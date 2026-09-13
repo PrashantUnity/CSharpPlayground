@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -15,20 +18,17 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
-    private readonly NotebookExecutionKernel _kernel;
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
 
-    private int _globalExecutionCounter = 0;
+    private readonly ObservableCollection<NotebookCellViewModel> _emptyCells = new();
+    private readonly ObservableCollection<NotebookVariableInfo> _emptyVariables = new();
+
+    [ObservableProperty]
+    private NotebookTabViewModel? _activeTab;
 
     [ObservableProperty]
     private NotebookDocumentItem _notebook;
-
-    [ObservableProperty]
-    private bool _isExecuting;
-
-    [ObservableProperty]
-    private string _compilerStatusText = "Kernel Ready";
 
     [ObservableProperty]
     private bool _isVariableInspectorOpen = false;
@@ -37,23 +37,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private bool _isOutlineOpen = false;
 
     [ObservableProperty]
-    private NotebookCellViewModel? _activeCell;
-
-    [ObservableProperty]
-    private string _kernelName = ".NET (C#)";
-
-    [ObservableProperty]
     private string _workspaceName = "SKIASHARP";
 
     [ObservableProperty]
     private bool _isWorkspaceExpanded = true;
-
-    public string WorkspaceExpansionArrow => IsWorkspaceExpanded ? "⌵" : ">";
-
-    partial void OnIsWorkspaceExpandedChanged(bool value)
-    {
-        OnPropertyChanged(nameof(WorkspaceExpansionArrow));
-    }
 
     [ObservableProperty]
     private bool _isExplorerOpen = true;
@@ -64,40 +51,120 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [ObservableProperty]
     private bool _isTimelineExpanded = false;
 
-    public ObservableCollection<NotebookCellViewModel> Cells { get; } = new();
-    public ObservableCollection<NotebookVariableInfo> Variables { get; } = new();
+    public ObservableCollection<NotebookTabViewModel> Tabs { get; } = new();
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
-    public string BreadcrumbText
+    public bool HasActiveTab => ActiveTab != null;
+    public bool HasNoTabs => ActiveTab == null;
+
+    public ObservableCollection<NotebookCellViewModel> Cells => ActiveTab?.Cells ?? _emptyCells;
+    public ObservableCollection<NotebookVariableInfo> Variables => ActiveTab?.Variables ?? _emptyVariables;
+
+    public NotebookCellViewModel? ActiveCell => ActiveTab?.ActiveCell;
+    public bool IsExecuting => ActiveTab?.IsExecuting ?? false;
+    public string KernelName => ActiveTab?.KernelName ?? ".NET (C#)";
+    public string CompilerStatusText
     {
-        get
+        get => ActiveTab?.KernelStatusText ?? "Kernel Ready";
+        set
         {
-            var title = string.IsNullOrWhiteSpace(Notebook?.Title) ? "codefrydev.frynb" : Notebook.Title;
-            if (!title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase))
+            if (ActiveTab != null)
             {
-                title += ".frynb";
+                ActiveTab.KernelStatusText = value;
+                OnPropertyChanged(nameof(CompilerStatusText));
             }
-            if (ActiveCell != null && !string.IsNullOrWhiteSpace(ActiveCell.Source))
-            {
-                var firstLine = ActiveCell.Source.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? string.Empty;
-                if (firstLine.Length > 40) firstLine = firstLine.Substring(0, 37) + "...";
-                return $"Code > {title} > C# {firstLine}";
-            }
-            return $"Code > {title}";
         }
     }
 
-    public string DocumentTabTitle
+    public string WorkspaceExpansionArrow => IsWorkspaceExpanded ? "⌵" : ">";
+
+    public string BreadcrumbFolder => ActiveTab?.BreadcrumbFolder ?? "Code";
+    public string BreadcrumbDocument => ActiveTab?.BreadcrumbDocument ?? "Untitled.frynb";
+    public string ActiveCellBadgeText => ActiveTab?.ActiveCellBadgeText ?? "Notebook Root";
+    public string ActiveCellTypeIcon => ActiveTab?.ActiveCellTypeIcon ?? "CodeBraces";
+    public string ActiveCellTypeColor => ActiveTab?.ActiveCellTypeColor ?? "#58A6FF";
+
+    public string BreadcrumbText => $"{BreadcrumbFolder} › {BreadcrumbDocument} › {ActiveCellBadgeText}";
+    public string DocumentTabTitle => ActiveTab?.Title ?? "Notebook.frynb";
+
+    partial void OnIsWorkspaceExpandedChanged(bool value)
     {
-        get
+        OnPropertyChanged(nameof(WorkspaceExpansionArrow));
+    }
+
+    partial void OnActiveTabChanged(NotebookTabViewModel? oldValue, NotebookTabViewModel? newValue)
+    {
+        if (oldValue != null)
         {
-            var title = string.IsNullOrWhiteSpace(Notebook?.Title) ? "codefrydev.frynb" : Notebook.Title;
-            if (!title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase))
-            {
-                title += ".frynb";
-            }
-            return title;
+            oldValue.PropertyChanged -= OnActiveTabPropertyChanged;
+            oldValue.IsActive = false;
         }
+
+        if (newValue != null)
+        {
+            newValue.IsActive = true;
+            newValue.PropertyChanged += OnActiveTabPropertyChanged;
+            Notebook = newValue.Notebook;
+        }
+
+        NotifyActiveTabProperties();
+    }
+
+    private void OnActiveTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(NotebookTabViewModel.ActiveCell) or
+            nameof(NotebookTabViewModel.ActiveCellBadgeText) or
+            nameof(NotebookTabViewModel.ActiveCellTypeIcon) or
+            nameof(NotebookTabViewModel.ActiveCellTypeColor))
+        {
+            OnPropertyChanged(nameof(ActiveCell));
+            OnPropertyChanged(nameof(ActiveCellBadgeText));
+            OnPropertyChanged(nameof(ActiveCellTypeIcon));
+            OnPropertyChanged(nameof(ActiveCellTypeColor));
+            OnPropertyChanged(nameof(BreadcrumbText));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.KernelStatusText))
+        {
+            OnPropertyChanged(nameof(CompilerStatusText));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.IsExecuting))
+        {
+            OnPropertyChanged(nameof(IsExecuting));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.Title))
+        {
+            OnPropertyChanged(nameof(BreadcrumbDocument));
+            OnPropertyChanged(nameof(DocumentTabTitle));
+            OnPropertyChanged(nameof(BreadcrumbText));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.FolderName))
+        {
+            OnPropertyChanged(nameof(BreadcrumbFolder));
+            OnPropertyChanged(nameof(BreadcrumbText));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.Variables))
+        {
+            OnPropertyChanged(nameof(Variables));
+        }
+    }
+
+    private void NotifyActiveTabProperties()
+    {
+        OnPropertyChanged(nameof(HasActiveTab));
+        OnPropertyChanged(nameof(HasNoTabs));
+        OnPropertyChanged(nameof(Cells));
+        OnPropertyChanged(nameof(Variables));
+        OnPropertyChanged(nameof(ActiveCell));
+        OnPropertyChanged(nameof(IsExecuting));
+        OnPropertyChanged(nameof(KernelName));
+        OnPropertyChanged(nameof(CompilerStatusText));
+        OnPropertyChanged(nameof(BreadcrumbFolder));
+        OnPropertyChanged(nameof(BreadcrumbDocument));
+        OnPropertyChanged(nameof(ActiveCellBadgeText));
+        OnPropertyChanged(nameof(ActiveCellTypeIcon));
+        OnPropertyChanged(nameof(ActiveCellTypeColor));
+        OnPropertyChanged(nameof(BreadcrumbText));
+        OnPropertyChanged(nameof(DocumentTabTitle));
     }
 
     public CSharpNotebookStudioViewModel(
@@ -112,184 +179,238 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
-        _kernel = new NotebookExecutionKernel();
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
 
-        PopulateCells();
         PopulateExplorerTree();
+
+        // Initialize primary open tab
+        var initialTab = new NotebookTabViewModel(
+            _notebook,
+            folderName: "Code",
+            filePath: $"Code/{notebook.Title}.frynb",
+            onSelectTab: SelectTab,
+            onCloseTab: CloseTab);
+
+        Tabs.Add(initialTab);
+        SelectTab(initialTab);
     }
 
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
     {
         Notebook = notebook;
-        CompilerStatusText = "Kernel Ready";
-        _kernel.ResetSession();
-        Variables.Clear();
-        PopulateCells();
-    }
 
-    private void PopulateCells()
-    {
-        Cells.Clear();
+        var existingTab = Tabs.FirstOrDefault(t => 
+            string.Equals(t.Notebook.Id, notebook.Id, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(t.Notebook.Title, notebook.Title, StringComparison.OrdinalIgnoreCase));
 
-        if (Notebook.Cells.Count == 0)
+        if (existingTab != null)
         {
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "using System;"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "Console.WriteLine(\"test is test\");"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "var list = new List<int>()\n{\n    1,3,4,5,6,7,8,10\n};\nlist"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "public class People\n{\n    public string Name { get; set; } = string.Empty;\n    public string Class { get; set; } = string.Empty;\n    public int[] Numbers { get; set; } = [1, 34, 45, 235, 25];\n    public People? Another { get; set; }\n    public void WhoAreYou()\n    {\n        Console.WriteLine($\"My name is {Name}\");\n    }\n}"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "var people = new People();\npeople"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "people.Name = \"Code\";\npeople.Class = \"II\";\npeople.Another = people;\n\npeople"
-            });
+            SelectTab(existingTab);
         }
-
-        foreach (var cellItem in Notebook.Cells)
+        else
         {
-            Cells.Add(CreateCellViewModel(cellItem));
-        }
+            var newTab = new NotebookTabViewModel(
+                notebook,
+                folderName: "Code",
+                filePath: $"Code/{notebook.Title}.frynb",
+                onSelectTab: SelectTab,
+                onCloseTab: CloseTab);
 
-        if (Cells.Count > 0)
-        {
-            SelectCell(Cells[0]);
+            Tabs.Add(newTab);
+            SelectTab(newTab);
         }
     }
 
-    private NotebookCellViewModel CreateCellViewModel(NotebookCellItem item)
+    [RelayCommand]
+    public void SelectTab(NotebookTabViewModel? tab)
     {
-        return new NotebookCellViewModel(
-            item,
-            runAction: RunSingleCellAsync,
-            deleteAction: DeleteCell,
-            moveAction: MoveCell,
-            addBelowAction: AddCellBelow);
+        if (tab == null) return;
+
+        ActiveTab = tab;
+
+        // Highlight matching item in explorer
+        HighlightExplorerItem(tab.Title);
+    }
+
+    [RelayCommand]
+    public void CloseTab(NotebookTabViewModel? tab)
+    {
+        if (tab == null) return;
+
+        var idx = Tabs.IndexOf(tab);
+        Tabs.Remove(tab);
+
+        if (ActiveTab == tab)
+        {
+            if (Tabs.Count > 0)
+            {
+                var nextIdx = Math.Min(idx, Tabs.Count - 1);
+                SelectTab(Tabs[nextIdx]);
+            }
+            else
+            {
+                ActiveTab = null;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void NewNotebookTab()
+    {
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Notebook_{timestamp}";
+        var fileName = $"{title}.frynb";
+
+        var codeFolder = ExplorerRootItems.FirstOrDefault(x => x.Name == "Code")
+                         ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
+
+        var newDoc = new NotebookDocumentItem
+        {
+            Title = title
+        };
+
+        var newTab = new NotebookTabViewModel(
+            newDoc,
+            folderName: codeFolder?.Name ?? "Code",
+            filePath: $"{codeFolder?.Name ?? "Code"}/{fileName}",
+            onSelectTab: SelectTab,
+            onCloseTab: CloseTab);
+
+        Tabs.Add(newTab);
+        SelectTab(newTab);
+
+        if (codeFolder != null)
+        {
+            var newExpItem = new ExplorerItemViewModel
+            {
+                Name = fileName,
+                IsDirectory = false,
+                FileExtension = ".frynb",
+                Parent = codeFolder,
+                OnItemClicked = OnExplorerItemClicked,
+                OnDeleteRequested = DeleteExplorerItem,
+                OnNewFileRequested = NewFileUnderItem,
+                OnNewFolderRequested = NewFolderUnderItem,
+                OnRenameCommitted = OnItemRenamed
+            };
+            codeFolder.IsExpanded = true;
+            codeFolder.Children.Add(newExpItem);
+            HighlightExplorerItem(fileName);
+        }
+    }
+
+    public void OpenDocument(ExplorerItemViewModel item)
+    {
+        if (item.IsDirectory)
+        {
+            item.IsExpanded = !item.IsExpanded;
+            return;
+        }
+
+        DeselectAll(ExplorerRootItems);
+        item.IsSelected = true;
+
+        var fileName = item.Name;
+        var folderName = item.Parent?.Name ?? "Code";
+        var filePath = item.FullPath;
+
+        var existingTab = Tabs.FirstOrDefault(t =>
+            string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
+
+        if (existingTab != null)
+        {
+            SelectTab(existingTab);
+            return;
+        }
+
+        var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+            ? fileName.Substring(0, fileName.Length - 6)
+            : fileName;
+
+        var newDoc = new NotebookDocumentItem
+        {
+            Title = docTitle
+        };
+
+        // Populate sample cells for codefrydev.frynb demo
+        if (fileName.Contains("codefrydev", StringComparison.OrdinalIgnoreCase))
+        {
+            newDoc.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = "# 🚀 CodeFryDev Polyglot Workspace\nInteractive multi-cell document automation, SkiaSharp rendering, and dynamic C# scripts."
+            });
+            newDoc.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "// Compute Fibonacci sequence\nvar fib = new List<int> { 1, 1 };\nfor (int i = 2; i < 10; i++) fib.Add(fib[i - 1] + fib[i - 2]);\nfib"
+            });
+            newDoc.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "Console.WriteLine($\"Workspace timestamp: {DateTime.Now:T}\");"
+            });
+        }
+
+        var newTab = new NotebookTabViewModel(
+            newDoc,
+            folderName: folderName,
+            filePath: filePath,
+            onSelectTab: SelectTab,
+            onCloseTab: CloseTab);
+
+        Tabs.Add(newTab);
+        SelectTab(newTab);
     }
 
     [RelayCommand]
     public async Task RunSingleCellAsync(NotebookCellViewModel cell)
     {
-        if (cell.Type != CellType.Code || string.IsNullOrWhiteSpace(cell.Source))
+        if (ActiveTab != null)
         {
-            return;
+            await ActiveTab.RunSingleCellAsync(cell);
         }
+    }
 
-        cell.IsExecuting = true;
-        cell.HasError = false;
-        cell.ClearOutput();
-
-        _globalExecutionCounter++;
-        cell.ExecutionCount = _globalExecutionCounter;
-        CompilerStatusText = $"Executing Cell [{cell.ExecutionCount}]...";
-
-        try
+    [RelayCommand]
+    public async Task RunAllCellsAsync()
+    {
+        if (ActiveTab != null)
         {
-            var result = await _kernel.ExecuteCellAsync(
-                cell.Source,
-                onLiveConsole: text =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        cell.OutputText += text;
-                    });
-                },
-                onRichOutput: rich =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        switch (rich.Kind)
-                        {
-                            case CellOutputKind.Image:
-                                if (rich.ImageBytes != null)
-                                {
-                                    cell.SetImageOutput(rich.ImageBytes, rich.ImageFormat ?? "PNG", rich.ImageWidth, rich.ImageHeight);
-                                }
-                                break;
-                            case CellOutputKind.Control:
-                                if (rich.InteractiveControl != null)
-                                {
-                                    cell.SetInteractiveControl(rich.InteractiveControl);
-                                }
-                                break;
-                            case CellOutputKind.Html:
-                                if (!string.IsNullOrEmpty(rich.HtmlContent))
-                                {
-                                    cell.SetHtmlContent(rich.HtmlContent);
-                                }
-                                break;
-                            case CellOutputKind.Table:
-                                if (rich.TableResult != null)
-                                {
-                                    cell.SetTableOutput(rich.TableResult);
-                                }
-                                break;
-                            case CellOutputKind.ObjectInspector:
-                                if (rich.InspectorNode != null)
-                                {
-                                    cell.SetInspectorOutput(rich.InspectorNode);
-                                }
-                                break;
-                        }
-                    });
-                });
-
-            if (!result.Success)
-            {
-                cell.HasError = true;
-            }
-
-            cell.ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
-
-            // Update live variables in the inspector
-            UpdateVariables();
-
-            CompilerStatusText = result.Success
-                ? $"Kernel Ready • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}"
-                : "Execution Failed";
+            await ActiveTab.RunAllCellsAsync();
         }
-        finally
-        {
-            cell.IsExecuting = false;
-        }
+    }
+
+    [RelayCommand]
+    public void RestartKernel()
+    {
+        ActiveTab?.RestartKernel();
+    }
+
+    [RelayCommand]
+    public void ClearAllOutputs()
+    {
+        ActiveTab?.ClearAllOutputs();
     }
 
     [RelayCommand]
     public void SelectCell(NotebookCellViewModel? cell)
     {
-        if (cell == null) return;
-        foreach (var c in Cells)
-        {
-            c.IsSelected = (c == cell);
-        }
-        ActiveCell = cell;
-        OnPropertyChanged(nameof(BreadcrumbText));
+        ActiveTab?.SelectCell(cell);
+    }
+
+    [RelayCommand]
+    public void AddCodeCell(NotebookCellViewModel? afterCell = null)
+    {
+        ActiveTab?.AddCodeCell(afterCell);
+    }
+
+    [RelayCommand]
+    public void AddMarkdownCell(NotebookCellViewModel? afterCell = null)
+    {
+        ActiveTab?.AddMarkdownCell(afterCell);
     }
 
     [RelayCommand]
@@ -299,154 +420,25 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task RunAllCellsAsync()
-    {
-        if (IsExecuting) return;
-
-        IsExecuting = true;
-        CompilerStatusText = "Restarting Kernel & Running Notebook...";
-
-        try
-        {
-            // Reset state to ensure fresh linear run
-            _kernel.ResetSession();
-            Variables.Clear();
-
-            foreach (var cell in Cells.Where(c => c.Type == CellType.Code))
-            {
-                await RunSingleCellAsync(cell);
-                if (cell.HasError)
-                {
-                    CompilerStatusText = "Notebook execution stopped due to error";
-                    break;
-                }
-            }
-
-            if (Cells.All(c => !c.HasError))
-            {
-                CompilerStatusText = $"Notebook Finished • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}";
-            }
-        }
-        finally
-        {
-            IsExecuting = false;
-        }
-    }
-
-    [RelayCommand]
-    public void RestartKernel()
-    {
-        _kernel.ResetSession();
-        Variables.Clear();
-        CompilerStatusText = "Kernel Restarted • Session Fresh";
-    }
-
-    [RelayCommand]
     public void ToggleVariableInspector()
     {
         IsVariableInspectorOpen = !IsVariableInspectorOpen;
         if (IsVariableInspectorOpen)
         {
-            UpdateVariables();
-        }
-    }
-
-    private void UpdateVariables()
-    {
-        var active = _kernel.GetActiveVariables();
-        Dispatcher.UIThread.Post(() =>
-        {
-            Variables.Clear();
-            foreach (var v in active)
-            {
-                Variables.Add(v);
-            }
-            OnPropertyChanged(nameof(Variables));
-        });
-    }
-
-    [RelayCommand]
-    public void AddCodeCell(NotebookCellViewModel? afterCell = null)
-    {
-        AddCellBelow(afterCell, CellType.Code);
-    }
-
-    [RelayCommand]
-    public void AddMarkdownCell(NotebookCellViewModel? afterCell = null)
-    {
-        AddCellBelow(afterCell, CellType.Markdown);
-    }
-
-    private void AddCellBelow(NotebookCellViewModel? targetCell, CellType type)
-    {
-        var newCellItem = new NotebookCellItem
-        {
-            Type = type,
-            Source = type == CellType.Code ? "// C# Code Block\n" : "### Markdown Notes\nWrite documentation here."
-        };
-
-        var newVm = CreateCellViewModel(newCellItem);
-
-        if (targetCell == null)
-        {
-            Cells.Add(newVm);
-            Notebook.Cells.Add(newCellItem);
-        }
-        else
-        {
-            var idx = Cells.IndexOf(targetCell);
-            if (idx >= 0 && idx < Cells.Count)
-            {
-                Cells.Insert(idx + 1, newVm);
-                Notebook.Cells.Insert(idx + 1, newCellItem);
-            }
-            else
-            {
-                Cells.Add(newVm);
-                Notebook.Cells.Add(newCellItem);
-            }
-        }
-    }
-
-    private void DeleteCell(NotebookCellViewModel cell)
-    {
-        Cells.Remove(cell);
-        Notebook.Cells.Remove(cell.Model);
-
-        if (Cells.Count == 0)
-        {
-            AddCodeCell();
-        }
-    }
-
-    private void MoveCell(NotebookCellViewModel cell, int delta)
-    {
-        var oldIdx = Cells.IndexOf(cell);
-        var newIdx = oldIdx + delta;
-
-        if (oldIdx >= 0 && newIdx >= 0 && newIdx < Cells.Count)
-        {
-            Cells.Move(oldIdx, newIdx);
-            Notebook.Cells.RemoveAt(oldIdx);
-            Notebook.Cells.Insert(newIdx, cell.Model);
-        }
-    }
-
-    [RelayCommand]
-    public void ClearAllOutputs()
-    {
-        foreach (var cell in Cells)
-        {
-            cell.ClearOutput();
+            ActiveTab?.UpdateVariables();
         }
     }
 
     [RelayCommand]
     public async Task SaveAsync()
     {
-        Notebook.LastModified = DateTime.UtcNow;
-        await _storageService.SaveNotebookAsync(Notebook);
-        CompilerStatusText = "Saved";
+        if (ActiveTab != null)
+        {
+            ActiveTab.Notebook.LastModified = DateTime.UtcNow;
+            await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
+            ActiveTab.IsModified = false;
+            CompilerStatusText = "Saved";
+        }
     }
 
     [RelayCommand]
@@ -503,6 +495,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (item == null) return;
 
+        // Close any tab open for this item
+        var openTab = Tabs.FirstOrDefault(t =>
+            string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(item.FullPath) && string.Equals(t.FilePath, item.FullPath, StringComparison.OrdinalIgnoreCase)));
+
+        if (openTab != null)
+        {
+            CloseTab(openTab);
+        }
+
         if (item.Parent != null)
         {
             item.Parent.Children.Remove(item);
@@ -519,11 +521,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             {
                 OnExplorerItemClicked(nextFile);
             }
-            else
-            {
-                Notebook.Title = "Untitled";
-                OnPropertyChanged(nameof(BreadcrumbText));
-            }
         }
     }
 
@@ -531,7 +528,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public void NewFile()
     {
         var selected = FindSelectedItem(ExplorerRootItems);
-        var targetFolder = (selected != null && selected.IsDirectory) ? selected : 
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected :
             (selected?.Parent ?? ExplorerRootItems.FirstOrDefault(x => x.Name == "Code") ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory));
 
         if (targetFolder != null)
@@ -540,20 +537,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
         else
         {
-            var newFile = new ExplorerItemViewModel
-            {
-                Name = $"Notebook_{DateTime.Now:HHmmss}.frynb",
-                IsDirectory = false,
-                FileExtension = ".frynb",
-                OnItemClicked = OnExplorerItemClicked,
-                OnDeleteRequested = DeleteExplorerItem,
-                OnNewFileRequested = NewFileUnderItem,
-                OnNewFolderRequested = NewFolderUnderItem,
-                OnRenameCommitted = OnItemRenamed
-            };
-            ExplorerRootItems.Add(newFile);
-            OnExplorerItemClicked(newFile);
-            newFile.StartRename();
+            NewNotebookTab();
         }
     }
 
@@ -561,9 +545,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public void NewFileUnderItem(ExplorerItemViewModel target)
     {
         var folder = target.IsDirectory ? target : (target.Parent ?? target);
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var name = $"Notebook_{timestamp}.frynb";
+
         var newFile = new ExplorerItemViewModel
         {
-            Name = $"Notebook_{DateTime.Now:HHmmss}.frynb",
+            Name = name,
             IsDirectory = false,
             FileExtension = ".frynb",
             Parent = folder,
@@ -576,7 +563,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         folder.IsExpanded = true;
         folder.Children.Add(newFile);
-        OnExplorerItemClicked(newFile);
+        OpenDocument(newFile);
         newFile.StartRename();
     }
 
@@ -705,37 +692,24 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     private void OnExplorerItemClicked(ExplorerItemViewModel item)
     {
-        if (item.IsDirectory)
-        {
-            item.IsExpanded = !item.IsExpanded;
-        }
-        else
-        {
-            DeselectAll(ExplorerRootItems);
-            item.IsSelected = true;
-
-            if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase))
-            {
-                var title = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-                    ? item.Name.Substring(0, item.Name.Length - 6)
-                    : item.Name;
-                Notebook.Title = title;
-                OnPropertyChanged(nameof(BreadcrumbText));
-                OnPropertyChanged(nameof(DocumentTabTitle));
-            }
-        }
+        OpenDocument(item);
     }
 
     private void OnItemRenamed(ExplorerItemViewModel item)
     {
-        if (item.IsSelected && !item.IsDirectory)
+        if (!item.IsDirectory)
         {
-            var title = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-                ? item.Name.Substring(0, item.Name.Length - 6)
-                : item.Name;
-            Notebook.Title = title;
-            OnPropertyChanged(nameof(BreadcrumbText));
-            OnPropertyChanged(nameof(DocumentTabTitle));
+            var openTab = Tabs.FirstOrDefault(t =>
+                string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
+                t.IsActive);
+
+            if (openTab != null)
+            {
+                openTab.Title = item.Name;
+                openTab.Notebook.Title = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+                    ? item.Name.Substring(0, item.Name.Length - 6)
+                    : item.Name;
+            }
         }
     }
 
@@ -749,6 +723,33 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 DeselectAll(it.Children);
             }
         }
+    }
+
+    private void HighlightExplorerItem(string fileName)
+    {
+        DeselectAll(ExplorerRootItems);
+        var match = FindItemByName(ExplorerRootItems, fileName);
+        if (match != null)
+        {
+            match.IsSelected = true;
+            var parent = match.Parent;
+            while (parent != null)
+            {
+                parent.IsExpanded = true;
+                parent = parent.Parent;
+            }
+        }
+    }
+
+    private ExplorerItemViewModel? FindItemByName(IEnumerable<ExplorerItemViewModel> items, string name)
+    {
+        foreach (var it in items)
+        {
+            if (string.Equals(it.Name, name, StringComparison.OrdinalIgnoreCase)) return it;
+            var found = FindItemByName(it.Children, name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private ExplorerItemViewModel? FindSelectedItem(IEnumerable<ExplorerItemViewModel> items)
