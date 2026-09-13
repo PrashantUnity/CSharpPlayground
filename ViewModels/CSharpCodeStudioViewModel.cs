@@ -922,6 +922,35 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task AddWatchExpressionAsync(string? expr)
+    {
+        if (string.IsNullOrWhiteSpace(expr)) return;
+        expr = expr.Trim();
+        if (WatchExpressions.Any(w => w.Expression == expr)) return;
+
+        var watchItem = new WatchExpressionItem
+        {
+            Expression = expr,
+            Result = "Evaluating...",
+            TypeName = ""
+        };
+        WatchExpressions.Add(watchItem);
+
+        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
+        watchItem.Result = res;
+        watchItem.TypeName = type;
+        watchItem.HasError = !ok;
+
+        SelectedBottomTabIndex = 4;
+        IsBottomDeckExpanded = true;
+    }
+
+    public Task<(bool Success, string Result, string TypeName)> EvaluateExpressionAsync(string expr)
+    {
+        return _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
+    }
+
+    [RelayCommand]
     public void RemoveWatch(WatchExpressionItem? item)
     {
         if (item == null) return;

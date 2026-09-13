@@ -7,6 +7,7 @@
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="820"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpCodeStudioView"
              x:DataType="vm:CSharpCodeStudioViewModel">
@@ -541,18 +542,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Upper: High-Performance C# AvaloniaEdit -->
-                <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
-                    <avaloniaEdit:TextEditor Name="Editor"
-                                             FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
-                                             FontSize="13"
-                                             ShowLineNumbers="True"
-                                             WordWrap="False"
-                                             HorizontalScrollBarVisibility="Auto"
-                                             VerticalScrollBarVisibility="Auto"
-                                             Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                             Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                </Border>
+                <!-- Upper: High-Performance C# AvaloniaEdit with Debug Hover Data Tip Overlay -->
+                <Grid Grid.Row="1" Name="EditorHostGrid">
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                        <avaloniaEdit:TextEditor Name="Editor"
+                                                 FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
+                                                 FontSize="13"
+                                                 ShowLineNumbers="True"
+                                                 WordWrap="False"
+                                                 HorizontalScrollBarVisibility="Auto"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                 Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                    </Border>
+
+                    <!-- Live Debug Hover Data Tip Card -->
+                    <controls:DebugHoverDataTipControl Name="DebugHoverTip"
+                                                       HorizontalAlignment="Left"
+                                                       VerticalAlignment="Top"
+                                                       IsVisible="False" />
+                </Grid>
 
                 <!-- Horizontal Splitter (Editor vs Bottom Deck) -->
                 <GridSplitter Grid.Row="2"

@@ -174,7 +174,7 @@ public class ScriptDebuggerService
                 {
                     // Store in a global lookup dictionary for safe evaluation
                     GlobalVariableCache.Set(local.Name, local.RawValue);
-                    prefix.AppendLine($"var {local.Name} = ({local.TypeName})PdfEditorApp.Plugins.CSharpEditor.Services.GlobalVariableCache.Get(\"{local.Name}\");");
+                    prefix.AppendLine($"var {local.Name} = (dynamic)PdfEditorApp.Plugins.CSharpEditor.Services.GlobalVariableCache.Get(\"{local.Name}\");");
                 }
             }
 

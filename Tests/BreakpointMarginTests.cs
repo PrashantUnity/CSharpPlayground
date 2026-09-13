@@ -109,4 +109,43 @@ public class BreakpointMarginTests
         margin.AddBreakpoint(12);
         Assert.True(margin.HasBreakpoint(12));
     }
+
+    [Fact]
+    public void InsightWindow_ShouldExistInAvaloniaEdit()
+    {
+        var type = typeof(AvaloniaEdit.CodeCompletion.InsightWindow);
+        Assert.NotNull(type);
+        Assert.True(typeof(AvaloniaEdit.CodeCompletion.CompletionWindowBase).IsAssignableFrom(type));
+        var props = type.GetProperties().Select(p => p.Name).ToList();
+        Assert.NotNull(props);
+    }
+
+    [Fact]
+    public void Popup_ShouldExistInAvaloniaControls()
+    {
+        var popup = new Avalonia.Controls.Primitives.Popup();
+        Assert.NotNull(popup);
+        Assert.False(popup.IsOpen);
+    }
+
+    [Theory]
+    [InlineData("var environment = new {", 8, "environment", "environment")]
+    [InlineData("environment.Dump(\"text\");", 3, "environment", "environment.Dump")]
+    [InlineData("environment.Application;", 15, "Application", "environment.Application")]
+    [InlineData("int a = 1;", 5, "a", "a")]
+    [InlineData("   ", 2, "", "")]
+    public void ExpressionUnderCursorFinder_ShouldExtractIdentifierAndDottedPath(
+        string line, int col, string expectedId, string expectedPath)
+    {
+        var (id, path, _, _) = ExpressionUnderCursorFinder.FindExpression(line, col);
+        Assert.Equal(expectedId, id);
+        Assert.Equal(expectedPath, path);
+    }
+
+    [Fact]
+    public void Clipboard_ShouldHaveSetTextAsync()
+    {
+        var m = typeof(Avalonia.Input.Platform.ClipboardExtensions).GetMethod("SetTextAsync", new[] { typeof(Avalonia.Input.Platform.IClipboard), typeof(string) });
+        Assert.NotNull(m);
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -9,6 +10,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation.CSharp;
 using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -27,6 +29,8 @@ public partial class CSharpCodeStudioView : UserControl
 
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
+    private DebugHoverDataTipControl? _debugHoverTip;
+    private DebugHoverDataTipController? _debugHoverController;
 
     public CSharpCodeStudioView()
     {
@@ -78,7 +82,20 @@ public partial class CSharpCodeStudioView : UserControl
             // 8. Integrated Search & Replace Panel (Ctrl+F / Cmd+F)
             _searchPanel = SearchPanel.Install(_editor);
 
-            // 9. Event listeners
+            // 9. Interactive Live Debug Hover Data Tip Controller
+            _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
+            if (_debugHoverTip != null)
+            {
+                _debugHoverController = new DebugHoverDataTipController(
+                    _editor,
+                    _debugHoverTip,
+                    () => _currentVm?.IsPaused == true,
+                    () => _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : Array.Empty<DebugVariableItem>(),
+                    expr => _currentVm != null ? _currentVm.EvaluateExpressionAsync(expr) : Task.FromResult((false, "", "")),
+                    expr => _ = _currentVm?.AddWatchExpressionAsync(expr));
+            }
+
+            // 10. Event listeners
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
             _editor.KeyDown += OnEditorKeyDown;
@@ -286,6 +303,10 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSetPausedLine(int line)
     {
         if (_editor == null) return;
+        if (line == -1)
+        {
+            _debugHoverController?.HideTip();
+        }
         _breakpointMargin.CurrentPausedLine = line;
         _debugLineRenderer.CurrentPausedLine = line;
         _editor.TextArea.TextView.InvalidateVisual();
