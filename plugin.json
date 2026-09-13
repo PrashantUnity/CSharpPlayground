@@ -3,7 +3,7 @@
   "name": "C# Code Studio",
   "version": "1.0.0",
   "author": "Code Fry Dev",
-  "description": "Interactive in-app C# development and automation studio featuring a dedicated project/script manager, syntax-highlighted editor, real-time Roslyn compilation diagnostics, and in-memory execution.",
+  "description": "Interactive in-app C# development and automation studio featuring a dedicated project/script manager, syntax-highlighted editor, real-time Roslyn compilation diagnostics, in-memory execution, visual gutter breakpoints, interactive stepping (F5/F10/F11), locals/watch inspection, and immediate evaluation.",
   "entryPoint": "CSharpEditorPlugin.dll",
   "icon": "CodeBraces",
   "dependencies": [],

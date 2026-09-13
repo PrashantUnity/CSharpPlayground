@@ -25,6 +25,9 @@ public partial class CSharpCodeStudioView : UserControl
     private CSharpCodeStudioViewModel? _currentVm;
     private bool _isUpdatingText;
 
+    private readonly BreakpointMargin _breakpointMargin = new();
+    private readonly DebugLineRenderer _debugLineRenderer = new();
+
     public CSharpCodeStudioView()
     {
         InitializeComponent();
@@ -67,10 +70,15 @@ public partial class CSharpCodeStudioView : UserControl
             // 6. Clean Gutter Margins: Remove ugly DottedLineMargin and style FoldingMargin
             PolishLeftMargins();
 
-            // 7. Integrated Search & Replace Panel (Ctrl+F / Cmd+F)
+            // 7. Install Breakpoint Gutter Margin & Debug Highlight Renderer
+            _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
+            _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
+            _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
+
+            // 8. Integrated Search & Replace Panel (Ctrl+F / Cmd+F)
             _searchPanel = SearchPanel.Install(_editor);
 
-            // 8. Event listeners
+            // 9. Event listeners
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
             _editor.KeyDown += OnEditorKeyDown;
@@ -124,6 +132,8 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestFoldAll -= FoldAll;
             _currentVm.RequestUnfoldAll -= UnfoldAll;
             _currentVm.RequestToggleSearch -= ToggleSearch;
+            _currentVm.RequestSetPausedLine -= OnSetPausedLine;
+            _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
@@ -137,7 +147,11 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestFoldAll += FoldAll;
             _currentVm.RequestUnfoldAll += UnfoldAll;
             _currentVm.RequestToggleSearch += ToggleSearch;
+            _currentVm.RequestSetPausedLine += OnSetPausedLine;
+            _currentVm.RequestSyncBreakpoints += OnSyncBreakpoints;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
+
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
 
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
@@ -197,7 +211,58 @@ public partial class CSharpCodeStudioView : UserControl
 
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_editor == null || _foldingManager == null) return;
+        if (_editor == null) return;
+
+        // F9: Toggle breakpoint on caret line
+        if (e.Key == Key.F9)
+        {
+            _currentVm?.ToggleBreakpoint(_editor.TextArea.Caret.Line);
+            e.Handled = true;
+            return;
+        }
+
+        // F5: Debug or Continue
+        if (e.Key == Key.F5 && !e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            if (_currentVm?.IsPaused == true)
+            {
+                _currentVm.ContinueDebug();
+                e.Handled = true;
+                return;
+            }
+            else if (_currentVm?.IsExecuting == false && _currentVm?.IsDebugging == false)
+            {
+                _ = _currentVm.DebugCodeCommand.ExecuteAsync(null);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // F10: Step Over
+        if (e.Key == Key.F10 && _currentVm?.IsPaused == true)
+        {
+            _currentVm.StepOver();
+            e.Handled = true;
+            return;
+        }
+
+        // F11: Step Into
+        if (e.Key == Key.F11 && _currentVm?.IsPaused == true)
+        {
+            _currentVm.StepInto();
+            e.Handled = true;
+            return;
+        }
+
+        // Shift+F5: Stop Debugging
+        if (e.Key == Key.F5 && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _currentVm?.IsDebugging == true)
+        {
+            _currentVm.StopDebug();
+            e.Handled = true;
+            return;
+        }
+
+        if (_foldingManager == null) return;
 
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
@@ -216,6 +281,19 @@ public partial class CSharpCodeStudioView : UserControl
             e.Handled = true;
             return;
         }
+    }
+
+    private void OnSetPausedLine(int line)
+    {
+        if (_editor == null) return;
+        _breakpointMargin.CurrentPausedLine = line;
+        _debugLineRenderer.CurrentPausedLine = line;
+        _editor.TextArea.TextView.InvalidateVisual();
+    }
+
+    private void OnSyncBreakpoints(IEnumerable<int> lines)
+    {
+        _breakpointMargin.SetBreakpoints(lines);
     }
 
     private void ToggleFoldAtCaret(bool? fold = null)

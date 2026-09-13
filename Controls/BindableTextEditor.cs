@@ -43,6 +43,11 @@ public class BindableTextEditor : TextEditor
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
     private readonly CSharpEditorCompletionController _completionController;
+    private readonly BreakpointMargin _breakpointMargin = new();
+    private readonly DebugLineRenderer _debugLineRenderer = new();
+
+    public BreakpointMargin BreakpointMargin => _breakpointMargin;
+    public DebugLineRenderer DebugLineRenderer => _debugLineRenderer;
 
     public BindableTextEditor()
     {
@@ -71,9 +76,22 @@ public class BindableTextEditor : TextEditor
         _foldingManager = AvaloniaEdit.Folding.FoldingManager.Install(TextArea);
         PolishLeftMargins();
 
+        // Install Breakpoint Gutter Margin at index 0 (left of line numbers)
+        TextArea.LeftMargins.Insert(0, _breakpointMargin);
+
+        // Install Debug Paused Line Background Renderer
+        TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
+
         _completionController = new CSharpEditorCompletionController(this, SharedCompiler.Value);
 
         TextChanged += OnEditorTextChanged;
+    }
+
+    public void SetPausedLine(int line)
+    {
+        _breakpointMargin.CurrentPausedLine = line;
+        _debugLineRenderer.CurrentPausedLine = line;
+        TextArea.TextView.InvalidateVisual();
     }
 
     private void PolishLeftMargins()
@@ -192,6 +210,22 @@ public class BindableTextEditor : TextEditor
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        // F9 to toggle breakpoint on caret line
+        if (e.Key == Key.F9)
+        {
+            var line = TextArea.Caret.Line;
+            if (_breakpointMargin.HasBreakpoint(line))
+            {
+                _breakpointMargin.RemoveBreakpoint(line);
+            }
+            else
+            {
+                _breakpointMargin.AddBreakpoint(line);
+            }
+            e.Handled = true;
+            return;
+        }
+
         // Ctrl+Enter or Cmd+Enter to execute the cell
         if (e.Key == Key.Enter && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
         {

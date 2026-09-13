@@ -21,6 +21,8 @@ public partial class CSharpEditorView : UserControl
     private readonly DispatcherTimer _foldingTimer;
     private CSharpEditorViewModel? _currentVm;
     private bool _isUpdatingText;
+    private readonly BreakpointMargin _breakpointMargin = new();
+    private readonly DebugLineRenderer _debugLineRenderer = new();
 
     public CSharpEditorView()
     {
@@ -55,6 +57,9 @@ public partial class CSharpEditorView : UserControl
             _editor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(_editor.Options);
             _foldingManager = FoldingManager.Install(_editor.TextArea);
             PolishLeftMargins();
+
+            _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
+            _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
             SearchPanel.Install(_editor);
 

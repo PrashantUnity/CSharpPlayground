@@ -18,6 +18,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly RoslynCompilerService _compilerService;
     public RoslynCompilerService CompilerService => _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
+    private readonly ScriptDebuggerService _debuggerService;
     private readonly NotebookExecutionKernel _kernel;
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
@@ -49,6 +50,18 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [ObservableProperty]
     private bool _isExecuting;
 
+    partial void OnIsExecutingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNormalExecuting));
+    }
+
+    partial void OnIsDebuggingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNormalExecuting));
+    }
+
+    public bool IsNormalExecuting => IsExecuting && !IsDebugging;
+
     [ObservableProperty]
     private string _executionTimeText = string.Empty;
 
@@ -75,6 +88,31 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
+
+    // --- Interactive Debugging State & Collections ---
+    [ObservableProperty]
+    private bool _isDebugging;
+
+    [ObservableProperty]
+    private bool _isPaused;
+
+    [ObservableProperty]
+    private int _currentPausedLine = -1;
+
+    [ObservableProperty]
+    private string _immediateInputText = string.Empty;
+
+    [ObservableProperty]
+    private string _watchInputText = string.Empty;
+
+    public ObservableCollection<BreakpointItem> Breakpoints { get; } = new();
+    public ObservableCollection<DebugVariableItem> Locals { get; } = new();
+    public ObservableCollection<WatchExpressionItem> WatchExpressions { get; } = new();
+    public ObservableCollection<CallStackFrameItem> CallStack { get; } = new();
+    public ObservableCollection<string> ImmediateOutput { get; } = new();
+
+    public event Action<int>? RequestSetPausedLine;
+    public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
     public ObservableCollection<string> LanguageModes { get; } = new()
     {
@@ -138,6 +176,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
+        _debuggerService = new ScriptDebuggerService(_compilerService, _executionEngine);
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _kernel = new NotebookExecutionKernel();
@@ -166,6 +205,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             TestCases.Add(new TestCaseItem { Name = "Case 1", Input = "// Sample input parameters" });
         }
 
+        Breakpoints.Clear();
+        foreach (var bpLine in script.Breakpoints)
+        {
+            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
+        }
+
         TriggerDiagnosticsCheck();
     }
 
@@ -189,6 +234,14 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         {
             TestCases.Add(tc);
         }
+
+        Breakpoints.Clear();
+        foreach (var bpLine in script.Breakpoints)
+        {
+            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
+        }
+
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
 
         TriggerDiagnosticsCheck();
     }
@@ -607,5 +660,308 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         CaretLine = line;
         CaretColumn = col;
+    }
+
+    // =========================================================================
+    // INTERACTIVE DEBUGGING COMMANDS & LOGIC
+    // =========================================================================
+
+    [RelayCommand]
+    public async Task DebugCodeAsync()
+    {
+        if (IsExecuting || IsDebugging) return;
+
+        DumpResults.Clear();
+        RichOutputs.Clear();
+        Locals.Clear();
+        CallStack.Clear();
+        SelectedBottomTabIndex = 4; // Automatically focus Debugger tab
+        IsBottomDeckExpanded = true;
+        ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
+        CompilerStatusText = "Compiling for Debug...";
+        IsExecuting = true;
+        IsDebugging = true;
+        IsPaused = false;
+        CurrentPausedLine = -1;
+
+        _executionCts?.Cancel();
+        _executionCts = new CancellationTokenSource();
+        var token = _executionCts.Token;
+
+        var (compileOk, bytes, diagnostics) = await Task.Run(() =>
+            _debuggerService.CompileForDebugging(Code, CurrentLanguageMode));
+
+        if (!compileOk || bytes == null)
+        {
+            ConsoleOutput += "❌ Debug compilation failed. Check the Problems tab for details.\n";
+            Diagnostics.Clear();
+            foreach (var d in diagnostics)
+            {
+                Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+            }
+            ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
+            WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
+            SelectedBottomTabIndex = 2; // Problems tab
+            CompilerStatusText = "Build Failed";
+            IsExecuting = false;
+            IsDebugging = false;
+            return;
+        }
+
+        ConsoleOutput += "✨ Instrumentation ready! Executing in-memory...\n";
+        ConsoleOutput += "--------------------------------------------------\n";
+        CompilerStatusText = "Debugging...";
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            var session = ScriptDebugSession.BeginSession(Breakpoints, _executionCts);
+
+            session.Paused += (line, locals) =>
+            {
+                IsPaused = true;
+                CurrentPausedLine = line;
+                CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
+
+                Locals.Clear();
+                foreach (var l in locals)
+                {
+                    Locals.Add(l);
+                }
+
+                CallStack.Clear();
+                CallStack.Add(new CallStackFrameItem
+                {
+                    FrameIndex = 0,
+                    MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
+                    LineNumber = line,
+                    FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
+                    IsCurrentFrame = true
+                });
+
+                _ = UpdateWatchExpressionsAsync();
+
+                SelectedBottomTabIndex = 4; // Ensure Debugger tab is active
+                IsBottomDeckExpanded = true;
+
+                RequestSetPausedLine?.Invoke(line);
+                RequestNavigateToCaret?.Invoke(line, 1);
+            };
+
+            session.Resumed += () =>
+            {
+                IsPaused = false;
+                CurrentPausedLine = -1;
+                CompilerStatusText = "Debugging...";
+                RequestSetPausedLine?.Invoke(-1);
+            };
+
+            session.Stopped += () =>
+            {
+                IsPaused = false;
+                CurrentPausedLine = -1;
+                RequestSetPausedLine?.Invoke(-1);
+            };
+
+            var result = await _executionEngine.ExecuteAsync(
+                bytes,
+                liveText =>
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        ConsoleOutput += liveText;
+                    });
+                },
+                token);
+
+            sw.Stop();
+            ExecutionTimeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
+
+            ConsoleOutput += "\n--------------------------------------------------\n";
+            if (result.Success)
+            {
+                ConsoleOutput += $"🏁 Debugging finished in {sw.Elapsed.TotalMilliseconds:N0} ms\n";
+                CompilerStatusText = DumpResults.Count > 0
+                    ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
+                    : "Completed";
+                Script.ExecutionCount++;
+                _ = _storageService.SaveScriptAsync(Script);
+            }
+            else if (result.WasCancelled)
+            {
+                ConsoleOutput += "🛑 Debug session stopped by user.\n";
+                CompilerStatusText = "Stopped";
+            }
+            else
+            {
+                ConsoleOutput += $"❌ Runtime Error: {result.Error}\n";
+                CompilerStatusText = "Runtime Error";
+            }
+        }
+        finally
+        {
+            ScriptDebugSession.EndSession();
+            IsExecuting = false;
+            IsDebugging = false;
+            IsPaused = false;
+            CurrentPausedLine = -1;
+            RequestSetPausedLine?.Invoke(-1);
+        }
+    }
+
+    [RelayCommand]
+    public void ContinueDebug()
+    {
+        ScriptDebugSession.Current?.Continue();
+    }
+
+    [RelayCommand]
+    public void StepOver()
+    {
+        ScriptDebugSession.Current?.StepOver();
+    }
+
+    [RelayCommand]
+    public void StepInto()
+    {
+        ScriptDebugSession.Current?.StepInto();
+    }
+
+    [RelayCommand]
+    public void StopDebug()
+    {
+        ScriptDebugSession.Current?.Stop();
+        _executionCts?.Cancel();
+    }
+
+    [RelayCommand]
+    public async Task RestartDebugAsync()
+    {
+        StopDebug();
+        await Task.Delay(200);
+        await DebugCodeAsync();
+    }
+
+    [RelayCommand]
+    public void ToggleBreakpoint(int line)
+    {
+        var existing = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
+        if (existing != null)
+        {
+            Breakpoints.Remove(existing);
+            Script.Breakpoints.Remove(line);
+        }
+        else
+        {
+            var bp = new BreakpointItem { LineNumber = line, IsEnabled = true };
+            Breakpoints.Add(bp);
+            if (!Script.Breakpoints.Contains(line))
+            {
+                Script.Breakpoints.Add(line);
+            }
+        }
+
+        var sorted = Breakpoints.OrderBy(b => b.LineNumber).ToList();
+        Breakpoints.Clear();
+        foreach (var b in sorted)
+        {
+            Breakpoints.Add(b);
+        }
+
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+        _ = _storageService.SaveScriptAsync(Script);
+    }
+
+    [RelayCommand]
+    public void RemoveBreakpoint(BreakpointItem? item)
+    {
+        if (item == null) return;
+        Breakpoints.Remove(item);
+        Script.Breakpoints.Remove(item.LineNumber);
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+        _ = _storageService.SaveScriptAsync(Script);
+    }
+
+    [RelayCommand]
+    public void ClearAllBreakpoints()
+    {
+        Breakpoints.Clear();
+        Script.Breakpoints.Clear();
+        RequestSyncBreakpoints?.Invoke(Array.Empty<int>());
+        _ = _storageService.SaveScriptAsync(Script);
+    }
+
+    [RelayCommand]
+    public void ToggleBreakpointEnabled(BreakpointItem? item)
+    {
+        if (item == null) return;
+        item.IsEnabled = !item.IsEnabled;
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+    }
+
+    [RelayCommand]
+    public async Task AddWatchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(WatchInputText)) return;
+        var expr = WatchInputText.Trim();
+        WatchInputText = string.Empty;
+
+        var watchItem = new WatchExpressionItem
+        {
+            Expression = expr,
+            Result = "Evaluating...",
+            TypeName = ""
+        };
+        WatchExpressions.Add(watchItem);
+
+        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
+        watchItem.Result = res;
+        watchItem.TypeName = type;
+        watchItem.HasError = !ok;
+    }
+
+    [RelayCommand]
+    public void RemoveWatch(WatchExpressionItem? item)
+    {
+        if (item == null) return;
+        WatchExpressions.Remove(item);
+    }
+
+    private async Task UpdateWatchExpressionsAsync()
+    {
+        var localsSnapshot = Locals.ToList();
+        foreach (var w in WatchExpressions)
+        {
+            var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(w.Expression, localsSnapshot);
+            w.Result = res;
+            w.TypeName = type;
+            w.HasError = !ok;
+        }
+    }
+
+    [RelayCommand]
+    public async Task EvaluateImmediateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ImmediateInputText)) return;
+        var expr = ImmediateInputText.Trim();
+        ImmediateInputText = string.Empty;
+
+        ImmediateOutput.Add($"> {expr}");
+        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
+        if (ok)
+        {
+            ImmediateOutput.Add($"  {res} ({type})");
+        }
+        else
+        {
+            ImmediateOutput.Add($"  ❌ Error: {res}");
+        }
+    }
+
+    [RelayCommand]
+    public void ClearImmediate()
+    {
+        ImmediateOutput.Clear();
     }
 }

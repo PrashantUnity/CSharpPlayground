@@ -16,6 +16,7 @@ public class ScriptDocumentItem
     public string Notes { get; set; } = string.Empty;
     public List<string> References { get; set; } = new();
     public List<TestCaseItem> TestCases { get; set; } = new();
+    public List<int> Breakpoints { get; set; } = new();
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public int ExecutionCount { get; set; }

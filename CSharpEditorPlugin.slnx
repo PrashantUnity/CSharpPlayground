@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="CSharpEditorPlugin.csproj" />
   <Project Path="Runner/CSharpEditorPlugin.Runner.csproj" />
+  <Project Path="Tests/CSharpEditorPlugin.Tests.csproj" />
 </Solution>
