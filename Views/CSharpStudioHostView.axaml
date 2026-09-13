@@ -4,9 +4,113 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
-             x:DataType="vm:CSharpStudioHostViewModel">
+             x:DataType="vm:CSharpStudioHostViewModel"
+             Background="{DynamicResource M3SurfaceBrush}">
+
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding NavigateToHomeCommand}" />
+        <KeyBinding Gesture="Cmd+W" Command="{Binding NavigateToHomeCommand}" />
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding NavigateToHomeCommand}" />
+    </UserControl.KeyBindings>
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!-- Fallback Brush Definitions for standalone preview execution -->
+            <SolidColorBrush x:Key="M3SurfaceBrush" Color="#0D1117" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowestBrush" Color="#080C11" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowBrush" Color="#121720" />
+            <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#171D27" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#1E2633" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#263142" />
+            <SolidColorBrush x:Key="M3PrimaryBrush" Color="#75D59A" />
+            <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#00391C" />
+            <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#00522B" />
+            <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#92F2B5" />
+            <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="#22304A" />
+            <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="#D3E3FD" />
+            <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="M3OutlineBrush" Color="#475569" />
+            <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="#252E3E" />
+            <SolidColorBrush x:Key="M3SuccessBrush" Color="#22C55E" />
+            <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
+            <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
+            <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- M3 Expressive Studio Home Tab Button -->
+        <Style Selector="Button.studio-home-tab-btn">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.studio-home-tab-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SecondaryContainerBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <!-- Breadcrumb Link Button -->
+        <Style Selector="Button.studio-breadcrumb-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.studio-breadcrumb-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.studio-breadcrumb-btn:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <!-- Studio Close Button -->
+        <Style Selector="Button.studio-close-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.studio-close-btn:pointerover">
+            <Setter Property="Background" Value="#382025" />
+        </Style>
+        <Style Selector="Button.studio-close-btn:pointerover materialIcons|MaterialIcon">
+            <Setter Property="Foreground" Value="#F87171" />
+        </Style>
+    </UserControl.Styles>
 
     <UserControl.DataTemplates>
         <DataTemplate DataType="vm:CSharpManagerViewModel">
@@ -23,5 +127,102 @@
         </DataTemplate>
     </UserControl.DataTemplates>
 
-    <TransitioningContentControl Content="{Binding CurrentPage}" />
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ============================================================ -->
+        <!-- ROW 0: TOP STUDIO COMMAND BAR (Visible Only on Home / Hub)    -->
+        <!-- ============================================================ -->
+        <Border Grid.Row="0"
+                IsVisible="{Binding IsOnManagerPage}"
+                Height="44"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="12,0,12,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <!-- Left: Home Tab, Divider & Studio Branding -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+
+                    <!-- M3 Expressive Home Tab Button -->
+                    <Button Command="{Binding NavigateToHomeCommand}"
+                            Classes="studio-home-tab-btn"
+                            ToolTip.Tip="Return to FryPDF Home Dashboard &amp; Close Studio (Esc / ⌘W)">
+                        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="HomeOutline" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Home" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Width="1" Height="18" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
+
+                    <!-- Studio Identity Badge -->
+                    <Border Width="26" Height="26"
+                            CornerRadius="6"
+                            Background="{DynamicResource M3PrimaryContainerBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14"
+                                                    Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+
+                    <TextBlock Text="C# Code Studio" FontWeight="Bold" FontSize="13"
+                               Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
+                            CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                        <TextBlock Text="STUDIO" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                    </Border>
+
+                    <!-- Breadcrumb: Hub -->
+                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="14" Height="14" Foreground="{DynamicResource M3OutlineBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Hub"
+                               FontSize="12" FontWeight="Medium"
+                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Right: Engine Status Pill, Esc Hint & Close Studio Button -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <!-- Engine Status Pill -->
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Height="26"
+                            Padding="10,0"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Roslyn .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Esc Shortcut Cue -->
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="5,2"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="Esc" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OutlineBrush}" VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Close Studio Action Button -->
+                    <Button Command="{Binding NavigateToHomeCommand}"
+                            Classes="studio-close-btn"
+                            ToolTip.Tip="Close C# Code Studio &amp; Return to FryPDF (Esc / ⌘W)">
+                        <materialIcons:MaterialIcon Kind="Close" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================ -->
+        <!-- ROW 1: ACTIVE STUDIO PAGE (Hub / Code IDE / Notebook)        -->
+        <!-- ============================================================ -->
+        <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentPage}" />
+    </Grid>
 </UserControl>

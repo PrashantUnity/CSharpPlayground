@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
@@ -16,7 +17,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
+    private readonly NotebookExecutionKernel _kernel;
     private readonly Action _backToHubAction;
+    private readonly Action? _backToHomeAction;
 
     private CancellationTokenSource? _diagnosticsCts;
     private CancellationTokenSource? _executionCts;
@@ -34,7 +37,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private int _selectedLeftTabIndex = 0; // 0 = Description & Notes, 1 = References, 2 = Testcases
 
     [ObservableProperty]
-    private int _selectedBottomTabIndex = 0; // 0 = Console Output, 1 = Problems, 2 = Test Results
+    private int _selectedBottomTabIndex = 0; // 0 = Results (.Dump), 1 = Console Output, 2 = Problems, 3 = Test Cases
 
     [ObservableProperty]
     private bool _isBottomDeckExpanded = true;
@@ -66,13 +69,15 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [ObservableProperty]
     private int _caretColumn = 1;
 
+    public ObservableCollection<DumpTableResult> DumpResults { get; } = new();
+    public ObservableCollection<RichCellOutput> RichOutputs { get; } = new();
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
 
     public ObservableCollection<string> LanguageModes { get; } = new()
     {
-        "C# Statements (LINQPad)",
+        "C# Statements",
         "C# Program (Main)",
         "C# Expression"
     };
@@ -91,13 +96,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         IScriptStorageService storageService,
         RoslynCompilerService compilerService,
         ScriptExecutionEngine executionEngine,
-        Action backToHubAction)
+        Action backToHubAction,
+        Action? backToHomeAction = null)
     {
         _script = script;
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
         _backToHubAction = backToHubAction;
+        _backToHomeAction = backToHomeAction;
+        _kernel = new NotebookExecutionKernel();
 
         _code = script.Code;
         _notes = script.Notes;
@@ -231,70 +239,223 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void ClearResults()
+    {
+        DumpResults.Clear();
+        RichOutputs.Clear();
+    }
+
+    [RelayCommand]
+    public async Task CopyTableTsvAsync(DumpTableResult? table)
+    {
+        if (table == null) return;
+        var text = table.ToTsv();
+        await SetClipboardTextAsync(text);
+        CompilerStatusText = $"Copied {table.FullHeaderTitle} as TSV to clipboard";
+    }
+
+    [RelayCommand]
+    public async Task CopyTableCsvAsync(DumpTableResult? table)
+    {
+        if (table == null) return;
+        var text = table.ToCsv();
+        await SetClipboardTextAsync(text);
+        CompilerStatusText = $"Copied {table.FullHeaderTitle} as CSV to clipboard";
+    }
+
+    [RelayCommand]
+    public async Task CopyTableJsonAsync(DumpTableResult? table)
+    {
+        if (table == null) return;
+        var text = table.ToJson();
+        await SetClipboardTextAsync(text);
+        CompilerStatusText = $"Copied {table.FullHeaderTitle} as JSON to clipboard";
+    }
+
+    private static async Task SetClipboardTextAsync(string text)
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(desktop.MainWindow);
+            if (topLevel?.Clipboard != null)
+            {
+                await topLevel.Clipboard.SetTextAsync(text);
+            }
+        }
+    }
+
+    [RelayCommand]
     private async Task RunCodeAsync()
     {
         if (IsExecuting) return;
 
-        SelectedBottomTabIndex = 0; // Switch to Console Output
+        DumpResults.Clear();
+        RichOutputs.Clear();
+        SelectedBottomTabIndex = 0; // Default to Results
         IsBottomDeckExpanded = true;
-        ConsoleOutput = "🚀 Compiling C# via Roslyn (.Dump enabled)...\n";
-        CompilerStatusText = "Compiling...";
+        ConsoleOutput = "🚀 Running C# code (.Dump enabled)...\n";
+        CompilerStatusText = "Executing...";
         IsExecuting = true;
 
         _executionCts?.Cancel();
         _executionCts = new CancellationTokenSource();
         var token = _executionCts.Token;
 
+        using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                RichOutputs.Add(richOutput);
+                if (richOutput.TableResult != null)
+                {
+                    DumpResults.Add(richOutput.TableResult);
+                    SelectedBottomTabIndex = 0; // Automatically show Results tab
+                }
+            });
+        });
+
         try
         {
-            var (success, bytes, diagnostics) = await Task.Run(() =>
-                _compilerService.CompileToAssembly(Code, CurrentLanguageMode));
-
-            if (!success || bytes == null)
+            if (CurrentLanguageMode == ExecutionLanguageMode.Statements || CurrentLanguageMode == ExecutionLanguageMode.Expression)
             {
-                ConsoleOutput += "❌ Compilation failed. Check the Problems tab for details.\n";
-                foreach (var diag in diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+                // Execute via Roslyn Scripting Kernel (Supports top-level statements, collection expressions, #r nuget, .Dump)
+                _kernel.ResetSession();
+
+                var codeToRun = Code;
+                if (CurrentLanguageMode == ExecutionLanguageMode.Expression)
                 {
-                    ConsoleOutput += $"  • {diag.LocationString}: {diag.Id} {diag.Message}\n";
+                    var expr = Code.Trim().TrimEnd(';');
+                    codeToRun = $"({expr}).Dump();";
                 }
-                CompilerStatusText = "Build Failed";
-                SelectedBottomTabIndex = 1; // Jump to Problems
-                return;
-            }
 
-            ConsoleOutput += "✨ Build succeeded! Executing in-memory...\n";
-            ConsoleOutput += "--------------------------------------------------\n";
-            CompilerStatusText = "Running...";
-
-            var result = await _executionEngine.ExecuteAsync(
-                bytes,
-                liveText =>
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                var kernelResult = await _kernel.ExecuteCellAsync(
+                    codeToRun,
+                    ct: token,
+                    onLiveConsole: liveText =>
                     {
-                        ConsoleOutput += liveText;
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            ConsoleOutput += liveText;
+                        });
+                    },
+                    onRichOutput: rich =>
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            RichOutputs.Add(rich);
+                            if (rich.TableResult != null)
+                            {
+                                DumpResults.Add(rich.TableResult);
+                                SelectedBottomTabIndex = 0;
+                            }
+                        });
                     });
-                },
-                token);
 
-            ConsoleOutput += "\n--------------------------------------------------\n";
-            if (result.Success)
-            {
-                ConsoleOutput += $"✅ Execution finished in {result.Elapsed.TotalMilliseconds:N0} ms\n";
-                ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
-                CompilerStatusText = "Completed";
-                Script.ExecutionCount++;
-                _ = _storageService.SaveScriptAsync(Script);
-            }
-            else if (result.WasCancelled)
-            {
-                ConsoleOutput += "⚠️ Execution was cancelled.\n";
-                CompilerStatusText = "Cancelled";
+                if (kernelResult.Success)
+                {
+                    ExecutionTimeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
+                    CompilerStatusText = DumpResults.Count > 0
+                        ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
+                        : "Completed";
+                    Script.ExecutionCount++;
+                    _ = _storageService.SaveScriptAsync(Script);
+
+                    if (DumpResults.Count > 0)
+                    {
+                        SelectedBottomTabIndex = 0;
+                    }
+                    else
+                    {
+                        SelectedBottomTabIndex = 1;
+                    }
+                }
+                else if (kernelResult.WasCancelled)
+                {
+                    CompilerStatusText = "Cancelled";
+                }
+                else
+                {
+                    CompilerStatusText = "Execution Failed";
+                    if (kernelResult.Diagnostics.Count > 0)
+                    {
+                        Diagnostics.Clear();
+                        foreach (var d in kernelResult.Diagnostics)
+                        {
+                            Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                        }
+                        ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
+                        WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
+                        SelectedBottomTabIndex = 2; // Problems tab
+                    }
+                    else
+                    {
+                        SelectedBottomTabIndex = 1; // Console Output
+                    }
+                }
             }
             else
             {
-                ConsoleOutput += $"❌ Execution failed: {result.Error}\n";
-                CompilerStatusText = "Runtime Error";
+                // Program mode: compile full class/Main to assembly
+                var (success, bytes, diagnostics) = await Task.Run(() =>
+                    _compilerService.CompileToAssembly(Code, CurrentLanguageMode));
+
+                if (!success || bytes == null)
+                {
+                    ConsoleOutput += "❌ Compilation failed. Check the Problems tab for details.\n";
+                    foreach (var diag in diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+                    {
+                        ConsoleOutput += $"  • {diag.LocationString}: {diag.Id} {diag.Message}\n";
+                    }
+                    CompilerStatusText = "Build Failed";
+                    SelectedBottomTabIndex = 2; // Jump to Problems
+                    return;
+                }
+
+                ConsoleOutput += "✨ Build succeeded! Executing in-memory...\n";
+                ConsoleOutput += "--------------------------------------------------\n";
+                CompilerStatusText = "Running...";
+
+                var result = await _executionEngine.ExecuteAsync(
+                    bytes,
+                    liveText =>
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            ConsoleOutput += liveText;
+                        });
+                    },
+                    token);
+
+                ConsoleOutput += "\n--------------------------------------------------\n";
+                if (result.Success)
+                {
+                    ConsoleOutput += $"✅ Execution finished in {result.Elapsed.TotalMilliseconds:N0} ms\n";
+                    ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
+                    CompilerStatusText = DumpResults.Count > 0
+                        ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
+                        : "Completed";
+                    Script.ExecutionCount++;
+                    _ = _storageService.SaveScriptAsync(Script);
+
+                    if (DumpResults.Count > 0)
+                    {
+                        SelectedBottomTabIndex = 0;
+                    }
+                    else
+                    {
+                        SelectedBottomTabIndex = 1;
+                    }
+                }
+                else if (result.WasCancelled)
+                {
+                    ConsoleOutput += "⚠️ Execution was cancelled.\n";
+                    CompilerStatusText = "Cancelled";
+                }
+                else
+                {
+                    ConsoleOutput += $"❌ Execution failed: {result.Error}\n";
+                    CompilerStatusText = "Runtime Error";
+                }
             }
         }
         finally
@@ -367,6 +528,13 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         _ = SaveAsync();
         _backToHubAction.Invoke();
+    }
+
+    [RelayCommand]
+    private void BackToHome()
+    {
+        _ = SaveAsync();
+        _backToHomeAction?.Invoke();
     }
 
     [RelayCommand]

@@ -49,6 +49,9 @@ public class RoslynCompilerService
             typeof(JsonSerializer).Assembly.Location,                          // System.Text.Json
             typeof(Regex).Assembly.Location,                                   // System.Text.RegularExpressions
             typeof(System.Diagnostics.Stopwatch).Assembly.Location,            // System.Diagnostics.Stopwatch
+            typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
+            typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
+            typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
             Path.Combine(coreDir, "System.Runtime.dll"),                       // System.Runtime
             Path.Combine(coreDir, "System.Collections.dll"),                   // System.Collections
             Path.Combine(coreDir, "System.Collections.NonGeneric.dll"),        // System.Collections.NonGeneric
@@ -85,80 +88,7 @@ public class RoslynCompilerService
         }
     }
 
-    private const string DumpHelperCode = $$$$""""
-#nullable disable
-#line 1 "internal_helpers.g.cs"
-public static class DumpExtensions
-{
-    public static T Dump<T>(this T obj, string? label = null)
-    {
-        if (!string.IsNullOrEmpty(label))
-        {
-            global::System.Console.WriteLine($"=== {label} ===");
-        }
-
-        if (obj == null)
-        {
-            global::System.Console.WriteLine("<null>");
-            return obj;
-        }
-
-        if (obj is string s)
-        {
-            global::System.Console.WriteLine(s);
-            return obj;
-        }
-
-        if (obj is global::System.Collections.IDictionary dict)
-        {
-            global::System.Console.WriteLine($"[Dictionary: {dict.Count} entries]");
-            foreach (global::System.Collections.DictionaryEntry entry in dict)
-            {
-                global::System.Console.WriteLine($"  {entry.Key} => {FormatValue(entry.Value)}");
-            }
-            if (dict.Count == 0) global::System.Console.WriteLine("  (empty dictionary)");
-            return obj;
-        }
-
-        if (obj is global::System.Collections.IEnumerable enumerable)
-        {
-            int index = 0;
-            var typeName = obj.GetType().Name.Replace("`1", "");
-            global::System.Console.WriteLine($"[{typeName}]");
-            foreach (var item in enumerable)
-            {
-                global::System.Console.WriteLine($"  [{index++}] {FormatValue(item)}");
-            }
-            if (index == 0) global::System.Console.WriteLine("  (empty collection)");
-            return obj;
-        }
-
-        global::System.Console.WriteLine(FormatValue(obj));
-        return obj;
-    }
-
-    private static string FormatValue(object? item)
-    {
-        if (item == null) return "<null>";
-        if (item is string or int or long or double or float or decimal or bool or global::System.DateTime or global::System.TimeSpan or global::System.Guid)
-        {
-            return item.ToString() ?? "";
-        }
-        if (item is global::System.Exception ex)
-        {
-            return $"[Exception {ex.GetType().Name}]: {ex.Message}";
-        }
-        try
-        {
-            return global::System.Text.Json.JsonSerializer.Serialize(item, new global::System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        }
-        catch
-        {
-            return item.ToString() ?? "";
-        }
-    }
-}
-"""";
+    private const string DumpHelperCode = "";
 
     public string WrapSourceCode(string rawCode, ExecutionLanguageMode mode)
     {
@@ -174,11 +104,7 @@ public static class DumpExtensions
 
         if (isExplicitProgram)
         {
-            if (!rawCode.Contains("class DumpExtensions") && rawCode.Contains(".Dump("))
-            {
-                return $"#line 1 \"script.cs\"\n{rawCode}\n\n{DumpHelperCode}";
-            }
-            return $"#line 1 \"script.cs\"\n{rawCode}";
+            return $"using PdfEditorApp.Plugins.CSharpEditor.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Models;\n#line 1 \"script.cs\"\n{rawCode}";
         }
 
         // 2. Parse using directives to hoist them out of statements/expressions
@@ -191,7 +117,9 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Diagnostics;
-using System.Threading.Tasks;";
+using System.Threading.Tasks;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models;";
 
         var allUsings = defaultUsings;
         if (!string.IsNullOrWhiteSpace(hoistedUsings))
@@ -211,7 +139,7 @@ using System.Threading.Tasks;";
 {DumpHelperCode}";
         }
 
-        // 4. Statements mode (LINQPad / Notebook Cells)
+        // 4. Statements mode (Script / Notebook Cells)
         // Check if user code is a bare expression without semicolon, e.g. "1 + 1" or "DateTime.Now"
         var trimmed = remainingCode.Trim();
         if (!trimmed.Contains(';') && !trimmed.Contains('\n') && !trimmed.Contains('{') && !trimmed.StartsWith("//"))

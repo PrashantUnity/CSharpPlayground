@@ -53,6 +53,8 @@ public partial class CSharpManagerViewModel : ObservableObject
         "Recently Modified", "Title (A-Z)", "Execution Count"
     };
 
+    private readonly Action? _navigateToHomeAction;
+
     public bool IsAllFilterActive => SelectedTypeFilter == "All";
     public bool IsScriptsFilterActive => SelectedTypeFilter == "Scripts";
     public bool IsNotebooksFilterActive => SelectedTypeFilter == "Notebooks";
@@ -60,11 +62,13 @@ public partial class CSharpManagerViewModel : ObservableObject
     public CSharpManagerViewModel(
         IScriptStorageService storageService,
         Action<ScriptDocumentItem> openScriptAction,
-        Action<NotebookDocumentItem> openNotebookAction)
+        Action<NotebookDocumentItem> openNotebookAction,
+        Action? navigateToHomeAction = null)
     {
         _storageService = storageService;
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
+        _navigateToHomeAction = navigateToHomeAction;
 
         foreach (var t in CodeTemplateLibrary.GetTemplates())
         {
@@ -72,6 +76,12 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
 
         _ = LoadWorkspaceItemsAsync();
+    }
+
+    [RelayCommand]
+    private void NavigateToHome()
+    {
+        _navigateToHomeAction?.Invoke();
     }
 
     public async Task LoadWorkspaceItemsAsync()

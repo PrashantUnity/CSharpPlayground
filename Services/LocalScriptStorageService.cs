@@ -72,30 +72,83 @@ public class LocalScriptStorageService : IScriptStorageService
                     LastModified = DateTime.UtcNow.AddMinutes(-10)
                 };
 
-                nb.Cells.Add(new NotebookCellItem
+                if (t.Id == "skiasharp_image_studio")
                 {
-                    Type = CellType.Markdown,
-                    Source = "# 📓 Polyglot Notebook: Document Automation\nInteractive C# workflow inside FryPDF with isolated cell execution.\nHit **[ ▶ ]** on any cell or **Run All** in the toolbar.",
-                    IsMarkdownPreviewMode = true
-                });
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 🎨 SkiaSharp Graphics & Rich Image Display\nThis notebook demonstrates resolving **SkiaSharp** via `#r \"nuget: ...\"`, performing hardware-accelerated 2D vector drawing, and rendering high-resolution graphics directly into the cell output via `Display.Image(...)`.\n\nHit **[ ▶ ]** to run the cell below!",
+                        IsMarkdownPreviewMode = true
+                    });
 
-                nb.Cells.Add(new NotebookCellItem
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = t.InitialCode
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 2: Draw a second graphic reusing surface/canvas concepts
+var pieInfo = new SKImageInfo(380, 200);
+using var pieSurface = SKSurface.Create(pieInfo);
+var pieCanvas = pieSurface.Canvas;
+pieCanvas.Clear(new SKColor(20, 26, 38));
+
+using var piePaint = new SKPaint { IsAntialias = true };
+var rect = new SKRect(40, 20, 200, 180);
+
+piePaint.Color = new SKColor(168, 199, 250);
+pieCanvas.DrawArc(rect, 0, 120, true, piePaint);
+
+piePaint.Color = new SKColor(102, 157, 246);
+pieCanvas.DrawArc(rect, 120, 150, true, piePaint);
+
+piePaint.Color = new SKColor(234, 134, 143);
+pieCanvas.DrawArc(rect, 270, 90, true, piePaint);
+
+// Render rich pie chart image
+Display.Image(pieSurface.Snapshot());
+Console.WriteLine(""✅ Pie chart generated and displayed in cell output."");"
+                    });
+                }
+                else
                 {
-                    Type = CellType.Code,
-                    Source = @"// Step 1: Initialize document batch
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 📓 Polyglot Notebook: Document Automation\nInteractive C# workflow inside FryPDF with stateful variable sharing across cells.\nVariables declared in Cell 1 persist into Cell 2 and beyond!\nHit **[ ▶ ]** on each cell or **Run All** in the toolbar.",
+                        IsMarkdownPreviewMode = true
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 1: Initialize document batch
 string docName = ""Quarterly_Report_2026.pdf"";
 int totalPages = 32;
 new { Document = docName, Pages = totalPages, Status = ""Pending"" }.Dump(""Initial State"");"
-                });
+                    });
 
-                nb.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Code,
-                    Source = @"// Step 2: Compute page size metrics
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 2: Compute page size metrics (Reading totalPages from previous cell!)
 var pageWeights = Enumerable.Range(1, totalPages).Select(p => p * 12.4).ToList();
-Console.WriteLine($""Total estimated payload: {pageWeights.Sum():F1} KB"");
+Console.WriteLine($""Total estimated payload for '{docName}': {pageWeights.Sum():F1} KB"");
 pageWeights.Take(5).Dump(""First 5 Page Weights (KB)"");"
-                });
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 3: Interactive UI Control
+var slider = new Avalonia.Controls.Slider { Minimum = 1, Maximum = 100, Value = totalPages, Width = 320 };
+Display.Control(slider);
+Console.WriteLine($""Created live interactive Slider control initialized to totalPages = {totalPages}"");"
+                    });
+                }
 
                 await SaveNotebookAsync(nb);
             }
@@ -256,12 +309,19 @@ pageWeights.Take(5).Dump(""First 5 Page Weights (KB)"");"
     public async Task<NotebookDocumentItem> CreateNewNotebookAsync(string title = "New Notebook", string? templateId = null)
     {
         await EnsureInitializedAsync();
+        var templates = CodeTemplateLibrary.GetTemplates();
+        var template = templates.FirstOrDefault(t => t.Id == templateId && t.Kind == WorkspaceItemKind.Notebook);
+
+        var resolvedTitle = !string.IsNullOrWhiteSpace(title) && title != "New Notebook"
+            ? title
+            : (template?.Title ?? "New Interactive Notebook");
+
         var notebook = new NotebookDocumentItem
         {
             Id = Guid.NewGuid().ToString("N"),
-            Title = string.IsNullOrWhiteSpace(title) ? "New Interactive Notebook" : title,
-            Description = "Interactive cell-based notebook",
-            Category = "Interactive",
+            Title = resolvedTitle,
+            Description = template?.Description ?? "Interactive cell-based notebook",
+            Category = template?.Category ?? "Interactive",
             Created = DateTime.UtcNow,
             LastModified = DateTime.UtcNow
         };
@@ -276,7 +336,9 @@ pageWeights.Take(5).Dump(""First 5 Page Weights (KB)"");"
         notebook.Cells.Add(new NotebookCellItem
         {
             Type = CellType.Code,
-            Source = "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
+            Source = !string.IsNullOrWhiteSpace(template?.InitialCode)
+                ? template.InitialCode
+                : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
         });
 
         await SaveNotebookAsync(notebook);

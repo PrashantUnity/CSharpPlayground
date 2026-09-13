@@ -48,7 +48,7 @@
                              PlaceholderText="Script Name..." />
                 </StackPanel>
 
-                <!-- Center Controls: Mode Switcher & LINQPad Execution Mode -->
+                <!-- Center Controls: Mode Switcher & Execution Mode -->
                 <StackPanel Grid.Column="1" Margin="14,0,0,0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <!-- Segmented View Mode Toggle: [ 📓 Notebook | 💻 Studio ] -->
                     <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
@@ -72,7 +72,7 @@
                                           Classes="m3-filter-chip"
                                           Padding="10,4"
                                           Cursor="Hand"
-                                          ToolTip.Tip="LINQPad / Classic Full Studio Script Mode">
+                                          ToolTip.Tip="Classic Full Studio Script Mode">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14" />
                                     <TextBlock Text="Studio Script" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
@@ -81,14 +81,14 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- LINQPad Execution Mode Dropdown (Only in Script Mode) -->
+                    <!-- Execution Mode Dropdown (Only in Script Mode) -->
                     <ComboBox ItemsSource="{Binding LanguageModes}"
                               SelectedIndex="{Binding SelectedLanguageModeIndex, Mode=TwoWay}"
                               FontSize="11.5"
                               Padding="10,4"
                               CornerRadius="{StaticResource M3ShapeCornerFull}"
                               IsVisible="{Binding !IsNotebookMode}"
-                              ToolTip.Tip="Execution Mode (LINQPad Statements, Program, or Expression)" />
+                              ToolTip.Tip="Execution Mode (Statements, Program, or Expression)" />
 
                     <!-- Compiler Status Badge -->
                     <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
@@ -360,7 +360,7 @@
             </Grid>
 
             <!-- ============================================== -->
-            <!-- MODE B: CLASSIC STUDIO SCRIPT MODE (LINQPAD)   -->
+            <!-- MODE B: CLASSIC STUDIO SCRIPT MODE             -->
             <!-- ============================================== -->
             <Grid IsVisible="{Binding !IsNotebookMode}" RowDefinitions="*,Auto">
                 <!-- Central Code Editor -->
@@ -567,7 +567,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
                     <TextBlock Text=".NET 10 (C# 13) + Roslyn"
                                FontSize="11" Foreground="{DynamicResource WinMutedBrush}" />
-                    <TextBlock Text="LINQPad .Dump Ready"
+                    <TextBlock Text="Interactive .Dump Ready"
                                FontSize="11" Foreground="{DynamicResource M3PrimaryBrush}" />
                     <TextBlock Text="UTF-8"
                                FontSize="11" Foreground="{DynamicResource WinMutedBrush}" />

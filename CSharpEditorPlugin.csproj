@@ -31,6 +31,7 @@
     <!-- Code Editor & Roslyn compilation dependencies bundled with plugin -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,6 +54,8 @@
       <PluginFiles Include="$(TargetDir)AvaloniaEdit.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll')" />
+      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll')" />
+      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll')" />
       <PluginFiles Include="$(ProjectDir)plugin.json" />
     </ItemGroup>
 

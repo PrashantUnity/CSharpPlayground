@@ -73,7 +73,7 @@ public partial class CSharpEditorViewModel : ObservableObject
 
     public ObservableCollection<string> LanguageModes { get; } = new()
     {
-        "C# Statements (LINQPad)",
+        "C# Statements",
         "C# Program (Main)",
         "C# Expression"
     };
@@ -259,7 +259,7 @@ public partial class CSharpEditorViewModel : ObservableObject
 
         SelectedToolTabIndex = 1; // Switch to Console Output
         IsToolDeckExpanded = true;
-        ConsoleOutput = "🚀 Compiling script via Roslyn (LINQPad .Dump enabled)...\n";
+        ConsoleOutput = "🚀 Compiling script via Roslyn (.Dump enabled)...\n";
         CompilerStatusText = "Compiling...";
         IsExecuting = true;
 

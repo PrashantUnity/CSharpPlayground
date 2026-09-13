@@ -20,7 +20,16 @@ public class NotebookCellItem
     public bool HasError { get; set; }
     public bool IsMarkdownPreviewMode { get; set; } = false;
 
-    public bool HasOutput => !string.IsNullOrEmpty(OutputText);
+    // Rich Media Outputs
+    public byte[]? ImageBytes { get; set; }
+    public string? ImageFormat { get; set; }
+    public int? ImageWidth { get; set; }
+    public int? ImageHeight { get; set; }
+    public string? HtmlContent { get; set; }
+
+    public bool HasImage => ImageBytes != null && ImageBytes.Length > 0;
+    public bool HasHtml => !string.IsNullOrEmpty(HtmlContent);
+    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml;
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
 }

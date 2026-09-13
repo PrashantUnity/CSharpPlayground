@@ -16,9 +16,9 @@ public static class CodeTemplateLibrary
             Kind = WorkspaceItemKind.Script,
             Description = "Classic Two-Sum problem workspace with test cases, scratchpad notes, and Roslyn execution.",
             IconKind = MaterialIconKind.CodeBraces,
-            AccentColor = "#A8C7FA",
-            AccentBackground = "#1E2536",
-            AccentBorder = "#2D374D",
+            AccentColor = "#34D399",
+            AccentBackground = "#064E3B",
+            AccentBorder = "#059669",
             CategoryBadge = "LeetCode • Easy",
             Tags = new List<string> { "Algorithms", "Two-Sum", "Roslyn" },
             Notes = @"# 1. Two Sum
@@ -82,22 +82,22 @@ Console.WriteLine(""\n✅ Algorithm executed successfully!"");",
         },
         new()
         {
-            Id = "linqpad_scratchpad",
-            Title = "LINQPad Scratchpad (.Dump)",
-            Category = "LINQPad",
+            Id = "csharp_scratchpad",
+            Title = "C# Scratchpad (.Dump)",
+            Category = "Scratchpad",
             Kind = WorkspaceItemKind.Script,
             Description = "Fast expression & statements scratchpad with instant .Dump() inspection and zero boilerplate.",
             IconKind = MaterialIconKind.LightningBoltOutline,
-            AccentColor = "#A8C7FA",
-            AccentBackground = "#1E2536",
-            AccentBorder = "#2D374D",
+            AccentColor = "#FBBF24",
+            AccentBackground = "#451A03",
+            AccentBorder = "#D97706",
             CategoryBadge = "Scratchpad • Instant",
             Tags = new List<string> { "LINQ", ".Dump()", "Top-level" },
-            Notes = @"# LINQPad C# Scratchpad
+            Notes = @"# Interactive C# Scratchpad
 
 Write instant C# statements without `class Program` or `Main()`.
 Call `.Dump()` on any object, collection, or calculation to format output immediately.",
-            InitialCode = @"// ⚡ LINQPad-style instant C# statements with .Dump()!
+            InitialCode = @"// ⚡ Instant C# statements with .Dump()!
 using System;
 using System.Linq;
 
@@ -127,9 +127,9 @@ Console.WriteLine(""\n✨ Try typing any statement or expression!"");"
             Kind = WorkspaceItemKind.Script,
             Description = "Simulated document automation, file metadata inspection, and batch pipeline.",
             IconKind = MaterialIconKind.FilePdfBox,
-            AccentColor = "#A8C7FA",
-            AccentBackground = "#1E2536",
-            AccentBorder = "#2D374D",
+            AccentColor = "#F87171",
+            AccentBackground = "#4C0519",
+            AccentBorder = "#E11D48",
             CategoryBadge = "Studio API • Batch",
             Tags = new List<string> { "Automation", "Metadata", "Pipeline" },
             Notes = @"# PDF Document Automation Script
@@ -166,9 +166,9 @@ public static class Program
             Kind = WorkspaceItemKind.Notebook,
             Description = "Multi-cell notebook workflow with Markdown explanations and interactive C# cells.",
             IconKind = MaterialIconKind.NotebookOutline,
-            AccentColor = "#A8C7FA",
-            AccentBackground = "#1E2536",
-            AccentBorder = "#2D374D",
+            AccentColor = "#C084FC",
+            AccentBackground = "#261447",
+            AccentBorder = "#6B21A8",
             CategoryBadge = "Notebook • Interactive",
             Tags = new List<string> { "Markdown", "Multi-cell", "Interactive" },
             InitialCode = @"// [Code Cell 1]
@@ -176,6 +176,55 @@ string docTitle = ""Q3 Financial Overview & Audit.pdf"";
 int totalPages = 28;
 Console.WriteLine($""Pipeline active for '{docTitle}' ({totalPages} pages)"");
 new { Title = docTitle, Pages = totalPages, Status = ""Ready"" }.Dump();"
+        },
+        new()
+        {
+            Id = "skiasharp_image_studio",
+            Title = "SkiaSharp Graphics & Image Generation",
+            Category = "Graphics",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Generate 2D vector graphics, charts, and visual renderings using SkiaSharp (#r) and Display.Image.",
+            IconKind = MaterialIconKind.ImageOutline,
+            AccentColor = "#38BDF8",
+            AccentBackground = "#082F49",
+            AccentBorder = "#0284C7",
+            CategoryBadge = "SkiaSharp • Visual",
+            Tags = new List<string> { "SkiaSharp", "Images", "#r nuget", "Graphics" },
+            InitialCode = @"#r ""nuget: SkiaSharp, 4.154.0-preview.1.26454.9""
+using SkiaSharp;
+
+var info = new SKImageInfo(480, 240);
+var surface = SKSurface.Create(info);
+var canvas = surface.Canvas;
+
+// Draw gradient background
+var bgPaint = new SKPaint
+{
+    Shader = SKShader.CreateLinearGradient(
+        new SKPoint(0, 0),
+        new SKPoint(480, 240),
+        new[] { new SKColor(20, 26, 38), new SKColor(32, 45, 72) },
+        SKShaderTileMode.Clamp)
+};
+canvas.DrawRect(0, 0, 480, 240, bgPaint);
+
+// Draw stylized circular emblem
+var circlePaint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+canvas.DrawCircle(100, 120, 50, circlePaint);
+
+var innerCircle = new SKPaint { Color = new SKColor(168, 199, 250), IsAntialias = true };
+canvas.DrawCircle(100, 120, 28, innerCircle);
+
+// Draw bar accents
+var barPaint = new SKPaint { Color = new SKColor(234, 134, 143), IsAntialias = true };
+for (int i = 0; i < 5; i++)
+{
+    canvas.DrawRoundRect(200 + i * 45, 170 - (i * 22), 30, (i + 1) * 22, 6, 6, barPaint);
+}
+
+// Display the rendered image directly in the cell output!
+Display.Image(surface.Snapshot());
+Console.WriteLine(""✨ Rendered high-fidelity SkiaSharp graphics directly into cell output!"");"
         }
     };
 }

@@ -41,6 +41,33 @@ public partial class NotebookCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isMarkdownPreviewMode;
 
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _imageOutputBitmap;
+
+    [ObservableProperty]
+    private bool _hasImageOutput;
+
+    [ObservableProperty]
+    private string _imageDimensionsText = string.Empty;
+
+    [ObservableProperty]
+    private Avalonia.Controls.Control? _interactiveControl;
+
+    [ObservableProperty]
+    private bool _hasInteractiveControl;
+
+    [ObservableProperty]
+    private string _htmlContent = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasHtmlContent;
+
+    [ObservableProperty]
+    private DumpTableResult? _tableResult;
+
+    [ObservableProperty]
+    private bool _hasTableOutput;
+
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
 
@@ -72,6 +99,26 @@ public partial class NotebookCellViewModel : ObservableObject
         _deleteAction = deleteAction;
         _moveAction = moveAction;
         _addBelowAction = addBelowAction;
+
+        if (model.ImageBytes != null && model.ImageBytes.Length > 0)
+        {
+            try
+            {
+                using var ms = new System.IO.MemoryStream(model.ImageBytes);
+                _imageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
+                _hasImageOutput = true;
+                _imageDimensionsText = (model.ImageWidth.HasValue && model.ImageHeight.HasValue)
+                    ? $"{model.ImageWidth.Value} × {model.ImageHeight.Value} px • {model.ImageFormat ?? "PNG"}"
+                    : $"{model.ImageFormat ?? "PNG"} Image";
+            }
+            catch { }
+        }
+
+        if (!string.IsNullOrEmpty(model.HtmlContent))
+        {
+            _htmlContent = model.HtmlContent;
+            _hasHtmlContent = true;
+        }
     }
 
     partial void OnSourceChanged(string value)
@@ -194,12 +241,124 @@ public partial class NotebookCellViewModel : ObservableObject
         }
     }
 
+    public void SetImageOutput(byte[] bytes, string format = "PNG", int? width = null, int? height = null)
+    {
+        try
+        {
+            Model.ImageBytes = bytes;
+            Model.ImageFormat = format;
+            Model.ImageWidth = width;
+            Model.ImageHeight = height;
+
+            using var ms = new System.IO.MemoryStream(bytes);
+            ImageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
+            HasImageOutput = true;
+
+            ImageDimensionsText = (width.HasValue && height.HasValue)
+                ? $"{width.Value} × {height.Value} px • {format}"
+                : $"{format} Image";
+
+            HasOutput = true;
+        }
+        catch (Exception ex)
+        {
+            OutputText += $"\n⚠️ Image display error: {ex.Message}";
+        }
+    }
+
+    public void SetInteractiveControl(Avalonia.Controls.Control control)
+    {
+        InteractiveControl = control;
+        HasInteractiveControl = true;
+        HasOutput = true;
+    }
+
+    public void SetHtmlContent(string html)
+    {
+        HtmlContent = html;
+        Model.HtmlContent = html;
+        HasHtmlContent = !string.IsNullOrEmpty(html);
+        HasOutput = true;
+    }
+
+    public void SetTableOutput(DumpTableResult table)
+    {
+        TableResult = table;
+        HasTableOutput = true;
+        HasOutput = true;
+    }
+
+    [RelayCommand]
+    public async Task CopyImageAsync()
+    {
+        if (Model.ImageBytes == null || Model.ImageBytes.Length == 0) return;
+
+        var topLevel = Avalonia.Application.Current?.ApplicationLifetime switch
+        {
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop => desktop.MainWindow,
+            _ => null
+        };
+
+        if (topLevel?.Clipboard != null && ImageOutputBitmap != null)
+        {
+            // Avalonia Clipboard supports SetBitmapAsync or base64 fallback
+            try
+            {
+                var base64 = Convert.ToBase64String(Model.ImageBytes);
+                await topLevel.Clipboard.SetTextAsync($"data:image/png;base64,{base64}");
+            }
+            catch { }
+        }
+    }
+
+    [RelayCommand]
+    public async Task SaveImageAsync()
+    {
+        if (Model.ImageBytes == null || Model.ImageBytes.Length == 0) return;
+
+        try
+        {
+            var picturesPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            if (string.IsNullOrEmpty(picturesPath) || !System.IO.Directory.Exists(picturesPath))
+            {
+                picturesPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+
+            var fileName = $"notebook_render_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+            var fullPath = System.IO.Path.Combine(picturesPath, fileName);
+            await System.IO.File.WriteAllBytesAsync(fullPath, Model.ImageBytes);
+
+            OutputText += $"\n💾 Image successfully saved to: {fullPath}";
+        }
+        catch (Exception ex)
+        {
+            OutputText += $"\n❌ Failed to save image: {ex.Message}";
+        }
+    }
+
     [RelayCommand]
     public void ClearOutput()
     {
         OutputText = string.Empty;
         ExecutionTimeText = string.Empty;
         HasError = false;
+
+        ImageOutputBitmap = null;
+        HasImageOutput = false;
+        ImageDimensionsText = string.Empty;
+        Model.ImageBytes = null;
+
+        InteractiveControl = null;
+        HasInteractiveControl = false;
+
+        HtmlContent = string.Empty;
+        HasHtmlContent = false;
+        Model.HtmlContent = null;
+
+        TableResult = null;
+        HasTableOutput = false;
+
+        HasOutput = false;
     }
 
     [RelayCommand]

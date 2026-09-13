@@ -12,6 +12,8 @@ public partial class MainWindow : Window
         var settingsStore = new StandaloneSettingsStore();
         var sp = new StandaloneServiceProvider(settingsStore);
 
-        StudioHost.DataContext = new CSharpStudioHostViewModel(sp);
+        var vm = new CSharpStudioHostViewModel(sp);
+        vm.RequestClose = () => Close();
+        StudioHost.DataContext = vm;
     }
 }

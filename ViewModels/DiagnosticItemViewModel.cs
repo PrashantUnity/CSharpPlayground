@@ -16,6 +16,7 @@ public partial class DiagnosticItemViewModel : ObservableObject
     public string LocationString => Model.LocationString;
     public string SeverityIconKind => Model.SeverityIconKind;
     public string SeverityColorHex => Model.SeverityColorHex;
+    public Microsoft.CodeAnalysis.DiagnosticSeverity Severity => Model.Severity;
 
     private readonly Action<int, int>? _onNavigate;
 

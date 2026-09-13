@@ -2,9 +2,9 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -15,7 +15,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
+    private readonly NotebookExecutionKernel _kernel;
     private readonly Action _backToHubAction;
+    private readonly Action? _backToHomeAction;
 
     private int _globalExecutionCounter = 0;
 
@@ -26,22 +28,29 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private bool _isExecuting;
 
     [ObservableProperty]
-    private string _compilerStatusText = "Ready";
+    private string _compilerStatusText = "Kernel Ready";
+
+    [ObservableProperty]
+    private bool _isVariableInspectorOpen = false;
 
     public ObservableCollection<NotebookCellViewModel> Cells { get; } = new();
+    public ObservableCollection<NotebookVariableInfo> Variables { get; } = new();
 
     public CSharpNotebookStudioViewModel(
         NotebookDocumentItem notebook,
         IScriptStorageService storageService,
         RoslynCompilerService compilerService,
         ScriptExecutionEngine executionEngine,
-        Action backToHubAction)
+        Action backToHubAction,
+        Action? backToHomeAction = null)
     {
         _notebook = notebook;
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
+        _kernel = new NotebookExecutionKernel();
         _backToHubAction = backToHubAction;
+        _backToHomeAction = backToHomeAction;
 
         PopulateCells();
     }
@@ -49,7 +58,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
     {
         Notebook = notebook;
-        CompilerStatusText = "Ready";
+        CompilerStatusText = "Kernel Ready";
+        _kernel.ResetSession();
+        Variables.Clear();
         PopulateCells();
     }
 
@@ -62,7 +73,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             Notebook.Cells.Add(new NotebookCellItem
             {
                 Type = CellType.Code,
-                Source = "// New C# Code Cell\nConsole.WriteLine(\"Welcome to FryPDF Interactive Notebook!\");"
+                Source = "// 1. Variable Sharing\nvar m = 10;\nConsole.WriteLine($\"Variable m initialized to: {m}\");"
+            });
+
+            Notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "// 2. Read from previous cell!\nConsole.WriteLine($\"Reading m from previous cell: {m}\");\nm = m * 5;\nConsole.WriteLine($\"Updated m to: {m}\");"
             });
         }
 
@@ -92,45 +109,70 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         cell.IsExecuting = true;
         cell.HasError = false;
-        cell.OutputText = "Executing cell...\n";
+        cell.ClearOutput();
 
         _globalExecutionCounter++;
         cell.ExecutionCount = _globalExecutionCounter;
+        CompilerStatusText = $"Executing Cell [{cell.ExecutionCount}]...";
 
         try
         {
-            var (success, bytes, diagnostics) = await Task.Run(() =>
-                _compilerService.CompileToAssembly(cell.Source, ExecutionLanguageMode.Statements));
-
-            if (!success || bytes == null)
-            {
-                cell.HasError = true;
-                cell.OutputText = "❌ Compilation Error:\n";
-                foreach (var d in diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+            var result = await _kernel.ExecuteCellAsync(
+                cell.Source,
+                onLiveConsole: text =>
                 {
-                    cell.OutputText += $"  Line {d.Line}: {d.Message}\n";
-                }
-                return;
-            }
-
-            cell.OutputText = string.Empty;
-            var result = await _executionEngine.ExecuteAsync(
-                bytes,
-                liveText =>
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    Dispatcher.UIThread.Post(() =>
                     {
-                        cell.OutputText += liveText;
+                        cell.OutputText += text;
+                    });
+                },
+                onRichOutput: rich =>
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        switch (rich.Kind)
+                        {
+                            case CellOutputKind.Image:
+                                if (rich.ImageBytes != null)
+                                {
+                                    cell.SetImageOutput(rich.ImageBytes, rich.ImageFormat ?? "PNG", rich.ImageWidth, rich.ImageHeight);
+                                }
+                                break;
+                            case CellOutputKind.Control:
+                                if (rich.InteractiveControl != null)
+                                {
+                                    cell.SetInteractiveControl(rich.InteractiveControl);
+                                }
+                                break;
+                            case CellOutputKind.Html:
+                                if (!string.IsNullOrEmpty(rich.HtmlContent))
+                                {
+                                    cell.SetHtmlContent(rich.HtmlContent);
+                                }
+                                break;
+                            case CellOutputKind.Table:
+                                if (rich.TableResult != null)
+                                {
+                                    cell.SetTableOutput(rich.TableResult);
+                                }
+                                break;
+                        }
                     });
                 });
 
             if (!result.Success)
             {
                 cell.HasError = true;
-                cell.OutputText += $"\n❌ Runtime Error: {result.Error}";
             }
 
             cell.ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
+
+            // Update live variables in the inspector
+            UpdateVariables();
+
+            CompilerStatusText = result.Success
+                ? $"Kernel Ready • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}"
+                : "Execution Failed";
         }
         finally
         {
@@ -144,25 +186,65 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         if (IsExecuting) return;
 
         IsExecuting = true;
-        CompilerStatusText = "Running Notebook...";
+        CompilerStatusText = "Restarting Kernel & Running Notebook...";
 
         try
         {
+            // Reset state to ensure fresh linear run
+            _kernel.ResetSession();
+            Variables.Clear();
+
             foreach (var cell in Cells.Where(c => c.Type == CellType.Code))
             {
                 await RunSingleCellAsync(cell);
                 if (cell.HasError)
                 {
-                    CompilerStatusText = "Cell Failed";
+                    CompilerStatusText = "Notebook execution stopped due to error";
                     break;
                 }
             }
-            CompilerStatusText = "Notebook Finished";
+
+            if (Cells.All(c => !c.HasError))
+            {
+                CompilerStatusText = $"Notebook Finished • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}";
+            }
         }
         finally
         {
             IsExecuting = false;
         }
+    }
+
+    [RelayCommand]
+    public void RestartKernel()
+    {
+        _kernel.ResetSession();
+        Variables.Clear();
+        CompilerStatusText = "Kernel Restarted • Session Fresh";
+    }
+
+    [RelayCommand]
+    public void ToggleVariableInspector()
+    {
+        IsVariableInspectorOpen = !IsVariableInspectorOpen;
+        if (IsVariableInspectorOpen)
+        {
+            UpdateVariables();
+        }
+    }
+
+    private void UpdateVariables()
+    {
+        var active = _kernel.GetActiveVariables();
+        Dispatcher.UIThread.Post(() =>
+        {
+            Variables.Clear();
+            foreach (var v in active)
+            {
+                Variables.Add(v);
+            }
+            OnPropertyChanged(nameof(Variables));
+        });
     }
 
     [RelayCommand]
@@ -254,5 +336,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         _ = SaveAsync();
         _backToHubAction.Invoke();
+    }
+
+    [RelayCommand]
+    public void BackToHome()
+    {
+        _ = SaveAsync();
+        _backToHomeAction?.Invoke();
     }
 }

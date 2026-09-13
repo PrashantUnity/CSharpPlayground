@@ -259,6 +259,23 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Return to FryPDF Home Action Button -->
+                        <Button Command="{Binding NavigateToHomeCommand}"
+                                Classes="m3-tonal-btn"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Height="36"
+                                MinHeight="0"
+                                Padding="14,0"
+                                VerticalAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                Cursor="Hand"
+                                ToolTip.Tip="Return to FryPDF Home Dashboard (Esc / ⌘W)">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="HomeOutline" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="FryPDF Home" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
                         <!-- Unified + New Script Primary Button -->
                         <Button Command="{Binding CreateNewScriptCommand}"
                                 Classes="m3-filled-btn"
@@ -328,25 +345,25 @@
                                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
                                             <Border Grid.Column="0" Width="36" Height="36"
                                                     CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                    Background="{Binding AccentBackground}"
+                                                    BorderBrush="{Binding AccentBorder}"
                                                     BorderThickness="1">
                                                 <materialIcons:MaterialIcon Kind="{Binding IconKind}"
                                                                             Width="18" Height="18"
-                                                                            Foreground="{DynamicResource M3PrimaryBrush}"
+                                                                            Foreground="{Binding AccentColor}"
                                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
 
                                             <!-- Category Badge -->
                                             <Border Grid.Column="2"
-                                                    Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                    Background="{Binding AccentBackground}"
+                                                    BorderBrush="{Binding AccentBorder}"
                                                     BorderThickness="1"
                                                     CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                                     Padding="8,3" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding CategoryBadge}"
                                                            FontSize="10" FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                           Foreground="{Binding AccentColor}" />
                                             </Border>
                                         </Grid>
 
@@ -383,8 +400,8 @@
 
                                             <!-- Launch Action Cue -->
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="Launch" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                <materialIcons:MaterialIcon Kind="ArrowRight" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                <TextBlock Text="Launch" FontSize="11" FontWeight="SemiBold" Foreground="{Binding AccentColor}" />
+                                                <materialIcons:MaterialIcon Kind="ArrowRight" Width="13" Height="13" Foreground="{Binding AccentColor}" />
                                             </StackPanel>
                                         </Grid>
                                     </Grid>
@@ -565,14 +582,14 @@
                                         <!-- Leading Distinctive Category Icon -->
                                         <Border Grid.Column="0" Width="40" Height="40"
                                                 CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                BorderThickness="1"
+                                                Background="{Binding IconBackground}"
+                                                BorderBrush="{Binding IconBorder}"
+                                                BorderThickness="1.5"
                                                 Margin="0,0,16,0"
                                                 VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="{Binding IconKind}"
                                                                         Width="20" Height="20"
-                                                                        Foreground="{DynamicResource M3PrimaryBrush}"
+                                                                        Foreground="{Binding IconForeground}"
                                                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
 
@@ -585,23 +602,25 @@
                                                            Foreground="{DynamicResource M3OnSurfaceBrush}" />
 
                                                 <!-- Kind Badge (Script vs Notebook) -->
-                                                <Border Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                <Border Background="{Binding KindBadgeBackground}"
+                                                        BorderBrush="{Binding KindBadgeBorder}"
                                                         BorderThickness="1"
                                                         CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                                         Padding="7,2">
                                                     <TextBlock Text="{Binding KindBadgeText}"
                                                                FontSize="10" FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                               Foreground="{Binding KindBadgeForeground}" />
                                                 </Border>
 
                                                 <!-- Category Chip -->
-                                                <Border Background="{DynamicResource M3SurfaceContainerHighestBrush}"
+                                                <Border Background="{Binding CategoryBackground}"
+                                                        BorderBrush="{Binding CategoryBorder}"
+                                                        BorderThickness="1"
                                                         CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                                         Padding="7,2">
                                                     <TextBlock Text="{Binding Category}"
                                                                FontSize="10.5" FontWeight="Medium"
-                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                               Foreground="{Binding CategoryForeground}" />
                                                 </Border>
                                             </StackPanel>
 
