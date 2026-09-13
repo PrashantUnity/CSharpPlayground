@@ -22,7 +22,16 @@ public partial class CSharpManagerViewModel : ObservableObject
     private string _selectedTypeFilter = "All"; // "All", "Scripts", "Notebooks"
 
     [ObservableProperty]
+    private string _selectedSortOption = "Recently Modified";
+
+    [ObservableProperty]
     private bool _isLoading;
+
+    [ObservableProperty]
+    private bool _hasFilteredItems = true;
+
+    [ObservableProperty]
+    private bool _hasSearchQuery;
 
     [ObservableProperty]
     private int _totalScripts;
@@ -38,6 +47,15 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         "All", "Scripts", "Notebooks"
     };
+
+    public ObservableCollection<string> SortOptions { get; } = new()
+    {
+        "Recently Modified", "Title (A-Z)", "Execution Count"
+    };
+
+    public bool IsAllFilterActive => SelectedTypeFilter == "All";
+    public bool IsScriptsFilterActive => SelectedTypeFilter == "Scripts";
+    public bool IsNotebooksFilterActive => SelectedTypeFilter == "Notebooks";
 
     public CSharpManagerViewModel(
         IScriptStorageService storageService,
@@ -84,7 +102,14 @@ public partial class CSharpManagerViewModel : ObservableObject
     }
 
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
-    partial void OnSelectedTypeFilterChanged(string value) => ApplyFilter();
+    partial void OnSelectedTypeFilterChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsAllFilterActive));
+        OnPropertyChanged(nameof(IsScriptsFilterActive));
+        OnPropertyChanged(nameof(IsNotebooksFilterActive));
+        ApplyFilter();
+    }
+    partial void OnSelectedSortOptionChanged(string value) => ApplyFilter();
 
     [RelayCommand]
     private void SetSelectedTypeFilter(string filter)
@@ -92,11 +117,25 @@ public partial class CSharpManagerViewModel : ObservableObject
         SelectedTypeFilter = filter;
     }
 
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchQuery = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ResetFilters()
+    {
+        SearchQuery = string.Empty;
+        SelectedTypeFilter = "All";
+    }
+
     private void ApplyFilter()
     {
         FilteredItems.Clear();
 
         var query = SearchQuery.Trim().ToLowerInvariant();
+        HasSearchQuery = !string.IsNullOrEmpty(query);
         var typeFilter = SelectedTypeFilter;
 
         var matches = AllItems.Where(item =>
@@ -108,13 +147,24 @@ public partial class CSharpManagerViewModel : ObservableObject
 
             return item.Title.ToLowerInvariant().Contains(query) ||
                    item.Description.ToLowerInvariant().Contains(query) ||
-                   item.Category.ToLowerInvariant().Contains(query);
+                   item.Category.ToLowerInvariant().Contains(query) ||
+                   item.ExecutionMode.ToLowerInvariant().Contains(query);
         });
+
+        // Apply sorting
+        matches = SelectedSortOption switch
+        {
+            "Title (A-Z)" => matches.OrderBy(x => x.Title),
+            "Execution Count" => matches.OrderByDescending(x => x.ExecutionCount).ThenByDescending(x => x.LastModified),
+            _ => matches.OrderByDescending(x => x.LastModified)
+        };
 
         foreach (var match in matches)
         {
             FilteredItems.Add(match);
         }
+
+        HasFilteredItems = FilteredItems.Count > 0;
     }
 
     [RelayCommand]
@@ -160,6 +210,20 @@ public partial class CSharpManagerViewModel : ObservableObject
         var newNb = await _storageService.CreateNewNotebookAsync(title, templateId);
         await LoadWorkspaceItemsAsync();
         _openNotebookAction.Invoke(newNb);
+    }
+
+    [RelayCommand]
+    public async Task LaunchTemplateAsync(CodeTemplate template)
+    {
+        if (template == null) return;
+        if (template.Kind == WorkspaceItemKind.Notebook)
+        {
+            await CreateNewNotebookAsync(template.Id);
+        }
+        else
+        {
+            await CreateNewScriptAsync(template.Id);
+        }
     }
 
     [RelayCommand]

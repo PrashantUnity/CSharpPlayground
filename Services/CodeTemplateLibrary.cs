@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -14,7 +15,12 @@ public static class CodeTemplateLibrary
             Category = "Algorithms",
             Kind = WorkspaceItemKind.Script,
             Description = "Classic Two-Sum problem workspace with test cases, scratchpad notes, and Roslyn execution.",
-            IconKind = "CodeBraces",
+            IconKind = MaterialIconKind.CodeBraces,
+            AccentColor = "#F59E0B",
+            AccentBackground = "#2B1A04",
+            AccentBorder = "#78350F",
+            CategoryBadge = "LeetCode • Easy",
+            Tags = new List<string> { "Algorithms", "Two-Sum", "Roslyn" },
             Notes = @"# 1. Two Sum
 
 **Difficulty**: Easy | **Tags**: Array, Hash Table
@@ -81,7 +87,12 @@ Console.WriteLine(""\n✅ Algorithm executed successfully!"");",
             Category = "LINQPad",
             Kind = WorkspaceItemKind.Script,
             Description = "Fast expression & statements scratchpad with instant .Dump() inspection and zero boilerplate.",
-            IconKind = "LightningBoltOutline",
+            IconKind = MaterialIconKind.LightningBoltOutline,
+            AccentColor = "#06B6D4",
+            AccentBackground = "#08253A",
+            AccentBorder = "#0E7490",
+            CategoryBadge = "Scratchpad • Instant",
+            Tags = new List<string> { "LINQ", ".Dump()", "Top-level" },
             Notes = @"# LINQPad C# Scratchpad
 
 Write instant C# statements without `class Program` or `Main()`.
@@ -115,7 +126,12 @@ Console.WriteLine(""\n✨ Try typing any statement or expression!"");"
             Category = "Automation",
             Kind = WorkspaceItemKind.Script,
             Description = "Simulated document automation, file metadata inspection, and batch pipeline.",
-            IconKind = "FilePdfBox",
+            IconKind = MaterialIconKind.FilePdfBox,
+            AccentColor = "#EF4444",
+            AccentBackground = "#300D0D",
+            AccentBorder = "#991B1B",
+            CategoryBadge = "Studio API • Batch",
+            Tags = new List<string> { "Automation", "Metadata", "Pipeline" },
             Notes = @"# PDF Document Automation Script
 Inspect metadata, calculate page budgets, and generate simulation logs.",
             InitialCode = @"using System;
@@ -149,7 +165,12 @@ public static class Program
             Category = "Notebook",
             Kind = WorkspaceItemKind.Notebook,
             Description = "Multi-cell notebook workflow with Markdown explanations and interactive C# cells.",
-            IconKind = "NotebookOutline",
+            IconKind = MaterialIconKind.NotebookOutline,
+            AccentColor = "#0EA5E9",
+            AccentBackground = "#082F49",
+            AccentBorder = "#0284C7",
+            CategoryBadge = "Notebook • Interactive",
+            Tags = new List<string> { "Markdown", "Multi-cell", "Interactive" },
             InitialCode = @"// [Code Cell 1]
 string docTitle = ""Q3 Financial Overview & Audit.pdf"";
 int totalPages = 28;

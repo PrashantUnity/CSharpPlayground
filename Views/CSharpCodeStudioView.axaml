@@ -51,11 +51,15 @@
                     <Button Command="{Binding BackToHubCommand}"
                             Classes="m3-tonal-btn"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Padding="12,5"
+                            Height="32"
+                            MinHeight="0"
+                            Padding="12,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
                             Cursor="Hand"
                             ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" VerticalAlignment="Center" />
                             <TextBlock Text="Scripts Hub" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -66,17 +70,23 @@
                     <Border Background="#252526"
                             BorderBrush="#383838"
                             BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="8,2">
+                            CornerRadius="8"
+                            Height="32"
+                            Padding="10,0"
+                            VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="#EAB308" />
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="#EAB308" VerticalAlignment="Center" />
                             <TextBox Text="{Binding Script.Title, Mode=TwoWay}"
                                      FontWeight="SemiBold" FontSize="12.5"
                                      Foreground="#F3F4F6"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     Padding="2,0"
-                                     MinWidth="160"
+                                     MinHeight="0"
+                                     Height="28"
+                                     Padding="4,0"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     MinWidth="170"
                                      PlaceholderText="Script Title..." />
                         </StackPanel>
                     </Border>
@@ -88,17 +98,25 @@
                     <ComboBox ItemsSource="{Binding LanguageModes}"
                               SelectedIndex="{Binding SelectedLanguageModeIndex, Mode=TwoWay}"
                               FontSize="11.5"
-                              Padding="10,4"
+                              Height="32"
+                              MinHeight="0"
+                              Padding="12,0"
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center"
                               CornerRadius="{StaticResource M3ShapeCornerFull}"
                               ToolTip.Tip="Select Execution Mode (LINQPad Statements, Program, or Expression)" />
 
                     <!-- Status Pill -->
                     <Border Background="#252526"
+                            BorderBrush="#383838"
+                            BorderThickness="1"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Padding="10,4">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" />
-                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" />
+                            Height="32"
+                            Padding="12,0"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -109,11 +127,15 @@
                     <Button Command="{Binding SaveCommand}"
                             Classes="m3-tonal-btn"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Padding="14,6"
+                            Height="32"
+                            MinHeight="0"
+                            Padding="14,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
                             Cursor="Hand"
                             ToolTip.Tip="Save Script (Ctrl+S)">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" VerticalAlignment="Center" />
                             <TextBlock Text="Save" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -122,13 +144,17 @@
                     <Button Command="{Binding StopCommand}"
                             Classes="m3-outlined-btn"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Padding="12,6"
+                            Height="32"
+                            MinHeight="0"
+                            Padding="12,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
                             BorderBrush="#EF4444"
                             Foreground="#EF4444"
                             IsVisible="{Binding IsExecuting}"
                             Cursor="Hand">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="#EF4444" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="#EF4444" VerticalAlignment="Center" />
                             <TextBlock Text="Stop" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -139,12 +165,16 @@
                             Background="#166534"
                             Foreground="#FFFFFF"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Padding="16,6"
+                            Height="32"
+                            MinHeight="0"
+                            Padding="16,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
                             IsEnabled="{Binding !IsExecuting}"
                             Cursor="Hand"
                             ToolTip.Tip="Run C# Script (F5)">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="#22C55E" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="#22C55E" VerticalAlignment="Center" />
                             <TextBlock Text="Run (F5)" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -265,10 +295,17 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="#D1D5DB" VerticalAlignment="Center" />
                                     <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}"
-                                            Classes="m3-tonal-btn" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="10,4" Cursor="Hand">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
-                                            <TextBlock Text="+ Add Case" FontSize="11" VerticalAlignment="Center" />
+                                            Classes="m3-tonal-btn"
+                                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                            Height="28"
+                                            MinHeight="0"
+                                            Padding="12,0"
+                                            VerticalAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" VerticalAlignment="Center" />
+                                            <TextBlock Text="Add Case" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
@@ -481,15 +518,19 @@
                 BorderBrush="#333333"
                 BorderThickness="0,1,0,0"
                 Padding="12,3">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                 <!-- Left: Console Toggle Button -->
                 <Button Grid.Column="0"
                         Command="{Binding ToggleBottomDeckCommand}"
                         Classes="m3-icon-btn"
-                        Padding="6,2"
+                        Height="24"
+                        MinHeight="0"
+                        Padding="8,0"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
                         Cursor="Hand">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#9CA3AF" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#9CA3AF" VerticalAlignment="Center" />
                         <TextBlock Text="Console" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -501,11 +542,11 @@
                            IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                 <!-- Right: Ln, Col, Encoding, Language Status -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
-                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10.5" Foreground="#9CA3AF" />
-                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10.5" Foreground="#9CA3AF" />
-                    <TextBlock Text="UTF-8" FontSize="10.5" Foreground="#9CA3AF" />
-                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" FontWeight="SemiBold" Foreground="#EAB308" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                    <TextBlock Text="UTF-8" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" FontWeight="SemiBold" Foreground="#EAB308" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>
