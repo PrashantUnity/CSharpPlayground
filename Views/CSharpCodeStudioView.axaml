@@ -1,0 +1,513 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="820"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpCodeStudioView"
+             x:DataType="vm:CSharpCodeStudioViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
+        <!-- LeetCode-Inspired Workspace Tab Styles -->
+        <Style Selector="Button.ide-tab-btn">
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="Foreground" Value="#9CA3AF" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="BorderThickness" Value="0,2,1,0" />
+            <Setter Property="BorderBrush" Value="#333333" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.ide-tab-btn:hover">
+            <Setter Property="Background" Value="#252526" />
+            <Setter Property="Foreground" Value="#E5E7EB" />
+        </Style>
+        <Style Selector="Button.ide-tab-btn.active">
+            <Setter Property="Background" Value="#282828" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#EAB308" /> <!-- LeetCode Yellow Top Bar -->
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="#121212">
+        <!-- ============================================================ -->
+        <!-- 1. TOP HEADER: Navigation, Breadcrumb & Action Bar           -->
+        <!-- ============================================================ -->
+        <Border Grid.Row="0"
+                Background="#1E1E1E"
+                BorderBrush="#333333"
+                BorderThickness="0,0,0,1"
+                Padding="12,7">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                <!-- Left: Scripts Hub Button & Breadcrumbs -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding BackToHubCommand}"
+                            Classes="m3-tonal-btn"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="12,5"
+                            Cursor="Hand"
+                            ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" />
+                            <TextBlock Text="Scripts Hub" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="#666666" VerticalAlignment="Center" />
+
+                    <!-- LeetCode-style Script Title Badge & Input -->
+                    <Border Background="#252526"
+                            BorderBrush="#383838"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="8,2">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="#EAB308" />
+                            <TextBox Text="{Binding Script.Title, Mode=TwoWay}"
+                                     FontWeight="SemiBold" FontSize="12.5"
+                                     Foreground="#F3F4F6"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="2,0"
+                                     MinWidth="160"
+                                     PlaceholderText="Script Title..." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Center-Right: Mode Switcher & Status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <!-- Execution Mode Dropdown -->
+                    <ComboBox ItemsSource="{Binding LanguageModes}"
+                              SelectedIndex="{Binding SelectedLanguageModeIndex, Mode=TwoWay}"
+                              FontSize="11.5"
+                              Padding="10,4"
+                              CornerRadius="{StaticResource M3ShapeCornerFull}"
+                              ToolTip.Tip="Select Execution Mode (LINQPad Statements, Program, or Expression)" />
+
+                    <!-- Status Pill -->
+                    <Border Background="#252526"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" />
+                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Action Buttons (Run, Save, Stop) -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <!-- Save Button -->
+                    <Button Command="{Binding SaveCommand}"
+                            Classes="m3-tonal-btn"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="14,6"
+                            Cursor="Hand"
+                            ToolTip.Tip="Save Script (Ctrl+S)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" />
+                            <TextBlock Text="Save" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Stop Button (Visible during execution) -->
+                    <Button Command="{Binding StopCommand}"
+                            Classes="m3-outlined-btn"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="12,6"
+                            BorderBrush="#EF4444"
+                            Foreground="#EF4444"
+                            IsVisible="{Binding IsExecuting}"
+                            Cursor="Hand">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="#EF4444" />
+                            <TextBlock Text="Stop" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Run Button (F5) -->
+                    <Button Command="{Binding RunCodeCommand}"
+                            Classes="m3-filled-btn"
+                            Background="#166534"
+                            Foreground="#FFFFFF"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="16,6"
+                            IsEnabled="{Binding !IsExecuting}"
+                            Cursor="Hand"
+                            ToolTip.Tip="Run C# Script (F5)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="#22C55E" />
+                            <TextBlock Text="Run (F5)" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================ -->
+        <!-- 2. MAIN WORKSPACE: LeetCode-Inspired Split Panels             -->
+        <!-- ============================================================ -->
+        <Grid Grid.Row="1" ColumnDefinitions="420,4,*">
+            <!-- ======================================================== -->
+            <!-- 2A. LEFT PANEL: Description, Problem Notes & References   -->
+            <!-- ======================================================== -->
+            <Border Grid.Column="0"
+                    Background="#1E1E1E"
+                    BorderBrush="#333333"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Left Tab Bar (LeetCode Style with Top Yellow Accent) -->
+                    <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- Tab 0: Description & Notes -->
+                            <Button Command="{Binding SetLeftTabCommand}" CommandParameter="0"
+                                    Classes="ide-tab-btn"
+                                    Classes.active="{Binding SelectedLeftTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="FileDocumentOutline" Width="14" Height="14" />
+                                    <TextBlock Text="Description &amp; Notes" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab 1: Assembly References -->
+                            <Button Command="{Binding SetLeftTabCommand}" CommandParameter="1"
+                                    Classes="ide-tab-btn"
+                                    Classes.active="{Binding SelectedLeftTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="PackageVariantClosed" Width="14" Height="14" />
+                                    <TextBlock Text="References" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab 2: Testcases -->
+                            <Button Command="{Binding SetLeftTabCommand}" CommandParameter="2"
+                                    Classes="ide-tab-btn"
+                                    Classes.active="{Binding SelectedLeftTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="CheckboxMarkedCircleOutline" Width="14" Height="14" />
+                                    <TextBlock Text="Testcases" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Left Content Carousel -->
+                    <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedLeftTabIndex}">
+                        <!-- Content 0: Markdown Notes & Problem Description -->
+                        <Grid RowDefinitions="Auto,*">
+                            <!-- Character Count & Scratchpad Bar -->
+                            <Border Grid.Row="0" Background="#252526" BorderBrush="#333333" BorderThickness="0,0,0,1" Padding="12,5">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="SCRATCHPAD &amp; DOCUMENTATION" FontSize="10" FontWeight="Bold" Foreground="#6B7280" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Notes.Length, StringFormat='{}{0} chars'}" FontSize="10" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Markdown Notes Editor -->
+                            <TextBox Grid.Row="1"
+                                     Text="{Binding Notes, Mode=TwoWay}"
+                                     AcceptsReturn="True"
+                                     AcceptsTab="True"
+                                     FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
+                                     FontSize="12.5"
+                                     Foreground="#D1D5DB"
+                                     Background="#1E1E1E"
+                                     BorderThickness="0"
+                                     Padding="14,12"
+                                     TextWrapping="Wrap"
+                                     PlaceholderText="// Write problem statement, requirements, markdown notes, or test plans here..." />
+                        </Grid>
+
+                        <!-- Content 1: Assembly References -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="14,10" Spacing="8">
+                                <TextBlock Text="Referenced .NET Runtime &amp; Studio Assemblies"
+                                           FontSize="11.5" FontWeight="SemiBold" Foreground="#9CA3AF" Margin="0,0,0,4" />
+
+                                <ItemsControl ItemsSource="{Binding References}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AssemblyReferenceViewModel">
+                                            <Border Padding="10,6"
+                                                    Background="#252526"
+                                                    BorderBrush="#383838"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Margin="0,0,0,6">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariant" Width="16" Height="16"
+                                                                                Foreground="#EAB308" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="#F3F4F6" />
+                                                        <TextBlock Text="{Binding AssemblyPath}" FontSize="10" Foreground="#9CA3AF" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled}"
+                                                              IsEnabled="{Binding !IsSystem}"
+                                                              VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Content 2: LeetCode-Style Test Cases -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="14,12" Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="#D1D5DB" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}"
+                                            Classes="m3-tonal-btn" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="10,4" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                                            <TextBlock Text="+ Add Case" FontSize="11" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding TestCases}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TestCaseItem">
+                                            <Border Background="#252526" BorderBrush="#383838" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                                                <StackPanel Spacing="8">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="#EAB308" VerticalAlignment="Center" />
+                                                        <Button Grid.Column="1"
+                                                                Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RunTestCaseCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Classes="m3-filled-btn"
+                                                                Background="#166534"
+                                                                Padding="8,3"
+                                                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                                Cursor="Hand">
+                                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="#22C55E" />
+                                                                <TextBlock Text="Run" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <TextBlock Text="Input:" FontSize="10.5" Foreground="#9CA3AF" />
+                                                    <TextBox Text="{Binding Input, Mode=TwoWay}"
+                                                             FontFamily="Consolas, monospace" FontSize="11.5"
+                                                             Foreground="#F3F4F6" Background="#1A1A1A" BorderBrush="#333" BorderThickness="1"
+                                                             Padding="6" CornerRadius="4" />
+
+                                                    <TextBlock Text="Expected Output:" FontSize="10.5" Foreground="#9CA3AF" />
+                                                    <TextBox Text="{Binding ExpectedOutput, Mode=TwoWay}"
+                                                             FontFamily="Consolas, monospace" FontSize="11.5"
+                                                             Foreground="#F3F4F6" Background="#1A1A1A" BorderBrush="#333" BorderThickness="1"
+                                                             Padding="6" CornerRadius="4" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Carousel>
+                </Grid>
+            </Border>
+
+            <!-- Column Splitter (Left vs Right) -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          Background="#1A1A1A"
+                          ResizeDirection="Columns"
+                          Cursor="SizeWestEast" />
+
+            <!-- ======================================================== -->
+            <!-- 2B. RIGHT PANEL: C# Code Editor + Bottom Tool Deck        -->
+            <!-- ======================================================== -->
+            <Grid Grid.Column="2" RowDefinitions="*,4,Auto">
+                <!-- Upper: High-Performance C# AvaloniaEdit -->
+                <Border Grid.Row="0" Background="#14171F">
+                    <avaloniaEdit:TextEditor Name="Editor"
+                                             FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
+                                             FontSize="13.5"
+                                             ShowLineNumbers="True"
+                                             WordWrap="False"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Background="#14171F"
+                                             Foreground="#D4D4D4" />
+                </Border>
+
+                <!-- Horizontal Splitter (Editor vs Bottom Deck) -->
+                <GridSplitter Grid.Row="1"
+                              Height="4"
+                              Background="#1A1A1A"
+                              ResizeDirection="Rows"
+                              Cursor="SizeNorthSouth"
+                              IsVisible="{Binding IsBottomDeckExpanded}" />
+
+                <!-- Lower: Collapsible Tool Deck (Console, Problems, Test Results) -->
+                <Border Grid.Row="2"
+                        Height="230"
+                        Background="#1E1E1E"
+                        BorderBrush="#333333"
+                        BorderThickness="0,1,0,0"
+                        IsVisible="{Binding IsBottomDeckExpanded}">
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- Tool Deck Tab Bar -->
+                        <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <!-- Tab 0: Console Output -->
+                                    <Button Command="{Binding SetBottomTabCommand}" CommandParameter="0"
+                                            Classes="ide-tab-btn"
+                                            Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#38BDF8" />
+                                            <TextBlock Text="Console Output (.Dump)" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 1: Problems / Diagnostics -->
+                                    <Button Command="{Binding SetBottomTabCommand}" CommandParameter="1"
+                                            Classes="ide-tab-btn"
+                                            Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#F59E0B" />
+                                            <TextBlock Text="Problems" VerticalAlignment="Center" />
+                                            <Border Background="#EF4444" CornerRadius="10" Padding="5,1"
+                                                    IsVisible="{Binding ErrorCount}">
+                                                <TextBlock Text="{Binding ErrorCount}" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Right Actions: Clear Console & Minimize -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Button Command="{Binding ClearConsoleCommand}"
+                                            Classes="m3-icon-btn"
+                                            ToolTip.Tip="Clear Console"
+                                            Cursor="Hand">
+                                        <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="#9CA3AF" />
+                                    </Button>
+                                    <Button Command="{Binding ToggleBottomDeckCommand}"
+                                            Classes="m3-icon-btn"
+                                            ToolTip.Tip="Minimize Deck"
+                                            Cursor="Hand">
+                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#9CA3AF" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Tool Deck Content -->
+                        <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedBottomTabIndex}">
+                            <!-- Tab 0: Console Output -->
+                            <Border Background="#0D1117" Padding="12,8">
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                    <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
+                                             FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
+                                             FontSize="12"
+                                             Background="Transparent"
+                                             Foreground="#58A6FF"
+                                             BorderThickness="0"
+                                             IsReadOnly="True"
+                                             TextWrapping="Wrap" />
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Tab 1: Problems / Diagnostics List -->
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="12,8">
+                                    <TextBlock Text="No problems detected. Ready to run."
+                                               FontSize="12" Foreground="#9CA3AF"
+                                               Margin="10"
+                                               IsVisible="{Binding !Diagnostics.Count}" />
+
+                                    <ItemsControl ItemsSource="{Binding Diagnostics}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
+                                                <Border Background="Transparent"
+                                                        BorderBrush="#333333"
+                                                        BorderThickness="0,0,0,1"
+                                                        Padding="8,6">
+                                                    <Button Command="{Binding NavigateCommand}"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            HorizontalAlignment="Stretch"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            Padding="0"
+                                                            Cursor="Hand">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                                            <materialIcons:MaterialIcon Grid.Column="0"
+                                                                                        Kind="{Binding SeverityIconKind}"
+                                                                                        Foreground="{Binding SeverityColorHex}"
+                                                                                        Width="16" Height="16"
+                                                                                        Margin="0,0,8,0"
+                                                                                        VerticalAlignment="Center" />
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11.5"
+                                                                            Foreground="{Binding SeverityColorHex}" />
+                                                                <TextBlock Text="{Binding Message}" FontSize="12"
+                                                                            Foreground="#F3F4F6"
+                                                                            TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                            <TextBlock Grid.Column="2" Text="{Binding LocationString}"
+                                                                        FontSize="11" Foreground="#9CA3AF"
+                                                                        VerticalAlignment="Center" Margin="8,0,0,0" />
+                                                        </Grid>
+                                                    </Button>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Carousel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ============================================================ -->
+        <!-- 3. FOOTER STATUS BAR: Console Toggle, Ln/Col, Status        -->
+        <!-- ============================================================ -->
+        <Border Grid.Row="2"
+                Background="#1E1E1E"
+                BorderBrush="#333333"
+                BorderThickness="0,1,0,0"
+                Padding="12,3">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Console Toggle Button -->
+                <Button Grid.Column="0"
+                        Command="{Binding ToggleBottomDeckCommand}"
+                        Classes="m3-icon-btn"
+                        Padding="6,2"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#9CA3AF" />
+                        <TextBlock Text="Console" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Center: Elapsed Time -->
+                <TextBlock Grid.Column="1" Text="{Binding ExecutionTimeText, StringFormat='{}Execution Time: {0}'}"
+                           FontSize="10.5" Foreground="#9CA3AF"
+                           Margin="14,0,0,0" VerticalAlignment="Center"
+                           IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <!-- Right: Ln, Col, Encoding, Language Status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10.5" Foreground="#9CA3AF" />
+                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10.5" Foreground="#9CA3AF" />
+                    <TextBlock Text="UTF-8" FontSize="10.5" Foreground="#9CA3AF" />
+                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" FontWeight="SemiBold" Foreground="#EAB308" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

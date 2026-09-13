@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CSharpEditorPlugin.csproj" />
+  <Project Path="Runner/CSharpEditorPlugin.Runner.csproj" />
+</Solution>

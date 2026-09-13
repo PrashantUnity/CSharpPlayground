@@ -1,0 +1,321 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpNotebookStudioView"
+             x:DataType="vm:CSharpNotebookStudioViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="#121212">
+        <!-- 1. Top Header & Navigation -->
+        <Border Grid.Row="0"
+                Background="#1E1E1E"
+                BorderBrush="#333333"
+                BorderThickness="0,0,0,1"
+                Padding="12,7">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Back Button & Notebook Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding BackToHubCommand}"
+                            Classes="m3-tonal-btn"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="12,5"
+                            Cursor="Hand"
+                            ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" />
+                            <TextBlock Text="Scripts Hub" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="#666666" VerticalAlignment="Center" />
+
+                    <!-- Notebook Title Input -->
+                    <Border Background="#252526"
+                            BorderBrush="#383838"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="8,2">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="NotebookOutline" Width="15" Height="15" Foreground="#8B5CF6" />
+                            <TextBox Text="{Binding Notebook.Title, Mode=TwoWay}"
+                                     FontWeight="SemiBold" FontSize="12.5"
+                                     Foreground="#F3F4F6"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="2,0"
+                                     MinWidth="160"
+                                     PlaceholderText="Notebook Title..." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Center: Cell Count & Status -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" VerticalAlignment="Center">
+                    <Border Background="#252526" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="LayersOutline" Width="13" Height="13" Foreground="#8B5CF6" />
+                            <TextBlock Text="{Binding Cells.Count, StringFormat='{}{0} Cells'}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#252526" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#10B981" />
+                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Save & Execution Actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding SaveCommand}"
+                            Classes="m3-tonal-btn"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="12,6"
+                            Cursor="Hand"
+                            ToolTip.Tip="Save Notebook (Ctrl+S)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" />
+                            <TextBlock Text="Save" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding RunAllCellsCommand}"
+                            Classes="m3-filled-btn"
+                            Background="#5B21B6"
+                            Foreground="#FFFFFF"
+                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                            Padding="14,6"
+                            IsEnabled="{Binding !IsExecuting}"
+                            Cursor="Hand"
+                            ToolTip.Tip="Run all code cells in sequence">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="PlayBoxMultipleOutline" Width="15" Height="15" Foreground="#A78BFA" />
+                            <TextBlock Text="Run All" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Main Content: Interactive Cells Scroll Viewer -->
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="16" Margin="28,20,28,30" MaxWidth="1050">
+                <ItemsControl ItemsSource="{Binding Cells}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                            <Border Background="#1A1D24"
+                                    BorderBrush="#2D3340"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="0"
+                                    Margin="0,0,0,16">
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+                                    <!-- Cell Header Bar -->
+                                    <Border Grid.Row="0"
+                                            Background="#20242D"
+                                            BorderBrush="#2D3340"
+                                            BorderThickness="0,0,0,1"
+                                            CornerRadius="10,10,0,0"
+                                            Padding="12,6">
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                            <!-- Left: Run Button & Execution Badge -->
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Button Command="{Binding RunCellCommand}"
+                                                        Classes="m3-filled-btn"
+                                                        Background="#166534"
+                                                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                        Padding="8,4"
+                                                        IsVisible="{Binding IsCodeCell}"
+                                                        Cursor="Hand"
+                                                        ToolTip.Tip="Execute this cell (Ctrl+Enter)">
+                                                    <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="#22C55E" />
+                                                </Button>
+
+                                                <TextBlock Text="{Binding ExecutionBadgeText}"
+                                                           FontFamily="Consolas, monospace"
+                                                           FontSize="11.5" FontWeight="Bold"
+                                                           Foreground="#8B5CF6"
+                                                           VerticalAlignment="Center" />
+
+                                                <Border Background="#2C3240" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Type}" FontSize="10" FontWeight="Bold" Foreground="#9CA3AF" />
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Center Elapsed Time -->
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                                        IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <materialIcons:MaterialIcon Kind="TimerOutline" Width="12" Height="12" Foreground="#9CA3AF" />
+                                                <TextBlock Text="{Binding ExecutionTimeText}" FontSize="10.5" Foreground="#9CA3AF" />
+                                            </StackPanel>
+
+                                            <!-- Right: Cell Actions -->
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <Button Command="{Binding ToggleTypeCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Toggle Code / Markdown" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="SwapHorizontal" Width="15" Height="15" Foreground="#9CA3AF" />
+                                                </Button>
+                                                <Button Command="{Binding MoveUpCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Move Cell Up" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="ArrowUp" Width="15" Height="15" Foreground="#9CA3AF" />
+                                                </Button>
+                                                <Button Command="{Binding MoveDownCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Move Cell Down" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="ArrowDown" Width="15" Height="15" Foreground="#9CA3AF" />
+                                                </Button>
+                                                <Button Command="{Binding AddCodeBelowCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Add Code Cell Below" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="PlusBoxOutline" Width="15" Height="15" Foreground="#8B5CF6" />
+                                                </Button>
+                                                <Button Command="{Binding AddMarkdownBelowCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Add Markdown Below" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="15" Height="15" Foreground="#10B981" />
+                                                </Button>
+                                                <Button Command="{Binding DeleteCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Delete Cell" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="15" Height="15" Foreground="#EF4444" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Cell Body: Code Editor (BindableTextEditor) OR Markdown -->
+                                    <Panel Grid.Row="1">
+                                        <!-- Code Cell: Syntax Highlighted BindableTextEditor -->
+                                        <Border IsVisible="{Binding IsCodeCell}"
+                                                Background="#14171F"
+                                                BorderBrush="#2D3340"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Margin="8,6,8,8"
+                                                Padding="6,6">
+                                            <controls:BindableTextEditor TextContent="{Binding Source, Mode=TwoWay}"
+                                                                         ExecuteCommand="{Binding RunCellCommand}"
+                                                                         MinHeight="85"
+                                                                         FontSize="13" />
+                                        </Border>
+
+                                        <!-- Markdown Cell: Text Editor or Rendered -->
+                                        <Border IsVisible="{Binding IsMarkdownCell}"
+                                                Background="#181B22"
+                                                BorderBrush="#2D3340"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Margin="8,6,8,8"
+                                                Padding="12,8">
+                                            <TextBox Text="{Binding Source, Mode=TwoWay}"
+                                                     AcceptsReturn="True"
+                                                     AcceptsTab="True"
+                                                     FontFamily="Inter, Segoe UI, Roboto, sans-serif"
+                                                     FontSize="13"
+                                                     Foreground="#E5E7EB"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     MinHeight="65"
+                                                     PlaceholderText="Write markdown documentation, headers (# Title), or notes..."
+                                                     TextWrapping="Wrap" />
+                                        </Border>
+                                    </Panel>
+
+                                    <!-- Inline Cell Output Box (Directly Underneath) -->
+                                    <Border Grid.Row="2"
+                                            Background="#0D1117"
+                                            BorderBrush="#2D3340"
+                                            BorderThickness="0,1,0,0"
+                                            CornerRadius="0,0,10,10"
+                                            Padding="14,10"
+                                            IsVisible="{Binding HasOutput}">
+                                        <Grid RowDefinitions="Auto,*">
+                                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <materialIcons:MaterialIcon Kind="ConsoleLine" Width="13" Height="13" Foreground="#9CA3AF" />
+                                                    <TextBlock Text="Output" FontSize="11" FontWeight="Bold" Foreground="#9CA3AF" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Command="{Binding ClearOutputCommand}"
+                                                        Classes="m3-icon-btn" ToolTip.Tip="Clear Output" Cursor="Hand">
+                                                    <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="14" Height="14" Foreground="#9CA3AF" />
+                                                </Button>
+                                            </Grid>
+                                            <TextBox Grid.Row="1"
+                                                     Text="{Binding OutputText, Mode=OneWay}"
+                                                     FontFamily="Consolas, Menlo, Monaco, JetBrains Mono, monospace"
+                                                     FontSize="12"
+                                                     Foreground="#58A6FF"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     IsReadOnly="True"
+                                                     TextWrapping="Wrap" />
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 3. Bottom Quick-Add & Navigation Bar -->
+        <Border Grid.Row="2"
+                Background="#1E1E1E"
+                BorderBrush="#333333"
+                BorderThickness="0,1,0,0"
+                Padding="16,8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                <Button Command="{Binding AddCodeCellCommand}"
+                        Classes="m3-tonal-btn"
+                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                        Padding="14,6"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16" Foreground="#8B5CF6" />
+                        <TextBlock Text="+ Code Cell" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding AddMarkdownCellCommand}"
+                        Classes="m3-tonal-btn"
+                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                        Padding="14,6"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="16" Height="16" Foreground="#10B981" />
+                        <TextBlock Text="+ Markdown Note" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding RunAllCellsCommand}"
+                        Classes="m3-filled-btn"
+                        Background="#5B21B6"
+                        Foreground="#FFFFFF"
+                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                        Padding="16,6"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="PlayBoxMultipleOutline" Width="16" Height="16" Foreground="#A78BFA" />
+                        <TextBlock Text="Run All Cells" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding ClearAllOutputsCommand}"
+                        Classes="m3-outlined-btn"
+                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                        Padding="14,6"
+                        Cursor="Hand">
+                    <TextBlock Text="Clear All Outputs" FontSize="12" VerticalAlignment="Center" />
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

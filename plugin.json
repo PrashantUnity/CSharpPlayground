@@ -1,0 +1,43 @@
+{
+  "id": "com.frypdf.plugin.csharpeditor",
+  "name": "C# Code Studio",
+  "version": "1.0.0",
+  "author": "Code Fry Dev",
+  "description": "Interactive in-app C# development and automation studio featuring a dedicated project/script manager, syntax-highlighted editor, real-time Roslyn compilation diagnostics, and in-memory execution.",
+  "entryPoint": "CSharpEditorPlugin.dll",
+  "icon": "CodeBraces",
+  "dependencies": [],
+  "settingsSchema": {
+    "DefaultTemplate": {
+      "type": "select",
+      "label": "Default Starter Script",
+      "description": "Initial template loaded when creating a new script",
+      "default": "Hello World Console",
+      "options": ["Hello World Console", "PDF Document Automation", "LINQ Benchmark", "JSON Serializer"]
+    },
+    "EditorFontSize": {
+      "type": "integer",
+      "label": "Editor Font Size (px)",
+      "description": "Code typography size in points/pixels",
+      "default": 13
+    },
+    "ShowLineNumbers": {
+      "type": "boolean",
+      "label": "Show Line Numbers",
+      "description": "Display gutter line numbers along the left margin",
+      "default": true
+    },
+    "AutoCheckErrors": {
+      "type": "boolean",
+      "label": "Live Roslyn Diagnostics",
+      "description": "Continuously analyze C# code in the background for syntax and semantic errors",
+      "default": true
+    },
+    "ExecutionTimeoutSeconds": {
+      "type": "integer",
+      "label": "Execution Timeout (seconds)",
+      "description": "Maximum allowed run time before background script execution is halted",
+      "default": 10
+    }
+  }
+}

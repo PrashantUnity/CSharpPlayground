@@ -1,0 +1,288 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpManagerView"
+             x:DataType="vm:CSharpManagerViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" Margin="32,28,32,40">
+            <!-- 1. Hero Header & Quick Stats -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource M3ShapeCornerLarge}"
+                    Padding="28,24">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Border Width="44" Height="44"
+                                    CornerRadius="{StaticResource M3ShapeCornerMedium}"
+                                    Background="{DynamicResource M3PrimaryContainerBrush}">
+                                <materialIcons:MaterialIcon Kind="CodeBraces" Width="24" Height="24"
+                                                            Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="C# Code Studio &amp; Notebooks Hub"
+                                           FontSize="22" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <TextBlock Text="High-performance C# scripts, LeetCode algorithm workspaces, and interactive notebooks"
+                                           FontSize="13" Foreground="{DynamicResource WinMutedBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Stats Badges & Creation Actions -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <!-- Scripts Count Pill -->
+                        <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Padding="12,7">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="15" Height="15" Foreground="#10B981" />
+                                <TextBlock Text="{Binding TotalScripts, StringFormat='{}{0} Scripts'}"
+                                           FontSize="12" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Notebooks Count Pill -->
+                        <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Padding="12,7">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="NotebookOutline" Width="15" Height="15" Foreground="#8B5CF6" />
+                                <TextBlock Text="{Binding TotalNotebooks, StringFormat='{}{0} Notebooks'}"
+                                           FontSize="12" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- + New Script Button -->
+                        <Button Command="{Binding CreateNewScriptCommand}"
+                                Classes="m3-filled-btn"
+                                Background="#166534"
+                                Foreground="#FFFFFF"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Padding="14,8"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16" />
+                                <TextBlock Text="New Script" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- + New Notebook Button -->
+                        <Button Command="{Binding CreateNewNotebookCommand}"
+                                Classes="m3-filled-btn"
+                                Background="#5B21B6"
+                                Foreground="#FFFFFF"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Padding="14,8"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16" />
+                                <TextBlock Text="New Notebook" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. Starter Template Gallery Shelf -->
+            <StackPanel Spacing="14">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="20" Height="20"
+                                                Foreground="{DynamicResource M3PrimaryBrush}" />
+                    <TextBlock Text="Starter Templates" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                    <TextBlock Text="— Click any preset to instantly launch a studio workspace"
+                               FontSize="12" Foreground="{DynamicResource WinMutedBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding StarterTemplates}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:CodeTemplate">
+                            <Border Width="260" Height="150"
+                                    Margin="0,0,16,16"
+                                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource M3ShapeCornerMedium}"
+                                    Padding="16">
+                                <Grid RowDefinitions="Auto,*,Auto">
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                                        <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="20" Height="20"
+                                                                    Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontWeight="SemiBold" FontSize="12.5"
+                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="1"
+                                               Text="{Binding Description}"
+                                               FontSize="11.5"
+                                               Foreground="{DynamicResource WinMutedBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,6,0,0"
+                                               MaxLines="2" />
+
+                                    <Button Grid.Row="2"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).CreateNewScriptCommand}"
+                                            CommandParameter="{Binding Id}"
+                                            Classes="m3-tonal-btn"
+                                            CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                            Padding="12,5"
+                                            HorizontalAlignment="Right"
+                                            Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="PlayBoxOutline" Width="14" Height="14" />
+                                            <TextBlock Text="Launch Studio" FontSize="11" FontWeight="Medium" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- 3. Saved Items & Projects Section -->
+            <StackPanel Spacing="16">
+                <!-- Search & Filters Toolbar -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20"
+                                                    Foreground="{DynamicResource M3SecondaryBrush}" />
+                        <TextBlock Text="Workspace Items" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        <TextBlock Text="{Binding FilteredItems.Count, StringFormat='({0})'}"
+                                   FontSize="14" Foreground="{DynamicResource WinMutedBrush}" />
+
+                        <!-- Segmented Type Filter: [ All | 📜 Scripts | 📓 Notebooks ] -->
+                        <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                Padding="3" Margin="8,0,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="All"
+                                        Classes="m3-filter-chip" Padding="10,4" Cursor="Hand">
+                                    <TextBlock Text="All" FontSize="11" FontWeight="Medium" />
+                                </Button>
+                                <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Scripts"
+                                        Classes="m3-filter-chip" Padding="10,4" Cursor="Hand">
+                                    <TextBlock Text="📜 Scripts" FontSize="11" FontWeight="Medium" />
+                                </Button>
+                                <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Notebooks"
+                                        Classes="m3-filter-chip" Padding="10,4" Cursor="Hand">
+                                    <TextBlock Text="📓 Notebooks" FontSize="11" FontWeight="Medium" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Filter / Search Box -->
+                    <TextBox Grid.Column="2"
+                             Text="{Binding SearchQuery, Mode=TwoWay}"
+                             Classes="m3-search"
+                             Width="280"
+                             PlaceholderText="Search items by title or category..." />
+                </Grid>
+
+                <!-- Cards List -->
+                <ItemsControl ItemsSource="{Binding FilteredItems}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:WorkspaceItemSummary">
+                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource M3ShapeCornerLarge}"
+                                    Padding="18,14">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <!-- Leading Icon -->
+                                    <Border Grid.Column="0" Width="40" Height="40"
+                                            CornerRadius="{StaticResource M3ShapeCornerMedium}"
+                                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                            Margin="0,0,16,0">
+                                        <materialIcons:MaterialIcon Kind="{Binding IsNotebook, Converter={x:Static ObjectConverters.IsNull}}"
+                                                                    Width="20" Height="20"
+                                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <!-- Main Info -->
+                                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource M3OnSurfaceBrush}" />
+
+                                            <!-- Kind Badge -->
+                                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                    CornerRadius="{StaticResource M3ShapeCornerSmall}"
+                                                    Padding="6,2">
+                                                <TextBlock Text="{Binding KindBadgeText}"
+                                                           FontSize="10" FontWeight="Bold"
+                                                           Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="12" Foreground="{DynamicResource WinMutedBrush}" />
+                                            <TextBlock Text="•" Foreground="{DynamicResource WinMutedBrush}" />
+                                            <TextBlock Text="{Binding Category}"
+                                                       FontSize="11.5" Foreground="{DynamicResource WinMutedBrush}" />
+                                            <TextBlock Text="•" Foreground="{DynamicResource WinMutedBrush}" />
+                                            <TextBlock Text="{Binding LastModified, StringFormat='{}Edited {0:MMM dd, HH:mm}'}"
+                                                       FontSize="11.5" Foreground="{DynamicResource WinMutedBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).DeleteItemCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="m3-icon-btn"
+                                                ToolTip.Tip="Delete Item"
+                                                Cursor="Hand">
+                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="18" Height="18"
+                                                                        Foreground="{DynamicResource WinMutedBrush}" />
+                                        </Button>
+
+                                        <!-- Open in Studio -->
+                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).OpenItemCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="m3-filled-btn"
+                                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                Padding="16,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <materialIcons:MaterialIcon Kind="ArrowRight" Width="16" Height="16" />
+                                                <TextBlock Text="Open Studio" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

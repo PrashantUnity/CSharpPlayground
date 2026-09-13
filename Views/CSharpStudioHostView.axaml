@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
+             x:DataType="vm:CSharpStudioHostViewModel">
+
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:CSharpManagerViewModel">
+            <views:CSharpManagerView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:CSharpCodeStudioViewModel">
+            <views:CSharpCodeStudioView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:CSharpNotebookStudioViewModel">
+            <views:CSharpNotebookStudioView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:CSharpEditorViewModel">
+            <views:CSharpEditorView />
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <TransitioningContentControl Content="{Binding CurrentPage}" />
+</UserControl>
