@@ -9,7 +9,7 @@
         Width="1200" Height="820"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="#090D13">
+        Background="{DynamicResource M3SurfaceBrush}">
 
     <views:CSharpStudioHostView x:Name="StudioHost" />
 </Window>

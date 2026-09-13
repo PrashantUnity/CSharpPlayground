@@ -13,36 +13,40 @@
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
-        <!-- LeetCode-Inspired Workspace Tab Styles -->
+        <!-- Workspace Tab Styles (M3 Expressive Segmented Buttons) -->
         <Style Selector="Button.ide-tab-btn">
-            <Setter Property="Background" Value="#1A1A1A" />
-            <Setter Property="Foreground" Value="#9CA3AF" />
-            <Setter Property="Padding" Value="14,8" />
-            <Setter Property="BorderThickness" Value="0,2,1,0" />
-            <Setter Property="BorderBrush" Value="#333333" />
-            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
         </Style>
-        <Style Selector="Button.ide-tab-btn:hover">
-            <Setter Property="Background" Value="#252526" />
-            <Setter Property="Foreground" Value="#E5E7EB" />
+        <Style Selector="Button.ide-tab-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
         </Style>
         <Style Selector="Button.ide-tab-btn.active">
-            <Setter Property="Background" Value="#282828" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="#EAB308" /> <!-- LeetCode Yellow Top Bar -->
+            <Setter Property="Background" Value="{DynamicResource M3SecondaryContainerBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSecondaryContainerBrush}" />
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="#121212">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource M3SurfaceBrush}">
         <!-- ============================================================ -->
         <!-- 1. TOP HEADER: Navigation, Breadcrumb & Action Bar           -->
         <!-- ============================================================ -->
         <Border Grid.Row="0"
-                Background="#1E1E1E"
-                BorderBrush="#333333"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="12,7">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto">
@@ -64,21 +68,21 @@
                         </StackPanel>
                     </Button>
 
-                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="#666666" VerticalAlignment="Center" />
+                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
 
-                    <!-- LeetCode-style Script Title Badge & Input -->
-                    <Border Background="#252526"
-                            BorderBrush="#383838"
+                    <!-- Script Title Badge & Input -->
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="1"
-                            CornerRadius="8"
+                            CornerRadius="{StaticResource M3ShapeCornerMedium}"
                             Height="32"
                             Padding="10,0"
                             VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="#EAB308" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                             <TextBox Text="{Binding Script.Title, Mode=TwoWay}"
                                      FontWeight="SemiBold" FontSize="12.5"
-                                     Foreground="#F3F4F6"
+                                     Foreground="{DynamicResource M3OnSurfaceBrush}"
                                      Background="Transparent"
                                      BorderThickness="0"
                                      MinHeight="0"
@@ -107,16 +111,16 @@
                               ToolTip.Tip="Select Execution Mode (LINQPad Statements, Program, or Expression)" />
 
                     <!-- Status Pill -->
-                    <Border Background="#252526"
-                            BorderBrush="#383838"
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="1"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
                             Height="32"
                             Padding="12,0"
                             VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="#D1D5DB" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -149,12 +153,12 @@
                             Padding="12,0"
                             VerticalAlignment="Center"
                             VerticalContentAlignment="Center"
-                            BorderBrush="#EF4444"
-                            Foreground="#EF4444"
+                            BorderBrush="{DynamicResource M3ErrorBrush}"
+                            Foreground="{DynamicResource M3ErrorBrush}"
                             IsVisible="{Binding IsExecuting}"
                             Cursor="Hand">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="#EF4444" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Stop" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -162,8 +166,8 @@
                     <!-- Run Button (F5) -->
                     <Button Command="{Binding RunCodeCommand}"
                             Classes="m3-filled-btn"
-                            Background="#166534"
-                            Foreground="#FFFFFF"
+                            Background="{DynamicResource M3PrimaryBrush}"
+                            Foreground="{DynamicResource M3OnPrimaryBrush}"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
                             Height="32"
                             MinHeight="0"
@@ -174,7 +178,7 @@
                             Cursor="Hand"
                             ToolTip.Tip="Run C# Script (F5)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="#22C55E" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Run (F5)" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -190,12 +194,12 @@
             <!-- 2A. LEFT PANEL: Description, Problem Notes & References   -->
             <!-- ======================================================== -->
             <Border Grid.Column="0"
-                    Background="#1E1E1E"
-                    BorderBrush="#333333"
+                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*">
-                    <!-- Left Tab Bar (LeetCode Style with Top Yellow Accent) -->
-                    <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="0,0,0,1">
+                    <!-- Left Tab Bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
                         <StackPanel Orientation="Horizontal">
                             <!-- Tab 0: Description & Notes -->
                             <Button Command="{Binding SetLeftTabCommand}" CommandParameter="0"
@@ -234,10 +238,10 @@
                         <!-- Content 0: Markdown Notes & Problem Description -->
                         <Grid RowDefinitions="Auto,*">
                             <!-- Character Count & Scratchpad Bar -->
-                            <Border Grid.Row="0" Background="#252526" BorderBrush="#333333" BorderThickness="0,0,0,1" Padding="12,5">
+                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="12,5">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="SCRATCHPAD &amp; DOCUMENTATION" FontSize="10" FontWeight="Bold" Foreground="#6B7280" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Notes.Length, StringFormat='{}{0} chars'}" FontSize="10" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                                    <TextBlock Text="SCRATCHPAD &amp; DOCUMENTATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Notes.Length, StringFormat='{}{0} chars'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
 
@@ -248,8 +252,8 @@
                                      AcceptsTab="True"
                                      FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
                                      FontSize="12.5"
-                                     Foreground="#D1D5DB"
-                                     Background="#1E1E1E"
+                                     Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                     Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                                      BorderThickness="0"
                                      Padding="14,12"
                                      TextWrapping="Wrap"
@@ -260,23 +264,23 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="14,10" Spacing="8">
                                 <TextBlock Text="Referenced .NET Runtime &amp; Studio Assemblies"
-                                           FontSize="11.5" FontWeight="SemiBold" Foreground="#9CA3AF" Margin="0,0,0,4" />
+                                           FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,4" />
 
                                 <ItemsControl ItemsSource="{Binding References}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:AssemblyReferenceViewModel">
                                             <Border Padding="10,6"
-                                                    Background="#252526"
-                                                    BorderBrush="#383838"
+                                                    Background="{DynamicResource M3SurfaceContainerBrush}"
+                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                                     BorderThickness="1"
-                                                    CornerRadius="6"
+                                                    CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                                     Margin="0,0,0,6">
                                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariant" Width="16" Height="16"
-                                                                                Foreground="#EAB308" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                                                Foreground="{DynamicResource M3PrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="#F3F4F6" />
-                                                        <TextBlock Text="{Binding AssemblyPath}" FontSize="10" Foreground="#9CA3AF" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                        <TextBlock Text="{Binding AssemblyPath}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
                                                     <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled}"
                                                               IsEnabled="{Binding !IsSystem}"
@@ -293,7 +297,7 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="14,12" Spacing="12">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="#D1D5DB" VerticalAlignment="Center" />
+                                    <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                                     <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}"
                                             Classes="m3-tonal-btn"
                                             CornerRadius="{StaticResource M3ShapeCornerFull}"
@@ -313,36 +317,39 @@
                                 <ItemsControl ItemsSource="{Binding TestCases}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models:TestCaseItem">
-                                            <Border Background="#252526" BorderBrush="#383838" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                                            <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="{StaticResource M3ShapeCornerMedium}" Padding="12" Margin="0,0,0,10">
                                                 <StackPanel Spacing="8">
                                                     <Grid ColumnDefinitions="*,Auto">
-                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="#EAB308" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                                                         <Button Grid.Column="1"
                                                                 Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RunTestCaseCommand}"
                                                                 CommandParameter="{Binding}"
-                                                                Classes="m3-filled-btn"
-                                                                Background="#166534"
-                                                                Padding="8,3"
+                                                                Classes="m3-tonal-btn"
+                                                                Background="{DynamicResource M3SuccessContainerBrush}"
+                                                                Foreground="{DynamicResource M3OnSuccessContainerBrush}"
+                                                                Padding="10,4"
+                                                                Height="26"
+                                                                MinHeight="0"
                                                                 CornerRadius="{StaticResource M3ShapeCornerFull}"
                                                                 Cursor="Hand">
-                                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="#22C55E" />
-                                                                <TextBlock Text="Run" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="{DynamicResource M3OnSuccessContainerBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Run" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnSuccessContainerBrush}" VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Button>
                                                     </Grid>
 
-                                                    <TextBlock Text="Input:" FontSize="10.5" Foreground="#9CA3AF" />
+                                                    <TextBlock Text="Input:" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                     <TextBox Text="{Binding Input, Mode=TwoWay}"
                                                              FontFamily="Consolas, monospace" FontSize="11.5"
-                                                             Foreground="#F3F4F6" Background="#1A1A1A" BorderBrush="#333" BorderThickness="1"
-                                                             Padding="6" CornerRadius="4" />
+                                                             Foreground="{DynamicResource M3OnSurfaceBrush}" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
+                                                             Padding="6" CornerRadius="{StaticResource M3ShapeCornerSmall}" />
 
-                                                    <TextBlock Text="Expected Output:" FontSize="10.5" Foreground="#9CA3AF" />
+                                                    <TextBlock Text="Expected Output:" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                     <TextBox Text="{Binding ExpectedOutput, Mode=TwoWay}"
                                                              FontFamily="Consolas, monospace" FontSize="11.5"
-                                                             Foreground="#F3F4F6" Background="#1A1A1A" BorderBrush="#333" BorderThickness="1"
-                                                             Padding="6" CornerRadius="4" />
+                                                             Foreground="{DynamicResource M3OnSurfaceBrush}" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
+                                                             Padding="6" CornerRadius="{StaticResource M3ShapeCornerSmall}" />
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
@@ -357,7 +364,7 @@
             <!-- Column Splitter (Left vs Right) -->
             <GridSplitter Grid.Column="1"
                           Width="4"
-                          Background="#1A1A1A"
+                          Background="{DynamicResource M3OutlineVariantBrush}"
                           ResizeDirection="Columns"
                           Cursor="SizeWestEast" />
 
@@ -366,7 +373,7 @@
             <!-- ======================================================== -->
             <Grid Grid.Column="2" RowDefinitions="*,4,Auto">
                 <!-- Upper: High-Performance C# AvaloniaEdit -->
-                <Border Grid.Row="0" Background="#14171F">
+                <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
                     <avaloniaEdit:TextEditor Name="Editor"
                                              FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
                                              FontSize="13.5"
@@ -374,14 +381,14 @@
                                              WordWrap="False"
                                              HorizontalScrollBarVisibility="Auto"
                                              VerticalScrollBarVisibility="Auto"
-                                             Background="#14171F"
-                                             Foreground="#D4D4D4" />
+                                             Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                             Foreground="{DynamicResource M3OnSurfaceBrush}" />
                 </Border>
 
                 <!-- Horizontal Splitter (Editor vs Bottom Deck) -->
                 <GridSplitter Grid.Row="1"
                               Height="4"
-                              Background="#1A1A1A"
+                              Background="{DynamicResource M3OutlineVariantBrush}"
                               ResizeDirection="Rows"
                               Cursor="SizeNorthSouth"
                               IsVisible="{Binding IsBottomDeckExpanded}" />
@@ -389,13 +396,13 @@
                 <!-- Lower: Collapsible Tool Deck (Console, Problems, Test Results) -->
                 <Border Grid.Row="2"
                         Height="230"
-                        Background="#1E1E1E"
-                        BorderBrush="#333333"
+                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                         BorderThickness="0,1,0,0"
                         IsVisible="{Binding IsBottomDeckExpanded}">
                     <Grid RowDefinitions="Auto,*">
                         <!-- Tool Deck Tab Bar -->
-                        <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="0,0,0,1">
+                        <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                                     <!-- Tab 0: Console Output -->
@@ -403,7 +410,7 @@
                                             Classes="ide-tab-btn"
                                             Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#38BDF8" />
+                                            <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
                                             <TextBlock Text="Console Output (.Dump)" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
@@ -413,11 +420,11 @@
                                             Classes="ide-tab-btn"
                                             Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#F59E0B" />
+                                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource M3WarningBrush}" />
                                             <TextBlock Text="Problems" VerticalAlignment="Center" />
-                                            <Border Background="#EF4444" CornerRadius="10" Padding="5,1"
+                                            <Border Background="{DynamicResource M3ErrorBrush}" CornerRadius="{StaticResource M3ShapeCornerFull}" Padding="6,1"
                                                     IsVisible="{Binding ErrorCount}">
-                                                <TextBlock Text="{Binding ErrorCount}" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                                <TextBlock Text="{Binding ErrorCount}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3OnErrorBrush}" />
                                             </Border>
                                         </StackPanel>
                                     </Button>
@@ -429,13 +436,13 @@
                                             Classes="m3-icon-btn"
                                             ToolTip.Tip="Clear Console"
                                             Cursor="Hand">
-                                        <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="#9CA3AF" />
+                                        <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
                                     <Button Command="{Binding ToggleBottomDeckCommand}"
                                             Classes="m3-icon-btn"
                                             ToolTip.Tip="Minimize Deck"
                                             Cursor="Hand">
-                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#9CA3AF" />
+                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -444,13 +451,13 @@
                         <!-- Tool Deck Content -->
                         <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedBottomTabIndex}">
                             <!-- Tab 0: Console Output -->
-                            <Border Background="#0D1117" Padding="12,8">
+                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
                                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                     <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
                                              FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
                                              FontSize="12"
                                              Background="Transparent"
-                                             Foreground="#58A6FF"
+                                             Foreground="{DynamicResource M3PrimaryBrush}"
                                              BorderThickness="0"
                                              IsReadOnly="True"
                                              TextWrapping="Wrap" />
@@ -461,7 +468,7 @@
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="12,8">
                                     <TextBlock Text="No problems detected. Ready to run."
-                                               FontSize="12" Foreground="#9CA3AF"
+                                               FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                Margin="10"
                                                IsVisible="{Binding !Diagnostics.Count}" />
 
@@ -469,7 +476,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
                                                 <Border Background="Transparent"
-                                                        BorderBrush="#333333"
+                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                                         BorderThickness="0,0,0,1"
                                                         Padding="8,6">
                                                     <Button Command="{Binding NavigateCommand}"
@@ -490,11 +497,11 @@
                                                                 <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11.5"
                                                                             Foreground="{Binding SeverityColorHex}" />
                                                                 <TextBlock Text="{Binding Message}" FontSize="12"
-                                                                            Foreground="#F3F4F6"
+                                                                            Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                                             TextTrimming="CharacterEllipsis" />
                                                             </StackPanel>
                                                             <TextBlock Grid.Column="2" Text="{Binding LocationString}"
-                                                                        FontSize="11" Foreground="#9CA3AF"
+                                                                        FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                                         VerticalAlignment="Center" Margin="8,0,0,0" />
                                                         </Grid>
                                                     </Button>
@@ -514,8 +521,8 @@
         <!-- 3. FOOTER STATUS BAR: Console Toggle, Ln/Col, Status        -->
         <!-- ============================================================ -->
         <Border Grid.Row="2"
-                Background="#1E1E1E"
-                BorderBrush="#333333"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="12,3">
             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
@@ -530,23 +537,23 @@
                         VerticalContentAlignment="Center"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="#9CA3AF" VerticalAlignment="Center" />
-                        <TextBlock Text="Console" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Console" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
                 <!-- Center: Elapsed Time -->
                 <TextBlock Grid.Column="1" Text="{Binding ExecutionTimeText, StringFormat='{}Execution Time: {0}'}"
-                           FontSize="10.5" Foreground="#9CA3AF"
+                           FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                            Margin="14,0,0,0" VerticalAlignment="Center"
                            IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                 <!-- Right: Ln, Col, Encoding, Language Status -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
-                    <TextBlock Text="UTF-8" FontSize="10.5" Foreground="#9CA3AF" VerticalAlignment="Center" />
-                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" FontWeight="SemiBold" Foreground="#EAB308" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="UTF-8" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>

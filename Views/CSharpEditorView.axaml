@@ -124,12 +124,12 @@
                             Classes="m3-outlined-btn"
                             CornerRadius="{StaticResource M3ShapeCornerFull}"
                             Padding="12,6"
-                            BorderBrush="#EF4444"
-                            Foreground="#EF4444"
+                            BorderBrush="{DynamicResource M3ErrorBrush}"
+                            Foreground="{DynamicResource M3ErrorBrush}"
                             IsVisible="{Binding IsExecuting}"
                             Cursor="Hand">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="Stop" Width="16" Height="16" Foreground="#EF4444" />
+                            <materialIcons:MaterialIcon Kind="Stop" Width="16" Height="16" Foreground="{DynamicResource M3ErrorBrush}" />
                             <TextBlock Text="Stop" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -254,20 +254,20 @@
                                                                 Classes="m3-icon-btn"
                                                                 ToolTip.Tip="Delete Cell"
                                                                 Cursor="Hand">
-                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#EF4444" />
+                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource M3ErrorBrush}" />
                                                         </Button>
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
 
                                             <!-- Cell Body (Editor) -->
-                                            <Border Grid.Row="1" Background="#14171F" Padding="12,8">
+                                            <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
                                                 <TextBox Text="{Binding Source, Mode=TwoWay}"
                                                          AcceptsReturn="True"
                                                          AcceptsTab="True"
                                                          FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
                                                          FontSize="13"
-                                                         Foreground="#E2E8F0"
+                                                         Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                          Background="Transparent"
                                                          BorderThickness="0"
                                                          MinHeight="80"
@@ -276,7 +276,7 @@
 
                                             <!-- Inline Cell Output Box (Directly Underneath) -->
                                             <Border Grid.Row="2"
-                                                    Background="#0D1117"
+                                                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                                     BorderThickness="0,1,0,0"
                                                     Padding="14,10"
@@ -293,7 +293,7 @@
                                                              Text="{Binding OutputText, Mode=OneWay}"
                                                              FontFamily="Consolas, Menlo, Monaco, monospace"
                                                              FontSize="12"
-                                                             Foreground="#58A6FF"
+                                                             Foreground="{DynamicResource M3PrimaryBrush}"
                                                              Background="Transparent"
                                                              BorderThickness="0"
                                                              IsReadOnly="True"
@@ -364,7 +364,7 @@
             <!-- ============================================== -->
             <Grid IsVisible="{Binding !IsNotebookMode}" RowDefinitions="*,Auto">
                 <!-- Central Code Editor -->
-                <Border Grid.Row="0" Background="#14171F">
+                <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
                     <avaloniaEdit:TextEditor Name="Editor"
                                              FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
                                              FontSize="13.5"
@@ -372,8 +372,8 @@
                                              WordWrap="False"
                                              HorizontalScrollBarVisibility="Auto"
                                              VerticalScrollBarVisibility="Auto"
-                                             Background="#14171F"
-                                             Foreground="#E2E8F0" />
+                                             Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                             Foreground="{DynamicResource M3OnSurfaceBrush}" />
                 </Border>
 
                 <!-- Bottom Tool Deck (Problems / Output / References) -->
@@ -401,9 +401,9 @@
                                             <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14"
                                                                         Foreground="{DynamicResource M3PrimaryBrush}" />
                                             <TextBlock Text="Problems" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
-                                            <Border Background="#EF4444" CornerRadius="10" Padding="5,1"
+                                            <Border Background="{DynamicResource M3ErrorBrush}" CornerRadius="10" Padding="5,1"
                                                     IsVisible="{Binding ErrorCount}">
-                                                <TextBlock Text="{Binding ErrorCount}" FontSize="9.5" FontWeight="Bold" Foreground="White" />
+                                                <TextBlock Text="{Binding ErrorCount}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource M3OnErrorBrush}" />
                                             </Border>
                                         </StackPanel>
                                     </Button>
@@ -497,15 +497,14 @@
                             </ScrollViewer>
 
                             <!-- Tab 1: Console Output -->
-                            <Border Background="#0D1117" Padding="12,8">
-                                <ScrollViewer Name="ConsoleScrollViewer"
-                                              HorizontalScrollBarVisibility="Auto"
+                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto"
                                               VerticalScrollBarVisibility="Auto">
                                     <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
                                              FontFamily="Consolas, Menlo, Monaco, monospace"
                                              FontSize="12"
                                              Background="Transparent"
-                                             Foreground="#58A6FF"
+                                             Foreground="{DynamicResource M3PrimaryBrush}"
                                              BorderThickness="0"
                                              IsReadOnly="True"
                                              TextWrapping="Wrap" />

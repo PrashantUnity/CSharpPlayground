@@ -76,7 +76,7 @@ public class CSharpEditorPlugin : IFryPlugin
             Group = "Overview",
             IconKind = "CodeBraces",
             BadgeText = "Studio",
-            BadgeColorHex = "#10B981",
+            BadgeColorHex = "#75D59A",
             Order = 38,
             DisplayMode = NavigationDisplayMode.FullViewport,
             HideTopSearchBar = true,

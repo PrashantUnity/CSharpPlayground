@@ -25,7 +25,7 @@ public class WorkspaceItemSummary
     public bool IsScript => Kind == WorkspaceItemKind.Script;
     public string KindLabel => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeText => IsNotebook ? "Notebook" : "Script";
-    public string KindBadgeColor => IsNotebook ? "#0284C7" : "#10B981";
+    public string KindBadgeColor => IsNotebook ? "#C4D4EE" : "#A8C7FA";
 
     public MaterialIconKind IconKind => Kind switch
     {
@@ -39,41 +39,11 @@ public class WorkspaceItemSummary
         }
     };
 
-    public string IconForeground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => "#38BDF8",
-        _ => Category switch
-        {
-            "Algorithms" => "#FBBF24",
-            "LINQPad" => "#2DD4BF",
-            "Automation" => "#F87171",
-            _ => "#34D399"
-        }
-    };
+    public string IconForeground => "#A8C7FA";
 
-    public string IconBackground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => "#082F49",
-        _ => Category switch
-        {
-            "Algorithms" => "#301B05",
-            "LINQPad" => "#042F2E",
-            "Automation" => "#350E0E",
-            _ => "#062E22"
-        }
-    };
+    public string IconBackground => "#1E2536";
 
-    public string IconBorder => Kind switch
-    {
-        WorkspaceItemKind.Notebook => "#0284C7",
-        _ => Category switch
-        {
-            "Algorithms" => "#92400E",
-            "LINQPad" => "#0D9488",
-            "Automation" => "#991B1B",
-            _ => "#065F46"
-        }
-    };
+    public string IconBorder => "#2D374D";
 
     public string FormattedLastModified
     {

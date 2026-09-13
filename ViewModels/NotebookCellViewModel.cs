@@ -137,9 +137,9 @@ public partial class NotebookCellViewModel : ObservableObject
     public bool IsEditingMarkdown => IsMarkdownCell && !IsMarkdownPreviewMode;
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
 
-    public string StatusBadgeForeground => HasError ? "#F87171" : IsExecuting ? "#38BDF8" : ExecutionCount.HasValue ? "#34D399" : "#64748B";
-    public string StatusBadgeBackground => HasError ? "#350E0E" : IsExecuting ? "#082F49" : ExecutionCount.HasValue ? "#062E22" : "#161E2E";
-    public string StatusBadgeBorder => HasError ? "#991B1B" : IsExecuting ? "#0284C7" : ExecutionCount.HasValue ? "#059669" : "#243048";
+    public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#A8C7FA" : "#9BA1AD";
+    public string StatusBadgeBackground => HasError ? "#371B1D" : IsExecuting ? "#1A2840" : ExecutionCount.HasValue ? "#1E2536" : "#1A202C";
+    public string StatusBadgeBorder => HasError ? "#8C1D18" : IsExecuting ? "#385A9E" : ExecutionCount.HasValue ? "#2D374D" : "#2A313E";
 
     public string MarkdownTitle
     {

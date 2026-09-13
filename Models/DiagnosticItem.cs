@@ -24,9 +24,9 @@ public class DiagnosticItem
 
     public string SeverityColorHex => Severity switch
     {
-        DiagnosticSeverity.Error => "#EF4444",
-        DiagnosticSeverity.Warning => "#F59E0B",
-        DiagnosticSeverity.Info => "#3B82F6",
-        _ => "#94A3B8"
+        DiagnosticSeverity.Error => "#FFB4AB",
+        DiagnosticSeverity.Warning => "#FBBF24",
+        DiagnosticSeverity.Info => "#A8C7FA",
+        _ => "#9BA1AD"
     };
 }

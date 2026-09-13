@@ -15,9 +15,9 @@ public class CodeTemplate
     public WorkspaceItemKind Kind { get; set; } = WorkspaceItemKind.Script;
     public List<TestCaseItem> TestCases { get; set; } = new();
 
-    public string AccentColor { get; set; } = "#0EA5E9";
-    public string AccentBackground { get; set; } = "#082F49";
-    public string AccentBorder { get; set; } = "#0284C7";
+    public string AccentColor { get; set; } = "#A8C7FA";
+    public string AccentBackground { get; set; } = "#0F387D";
+    public string AccentBorder { get; set; } = "#A8C7FA";
     public string CategoryBadge { get; set; } = "Preset";
     public List<string> Tags { get; set; } = new();
 
