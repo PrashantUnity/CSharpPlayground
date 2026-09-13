@@ -8,6 +8,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation.CSharp;
 using AvaloniaEdit.Search;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class CSharpCodeStudioView : UserControl
     private TextEditor? _editor;
     private FoldingManager? _foldingManager;
     private SearchPanel? _searchPanel;
+    private CSharpEditorCompletionController? _completionController;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
     private CSharpCodeStudioViewModel? _currentVm;
@@ -123,6 +125,8 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestUnfoldAll -= UnfoldAll;
             _currentVm.RequestToggleSearch -= ToggleSearch;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
+            _completionController?.Dispose();
+            _completionController = null;
         }
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
@@ -134,6 +138,11 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestUnfoldAll += UnfoldAll;
             _currentVm.RequestToggleSearch += ToggleSearch;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
+
+            _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
+            {
+                LanguageMode = _currentVm.CurrentLanguageMode
+            };
 
             _editor.WordWrap = _currentVm.IsWordWrap;
 
@@ -157,6 +166,13 @@ public partial class CSharpCodeStudioView : UserControl
         if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsWordWrap))
         {
             _editor.WordWrap = _currentVm.IsWordWrap;
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.SelectedLanguageModeIndex))
+        {
+            if (_completionController != null)
+            {
+                _completionController.LanguageMode = _currentVm.CurrentLanguageMode;
+            }
         }
     }
 

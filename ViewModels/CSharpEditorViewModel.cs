@@ -15,6 +15,7 @@ public partial class CSharpEditorViewModel : ObservableObject
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
+    public RoslynCompilerService CompilerService => _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
     private readonly Action _backToManagerAction;
 

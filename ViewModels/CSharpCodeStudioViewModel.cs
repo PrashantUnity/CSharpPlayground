@@ -16,6 +16,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
+    public RoslynCompilerService CompilerService => _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
     private readonly NotebookExecutionKernel _kernel;
     private readonly Action _backToHubAction;

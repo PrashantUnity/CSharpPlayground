@@ -28,6 +28,7 @@ public class RoslynCompilerService
     private readonly List<AssemblyReferenceItem> _referenceItems = new();
 
     public IReadOnlyList<AssemblyReferenceItem> AvailableReferences => _referenceItems;
+    public IReadOnlyList<MetadataReference> DefaultReferences => _defaultReferences;
 
     public RoslynCompilerService()
     {

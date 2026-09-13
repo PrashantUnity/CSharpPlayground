@@ -6,6 +6,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation.CSharp;
 using AvaloniaEdit.Search;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class CSharpEditorView : UserControl
 {
     private TextEditor? _editor;
     private FoldingManager? _foldingManager;
+    private CSharpEditorCompletionController? _completionController;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
     private CSharpEditorViewModel? _currentVm;
@@ -101,6 +103,8 @@ public partial class CSharpEditorView : UserControl
         if (_currentVm != null)
         {
             _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
+            _completionController?.Dispose();
+            _completionController = null;
         }
 
         _currentVm = DataContext as CSharpEditorViewModel;
@@ -108,6 +112,11 @@ public partial class CSharpEditorView : UserControl
         if (_currentVm != null && _editor != null)
         {
             _currentVm.RequestNavigateToCaret += OnNavigateToCaret;
+
+            _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
+            {
+                LanguageMode = _currentVm.CurrentLanguageMode
+            };
 
             _isUpdatingText = true;
             try

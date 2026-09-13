@@ -41,6 +41,8 @@ public class BindableTextEditor : TextEditor
     private bool _isSyncing;
     private readonly FoldingManager? _foldingManager;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
+    private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
+    private readonly CSharpEditorCompletionController _completionController;
 
     public BindableTextEditor()
     {
@@ -68,6 +70,8 @@ public class BindableTextEditor : TextEditor
 
         _foldingManager = AvaloniaEdit.Folding.FoldingManager.Install(TextArea);
         PolishLeftMargins();
+
+        _completionController = new CSharpEditorCompletionController(this, SharedCompiler.Value);
 
         TextChanged += OnEditorTextChanged;
     }
