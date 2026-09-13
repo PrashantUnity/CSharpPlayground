@@ -372,12 +372,76 @@
             <!-- ======================================================== -->
             <!-- 2B. RIGHT PANEL: C# Code Editor + Bottom Tool Deck        -->
             <!-- ======================================================== -->
-            <Grid Grid.Column="2" RowDefinitions="*,4,280">
+            <Grid Grid.Column="2" RowDefinitions="Auto,*,4,280">
+                <!-- Editor Sub-Toolbar: Folding, Word Wrap, Find, Format -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="0,0,0,1"
+                        Height="32"
+                        Padding="10,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Left: File / Language Breadcrumb -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="4,1" Margin="4,0,0,0">
+                                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Right: Editor Shortcuts & Folding Controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <!-- Fold All -->
+                            <Button Command="{Binding FoldAllCommand}"
+                                    Classes="m3-icon-btn"
+                                    Width="26" Height="26"
+                                    ToolTip.Tip="Fold All Code Blocks (Ctrl+Shift+[)">
+                                <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+
+                            <!-- Unfold All -->
+                            <Button Command="{Binding UnfoldAllCommand}"
+                                    Classes="m3-icon-btn"
+                                    Width="26" Height="26"
+                                    ToolTip.Tip="Unfold All Code Blocks (Ctrl+Shift+])">
+                                <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+
+                            <Rectangle Width="1" Height="14" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
+
+                            <!-- Word Wrap Toggle -->
+                            <ToggleButton IsChecked="{Binding IsWordWrap, Mode=TwoWay}"
+                                          Classes="m3-icon-btn"
+                                          Width="26" Height="26"
+                                          ToolTip.Tip="Toggle Word Wrap">
+                                <materialIcons:MaterialIcon Kind="Wrap" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </ToggleButton>
+
+                            <!-- Search / Find -->
+                            <Button Command="{Binding ToggleSearchCommand}"
+                                    Classes="m3-icon-btn"
+                                    Width="26" Height="26"
+                                    ToolTip.Tip="Find &amp; Replace (Ctrl+F / ⌘F)">
+                                <materialIcons:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+
+                            <!-- Format Code -->
+                            <Button Command="{Binding FormatCodeCommand}"
+                                    Classes="m3-icon-btn"
+                                    Width="26" Height="26"
+                                    ToolTip.Tip="Format Document (Ctrl+K Ctrl+D)">
+                                <materialIcons:MaterialIcon Kind="FormatIndentIncrease" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
                 <!-- Upper: High-Performance C# AvaloniaEdit -->
-                <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
                     <avaloniaEdit:TextEditor Name="Editor"
-                                             FontFamily="Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"
-                                             FontSize="13.5"
+                                             FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
+                                             FontSize="13"
                                              ShowLineNumbers="True"
                                              WordWrap="False"
                                              HorizontalScrollBarVisibility="Auto"
@@ -387,7 +451,7 @@
                 </Border>
 
                 <!-- Horizontal Splitter (Editor vs Bottom Deck) -->
-                <GridSplitter Grid.Row="1"
+                <GridSplitter Grid.Row="2"
                               Height="4"
                               Background="{DynamicResource M3OutlineVariantBrush}"
                               ResizeDirection="Rows"
@@ -395,7 +459,7 @@
                               IsVisible="{Binding IsBottomDeckExpanded}" />
 
                 <!-- Lower: Collapsible Tool Deck (Visual Results, Console, Problems, Test Results) -->
-                <Border Grid.Row="2"
+                <Border Grid.Row="3"
                         MinHeight="140"
                         VerticalAlignment="Stretch"
                         Background="{DynamicResource M3SurfaceContainerLowBrush}"

@@ -63,16 +63,16 @@ public class Solution
     }
 }
 
-// 🧪 Test Execution
+// Execute test cases
 var sol = new Solution();
 
 int[] test1 = sol.TwoSum(new int[] { 2, 7, 11, 15 }, 9);
-test1.Dump(""Case 1 Result (Expect [0, 1])"");
+test1.Dump(""Test Case 1 (Target = 9)"");
 
 int[] test2 = sol.TwoSum(new int[] { 3, 2, 4 }, 6);
-test2.Dump(""Case 2 Result (Expect [1, 2])"");
+test2.Dump(""Test Case 2 (Target = 6)"");
 
-Console.WriteLine(""\n✅ Algorithm executed successfully!"");",
+Console.WriteLine(""All test cases evaluated successfully."");",
             TestCases = new List<TestCaseItem>
             {
                 new() { Name = "Case 1", Input = "nums = [2,7,11,15], target = 9", ExpectedOutput = "[0, 1]" },
@@ -83,7 +83,7 @@ Console.WriteLine(""\n✅ Algorithm executed successfully!"");",
         new()
         {
             Id = "csharp_scratchpad",
-            Title = "C# Scratchpad (.Dump)",
+            Title = "C# Interactive Scratchpad",
             Category = "Scratchpad",
             Kind = WorkspaceItemKind.Script,
             Description = "Fast expression & statements scratchpad with instant .Dump() inspection and zero boilerplate.",
@@ -97,27 +97,29 @@ Console.WriteLine(""\n✅ Algorithm executed successfully!"");",
 
 Write instant C# statements without `class Program` or `Main()`.
 Call `.Dump()` on any object, collection, or calculation to format output immediately.",
-            InitialCode = @"// ⚡ Instant C# statements with .Dump()!
+            InitialCode = @"// C# Top-Level Statements with Interactive .Dump()
 using System;
 using System.Linq;
 
-var studioInfo = new {
-    Title = ""FryPDF Document Studio"",
+// Inspect runtime environment and application metadata
+var environment = new {
+    Application = ""FryPDF Document Studio"",
     Version = ""2026.1"",
-    Engine = "".NET 10 (C# 13)"",
-    Features = new[] { ""PDF Rendering"", ""Page Manipulation"", ""C# Scripting"", ""M3 Themes"" }
+    Runtime = "".NET 10 (C# 13)"",
+    Compiler = ""Microsoft.CodeAnalysis.CSharp (Roslyn)"",
+    Modules = new[] { ""PDF Rendering"", ""Document Automation"", ""C# Studio"", ""Vector Canvas"" }
 };
 
-studioInfo.Dump(""Document Studio Status"");
+environment.Dump(""Studio Environment Metadata"");
 
-// LINQ transformation on numbers:
-var powers = Enumerable.Range(1, 8)
+// LINQ sequence projections and calculations
+var calculations = Enumerable.Range(1, 8)
     .Select(n => new { Number = n, Square = n * n, Cube = n * n * n })
     .ToList();
 
-powers.Dump(""Calculated Powers"");
+calculations.Dump(""Calculated Power Sequences"");
 
-Console.WriteLine(""\n✨ Try typing any statement or expression!"");"
+Console.WriteLine(""Script evaluation completed successfully."");"
         },
         new()
         {
@@ -141,8 +143,8 @@ public static class Program
 {
     public static void Main()
     {
-        Console.WriteLine(""📄 FryPDF Document Automation Script"");
-        Console.WriteLine(""--------------------------------------"");
+        Console.WriteLine(""FryPDF Document Automation Pipeline"");
+        Console.WriteLine(""------------------------------------"");
 
         var metadata = new
         {
@@ -154,7 +156,7 @@ public static class Program
         };
 
         metadata.Dump(""PDF Metadata Profile"");
-        Console.WriteLine(""✅ Document automation batch completed."");
+        Console.WriteLine(""Document automation pipeline completed successfully."");
     }
 }"
         },
@@ -224,7 +226,7 @@ for (int i = 0; i < 5; i++)
 
 // Display the rendered image directly in the cell output!
 Display.Image(surface.Snapshot());
-Console.WriteLine(""✨ Rendered high-fidelity SkiaSharp graphics directly into cell output!"");"
+Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
         }
     };
 }

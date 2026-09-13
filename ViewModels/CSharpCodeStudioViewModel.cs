@@ -83,6 +83,40 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     };
 
     public event Action<int, int>? RequestNavigateToCaret;
+    public event Action? RequestFoldAll;
+    public event Action? RequestUnfoldAll;
+    public event Action? RequestToggleSearch;
+
+    [ObservableProperty]
+    private bool _isWordWrap;
+
+    [RelayCommand]
+    public void FoldAll() => RequestFoldAll?.Invoke();
+
+    [RelayCommand]
+    public void UnfoldAll() => RequestUnfoldAll?.Invoke();
+
+    [RelayCommand]
+    public void ToggleSearch() => RequestToggleSearch?.Invoke();
+
+    [RelayCommand]
+    public void ToggleWordWrap() => IsWordWrap = !IsWordWrap;
+
+    [RelayCommand]
+    public void FormatCode()
+    {
+        if (string.IsNullOrWhiteSpace(Code)) return;
+        try
+        {
+            var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Code);
+            var root = tree.GetRoot();
+            Code = Microsoft.CodeAnalysis.SyntaxNodeExtensions.NormalizeWhitespace(root).ToFullString();
+        }
+        catch
+        {
+            // Ignore format errors if code has syntax errors
+        }
+    }
 
     public ExecutionLanguageMode CurrentLanguageMode => SelectedLanguageModeIndex switch
     {

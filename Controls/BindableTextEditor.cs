@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using AvaloniaEdit;
+using AvaloniaEdit.Folding;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
@@ -38,6 +39,8 @@ public class BindableTextEditor : TextEditor
     }
 
     private bool _isSyncing;
+    private readonly FoldingManager? _foldingManager;
+    private readonly CSharpFoldingStrategy _foldingStrategy = new();
 
     public BindableTextEditor()
     {
@@ -47,7 +50,7 @@ public class BindableTextEditor : TextEditor
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
-        FontFamily = new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
+        FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace");
         FontSize = 13;
 
         Background = new SolidColorBrush(Color.Parse("#14171F"));
@@ -58,7 +61,46 @@ public class BindableTextEditor : TextEditor
         TextArea.SelectionForeground = null;
         TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
 
+        Options.HighlightCurrentLine = true;
+        Options.ConvertTabsToSpaces = true;
+        Options.IndentationSize = 4;
+        TextArea.IndentationStrategy = new AvaloniaEdit.Indentation.CSharp.CSharpIndentationStrategy(Options);
+
+        _foldingManager = AvaloniaEdit.Folding.FoldingManager.Install(TextArea);
+        PolishLeftMargins();
+
         TextChanged += OnEditorTextChanged;
+    }
+
+    private void PolishLeftMargins()
+    {
+        for (int i = TextArea.LeftMargins.Count - 1; i >= 0; i--)
+        {
+            var margin = TextArea.LeftMargins[i];
+            if (margin.GetType().Name.Contains("DottedLineMargin"))
+            {
+                TextArea.LeftMargins.RemoveAt(i);
+            }
+            else if (margin is AvaloniaEdit.Folding.FoldingMargin foldingMargin)
+            {
+                foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
+                foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
+                foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+                foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+            }
+        }
+    }
+
+    private void UpdateCodeFolding()
+    {
+        if (_foldingManager != null && Document != null)
+        {
+            try
+            {
+                _foldingStrategy.UpdateFoldings(_foldingManager, Document);
+            }
+            catch { }
+        }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -71,6 +113,7 @@ public class BindableTextEditor : TextEditor
             try
             {
                 Text = TextContent;
+                UpdateCodeFolding();
             }
             finally
             {
@@ -89,6 +132,7 @@ public class BindableTextEditor : TextEditor
             try
             {
                 Text = TextContent;
+                UpdateCodeFolding();
             }
             finally
             {
