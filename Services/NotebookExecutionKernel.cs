@@ -335,9 +335,38 @@ public class NotebookExecutionKernel
             return;
         }
 
-        // Plain value representation
-        var formatted = FormatValue(returnValue);
-        onLiveConsole?.Invoke(formatted + Environment.NewLine);
+        // 1. If it's a 1D collection of scalars (e.g. List<int> -> [ 1, 3, 4, 5, 6, 7, 8, 10 ])
+        if (ObjectInspectorBuilder.IsCollectionOfScalars(returnValue, out var inlineFormatted))
+        {
+            onLiveConsole?.Invoke(inlineFormatted + Environment.NewLine);
+            return;
+        }
+
+        // 2. If it's a scalar primitive / string
+        if (ObjectInspectorBuilder.IsScalarType(returnValue.GetType()))
+        {
+            var formattedScalar = FormatValue(returnValue);
+            onLiveConsole?.Invoke(formattedScalar + Environment.NewLine);
+            return;
+        }
+
+        // 3. If it's a complex object (e.g. var people = new People(); people)
+        try
+        {
+            var inspectorNode = ObjectInspectorBuilder.Build(returnValue);
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.ObjectInspector,
+                InspectorNode = inspectorNode
+            });
+            return;
+        }
+        catch
+        {
+            // Fallback to plain string representation
+            var formatted = FormatValue(returnValue);
+            onLiveConsole?.Invoke(formatted + Environment.NewLine);
+        }
     }
 
     public IReadOnlyList<NotebookVariableInfo> GetActiveVariables()

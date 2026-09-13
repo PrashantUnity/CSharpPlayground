@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.ObjectInspectorView"
+             x:DataType="models:ObjectInspectorNode">
+
+    <StackPanel Spacing="3" Margin="0,1">
+        <!-- 1. Header Row (e.g. ▼ Submission#16+People) -->
+        <Button Command="{Binding ToggleExpandCommand}"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                Cursor="Hand"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- Triangle Disclosure Arrow -->
+                <TextBlock Text="{Binding ToggleIcon}"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                           VerticalAlignment="Center"
+                           Width="12" />
+
+                <!-- Type Name Chip -->
+                <Border Background="#2B2418"
+                        BorderBrush="#4D3E24"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="6,1"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="{Binding HeaderTitle}"
+                               FontFamily="Consolas, Menlo, Cascadia Code, monospace"
+                               FontSize="11.5"
+                               FontWeight="SemiBold"
+                               FontStyle="Italic"
+                               Foreground="#E5C07B"
+                               VerticalAlignment="Center" />
+                </Border>
+            </StackPanel>
+        </Button>
+
+        <!-- 2. Properties Key-Value Table (Visible only when expanded) -->
+        <ItemsControl ItemsSource="{Binding Properties}"
+                      IsVisible="{Binding IsExpanded}"
+                      Margin="16,2,0,2">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ObjectInspectorPropertyRow">
+                    <Panel Margin="0,1.5">
+                        <!-- Case A: Simple Scalar or Inline Array Property Row -->
+                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsComplexChild}">
+                            <!-- Column 0: Property Name -->
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Name}"
+                                       MinWidth="120"
+                                       FontFamily="Consolas, Menlo, Cascadia Code, monospace"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,16,0" />
+
+                            <!-- Column 1: Value Display -->
+                            <Panel Grid.Column="1" VerticalAlignment="Center">
+                                <!-- Null Value (<null>) -->
+                                <TextBlock Text="&lt;null&gt;"
+                                           FontFamily="Consolas, Menlo, Cascadia Code, monospace"
+                                           FontSize="12"
+                                           FontStyle="Italic"
+                                           Foreground="#6E7681"
+                                           IsVisible="{Binding IsNull}"
+                                           VerticalAlignment="Center" />
+
+                                <!-- Non-Null Simple Value / Formatted Array -->
+                                <TextBlock Text="{Binding SimpleValueText}"
+                                           FontFamily="Consolas, Menlo, Cascadia Code, monospace"
+                                           FontSize="12"
+                                           Foreground="#D4D4D4"
+                                           IsVisible="{Binding !IsNull}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap" />
+                            </Panel>
+                        </Grid>
+
+                        <!-- Case B: Complex Child Object (Recursive Nested Inspector) -->
+                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsComplexChild}">
+                            <!-- Column 0: Property Name -->
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Name}"
+                                       MinWidth="120"
+                                       FontFamily="Consolas, Menlo, Cascadia Code, monospace"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                       VerticalAlignment="Top"
+                                       Margin="0,3,16,0" />
+
+                            <!-- Column 1: Nested Child Object Inspector -->
+                            <views:ObjectInspectorView Grid.Column="1"
+                                                       DataContext="{Binding ChildNode}"
+                                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Panel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

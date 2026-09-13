@@ -68,8 +68,18 @@ public partial class NotebookCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasTableOutput;
 
+    [ObservableProperty]
+    private ObjectInspectorNode? _inspectorNode;
+
+    [ObservableProperty]
+    private bool _hasInspectorOutput;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
+    public string LanguageTag => IsCodeCell ? "C#" : "MD";
 
     public string ExecutionBadgeText => IsExecuting ? "[*]" : ExecutionCount.HasValue ? $"[{ExecutionCount}]" : "[ ]";
 
@@ -133,6 +143,7 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.Type = value;
         OnPropertyChanged(nameof(IsCodeCell));
         OnPropertyChanged(nameof(IsMarkdownCell));
+        OnPropertyChanged(nameof(LanguageTag));
         OnPropertyChanged(nameof(IsEditingMarkdown));
         OnPropertyChanged(nameof(IsViewingMarkdown));
     }
@@ -164,6 +175,7 @@ public partial class NotebookCellViewModel : ObservableObject
     partial void OnExecutionTimeTextChanged(string value)
     {
         Model.ExecutionTimeText = value;
+        OnPropertyChanged(nameof(ExecutionDurationShortText));
     }
 
     partial void OnHasErrorChanged(bool value)
@@ -179,10 +191,12 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.IsMarkdownPreviewMode = value;
         OnPropertyChanged(nameof(IsEditingMarkdown));
         OnPropertyChanged(nameof(IsViewingMarkdown));
+        OnPropertyChanged(nameof(MarkdownPreviewButtonText));
     }
 
     public bool IsEditingMarkdown => IsMarkdownCell && !IsMarkdownPreviewMode;
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
+    public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 
     public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#A8C7FA" : "#9BA1AD";
     public string StatusBadgeBackground => HasError ? "#371B1D" : IsExecuting ? "#1A2840" : ExecutionCount.HasValue ? "#1E2536" : "#1A202C";
@@ -288,6 +302,31 @@ public partial class NotebookCellViewModel : ObservableObject
         HasOutput = true;
     }
 
+    public void SetInspectorOutput(ObjectInspectorNode inspector)
+    {
+        InspectorNode = inspector;
+        HasInspectorOutput = true;
+        HasOutput = true;
+    }
+
+    public string ExecutionDurationShortText
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(ExecutionTimeText)) return string.Empty;
+            // If ExecutionTimeText is like "700 ms", convert to "0.7s"
+            if (ExecutionTimeText.EndsWith(" ms", StringComparison.OrdinalIgnoreCase))
+            {
+                var numStr = ExecutionTimeText.Substring(0, ExecutionTimeText.Length - 3).Trim();
+                if (double.TryParse(numStr, out var ms))
+                {
+                    return $"{ms / 1000.0:F1}s";
+                }
+            }
+            return ExecutionTimeText;
+        }
+    }
+
     [RelayCommand]
     public async Task CopyImageAsync()
     {
@@ -358,7 +397,11 @@ public partial class NotebookCellViewModel : ObservableObject
         TableResult = null;
         HasTableOutput = false;
 
+        InspectorNode = null;
+        HasInspectorOutput = false;
+
         HasOutput = false;
+        OnPropertyChanged(nameof(ExecutionDurationShortText));
     }
 
     [RelayCommand]

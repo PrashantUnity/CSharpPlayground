@@ -17,7 +17,8 @@ public enum CellOutputKind
     Html,
     Control,
     Error,
-    Table
+    Table,
+    ObjectInspector
 }
 
 public class RichCellOutput
@@ -31,6 +32,7 @@ public class RichCellOutput
     public string? HtmlContent { get; set; }
     public Control? InteractiveControl { get; set; }
     public DumpTableResult? TableResult { get; set; }
+    public ObjectInspectorNode? InspectorNode { get; set; }
 }
 
 public static class InteractiveDisplayContext
@@ -240,6 +242,15 @@ public static class Display
         {
             Kind = CellOutputKind.Table,
             TableResult = table
+        });
+    }
+
+    public static void Inspector(ObjectInspectorNode node)
+    {
+        InteractiveDisplayContext.Emit(new RichCellOutput
+        {
+            Kind = CellOutputKind.ObjectInspector,
+            InspectorNode = node
         });
     }
 }

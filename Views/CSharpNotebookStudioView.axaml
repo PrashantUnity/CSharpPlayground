@@ -7,864 +7,1135 @@
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpNotebookStudioView"
              x:DataType="vm:CSharpNotebookStudioViewModel">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <SolidColorBrush x:Key="M3SurfaceBrush" Color="#0D1117" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowestBrush" Color="#080C11" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowBrush" Color="#121720" />
+            <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#171D27" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#1E2633" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#263142" />
+            <SolidColorBrush x:Key="M3PrimaryBrush" Color="#75D59A" />
+            <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#00391C" />
+            <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#00522B" />
+            <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#92F2B5" />
+            <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="#22304A" />
+            <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="#D3E3FD" />
+            <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="M3OutlineBrush" Color="#475569" />
+            <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="#252E3E" />
+            <SolidColorBrush x:Key="M3SuccessBrush" Color="#22C55E" />
+            <SolidColorBrush x:Key="M3ErrorBrush" Color="#F87171" />
+            <SolidColorBrush x:Key="M3ErrorContainerBrush" Color="#450A0A" />
+            <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
+            <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
+            <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
+        </ResourceDictionary>
+    </UserControl.Resources>
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
-        <!-- Cell Card Hover & Transitions -->
-        <Style Selector="Border.notebook-cell-card">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerMedium}" />
+        <!-- Explorer Tree Item Button -->
+        <Style Selector="Button.explorer-item-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-                    <BrushTransition Property="Background" Duration="0:0:0.18" />
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Border.notebook-cell-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
+        <Style Selector="Button.explorer-item-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+        <Style Selector="Button.explorer-item-btn.selected">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
         </Style>
 
-        <!-- Cell Run Circular Button -->
-        <Style Selector="Button.cell-run-btn">
-            <Setter Property="Background" Value="{DynamicResource M3SuccessContainerBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource M3SuccessBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
+        <!-- Explorer Section Header Button -->
+        <Style Selector="Button.explorer-section-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.explorer-section-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+
+        <!-- Notebook Toolbar Action Buttons -->
+        <Style Selector="Button.nb-action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="7,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.nb-action-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+        <Style Selector="Button.nb-action-btn:pointerover materialIcons|MaterialIcon">
+            <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <!-- Cell Hover Action Icons -->
+        <Style Selector="Button.cell-tool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3ErrorContainerBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3ErrorBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover materialIcons|MaterialIcon">
+            <Setter Property="Foreground" Value="{DynamicResource M3ErrorBrush}" />
+        </Style>
+
+        <!-- Gutter Run Play Button -->
+        <Style Selector="Button.gutter-run-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.6" />
+        </Style>
+        <Style Selector="Button.gutter-run-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+
+        <!-- Gutter Menu Button -->
+        <Style Selector="Button.gutter-menu-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.6" />
+        </Style>
+        <Style Selector="Button.gutter-menu-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+
+        <!-- Editor Box Border Focus / Selection -->
+        <Style Selector="Border.notebook-editor-box">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.cell-run-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SuccessBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource M3SuccessBrush}" />
-        </Style>
-
-        <!-- Cell Action Icons -->
-        <Style Selector="Button.cell-action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="6,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        </Style>
-        <Style Selector="Button.cell-action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        </Style>
-
-        <!-- Delete Action -->
-        <Style Selector="Button.cell-delete-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        </Style>
-        <Style Selector="Button.cell-delete-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3ErrorContainerBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource M3ErrorBrush}" />
-        </Style>
-        <Style Selector="Button.cell-delete-btn:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="{DynamicResource M3ErrorBrush}" />
-        </Style>
-
-        <!-- Title Editor Input -->
-        <Style Selector="TextBox.notebook-title-box">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Padding" Value="2,0" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-        <Style Selector="TextBox.notebook-title-box:focus /template/ Border#PART_BorderElement">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+        <Style Selector="Border.notebook-editor-box:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource M3SurfaceBrush}">
+    <Grid RowDefinitions="*,Auto" Background="{DynamicResource M3SurfaceBrush}">
 
         <!-- ============================================================ -->
-        <!-- 1. TOP STUDIO TOOLBAR & UNIFIED WORKSPACE ACTIONS             -->
+        <!-- ROW 0: MAIN WORKSPACE (EXPLORER SIDEBAR + SPLITTER + STUDIO) -->
         <!-- ============================================================ -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,9">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- Left: Back Navigation & Notebook Title -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Button Command="{Binding BackToHubCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" VerticalAlignment="Center" />
-                            <TextBlock Text="Scripts Hub" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
+        <Grid Grid.Row="0" ColumnDefinitions="240,1,*">
 
-                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+            <!-- ======================================================== -->
+            <!-- COLUMN 0: LEFT EXPLORER SIDEBAR                          -->
+            <!-- ======================================================== -->
+            <Border Grid.Column="0"
+                    IsVisible="{Binding IsExplorerOpen}"
+                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,Auto,*">
 
-                    <!-- Seamless Editable Notebook Title -->
-                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                    <!-- 1. Top Header: EXPLORER ... -->
+                    <Border Grid.Row="0"
+                            Height="36"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                            Height="32"
-                            Padding="10,0"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="NotebookOutline" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBox Text="{Binding Notebook.Title, Mode=TwoWay}"
-                                     Classes="notebook-title-box"
-                                     MinWidth="190"
-                                     PlaceholderText="Notebook Title..." />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <!-- Center: Stats & Compiler Status Capsule -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" VerticalAlignment="Center">
-                    <!-- Total Cells Pill -->
-                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            Padding="12,0"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="LayersOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Cells.Count, StringFormat='{}{0} Cells'}"
-                                       FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
+                            BorderThickness="0,0,0,1"
+                            Padding="14,0,8,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="EXPLORER"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                       VerticalAlignment="Center" />
+                            <Button Grid.Column="1"
+                                    Classes="cell-tool-btn"
+                                    Width="22" Height="22"
+                                    ToolTip.Tip="Explorer Options">
+                                <TextBlock Text="..." FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                        </Grid>
                     </Border>
 
-                    <!-- Compiler Engine Status -->
-                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            Padding="12,0"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding CompilerStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <!-- Right: Workspace Actions Toolbar -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <!-- + Code Cell Action -->
-                    <Button Command="{Binding AddCodeCellCommand}"
-                            Classes="m3-filled-btn"
-                            Background="{DynamicResource M3PrimaryBrush}"
-                            Foreground="{DynamicResource M3OnPrimaryBrush}"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Add a new C# code cell">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Code" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- + Markdown Note Action -->
-                    <Button Command="{Binding AddMarkdownCellCommand}"
-                            Classes="m3-tonal-btn"
-                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                            BorderThickness="1"
-                            Foreground="{DynamicResource M3OnSurfaceBrush}"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Add documentation markdown note">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Note" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Clear Outputs -->
-                    <Button Command="{Binding ClearAllOutputsCommand}"
-                            Classes="m3-icon-btn"
-                            Width="32"
-                            Height="32"
-                            MinWidth="0"
-                            MinHeight="0"
-                            Padding="0"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            VerticalAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Clear all cell execution outputs">
-                        <materialIcons:MaterialIcon Kind="DeleteSweepOutline" Width="17" Height="17" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
-                    </Button>
-
-                    <!-- Save Notebook -->
-                    <Button Command="{Binding SaveCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Save Notebook (Ctrl+S)">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" VerticalAlignment="Center" />
-                            <TextBlock Text="Save" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Restart Kernel Action -->
-                    <Button Command="{Binding RestartKernelCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="11,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Restart Kernel and reset all shared variables">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Restart" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Restart" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Variable Inspector Toggle -->
-                    <Button Command="{Binding ToggleVariableInspectorCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="11,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
-                            ToolTip.Tip="Toggle Live Variable Inspector Drawer">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Variables" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
-                            <Border Background="{DynamicResource M3PrimaryBrush}" CornerRadius="10" Padding="5,1" Margin="2,0,0,0">
-                                <TextBlock Text="{Binding Variables.Count}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnPrimaryBrush}" />
-                            </Border>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Primary Run All Button -->
-                    <Button Command="{Binding RunAllCellsCommand}"
-                            Classes="m3-filled-btn"
-                            Background="{DynamicResource M3PrimaryBrush}"
-                            Foreground="{DynamicResource M3OnPrimaryBrush}"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="16,0"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            IsEnabled="{Binding !IsExecuting}"
-                            Cursor="Hand"
-                            ToolTip.Tip="Run all code cells in sequence">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="PlayBoxMultipleOutline" Width="15" Height="15" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Run All" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- ============================================================ -->
-        <!-- 2. MAIN NOTEBOOK CANVAS & LIVE VARIABLE INSPECTOR            -->
-        <!-- ============================================================ -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-
-            <!-- Center Notebook Cells Scrollable Canvas -->
-            <ScrollViewer Grid.Column="0"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="16" Margin="0,24,0,48" MaxWidth="1020" HorizontalAlignment="Center" Width="1020">
-
-                <!-- Dynamic Cells List -->
-                <ItemsControl ItemsSource="{Binding Cells}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                            <Border Classes="notebook-cell-card" Margin="0,0,0,16">
-                                <Grid RowDefinitions="Auto,Auto,Auto">
-
-                                    <!-- Cell Header Bar -->
-                                    <Border Grid.Row="0"
-                                            Background="{DynamicResource M3SurfaceContainerBrush}"
-                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                            BorderThickness="0,0,0,1"
-                                            CornerRadius="{StaticResource M3ShapeTopRoundedMedium}"
-                                            Padding="12,7">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <!-- Left: Run Button, Execution Badge, Cell Type Chip -->
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <!-- Run Circular Button (Code Cells only) -->
-                                                <Button Command="{Binding RunCellCommand}"
-                                                        Classes="cell-run-btn"
-                                                        IsVisible="{Binding IsCodeCell}"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Execute this cell (Ctrl+Enter)">
-                                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3OnSuccessContainerBrush}" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Button>
-
-                                                <!-- Execution Counter Badge -->
-                                                <Border Background="{Binding StatusBadgeBackground}"
-                                                        BorderBrush="{Binding StatusBadgeBorder}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                        Height="26"
-                                                        Padding="8,0"
-                                                        VerticalAlignment="Center"
-                                                        IsVisible="{Binding IsCodeCell}">
-                                                    <TextBlock Text="{Binding ExecutionBadgeText}"
-                                                               FontFamily="Consolas, Cascadia Code, monospace"
-                                                               FontSize="11" FontWeight="Bold"
-                                                               Foreground="{Binding StatusBadgeForeground}"
-                                                               VerticalAlignment="Center"
-                                                               HorizontalAlignment="Center" />
-                                                </Border>
-
-                                                <!-- Semantic Type Chip -->
-                                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                        Height="26"
-                                                        Padding="8,0"
-                                                        VerticalAlignment="Center"
-                                                        IsVisible="{Binding IsCodeCell}">
-                                                    <TextBlock Text="C# Code" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                                                </Border>
-
-                                                <!-- Markdown Chip -->
-                                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                        Height="26"
-                                                        Padding="8,0"
-                                                        VerticalAlignment="Center"
-                                                        IsVisible="{Binding IsMarkdownCell}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="Markdown Note" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Execution Duration Timing -->
-                                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                        Height="26"
-                                                        Padding="8,0"
-                                                        VerticalAlignment="Center"
-                                                        IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="Check" Width="11" Height="11" Foreground="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="{Binding ExecutionTimeText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                                    </StackPanel>
-                                                </Border>
-                                            </StackPanel>
-
-                                            <!-- Right: Actions (View/Edit, Move Up/Down, Convert, Delete) -->
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <!-- Markdown Preview / Edit Toggle -->
-                                                <Button Command="{Binding ToggleMarkdownPreviewCommand}"
-                                                        Classes="cell-action-btn"
-                                                        IsVisible="{Binding IsMarkdownCell}"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Toggle Markdown Preview / Edit Mode">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" IsVisible="{Binding IsViewingMarkdown}" VerticalAlignment="Center" />
-                                                        <materialIcons:MaterialIcon Kind="EyeOutline" Width="13" Height="13" IsVisible="{Binding IsEditingMarkdown}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="Edit" FontSize="11" IsVisible="{Binding IsViewingMarkdown}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="Preview" FontSize="11" IsVisible="{Binding IsEditingMarkdown}" VerticalAlignment="Center" />
-                                                    </StackPanel>
-                                                </Button>
-
-                                                <!-- Convert Code/Markdown -->
-                                                <Button Command="{Binding ToggleTypeCommand}"
-                                                        Classes="cell-action-btn"
-                                                        Width="26"
-                                                        Height="26"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Toggle between Code and Markdown">
-                                                    <materialIcons:MaterialIcon Kind="SwapHorizontal" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Button>
-
-                                                <!-- Move Up -->
-                                                <Button Command="{Binding MoveUpCommand}"
-                                                        Classes="cell-action-btn"
-                                                        Width="26"
-                                                        Height="26"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Move Cell Up">
-                                                    <materialIcons:MaterialIcon Kind="ArrowUp" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Button>
-
-                                                <!-- Move Down -->
-                                                <Button Command="{Binding MoveDownCommand}"
-                                                        Classes="cell-action-btn"
-                                                        Width="26"
-                                                        Height="26"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Move Cell Down">
-                                                    <materialIcons:MaterialIcon Kind="ArrowDown" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Button>
-
-                                                <!-- Delete Cell -->
-                                                <Button Command="{Binding DeleteCommand}"
-                                                        Classes="cell-delete-btn"
-                                                        Width="26"
-                                                        Height="26"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="Delete this cell">
-                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-
-                                    <!-- Cell Body: Code Editor OR Markdown Display -->
-                                    <Panel Grid.Row="1">
-                                        <!-- Code Cell: Syntax Highlighted Editor -->
-                                        <Border IsVisible="{Binding IsCodeCell}"
-                                                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                Margin="8,8,8,8"
-                                                Padding="4,4">
-                                            <controls:BindableTextEditor TextContent="{Binding Source, Mode=TwoWay}"
-                                                                         ExecuteCommand="{Binding RunCellCommand}"
-                                                                         MinHeight="85"
-                                                                         FontSize="13" />
-                                        </Border>
-
-                                        <!-- Markdown Cell (Preview Mode) -->
-                                        <Border IsVisible="{Binding IsViewingMarkdown}"
-                                                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                Margin="8,8,8,8"
-                                                Padding="18,14">
-                                            <StackPanel Spacing="6">
-                                                <TextBlock Text="{Binding MarkdownTitle}"
-                                                           FontSize="16" FontWeight="Bold"
-                                                           Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                <TextBlock Text="{Binding MarkdownBody}"
-                                                           FontSize="13" LineHeight="20"
-                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                                           TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- Markdown Cell (Edit Mode) -->
-                                        <Border IsVisible="{Binding IsEditingMarkdown}"
-                                                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                Margin="8,8,8,8"
-                                                Padding="12,10">
-                                            <TextBox Text="{Binding Source, Mode=TwoWay}"
-                                                     AcceptsReturn="True"
-                                                     AcceptsTab="True"
-                                                     FontFamily="Inter, Segoe UI, Roboto, sans-serif"
-                                                     FontSize="13"
-                                                     Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                     Background="Transparent"
-                                                     BorderThickness="0"
-                                                     MinHeight="75"
-                                                     PlaceholderText="Write markdown documentation (# Header, notes)..."
-                                                     TextWrapping="Wrap" />
-                                        </Border>
-                                    </Panel>
-
-                                    <!-- Inline Rich Media & Console Output (Underneath) -->
-                                    <Border Grid.Row="2"
-                                            Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                            BorderThickness="0,1,0,0"
-                                            CornerRadius="{StaticResource M3ShapeBottomRoundedMedium}"
-                                            Padding="14,12"
-                                            IsVisible="{Binding HasOutput}">
-                                        <StackPanel Spacing="12">
-
-                                            <!-- 1. Interactive UI Control Output -->
-                                            <Border IsVisible="{Binding HasInteractiveControl}"
-                                                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                    Padding="14,10">
-                                                <Grid RowDefinitions="Auto,*">
-                                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                        <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                    </StackPanel>
-                                                    <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
-                                                </Grid>
-                                            </Border>
-
-                                            <!-- Tabular Output (.Dump()) -->
-                                            <Border IsVisible="{Binding HasTableOutput}">
-                                                <views:DumpTableView DataContext="{Binding TableResult}" />
-                                            </Border>
-
-                                            <!-- 2. Rich Rendered Graphic / Image Output -->
-                                            <Border IsVisible="{Binding HasImageOutput}"
-                                                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                                    Padding="12">
-                                                <Grid RowDefinitions="Auto,*">
-                                                    <!-- Image Output Header Bar -->
-                                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,10" VerticalAlignment="Center">
-                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                            <materialIcons:MaterialIcon Kind="ImageOutline" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                            <TextBlock Text="Rendered Graphic" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                        </StackPanel>
-
-                                                        <!-- Dimensions Pill -->
-                                                        <Border Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0"
-                                                                Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                                                Padding="8,2">
-                                                            <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                        </Border>
-
-                                                        <!-- Image Actions: Copy & Save -->
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                            <Button Command="{Binding CopyImageCommand}"
-                                                                    Classes="cell-action-btn"
-                                                                    Height="26" Padding="8,0"
-                                                                    ToolTip.Tip="Copy Image to Clipboard">
-                                                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
-                                                                    <TextBlock Text="Copy" FontSize="11" />
-                                                                </StackPanel>
-                                                            </Button>
-                                                            <Button Command="{Binding SaveImageCommand}"
-                                                                    Classes="cell-action-btn"
-                                                                    Height="26" Padding="8,0"
-                                                                    ToolTip.Tip="Save Image to Pictures folder as PNG">
-                                                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                    <materialIcons:MaterialIcon Kind="DownloadOutline" Width="13" Height="13" />
-                                                                    <TextBlock Text="Save PNG" FontSize="11" />
-                                                                </StackPanel>
-                                                            </Button>
-                                                        </StackPanel>
-                                                    </Grid>
-
-                                                    <!-- Image Canvas Box -->
-                                                    <Border Grid.Row="1"
-                                                            Background="#0A0E17"
-                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                            Padding="12"
-                                                            HorizontalAlignment="Stretch">
-                                                        <Image Source="{Binding ImageOutputBitmap}"
-                                                               MaxHeight="450"
-                                                               Stretch="Uniform"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" />
-                                                    </Border>
-                                                </Grid>
-                                            </Border>
-
-                                            <!-- 3. Console Text Output -->
-                                            <Grid RowDefinitions="Auto,*" IsVisible="{Binding OutputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <!-- Console Header -->
-                                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="ConsoleLine" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                        <TextBlock Text="Console Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                                    </StackPanel>
-
-                                                    <!-- Console Output Actions: Copy & Clear -->
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <Button Command="{Binding CopyOutputCommand}"
-                                                                Classes="cell-action-btn"
-                                                                ToolTip.Tip="Copy output text to clipboard">
-                                                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
-                                                        </Button>
-                                                        <Button Command="{Binding ClearOutputCommand}"
-                                                                Classes="cell-action-btn"
-                                                                ToolTip.Tip="Clear Output">
-                                                            <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="14" Height="14" />
-                                                        </Button>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <!-- Output Text Monospace Display -->
-                                                <TextBox Grid.Row="1"
-                                                         Text="{Binding OutputText, Mode=OneWay}"
-                                                         FontFamily="Consolas, Menlo, Monaco, JetBrains Mono, monospace"
-                                                         FontSize="12"
-                                                         Foreground="{Binding StatusBadgeForeground}"
-                                                         Background="Transparent"
-                                                         BorderThickness="0"
-                                                         IsReadOnly="True"
-                                                         TextWrapping="Wrap" />
-                                            </Grid>
-
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- ============================================================ -->
-                <!-- Inline Add-Cell Action Block (Right below the last cell!)    -->
-                <!-- ============================================================ -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{StaticResource M3ShapeCornerLarge}"
-                        Padding="18,14">
-                    <Grid ColumnDefinitions="*,Auto,*">
-                        <Rectangle Grid.Column="0" Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" VerticalAlignment="Center" Margin="0,0,16,0" />
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <Button Command="{Binding AddCodeCellCommand}"
-                                    Classes="m3-filled-btn"
-                                    Background="{DynamicResource M3PrimaryBrush}"
-                                    Foreground="{DynamicResource M3OnPrimaryBrush}"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="36"
-                                    MinHeight="0"
-                                    Padding="16,0"
-                                    VerticalAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    Cursor="Hand">
+                    <!-- 2. Workspace Root Row: ⌵ SKIASHARP + 5 Actions -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            Height="28"
+                            Padding="10,0,6,0">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Button Grid.Column="0"
+                                    Command="{Binding ToggleWorkspaceExpandCommand}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    Cursor="Hand"
+                                    VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="Plus" Width="15" Height="15" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Add Code Cell" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding WorkspaceExpansionArrow}"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding WorkspaceName}"
+                                               FontSize="11.5"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                               VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
-                            <Button Command="{Binding AddMarkdownCellCommand}"
-                                    Classes="m3-tonal-btn"
-                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="36"
-                                    MinHeight="0"
-                                    Padding="16,0"
-                                    VerticalAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    Cursor="Hand">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Add Markdown Note" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
+                            <!-- Hover / Action Buttons -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <Button Command="{Binding NewFileCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Notebook (.frynb)">
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding NewFolderCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Folder">
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding DeleteSelectedExplorerItemCommand}" Classes="cell-tool-btn delete-tool" Width="20" Height="20" ToolTip.Tip="Delete Selected Item">
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding RefreshExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Refresh Explorer">
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding CollapseAllExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Collapse Folders">
+                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
-                        <Rectangle Grid.Column="2" Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" VerticalAlignment="Center" Margin="16,0,0,0" />
-                    </Grid>
-                </Border>
-
-            </StackPanel>
-        </ScrollViewer>
-
-        <!-- Collapsible Variable Inspector Drawer -->
-        <Border Grid.Column="1"
-                Width="330"
-                IsVisible="{Binding IsVariableInspectorOpen}"
-                Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1,0,0,0">
-            <Grid RowDefinitions="Auto,*">
-                <!-- Inspector Header -->
-                <Border Grid.Row="0"
-                        Padding="14,11"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="0,0,0,1"
-                        Background="{DynamicResource M3SurfaceContainerBrush}">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Variable Inspector" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                            <Border Background="{DynamicResource M3PrimaryBrush}" CornerRadius="10" Padding="6,1" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Variables.Count}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnPrimaryBrush}" />
-                            </Border>
-                        </StackPanel>
-
-                        <Button Grid.Column="1"
-                                Command="{Binding ToggleVariableInspectorCommand}"
-                                Classes="cell-action-btn"
-                                Width="26" Height="26" Padding="0"
-                                ToolTip.Tip="Close Inspector">
-                            <materialIcons:MaterialIcon Kind="Close" Width="15" Height="15" />
-                        </Button>
-                    </Grid>
-                </Border>
-
-                <!-- Variables List or Empty State -->
-                <Panel Grid.Row="1">
-                    <!-- Empty State -->
-                    <StackPanel IsVisible="{Binding !Variables.Count}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Spacing="10"
-                                Margin="24">
-                        <materialIcons:MaterialIcon Kind="DatabaseOutline" Width="36" Height="36" Foreground="{DynamicResource M3OutlineBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="No Variables in Session" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Run any cell declaring variables (e.g. var m = 10;) to inspect live state across cells."
-                                   FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" TextAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Active Variables List -->
-                    <ScrollViewer IsVisible="{Binding Variables.Count}" Padding="12">
-                        <ItemsControl ItemsSource="{Binding Variables}">
+                    <!-- 3. Folder & File Tree View -->
+                    <ScrollViewer Grid.Row="2"
+                                  IsVisible="{Binding IsWorkspaceExpanded}"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ExplorerRootItems}" Margin="4,4,4,8">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:NotebookVariableInfo">
-                                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="{StaticResource M3ShapeCornerMedium}"
-                                            Padding="10,8"
-                                            Margin="0,0,0,8">
-                                        <StackPanel Spacing="5">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontFamily="Consolas, Menlo, Monaco, monospace"
-                                                           FontSize="12.5" FontWeight="Bold"
-                                                           Foreground="{DynamicResource M3PrimaryBrush}"
-                                                           VerticalAlignment="Center" />
-                                                <Border Grid.Column="1"
-                                                        Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                                        Padding="6,1"
-                                                        VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding TypeName}"
-                                                               FontSize="10" FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                                </Border>
-                                            </Grid>
-
-                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="{StaticResource M3ShapeCornerSmall}"
-                                                    Padding="8,5">
-                                                <TextBlock Text="{Binding ValueDisplay}"
-                                                           FontFamily="Consolas, Menlo, Monaco, monospace"
-                                                           FontSize="11.5"
+                                <DataTemplate x:DataType="vm:ExplorerItemViewModel">
+                                    <StackPanel>
+                                        <!-- Root Item Row (e.g. assets, Code, docs, etc.) -->
+                                        <Button Command="{Binding ToggleExpandCommand}"
+                                                Classes="explorer-item-btn"
+                                                Classes.selected="{Binding IsSelected}"
+                                                HorizontalAlignment="Stretch">
+                                            <Button.ContextFlyout>
+                                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                    <MenuItem Header="New File Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsDirectory}">
+                                                        <MenuItem.Icon>
+                                                            <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsDirectory}">
+                                                        <MenuItem.Icon>
+                                                            <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <Separator IsVisible="{Binding IsDirectory}" />
+                                                    <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
+                                                        <MenuItem.Icon>
+                                                            <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
+                                                        <MenuItem.Icon>
+                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </MenuFlyout>
+                                            </Button.ContextFlyout>
+                                            <Grid ColumnDefinitions="14,18,*,Auto" Margin="4,0">
+                                                <!-- Arrow -->
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding ExpansionArrow}"
+                                                           FontSize="9.5"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center" />
+                                                <!-- Icon -->
+                                                <materialIcons:MaterialIcon Grid.Column="1"
+                                                                            Kind="{Binding IconKind}"
+                                                                            Width="14"
+                                                                            Height="14"
+                                                                            Foreground="{Binding IconColor}"
+                                                                            VerticalAlignment="Center" />
+                                                <!-- Name (Normal View) -->
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Name}"
+                                                           FontSize="12"
                                                            Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                           TextWrapping="Wrap" />
-                                            </Border>
-                                        </StackPanel>
-                                    </Border>
+                                                           VerticalAlignment="Center"
+                                                           Margin="6,0,0,0"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           IsVisible="{Binding !IsRenaming}" />
+
+                                                <!-- Rename TextBox (Edit View) -->
+                                                <TextBox Grid.Column="2"
+                                                         Text="{Binding EditName, Mode=TwoWay}"
+                                                         FontSize="11.5"
+                                                         Height="22"
+                                                         Padding="4,1"
+                                                         Margin="4,0,0,0"
+                                                         IsVisible="{Binding IsRenaming}"
+                                                         VerticalAlignment="Center" />
+
+                                                <!-- Hover Action Buttons: Delete -->
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                    <Button Command="{Binding RequestDeleteCommand}"
+                                                            Classes="cell-tool-btn delete-tool"
+                                                            Width="18" Height="18"
+                                                            ToolTip.Tip="Delete">
+                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+
+                                        <!-- Nested Children (e.g. Document Automation Notebook.frynb under Code) -->
+                                        <ItemsControl ItemsSource="{Binding Children}"
+                                                      IsVisible="{Binding IsExpanded}"
+                                                      Margin="14,0,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ExplorerItemViewModel">
+                                                    <Button Command="{Binding SelectCommand}"
+                                                            Classes="explorer-item-btn"
+                                                            Classes.selected="{Binding IsSelected}"
+                                                            HorizontalAlignment="Stretch">
+                                                        <Button.ContextFlyout>
+                                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                                <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                            </MenuFlyout>
+                                                        </Button.ContextFlyout>
+                                                        <Grid ColumnDefinitions="14,18,*,Auto" Margin="4,0">
+                                                            <!-- Arrow (blank for files) -->
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{Binding ExpansionArrow}"
+                                                                       FontSize="9.5"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       HorizontalAlignment="Center" />
+                                                            <!-- File Icon (e.g. Orange Notebook) -->
+                                                            <materialIcons:MaterialIcon Grid.Column="1"
+                                                                                        Kind="{Binding IconKind}"
+                                                                                        Width="14"
+                                                                                        Height="14"
+                                                                                        Foreground="{Binding IconColor}"
+                                                                                        VerticalAlignment="Center" />
+                                                            <!-- File Name (Normal View) -->
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding Name}"
+                                                                       FontSize="12"
+                                                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="6,0,0,0"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       IsVisible="{Binding !IsRenaming}" />
+
+                                                            <!-- Rename TextBox (Edit View) -->
+                                                            <TextBox Grid.Column="2"
+                                                                     Text="{Binding EditName, Mode=TwoWay}"
+                                                                     FontSize="11.5"
+                                                                     Height="22"
+                                                                     Padding="4,1"
+                                                                     Margin="4,0,0,0"
+                                                                     IsVisible="{Binding IsRenaming}"
+                                                                     VerticalAlignment="Center" />
+
+                                                            <!-- Hover Action Buttons: Delete -->
+                                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                                <Button Command="{Binding RequestDeleteCommand}"
+                                                                        Classes="cell-tool-btn delete-tool"
+                                                                        Width="18" Height="18"
+                                                                        ToolTip.Tip="Delete">
+                                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                </Panel>
+                </Grid>
+            </Border>
+
+            <!-- ======================================================== -->
+            <!-- COLUMN 1: VERTICAL GRID SPLITTER                         -->
+            <!-- ======================================================== -->
+            <GridSplitter Grid.Column="1"
+                          Width="1"
+                          Background="{DynamicResource M3OutlineVariantBrush}"
+                          ResizeDirection="Columns"
+                          Cursor="SizeWestEast"
+                          IsVisible="{Binding IsExplorerOpen}" />
+
+            <!-- ======================================================== -->
+            <!-- COLUMN 2: MAIN NOTEBOOK STUDIO CANVAS                    -->
+            <!-- ======================================================== -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*">
+
+                <!-- ==================================================== -->
+                <!-- ROW 0: DOCUMENT TAB BAR                              -->
+                <!-- ==================================================== -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="0,0,0,1"
+                        Height="36"
+                        Padding="10,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Left: Notebook Tab -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="1,1,1,0"
+                                    CornerRadius="6,6,0,0"
+                                    Height="31"
+                                    Padding="12,0"
+                                    VerticalAlignment="Bottom">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <!-- Orange Jupyter / Notebook Icon -->
+                                    <materialIcons:MaterialIcon Kind="NotebookOutline" Width="14" Height="14" Foreground="#D97706" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DocumentTabTitle}"
+                                               FontSize="12"
+                                               FontWeight="Medium"
+                                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                               VerticalAlignment="Center" />
+                                    <!-- Close Tab Action -->
+                                    <Button Command="{Binding BackToHubCommand}"
+                                            Classes="cell-tool-btn"
+                                            Width="18" Height="18"
+                                            Margin="4,0,0,0"
+                                            ToolTip.Tip="Close Notebook (Return to Hub)">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Right: Actions (Settings, Split, Menu, Hub) -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Settings">
+                                <materialIcons:MaterialIcon Kind="CogOutline" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Split Editor Right">
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="More Editor Actions">
+                                <materialIcons:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Rectangle Width="1" Height="14" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
+                            <Button Command="{Binding BackToHubCommand}"
+                                    Classes="nb-action-btn"
+                                    ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="ArrowLeft" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    <TextBlock Text="Hub" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ==================================================== -->
+                <!-- ROW 1: BREADCRUMBS & NOTEBOOK ACTIONS TOOLBAR        -->
+                <!-- ==================================================== -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="16,6">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <!-- Breadcrumbs: Code > codefrydev.ipynb > C# ... -->
+                        <TextBlock Grid.Row="0"
+                                   Text="{Binding BreadcrumbText}"
+                                   FontSize="11.5"
+                                   FontFamily="Consolas, Menlo, Cascadia Code, Inter, monospace"
+                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                   Margin="0,0,0,6"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <!-- Notebook Action Bar (+ Code, + Markdown, Colab, Run All, Restart, Clear All Outputs, Outline, Kernel) -->
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+                            <!-- Left: Core Notebook Actions -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <!-- + Code -->
+                                <Button Command="{Binding AddCodeCellCommand}" Classes="nb-action-btn" ToolTip.Tip="Add Code Cell (Ctrl+Shift+Enter)">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Code" FontSize="12" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- + Markdown -->
+                                <Button Command="{Binding AddMarkdownCellCommand}" Classes="nb-action-btn" ToolTip.Tip="Add Markdown Cell">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Markdown" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Rectangle Width="1" Height="16" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+
+                                <!-- Colab Link / Mode -->
+                                <Button Classes="nb-action-btn" ToolTip.Tip="Open or Sync with Google Colab / Remote">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Infinity" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Colab" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Rectangle Width="1" Height="16" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+
+                                <!-- Run All -->
+                                <Button Command="{Binding RunAllCellsCommand}" IsEnabled="{Binding !IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Run All Cells (Linear Sequence)">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
+                                        <TextBlock Text="Run All" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Restart Kernel -->
+                                <Button Command="{Binding RestartKernelCommand}" Classes="nb-action-btn" ToolTip.Tip="Restart Kernel &amp; Reset Variables">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Restart" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Restart" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Clear All Outputs -->
+                                <Button Command="{Binding ClearAllOutputsCommand}" Classes="nb-action-btn" ToolTip.Tip="Clear All Cell Outputs">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CloseBoxOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Clear All Outputs" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Rectangle Width="1" Height="16" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+
+                                <!-- Outline Toggle -->
+                                <Button Command="{Binding ToggleOutlineCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Notebook Outline">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Outline" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Variables Toggle -->
+                                <Button Command="{Binding ToggleVariableInspectorCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Live Variable Inspector">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Variables" FontSize="12" />
+                                        <Border Background="{DynamicResource M3PrimaryBrush}" CornerRadius="9" Padding="4,0" Margin="2,0,0,0">
+                                            <TextBlock Text="{Binding Variables.Count}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource M3OnPrimaryBrush}" />
+                                        </Border>
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Save -->
+                                <Button Command="{Binding SaveCommand}" Classes="nb-action-btn" ToolTip.Tip="Save Notebook (Ctrl+S)">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <TextBlock Text="Save" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Right: Kernel Indicator Badge (.NET (C#)) -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Height="26"
+                                        Padding="8,0"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="FlaskOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding KernelName}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- ==================================================== -->
+                <!-- ROW 2: MAIN NOTEBOOK CANVAS                          -->
+                <!-- ==================================================== -->
+                <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+
+                    <!-- Notebook Canvas ScrollViewer -->
+                    <ScrollViewer Grid.Column="0"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16" Margin="24,20,24,48" HorizontalAlignment="Stretch">
+
+                            <!-- Cells List -->
+                            <ItemsControl ItemsSource="{Binding Cells}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                        <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Editor & Output -->
+                                        <Grid ColumnDefinitions="56,*" Margin="0,0,0,18">
+
+                                            <!-- ======================================== -->
+                                            <!-- COLUMN 0: LEFT GUTTER                    -->
+                                            <!-- ======================================== -->
+                                            <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Right" Margin="0,2,10,0">
+                                                <!-- Execution Count: [1], [2], [*] -->
+                                                <TextBlock Text="{Binding ExecutionBadgeText}"
+                                                           FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{Binding StatusBadgeForeground}"
+                                                           HorizontalAlignment="Right"
+                                                           IsVisible="{Binding IsCodeCell}" />
+
+                                                <!-- Execution Duration / Success Pill: ✓ 0.7s -->
+                                                <StackPanel Orientation="Horizontal"
+                                                            Spacing="3"
+                                                            HorizontalAlignment="Right"
+                                                            IsVisible="{Binding ExecutionDurationShortText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                    <!-- Green Checkmark on success -->
+                                                    <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="{DynamicResource M3SuccessBrush}" IsVisible="{Binding !HasError}" VerticalAlignment="Center" />
+                                                    <!-- Red Cross on error -->
+                                                    <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3ErrorBrush}" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding ExecutionDurationShortText}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+
+                                                <!-- Play / Run Cell Gutter Button -->
+                                                <Button Command="{Binding RunCellCommand}"
+                                                        Classes="gutter-run-btn"
+                                                        HorizontalAlignment="Right"
+                                                        IsVisible="{Binding IsCodeCell}"
+                                                        ToolTip.Tip="Execute Cell (Ctrl+Enter)">
+                                                    <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="{DynamicResource M3SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Button>
+
+                                                <!-- Cell Context Actions Ellipsis (...) -->
+                                                <Button Classes="gutter-menu-btn"
+                                                        HorizontalAlignment="Right"
+                                                        ToolTip.Tip="Cell Options">
+                                                    <Button.Flyout>
+                                                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                            <MenuItem Header="Run Cell" Command="{Binding RunCellCommand}" IsVisible="{Binding IsCodeCell}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" Foreground="{DynamicResource M3SuccessBrush}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Clear Output" Command="{Binding ClearOutputCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <Separator />
+                                                            <MenuItem Header="Insert Code Below" Command="{Binding AddCodeBelowCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Insert Markdown Below" Command="{Binding AddMarkdownBelowCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="14" Height="14" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <Separator />
+                                                            <MenuItem Header="Move Up" Command="{Binding MoveUpCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="ArrowUp" Width="14" Height="14" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Move Down" Command="{Binding MoveDownCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="ArrowDown" Width="14" Height="14" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <Separator />
+                                                            <MenuItem Header="Delete Cell" Command="{Binding DeleteCommand}">
+                                                                <MenuItem.Icon>
+                                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                        </MenuFlyout>
+                                                    </Button.Flyout>
+                                                    <TextBlock Text="..." FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Button>
+                                            </StackPanel>
+
+                                            <!-- ======================================== -->
+                                            <!-- COLUMN 1: CELL EDITOR & INLINE OUTPUT    -->
+                                            <!-- ======================================== -->
+                                            <StackPanel Grid.Column="1" Spacing="6">
+
+                                                <!-- Code / Markdown Editor Box with Floating Action Bar -->
+                                                <Border Classes="notebook-editor-box">
+                                                    <Grid RowDefinitions="Auto,*,Auto">
+
+                                                        <!-- Floating Action Bar (Top Right) -->
+                                                        <StackPanel Grid.Row="0"
+                                                                    Orientation="Horizontal"
+                                                                    HorizontalAlignment="Right"
+                                                                    Spacing="2"
+                                                                    Margin="0,4,6,0">
+                                                            <!-- Run Action -->
+                                                            <Button Command="{Binding RunCellCommand}"
+                                                                    Classes="cell-tool-btn"
+                                                                    IsVisible="{Binding IsCodeCell}"
+                                                                    ToolTip.Tip="Execute Cell (Ctrl+Enter)">
+                                                                <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
+                                                            </Button>
+
+                                                            <!-- Split / Add Below -->
+                                                            <Button Command="{Binding AddCodeBelowCommand}"
+                                                                    Classes="cell-tool-btn"
+                                                                    ToolTip.Tip="Insert Code Cell Below">
+                                                                <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                                                            </Button>
+
+                                                            <!-- Move Up -->
+                                                            <Button Command="{Binding MoveUpCommand}"
+                                                                    Classes="cell-tool-btn"
+                                                                    ToolTip.Tip="Move Cell Up">
+                                                                <materialIcons:MaterialIcon Kind="ArrowUp" Width="13" Height="13" />
+                                                            </Button>
+
+                                                            <!-- Move Down -->
+                                                            <Button Command="{Binding MoveDownCommand}"
+                                                                    Classes="cell-tool-btn"
+                                                                    ToolTip.Tip="Move Cell Down">
+                                                                <materialIcons:MaterialIcon Kind="ArrowDown" Width="13" Height="13" />
+                                                            </Button>
+
+                                                            <!-- Delete Cell -->
+                                                            <Button Command="{Binding DeleteCommand}"
+                                                                    Classes="cell-tool-btn delete-tool"
+                                                                    ToolTip.Tip="Delete Cell">
+                                                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="13" Height="13" />
+                                                            </Button>
+                                                        </StackPanel>
+
+                                                        <!-- Editor Content (Code or Markdown) -->
+                                                        <Panel Grid.Row="1" Margin="6,2,6,4">
+                                                            <!-- C# Syntax Highlighted Code Editor -->
+                                                            <controls:BindableTextEditor IsVisible="{Binding IsCodeCell}"
+                                                                                         TextContent="{Binding Source, Mode=TwoWay}"
+                                                                                         ExecuteCommand="{Binding RunCellCommand}"
+                                                                                         MinHeight="60"
+                                                                                         FontSize="13" />
+
+                                                            <!-- Markdown View (Rendered Header & Notes) -->
+                                                            <StackPanel IsVisible="{Binding IsViewingMarkdown}" Spacing="6" Margin="10,6">
+                                                                <TextBlock Text="{Binding MarkdownTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                <TextBlock Text="{Binding MarkdownBody}" FontSize="12.5" LineHeight="19" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                                            </StackPanel>
+
+                                                            <!-- Markdown Edit Mode -->
+                                                            <TextBox IsVisible="{Binding IsEditingMarkdown}"
+                                                                     Text="{Binding Source, Mode=TwoWay}"
+                                                                     AcceptsReturn="True"
+                                                                     AcceptsTab="True"
+                                                                     Background="Transparent"
+                                                                     BorderThickness="0"
+                                                                     MinHeight="60"
+                                                                     FontSize="13"
+                                                                     Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                     PlaceholderText="Write markdown documentation (# Header, notes)..."
+                                                                     TextWrapping="Wrap" />
+                                                        </Panel>
+
+                                                        <!-- Bottom Bar: Language Tag Chip (Bottom Right, e.g. "C#") -->
+                                                        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10,0,10,6">
+                                                            <!-- Left: Markdown toggle button (if markdown cell) -->
+                                                            <Button Grid.Column="0"
+                                                                    Command="{Binding ToggleMarkdownPreviewCommand}"
+                                                                    Classes="cell-tool-btn"
+                                                                    Width="NaN"
+                                                                    Height="20"
+                                                                    Padding="6,0"
+                                                                    IsVisible="{Binding IsMarkdownCell}">
+                                                                <TextBlock Text="{Binding MarkdownPreviewButtonText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                            </Button>
+
+                                                            <!-- Right: Language Chip (C# / Markdown) -->
+                                                            <Border Grid.Column="2"
+                                                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="3"
+                                                                    Padding="6,1">
+                                                                <TextBlock Text="{Binding LanguageTag}"
+                                                                           FontSize="10"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                            </Border>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- ============================================================ -->
+                                                <!-- INLINE OUTPUT STREAM (Directly underneath, flush with editor) -->
+                                                <!-- ============================================================ -->
+                                                <StackPanel Spacing="6" Margin="0,3,0,0" IsVisible="{Binding HasOutput}">
+
+                                                    <!-- 1. Interactive Object Inspector Tree (▼ Submission#16+People) -->
+                                                    <Border IsVisible="{Binding HasInspectorOutput}" Margin="0,1,0,3">
+                                                        <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                                                    </Border>
+
+                                                    <!-- 2. Plain Console Stdout Text Output (e.g. test is test, [ 1, 3, 4, ... ]) -->
+                                                    <TextBox Text="{Binding OutputText, Mode=OneWay}"
+                                                             FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                             FontSize="12"
+                                                             Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             Padding="0"
+                                                             IsReadOnly="True"
+                                                             TextWrapping="Wrap"
+                                                             IsVisible="{Binding OutputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                                    <!-- 3. Tabular Output (.Dump()) -->
+                                                    <Border IsVisible="{Binding HasTableOutput}">
+                                                        <views:DumpTableView DataContext="{Binding TableResult}" />
+                                                    </Border>
+
+                                                    <!-- 4. Rendered Graphic / Image Output -->
+                                                    <Border IsVisible="{Binding HasImageOutput}"
+                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="10">
+                                                        <Grid RowDefinitions="Auto,*">
+                                                            <!-- Image Output Header -->
+                                                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                    <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                </StackPanel>
+
+                                                                <Border Grid.Column="1" HorizontalAlignment="Left" Margin="8,0,0,0"
+                                                                        Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                                        CornerRadius="4" Padding="6,1">
+                                                                    <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                </Border>
+
+                                                                <!-- Image Actions: Copy & Save -->
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                    <Button Command="{Binding CopyImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Image">
+                                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                                                                    </Button>
+                                                                    <Button Command="{Binding SaveImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Save PNG">
+                                                                        <materialIcons:MaterialIcon Kind="DownloadOutline" Width="12" Height="12" />
+                                                                    </Button>
+                                                                </StackPanel>
+                                                            </Grid>
+
+                                                            <!-- Image Canvas -->
+                                                            <Border Grid.Row="1"
+                                                                    Background="#080C11"
+                                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="4"
+                                                                    Padding="8"
+                                                                    HorizontalAlignment="Stretch">
+                                                                <Image Source="{Binding ImageOutputBitmap}"
+                                                                       MaxHeight="450"
+                                                                       Stretch="Uniform"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center" />
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+
+                                                    <!-- 5. Interactive Avalonia UI Control -->
+                                                    <Border IsVisible="{Binding HasInteractiveControl}"
+                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="12,8">
+                                                        <Grid RowDefinitions="Auto,*">
+                                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                                                <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                            </StackPanel>
+                                                            <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                                                        </Grid>
+                                                    </Border>
+
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Collapsible Variable Inspector Drawer -->
+                    <Border Grid.Column="1"
+                            Width="320"
+                            IsVisible="{Binding IsVariableInspectorOpen}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1,0,0,0">
+                        <Grid RowDefinitions="Auto,*">
+                            <!-- Drawer Header -->
+                            <Border Grid.Row="0"
+                                    Background="{DynamicResource M3SurfaceContainerBrush}"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="12,10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Live Variables" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Command="{Binding ToggleVariableInspectorCommand}"
+                                            Classes="cell-tool-btn">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Variables List -->
+                            <ScrollViewer Grid.Row="1">
+                                <ItemsControl ItemsSource="{Binding Variables}" Margin="8">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:NotebookVariableInfo">
+                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    Padding="8,6"
+                                                    Margin="0,0,0,6">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                        <TextBlock Text="{Binding TypeName}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding ValueDisplay}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               Margin="8,0"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <!-- Collapsible Outline Drawer -->
+                    <Border Grid.Column="1"
+                            Width="280"
+                            IsVisible="{Binding IsOutlineOpen}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1,0,0,0">
+                        <Grid RowDefinitions="Auto,*">
+                            <!-- Drawer Header -->
+                            <Border Grid.Row="0"
+                                    Background="{DynamicResource M3SurfaceContainerBrush}"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="12,10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Notebook Outline" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Command="{Binding ToggleOutlineCommand}"
+                                            Classes="cell-tool-btn">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Cells Outline Items -->
+                            <ScrollViewer Grid.Row="1">
+                                <ItemsControl ItemsSource="{Binding Cells}" Margin="8">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    Padding="8,6"
+                                                    Margin="0,0,0,4">
+                                                <Grid ColumnDefinitions="Auto,*">
+                                                    <TextBlock Grid.Column="0" Text="{Binding ExecutionBadgeText}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" Margin="0,0,6,0" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding MarkdownTitle}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               IsVisible="{Binding IsMarkdownCell}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Source}"
+                                                               FontSize="11"
+                                                               FontFamily="Consolas, monospace"
+                                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               IsVisible="{Binding IsCodeCell}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ============================================================ -->
+        <!-- ROW 1: STATUS BAR FOOTER                                     -->
+        <!-- ============================================================ -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,1,0,0"
+                Height="24"
+                Padding="12,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Launchpad, Error/Warning counts, Status -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="RocketLaunchOutline" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
+                        <TextBlock Text="Launchpad" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <TextBlock Text="0" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <TextBlock Text="0" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CompilerStatusText}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Right: Metadata & Kernel Indicator -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="Spaces: 4" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Cells.Count, StringFormat='{}Cell {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="AccessPoint" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
+                        <TextBlock Text="Go Live" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="{DynamicResource M3SuccessBrush}" />
+                        <TextBlock Text="Prettier" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding KernelName}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
+                </StackPanel>
             </Grid>
         </Border>
-
-    </Grid>
-
-    <!-- ============================================================ -->
-    <!-- 3. SLIM DEVELOPER STATUS BAR FOOTER                          -->
-    <!-- ============================================================ -->
-    <Border Grid.Row="2"
-            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-            BorderThickness="0,1,0,0"
-            Padding="20,6">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="Stateful Roslyn C# 13 Kernel" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                <TextBlock Text="•" Foreground="{DynamicResource M3OutlineBrush}" Margin="4,0" />
-                <TextBlock Text="Shared Variables &amp; NuGet (#r) Enabled" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-            </StackPanel>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Variables.Count, StringFormat='{}{0} Variables in Memory'}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                <TextBlock Text="•" Foreground="{DynamicResource M3OutlineBrush}" Margin="4,0" />
-                <TextBlock Text="{Binding Cells.Count, StringFormat='{}{0} Interactive Cells'}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-            </StackPanel>
-        </Grid>
-    </Border>
-
     </Grid>
 </UserControl>
