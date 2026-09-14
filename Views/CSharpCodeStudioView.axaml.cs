@@ -49,16 +49,8 @@ public partial class CSharpCodeStudioView : UserControl
         _editor = this.FindControl<TextEditor>("Editor");
         if (_editor != null)
         {
-            // 1. VS Code Dark+ Syntax Highlighting Theme
-            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
-
-            // 2. High-contrast modern dark palette
-            _editor.Background = new SolidColorBrush(Color.Parse("#14171F"));
-            _editor.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
-            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
-            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
-            _editor.TextArea.SelectionForeground = null;
-            _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+            ApplyThemeVariant();
+            ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
             // 3. Editor Options: Active line highlight, tab indentation
             _editor.Options.HighlightCurrentLine = true;
@@ -104,7 +96,44 @@ public partial class CSharpCodeStudioView : UserControl
         DataContextChanged += OnDataContextChanged;
     }
 
-    private void PolishLeftMargins()
+    public void ApplyThemeVariant()
+    {
+        if (_editor == null) return;
+
+        bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
+                      (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+
+        if (isDark)
+        {
+            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            _editor.Background = new SolidColorBrush(Color.Parse("#14171F"));
+            _editor.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
+            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
+            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
+            _editor.TextArea.SelectionForeground = null;
+            _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+        }
+        else
+        {
+            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            _editor.Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
+            _editor.Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
+            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
+            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
+            _editor.TextArea.SelectionForeground = null;
+            _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
+        }
+
+        PolishLeftMargins(isDark);
+    }
+
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ApplyThemeVariant();
+    }
+
+    private void PolishLeftMargins(bool isDark = true)
     {
         if (_editor == null) return;
 
@@ -118,10 +147,20 @@ public partial class CSharpCodeStudioView : UserControl
             }
             else if (margin is FoldingMargin foldingMargin)
             {
-                foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
-                foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
-                foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
-                foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+                if (isDark)
+                {
+                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
+                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
+                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+                }
+                else
+                {
+                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#64748B"));
+                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#F1F5F9"));
+                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#2563EB"));
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#DBEAFE"));
+                }
             }
         }
     }

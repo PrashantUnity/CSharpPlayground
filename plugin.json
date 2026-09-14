@@ -13,7 +13,12 @@
       "label": "Default Starter Script",
       "description": "Initial template loaded when creating a new script",
       "default": "Hello World Console",
-      "options": ["Hello World Console", "PDF Document Automation", "LINQ Benchmark", "JSON Serializer"]
+      "options": [
+        "Hello World Console",
+        "PDF Document Automation",
+        "LINQ Benchmark",
+        "JSON Serializer"
+      ]
     },
     "EditorFontSize": {
       "type": "integer",
@@ -39,5 +44,6 @@
       "description": "Maximum allowed run time before background script execution is halted",
       "default": 10
     }
-  }
+  },
+  "isCollectible": false
 }

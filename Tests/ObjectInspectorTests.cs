@@ -174,4 +174,43 @@ public class NotebookSamplePerson
         Assert.Contains(richOutput.InspectorNode.Properties, prop => prop.Name == "Name" && prop.SimpleValueText == "Code");
         Assert.Contains(richOutput.InspectorNode.Properties, prop => prop.Name == "Numbers" && prop.SimpleValueText == "[ 1, 34, 45, 235, 25 ]");
     }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Kernel_ShouldEmit_TableOnDump()
+    {
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? richOutput = null;
+
+        var result = await kernel.ExecuteCellAsync(
+            "int[] digit = [1, 2, 3, 4, 4, 0, 0, 7, 6];\ndigit.Dump();",
+            onRichOutput: rich => richOutput = rich);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(richOutput);
+        Assert.Equal(CellOutputKind.Table, richOutput.Kind);
+        Assert.NotNull(richOutput.TableResult);
+        Assert.Equal(9, richOutput.TableResult.Rows.Count);
+        Assert.Single(richOutput.TableResult.Columns);
+        Assert.Equal("Item", richOutput.TableResult.Columns[0].Header);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Kernel_ShouldEmit_TableOnAnonymousObjectDump()
+    {
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? richOutput = null;
+
+        var result = await kernel.ExecuteCellAsync(
+            "var obj = new { Title = \"FryPDF\", Version = \"1.0.0\", Count = 42 };\nobj.Dump();",
+            onRichOutput: rich => richOutput = rich);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(richOutput);
+        Assert.Equal(CellOutputKind.Table, richOutput.Kind);
+        Assert.NotNull(richOutput.TableResult);
+        Assert.Equal(3, richOutput.TableResult.Rows.Count);
+        Assert.Equal(2, richOutput.TableResult.Columns.Count);
+        Assert.Equal("Property", richOutput.TableResult.Columns[0].Header);
+        Assert.Equal("Value", richOutput.TableResult.Columns[1].Header);
+    }
 }

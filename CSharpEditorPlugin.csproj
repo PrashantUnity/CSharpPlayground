@@ -66,4 +66,24 @@
 
     <Message Importance="High" Text="✨ Successfully packaged FryPDF plugin: $(OutputFryPlugin)" />
   </Target>
+
+  <!-- Synchronize plugin to FryPDF host development plugins directory -->
+  <Target Name="SyncPluginToHost" AfterTargets="Build">
+    <PropertyGroup>
+      <HostPluginDir>/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp/bin/Debug/net10.0/plugins/com.frypdf.plugin.csharpeditor/</HostPluginDir>
+    </PropertyGroup>
+
+    <ItemGroup Condition="Exists('$(HostPluginDir)')">
+      <PluginSyncDll Include="$(TargetDir)CSharpEditorPlugin.dll" />
+      <PluginSyncPdb Include="$(TargetDir)CSharpEditorPlugin.pdb" Condition="Exists('$(TargetDir)CSharpEditorPlugin.pdb')" />
+      <PluginSyncDeps Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
+      <PluginSyncManifest Include="$(MSBuildProjectDirectory)/plugin.json" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(PluginSyncDll)" DestinationFolder="$(HostPluginDir)" SkipUnchangedFiles="false" Condition="Exists('$(HostPluginDir)')" />
+    <Copy SourceFiles="@(PluginSyncPdb)" DestinationFolder="$(HostPluginDir)" SkipUnchangedFiles="false" Condition="Exists('$(HostPluginDir)')" />
+    <Copy SourceFiles="@(PluginSyncDeps)" DestinationFolder="$(HostPluginDir)" SkipUnchangedFiles="false" Condition="Exists('$(HostPluginDir)')" />
+    <Copy SourceFiles="@(PluginSyncManifest)" DestinationFolder="$(HostPluginDir)" SkipUnchangedFiles="false" Condition="Exists('$(HostPluginDir)')" />
+    <Message Importance="High" Text="✨ Synchronized CSharpEditorPlugin to host plugins directory: $(HostPluginDir)" Condition="Exists('$(HostPluginDir)')" />
+  </Target>
 </Project>

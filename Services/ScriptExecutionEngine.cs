@@ -110,6 +110,10 @@ public class ScriptExecutionEngine
 
         protected override Assembly? Load(AssemblyName assemblyName)
         {
+            if (assemblyName.Name != null && string.Equals(assemblyName.Name, typeof(ScriptExecutionEngine).Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return typeof(ScriptExecutionEngine).Assembly;
+            }
             return null; // Fallback to default load context
         }
     }

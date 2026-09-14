@@ -27,8 +27,8 @@
                            Width="12" />
 
                 <!-- Type Name Chip -->
-                <Border Background="#2B2418"
-                        BorderBrush="#4D3E24"
+                <Border Background="{DynamicResource M3SecondaryContainerBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="6,1"
@@ -38,7 +38,7 @@
                                FontSize="11.5"
                                FontWeight="SemiBold"
                                FontStyle="Italic"
-                               Foreground="#E5C07B"
+                               Foreground="{DynamicResource M3OnSecondaryContainerBrush}"
                                VerticalAlignment="Center" />
                 </Border>
             </StackPanel>
@@ -70,7 +70,7 @@
                                            FontFamily="Consolas, Menlo, Cascadia Code, monospace"
                                            FontSize="12"
                                            FontStyle="Italic"
-                                           Foreground="#6E7681"
+                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                            IsVisible="{Binding IsNull}"
                                            VerticalAlignment="Center" />
 
@@ -78,7 +78,7 @@
                                 <TextBlock Text="{Binding SimpleValueText}"
                                            FontFamily="Consolas, Menlo, Cascadia Code, monospace"
                                            FontSize="12"
-                                           Foreground="#D4D4D4"
+                                           Foreground="{DynamicResource M3OnSurfaceBrush}"
                                            IsVisible="{Binding !IsNull}"
                                            VerticalAlignment="Center"
                                            TextWrapping="Wrap" />

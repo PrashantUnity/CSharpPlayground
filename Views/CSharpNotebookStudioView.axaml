@@ -13,25 +13,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <SolidColorBrush x:Key="M3SurfaceBrush" Color="#0D1117" />
-            <SolidColorBrush x:Key="M3SurfaceContainerLowestBrush" Color="#080C11" />
-            <SolidColorBrush x:Key="M3SurfaceContainerLowBrush" Color="#121720" />
-            <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#171D27" />
-            <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#1E2633" />
-            <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#263142" />
-            <SolidColorBrush x:Key="M3PrimaryBrush" Color="#75D59A" />
-            <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#00391C" />
-            <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#00522B" />
-            <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#92F2B5" />
-            <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="#22304A" />
-            <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="#D3E3FD" />
-            <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#E2E8F0" />
-            <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="#94A3B8" />
-            <SolidColorBrush x:Key="M3OutlineBrush" Color="#475569" />
-            <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="#252E3E" />
-            <SolidColorBrush x:Key="M3SuccessBrush" Color="#22C55E" />
-            <SolidColorBrush x:Key="M3ErrorBrush" Color="#F87171" />
-            <SolidColorBrush x:Key="M3ErrorContainerBrush" Color="#450A0A" />
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>

@@ -27,6 +27,13 @@ public partial class DumpTableView : UserControl
         }
 
         DataContextChanged += OnDataContextChanged;
+        ActualThemeVariantChanged += (s, e) =>
+        {
+            if (DataContext is DumpTableResult table)
+            {
+                BuildTable(table);
+            }
+        };
     }
 
     private void OnScrollViewerSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -53,7 +60,7 @@ public partial class DumpTableView : UserControl
             }
         }
 
-        if (DataContext is DumpTableResult table && (_tableGrid == null || _tableGrid.Children.Count == 0))
+        if (DataContext is DumpTableResult table)
         {
             BuildTable(table);
         }
@@ -70,6 +77,19 @@ public partial class DumpTableView : UserControl
         {
             BuildTable(table);
         }
+    }
+
+    private IBrush ResolveBrush(string resourceKey, string fallbackHex)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is IBrush b)
+        {
+            return b;
+        }
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is IBrush appB)
+        {
+            return appB;
+        }
+        return new SolidColorBrush(Color.Parse(fallbackHex));
     }
 
     public void BuildTable(DumpTableResult table)
@@ -119,10 +139,10 @@ public partial class DumpTableView : UserControl
         // Header Row definition
         _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
 
-        var headerBrush = new SolidColorBrush(Color.Parse("#1A2232"));
-        var borderBrush = new SolidColorBrush(Color.Parse("#2B3648"));
-        var onSurfaceBrush = new SolidColorBrush(Color.Parse("#E2E8F0"));
-        var onSurfaceMutedBrush = new SolidColorBrush(Color.Parse("#94A3B8"));
+        var headerBrush = ResolveBrush("M3SurfaceContainerHighBrush", "#1A2232");
+        var borderBrush = ResolveBrush("M3OutlineVariantBrush", "#2B3648");
+        var onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E8F0");
+        var onSurfaceMutedBrush = ResolveBrush("M3OnSurfaceVariantBrush", "#94A3B8");
 
         // Build Header Cells
         for (int c = 0; c < colCount; c++)
@@ -173,8 +193,8 @@ public partial class DumpTableView : UserControl
         }
 
         // Data Rows definition and cells
-        var rowBgEven = new SolidColorBrush(Color.Parse("#0F141E"));
-        var rowBgOdd = new SolidColorBrush(Color.Parse("#141B28"));
+        var rowBgEven = ResolveBrush("M3SurfaceContainerLowestBrush", "#0F141E");
+        var rowBgOdd = ResolveBrush("M3SurfaceContainerLowBrush", "#141B28");
         var monospaceFont = new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
 
         for (int r = 0; r < table.Rows.Count; r++)

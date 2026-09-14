@@ -6,6 +6,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -51,7 +52,6 @@ public class BindableTextEditor : TextEditor
 
     public BindableTextEditor()
     {
-        SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
         ShowLineNumbers = true;
         WordWrap = false;
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -60,21 +60,14 @@ public class BindableTextEditor : TextEditor
         FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace");
         FontSize = 13;
 
-        Background = new SolidColorBrush(Color.Parse("#14171F"));
-        Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
-        LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
-
-        TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
-        TextArea.SelectionForeground = null;
-        TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
-
         Options.HighlightCurrentLine = true;
         Options.ConvertTabsToSpaces = true;
         Options.IndentationSize = 4;
         TextArea.IndentationStrategy = new AvaloniaEdit.Indentation.CSharp.CSharpIndentationStrategy(Options);
 
         _foldingManager = AvaloniaEdit.Folding.FoldingManager.Install(TextArea);
-        PolishLeftMargins();
+        ApplyThemeVariant();
+        ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
         // Install Breakpoint Gutter Margin at index 0 (left of line numbers)
         TextArea.LeftMargins.Insert(0, _breakpointMargin);
@@ -94,7 +87,36 @@ public class BindableTextEditor : TextEditor
         TextArea.TextView.InvalidateVisual();
     }
 
-    private void PolishLeftMargins()
+    public void ApplyThemeVariant()
+    {
+        bool isDark = ActualThemeVariant == ThemeVariant.Dark ||
+                      (ActualThemeVariant != ThemeVariant.Light && (Application.Current?.ActualThemeVariant == ThemeVariant.Dark));
+
+        if (isDark)
+        {
+            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            Background = new SolidColorBrush(Color.Parse("#14171F"));
+            Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
+            LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
+            TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
+            TextArea.SelectionForeground = null;
+            TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+        }
+        else
+        {
+            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
+            Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
+            LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
+            TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
+            TextArea.SelectionForeground = null;
+            TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
+        }
+
+        PolishLeftMargins(isDark);
+    }
+
+    private void PolishLeftMargins(bool isDark)
     {
         for (int i = TextArea.LeftMargins.Count - 1; i >= 0; i--)
         {
@@ -105,12 +127,28 @@ public class BindableTextEditor : TextEditor
             }
             else if (margin is AvaloniaEdit.Folding.FoldingMargin foldingMargin)
             {
-                foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
-                foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
-                foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
-                foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+                if (isDark)
+                {
+                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
+                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
+                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+                }
+                else
+                {
+                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#64748B"));
+                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#F1F5F9"));
+                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#2563EB"));
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#DBEAFE"));
+                }
             }
         }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ApplyThemeVariant();
     }
 
     private void UpdateCodeFolding()

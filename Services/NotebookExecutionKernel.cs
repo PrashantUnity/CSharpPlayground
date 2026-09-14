@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.Scripting.Hosting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,6 +32,7 @@ public class NotebookExecutionKernel
 {
     private ScriptState<object>? _currentState;
     private ScriptOptions _scriptOptions;
+    private InteractiveAssemblyLoader _assemblyLoader = new();
     private readonly NuGetReferenceResolver _nuGetResolver;
     private readonly List<MetadataReference> _additionalReferences = new();
 
@@ -39,7 +41,16 @@ public class NotebookExecutionKernel
     public NotebookExecutionKernel()
     {
         _nuGetResolver = new NuGetReferenceResolver();
+        _assemblyLoader = new InteractiveAssemblyLoader();
+        RegisterCoreDependencies(_assemblyLoader);
         _scriptOptions = CreateDefaultScriptOptions();
+    }
+
+    private static void RegisterCoreDependencies(InteractiveAssemblyLoader loader)
+    {
+        loader.RegisterDependency(typeof(Display).Assembly);
+        loader.RegisterDependency(typeof(Control).Assembly);
+        loader.RegisterDependency(typeof(Bitmap).Assembly);
     }
 
     private ScriptOptions CreateDefaultScriptOptions()
@@ -150,6 +161,18 @@ public class NotebookExecutionKernel
         {
             _additionalReferences.AddRange(nugetResult.References);
             _scriptOptions = _scriptOptions.AddReferences(nugetResult.References);
+            foreach (var r in nugetResult.References)
+            {
+                if (r is PortableExecutableReference per && !string.IsNullOrEmpty(per.FilePath) && File.Exists(per.FilePath))
+                {
+                    try
+                    {
+                        var asm = Assembly.LoadFrom(per.FilePath);
+                        _assemblyLoader.RegisterDependency(asm);
+                    }
+                    catch { }
+                }
+            }
         }
 
         var cleanCode = nugetResult.SanitizedCode;
@@ -177,11 +200,11 @@ public class NotebookExecutionKernel
 
                 if (_currentState == null)
                 {
-                    newState = await CSharpScript.RunAsync(
+                    var script = CSharpScript.Create<object>(
                         cleanCode,
                         _scriptOptions,
-                        globals: null,
-                        cancellationToken: ct);
+                        assemblyLoader: _assemblyLoader);
+                    newState = await script.RunAsync(cancellationToken: ct);
                 }
                 else
                 {
@@ -403,6 +426,9 @@ public class NotebookExecutionKernel
     {
         _currentState = null;
         _additionalReferences.Clear();
+        try { _assemblyLoader.Dispose(); } catch { }
+        _assemblyLoader = new InteractiveAssemblyLoader();
+        RegisterCoreDependencies(_assemblyLoader);
         _scriptOptions = CreateDefaultScriptOptions();
     }
 

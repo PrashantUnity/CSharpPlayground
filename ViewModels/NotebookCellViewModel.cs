@@ -198,7 +198,7 @@ public partial class NotebookCellViewModel : ObservableObject
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
     public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 
-    public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#A8C7FA" : "#9BA1AD";
+    public string StatusBadgeForeground => HasError ? "#DC2626" : IsExecuting ? "#2563EB" : ExecutionCount.HasValue ? "#2563EB" : "#64748B";
     public string StatusBadgeBackground => HasError ? "#371B1D" : IsExecuting ? "#1A2840" : ExecutionCount.HasValue ? "#1E2536" : "#1A202C";
     public string StatusBadgeBorder => HasError ? "#8C1D18" : IsExecuting ? "#385A9E" : ExecutionCount.HasValue ? "#2D374D" : "#2A313E";
 

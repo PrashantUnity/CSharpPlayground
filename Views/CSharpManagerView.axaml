@@ -10,14 +10,6 @@
              x:DataType="vm:CSharpManagerViewModel">
 
     <UserControl.Resources>
-        <!-- ComboBox Dropdown Theme Tokens -->
-        <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#181D27" />
-        <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#2A3447" />
-        <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#22304A" />
-        <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#283A5A" />
-        <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#D3E3FD" />
-        <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#1E2638" />
-        <SolidColorBrush x:Key="ComboBoxItemForegroundPointerOver" Color="#F1F5F9" />
         <CornerRadius x:Key="OverlayCornerRadius">12</CornerRadius>
     </UserControl.Resources>
 
