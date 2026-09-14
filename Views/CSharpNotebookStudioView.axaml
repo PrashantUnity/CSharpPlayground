@@ -835,6 +835,7 @@
                                                             <controls:BindableTextEditor IsVisible="{Binding IsCodeCell}"
                                                                                          TextContent="{Binding Source, Mode=TwoWay}"
                                                                                          ExecuteCommand="{Binding RunCellCommand}"
+                                                                                         ExecuteAndNextCommand="{Binding RunCellAndSelectNextCommand}"
                                                                                          MinHeight="22"
                                                                                          FontSize="13" />
 

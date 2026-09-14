@@ -210,7 +210,8 @@ public partial class NotebookTabViewModel : ObservableObject
             runAction: RunSingleCellAsync,
             deleteAction: DeleteCell,
             moveAction: MoveCell,
-            addBelowAction: AddCellBelow);
+            addBelowAction: AddCellBelow,
+            runAndSelectNextAction: RunCellAndSelectNextAsync);
     }
 
     [RelayCommand]
@@ -376,6 +377,58 @@ public partial class NotebookTabViewModel : ObservableObject
     public void AddMarkdownCell(NotebookCellViewModel? afterCell = null)
     {
         AddCellBelow(afterCell, CellType.Markdown);
+    }
+
+    public void AddCellAbove(NotebookCellViewModel? targetCell, CellType type)
+    {
+        var newCellItem = new NotebookCellItem
+        {
+            Type = type,
+            Source = type == CellType.Code ? "// C# Code Block\n" : "### Markdown Notes\nWrite documentation here."
+        };
+        var newVm = CreateCellViewModel(newCellItem);
+
+        if (targetCell == null || Cells.Count == 0)
+        {
+            Cells.Insert(0, newVm);
+            Notebook.Cells.Insert(0, newCellItem);
+        }
+        else
+        {
+            var idx = Cells.IndexOf(targetCell);
+            if (idx >= 0)
+            {
+                Cells.Insert(idx, newVm);
+                Notebook.Cells.Insert(idx, newCellItem);
+            }
+            else
+            {
+                Cells.Insert(0, newVm);
+                Notebook.Cells.Insert(0, newCellItem);
+            }
+        }
+
+        IsModified = true;
+        SelectCell(newVm);
+    }
+
+    [RelayCommand]
+    public async Task RunCellAndSelectNextAsync(NotebookCellViewModel? targetCell = null)
+    {
+        var cell = targetCell ?? ActiveCell ?? Cells.FirstOrDefault();
+        if (cell == null) return;
+
+        await RunSingleCellAsync(cell);
+
+        var idx = Cells.IndexOf(cell);
+        if (idx >= 0 && idx < Cells.Count - 1)
+        {
+            SelectCell(Cells[idx + 1]);
+        }
+        else
+        {
+            AddCodeCell(cell);
+        }
     }
 
     public void AddCellBelow(NotebookCellViewModel? targetCell, CellType type)

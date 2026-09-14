@@ -126,13 +126,181 @@ public class CSharpEditorPlugin : IFryPlugin
             Action = _ => { }
         });
 
-        // 5. Clean Teardown
+        // 5. Register Keyboard Shortcuts
+        var shortcuts = new List<IDisposable>
+        {
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.studio.launch",
+                Title = "Launch C# Code Studio",
+                Description = "Open in-app C# development studio and script automation workspace.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+Alt+E",
+                MacGesture = "Cmd+Alt+E",
+                Scope = ShortcutScope.Global,
+                Action = sp =>
+                {
+                    var homeType = Type.GetType("PdfEditorApp.ViewModels.HomeViewModel, PdfEditorApp");
+                    if (homeType != null)
+                    {
+                        var home = sp.GetService(homeType);
+                        homeType.GetMethod("SelectNavSection")?.Invoke(home, ["CSharpStudio"]);
+                    }
+                }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.run",
+                Title = "Run Script / Debug",
+                Description = "Execute active C# script or debug at current breakpoint.",
+                Category = "Editor",
+                DefaultGesture = "F5",
+                MacGesture = "F5",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.stop",
+                Title = "Stop Script Execution",
+                Description = "Halt currently running C# background script.",
+                Category = "Editor",
+                DefaultGesture = "Shift+F5",
+                MacGesture = "Shift+F5",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.save",
+                Title = "Save Script / Notebook",
+                Description = "Save active C# script or notebook to local workspace storage.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+S",
+                MacGesture = "Cmd+S",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.new",
+                Title = "New C# Script / Notebook",
+                Description = "Create a new C# automation script.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+N",
+                MacGesture = "Cmd+N",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.show_references",
+                Title = "Open NuGet Package Manager",
+                Description = "Switch to References tab and manage NuGet package dependencies.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+Shift+P",
+                MacGesture = "Cmd+Shift+P",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.run_cell",
+                Title = "Run Cell and Select Next",
+                Description = "Execute current notebook code cell and advance cursor to next cell.",
+                Category = "Notebook",
+                DefaultGesture = "Shift+Enter",
+                MacGesture = "Shift+Enter",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.run_cell_stay",
+                Title = "Run Cell In Place",
+                Description = "Execute current notebook cell without moving cursor focus.",
+                Category = "Notebook",
+                DefaultGesture = "Ctrl+Enter",
+                MacGesture = "Cmd+Enter",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.run_all",
+                Title = "Run All Cells",
+                Description = "Restart notebook kernel and execute all cells in sequence.",
+                Category = "Notebook",
+                DefaultGesture = "Ctrl+Shift+Enter",
+                MacGesture = "Cmd+Shift+Enter",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.insert_cell_below",
+                Title = "Insert Cell Below",
+                Description = "Insert a new C# code cell below current cell.",
+                Category = "Notebook",
+                DefaultGesture = "Ctrl+Shift+B",
+                MacGesture = "Cmd+Shift+B",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.insert_cell_above",
+                Title = "Insert Cell Above",
+                Description = "Insert a new C# code cell above current cell.",
+                Category = "Notebook",
+                DefaultGesture = "Ctrl+Shift+A",
+                MacGesture = "Cmd+Shift+A",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.notebook.delete_cell",
+                Title = "Delete Active Cell",
+                Description = "Remove the selected notebook cell from document.",
+                Category = "Notebook",
+                DefaultGesture = "Ctrl+Shift+D",
+                MacGesture = "Cmd+Shift+D",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                Action = _ => { }
+            })
+        };
+
+        // 6. Clean Teardown
         ctx.RegisterEffect(() =>
         {
             navReg.Dispose();
             cmdReg.Dispose();
             statusReg.Dispose();
             ribbonActionReg.Dispose();
+            foreach (var s in shortcuts) s.Dispose();
         });
 
         return Task.CompletedTask;

@@ -20,5 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSharpEditorPlugin.csproj" />
+    <ProjectReference Include="/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj" Condition="Exists('/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
   </ItemGroup>
 </Project>

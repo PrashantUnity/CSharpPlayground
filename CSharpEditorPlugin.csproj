@@ -17,7 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FryPdf.PluginSdk" Version="0.0.8" PrivateAssets="all" />
+    <ProjectReference Include="/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj" PrivateAssets="all" Condition="Exists('/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
+    <PackageReference Include="FryPdf.PluginSdk" Version="0.0.8" PrivateAssets="all" Condition="!Exists('/Users/codefrydev/Desktop/SourceCode/PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
   </ItemGroup>
 
   <ItemGroup>

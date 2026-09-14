@@ -39,6 +39,16 @@ public class BindableTextEditor : TextEditor
         set => SetValue(ExecuteCommandProperty, value);
     }
 
+    public static readonly StyledProperty<ICommand?> ExecuteAndNextCommandProperty =
+        AvaloniaProperty.Register<BindableTextEditor, ICommand?>(
+            nameof(ExecuteAndNextCommand));
+
+    public ICommand? ExecuteAndNextCommand
+    {
+        get => GetValue(ExecuteAndNextCommandProperty);
+        set => SetValue(ExecuteAndNextCommandProperty, value);
+    }
+
     private bool _isSyncing;
     private readonly FoldingManager? _foldingManager;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
@@ -262,6 +272,17 @@ public class BindableTextEditor : TextEditor
             }
             e.Handled = true;
             return;
+        }
+
+        // Shift+Enter to execute cell and advance to next
+        if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            if (ExecuteAndNextCommand != null && ExecuteAndNextCommand.CanExecute(null))
+            {
+                ExecuteAndNextCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
         }
 
         // Ctrl+Enter or Cmd+Enter to execute the cell

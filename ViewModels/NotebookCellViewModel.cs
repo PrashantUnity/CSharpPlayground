@@ -87,13 +87,15 @@ public partial class NotebookCellViewModel : ObservableObject
     private readonly Action<NotebookCellViewModel>? _deleteAction;
     private readonly Action<NotebookCellViewModel, int>? _moveAction;
     private readonly Action<NotebookCellViewModel, CellType>? _addBelowAction;
+    private readonly Func<NotebookCellViewModel, Task>? _runAndSelectNextAction;
 
     public NotebookCellViewModel(
         NotebookCellItem model,
         Func<NotebookCellViewModel, Task>? runAction = null,
         Action<NotebookCellViewModel>? deleteAction = null,
         Action<NotebookCellViewModel, int>? moveAction = null,
-        Action<NotebookCellViewModel, CellType>? addBelowAction = null)
+        Action<NotebookCellViewModel, CellType>? addBelowAction = null,
+        Func<NotebookCellViewModel, Task>? runAndSelectNextAction = null)
     {
         Model = model;
         _type = model.Type;
@@ -109,6 +111,7 @@ public partial class NotebookCellViewModel : ObservableObject
         _deleteAction = deleteAction;
         _moveAction = moveAction;
         _addBelowAction = addBelowAction;
+        _runAndSelectNextAction = runAndSelectNextAction;
 
         if (model.ImageBytes != null && model.ImageBytes.Length > 0)
         {
@@ -250,6 +253,19 @@ public partial class NotebookCellViewModel : ObservableObject
     private async Task RunCellAsync()
     {
         if (_runAction != null)
+        {
+            await _runAction.Invoke(this);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RunCellAndSelectNextAsync()
+    {
+        if (_runAndSelectNextAction != null)
+        {
+            await _runAndSelectNextAction.Invoke(this);
+        }
+        else if (_runAction != null)
         {
             await _runAction.Invoke(this);
         }

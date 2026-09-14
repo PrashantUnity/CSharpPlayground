@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -94,6 +95,62 @@ public partial class CSharpCodeStudioView : UserControl
         }
 
         DataContextChanged += OnDataContextChanged;
+        AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_currentVm == null) return;
+
+        var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // Ctrl+S / Cmd+S: Save Script
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
+        {
+            _ = _currentVm.SaveCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        // F5: Debug or Continue
+        if (e.Key == Key.F5 && !e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            if (_currentVm.IsPaused)
+            {
+                _currentVm.ContinueDebug();
+                e.Handled = true;
+                return;
+            }
+            else if (!_currentVm.IsExecuting && !_currentVm.IsDebugging)
+            {
+                _ = _currentVm.DebugCodeCommand.ExecuteAsync(null);
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Shift+F5: Stop Debugging / Execution
+        if (e.Key == Key.F5 && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (_currentVm.IsDebugging || _currentVm.IsExecuting))
+        {
+            if (_currentVm.IsDebugging)
+            {
+                _currentVm.StopDebug();
+            }
+            else
+            {
+                _currentVm.StopCommand.Execute(null);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Shift+P / Cmd+Shift+P: References
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
+        {
+            _currentVm.SelectedLeftTabIndex = _currentVm.SelectedLeftTabIndex == 1 ? 0 : 1;
+            e.Handled = true;
+            return;
+        }
     }
 
     public void ApplyThemeVariant()

@@ -375,6 +375,30 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task RunCellAndSelectNextAsync(NotebookCellViewModel? cell = null)
+    {
+        if (ActiveTab != null)
+        {
+            await ActiveTab.RunCellAndSelectNextAsync(cell);
+        }
+    }
+
+    [RelayCommand]
+    public void AddCellAbove()
+    {
+        ActiveTab?.AddCellAbove(ActiveTab.ActiveCell, CellType.Code);
+    }
+
+    [RelayCommand]
+    public void DeleteActiveCell()
+    {
+        if (ActiveTab?.ActiveCell != null)
+        {
+            ActiveTab.DeleteCell(ActiveTab.ActiveCell);
+        }
+    }
+
+    [RelayCommand]
     public async Task RunAllCellsAsync()
     {
         if (ActiveTab != null)
