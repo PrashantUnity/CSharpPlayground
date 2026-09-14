@@ -223,4 +223,173 @@ public class CSharpNotebookStudioTabTests
         Assert.Single(studio.Tabs);
         Assert.DoesNotContain(studio.Tabs, t => t.Title == "codefrydev.frynb");
     }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteSkiaSharp3_ExecutesSuccessfully()
+    {
+        var kernel = new NotebookExecutionKernel();
+        var code = @"#r ""nuget: SkiaSharp, 3.119.4""
+using SkiaSharp;
+
+var info = new SKImageInfo(480, 240);
+var surface = SKSurface.Create(info);
+var canvas = surface.Canvas;
+
+var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+canvas.DrawCircle(100, 120, 50, paint);
+
+Display.Image(surface.Snapshot());
+Console.WriteLine(""Success!"");";
+
+        RichCellOutput? emittedRich = null;
+        var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => emittedRich = r);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.NotNull(emittedRich);
+        Assert.Equal(CellOutputKind.Image, emittedRich.Kind);
+        Assert.NotNull(emittedRich.ImageBytes);
+        Assert.True(emittedRich.ImageBytes.Length > 0);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteSkiaSharpNoVersion_ExecutesSuccessfully()
+    {
+        var kernel = new NotebookExecutionKernel();
+        var code = @"#r ""nuget: SkiaSharp""
+using SkiaSharp;
+
+var info = new SKImageInfo(480, 240);
+var surface = SKSurface.Create(info);
+var canvas = surface.Canvas;
+
+var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+canvas.DrawCircle(100, 120, 50, paint);
+
+Display.Image(surface.Snapshot());
+Console.WriteLine(""Success!"");";
+
+        RichCellOutput? emittedRich = null;
+        var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => emittedRich = r);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.NotNull(emittedRich);
+        Assert.Equal(CellOutputKind.Image, emittedRich.Kind);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteSkiaSharpLegacy4Preview_GracefullyBindsToHostRuntime()
+    {
+        var kernel = new NotebookExecutionKernel();
+        // Legacy directive that previously triggered TypeInitializationException
+        var code = @"#r ""nuget: SkiaSharp, 4.154.0-preview.1.26454.9""
+using SkiaSharp;
+
+var info = new SKImageInfo(300, 150);
+var surface = SKSurface.Create(info);
+var canvas = surface.Canvas;
+canvas.Clear(new SKColor(30, 40, 60));
+
+Display.Image(surface.Snapshot());
+Console.WriteLine(""Legacy directive executed safely."");";
+
+        var result = await kernel.ExecuteCellAsync(code);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.Contains("Legacy directive executed safely.", result.ConsoleOutput);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteTemplate_SkiaSharpGraphics_ExecutesSuccessfully()
+    {
+        var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t => t.Id == "skiasharp_image_studio");
+        Assert.NotNull(template);
+
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? emittedRich = null;
+        var result = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => emittedRich = r);
+
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.NotNull(emittedRich);
+        Assert.Equal(CellOutputKind.Image, emittedRich.Kind);
+        Assert.NotNull(emittedRich.ImageBytes);
+        Assert.True(emittedRich.ImageBytes.Length > 0);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteAnyPackage_NewtonsoftJson_ExecutesSuccessfully()
+    {
+        var kernel = new NotebookExecutionKernel();
+        var code = @"#r ""nuget: Newtonsoft.Json, 13.0.3""
+using Newtonsoft.Json;
+
+var obj = new { Title = ""FryPDF"", Success = true, Number = 42 };
+var json = JsonConvert.SerializeObject(obj);
+Console.WriteLine($""Serialized: {json}"");";
+
+        var result = await kernel.ExecuteCellAsync(code);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.Contains("Serialized: {\"Title\":\"FryPDF\",\"Success\":true,\"Number\":42}", result.ConsoleOutput);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteAnyPackage_YamlDotNet_ExecutesSuccessfully()
+    {
+        var kernel = new NotebookExecutionKernel();
+        var code = @"#r ""nuget: YamlDotNet""
+using YamlDotNet.Serialization;
+
+var serializer = new SerializerBuilder().Build();
+var yaml = serializer.Serialize(new { App = ""FryPDF"", Category = ""UniversalNuGet"" });
+Console.WriteLine(yaml.Trim());";
+
+        var result = await kernel.ExecuteCellAsync(code);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.Contains("App: FryPDF", result.ConsoleOutput);
+        Assert.Contains("Category: UniversalNuGet", result.ConsoleOutput);
+    }
+
+    [Fact]
+    public void NuGetSemanticVersion_ParsingAndComparison_PrefersStableOverPrerelease()
+    {
+        Assert.True(NuGetSemanticVersion.TryParse("3.119.4", out var vStable));
+        Assert.True(NuGetSemanticVersion.TryParse("4.154.0-preview.1.26454.9", out var vPreview));
+        Assert.True(NuGetSemanticVersion.TryParse("13.0.3", out var vNewtonsoft));
+
+        Assert.NotNull(vStable);
+        Assert.NotNull(vPreview);
+        Assert.NotNull(vNewtonsoft);
+
+        Assert.False(vStable.IsPrerelease);
+        Assert.True(vPreview.IsPrerelease);
+
+        Assert.Equal(3, vStable.Major);
+        Assert.Equal(119, vStable.Minor);
+        Assert.Equal(4, vStable.Patch);
+
+        Assert.Equal(13, vNewtonsoft.Major);
+        Assert.Equal(0, vNewtonsoft.Minor);
+        Assert.Equal(3, vNewtonsoft.Patch);
+    }
 }
+

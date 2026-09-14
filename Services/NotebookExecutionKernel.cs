@@ -35,6 +35,7 @@ public class NotebookExecutionKernel
     private InteractiveAssemblyLoader _assemblyLoader = new();
     private readonly NuGetReferenceResolver _nuGetResolver;
     private readonly List<MetadataReference> _additionalReferences = new();
+    private static readonly SemaphoreSlim _executionLock = new(1, 1);
 
     public bool IsSessionActive => _currentState != null;
 
@@ -113,7 +114,7 @@ public class NotebookExecutionKernel
             }
         }
 
-        var defaultImports = new[]
+        var defaultImports = new List<string>
         {
             "System",
             "System.IO",
@@ -150,7 +151,7 @@ public class NotebookExecutionKernel
         }
 
         // 1. Process #r "nuget: ..." directives
-        var nugetResult = _nuGetResolver.ProcessDirectives(code);
+        var nugetResult = await _nuGetResolver.ProcessDirectivesAsync(code, ct);
 
         foreach (var msg in nugetResult.Messages)
         {
@@ -169,6 +170,7 @@ public class NotebookExecutionKernel
                     {
                         var asm = Assembly.LoadFrom(per.FilePath);
                         _assemblyLoader.RegisterDependency(asm);
+                        _nuGetResolver.EnsureNativeAssetsResolved(asm, nugetResult);
                     }
                     catch { }
                 }
@@ -177,96 +179,114 @@ public class NotebookExecutionKernel
 
         var cleanCode = nugetResult.SanitizedCode;
 
-        // 2. Intercept Console.Out and live writers
-        var originalOut = Console.Out;
-        var originalErr = Console.Error;
-
-        var liveWriter = new KernelLiveStringWriter(text =>
-        {
-            onLiveConsole?.Invoke(text);
-        });
-
-        Console.SetOut(liveWriter);
-        Console.SetError(liveWriter);
-
+        await _executionLock.WaitAsync(ct);
         try
         {
-            using (InteractiveDisplayContext.EnterScope(richOutput =>
+            // 2. Intercept Console.Out and live writers
+            var originalOut = Console.Out;
+            var originalErr = Console.Error;
+
+            var liveWriter = new KernelLiveStringWriter(text =>
             {
-                onRichOutput?.Invoke(richOutput);
-            }))
+                onLiveConsole?.Invoke(text);
+            });
+
+            Console.SetOut(liveWriter);
+            Console.SetError(liveWriter);
+
+            try
             {
-                ScriptState<object> newState;
-
-                if (_currentState == null)
+                using (InteractiveDisplayContext.EnterScope(richOutput =>
                 {
-                    var script = CSharpScript.Create<object>(
-                        cleanCode,
-                        _scriptOptions,
-                        assemblyLoader: _assemblyLoader);
-                    newState = await script.RunAsync(cancellationToken: ct);
-                }
-                else
+                    onRichOutput?.Invoke(richOutput);
+                }))
                 {
-                    newState = await _currentState.ContinueWithAsync(
-                        cleanCode,
-                        _scriptOptions,
-                        cancellationToken: ct);
-                }
+                    ScriptState<object> newState;
 
-                _currentState = newState;
-                result.Success = true;
+                    if (_currentState == null)
+                    {
+                        var script = CSharpScript.Create<object>(
+                            cleanCode,
+                            _scriptOptions,
+                            assemblyLoader: _assemblyLoader);
+                        newState = await script.RunAsync(cancellationToken: ct);
+                    }
+                    else
+                    {
+                        newState = await _currentState.ContinueWithAsync(
+                            cleanCode,
+                            _scriptOptions,
+                            cancellationToken: ct);
+                    }
 
-                // Inspect return value for rich media or expression output
-                if (newState.ReturnValue != null)
-                {
-                    InspectAndEmitReturnValue(newState.ReturnValue, onLiveConsole, onRichOutput);
+                    _currentState = newState;
+                    result.Success = true;
+
+                    // Inspect return value for rich media or expression output
+                    if (newState.ReturnValue != null)
+                    {
+                        InspectAndEmitReturnValue(newState.ReturnValue, onLiveConsole, onRichOutput);
+                    }
                 }
             }
-        }
-        catch (CompilationErrorException cee)
-        {
-            result.Success = false;
-            var diags = new List<DiagnosticItem>();
-
-            foreach (var diag in cee.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+            catch (CompilationErrorException cee)
             {
-                var lineSpan = diag.Location.GetLineSpan();
-                diags.Add(new DiagnosticItem
-                {
-                    Id = diag.Id,
-                    Message = diag.GetMessage(),
-                    Severity = diag.Severity,
-                    Line = lineSpan.StartLinePosition.Line + 1,
-                    Column = lineSpan.StartLinePosition.Character + 1
-                });
-            }
+                result.Success = false;
+                var diags = new List<DiagnosticItem>();
 
-            result.Diagnostics = diags;
-            result.ErrorMessage = string.Join("\n", diags.Select(d => $"Line {d.Line}: {d.Message}"));
-            liveWriter.WriteLine($"\n❌ Compilation Error:\n{result.ErrorMessage}");
-        }
-        catch (OperationCanceledException)
-        {
-            result.WasCancelled = true;
-            result.ErrorMessage = "Execution was cancelled.";
-            liveWriter.WriteLine("\n⚠️ Execution cancelled.");
-        }
-        catch (Exception ex)
-        {
-            result.Success = false;
-            var inner = ex.InnerException ?? ex;
-            result.ErrorMessage = inner.Message;
-            liveWriter.WriteLine($"\n❌ Runtime Error: {inner.GetType().Name}: {inner.Message}\n{inner.StackTrace}");
+                foreach (var diag in cee.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+                {
+                    var lineSpan = diag.Location.GetLineSpan();
+                    diags.Add(new DiagnosticItem
+                    {
+                        Id = diag.Id,
+                        Message = diag.GetMessage(),
+                        Severity = diag.Severity,
+                        Line = lineSpan.StartLinePosition.Line + 1,
+                        Column = lineSpan.StartLinePosition.Character + 1
+                    });
+                }
+
+                result.Diagnostics = diags;
+                result.ErrorMessage = string.Join("\n", diags.Select(d => $"Line {d.Line}: {d.Message}"));
+                liveWriter.WriteLine($"\n❌ Compilation Error:\n{result.ErrorMessage}");
+            }
+            catch (OperationCanceledException)
+            {
+                result.WasCancelled = true;
+                result.ErrorMessage = "Execution was cancelled.";
+                liveWriter.WriteLine("\n⚠️ Execution cancelled.");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                var root = ex;
+                while (root.InnerException != null &&
+                       (root is TargetInvocationException || root is TypeInitializationException || root is AggregateException))
+                {
+                    root = root.InnerException;
+                }
+
+                result.ErrorMessage = root.Message;
+                liveWriter.WriteLine($"\n❌ Runtime Error: {root.GetType().Name}: {root.Message}\n{root.StackTrace}");
+                if (root != ex && ex.InnerException != null && ex.InnerException != root)
+                {
+                    liveWriter.WriteLine($"\n(Root cause of {ex.GetType().Name}: {ex.Message})");
+                }
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalErr);
+                sw.Stop();
+
+                result.Elapsed = sw.Elapsed;
+                result.ConsoleOutput = liveWriter.ToString();
+            }
         }
         finally
         {
-            Console.SetOut(originalOut);
-            Console.SetError(originalErr);
-            sw.Stop();
-
-            result.Elapsed = sw.Elapsed;
-            result.ConsoleOutput = liveWriter.ToString();
+            _executionLock.Release();
         }
 
         return result;

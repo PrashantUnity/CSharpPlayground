@@ -192,7 +192,7 @@ new { Title = docTitle, Pages = totalPages, Status = ""Ready"" }.Dump();"
             AccentBorder = "#0284C7",
             CategoryBadge = "SkiaSharp • Visual",
             Tags = new List<string> { "SkiaSharp", "Images", "#r nuget", "Graphics" },
-            InitialCode = @"#r ""nuget: SkiaSharp, 4.154.0-preview.1.26454.9""
+            InitialCode = @"#r ""nuget: SkiaSharp, 3.119.4""
 using SkiaSharp;
 
 var info = new SKImageInfo(480, 240);

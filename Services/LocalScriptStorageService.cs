@@ -265,7 +265,24 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         try
         {
             var json = await File.ReadAllTextAsync(file);
-            return JsonSerializer.Deserialize<NotebookDocumentItem>(json);
+            var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
+            if (nb != null)
+            {
+                bool migrated = false;
+                foreach (var cell in nb.Cells)
+                {
+                    if (cell.Source?.Contains("4.154.0-preview.1.26454.9") == true)
+                    {
+                        cell.Source = cell.Source.Replace("4.154.0-preview.1.26454.9", "3.119.4");
+                        migrated = true;
+                    }
+                }
+                if (migrated)
+                {
+                    await SaveNotebookAsync(nb);
+                }
+            }
+            return nb;
         }
         catch
         {
