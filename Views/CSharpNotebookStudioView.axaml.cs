@@ -17,6 +17,23 @@ public partial class CSharpNotebookStudioView : UserControl
     {
         if (DataContext is not CSharpNotebookStudioViewModel vm) return;
 
+        // Enter / Escape during inline rename in explorer
+        if (e.Source is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
+        {
+            if (e.Key == Key.Enter)
+            {
+                itemVm.CommitRenameCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                itemVm.CancelRenameCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+        }
+
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
         // Ctrl+Shift+Enter: Run All Cells

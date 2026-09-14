@@ -11,7 +11,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSharpEditorPlugin.csproj" />
-    <ProjectReference Include="..\..\..\shared\FryPdf.Runner.Shared\FryPdf.Runner.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Local copies of M3 Expressive tokens and styles (no longer depends on FryPdf.Runner.Shared) -->
+    <AvaloniaResource Include="Material3ExpressiveTokens.axaml" />
+    <AvaloniaResource Include="Material3ExpressiveStyles.axaml" />
   </ItemGroup>
 
   <ItemGroup>

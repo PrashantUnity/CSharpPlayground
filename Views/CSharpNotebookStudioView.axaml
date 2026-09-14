@@ -19,31 +19,194 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:ExplorerItemViewModel">
+            <StackPanel>
+                <!-- Tree Row Item -->
+                <Button Command="{Binding ToggleExpandCommand}"
+                        Classes="explorer-item-btn"
+                        Classes.selected="{Binding IsSelected}"
+                        HorizontalAlignment="Stretch">
+                    <Button.ContextFlyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                            <MenuItem Header="Open" Command="{Binding SelectCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FileEyeOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="New Notebook Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Duplicate" Command="{Binding RequestDuplicateCommand}" IsVisible="{Binding !IsDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Copy Path" Command="{Binding RequestCopyPathCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </Button.ContextFlyout>
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="{Binding IndentPadding}">
+                        <!-- Col 0: Chevron Expander for Folders (ChevronDown / ChevronRight) -->
+                        <Border Grid.Column="0" Width="16" Height="16" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="{Binding ChevronKind}"
+                                                        Width="12" Height="12"
+                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center"
+                                                        IsVisible="{Binding IsDirectory}" />
+                        </Border>
+
+                        <!-- Col 1: Icon (Folder / Notebook / C#) -->
+                        <materialIcons:MaterialIcon Grid.Column="1"
+                                                    Kind="{Binding IconKind}"
+                                                    Width="15" Height="15"
+                                                    Foreground="{Binding IconColor}"
+                                                    VerticalAlignment="Center"
+                                                    Margin="2,0,6,0" />
+
+                        <!-- Col 2: Name (Normal View) -->
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Name}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   IsVisible="{Binding !IsRenaming}" />
+
+                        <!-- Col 2: Rename TextBox (Edit View) -->
+                        <TextBox Grid.Column="2"
+                                 Text="{Binding EditName, Mode=TwoWay}"
+                                 FontSize="11.5"
+                                 Height="22"
+                                 Padding="4,1"
+                                 Margin="0,0,4,0"
+                                 IsVisible="{Binding IsRenaming}"
+                                 VerticalAlignment="Center" />
+
+                        <!-- Col 3: Action Buttons (Only visible on hover!) -->
+                        <StackPanel Grid.Column="3"
+                                    Classes="explorer-row-actions"
+                                    Orientation="Horizontal"
+                                    Spacing="2"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0">
+                            <!-- Folder actions on hover -->
+                            <Button Command="{Binding RequestNewFileCommand}"
+                                    Classes="cell-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="New Notebook Here"
+                                    IsVisible="{Binding IsDirectory}">
+                                <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Command="{Binding RequestNewFolderCommand}"
+                                    Classes="cell-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="New Folder Here"
+                                    IsVisible="{Binding IsDirectory}">
+                                <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <!-- File actions on hover -->
+                            <Button Command="{Binding RequestDuplicateCommand}"
+                                    Classes="cell-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="Duplicate Notebook"
+                                    IsVisible="{Binding !IsDirectory}">
+                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Command="{Binding RequestDeleteCommand}"
+                                    Classes="cell-tool-btn delete-tool"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="Delete">
+                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Button>
+
+                <!-- Recursive Nested Children -->
+                <ItemsControl ItemsSource="{Binding Children}"
+                              IsVisible="{Binding IsExpanded}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
         <!-- Explorer Tree Item Button -->
         <Style Selector="Button.explorer-item-btn">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Height" Value="24" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Height" Value="25" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                    <BrushTransition Property="Background" Duration="0:0:0.08" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.08" />
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Button.explorer-item-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
         </Style>
         <Style Selector="Button.explorer-item-btn.selected">
             <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="BorderBrush" Value="#E36C28" />
+        </Style>
+
+        <!-- Hover Action Buttons: Hidden by default, revealed on row hover -->
+        <Style Selector="StackPanel.explorer-row-actions">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.explorer-item-btn:pointerover StackPanel.explorer-row-actions">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <!-- Explorer Section Header Actions: Hidden by default, revealed on header hover -->
+        <Style Selector="StackPanel.explorer-header-actions">
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.explorer-section-header:pointerover StackPanel.explorer-header-actions">
+            <Setter Property="Opacity" Value="1" />
         </Style>
 
         <!-- Explorer Section Header Button -->
@@ -261,8 +424,9 @@
                         </Grid>
                     </Border>
 
-                    <!-- 2. Workspace Root Row: ⌵ SKIASHARP + 5 Actions -->
+                    <!-- 2. Workspace Root Row: ▾ SKIASHARP + 4 Actions -->
                     <Border Grid.Row="1"
+                            Classes="explorer-section-header"
                             Background="{DynamicResource M3SurfaceContainerLowBrush}"
                             Height="28"
                             Padding="10,0,6,0">
@@ -275,29 +439,23 @@
                                     Cursor="Hand"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding WorkspaceExpansionArrow}"
-                                               FontSize="10"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                               VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding IsWorkspaceExpanded}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding !IsWorkspaceExpanded}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding WorkspaceName}"
-                                               FontSize="11.5"
+                                               FontSize="11"
                                                FontWeight="Bold"
                                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
-                            <!-- Hover / Action Buttons -->
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                            <!-- Clean VS Code Header Actions -->
+                            <StackPanel Grid.Column="2" Classes="explorer-header-actions" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                 <Button Command="{Binding NewFileCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Notebook (.frynb)">
                                     <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
                                 <Button Command="{Binding NewFolderCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Folder">
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                </Button>
-                                <Button Command="{Binding DeleteSelectedExplorerItemCommand}" Classes="cell-tool-btn delete-tool" Width="20" Height="20" ToolTip.Tip="Delete Selected Item">
-                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
                                 <Button Command="{Binding RefreshExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Refresh Explorer">
                                     <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -309,171 +467,12 @@
                         </Grid>
                     </Border>
 
-                    <!-- 3. Folder & File Tree View -->
+                    <!-- 3. Folder & File Tree View (Arbitrary recursive depth via ExplorerItemViewModel DataTemplate) -->
                     <ScrollViewer Grid.Row="2"
                                   IsVisible="{Binding IsWorkspaceExpanded}"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding ExplorerRootItems}" Margin="4,4,4,8">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ExplorerItemViewModel">
-                                    <StackPanel>
-                                        <!-- Root Item Row (e.g. assets, Code, docs, etc.) -->
-                                        <Button Command="{Binding ToggleExpandCommand}"
-                                                Classes="explorer-item-btn"
-                                                Classes.selected="{Binding IsSelected}"
-                                                HorizontalAlignment="Stretch">
-                                            <Button.ContextFlyout>
-                                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                                    <MenuItem Header="New File Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsDirectory}">
-                                                        <MenuItem.Icon>
-                                                            <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsDirectory}">
-                                                        <MenuItem.Icon>
-                                                            <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <Separator IsVisible="{Binding IsDirectory}" />
-                                                    <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
-                                                        <MenuItem.Icon>
-                                                            <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
-                                                        <MenuItem.Icon>
-                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                </MenuFlyout>
-                                            </Button.ContextFlyout>
-                                            <Grid ColumnDefinitions="14,18,*,Auto" Margin="4,0">
-                                                <!-- Arrow -->
-                                                <TextBlock Grid.Column="0"
-                                                           Text="{Binding ExpansionArrow}"
-                                                           FontSize="9.5"
-                                                           FontWeight="Bold"
-                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                                           VerticalAlignment="Center"
-                                                           HorizontalAlignment="Center" />
-                                                <!-- Icon -->
-                                                <materialIcons:MaterialIcon Grid.Column="1"
-                                                                            Kind="{Binding IconKind}"
-                                                                            Width="14"
-                                                                            Height="14"
-                                                                            Foreground="{Binding IconColor}"
-                                                                            VerticalAlignment="Center" />
-                                                <!-- Name (Normal View) -->
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding Name}"
-                                                           FontSize="12"
-                                                           Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="6,0,0,0"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           IsVisible="{Binding !IsRenaming}" />
-
-                                                <!-- Rename TextBox (Edit View) -->
-                                                <TextBox Grid.Column="2"
-                                                         Text="{Binding EditName, Mode=TwoWay}"
-                                                         FontSize="11.5"
-                                                         Height="22"
-                                                         Padding="4,1"
-                                                         Margin="4,0,0,0"
-                                                         IsVisible="{Binding IsRenaming}"
-                                                         VerticalAlignment="Center" />
-
-                                                <!-- Hover Action Buttons: Delete -->
-                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                    <Button Command="{Binding RequestDeleteCommand}"
-                                                            Classes="cell-tool-btn delete-tool"
-                                                            Width="18" Height="18"
-                                                            ToolTip.Tip="Delete">
-                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Button>
-
-                                        <!-- Nested Children (e.g. Document Automation Notebook.frynb under Code) -->
-                                        <ItemsControl ItemsSource="{Binding Children}"
-                                                      IsVisible="{Binding IsExpanded}"
-                                                      Margin="14,0,0,0">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:ExplorerItemViewModel">
-                                                    <Button Command="{Binding SelectCommand}"
-                                                            Classes="explorer-item-btn"
-                                                            Classes.selected="{Binding IsSelected}"
-                                                            HorizontalAlignment="Stretch">
-                                                        <Button.ContextFlyout>
-                                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                                                <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
-                                                                    <MenuItem.Icon>
-                                                                        <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
-                                                                    </MenuItem.Icon>
-                                                                </MenuItem>
-                                                                <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
-                                                                    <MenuItem.Icon>
-                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
-                                                                    </MenuItem.Icon>
-                                                                </MenuItem>
-                                                            </MenuFlyout>
-                                                        </Button.ContextFlyout>
-                                                        <Grid ColumnDefinitions="14,18,*,Auto" Margin="4,0">
-                                                            <!-- Arrow (blank for files) -->
-                                                            <TextBlock Grid.Column="0"
-                                                                       Text="{Binding ExpansionArrow}"
-                                                                       FontSize="9.5"
-                                                                       FontWeight="Bold"
-                                                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                                                       VerticalAlignment="Center"
-                                                                       HorizontalAlignment="Center" />
-                                                            <!-- File Icon (e.g. Orange Notebook) -->
-                                                            <materialIcons:MaterialIcon Grid.Column="1"
-                                                                                        Kind="{Binding IconKind}"
-                                                                                        Width="14"
-                                                                                        Height="14"
-                                                                                        Foreground="{Binding IconColor}"
-                                                                                        VerticalAlignment="Center" />
-                                                            <!-- File Name (Normal View) -->
-                                                            <TextBlock Grid.Column="2"
-                                                                       Text="{Binding Name}"
-                                                                       FontSize="12"
-                                                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                                       VerticalAlignment="Center"
-                                                                       Margin="6,0,0,0"
-                                                                       TextTrimming="CharacterEllipsis"
-                                                                       IsVisible="{Binding !IsRenaming}" />
-
-                                                            <!-- Rename TextBox (Edit View) -->
-                                                            <TextBox Grid.Column="2"
-                                                                     Text="{Binding EditName, Mode=TwoWay}"
-                                                                     FontSize="11.5"
-                                                                     Height="22"
-                                                                     Padding="4,1"
-                                                                     Margin="4,0,0,0"
-                                                                     IsVisible="{Binding IsRenaming}"
-                                                                     VerticalAlignment="Center" />
-
-                                                            <!-- Hover Action Buttons: Delete -->
-                                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                                <Button Command="{Binding RequestDeleteCommand}"
-                                                                        Classes="cell-tool-btn delete-tool"
-                                                                        Width="18" Height="18"
-                                                                        ToolTip.Tip="Delete">
-                                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                                                </Button>
-                                                            </StackPanel>
-                                                        </Grid>
-                                                    </Button>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding ExplorerRootItems}" Margin="2,4,2,8" />
                     </ScrollViewer>
                 </Grid>
             </Border>

@@ -1,0 +1,406 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =================================================================== -->
+    <!-- Google Material Design 3 Expressive (M3 Expressive) Design Tokens   -->
+    <!-- =================================================================== -->
+
+    <!-- Shape Scale Corner Radii -->
+    <CornerRadius x:Key="M3ShapeCornerNone">0</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerExtraSmall">4</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerLarge">16</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerExtraLarge">28</CornerRadius>
+    <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
+
+    <!-- Asymmetric & Specialized Shapes -->
+    <CornerRadius x:Key="M3ShapeTopRoundedMedium">12,12,0,0</CornerRadius>
+    <CornerRadius x:Key="M3ShapeBottomRoundedMedium">0,0,12,12</CornerRadius>
+    <CornerRadius x:Key="M3ShapeLeftRoundedPill">9999,0,0,9999</CornerRadius>
+    <CornerRadius x:Key="M3ShapeRightRoundedPill">0,9999,9999,0</CornerRadius>
+
+    <!-- Chubby Tactile Slider Metrics -->
+    <x:Double x:Key="SliderTrackThemeHeight">10</x:Double>
+    <GridLength x:Key="SliderPreContentMargin">0</GridLength>
+    <GridLength x:Key="SliderPostContentMargin">0</GridLength>
+    <x:Double x:Key="SliderHorizontalHeight">26</x:Double>
+    <x:Double x:Key="SliderVerticalWidth">26</x:Double>
+    <x:Double x:Key="SliderHorizontalThumbWidth">22</x:Double>
+    <x:Double x:Key="SliderHorizontalThumbHeight">22</x:Double>
+    <x:Double x:Key="SliderVerticalThumbWidth">22</x:Double>
+    <x:Double x:Key="SliderVerticalThumbHeight">22</x:Double>
+    <CornerRadius x:Key="SliderThumbCornerRadius">11</CornerRadius>
+    <CornerRadius x:Key="SliderThumbTactileRadius">11</CornerRadius>
+
+    <!-- Typography Scale -->
+    <FontFamily x:Key="M3FontFamily">Inter, Segoe UI, -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, sans-serif</FontFamily>
+    <FontFamily x:Key="M3FontFamilyDisplay">Inter, Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif</FontFamily>
+    <FontFamily x:Key="M3FontFamilyMono">Cascadia Code, Fira Code, Consolas, 'Roboto Mono', monospace</FontFamily>
+
+    <x:Double x:Key="M3FontSizeDisplayLarge">57</x:Double>
+    <x:Double x:Key="M3FontSizeDisplayMedium">45</x:Double>
+    <x:Double x:Key="M3FontSizeDisplaySmall">36</x:Double>
+    <x:Double x:Key="M3FontSizeHeadlineLarge">32</x:Double>
+    <x:Double x:Key="M3FontSizeHeadlineMedium">28</x:Double>
+    <x:Double x:Key="M3FontSizeHeadlineSmall">24</x:Double>
+    <x:Double x:Key="M3FontSizeTitleLarge">22</x:Double>
+    <x:Double x:Key="M3FontSizeTitleMedium">16</x:Double>
+    <x:Double x:Key="M3FontSizeTitleSmall">14</x:Double>
+    <x:Double x:Key="M3FontSizeBodyLarge">16</x:Double>
+    <x:Double x:Key="M3FontSizeBodyMedium">14</x:Double>
+    <x:Double x:Key="M3FontSizeBodySmall">12</x:Double>
+    <x:Double x:Key="M3FontSizeLabelLarge">14</x:Double>
+    <x:Double x:Key="M3FontSizeLabelMedium">12</x:Double>
+    <x:Double x:Key="M3FontSizeLabelSmall">11</x:Double>
+
+    <!-- Tonal Elevation Shadows (Dual-Layer Ambient + Key) -->
+    <BoxShadows x:Key="M3ElevationLevel0">0 0 0 transparent</BoxShadows>
+    <BoxShadows x:Key="M3ElevationLevel1">0 1 3 #14000000, 0 1 2 #1E000000</BoxShadows>
+    <BoxShadows x:Key="M3ElevationLevel2">0 2 6 #16000000, 0 4 8 #1C000000</BoxShadows>
+    <BoxShadows x:Key="M3ElevationLevel3">0 4 12 #1A000000, 0 8 20 #20000000</BoxShadows>
+    <BoxShadows x:Key="M3ElevationLevel4">0 6 18 #1E000000, 0 12 28 #22000000</BoxShadows>
+    <BoxShadows x:Key="M3ElevationLevel5">0 8 24 #22000000, 0 16 36 #26000000</BoxShadows>
+    <!-- M3 Modal Dialog Elevation (Deep Dual-Layer Ambient + Key for Scrim Backdrops) -->
+    <BoxShadows x:Key="M3ElevationModalDialog">0 8 24 #28000000, 0 24 64 #48000000</BoxShadows>
+
+    <!-- =================================================================== -->
+    <!-- THEME DICTIONARIES: LIGHT & DARK M3 EXPRESSIVE PALETTES            -->
+    <!-- =================================================================== -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- LIGHT THEME -->
+        <ResourceDictionary x:Key="Light">
+            <!-- 1. M3 Primary Accent Palette (Electric Sapphire) -->
+            <Color x:Key="M3PrimaryColor">#1E5EEB</Color>
+            <Color x:Key="M3OnPrimaryColor">#FFFFFF</Color>
+            <Color x:Key="M3PrimaryContainerColor">#E0EAFF</Color>
+            <Color x:Key="M3OnPrimaryContainerColor">#001A42</Color>
+
+            <!-- 2. M3 Secondary Accent Palette (Slate Indigo) -->
+            <Color x:Key="M3SecondaryColor">#4A607A</Color>
+            <Color x:Key="M3OnSecondaryColor">#FFFFFF</Color>
+            <Color x:Key="M3SecondaryContainerColor">#D7E3F8</Color>
+            <Color x:Key="M3OnSecondaryContainerColor">#081D33</Color>
+
+            <!-- 3. M3 Tertiary Expressive Palette (Warm Coral / Sunset) -->
+            <Color x:Key="M3TertiaryColor">#E05D38</Color>
+            <Color x:Key="M3OnTertiaryColor">#FFFFFF</Color>
+            <Color x:Key="M3TertiaryContainerColor">#FFDBD0</Color>
+            <Color x:Key="M3OnTertiaryContainerColor">#380D03</Color>
+
+            <!-- 4. M3 Semantic Feedback Palettes -->
+            <Color x:Key="M3ErrorColor">#BA1A1A</Color>
+            <Color x:Key="M3OnErrorColor">#FFFFFF</Color>
+            <Color x:Key="M3ErrorContainerColor">#FFDAD6</Color>
+            <Color x:Key="M3OnErrorContainerColor">#410002</Color>
+
+            <Color x:Key="M3SuccessColor">#198754</Color>
+            <Color x:Key="M3OnSuccessColor">#FFFFFF</Color>
+            <Color x:Key="M3SuccessContainerColor">#D1E7DD</Color>
+            <Color x:Key="M3OnSuccessContainerColor">#0A3622</Color>
+
+            <Color x:Key="M3WarningColor">#D97706</Color>
+            <Color x:Key="M3OnWarningColor">#FFFFFF</Color>
+            <Color x:Key="M3WarningContainerColor">#FEF3C7</Color>
+            <Color x:Key="M3OnWarningContainerColor">#78350F</Color>
+
+            <!-- 5. M3 Tonal Surface Hierarchy (Light) -->
+            <Color x:Key="M3SurfaceColor">#F8FAFD</Color>
+            <Color x:Key="M3SurfaceDimColor">#D9E2EC</Color>
+            <Color x:Key="M3SurfaceBrightColor">#FFFFFF</Color>
+            <Color x:Key="M3SurfaceContainerLowestColor">#FFFFFF</Color>
+            <Color x:Key="M3SurfaceContainerLowColor">#F1F5F9</Color>
+            <Color x:Key="M3SurfaceContainerColor">#E9EEF6</Color>
+            <Color x:Key="M3SurfaceContainerHighColor">#E1E8F2</Color>
+            <Color x:Key="M3SurfaceContainerHighestColor">#D7E1EE</Color>
+
+            <!-- 6. M3 Text & Outlines -->
+            <Color x:Key="M3OnSurfaceColor">#191C20</Color>
+            <Color x:Key="M3OnSurfaceVariantColor">#44474E</Color>
+            <Color x:Key="M3OutlineColor">#74777F</Color>
+            <Color x:Key="M3OutlineVariantColor">#C4C7D0</Color>
+            <Color x:Key="M3InverseSurfaceColor">#2E3135</Color>
+            <Color x:Key="M3InverseOnSurfaceColor">#F0F1F5</Color>
+            <Color x:Key="M3InversePrimaryColor">#A8C7FA</Color>
+            <Color x:Key="M3ScrimColor">#52000000</Color>
+
+            <!-- M3 SolidColorBrushes (Light) -->
+            <SolidColorBrush x:Key="M3PrimaryBrush" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="{StaticResource M3OnPrimaryColor}" />
+            <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="{StaticResource M3PrimaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="{StaticResource M3OnPrimaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SecondaryBrush" Color="{StaticResource M3SecondaryColor}" />
+            <SolidColorBrush x:Key="M3OnSecondaryBrush" Color="{StaticResource M3OnSecondaryColor}" />
+            <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="{StaticResource M3SecondaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="{StaticResource M3OnSecondaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3TertiaryBrush" Color="{StaticResource M3TertiaryColor}" />
+            <SolidColorBrush x:Key="M3OnTertiaryBrush" Color="{StaticResource M3OnTertiaryColor}" />
+            <SolidColorBrush x:Key="M3TertiaryContainerBrush" Color="{StaticResource M3TertiaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnTertiaryContainerBrush" Color="{StaticResource M3OnTertiaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3ErrorBrush" Color="{StaticResource M3ErrorColor}" />
+            <SolidColorBrush x:Key="M3OnErrorBrush" Color="{StaticResource M3OnErrorColor}" />
+            <SolidColorBrush x:Key="M3ErrorContainerBrush" Color="{StaticResource M3ErrorContainerColor}" />
+            <SolidColorBrush x:Key="M3OnErrorContainerBrush" Color="{StaticResource M3OnErrorContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SuccessBrush" Color="{StaticResource M3SuccessColor}" />
+            <SolidColorBrush x:Key="M3OnSuccessBrush" Color="{StaticResource M3OnSuccessColor}" />
+            <SolidColorBrush x:Key="M3SuccessContainerBrush" Color="{StaticResource M3SuccessContainerColor}" />
+            <SolidColorBrush x:Key="M3OnSuccessContainerBrush" Color="{StaticResource M3OnSuccessContainerColor}" />
+
+            <SolidColorBrush x:Key="M3WarningBrush" Color="{StaticResource M3WarningColor}" />
+            <SolidColorBrush x:Key="M3OnWarningBrush" Color="{StaticResource M3OnWarningColor}" />
+            <SolidColorBrush x:Key="M3WarningContainerBrush" Color="{StaticResource M3WarningContainerColor}" />
+            <SolidColorBrush x:Key="M3OnWarningContainerBrush" Color="{StaticResource M3OnWarningContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SurfaceBrush" Color="{StaticResource M3SurfaceColor}" />
+            <SolidColorBrush x:Key="M3SurfaceDimBrush" Color="{StaticResource M3SurfaceDimColor}" />
+            <SolidColorBrush x:Key="M3SurfaceBrightBrush" Color="{StaticResource M3SurfaceBrightColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowestBrush" Color="{StaticResource M3SurfaceContainerLowestColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowBrush" Color="{StaticResource M3SurfaceContainerLowColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="{StaticResource M3SurfaceContainerColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="{StaticResource M3SurfaceContainerHighColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+
+            <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="{StaticResource M3OnSurfaceColor}" />
+            <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="{StaticResource M3OnSurfaceVariantColor}" />
+            <SolidColorBrush x:Key="M3OutlineBrush" Color="{StaticResource M3OutlineColor}" />
+            <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="{StaticResource M3OutlineVariantColor}" />
+            <SolidColorBrush x:Key="M3InverseSurfaceBrush" Color="{StaticResource M3InverseSurfaceColor}" />
+            <SolidColorBrush x:Key="M3InverseOnSurfaceBrush" Color="{StaticResource M3InverseOnSurfaceColor}" />
+            <SolidColorBrush x:Key="M3InversePrimaryBrush" Color="{StaticResource M3InversePrimaryColor}" />
+            <SolidColorBrush x:Key="M3ScrimBrush" Color="{StaticResource M3ScrimColor}" />
+
+            <!-- =============================================================== -->
+            <!-- BACKWARD COMPATIBILITY ALIASES (LIGHT THEME)                    -->
+            <!-- Maps legacy Win* keys to modern M3 Expressive semantic tokens   -->
+            <!-- =============================================================== -->
+            <Color x:Key="WinBgColor">#F8FAFD</Color>
+            <Color x:Key="WinPanelColor">#FFFFFF</Color>
+            <Color x:Key="WinSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="WinInputBgColor">#F1F5F9</Color>
+            <Color x:Key="WinBorderColor">#E2E8F0</Color>
+            <Color x:Key="WinBorderSubtleColor">#EDF2F7</Color>
+            <Color x:Key="WinHoverColor">#EBF2FD</Color>
+            <Color x:Key="WinActiveColor">#D7E3F8</Color>
+            <Color x:Key="WinCardHoverColor">#E0EAFF</Color>
+            <Color x:Key="WinTextColor">#191C20</Color>
+            <Color x:Key="WinMutedColor">#5B6471</Color>
+            <Color x:Key="WinSubtleColor">#8E97A6</Color>
+            <Color x:Key="WinAccentColor">#1E5EEB</Color>
+            <Color x:Key="WinAccentHoverColor">#1548B8</Color>
+            <Color x:Key="WinAccentLightColor">#E0EAFF</Color>
+            <Color x:Key="WinAccentBorderColor">#A8C7FA</Color>
+            <Color x:Key="WinDangerColor">#BA1A1A</Color>
+            <Color x:Key="WinDangerLightColor">#FFDAD6</Color>
+            <Color x:Key="WinDangerBorderColor">#FFB4AB</Color>
+            <Color x:Key="WinSuccessColor">#198754</Color>
+            <Color x:Key="WinSuccessLightColor">#D1E7DD</Color>
+
+            <SolidColorBrush x:Key="WinBgBrush" Color="{StaticResource WinBgColor}" />
+            <SolidColorBrush x:Key="WinPanelBrush" Color="{StaticResource WinPanelColor}" />
+            <SolidColorBrush x:Key="WinSurfaceBrush" Color="{StaticResource WinSurfaceColor}" />
+            <SolidColorBrush x:Key="WinInputBgBrush" Color="{StaticResource WinInputBgColor}" />
+            <SolidColorBrush x:Key="WinBorderBrush" Color="{StaticResource WinBorderColor}" />
+            <SolidColorBrush x:Key="WinBorderSubtleBrush" Color="{StaticResource WinBorderSubtleColor}" />
+            <SolidColorBrush x:Key="WinHoverBrush" Color="{StaticResource WinHoverColor}" />
+            <SolidColorBrush x:Key="WinActiveBrush" Color="{StaticResource WinActiveColor}" />
+            <SolidColorBrush x:Key="WinCardHoverBrush" Color="{StaticResource WinCardHoverColor}" />
+            <SolidColorBrush x:Key="WinTextBrush" Color="{StaticResource WinTextColor}" />
+            <SolidColorBrush x:Key="WinMutedBrush" Color="{StaticResource WinMutedColor}" />
+            <SolidColorBrush x:Key="WinSubtleBrush" Color="{StaticResource WinSubtleColor}" />
+            <SolidColorBrush x:Key="WinAccentBrush" Color="{StaticResource WinAccentColor}" />
+            <SolidColorBrush x:Key="WinAccentHoverBrush" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="WinAccentLightBrush" Color="{StaticResource WinAccentLightColor}" />
+            <SolidColorBrush x:Key="WinAccentBorderBrush" Color="{StaticResource WinAccentBorderColor}" />
+            <SolidColorBrush x:Key="WinDangerBrush" Color="{StaticResource WinDangerColor}" />
+            <SolidColorBrush x:Key="WinDangerLightBrush" Color="{StaticResource WinDangerLightColor}" />
+            <SolidColorBrush x:Key="WinDangerBorderBrush" Color="{StaticResource WinDangerBorderColor}" />
+            <SolidColorBrush x:Key="WinSuccessBrush" Color="{StaticResource WinSuccessColor}" />
+            <SolidColorBrush x:Key="WinSuccessLightBrush" Color="{StaticResource WinSuccessLightColor}" />
+            <SolidColorBrush x:Key="WinScrimBrush" Color="{StaticResource M3ScrimColor}" />
+
+            <!-- Slider Brushes (Light Theme) -->
+            <SolidColorBrush x:Key="SliderTrackFill" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="{StaticResource M3OutlineVariantColor}" />
+            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="{StaticResource M3OutlineColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{StaticResource WinAccentHoverColor}" />
+        </ResourceDictionary>
+
+        <!-- DARK THEME -->
+        <ResourceDictionary x:Key="Dark">
+            <!-- 1. M3 Primary Accent Palette (Luminous Blue) -->
+            <Color x:Key="M3PrimaryColor">#A8C7FA</Color>
+            <Color x:Key="M3OnPrimaryColor">#062E6F</Color>
+            <Color x:Key="M3PrimaryContainerColor">#0F387D</Color>
+            <Color x:Key="M3OnPrimaryContainerColor">#D3E3FD</Color>
+
+            <!-- 2. M3 Secondary Accent Palette (Luminous Slate) -->
+            <Color x:Key="M3SecondaryColor">#BDC7DC</Color>
+            <Color x:Key="M3OnSecondaryColor">#273142</Color>
+            <Color x:Key="M3SecondaryContainerColor">#343E4E</Color>
+            <Color x:Key="M3OnSecondaryContainerColor">#D9E3F8</Color>
+
+            <!-- 3. M3 Tertiary Expressive Palette (Peach / Coral Glow) -->
+            <Color x:Key="M3TertiaryColor">#FFB4A1</Color>
+            <Color x:Key="M3OnTertiaryColor">#581E10</Color>
+            <Color x:Key="M3TertiaryContainerColor">#6C2C1E</Color>
+            <Color x:Key="M3OnTertiaryContainerColor">#FFDBD0</Color>
+
+            <!-- 4. M3 Semantic Feedback Palettes -->
+            <Color x:Key="M3ErrorColor">#FFB4AB</Color>
+            <Color x:Key="M3OnErrorColor">#690005</Color>
+            <Color x:Key="M3ErrorContainerColor">#93000A</Color>
+            <Color x:Key="M3OnErrorContainerColor">#FFDAD6</Color>
+
+            <Color x:Key="M3SuccessColor">#75D59A</Color>
+            <Color x:Key="M3OnSuccessColor">#00391A</Color>
+            <Color x:Key="M3SuccessContainerColor">#0F5229</Color>
+            <Color x:Key="M3OnSuccessContainerColor">#A8F5C1</Color>
+
+            <Color x:Key="M3WarningColor">#FBBF24</Color>
+            <Color x:Key="M3OnWarningColor">#451A03</Color>
+            <Color x:Key="M3WarningContainerColor">#78350F</Color>
+            <Color x:Key="M3OnWarningContainerColor">#FEF3C7</Color>
+
+            <!-- 5. M3 Tonal Surface Hierarchy (Dark) -->
+            <Color x:Key="M3SurfaceColor">#101317</Color>
+            <Color x:Key="M3SurfaceDimColor">#0D1013</Color>
+            <Color x:Key="M3SurfaceBrightColor">#343940</Color>
+            <Color x:Key="M3SurfaceContainerLowestColor">#0B0E11</Color>
+            <Color x:Key="M3SurfaceContainerLowColor">#161A1F</Color>
+            <Color x:Key="M3SurfaceContainerColor">#1C2128</Color>
+            <Color x:Key="M3SurfaceContainerHighColor">#252C36</Color>
+            <Color x:Key="M3SurfaceContainerHighestColor">#2F3743</Color>
+
+            <!-- 6. M3 Text & Outlines -->
+            <Color x:Key="M3OnSurfaceColor">#E2E2E6</Color>
+            <Color x:Key="M3OnSurfaceVariantColor">#9BA1AD</Color>
+            <Color x:Key="M3OutlineColor">#8E919A</Color>
+            <Color x:Key="M3OutlineVariantColor">#3D4450</Color>
+            <Color x:Key="M3InverseSurfaceColor">#E2E2E6</Color>
+            <Color x:Key="M3InverseOnSurfaceColor">#191C20</Color>
+            <Color x:Key="M3InversePrimaryColor">#1E5EEB</Color>
+            <Color x:Key="M3ScrimColor">#80000000</Color>
+
+            <!-- M3 SolidColorBrushes (Dark) -->
+            <SolidColorBrush x:Key="M3PrimaryBrush" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="{StaticResource M3OnPrimaryColor}" />
+            <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="{StaticResource M3PrimaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="{StaticResource M3OnPrimaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SecondaryBrush" Color="{StaticResource M3SecondaryColor}" />
+            <SolidColorBrush x:Key="M3OnSecondaryBrush" Color="{StaticResource M3OnSecondaryColor}" />
+            <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="{StaticResource M3SecondaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="{StaticResource M3OnSecondaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3TertiaryBrush" Color="{StaticResource M3TertiaryColor}" />
+            <SolidColorBrush x:Key="M3OnTertiaryBrush" Color="{StaticResource M3OnTertiaryColor}" />
+            <SolidColorBrush x:Key="M3TertiaryContainerBrush" Color="{StaticResource M3TertiaryContainerColor}" />
+            <SolidColorBrush x:Key="M3OnTertiaryContainerBrush" Color="{StaticResource M3OnTertiaryContainerColor}" />
+
+            <SolidColorBrush x:Key="M3ErrorBrush" Color="{StaticResource M3ErrorColor}" />
+            <SolidColorBrush x:Key="M3OnErrorBrush" Color="{StaticResource M3OnErrorColor}" />
+            <SolidColorBrush x:Key="M3ErrorContainerBrush" Color="{StaticResource M3ErrorContainerColor}" />
+            <SolidColorBrush x:Key="M3OnErrorContainerBrush" Color="{StaticResource M3OnErrorContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SuccessBrush" Color="{StaticResource M3SuccessColor}" />
+            <SolidColorBrush x:Key="M3OnSuccessBrush" Color="{StaticResource M3OnSuccessColor}" />
+            <SolidColorBrush x:Key="M3SuccessContainerBrush" Color="{StaticResource M3SuccessContainerColor}" />
+            <SolidColorBrush x:Key="M3OnSuccessContainerBrush" Color="{StaticResource M3OnSuccessContainerColor}" />
+
+            <SolidColorBrush x:Key="M3WarningBrush" Color="{StaticResource M3WarningColor}" />
+            <SolidColorBrush x:Key="M3OnWarningBrush" Color="{StaticResource M3OnWarningColor}" />
+            <SolidColorBrush x:Key="M3WarningContainerBrush" Color="{StaticResource M3WarningContainerColor}" />
+            <SolidColorBrush x:Key="M3OnWarningContainerBrush" Color="{StaticResource M3OnWarningContainerColor}" />
+
+            <SolidColorBrush x:Key="M3SurfaceBrush" Color="{StaticResource M3SurfaceColor}" />
+            <SolidColorBrush x:Key="M3SurfaceDimBrush" Color="{StaticResource M3SurfaceDimColor}" />
+            <SolidColorBrush x:Key="M3SurfaceBrightBrush" Color="{StaticResource M3SurfaceBrightColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowestBrush" Color="{StaticResource M3SurfaceContainerLowestColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerLowBrush" Color="{StaticResource M3SurfaceContainerLowColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="{StaticResource M3SurfaceContainerColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="{StaticResource M3SurfaceContainerHighColor}" />
+            <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+
+            <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="{StaticResource M3OnSurfaceColor}" />
+            <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="{StaticResource M3OnSurfaceVariantColor}" />
+            <SolidColorBrush x:Key="M3OutlineBrush" Color="{StaticResource M3OutlineColor}" />
+            <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="{StaticResource M3OutlineVariantColor}" />
+            <SolidColorBrush x:Key="M3InverseSurfaceBrush" Color="{StaticResource M3InverseSurfaceColor}" />
+            <SolidColorBrush x:Key="M3InverseOnSurfaceBrush" Color="{StaticResource M3InverseOnSurfaceColor}" />
+            <SolidColorBrush x:Key="M3InversePrimaryBrush" Color="{StaticResource M3InversePrimaryColor}" />
+            <SolidColorBrush x:Key="M3ScrimBrush" Color="{StaticResource M3ScrimColor}" />
+
+            <!-- =============================================================== -->
+            <!-- BACKWARD COMPATIBILITY ALIASES (DARK THEME)                     -->
+            <!-- Maps legacy Win* keys to modern M3 Expressive semantic tokens   -->
+            <!-- =============================================================== -->
+            <Color x:Key="WinBgColor">#101317</Color>
+            <Color x:Key="WinPanelColor">#161A1F</Color>
+            <Color x:Key="WinSurfaceColor">#1C2128</Color>
+            <Color x:Key="WinInputBgColor">#0B0E11</Color>
+            <Color x:Key="WinBorderColor">#2F3743</Color>
+            <Color x:Key="WinBorderSubtleColor">#202630</Color>
+            <Color x:Key="WinHoverColor">#252C36</Color>
+            <Color x:Key="WinActiveColor">#343E4E</Color>
+            <Color x:Key="WinCardHoverColor">#182338</Color>
+            <Color x:Key="WinTextColor">#F8FAFC</Color>
+            <Color x:Key="WinMutedColor">#9BA1AD</Color>
+            <Color x:Key="WinSubtleColor">#647082</Color>
+            <Color x:Key="WinAccentColor">#A8C7FA</Color>
+            <Color x:Key="WinAccentHoverColor">#7AA9F8</Color>
+            <Color x:Key="WinAccentLightColor">#0F387D</Color>
+            <Color x:Key="WinAccentBorderColor">#4D8DF7</Color>
+            <Color x:Key="WinDangerColor">#FFB4AB</Color>
+            <Color x:Key="WinDangerLightColor">#4E0003</Color>
+            <Color x:Key="WinDangerBorderColor">#93000A</Color>
+            <Color x:Key="WinSuccessColor">#75D59A</Color>
+            <Color x:Key="WinSuccessLightColor">#0F5229</Color>
+
+            <SolidColorBrush x:Key="WinBgBrush" Color="{StaticResource WinBgColor}" />
+            <SolidColorBrush x:Key="WinPanelBrush" Color="{StaticResource WinPanelColor}" />
+            <SolidColorBrush x:Key="WinSurfaceBrush" Color="{StaticResource WinSurfaceColor}" />
+            <SolidColorBrush x:Key="WinInputBgBrush" Color="{StaticResource WinInputBgColor}" />
+            <SolidColorBrush x:Key="WinBorderBrush" Color="{StaticResource WinBorderColor}" />
+            <SolidColorBrush x:Key="WinBorderSubtleBrush" Color="{StaticResource WinBorderSubtleColor}" />
+            <SolidColorBrush x:Key="WinHoverBrush" Color="{StaticResource WinHoverColor}" />
+            <SolidColorBrush x:Key="WinActiveBrush" Color="{StaticResource WinActiveColor}" />
+            <SolidColorBrush x:Key="WinCardHoverBrush" Color="{StaticResource WinCardHoverColor}" />
+            <SolidColorBrush x:Key="WinTextBrush" Color="{StaticResource WinTextColor}" />
+            <SolidColorBrush x:Key="WinMutedBrush" Color="{StaticResource WinMutedColor}" />
+            <SolidColorBrush x:Key="WinSubtleBrush" Color="{StaticResource WinSubtleColor}" />
+            <SolidColorBrush x:Key="WinAccentBrush" Color="{StaticResource WinAccentColor}" />
+            <SolidColorBrush x:Key="WinAccentHoverBrush" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="WinAccentLightBrush" Color="{StaticResource WinAccentLightColor}" />
+            <SolidColorBrush x:Key="WinAccentBorderBrush" Color="{StaticResource WinAccentBorderColor}" />
+            <SolidColorBrush x:Key="WinDangerBrush" Color="{StaticResource WinDangerColor}" />
+            <SolidColorBrush x:Key="WinDangerLightBrush" Color="{StaticResource WinDangerLightColor}" />
+            <SolidColorBrush x:Key="WinDangerBorderBrush" Color="{StaticResource WinDangerBorderColor}" />
+            <SolidColorBrush x:Key="WinSuccessBrush" Color="{StaticResource WinSuccessColor}" />
+            <SolidColorBrush x:Key="WinSuccessLightBrush" Color="{StaticResource WinSuccessLightColor}" />
+            <SolidColorBrush x:Key="WinScrimBrush" Color="{StaticResource M3ScrimColor}" />
+
+            <!-- Slider Brushes (Dark Theme) -->
+            <SolidColorBrush x:Key="SliderTrackFill" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="{StaticResource M3OutlineVariantColor}" />
+            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="{StaticResource M3OutlineColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="{StaticResource M3PrimaryColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource WinAccentHoverColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{StaticResource WinAccentHoverColor}" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

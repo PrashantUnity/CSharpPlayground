@@ -391,5 +391,121 @@ Console.WriteLine(yaml.Trim());";
         Assert.Equal(0, vNewtonsoft.Minor);
         Assert.Equal(3, vNewtonsoft.Patch);
     }
+
+    [Fact]
+    public void UpdateActiveNotebook_AddsDocumentToExplorerAndHighlightsIt()
+    {
+        var studio = CreateStudio();
+
+        var customNb = new NotebookDocumentItem
+        {
+            Id = "skiasharp_image_studio",
+            Title = "SkiaSharp Graphics & Image Generation Copy"
+        };
+
+        studio.UpdateActiveNotebook(customNb);
+
+        Assert.Equal(2, studio.Tabs.Count);
+        Assert.NotNull(studio.ActiveTab);
+        Assert.Equal("SkiaSharp Graphics & Image Generation Copy.frynb", studio.ActiveTab.Title);
+
+        // Verify document was added to the Explorer tree and selected
+        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
+        Assert.NotNull(codeFolder);
+        Assert.True(codeFolder.IsExpanded);
+
+        var expItem = codeFolder.Children.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
+        Assert.NotNull(expItem);
+        Assert.True(expItem.IsSelected);
+        Assert.Equal("skiasharp_image_studio", expItem.DocumentId);
+    }
+
+    [Fact]
+    public async Task OpenDocument_WhenSavedInStorage_LoadsSavedCells()
+    {
+        var studio = CreateStudio();
+
+        // Create and save a notebook in storage
+        var storage = new LocalScriptStorageService();
+        var uniqueTitle = $"StorageTest_{Guid.NewGuid():N}";
+        var newNb = new NotebookDocumentItem
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Title = uniqueTitle
+        };
+        newNb.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Code,
+            Source = "Console.WriteLine(\"Persistent Storage Cell\");"
+        });
+        await storage.SaveNotebookAsync(newNb);
+
+        // Add to explorer
+        var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
+        var itemVm = new ExplorerItemViewModel
+        {
+            Name = $"{uniqueTitle}.frynb",
+            DocumentId = newNb.Id,
+            IsDirectory = false,
+            FileExtension = ".frynb",
+            Parent = codeFolder
+        };
+        codeFolder.Children.Add(itemVm);
+
+        // Click to open document
+        studio.OpenDocument(itemVm);
+
+        Assert.Equal(2, studio.Tabs.Count);
+        Assert.Equal($"{uniqueTitle}.frynb", studio.ActiveTab!.Title);
+        Assert.Contains(studio.Cells, c => c.Source?.Contains("Persistent Storage Cell") == true);
+    }
+
+    [Fact]
+    public void DuplicateExplorerItem_CreatesClonedDocumentInStorageAndExplorer()
+    {
+        var studio = CreateStudio();
+
+        var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
+        var sampleFile = codeFolder.Children.First(x => x.Name == "codefrydev.frynb");
+
+        studio.DuplicateExplorerItem(sampleFile);
+
+        Assert.Contains(codeFolder.Children, x => x.Name == "codefrydev Copy.frynb");
+        var duplicateItem = codeFolder.Children.First(x => x.Name == "codefrydev Copy.frynb");
+        Assert.False(string.IsNullOrEmpty(duplicateItem.DocumentId));
+        Assert.Equal("codefrydev Copy.frynb", studio.ActiveTab!.Title);
+    }
+
+    [Fact]
+    public void ExplorerItem_IndentationAndChevronProperties_CalculateAccurately()
+    {
+        var folder = new ExplorerItemViewModel
+        {
+            Name = "RootFolder",
+            IsDirectory = true,
+            Depth = 0,
+            IsExpanded = false
+        };
+
+        Assert.Equal("ChevronRight", folder.ChevronKind);
+        Assert.Equal(4, folder.IndentPadding.Left);
+
+        folder.IsExpanded = true;
+        Assert.Equal("ChevronDown", folder.ChevronKind);
+
+        var child = new ExplorerItemViewModel
+        {
+            Name = "ChildFile.frynb",
+            IsDirectory = false,
+            FileExtension = ".frynb",
+            Depth = 1,
+            Parent = folder
+        };
+
+        Assert.Equal(18, child.IndentPadding.Left);
+        Assert.Equal("#E36C28", child.IconColor);
+        Assert.Equal("NotebookOutline", child.IconKind);
+    }
 }
+
 

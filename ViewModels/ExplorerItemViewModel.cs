@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -21,6 +22,9 @@ public partial class ExplorerItemViewModel : ObservableObject
     private string _fullPath = string.Empty;
 
     [ObservableProperty]
+    private string? _documentId;
+
+    [ObservableProperty]
     private bool _isDirectory;
 
     [ObservableProperty]
@@ -32,9 +36,14 @@ public partial class ExplorerItemViewModel : ObservableObject
     [ObservableProperty]
     private string _fileExtension = string.Empty;
 
+    [ObservableProperty]
+    private int _depth;
+
     public ExplorerItemViewModel? Parent { get; set; }
 
     public ObservableCollection<ExplorerItemViewModel> Children { get; } = new();
+
+    public Thickness IndentPadding => new Thickness(Math.Max(4, (Depth * 14) + 4), 0, 4, 0);
 
     public string IconKind
     {
@@ -47,7 +56,7 @@ public partial class ExplorerItemViewModel : ObservableObject
 
             return FileExtension.ToLowerInvariant() switch
             {
-                ".frynb" => "NotebookOutline",
+                ".frynb" or ".ipynb" => "NotebookOutline",
                 ".cs" or ".frycs" => "LanguageCsharp",
                 ".json" => "CodeJson",
                 ".md" => "FormatHeaderPound",
@@ -65,15 +74,17 @@ public partial class ExplorerItemViewModel : ObservableObject
 
             return FileExtension.ToLowerInvariant() switch
             {
-                ".frynb" => "#D97706",
+                ".frynb" or ".ipynb" => "#E36C28",
                 ".cs" or ".frycs" => "#58A6FF",
                 ".json" => "#E5C07B",
                 ".md" => "#4EC9B0",
                 ".png" or ".jpg" or ".jpeg" or ".svg" => "#C586C0",
-                _ => "#94A3B8"
+                _ => "#8B949E"
             };
         }
     }
+
+    public string ChevronKind => IsExpanded ? "ChevronDown" : "ChevronRight";
 
     public string ExpansionArrow => IsDirectory ? (IsExpanded ? "⌵" : ">") : " ";
 
@@ -82,11 +93,18 @@ public partial class ExplorerItemViewModel : ObservableObject
     public Action<ExplorerItemViewModel>? OnNewFileRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnNewFolderRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnRenameCommitted { get; set; }
+    public Action<ExplorerItemViewModel>? OnDuplicateRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnCopyPathRequested { get; set; }
+
+    partial void OnDepthChanged(int value)
+    {
+        OnPropertyChanged(nameof(IndentPadding));
+    }
 
     partial void OnIsExpandedChanged(bool value)
     {
         OnPropertyChanged(nameof(IconKind));
-        OnPropertyChanged(nameof(ExpansionArrow));
+        OnPropertyChanged(nameof(ChevronKind));
     }
 
     [RelayCommand]
@@ -165,5 +183,17 @@ public partial class ExplorerItemViewModel : ObservableObject
     public void RequestNewFolder()
     {
         OnNewFolderRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestDuplicate()
+    {
+        OnDuplicateRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestCopyPath()
+    {
+        OnCopyPathRequested?.Invoke(this);
     }
 }
