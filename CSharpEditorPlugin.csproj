@@ -17,9 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Sibling checkout for local in-tree development, falling back to NuGet SDK package -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj" PrivateAssets="all" Condition="'$(UseLocalSdk)' != 'false' And Exists('$(MSBuildThisFileDirectory)../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
-    <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" Condition="'$(UseLocalSdk)' == 'false' Or !Exists('$(MSBuildThisFileDirectory)../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
+    <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

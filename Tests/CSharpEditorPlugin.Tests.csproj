@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSharpEditorPlugin.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)../../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj" Condition="'$(UseLocalSdk)' != 'false' And Exists('$(MSBuildThisFileDirectory)../../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
-    <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" Condition="'$(UseLocalSdk)' == 'false' Or !Exists('$(MSBuildThisFileDirectory)../../../../PDFCreator/src/PdfEditorApp.Core/PdfEditorApp.Core.csproj')" />
+    <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" />
   </ItemGroup>
 </Project>
