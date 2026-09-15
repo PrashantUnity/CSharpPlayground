@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using PdfEditorApp.Core.Plugins.Manifests;
+using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -68,6 +69,21 @@ public class CSharpEditorPlugin : IFryPlugin
 
     public Task ApplyAsync(IFryPluginContext ctx, CancellationToken ct = default)
     {
+        // Tracks the live host instance so shortcut/command-palette/ribbon actions (which only receive
+        // an IServiceProvider, not the ViewModel) can reach whichever Code Studio / Notebook Studio page
+        // is actually on screen. Reassigned every time ViewFactory runs (e.g. navigating away and back).
+        CSharpStudioHostViewModel? activeHost = null;
+
+        void NavigateToStudio(IServiceProvider sp)
+        {
+            var homeType = Type.GetType("PdfEditorApp.ViewModels.HomeViewModel, PdfEditorApp");
+            if (homeType != null)
+            {
+                var home = sp.GetService(homeType);
+                homeType.GetMethod("SelectNavSection")?.Invoke(home, ["CSharpStudio"]);
+            }
+        }
+
         // 1. Register Full-Viewport Workspace Studio Page in Left Sidebar Navigation
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
         {
@@ -80,9 +96,12 @@ public class CSharpEditorPlugin : IFryPlugin
             Order = 38,
             DisplayMode = NavigationDisplayMode.FullViewport,
             HideTopSearchBar = true,
-            ViewFactory = sp => new CSharpStudioHostView
+            ViewFactory = sp =>
             {
-                DataContext = new CSharpStudioHostViewModel(sp)
+                ctx.TryGetService<IPluginSettingsStore>(out var settingsStore);
+                var hostVm = new CSharpStudioHostViewModel(sp, settingsStore);
+                activeHost = hostVm;
+                return new CSharpStudioHostView { DataContext = hostVm };
             }
         });
 
@@ -96,7 +115,7 @@ public class CSharpEditorPlugin : IFryPlugin
             IconKind = "CodeBraces",
             Shortcut = "Ctrl+Alt+E",
             Order = 85,
-            Action = _ => { }
+            Action = NavigateToStudio
         });
 
         // 3. Status Bar Widget Indicator
@@ -123,10 +142,14 @@ public class CSharpEditorPlugin : IFryPlugin
             Tooltip = "Open full-featured C# development studio and script automation workspace",
             IconKind = "CodeBraces",
             Order = 30,
-            Action = _ => { }
+            Action = NavigateToStudio
         });
 
-        // 5. Register Keyboard Shortcuts
+        // 5. Register Keyboard Shortcuts. Every Action below calls the SAME ViewModel command the raw
+        // key handlers in CSharpCodeStudioView.axaml.cs / CSharpNotebookStudioView.axaml.cs /
+        // BindableTextEditor.cs already call for a plain keypress — so triggering these from the
+        // command palette or a shortcuts-settings UI (not just a raw keypress with the right control
+        // focused) now actually does something, instead of the previous `Action = _ => { }` no-ops.
         var shortcuts = new List<IDisposable>
         {
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -138,15 +161,7 @@ public class CSharpEditorPlugin : IFryPlugin
                 DefaultGesture = "Ctrl+Alt+E",
                 MacGesture = "Cmd+Alt+E",
                 Scope = ShortcutScope.Global,
-                Action = sp =>
-                {
-                    var homeType = Type.GetType("PdfEditorApp.ViewModels.HomeViewModel, PdfEditorApp");
-                    if (homeType != null)
-                    {
-                        var home = sp.GetService(homeType);
-                        homeType.GetMethod("SelectNavSection")?.Invoke(home, ["CSharpStudio"]);
-                    }
-                }
+                Action = NavigateToStudio
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -159,20 +174,47 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "F5",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is not CSharpCodeStudioViewModel codeVm) return;
+                    if (codeVm.IsPaused)
+                    {
+                        codeVm.ContinueDebug();
+                    }
+                    else if (!codeVm.IsExecuting && !codeVm.IsDebugging)
+                    {
+                        codeVm.DebugCodeCommand.Execute(null);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.stop",
                 Title = "Stop Script Execution",
-                Description = "Halt currently running C# background script.",
+                Description = "Halt currently running C# background script, or interrupt the active notebook cell.",
                 Category = "Editor",
                 DefaultGesture = "Shift+F5",
                 MacGesture = "Shift+F5",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    switch (activeHost?.CurrentPage)
+                    {
+                        case CSharpCodeStudioViewModel { IsDebugging: true } codeVm:
+                            codeVm.StopDebug();
+                            break;
+                        case CSharpCodeStudioViewModel codeVm:
+                            codeVm.StopCommand.Execute(null);
+                            break;
+                        case CSharpNotebookStudioViewModel nbVm:
+                            nbVm.InterruptExecutionCommand.Execute(null);
+                            break;
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -185,20 +227,42 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+S",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    switch (activeHost?.CurrentPage)
+                    {
+                        case CSharpCodeStudioViewModel codeVm:
+                            codeVm.SaveCommand.Execute(null);
+                            break;
+                        case CSharpNotebookStudioViewModel nbVm:
+                            nbVm.SaveCommand.Execute(null);
+                            break;
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.new",
                 Title = "New C# Script / Notebook",
-                Description = "Create a new C# automation script.",
+                Description = "Create a new notebook when Notebook Studio is active, otherwise a new automation script.",
                 Category = "Editor",
                 DefaultGesture = "Ctrl+N",
                 MacGesture = "Cmd+N",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                Action = sp =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.NewNotebookTabCommand.Execute(null);
+                    }
+                    else
+                    {
+                        var newScriptTask = activeHost?.ManagerViewModel.CreateNewScriptAsync(null);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -211,7 +275,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Shift+P",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm)
+                    {
+                        codeVm.SelectedLeftTabIndex = codeVm.SelectedLeftTabIndex == 1 ? 0 : 1;
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -224,7 +295,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Shift+Enter",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.RunCellAndSelectNextCommand.Execute(null);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -237,7 +315,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Enter",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel { ActiveCell: not null },
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel { ActiveCell: not null } nbVm)
+                    {
+                        nbVm.RunSingleCellCommand.Execute(nbVm.ActiveCell);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -250,7 +335,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Shift+Enter",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.RunAllCellsCommand.Execute(null);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -263,7 +355,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Shift+B",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.AddCodeCellCommand.Execute(nbVm.ActiveCell);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -276,7 +375,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Shift+A",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.AddCellAboveCommand.Execute(null);
+                    }
+                }
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -289,7 +395,14 @@ public class CSharpEditorPlugin : IFryPlugin
                 MacGesture = "Cmd+Shift+D",
                 Scope = ShortcutScope.Context,
                 ContextId = "CSharpStudio",
-                Action = _ => { }
+                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
+                    {
+                        nbVm.DeleteActiveCellCommand.Execute(null);
+                    }
+                }
             })
         };
 

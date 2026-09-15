@@ -25,6 +25,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     private CancellationTokenSource? _diagnosticsCts;
     private CancellationTokenSource? _executionCts;
+    private readonly Func<int> _getTimeoutSeconds;
 
     [ObservableProperty]
     private ScriptDocumentItem _script;
@@ -170,7 +171,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         RoslynCompilerService compilerService,
         ScriptExecutionEngine executionEngine,
         Action backToHubAction,
-        Action? backToHomeAction = null)
+        Action? backToHomeAction = null,
+        Func<int>? getTimeoutSeconds = null)
     {
         _script = script;
         _storageService = storageService;
@@ -179,6 +181,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _debuggerService = new ScriptDebuggerService(_compilerService, _executionEngine);
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
         _kernel = new NotebookExecutionKernel();
 
         _code = script.Code;
@@ -387,7 +390,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         _executionCts?.Cancel();
         _executionCts = new CancellationTokenSource();
-        var token = _executionCts.Token;
+        var timeoutSeconds = Math.Max(1, _getTimeoutSeconds());
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_executionCts.Token, timeoutCts.Token);
+        var token = linkedCts.Token;
 
         using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
         {
@@ -459,7 +465,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                 }
                 else if (kernelResult.WasCancelled)
                 {
-                    CompilerStatusText = "Cancelled";
+                    CompilerStatusText = timeoutCts.IsCancellationRequested
+                        ? $"⏱️ Timed out after {timeoutSeconds}s"
+                        : "🛑 Cancelled";
                 }
                 else
                 {
@@ -536,8 +544,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                 }
                 else if (result.WasCancelled)
                 {
-                    ConsoleOutput += "⚠️ Execution was cancelled.\n";
-                    CompilerStatusText = "Cancelled";
+                    if (timeoutCts.IsCancellationRequested)
+                    {
+                        ConsoleOutput += $"⏱️ Execution timed out after {timeoutSeconds}s.\n";
+                        CompilerStatusText = $"⏱️ Timed out after {timeoutSeconds}s";
+                    }
+                    else
+                    {
+                        ConsoleOutput += "⚠️ Execution was cancelled.\n";
+                        CompilerStatusText = "🛑 Cancelled";
+                    }
                 }
                 else
                 {
@@ -607,8 +623,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Script.Notes = Notes;
         Script.TestCases = TestCases.ToList();
         Script.LastModified = DateTime.UtcNow;
-        await _storageService.SaveScriptAsync(Script);
-        CompilerStatusText = "Saved";
+        var saved = await _storageService.SaveScriptAsync(Script);
+        CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
     }
 
     [RelayCommand]
@@ -675,6 +691,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         RichOutputs.Clear();
         Locals.Clear();
         CallStack.Clear();
+        GlobalVariableCache.Clear(); // Guarantee a clean slate — a prior session's stale values must never leak into this one
         SelectedBottomTabIndex = 4; // Automatically focus Debugger tab
         IsBottomDeckExpanded = true;
         ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
@@ -802,6 +819,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         finally
         {
             ScriptDebugSession.EndSession();
+            GlobalVariableCache.Clear(); // Don't leave this session's locals around for the next one to read
             IsExecuting = false;
             IsDebugging = false;
             IsPaused = false;

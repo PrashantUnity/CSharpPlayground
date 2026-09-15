@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,6 +15,8 @@ public partial class NotebookTabViewModel : ObservableObject
 {
     private readonly Action<NotebookTabViewModel>? _onSelectTab;
     private readonly Action<NotebookTabViewModel>? _onCloseTab;
+    private readonly Func<int> _getTimeoutSeconds;
+    private CancellationTokenSource? _executionCts;
 
     [ObservableProperty]
     private string _id = Guid.NewGuid().ToString("N");
@@ -22,7 +25,7 @@ public partial class NotebookTabViewModel : ObservableObject
     private string _title = "Untitled.frynb";
 
     [ObservableProperty]
-    private string _folderName = "Code";
+    private string _folderName = "Library";
 
     [ObservableProperty]
     private string _filePath = string.Empty;
@@ -60,7 +63,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public int ExecutionCounter { get; set; } = 0;
 
-    public string BreadcrumbFolder => string.IsNullOrWhiteSpace(FolderName) ? "Code" : FolderName;
+    public string BreadcrumbFolder => string.IsNullOrWhiteSpace(FolderName) ? "Library" : FolderName;
 
     public string BreadcrumbDocument => string.IsNullOrWhiteSpace(Title) ? "Untitled.frynb" : Title;
 
@@ -100,10 +103,11 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public NotebookTabViewModel(
         NotebookDocumentItem notebook,
-        string folderName = "Code",
+        string folderName = "Library",
         string filePath = "",
         Action<NotebookTabViewModel>? onSelectTab = null,
-        Action<NotebookTabViewModel>? onCloseTab = null)
+        Action<NotebookTabViewModel>? onCloseTab = null,
+        Func<int>? getTimeoutSeconds = null)
     {
         _notebook = notebook;
         _folderName = folderName;
@@ -114,6 +118,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
         _onSelectTab = onSelectTab;
         _onCloseTab = onCloseTab;
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
 
         Kernel = new NotebookExecutionKernel();
 
@@ -214,6 +219,24 @@ public partial class NotebookTabViewModel : ObservableObject
             runAndSelectNextAction: RunCellAndSelectNextAsync);
     }
 
+    /// <summary>
+    /// Requests cooperative cancellation of whatever this tab's kernel is currently doing. This is
+    /// best-effort, not a guarantee: it reliably stops a cell before it starts, and stops genuinely
+    /// cancellable work (e.g. the NuGet resolver's network calls), but CancellationToken cancellation
+    /// cannot forcibly interrupt an already-running, non-yielding synchronous loop like `while(true){}`
+    /// — Roslyn scripting doesn't inject cancellation checks into the compiled loop body, and .NET has
+    /// no safe way to abort a running thread from outside it. Forcibly killing that case would need an
+    /// out-of-process (or at least a separately-killable-thread) execution model — a materially larger
+    /// change than this fix, and not attempted here. LINQPad solves this the same way: a separate,
+    /// killable child process, not a cancellation token.
+    /// </summary>
+    [RelayCommand]
+    public void InterruptExecution()
+    {
+        _executionCts?.Cancel();
+        KernelStatusText = "Interrupting...";
+    }
+
     [RelayCommand]
     public async Task RunSingleCellAsync(NotebookCellViewModel cell)
     {
@@ -230,10 +253,23 @@ public partial class NotebookTabViewModel : ObservableObject
         cell.ExecutionCount = ExecutionCounter;
         KernelStatusText = $"Executing Cell [{cell.ExecutionCount}]...";
 
+        // Starting a new run interrupts whatever this tab's kernel was previously doing — a tab has
+        // only one logical "current execution", mirroring Script Studio's Run/Stop semantics. This is
+        // also the safety net for a stuck cell: starting any other cell frees the kernel.
+        _executionCts?.Cancel();
+        _executionCts?.Dispose();
+        _executionCts = new CancellationTokenSource();
+        var executionCts = _executionCts;
+
+        var timeoutSeconds = Math.Max(1, _getTimeoutSeconds());
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(executionCts.Token, timeoutCts.Token);
+
         try
         {
             var result = await Kernel.ExecuteCellAsync(
                 cell.Source,
+                ct: linkedCts.Token,
                 onLiveConsole: text =>
                 {
                     Dispatcher.UIThread.Post(() =>
@@ -290,9 +326,18 @@ public partial class NotebookTabViewModel : ObservableObject
 
             UpdateVariables();
 
-            KernelStatusText = result.Success
-                ? $"Kernel Ready • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}"
-                : "Execution Failed";
+            if (result.WasCancelled)
+            {
+                KernelStatusText = timeoutCts.IsCancellationRequested
+                    ? $"⏱️ Cell timed out after {timeoutSeconds}s"
+                    : "🛑 Cell execution interrupted";
+            }
+            else
+            {
+                KernelStatusText = result.Success
+                    ? $"Kernel Ready • {Variables.Count} active variable{(Variables.Count == 1 ? "" : "s")}"
+                    : "Execution Failed";
+            }
         }
         finally
         {
@@ -337,6 +382,7 @@ public partial class NotebookTabViewModel : ObservableObject
     [RelayCommand]
     public void RestartKernel()
     {
+        _executionCts?.Cancel();
         Kernel.ResetSession();
         Variables.Clear();
         KernelStatusText = "Kernel Restarted • Session Fresh";

@@ -132,6 +132,18 @@ public partial class NotebookCellViewModel : ObservableObject
             _htmlContent = model.HtmlContent;
             _hasHtmlContent = true;
         }
+
+        if (model.TableSnapshot != null)
+        {
+            _tableResult = model.TableSnapshot.ToLive();
+            _hasTableOutput = true;
+        }
+
+        if (model.InspectorSnapshot != null)
+        {
+            _inspectorNode = model.InspectorSnapshot.ToLive();
+            _hasInspectorOutput = true;
+        }
     }
 
     partial void OnSourceChanged(string value)
@@ -314,6 +326,7 @@ public partial class NotebookCellViewModel : ObservableObject
     public void SetTableOutput(DumpTableResult table)
     {
         TableResult = table;
+        Model.TableSnapshot = table.ToSnapshot();
         HasTableOutput = true;
         HasOutput = true;
     }
@@ -321,6 +334,7 @@ public partial class NotebookCellViewModel : ObservableObject
     public void SetInspectorOutput(ObjectInspectorNode inspector)
     {
         InspectorNode = inspector;
+        Model.InspectorSnapshot = inspector.ToSnapshot();
         HasInspectorOutput = true;
         HasOutput = true;
     }
@@ -412,9 +426,11 @@ public partial class NotebookCellViewModel : ObservableObject
 
         TableResult = null;
         HasTableOutput = false;
+        Model.TableSnapshot = null;
 
         InspectorNode = null;
         HasInspectorOutput = false;
+        Model.InspectorSnapshot = null;
 
         HasOutput = false;
         OnPropertyChanged(nameof(ExecutionDurationShortText));

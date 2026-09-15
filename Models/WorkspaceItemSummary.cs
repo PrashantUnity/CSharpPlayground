@@ -16,6 +16,7 @@ public class WorkspaceItemSummary
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = "General";
     public WorkspaceItemKind Kind { get; set; } = WorkspaceItemKind.Script;
+    public string FolderPath { get; set; } = string.Empty; // "" = root; e.g. "Reports/Q1" — computed from real storage, never persisted in the document itself
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public int ExecutionCount { get; set; }
     public int CellCount { get; set; } // Only relevant for Notebooks

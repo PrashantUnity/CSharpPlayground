@@ -108,8 +108,6 @@ public class RoslynCompilerService
         return (references, items);
     }
 
-    private const string DumpHelperCode = "";
-
     public string WrapSourceCode(string rawCode, ExecutionLanguageMode mode)
     {
         if (string.IsNullOrWhiteSpace(rawCode))
@@ -155,8 +153,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;";
 
 #line 1 ""script.cs""
 ({expr}).Dump();
-
-{DumpHelperCode}";
+";
         }
 
         // 4. Statements mode (Script / Notebook Cells)
@@ -168,8 +165,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;";
 
 #line 1 ""script.cs""
 ({trimmed}).Dump();
-
-{DumpHelperCode}";
+";
         }
 
         // In C# top-level statements, types (classes, records, structs) must appear AFTER all statements.
@@ -189,7 +185,6 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;";
             sb.AppendLine(types);
             sb.AppendLine();
         }
-        sb.AppendLine(DumpHelperCode);
 
         return sb.ToString();
     }

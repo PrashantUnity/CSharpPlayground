@@ -253,7 +253,8 @@
         </Setter>
     </Style>
     <Style Selector="Button.m3-filled-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource WinAccentHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Opacity" Value="0.92" />
         <Setter Property="RenderTransform" Value="scale(1.02)" />
     </Style>
     <Style Selector="Button.m3-filled-btn:pressed">

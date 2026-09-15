@@ -135,7 +135,7 @@
 
         <!-- ComboBox Popup & Item Styling -->
         <Style Selector="ComboBox /template/ Border#PopupBorder">
-            <Setter Property="Background" Value="#181D27" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerMedium}" />
@@ -153,11 +153,11 @@
             <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
         </Style>
         <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="#22304A" />
+            <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
         </Style>
         <Style Selector="ComboBoxItem:selected:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#283A5A" />
+            <Setter Property="Background" Value="{DynamicResource M3SecondaryContainerBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
         </Style>
     </UserControl.Styles>

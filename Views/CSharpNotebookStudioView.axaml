@@ -104,6 +104,7 @@
                                  Padding="4,1"
                                  Margin="0,0,4,0"
                                  IsVisible="{Binding IsRenaming}"
+                                 controls:FocusOnTrueBehavior.IsActive="{Binding IsRenaming}"
                                  VerticalAlignment="Center" />
 
                         <!-- Col 3: Action Buttons (Only visible on hover!) -->
@@ -408,20 +409,11 @@
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="0,0,0,1"
                             Padding="14,0,8,0">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0"
-                                       Text="EXPLORER"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                       VerticalAlignment="Center" />
-                            <Button Grid.Column="1"
-                                    Classes="cell-tool-btn"
-                                    Width="22" Height="22"
-                                    ToolTip.Tip="Explorer Options">
-                                <TextBlock Text="..." FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Button>
-                        </Grid>
+                        <TextBlock Text="EXPLORER"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                   VerticalAlignment="Center" />
                     </Border>
 
                     <!-- 2. Workspace Root Row: ▾ SKIASHARP + 4 Actions -->
@@ -572,18 +564,8 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Right: Actions (Settings, Split, Menu, Hub) -->
+                        <!-- Right: Actions (Hub) -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Settings">
-                                <materialIcons:MaterialIcon Kind="CogOutline" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                            </Button>
-                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Split Editor Right">
-                                <materialIcons:MaterialIcon Kind="DockRight" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                            </Button>
-                            <Button Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="More Editor Actions">
-                                <materialIcons:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                            </Button>
-                            <Rectangle Width="1" Height="14" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
                             <Button Command="{Binding BackToHubCommand}"
                                     Classes="nb-action-btn"
                                     ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
@@ -1251,20 +1233,8 @@
                 Height="24"
                 Padding="12,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- Left: Launchpad, Error/Warning counts, Status -->
+                <!-- Left: Kernel status -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="RocketLaunchOutline" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
-                        <TextBlock Text="Launchpad" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                        <TextBlock Text="0" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                        <TextBlock Text="0" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding CompilerStatusText}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
@@ -1273,16 +1243,7 @@
 
                 <!-- Right: Metadata & Kernel Indicator -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="Spaces: 4" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding Cells.Count, StringFormat='{}Cell {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="AccessPoint" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
-                        <TextBlock Text="Go Live" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="{DynamicResource M3SuccessBrush}" />
-                        <TextBlock Text="Prettier" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
                     <TextBlock Text="{Binding KernelName}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>

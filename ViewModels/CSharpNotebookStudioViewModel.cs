@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly ScriptExecutionEngine _executionEngine;
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
+    private readonly Func<int> _getTimeoutSeconds;
 
     private readonly ObservableCollection<NotebookCellViewModel> _emptyCells = new();
     private readonly ObservableCollection<NotebookVariableInfo> _emptyVariables = new();
@@ -78,7 +80,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     public string WorkspaceExpansionArrow => IsWorkspaceExpanded ? "⌵" : ">";
 
-    public string BreadcrumbFolder => ActiveTab?.BreadcrumbFolder ?? "Code";
+    public string BreadcrumbFolder => ActiveTab?.BreadcrumbFolder ?? "Library";
     public string BreadcrumbDocument => ActiveTab?.BreadcrumbDocument ?? "Untitled.frynb";
     public string ActiveCellBadgeText => ActiveTab?.ActiveCellBadgeText ?? "Notebook Root";
     public string ActiveCellTypeIcon => ActiveTab?.ActiveCellTypeIcon ?? "CodeBraces";
@@ -173,7 +175,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         RoslynCompilerService compilerService,
         ScriptExecutionEngine executionEngine,
         Action backToHubAction,
-        Action? backToHomeAction = null)
+        Action? backToHomeAction = null,
+        Func<int>? getTimeoutSeconds = null)
     {
         _notebook = notebook;
         _storageService = storageService;
@@ -181,14 +184,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _executionEngine = executionEngine;
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
 
         // Initialize primary open tab
         var initialTab = new NotebookTabViewModel(
             _notebook,
-            folderName: "Code",
-            filePath: $"Code/{notebook.Title}.frynb",
+            folderName: "Library",
+            filePath: $"{notebook.Title}.frynb",
             onSelectTab: SelectTab,
-            onCloseTab: CloseTab);
+            onCloseTab: CloseTab,
+            getTimeoutSeconds: _getTimeoutSeconds);
 
         Tabs.Add(initialTab);
         SelectTab(initialTab);
@@ -202,7 +207,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         var expItem = EnsureDocumentInExplorer(notebook);
 
-        var existingTab = Tabs.FirstOrDefault(t => 
+        var existingTab = Tabs.FirstOrDefault(t =>
             string.Equals(t.Notebook.Id, notebook.Id, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Notebook.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
@@ -214,19 +219,26 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
         else
         {
-            var folder = expItem?.Parent?.Name ?? "Code";
+            var folder = expItem?.Parent?.Name ?? "Library";
             var newTab = new NotebookTabViewModel(
                 notebook,
                 folderName: folder,
-                filePath: $"{folder}/{notebook.Title}.frynb",
+                filePath: expItem?.FullPath ?? $"{notebook.Title}.frynb",
                 onSelectTab: SelectTab,
-                onCloseTab: CloseTab);
+                onCloseTab: CloseTab,
+                getTimeoutSeconds: _getTimeoutSeconds);
 
             Tabs.Add(newTab);
             SelectTab(newTab);
         }
     }
 
+    /// <summary>
+    /// Idempotently makes sure a notebook is represented somewhere in the tree — used for tabs that
+    /// were opened before their document had a real place on disk. Since the tree is now derived
+    /// purely from real storage, a not-yet-persisted document is placed at the workspace root; once
+    /// saved into a real folder, the next refresh picks up its true location.
+    /// </summary>
     public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook)
     {
         var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
@@ -244,36 +256,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             return existing;
         }
 
-        var codeFolder = ExplorerRootItems.FirstOrDefault(x => x.Name == "Code")
-                         ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
-
-        var expItem = new ExplorerItemViewModel
-        {
-            Name = fileName,
-            DocumentId = notebook.Id,
-            IsDirectory = false,
-            FileExtension = ".frynb",
-            Parent = codeFolder,
-            Depth = (codeFolder?.Depth ?? 0) + 1,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
-        };
-
-        if (codeFolder != null)
-        {
-            codeFolder.Children.Add(expItem);
-            codeFolder.IsExpanded = true;
-        }
-        else
-        {
-            ExplorerRootItems.Add(expItem);
-        }
-
+        var expItem = CreateFileItem(fileName, notebook.Id, parent: null, fullPath: fileName);
+        ExplorerRootItems.Add(expItem);
         return expItem;
     }
 
@@ -311,81 +295,46 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void NewNotebookTab()
+    public async Task NewNotebookTab()
     {
         var timestamp = DateTime.Now.ToString("HHmmss");
         var title = $"Notebook_{timestamp}";
-        var fileName = $"{title}.frynb";
 
-        var codeFolder = ExplorerRootItems.FirstOrDefault(x => x.Name == "Code")
-                         ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
-
-        var newDoc = new NotebookDocumentItem
+        NotebookDocumentItem newDoc;
+        try
         {
-            Id = Guid.NewGuid().ToString("N"),
-            Title = title,
-            Category = "Interactive",
-            Created = DateTime.UtcNow,
-            LastModified = DateTime.UtcNow
-        };
-
-        newDoc.Cells.Add(new NotebookCellItem
+            newDoc = await _storageService.CreateNewNotebookAsync(title);
+        }
+        catch (Exception ex)
         {
-            Type = CellType.Markdown,
-            Source = $"# 📓 {title}\nInteractive C# Notebook.",
-            IsMarkdownPreviewMode = true
-        });
-        newDoc.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
-        });
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await _storageService.SaveNotebookAsync(newDoc);
-            }
-            catch { }
-        });
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create new notebook: {ex.Message}");
+            newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
+        }
 
         var newTab = new NotebookTabViewModel(
             newDoc,
-            folderName: codeFolder?.Name ?? "Code",
-            filePath: $"{codeFolder?.Name ?? "Code"}/{fileName}",
+            folderName: "Library",
+            filePath: $"{newDoc.Title}.frynb",
             onSelectTab: SelectTab,
-            onCloseTab: CloseTab);
+            onCloseTab: CloseTab,
+            getTimeoutSeconds: _getTimeoutSeconds);
 
         Tabs.Add(newTab);
         SelectTab(newTab);
 
-        if (codeFolder != null)
-        {
-            var newExpItem = new ExplorerItemViewModel
-            {
-                Name = fileName,
-                DocumentId = newDoc.Id,
-                IsDirectory = false,
-                FileExtension = ".frynb",
-                Parent = codeFolder,
-                Depth = codeFolder.Depth + 1,
-                OnItemClicked = OnExplorerItemClicked,
-                OnDeleteRequested = DeleteExplorerItem,
-                OnNewFileRequested = NewFileUnderItem,
-                OnNewFolderRequested = NewFolderUnderItem,
-                OnRenameCommitted = OnItemRenamed,
-                OnDuplicateRequested = DuplicateExplorerItem,
-                OnCopyPathRequested = CopyItemPath
-            };
-            codeFolder.IsExpanded = true;
-            codeFolder.Children.Add(newExpItem);
-            HighlightExplorerItem(fileName);
-            newExpItem.StartRename();
-        }
+        var newExpItem = EnsureDocumentInExplorer(newDoc);
+        HighlightExplorerItem(newExpItem.Name);
+        newExpItem.StartRename();
     }
 
-    public void OpenDocument(ExplorerItemViewModel item)
+    /// <summary>Fire-and-forget wrapper — required because ExplorerItemViewModel.OnItemClicked is a
+    /// plain Action, which can't hold an async method. Non-blocking, unlike the old .GetAwaiter()
+    /// .GetResult() call this replaces.</summary>
+    private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
+
+    public void OpenDocument(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
+
+    public async Task OpenDocumentAsync(ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -397,8 +346,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         item.IsSelected = true;
 
         var fileName = item.Name;
-        var folderName = item.Parent?.Name ?? "Code";
-        var filePath = item.FullPath;
+        var folderName = item.Parent?.Name ?? "Library";
+        var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
         var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
             ? fileName.Substring(0, fileName.Length - 6)
             : fileName;
@@ -415,34 +364,25 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             return;
         }
 
-        // Attempt to load from storage synchronously
         NotebookDocumentItem? loadedDoc = null;
         if (!string.IsNullOrEmpty(item.DocumentId))
         {
-            try
-            {
-                loadedDoc = _storageService.LoadNotebookAsync(item.DocumentId).GetAwaiter().GetResult();
-            }
-            catch { }
+            loadedDoc = await _storageService.LoadNotebookAsync(item.DocumentId);
         }
 
         if (loadedDoc == null)
         {
-            try
-            {
-                var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
-                var match = summaries.FirstOrDefault(s => s.IsNotebook && (
-                    string.Equals(s.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(s.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(s.Title, fileName, StringComparison.OrdinalIgnoreCase)));
+            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
+            var match = summaries.FirstOrDefault(s => s.IsNotebook && (
+                string.Equals(s.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(s.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(s.Title, fileName, StringComparison.OrdinalIgnoreCase)));
 
-                if (match != null)
-                {
-                    loadedDoc = _storageService.LoadNotebookAsync(match.Id).GetAwaiter().GetResult();
-                    if (loadedDoc != null) item.DocumentId = match.Id;
-                }
+            if (match != null)
+            {
+                loadedDoc = await _storageService.LoadNotebookAsync(match.Id);
+                if (loadedDoc != null) item.DocumentId = match.Id;
             }
-            catch { }
         }
 
         if (loadedDoc == null)
@@ -468,16 +408,17 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
             });
 
-            _ = _storageService.SaveNotebookAsync(loadedDoc);
+            await _storageService.SaveNotebookAsync(loadedDoc);
             item.DocumentId = loadedDoc.Id;
         }
 
         var newTab = new NotebookTabViewModel(
             loadedDoc,
             folderName: folderName,
-            filePath: !string.IsNullOrEmpty(filePath) ? filePath : $"{folderName}/{fileName}",
+            filePath: filePath,
             onSelectTab: SelectTab,
-            onCloseTab: CloseTab);
+            onCloseTab: CloseTab,
+            getTimeoutSeconds: _getTimeoutSeconds);
 
         Tabs.Add(newTab);
         SelectTab(newTab);
@@ -532,6 +473,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void InterruptExecution()
+    {
+        ActiveTab?.InterruptExecution();
+    }
+
+    [RelayCommand]
     public void ClearAllOutputs()
     {
         ActiveTab?.ClearAllOutputs();
@@ -577,9 +524,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         if (ActiveTab != null)
         {
             ActiveTab.Notebook.LastModified = DateTime.UtcNow;
-            await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
-            ActiveTab.IsModified = false;
-            CompilerStatusText = "Saved";
+            var saved = await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
+            ActiveTab.IsModified = !saved;
+            CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
         }
     }
 
@@ -623,39 +570,65 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void DeleteSelectedExplorerItem()
+    public async Task DeleteSelectedExplorerItem()
     {
         var selected = FindSelectedItem(ExplorerRootItems);
         if (selected != null)
         {
-            DeleteExplorerItem(selected);
+            await DeleteExplorerItemAsync(selected);
         }
     }
 
+    public void DeleteExplorerItem(ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
+
     [RelayCommand]
-    public void DeleteExplorerItem(ExplorerItemViewModel item)
+    public async Task DeleteExplorerItemAsync(ExplorerItemViewModel item)
     {
         if (item == null) return;
 
-        // Delete from storage if linked to a real document
-        if (!string.IsNullOrEmpty(item.DocumentId))
+        if (item.IsDirectory)
+        {
+            // Cascading delete: close every open tab for a document nested under this folder, then let
+            // the OS recursively delete the whole subtree in one call — no orphaned documents resurface
+            // on the next refresh, unlike the old fake-tree version of this method.
+            var descendantIds = CollectDescendantDocumentIds(item);
+            if (descendantIds.Count > 0)
+            {
+                foreach (var tab in Tabs.Where(t => descendantIds.Contains(t.Notebook.Id)).ToList())
+                {
+                    CloseTab(tab);
+                }
+            }
+
+            try
+            {
+                await _storageService.DeleteFolderAsync(item.FullPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete folder '{item.FullPath}': {ex.Message}");
+            }
+        }
+        else if (!string.IsNullOrEmpty(item.DocumentId))
         {
             try
             {
-                _ = _storageService.DeleteItemAsync(item.DocumentId);
+                await _storageService.DeleteItemAsync(item.DocumentId);
             }
-            catch { }
-        }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete '{item.DocumentId}': {ex.Message}");
+            }
 
-        // Close any tab open for this item
-        var openTab = Tabs.FirstOrDefault(t =>
-            (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-            string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrEmpty(item.FullPath) && string.Equals(t.FilePath, item.FullPath, StringComparison.OrdinalIgnoreCase)));
+            var openTab = Tabs.FirstOrDefault(t =>
+                string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(item.FullPath) && string.Equals(t.FilePath, item.FullPath, StringComparison.OrdinalIgnoreCase)));
 
-        if (openTab != null)
-        {
-            CloseTab(openTab);
+            if (openTab != null)
+            {
+                CloseTab(openTab);
+            }
         }
 
         if (item.Parent != null)
@@ -672,28 +645,29 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var nextFile = FindFirstFile(ExplorerRootItems);
             if (nextFile != null)
             {
-                OnExplorerItemClicked(nextFile);
+                await OpenDocumentAsync(nextFile);
             }
         }
     }
 
+    public void DuplicateExplorerItem(ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
+
     [RelayCommand]
-    public void DuplicateExplorerItem(ExplorerItemViewModel item)
+    public async Task DuplicateExplorerItemAsync(ExplorerItemViewModel item)
     {
         if (item == null || item.IsDirectory) return;
 
-        var parent = item.Parent ?? ExplorerRootItems.FirstOrDefault(x => x.Name == "Code") ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
+        var parent = item.Parent;
         var originalTitle = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
             ? item.Name.Substring(0, item.Name.Length - 6)
             : item.Name;
         var copyTitle = $"{originalTitle} Copy";
         var copyFileName = $"{copyTitle}.frynb";
 
-        // Load original document cells if available
         NotebookDocumentItem? origDoc = null;
         if (!string.IsNullOrEmpty(item.DocumentId))
         {
-            try { origDoc = _storageService.LoadNotebookAsync(item.DocumentId).GetAwaiter().GetResult(); } catch { }
+            origDoc = await _storageService.LoadNotebookAsync(item.DocumentId);
         }
         if (origDoc == null)
         {
@@ -739,36 +713,15 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             });
         }
 
-        _ = _storageService.SaveNotebookAsync(copyDoc);
+        await _storageService.SaveNotebookAsync(copyDoc);
 
-        var copyItem = new ExplorerItemViewModel
-        {
-            Name = copyFileName,
-            DocumentId = copyDoc.Id,
-            IsDirectory = false,
-            FileExtension = ".frynb",
-            Parent = parent,
-            Depth = (parent?.Depth ?? 0) + 1,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
-        };
+        var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
+        var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);
 
-        if (parent != null)
-        {
-            parent.Children.Add(copyItem);
-            parent.IsExpanded = true;
-        }
-        else
-        {
-            ExplorerRootItems.Add(copyItem);
-        }
+        AddToTree(parent, copyItem);
+        if (parent != null) parent.IsExpanded = true;
 
-        OpenDocument(copyItem);
+        await OpenDocumentAsync(copyItem);
     }
 
     [RelayCommand]
@@ -780,114 +733,103 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void NewFile()
+    public async Task NewFile()
     {
         var selected = FindSelectedItem(ExplorerRootItems);
-        var targetFolder = (selected != null && selected.IsDirectory) ? selected :
-            (selected?.Parent ?? ExplorerRootItems.FirstOrDefault(x => x.Name == "Code") ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory));
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
 
         if (targetFolder != null)
         {
-            NewFileUnderItem(targetFolder);
+            await NewFileUnderItemAsync(targetFolder);
         }
         else
         {
-            NewNotebookTab();
+            await NewNotebookTab();
         }
     }
 
+    public void NewFileUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+
     [RelayCommand]
-    public void NewFileUnderItem(ExplorerItemViewModel target)
+    public async Task NewFileUnderItemAsync(ExplorerItemViewModel target)
     {
-        var folder = target.IsDirectory ? target : (target.Parent ?? target);
+        var folder = target.IsDirectory ? target : target.Parent;
         var timestamp = DateTime.Now.ToString("HHmmss");
         var title = $"Notebook_{timestamp}";
         var fileName = $"{title}.frynb";
+        var folderPath = folder?.FullPath;
 
-        NotebookDocumentItem? newDoc = null;
+        NotebookDocumentItem newDoc;
         try
         {
-            newDoc = _storageService.CreateNewNotebookAsync(title).GetAwaiter().GetResult();
+            newDoc = await _storageService.CreateNewNotebookAsync(title, folderPath: folderPath);
         }
-        catch
+        catch (Exception ex)
         {
-            newDoc = new NotebookDocumentItem
-            {
-                Id = Guid.NewGuid().ToString("N"),
-                Title = title
-            };
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create notebook: {ex.Message}");
+            newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
         }
 
-        var newFile = new ExplorerItemViewModel
-        {
-            Name = fileName,
-            DocumentId = newDoc.Id,
-            IsDirectory = false,
-            FileExtension = ".frynb",
-            Parent = folder,
-            Depth = (folder?.Depth ?? 0) + 1,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
-        };
+        var fullPath = string.IsNullOrEmpty(folderPath) ? fileName : $"{folderPath}/{fileName}";
+        var newFile = CreateFileItem(fileName, newDoc.Id, folder, fullPath);
 
-        if (folder != null)
-        {
-            folder.IsExpanded = true;
-            folder.Children.Add(newFile);
-        }
-        else
-        {
-            ExplorerRootItems.Add(newFile);
-        }
+        AddToTree(folder, newFile);
+        if (folder != null) folder.IsExpanded = true;
 
-        OpenDocument(newFile);
+        await OpenDocumentAsync(newFile);
         newFile.StartRename();
     }
 
     [RelayCommand]
-    public void NewFolder()
+    public async Task NewFolder()
     {
         var selected = FindSelectedItem(ExplorerRootItems);
-        var targetFolder = (selected != null && selected.IsDirectory) ? selected : (selected?.Parent);
-
-        if (targetFolder != null)
-        {
-            NewFolderUnderItem(targetFolder);
-        }
-        else
-        {
-            var newFolder = CreateFolderItem($"folder_{DateTime.Now:HHmmss}", isExpanded: true);
-            ExplorerRootItems.Add(newFolder);
-            newFolder.StartRename();
-        }
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
+        await CreateFolderCoreAsync(targetFolder);
     }
 
+    public void NewFolderUnderItem(ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
+
     [RelayCommand]
-    public void NewFolderUnderItem(ExplorerItemViewModel target)
+    public async Task NewFolderUnderItemAsync(ExplorerItemViewModel target)
     {
-        var folder = target.IsDirectory ? target : (target.Parent ?? target);
-        var newFolder = CreateFolderItem($"folder_{DateTime.Now:HHmmss}", isExpanded: true, parent: folder);
-        if (folder != null)
+        var folder = target.IsDirectory ? target : target.Parent;
+        await CreateFolderCoreAsync(folder);
+    }
+
+    private async Task CreateFolderCoreAsync(ExplorerItemViewModel? parentFolder)
+    {
+        string newRelativePath;
+        try
         {
-            folder.IsExpanded = true;
-            folder.Children.Add(newFolder);
+            newRelativePath = await _storageService.CreateFolderAsync(parentFolder?.FullPath, "New Folder");
         }
-        else
+        catch (Exception ex)
         {
-            ExplorerRootItems.Add(newFolder);
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create folder: {ex.Message}");
+            return;
         }
+
+        var name = newRelativePath.Contains('/') ? newRelativePath[(newRelativePath.LastIndexOf('/') + 1)..] : newRelativePath;
+        var newFolder = CreateFolderItem(name, newRelativePath, isExpanded: true, parent: parentFolder);
+        AddToTree(parentFolder, newFolder);
+        if (parentFolder != null) parentFolder.IsExpanded = true;
         newFolder.StartRename();
     }
 
     [RelayCommand]
-    public void RefreshExplorer()
+    public async Task RefreshExplorer()
     {
-        PopulateExplorerTree();
+        try
+        {
+            var folderPaths = await _storageService.LoadFolderPathsAsync();
+            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
+            RebuildExplorerTree(folderPaths, summaries);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh explorer tree: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -911,96 +853,81 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Synchronous entry point used ONLY from the constructor, which the host always constructs off the
+    /// UI thread (see CSharpStudioHostViewModel's Task.Run wrapping around child-ViewModel creation) —
+    /// safe to block here. Any UI-triggered refresh must go through the async RefreshExplorer() command.
+    /// </summary>
     public void PopulateExplorerTree()
     {
-        ExplorerRootItems.Clear();
-
-        var code = CreateFolderItem("Code", isExpanded: true, depth: 0);
-        ExplorerRootItems.Add(code);
-
-        // Load any existing workspace documents from storage
         try
         {
+            var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
             var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
-            foreach (var s in summaries.Where(x => x.IsNotebook))
-            {
-                var name = s.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}.frynb";
-                if (!code.Children.Any(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var nbItem = new ExplorerItemViewModel
-                    {
-                        Name = name,
-                        DocumentId = s.Id,
-                        IsDirectory = false,
-                        FileExtension = ".frynb",
-                        Parent = code,
-                        Depth = 1,
-                        OnItemClicked = OnExplorerItemClicked,
-                        OnDeleteRequested = DeleteExplorerItem,
-                        OnNewFileRequested = NewFileUnderItem,
-                        OnNewFolderRequested = NewFolderUnderItem,
-                        OnRenameCommitted = OnItemRenamed,
-                        OnDuplicateRequested = DuplicateExplorerItem,
-                        OnCopyPathRequested = CopyItemPath
-                    };
-                    code.Children.Add(nbItem);
-                }
-            }
+            RebuildExplorerTree(folderPaths, summaries);
         }
-        catch { }
-
-        // Also ensure any currently open tabs are in the explorer
-        foreach (var tab in Tabs)
+        catch (Exception ex)
         {
-            var tabFileName = tab.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ? tab.Title : $"{tab.Title}.frynb";
-            if (!code.Children.Any(c => string.Equals(c.Name, tabFileName, StringComparison.OrdinalIgnoreCase)))
-            {
-                var tabItem = new ExplorerItemViewModel
-                {
-                    Name = tabFileName,
-                    DocumentId = tab.Notebook.Id,
-                    IsDirectory = false,
-                    FileExtension = ".frynb",
-                    Parent = code,
-                    Depth = 1,
-                    OnItemClicked = OnExplorerItemClicked,
-                    OnDeleteRequested = DeleteExplorerItem,
-                    OnNewFileRequested = NewFileUnderItem,
-                    OnNewFolderRequested = NewFolderUnderItem,
-                    OnRenameCommitted = OnItemRenamed,
-                    OnDuplicateRequested = DuplicateExplorerItem,
-                    OnCopyPathRequested = CopyItemPath
-                };
-                code.Children.Add(tabItem);
-            }
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to populate explorer tree: {ex.Message}");
+            ExplorerRootItems.Clear();
         }
+    }
 
-        // If no items exist in code folder yet and we have an active notebook, add it
-        if (code.Children.Count == 0 && Notebook != null)
+    /// <summary>
+    /// Builds the visible tree purely from real storage: real folders (from LoadFolderPathsAsync) plus
+    /// real notebooks (from LoadWorkspaceSummariesAsync, placed under their actual FolderPath). No
+    /// hardcoded decorative folders and no fabricated demo documents — if it's not really on disk, it
+    /// doesn't appear here.
+    /// </summary>
+    private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
+    {
+        ExplorerRootItems.Clear();
+        var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
-            var activeFileName = Notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-                ? Notebook.Title
-                : $"{Notebook.Title}.frynb";
+            if (string.IsNullOrEmpty(relativePath)) return null;
+            if (folderNodes.TryGetValue(relativePath, out var existing)) return existing;
 
-            var activeItem = new ExplorerItemViewModel
-            {
-                Name = activeFileName,
-                DocumentId = Notebook.Id,
-                IsDirectory = false,
-                FileExtension = ".frynb",
-                IsSelected = true,
-                Parent = code,
-                Depth = 1,
-                OnItemClicked = OnExplorerItemClicked,
-                OnDeleteRequested = DeleteExplorerItem,
-                OnNewFileRequested = NewFileUnderItem,
-                OnNewFolderRequested = NewFolderUnderItem,
-                OnRenameCommitted = OnItemRenamed,
-                OnDuplicateRequested = DuplicateExplorerItem,
-                OnCopyPathRequested = CopyItemPath
-            };
-            code.Children.Add(activeItem);
+            var lastSlash = relativePath.LastIndexOf('/');
+            var name = lastSlash >= 0 ? relativePath[(lastSlash + 1)..] : relativePath;
+            var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
+            var parent = GetOrCreateFolder(parentPath);
+
+            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            AddToTree(parent, node);
+            folderNodes[relativePath] = node;
+            return node;
         }
+
+        foreach (var path in folderPaths.OrderBy(p => p.Count(c => c == '/')).ThenBy(p => p, StringComparer.OrdinalIgnoreCase))
+        {
+            GetOrCreateFolder(path);
+        }
+
+        foreach (var s in summaries.Where(x => x.IsNotebook).OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
+        {
+            var name = s.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}.frynb";
+            var parent = GetOrCreateFolder(s.FolderPath);
+            var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
+
+            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
+            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var docItem = CreateFileItem(name, s.Id, parent, fullPath);
+            AddToTree(parent, docItem);
+        }
+
+        // Ensure every open tab is represented even if its document hasn't reached storage yet
+        foreach (var tab in Tabs.ToList())
+        {
+            EnsureDocumentInExplorer(tab.Notebook);
+        }
+
+        SortExplorerTree(ExplorerRootItems);
 
         if (ActiveTab != null)
         {
@@ -1008,7 +935,25 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    private ExplorerItemViewModel CreateFolderItem(string name, bool isExpanded = false, ExplorerItemViewModel? parent = null, int depth = 0)
+    private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
+    {
+        var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        if (!sorted.SequenceEqual(items))
+        {
+            items.Clear();
+            foreach (var item in sorted)
+            {
+                items.Add(item);
+            }
+        }
+
+        foreach (var folder in items.Where(i => i.IsDirectory))
+        {
+            SortExplorerTree(folder.Children);
+        }
+    }
+
+    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null)
     {
         return new ExplorerItemViewModel
         {
@@ -1016,7 +961,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             IsDirectory = true,
             IsExpanded = isExpanded,
             Parent = parent,
-            Depth = parent != null ? parent.Depth + 1 : depth,
+            Depth = (parent?.Depth ?? -1) + 1,
+            FullPath = fullPath,
             OnItemClicked = OnExplorerItemClicked,
             OnDeleteRequested = DeleteExplorerItem,
             OnNewFileRequested = NewFileUnderItem,
@@ -1027,32 +973,117 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         };
     }
 
-    private void OnExplorerItemClicked(ExplorerItemViewModel item)
+    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath)
     {
-        OpenDocument(item);
+        return new ExplorerItemViewModel
+        {
+            Name = name,
+            DocumentId = documentId,
+            IsDirectory = false,
+            FileExtension = Path.GetExtension(name),
+            Parent = parent,
+            Depth = (parent?.Depth ?? -1) + 1,
+            FullPath = fullPath,
+            OnItemClicked = OnExplorerItemClicked,
+            OnDeleteRequested = DeleteExplorerItem,
+            OnNewFileRequested = NewFileUnderItem,
+            OnNewFolderRequested = NewFolderUnderItem,
+            OnRenameCommitted = OnItemRenamed,
+            OnDuplicateRequested = DuplicateExplorerItem,
+            OnCopyPathRequested = CopyItemPath
+        };
     }
 
-    private void OnItemRenamed(ExplorerItemViewModel item)
+    private void AddToTree(ExplorerItemViewModel? parent, ExplorerItemViewModel child)
     {
-        if (!item.IsDirectory)
+        if (parent != null)
         {
-            var openTab = Tabs.FirstOrDefault(t =>
-                (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-                string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
-                t.IsActive);
+            parent.Children.Add(child);
+        }
+        else
+        {
+            ExplorerRootItems.Add(child);
+        }
+    }
 
-            if (openTab != null)
+    private HashSet<string> CollectDescendantDocumentIds(ExplorerItemViewModel item)
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void Walk(ExplorerItemViewModel node)
+        {
+            if (!node.IsDirectory && !string.IsNullOrEmpty(node.DocumentId))
             {
-                openTab.Title = item.Name;
-                openTab.Notebook.Title = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-                    ? item.Name.Substring(0, item.Name.Length - 6)
-                    : item.Name;
+                ids.Add(node.DocumentId);
+            }
+            foreach (var child in node.Children)
+            {
+                Walk(child);
+            }
+        }
 
-                try
-                {
-                    _ = _storageService.SaveNotebookAsync(openTab.Notebook);
-                }
-                catch { }
+        Walk(item);
+        return ids;
+    }
+
+    private void UpdateDescendantFullPaths(ExplorerItemViewModel node, string oldPrefix, string newPrefix)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.FullPath.StartsWith(oldPrefix, StringComparison.Ordinal))
+            {
+                child.FullPath = newPrefix + child.FullPath[oldPrefix.Length..];
+            }
+            UpdateDescendantFullPaths(child, oldPrefix, newPrefix);
+        }
+    }
+
+    private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
+
+    // internal (not private) so tests can await the real rename flow directly instead of racing the
+    // fire-and-forget wrapper above, which UI callers use because ExplorerItemViewModel's callback
+    // properties are plain Action delegates that can't hold an async method.
+    internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
+    {
+        if (item.IsDirectory)
+        {
+            try
+            {
+                var oldPath = item.FullPath;
+                var newPath = await _storageService.RenameFolderAsync(oldPath, item.Name);
+                UpdateDescendantFullPaths(item, oldPath, newPath);
+                item.FullPath = newPath;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to rename folder '{item.FullPath}': {ex.Message}");
+            }
+            return;
+        }
+
+        if (string.IsNullOrEmpty(item.DocumentId)) return;
+
+        var newTitle = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+            ? item.Name.Substring(0, item.Name.Length - 6)
+            : item.Name;
+
+        // Persist by DocumentId unconditionally — the old version only saved the rename if a tab
+        // happened to be open for this exact item, so renaming a closed file silently reverted on
+        // the next refresh.
+        var openTab = Tabs.FirstOrDefault(t => string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase));
+        if (openTab != null)
+        {
+            openTab.Title = item.Name;
+            openTab.Notebook.Title = newTitle;
+            await _storageService.SaveNotebookAsync(openTab.Notebook);
+        }
+        else
+        {
+            var doc = await _storageService.LoadNotebookAsync(item.DocumentId);
+            if (doc != null)
+            {
+                doc.Title = newTitle;
+                await _storageService.SaveNotebookAsync(doc);
             }
         }
     }
@@ -1100,11 +1131,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             if (found != null) return found;
         }
         return null;
-    }
-
-    private ExplorerItemViewModel? FindItemByName(IEnumerable<ExplorerItemViewModel> items, string name)
-    {
-        return FindItemByIdOrName(items, null, name);
     }
 
     private ExplorerItemViewModel? FindSelectedItem(IEnumerable<ExplorerItemViewModel> items)

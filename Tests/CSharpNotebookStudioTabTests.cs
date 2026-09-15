@@ -48,10 +48,11 @@ public class CSharpNotebookStudioTabTests : IDisposable
             backToHomeAction: () => { });
     }
 
+    /// <summary>Adds a second root-level notebook item directly to the tree, bypassing storage — used
+    /// by tests that just need a second openable item, not a full create-and-persist round trip.</summary>
     private ExplorerItemViewModel EnsureSecondNotebookItem(CSharpNotebookStudioViewModel studio, string name = "Second_Notebook.frynb")
     {
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var existing = codeFolder?.Children.FirstOrDefault(x => x.Name == name);
+        var existing = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == name);
         if (existing != null) return existing;
 
         var secondItem = new ExplorerItemViewModel
@@ -60,9 +61,10 @@ public class CSharpNotebookStudioTabTests : IDisposable
             DocumentId = "test_doc_second",
             IsDirectory = false,
             FileExtension = ".frynb",
-            Parent = codeFolder
+            FullPath = name,
+            Parent = null
         };
-        codeFolder?.Children.Add(secondItem);
+        studio.ExplorerRootItems.Add(secondItem);
         return secondItem;
     }
 
@@ -81,15 +83,13 @@ public class CSharpNotebookStudioTabTests : IDisposable
     }
 
     [Fact]
-    public void OpenDocument_MultipleFiles_DisplaysMultipleTabs()
+    public async Task OpenDocument_MultipleFiles_DisplaysMultipleTabs()
     {
         var studio = CreateStudio();
 
-        // Add second notebook in Explorer tree
         var secondFile = EnsureSecondNotebookItem(studio);
 
-        // Open second notebook
-        studio.OpenDocument(secondFile);
+        await studio.OpenDocumentAsync(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
@@ -99,28 +99,27 @@ public class CSharpNotebookStudioTabTests : IDisposable
     }
 
     [Fact]
-    public void OpenDocument_SameFileTwice_DoesNotDuplicateTabs()
+    public async Task OpenDocument_SameFileTwice_DoesNotDuplicateTabs()
     {
         var studio = CreateStudio();
 
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var docFile = codeFolder!.Children.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
+        var docFile = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(docFile);
 
         // Click same file again
-        studio.OpenDocument(docFile);
+        await studio.OpenDocumentAsync(docFile);
 
         Assert.Single(studio.Tabs);
         Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab!.Title);
     }
 
     [Fact]
-    public void SelectTab_SwitchesActiveTab_AndUpdatesExplorerSelection()
+    public async Task SelectTab_SwitchesActiveTab_AndUpdatesExplorerSelection()
     {
         var studio = CreateStudio();
 
         var secondFile = EnsureSecondNotebookItem(studio);
-        studio.OpenDocument(secondFile);
+        await studio.OpenDocumentAsync(secondFile);
 
         Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
 
@@ -132,19 +131,18 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.False(studio.Tabs[1].IsActive);
 
         // Verify Explorer selection updated
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var firstItem = codeFolder!.Children.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
+        var firstItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(firstItem);
         Assert.True(firstItem.IsSelected);
     }
 
     [Fact]
-    public void CloseTab_SwitchesToAdjacentTab()
+    public async Task CloseTab_SwitchesToAdjacentTab()
     {
         var studio = CreateStudio();
 
         var secondFile = EnsureSecondNotebookItem(studio);
-        studio.OpenDocument(secondFile);
+        await studio.OpenDocumentAsync(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
@@ -189,7 +187,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
         activeTab.SelectCell(mdCellVm);
 
         // Verify breadcrumb segment formatting
-        Assert.Equal("Code", studio.BreadcrumbFolder);
+        Assert.Equal("Library", studio.BreadcrumbFolder);
         Assert.Equal("Document Automation Notebook.frynb", studio.BreadcrumbDocument);
         Assert.Equal("Markdown: 📓 Polyglot Notebook Demo Copy", activeTab.ActiveCellBadgeText);
         Assert.Equal("FormatHeaderPound", activeTab.ActiveCellTypeIcon);
@@ -219,41 +217,104 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.Equal("Cell [1]: public class People", activeTab.ActiveCellBadgeText);
         Assert.Equal("CodeBraces", activeTab.ActiveCellTypeIcon);
         Assert.Equal("#58A6FF", activeTab.ActiveCellTypeColor);
-        Assert.Equal("Code › Document Automation Notebook.frynb › Cell [1]: public class People", studio.BreadcrumbText);
+        Assert.Equal("Library › Document Automation Notebook.frynb › Cell [1]: public class People", studio.BreadcrumbText);
     }
 
     [Fact]
-    public void NewNotebookTab_CreatesTabAndAddsToExplorer()
+    public async Task NewNotebookTab_CreatesTabAndAddsToExplorer()
     {
         var studio = CreateStudio();
 
         var initialCount = studio.Tabs.Count;
-        studio.NewNotebookTab();
+        await studio.NewNotebookTab();
 
         Assert.Equal(initialCount + 1, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
         Assert.StartsWith("Notebook_", studio.ActiveTab.Title);
 
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        Assert.NotNull(codeFolder);
-        Assert.Contains(codeFolder.Children, x => x.Name == studio.ActiveTab.Title);
+        Assert.Contains(studio.ExplorerRootItems, x => x.Name == studio.ActiveTab.Title);
     }
 
     [Fact]
-    public void DeleteExplorerItem_ClosesOpenTab()
+    public async Task DeleteExplorerItem_ClosesOpenTab()
     {
         var studio = CreateStudio();
 
         var secondFile = EnsureSecondNotebookItem(studio);
-        studio.OpenDocument(secondFile);
+        await studio.OpenDocumentAsync(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
 
         // Delete from explorer
-        studio.DeleteExplorerItem(secondFile);
+        await studio.DeleteExplorerItemAsync(secondFile);
 
         Assert.Single(studio.Tabs);
         Assert.DoesNotContain(studio.Tabs, t => t.Title == "Second_Notebook.frynb");
+    }
+
+    [Fact]
+    public async Task NewFolder_PersistsAcrossRefresh()
+    {
+        var studio = CreateStudio();
+
+        await studio.NewFolder();
+
+        var folder = studio.ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
+        Assert.NotNull(folder);
+        Assert.Equal("New Folder", folder.Name);
+
+        // Simulate the tree being rebuilt (e.g. app restart / manual refresh)
+        await studio.RefreshExplorer();
+
+        Assert.Contains(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == "New Folder");
+    }
+
+    [Fact]
+    public async Task RenameFolder_UpdatesDescendantPaths_AndPersistsAcrossRefresh()
+    {
+        var studio = CreateStudio();
+
+        await studio.NewFolder();
+        var folder = studio.ExplorerRootItems.First(x => x.IsDirectory);
+
+        await studio.NewFileUnderItemAsync(folder);
+        var childBeforeRename = folder.Children.First();
+        var childId = childBeforeRename.DocumentId;
+
+        folder.Name = "Renamed Folder";
+        await studio.OnItemRenamedAsync(folder);
+
+        Assert.Equal("Renamed Folder", folder.FullPath);
+        Assert.StartsWith("Renamed Folder/", folder.Children.First().FullPath);
+
+        await studio.RefreshExplorer();
+
+        var renamedFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.IsDirectory && x.Name == "Renamed Folder");
+        Assert.NotNull(renamedFolder);
+        Assert.Contains(renamedFolder.Children, c => c.DocumentId == childId);
+    }
+
+    [Fact]
+    public async Task DeleteFolder_CascadesToChildrenAndClosesTabs()
+    {
+        var studio = CreateStudio();
+
+        await studio.NewFolder();
+        var folder = studio.ExplorerRootItems.First(x => x.IsDirectory);
+
+        await studio.NewFileUnderItemAsync(folder);
+        var child = folder.Children.First();
+        var childId = child.DocumentId!;
+
+        Assert.Equal(2, studio.Tabs.Count); // initial tab + the new file (opened automatically)
+
+        await studio.DeleteExplorerItemAsync(folder);
+
+        Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == folder.Name);
+        Assert.DoesNotContain(studio.Tabs, t => t.Notebook.Id == childId);
+
+        var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+        Assert.DoesNotContain(summaries, s => s.Id == childId);
     }
 
     [Fact]
@@ -401,6 +462,63 @@ Console.WriteLine(yaml.Trim());";
         Assert.Contains("Category: UniversalNuGet", result.ConsoleOutput);
     }
 
+    // NOTE: a bare `while (true) { }` cannot be tested here — CancellationToken cancellation is
+    // cooperative, and Roslyn scripting does not inject cancellation checks into the compiled loop
+    // body. An already-running, non-yielding synchronous loop cannot be interrupted this way (same
+    // fundamental limitation as ScriptExecutionEngine's "Program" mode). Confirmed empirically: an
+    // earlier version of this test with that exact code hung the whole run at 100% CPU. What the
+    // cancellation plumbing DOES reliably guarantee is covered below: a token already cancelled before
+    // execution starts is honored immediately, without ever running the cell body.
+    [Fact]
+    public async Task NotebookKernel_AlreadyCancelledToken_ReturnsWasCancelledWithoutRunning()
+    {
+        var kernel = new NotebookExecutionKernel();
+        using var cts = new System.Threading.CancellationTokenSource();
+        cts.Cancel();
+
+        var ranCellBody = false;
+        var result = await kernel.ExecuteCellAsync(
+            "Console.WriteLine(\"should not run\");",
+            ct: cts.Token,
+            onLiveConsole: _ => ranCellBody = true);
+
+        Assert.True(result.WasCancelled);
+        Assert.False(ranCellBody);
+    }
+
+    [Fact]
+    public async Task NotebookCell_TableAndInspectorOutput_SurvivesSaveAndReload()
+    {
+        var cellItem = new NotebookCellItem { Type = CellType.Code, Source = "new[] {1,2,3}.Dump();" };
+        var cellVm = new NotebookCellViewModel(cellItem);
+
+        var table = new DumpTableResult("Int32[3]");
+        table.Columns.Add(new DumpTableColumn { Header = "Item", IsNumeric = true });
+        table.Rows.Add(new DumpTableRow(0, new List<DumpTableCell> { new() { DisplayText = "1", IsNumeric = true } }));
+        cellVm.SetTableOutput(table);
+
+        var inspector = new ObjectInspectorNode("Person");
+        inspector.Properties.Add(new ObjectInspectorPropertyRow { Name = "Name", SimpleValueText = "\"Ada\"" });
+        cellVm.SetInspectorOutput(inspector);
+
+        var nb = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = "RichOutputTest" };
+        nb.Cells.Add(cellItem);
+        await _testStorage.SaveNotebookAsync(nb);
+
+        var reloaded = await _testStorage.LoadNotebookAsync(nb.Id);
+        Assert.NotNull(reloaded);
+        var reloadedCellVm = new NotebookCellViewModel(reloaded.Cells[0]);
+
+        Assert.True(reloadedCellVm.HasTableOutput);
+        Assert.Equal("Int32[3]", reloadedCellVm.TableResult!.Title);
+        Assert.Single(reloadedCellVm.TableResult.Rows);
+        Assert.Equal("1", reloadedCellVm.TableResult.Rows[0].Cells[0].DisplayText);
+
+        Assert.True(reloadedCellVm.HasInspectorOutput);
+        Assert.Equal("Person", reloadedCellVm.InspectorNode!.HeaderTitle);
+        Assert.Equal("Name", reloadedCellVm.InspectorNode.Properties[0].Name);
+    }
+
     [Fact]
     public void NuGetSemanticVersion_ParsingAndComparison_PrefersStableOverPrerelease()
     {
@@ -441,12 +559,8 @@ Console.WriteLine(yaml.Trim());";
         Assert.NotNull(studio.ActiveTab);
         Assert.Equal("SkiaSharp Graphics & Image Generation Copy.frynb", studio.ActiveTab.Title);
 
-        // Verify document was added to the Explorer tree and selected
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        Assert.NotNull(codeFolder);
-        Assert.True(codeFolder.IsExpanded);
-
-        var expItem = codeFolder.Children.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
+        // Verify document was added to the Explorer tree root and selected
+        var expItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
         Assert.NotNull(expItem);
         Assert.True(expItem.IsSelected);
         Assert.Equal("skiasharp_image_studio", expItem.DocumentId);
@@ -471,20 +585,20 @@ Console.WriteLine(yaml.Trim());";
         });
         await _testStorage.SaveNotebookAsync(newNb);
 
-        // Add to explorer
-        var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
+        // Add to explorer root
         var itemVm = new ExplorerItemViewModel
         {
             Name = $"{uniqueTitle}.frynb",
             DocumentId = newNb.Id,
             IsDirectory = false,
             FileExtension = ".frynb",
-            Parent = codeFolder
+            FullPath = $"{uniqueTitle}.frynb",
+            Parent = null
         };
-        codeFolder.Children.Add(itemVm);
+        studio.ExplorerRootItems.Add(itemVm);
 
         // Click to open document
-        studio.OpenDocument(itemVm);
+        await studio.OpenDocumentAsync(itemVm);
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.Equal($"{uniqueTitle}.frynb", studio.ActiveTab!.Title);
@@ -492,17 +606,16 @@ Console.WriteLine(yaml.Trim());";
     }
 
     [Fact]
-    public void DuplicateExplorerItem_CreatesClonedDocumentInStorageAndExplorer()
+    public async Task DuplicateExplorerItem_CreatesClonedDocumentInStorageAndExplorer()
     {
         var studio = CreateStudio();
 
-        var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
-        var docFile = codeFolder.Children.First(x => x.Name == "Document Automation Notebook.frynb");
+        var docFile = studio.ExplorerRootItems.First(x => x.Name == "Document Automation Notebook.frynb");
 
-        studio.DuplicateExplorerItem(docFile);
+        await studio.DuplicateExplorerItemAsync(docFile);
 
-        Assert.Contains(codeFolder.Children, x => x.Name == "Document Automation Notebook Copy.frynb");
-        var duplicateItem = codeFolder.Children.First(x => x.Name == "Document Automation Notebook Copy.frynb");
+        Assert.Contains(studio.ExplorerRootItems, x => x.Name == "Document Automation Notebook Copy.frynb");
+        var duplicateItem = studio.ExplorerRootItems.First(x => x.Name == "Document Automation Notebook Copy.frynb");
         Assert.False(string.IsNullOrEmpty(duplicateItem.DocumentId));
         Assert.Equal("Document Automation Notebook Copy.frynb", studio.ActiveTab!.Title);
     }
@@ -538,5 +651,3 @@ Console.WriteLine(yaml.Trim());";
         Assert.Equal("NotebookOutline", child.IconKind);
     }
 }
-
-

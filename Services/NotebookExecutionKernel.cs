@@ -35,7 +35,13 @@ public class NotebookExecutionKernel
     private InteractiveAssemblyLoader _assemblyLoader = new();
     private readonly NuGetReferenceResolver _nuGetResolver;
     private readonly List<MetadataReference> _additionalReferences = new();
-    private static readonly SemaphoreSlim _executionLock = new(1, 1);
+
+    // Per-instance: protects this kernel's own _currentState/_scriptOptions/_additionalReferences from
+    // concurrent mutation (e.g. two Run clicks racing in the same tab). Each notebook tab owns its own
+    // kernel, so this intentionally no longer serializes execution *across* tabs — that used to happen
+    // by accident because this was `static`. Cross-process Console redirection is handled separately by
+    // ConsoleRedirectionGate, which does need to stay process-wide.
+    private readonly SemaphoreSlim _executionLock = new(1, 1);
 
     public bool IsSessionActive => _currentState != null;
 
@@ -103,6 +109,32 @@ public class NotebookExecutionKernel
             return result;
         }
 
+        // Everything below can throw OperationCanceledException before the innermost try/catch even
+        // starts (e.g. an already-cancelled token failing the very first WaitAsync) — that must come
+        // back as a normal WasCancelled result, not an unhandled exception out of this method.
+        try
+        {
+            await ExecuteCellCoreAsync(code, result, sw, onLiveConsole, onRichOutput, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            result.WasCancelled = true;
+            result.ErrorMessage = "Execution was cancelled.";
+            sw.Stop();
+            result.Elapsed = sw.Elapsed;
+        }
+
+        return result;
+    }
+
+    private async Task ExecuteCellCoreAsync(
+        string code,
+        KernelExecutionResult result,
+        Stopwatch sw,
+        Action<string>? onLiveConsole,
+        Action<RichCellOutput>? onRichOutput,
+        CancellationToken ct)
+    {
         // 1. Process #r "nuget: ..." directives
         var nugetResult = await _nuGetResolver.ProcessDirectivesAsync(code, ct);
 
@@ -135,114 +167,123 @@ public class NotebookExecutionKernel
         await _executionLock.WaitAsync(ct);
         try
         {
-            // 2. Intercept Console.Out and live writers
-            var originalOut = Console.Out;
-            var originalErr = Console.Error;
-
-            var liveWriter = new KernelLiveStringWriter(text =>
-            {
-                onLiveConsole?.Invoke(text);
-            });
-
-            Console.SetOut(liveWriter);
-            Console.SetError(liveWriter);
-
+            // 2. Intercept Console.Out and live writers. Console.Out/Error are process-wide statics,
+            // so this swap must be serialized against every OTHER execution engine in the process
+            // (see ConsoleRedirectionGate) — the per-instance _executionLock above only protects this
+            // kernel's own state, it says nothing about a concurrent Code Studio "Program" run.
+            await ConsoleRedirectionGate.Gate.WaitAsync(ct);
             try
             {
-                using (InteractiveDisplayContext.EnterScope(richOutput =>
+                var originalOut = Console.Out;
+                var originalErr = Console.Error;
+
+                var liveWriter = new KernelLiveStringWriter(text =>
                 {
-                    onRichOutput?.Invoke(richOutput);
-                }))
+                    onLiveConsole?.Invoke(text);
+                });
+
+                Console.SetOut(liveWriter);
+                Console.SetError(liveWriter);
+
+                try
                 {
-                    ScriptState<object> newState;
-
-                    if (_currentState == null)
+                    using (InteractiveDisplayContext.EnterScope(richOutput =>
                     {
-                        var script = CSharpScript.Create<object>(
-                            cleanCode,
-                            _scriptOptions,
-                            assemblyLoader: _assemblyLoader);
-                        newState = await script.RunAsync(cancellationToken: ct);
-                    }
-                    else
+                        onRichOutput?.Invoke(richOutput);
+                    }))
                     {
-                        newState = await _currentState.ContinueWithAsync(
-                            cleanCode,
-                            _scriptOptions,
-                            cancellationToken: ct);
-                    }
+                        ScriptState<object> newState;
 
-                    _currentState = newState;
-                    result.Success = true;
+                        if (_currentState == null)
+                        {
+                            var script = CSharpScript.Create<object>(
+                                cleanCode,
+                                _scriptOptions,
+                                assemblyLoader: _assemblyLoader);
+                            newState = await script.RunAsync(cancellationToken: ct);
+                        }
+                        else
+                        {
+                            newState = await _currentState.ContinueWithAsync(
+                                cleanCode,
+                                _scriptOptions,
+                                cancellationToken: ct);
+                        }
 
-                    // Inspect return value for rich media or expression output
-                    if (newState.ReturnValue != null)
-                    {
-                        InspectAndEmitReturnValue(newState.ReturnValue, onLiveConsole, onRichOutput);
+                        _currentState = newState;
+                        result.Success = true;
+
+                        // Inspect return value for rich media or expression output
+                        if (newState.ReturnValue != null)
+                        {
+                            InspectAndEmitReturnValue(newState.ReturnValue, onLiveConsole, onRichOutput);
+                        }
                     }
                 }
-            }
-            catch (CompilationErrorException cee)
-            {
-                result.Success = false;
-                var diags = new List<DiagnosticItem>();
-
-                foreach (var diag in cee.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+                catch (CompilationErrorException cee)
                 {
-                    var lineSpan = diag.Location.GetLineSpan();
-                    diags.Add(new DiagnosticItem
+                    result.Success = false;
+                    var diags = new List<DiagnosticItem>();
+
+                    foreach (var diag in cee.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
                     {
-                        Id = diag.Id,
-                        Message = diag.GetMessage(),
-                        Severity = diag.Severity,
-                        Line = lineSpan.StartLinePosition.Line + 1,
-                        Column = lineSpan.StartLinePosition.Character + 1
-                    });
-                }
+                        var lineSpan = diag.Location.GetLineSpan();
+                        diags.Add(new DiagnosticItem
+                        {
+                            Id = diag.Id,
+                            Message = diag.GetMessage(),
+                            Severity = diag.Severity,
+                            Line = lineSpan.StartLinePosition.Line + 1,
+                            Column = lineSpan.StartLinePosition.Character + 1
+                        });
+                    }
 
-                result.Diagnostics = diags;
-                result.ErrorMessage = string.Join("\n", diags.Select(d => $"Line {d.Line}: {d.Message}"));
-                liveWriter.WriteLine($"\n❌ Compilation Error:\n{result.ErrorMessage}");
-            }
-            catch (OperationCanceledException)
-            {
-                result.WasCancelled = true;
-                result.ErrorMessage = "Execution was cancelled.";
-                liveWriter.WriteLine("\n⚠️ Execution cancelled.");
-            }
-            catch (Exception ex)
-            {
-                result.Success = false;
-                var root = ex;
-                while (root.InnerException != null &&
-                       (root is TargetInvocationException || root is TypeInitializationException || root is AggregateException))
-                {
-                    root = root.InnerException;
+                    result.Diagnostics = diags;
+                    result.ErrorMessage = string.Join("\n", diags.Select(d => $"Line {d.Line}: {d.Message}"));
+                    liveWriter.WriteLine($"\n❌ Compilation Error:\n{result.ErrorMessage}");
                 }
-
-                result.ErrorMessage = root.Message;
-                liveWriter.WriteLine($"\n❌ Runtime Error: {root.GetType().Name}: {root.Message}\n{root.StackTrace}");
-                if (root != ex && ex.InnerException != null && ex.InnerException != root)
+                catch (OperationCanceledException)
                 {
-                    liveWriter.WriteLine($"\n(Root cause of {ex.GetType().Name}: {ex.Message})");
+                    result.WasCancelled = true;
+                    result.ErrorMessage = "Execution was cancelled.";
+                    liveWriter.WriteLine("\n⚠️ Execution cancelled.");
+                }
+                catch (Exception ex)
+                {
+                    result.Success = false;
+                    var root = ex;
+                    while (root.InnerException != null &&
+                           (root is TargetInvocationException || root is TypeInitializationException || root is AggregateException))
+                    {
+                        root = root.InnerException;
+                    }
+
+                    result.ErrorMessage = root.Message;
+                    liveWriter.WriteLine($"\n❌ Runtime Error: {root.GetType().Name}: {root.Message}\n{root.StackTrace}");
+                    if (root != ex && ex.InnerException != null && ex.InnerException != root)
+                    {
+                        liveWriter.WriteLine($"\n(Root cause of {ex.GetType().Name}: {ex.Message})");
+                    }
+                }
+                finally
+                {
+                    Console.SetOut(originalOut);
+                    Console.SetError(originalErr);
+                    sw.Stop();
+
+                    result.Elapsed = sw.Elapsed;
+                    result.ConsoleOutput = liveWriter.ToString();
                 }
             }
             finally
             {
-                Console.SetOut(originalOut);
-                Console.SetError(originalErr);
-                sw.Stop();
-
-                result.Elapsed = sw.Elapsed;
-                result.ConsoleOutput = liveWriter.ToString();
+                ConsoleRedirectionGate.Gate.Release();
             }
         }
         finally
         {
             _executionLock.Release();
         }
-
-        return result;
     }
 
     private void InspectAndEmitReturnValue(

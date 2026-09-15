@@ -73,22 +73,28 @@ public class DebugHoverDataTipController : IDisposable
         _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
         _editor.KeyDown += OnEditorKeyDown;
 
-        // Hook tip control events
-        _tipControl.PointerEntered += (s, e) =>
-        {
-            _isPointerOverTip = true;
-            _dismissTimer.Stop();
-        };
-        _tipControl.PointerExited += (s, e) =>
-        {
-            _isPointerOverTip = false;
-            _dismissTimer.Start();
-        };
+        // Hook tip control events. Named methods (not lambdas) so Dispose() can actually unsubscribe them.
+        _tipControl.PointerEntered += OnTipPointerEntered;
+        _tipControl.PointerExited += OnTipPointerExited;
         _tipControl.CloseRequested += HideTip;
-        _tipControl.AddWatchRequested += expr =>
-        {
-            _addWatchAction?.Invoke(expr);
-        };
+        _tipControl.AddWatchRequested += OnTipAddWatchRequested;
+    }
+
+    private void OnTipPointerEntered(object? sender, PointerEventArgs e)
+    {
+        _isPointerOverTip = true;
+        _dismissTimer.Stop();
+    }
+
+    private void OnTipPointerExited(object? sender, PointerEventArgs e)
+    {
+        _isPointerOverTip = false;
+        _dismissTimer.Start();
+    }
+
+    private void OnTipAddWatchRequested(string expr)
+    {
+        _addWatchAction?.Invoke(expr);
     }
 
     public void HideTip()
@@ -308,11 +314,17 @@ public class DebugHoverDataTipController : IDisposable
     public void Dispose()
     {
         _hoverTimer.Stop();
+        _hoverTimer.Tick -= OnHoverTimerTick;
         _dismissTimer.Stop();
 
         _editor.TextArea.TextView.PointerMoved -= OnTextViewPointerMoved;
         _editor.TextArea.TextView.PointerExited -= OnTextViewPointerExited;
         _editor.TextArea.Caret.PositionChanged -= OnCaretPositionChanged;
         _editor.KeyDown -= OnEditorKeyDown;
+
+        _tipControl.PointerEntered -= OnTipPointerEntered;
+        _tipControl.PointerExited -= OnTipPointerExited;
+        _tipControl.CloseRequested -= HideTip;
+        _tipControl.AddWatchRequested -= OnTipAddWatchRequested;
     }
 }

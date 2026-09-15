@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
@@ -225,6 +227,35 @@ public static class Display
             Kind = CellOutputKind.Html,
             HtmlContent = html
         });
+    }
+
+    /// <summary>Renders a small common subset of Markdown (headers, bold/italic, inline code, links)
+    /// through the existing Html rich-output path — notebooks already have a Markdown cell type and an
+    /// Html renderer, so this reuses both rather than introducing a new output kind.</summary>
+    public static void Markdown(string markdown)
+    {
+        Html(ConvertMarkdownToHtml(markdown ?? string.Empty));
+    }
+
+    private static string ConvertMarkdownToHtml(string markdown)
+    {
+        // Encode the raw text first so injected tags below are the only real HTML — user-typed
+        // Markdown must never be able to smuggle a <script> tag into the rendered output.
+        var html = WebUtility.HtmlEncode(markdown);
+
+        html = Regex.Replace(html, @"^###### (.*)$", "<h6>$1</h6>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^##### (.*)$", "<h5>$1</h5>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^#### (.*)$", "<h4>$1</h4>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^### (.*)$", "<h3>$1</h3>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^## (.*)$", "<h2>$1</h2>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^# (.*)$", "<h1>$1</h1>", RegexOptions.Multiline);
+
+        html = Regex.Replace(html, @"\*\*(.+?)\*\*", "<b>$1</b>");
+        html = Regex.Replace(html, @"\*(.+?)\*", "<i>$1</i>");
+        html = Regex.Replace(html, @"`(.+?)`", "<code>$1</code>");
+        html = Regex.Replace(html, @"\[(.+?)\]\((.+?)\)", "<a href=\"$2\">$1</a>");
+
+        return html.Replace("\r\n", "\n").Replace("\n", "<br/>");
     }
 
     public static void Control(Control control)

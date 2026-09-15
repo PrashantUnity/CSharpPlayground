@@ -9,7 +9,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
 public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 {
-    private readonly HashSet<string> _declaredVariables = new();
+    private HashSet<string> _declaredVariables = new();
 
     public static SyntaxTree Instrument(SyntaxTree syntaxTree)
     {
@@ -22,46 +22,63 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
     public override SyntaxNode? VisitBlock(BlockSyntax node)
     {
         var newStatements = new List<StatementSyntax>();
-        var localScopeVars = new HashSet<string>(_declaredVariables);
 
-        foreach (var statement in node.Statements)
+        // Enter a new lexical scope: start from whatever the caller had accumulated so far (outer-scope
+        // locals stay visible), let this block add its own declarations, then restore on the way out —
+        // exactly like real C# block-scoping rules. Threading the scope through the *field* (instead of
+        // a throwaway local, which was the bug: nested Visit() calls always saw an empty field) is what
+        // lets a breakpoint inside a nested if/while/for still see variables from the enclosing block.
+        var outerScope = _declaredVariables;
+        var localScopeVars = new HashSet<string>(outerScope);
+        _declaredVariables = localScopeVars;
+        try
         {
-            // Do not instrument synthetic probes
-            if (IsSyntheticProbe(statement))
+            foreach (var statement in node.Statements)
             {
-                newStatements.Add(statement);
-                continue;
-            }
-
-            var line = GetLineNumber(statement);
-            if (line > 0)
-            {
-                var probe = CreateProbeStatement(line, localScopeVars);
-                newStatements.Add(probe);
-            }
-
-            // If this statement is a local declaration, record newly introduced variables for subsequent statements
-            if (statement is LocalDeclarationStatementSyntax localDecl)
-            {
-                foreach (var v in localDecl.Declaration.Variables)
+                // Do not instrument synthetic probes
+                if (IsSyntheticProbe(statement))
                 {
-                    localScopeVars.Add(v.Identifier.Text);
+                    newStatements.Add(statement);
+                    continue;
                 }
+
+                var line = GetLineNumber(statement);
+                if (line > 0)
+                {
+                    var probe = CreateProbeStatement(line, localScopeVars);
+                    newStatements.Add(probe);
+                }
+
+                // If this statement is a local declaration, record newly introduced variables for subsequent statements
+                if (statement is LocalDeclarationStatementSyntax localDecl)
+                {
+                    foreach (var v in localDecl.Declaration.Variables)
+                    {
+                        localScopeVars.Add(v.Identifier.Text);
+                    }
+                }
+
+                // Recurse into nested structures (blocks, loops, conditionals)
+                var visited = (StatementSyntax)Visit(statement);
+                newStatements.Add(visited);
             }
 
-            // Recurse into nested structures (blocks, loops, conditionals)
-            var visited = (StatementSyntax)Visit(statement);
-            newStatements.Add(visited);
+            return node.WithStatements(SyntaxFactory.List(newStatements));
         }
-
-        return node.WithStatements(SyntaxFactory.List(newStatements));
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
     }
 
     public override SyntaxNode? VisitCompilationUnit(CompilationUnitSyntax node)
     {
         var newMembers = new List<MemberDeclarationSyntax>();
-        var topLevelVars = new HashSet<string>();
 
+        // Top-level statements are the default "Statements" execution mode — the common case — so this
+        // needs the same fix as VisitBlock: write into _declaredVariables directly instead of a separate
+        // untracked local, or a breakpoint inside the very first nested if/while/for at the top level
+        // would still show none of the top-level variables declared before it.
         foreach (var member in node.Members)
         {
             if (member is GlobalStatementSyntax globalStatement)
@@ -71,7 +88,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 
                 if (line > 0 && !IsSyntheticProbe(statement))
                 {
-                    var probe = CreateProbeStatement(line, topLevelVars);
+                    var probe = CreateProbeStatement(line, _declaredVariables);
                     newMembers.Add(SyntaxFactory.GlobalStatement(probe));
                 }
 
@@ -79,7 +96,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
                 {
                     foreach (var v in localDecl.Declaration.Variables)
                     {
-                        topLevelVars.Add(v.Identifier.Text);
+                        _declaredVariables.Add(v.Identifier.Text);
                     }
                 }
 
@@ -136,7 +153,8 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode? VisitForStatement(ForStatementSyntax node)
     {
-        var varsInLoop = new HashSet<string>(_declaredVariables);
+        var outerScope = _declaredVariables;
+        var varsInLoop = new HashSet<string>(outerScope);
         if (node.Declaration != null)
         {
             foreach (var v in node.Declaration.Variables)
@@ -145,7 +163,19 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
             }
         }
 
-        var visited = (StatementSyntax)Visit(node.Statement);
+        // The loop variable(s) must be visible while recursing into the body, so a breakpoint inside
+        // "for (int i = 0; ...) { ... }" can see `i` — not just in the no-braces single-statement case.
+        _declaredVariables = varsInLoop;
+        StatementSyntax visited;
+        try
+        {
+            visited = (StatementSyntax)Visit(node.Statement);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+
         if (visited is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);
@@ -157,12 +187,23 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode? VisitForEachStatement(ForEachStatementSyntax node)
     {
-        var varsInLoop = new HashSet<string>(_declaredVariables)
+        var outerScope = _declaredVariables;
+        var varsInLoop = new HashSet<string>(outerScope)
         {
             node.Identifier.Text
         };
 
-        var visited = (StatementSyntax)Visit(node.Statement);
+        _declaredVariables = varsInLoop;
+        StatementSyntax visited;
+        try
+        {
+            visited = (StatementSyntax)Visit(node.Statement);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+
         if (visited is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);

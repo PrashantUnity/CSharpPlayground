@@ -75,18 +75,10 @@ public partial class CSharpCodeStudioView : UserControl
             // 8. Integrated Search & Replace Panel (Ctrl+F / Cmd+F)
             _searchPanel = SearchPanel.Install(_editor);
 
-            // 9. Interactive Live Debug Hover Data Tip Controller
+            // 9. Interactive Live Debug Hover Data Tip Controller — constructed in OnAttachedToVisualTree
+            // and disposed in OnDetachedFromVisualTree (see those overrides below) rather than here, so
+            // it doesn't outlive the view and leak its two DispatcherTimers + event subscriptions.
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
-            if (_debugHoverTip != null)
-            {
-                _debugHoverController = new DebugHoverDataTipController(
-                    _editor,
-                    _debugHoverTip,
-                    () => _currentVm?.IsPaused == true,
-                    () => _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : Array.Empty<DebugVariableItem>(),
-                    expr => _currentVm != null ? _currentVm.EvaluateExpressionAsync(expr) : Task.FromResult((false, "", "")),
-                    expr => _ = _currentVm?.AddWatchExpressionAsync(expr));
-            }
 
             // 10. Event listeners
             _editor.TextChanged += OnEditorTextChanged;
@@ -188,6 +180,24 @@ public partial class CSharpCodeStudioView : UserControl
     {
         base.OnAttachedToVisualTree(e);
         ApplyThemeVariant();
+
+        if (_debugHoverController == null && _editor != null && _debugHoverTip != null)
+        {
+            _debugHoverController = new DebugHoverDataTipController(
+                _editor,
+                _debugHoverTip,
+                () => _currentVm?.IsPaused == true,
+                () => _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : Array.Empty<DebugVariableItem>(),
+                expr => _currentVm != null ? _currentVm.EvaluateExpressionAsync(expr) : Task.FromResult((false, "", "")),
+                expr => _ = _currentVm?.AddWatchExpressionAsync(expr));
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _debugHoverController?.Dispose();
+        _debugHoverController = null;
     }
 
     private void PolishLeftMargins(bool isDark = true)

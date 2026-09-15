@@ -27,78 +27,91 @@ public class ScriptExecutionEngine
         var result = new ExecutionResult();
         var sw = Stopwatch.StartNew();
 
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
-
-        var liveWriter = new LiveStringWriter(text =>
-        {
-            onLiveOutput?.Invoke(text);
-        });
-
-        Console.SetOut(liveWriter);
-        Console.SetError(liveWriter);
-
-        var context = new CollectibleAssemblyLoadContext();
-
+        // Console.Out/Error are process-wide statics — serialize the swap against every other
+        // execution engine in the process (notably NotebookExecutionKernel), or a concurrent
+        // notebook cell run and Code Studio run can misattribute output / restore the wrong writer.
+        // Everything from here on is inside the outer try so the gate is released exactly once,
+        // even if something between acquiring it and starting execution throws.
+        await ConsoleRedirectionGate.Gate.WaitAsync(ct);
         try
         {
-            await Task.Run(() =>
+            var originalOut = Console.Out;
+            var originalError = Console.Error;
+
+            var liveWriter = new LiveStringWriter(text =>
             {
-                using var ms = new MemoryStream(assemblyBytes);
-                var assembly = context.LoadFromStream(ms);
+                onLiveOutput?.Invoke(text);
+            });
 
-                var entryPoint = assembly.EntryPoint;
-                if (entryPoint == null)
+            Console.SetOut(liveWriter);
+            Console.SetError(liveWriter);
+
+            var context = new CollectibleAssemblyLoadContext();
+
+            try
+            {
+                await Task.Run(() =>
                 {
-                    throw new InvalidOperationException("No entry point found. Please declare 'public static void Main()' or 'public static async Task Main()'.");
-                }
+                    using var ms = new MemoryStream(assemblyBytes);
+                    var assembly = context.LoadFromStream(ms);
 
-                var parameters = entryPoint.GetParameters();
-                object?[]? args = null;
-                if (parameters.Length > 0 && parameters[0].ParameterType == typeof(string[]))
-                {
-                    args = [Array.Empty<string>()];
-                }
+                    var entryPoint = assembly.EntryPoint;
+                    if (entryPoint == null)
+                    {
+                        throw new InvalidOperationException("No entry point found. Please declare 'public static void Main()' or 'public static async Task Main()'.");
+                    }
 
-                ct.ThrowIfCancellationRequested();
+                    var parameters = entryPoint.GetParameters();
+                    object?[]? args = null;
+                    if (parameters.Length > 0 && parameters[0].ParameterType == typeof(string[]))
+                    {
+                        args = [Array.Empty<string>()];
+                    }
 
-                var returnVal = entryPoint.Invoke(null, args);
-                if (returnVal is Task task)
-                {
-                    task.GetAwaiter().GetResult();
-                }
-            }, ct);
+                    ct.ThrowIfCancellationRequested();
 
-            result.Success = true;
-        }
-        catch (OperationCanceledException)
-        {
-            result.WasCancelled = true;
-            liveWriter.WriteLine("\n⚠️ Execution was cancelled by user or timed out.");
-        }
-        catch (TargetInvocationException tie)
-        {
-            result.Success = false;
-            var inner = tie.InnerException ?? tie;
-            result.Error = inner.Message;
-            liveWriter.WriteLine($"\n❌ Runtime Exception: {inner.GetType().Name}: {inner.Message}\n{inner.StackTrace}");
-        }
-        catch (Exception ex)
-        {
-            result.Success = false;
-            result.Error = ex.Message;
-            liveWriter.WriteLine($"\n❌ Error: {ex.Message}");
+                    var returnVal = entryPoint.Invoke(null, args);
+                    if (returnVal is Task task)
+                    {
+                        task.GetAwaiter().GetResult();
+                    }
+                }, ct);
+
+                result.Success = true;
+            }
+            catch (OperationCanceledException)
+            {
+                result.WasCancelled = true;
+                liveWriter.WriteLine("\n⚠️ Execution was cancelled by user or timed out.");
+            }
+            catch (TargetInvocationException tie)
+            {
+                result.Success = false;
+                var inner = tie.InnerException ?? tie;
+                result.Error = inner.Message;
+                liveWriter.WriteLine($"\n❌ Runtime Exception: {inner.GetType().Name}: {inner.Message}\n{inner.StackTrace}");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Error = ex.Message;
+                liveWriter.WriteLine($"\n❌ Error: {ex.Message}");
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                sw.Stop();
+
+                result.Elapsed = sw.Elapsed;
+                result.Output = liveWriter.ToString();
+
+                context.Unload();
+            }
         }
         finally
         {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-            sw.Stop();
-
-            result.Elapsed = sw.Elapsed;
-            result.Output = liveWriter.ToString();
-
-            context.Unload();
+            ConsoleRedirectionGate.Gate.Release();
         }
 
         return result;

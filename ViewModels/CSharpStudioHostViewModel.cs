@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -13,7 +14,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 public partial class CSharpStudioHostViewModel : ObservableObject
 {
+    private const string PluginId = "com.frypdf.plugin.csharpeditor";
+    private const int DefaultExecutionTimeoutSeconds = 10;
+
     private readonly IScriptStorageService _storageService;
+    private readonly IPluginSettingsStore? _settingsStore;
     private RoslynCompilerService? _compilerService;
     private ScriptExecutionEngine? _executionEngine;
 
@@ -43,9 +48,10 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
-    public CSharpStudioHostViewModel(IServiceProvider? serviceProvider = null)
+    public CSharpStudioHostViewModel(IServiceProvider? serviceProvider = null, IPluginSettingsStore? settingsStore = null)
     {
         _storageService = new LocalScriptStorageService();
+        _settingsStore = settingsStore;
 
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(
@@ -117,7 +123,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 _compilerService,
                 _executionEngine,
                 backToHubAction: NavigateToManager,
-                backToHomeAction: NavigateToHome);
+                backToHomeAction: NavigateToHome,
+                getTimeoutSeconds: GetExecutionTimeoutSeconds);
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -130,7 +137,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 _compilerService,
                 _executionEngine,
                 backToHubAction: NavigateToManager,
-                backToHomeAction: NavigateToHome);
+                backToHomeAction: NavigateToHome,
+                getTimeoutSeconds: GetExecutionTimeoutSeconds);
         });
 
         // Only lightweight property assignments go back to the UI thread
@@ -202,4 +210,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";
     }
+
+    /// <summary>
+    /// Reads the user-configured "ExecutionTimeoutSeconds" plugin setting (see plugin.json), falling
+    /// back to the documented default if no settings store was supplied (e.g. the standalone Runner) or
+    /// the host hasn't registered one — this never throws and never blocks execution on a missing service.
+    /// </summary>
+    public int GetExecutionTimeoutSeconds() =>
+        _settingsStore?.GetSetting(PluginId, "ExecutionTimeoutSeconds", DefaultExecutionTimeoutSeconds) ?? DefaultExecutionTimeoutSeconds;
 }

@@ -26,10 +26,12 @@ public class NotebookCellItem
     public int? ImageWidth { get; set; }
     public int? ImageHeight { get; set; }
     public string? HtmlContent { get; set; }
+    public DumpTableSnapshot? TableSnapshot { get; set; }
+    public ObjectInspectorSnapshot? InspectorSnapshot { get; set; }
 
     public bool HasImage => ImageBytes != null && ImageBytes.Length > 0;
     public bool HasHtml => !string.IsNullOrEmpty(HtmlContent);
-    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml;
+    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null;
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
 }

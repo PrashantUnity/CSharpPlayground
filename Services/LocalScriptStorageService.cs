@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -11,47 +13,88 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 public class LocalScriptStorageService : IScriptStorageService
 {
     private readonly string _baseDir;
-    private readonly string _scriptsDir;
-    private readonly string _notebooksDir;
+    private readonly string _libraryRoot;
+    private readonly string _legacyScriptsDir;
+    private readonly string _legacyNotebooksDir;
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
-    private bool _initialized;
+    private readonly SemaphoreSlim _initLock = new(1, 1);
+    private volatile bool _initialized;
 
     public LocalScriptStorageService(string? customBaseDir = null)
     {
-        if (!string.IsNullOrEmpty(customBaseDir))
-        {
-            _baseDir = customBaseDir;
-        }
-        else
-        {
-            _baseDir = Path.Combine(
+        _baseDir = !string.IsNullOrEmpty(customBaseDir)
+            ? customBaseDir
+            : Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "FryPDF",
                 "Plugins",
                 "com.frypdf.plugin.csharpeditor");
-        }
 
-        _scriptsDir = Path.Combine(_baseDir, "scripts");
-        _notebooksDir = Path.Combine(_baseDir, "notebooks");
+        _libraryRoot = Path.Combine(_baseDir, "library");
+        _legacyScriptsDir = Path.Combine(_baseDir, "scripts");
+        _legacyNotebooksDir = Path.Combine(_baseDir, "notebooks");
 
-        Directory.CreateDirectory(_baseDir);
-        Directory.CreateDirectory(_scriptsDir);
-        Directory.CreateDirectory(_notebooksDir);
+        Directory.CreateDirectory(_libraryRoot);
     }
 
     private async Task EnsureInitializedAsync()
     {
         if (_initialized) return;
 
-        var hasScripts = Directory.GetFiles(_scriptsDir, "*.frycs").Length > 0;
-        var hasNotebooks = Directory.GetFiles(_notebooksDir, "*.frynb").Length > 0;
-
-        if (!hasScripts && !hasNotebooks)
+        await _initLock.WaitAsync();
+        try
         {
-            await SeedDefaultsAsync();
-        }
+            if (_initialized) return;
 
-        _initialized = true;
+            MigrateLegacyLayout();
+
+            var hasAnyDocument = Directory.EnumerateFiles(_libraryRoot, "*", SearchOption.AllDirectories)
+                .Any(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase));
+
+            if (!hasAnyDocument)
+            {
+                await SeedDefaultsAsync();
+            }
+
+            _initialized = true;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// One-time, idempotent migration from the old flat "scripts/" + "notebooks/" layout into the
+    /// unified "library/" root. Legacy filenames are already "{id}.ext" with globally-unique GUID ids,
+    /// so a straight move can never collide. Leaves the (now empty) legacy folders in place — their
+    /// emptiness is itself the "already migrated" signal, so no separate version flag is needed.
+    /// </summary>
+    private void MigrateLegacyLayout()
+    {
+        MigrateLegacyDirectory(_legacyScriptsDir, "*.frycs");
+        MigrateLegacyDirectory(_legacyNotebooksDir, "*.frynb");
+    }
+
+    private void MigrateLegacyDirectory(string legacyDir, string searchPattern)
+    {
+        if (!Directory.Exists(legacyDir)) return;
+
+        foreach (var file in Directory.GetFiles(legacyDir, searchPattern))
+        {
+            try
+            {
+                var destination = Path.Combine(_libraryRoot, Path.GetFileName(file));
+                if (!File.Exists(destination))
+                {
+                    File.Move(file, destination);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to migrate legacy file '{file}': {ex.Message}");
+            }
+        }
     }
 
     private async Task SeedDefaultsAsync()
@@ -173,13 +216,25 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         }
     }
 
+    private string GetFolderPath(string filePath)
+    {
+        var dir = Path.GetDirectoryName(filePath) ?? _libraryRoot;
+        var rel = Path.GetRelativePath(_libraryRoot, dir);
+        return rel == "." ? string.Empty : rel.Replace(Path.DirectorySeparatorChar, '/');
+    }
+
+    private string? FindExistingFilePath(string id, string extension)
+    {
+        return Directory.EnumerateFiles(_libraryRoot, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
+    }
+
     public async Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync()
     {
         await EnsureInitializedAsync();
         var list = new List<WorkspaceItemSummary>();
 
         // 1. Load Scripts
-        foreach (var file in Directory.GetFiles(_scriptsDir, "*.frycs"))
+        foreach (var file in Directory.EnumerateFiles(_libraryRoot, "*.frycs", SearchOption.AllDirectories))
         {
             try
             {
@@ -196,15 +251,19 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
                         Kind = WorkspaceItemKind.Script,
                         LastModified = script.LastModified,
                         ExecutionCount = script.ExecutionCount,
-                        ExecutionMode = script.ExecutionMode
+                        ExecutionMode = script.ExecutionMode,
+                        FolderPath = GetFolderPath(file)
                     });
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted script file '{file}': {ex.Message}");
+            }
         }
 
         // 2. Load Notebooks
-        foreach (var file in Directory.GetFiles(_notebooksDir, "*.frynb"))
+        foreach (var file in Directory.EnumerateFiles(_libraryRoot, "*.frynb", SearchOption.AllDirectories))
         {
             try
             {
@@ -221,11 +280,15 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
                         Kind = WorkspaceItemKind.Notebook,
                         LastModified = nb.LastModified,
                         ExecutionCount = nb.ExecutionCount,
-                        CellCount = nb.Cells.Count
+                        CellCount = nb.Cells.Count,
+                        FolderPath = GetFolderPath(file)
                     });
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted notebook file '{file}': {ex.Message}");
+            }
         }
 
         return list.OrderByDescending(x => x.LastModified).ToList();
@@ -234,33 +297,43 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
     public async Task<ScriptDocumentItem?> LoadScriptAsync(string id)
     {
         await EnsureInitializedAsync();
-        var file = Path.Combine(_scriptsDir, $"{id}.frycs");
-        if (!File.Exists(file)) return null;
+        var file = FindExistingFilePath(id, ".frycs");
+        if (file == null) return null;
 
         try
         {
             var json = await File.ReadAllTextAsync(file);
             return JsonSerializer.Deserialize<ScriptDocumentItem>(json);
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load script '{id}': {ex.Message}");
             return null;
         }
     }
 
-    public async Task SaveScriptAsync(ScriptDocumentItem script)
+    public async Task<bool> SaveScriptAsync(ScriptDocumentItem script)
     {
-        var file = Path.Combine(_scriptsDir, $"{script.Id}.frycs");
-        script.LastModified = DateTime.UtcNow;
-        var json = JsonSerializer.Serialize(script, _jsonOptions);
-        await File.WriteAllTextAsync(file, json);
+        try
+        {
+            var file = FindExistingFilePath(script.Id, ".frycs") ?? Path.Combine(_libraryRoot, $"{script.Id}.frycs");
+            script.LastModified = DateTime.UtcNow;
+            var json = JsonSerializer.Serialize(script, _jsonOptions);
+            await File.WriteAllTextAsync(file, json);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save script '{script.Id}': {ex.Message}");
+            return false;
+        }
     }
 
     public async Task<NotebookDocumentItem?> LoadNotebookAsync(string id)
     {
         await EnsureInitializedAsync();
-        var file = Path.Combine(_notebooksDir, $"{id}.frynb");
-        if (!File.Exists(file)) return null;
+        var file = FindExistingFilePath(id, ".frynb");
+        if (file == null) return null;
 
         try
         {
@@ -284,21 +357,45 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
             }
             return nb;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load notebook '{id}': {ex.Message}");
             return null;
         }
     }
 
-    public async Task SaveNotebookAsync(NotebookDocumentItem notebook)
+    public async Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook)
     {
-        var file = Path.Combine(_notebooksDir, $"{notebook.Id}.frynb");
-        notebook.LastModified = DateTime.UtcNow;
-        var json = JsonSerializer.Serialize(notebook, _jsonOptions);
+        try
+        {
+            var file = FindExistingFilePath(notebook.Id, ".frynb") ?? Path.Combine(_libraryRoot, $"{notebook.Id}.frynb");
+            notebook.LastModified = DateTime.UtcNow;
+            var json = JsonSerializer.Serialize(notebook, _jsonOptions);
+            await File.WriteAllTextAsync(file, json);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save notebook '{notebook.Id}': {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Writes a brand-new document directly into the requested folder. Used only by the
+    /// CreateNew*Async factory methods — SaveScriptAsync/SaveNotebookAsync intentionally fall back to
+    /// the library root for "not found anywhere" documents, which would silently ignore a requested
+    /// folder for a document that has never been written before.
+    /// </summary>
+    private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json)
+    {
+        var targetDir = string.IsNullOrEmpty(folderPath) ? _libraryRoot : Path.Combine(_libraryRoot, folderPath);
+        Directory.CreateDirectory(targetDir);
+        var file = Path.Combine(targetDir, $"{id}{extension}");
         await File.WriteAllTextAsync(file, json);
     }
 
-    public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null)
+    public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null)
     {
         await EnsureInitializedAsync();
         var templates = CodeTemplateLibrary.GetTemplates();
@@ -319,11 +416,19 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
             LastModified = DateTime.UtcNow
         };
 
-        await SaveScriptAsync(script);
+        try
+        {
+            await WriteNewDocumentAsync(script.Id, ".frycs", folderPath, JsonSerializer.Serialize(script, _jsonOptions));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create script '{script.Id}': {ex.Message}");
+        }
+
         return script;
     }
 
-    public async Task<NotebookDocumentItem> CreateNewNotebookAsync(string title = "New Notebook", string? templateId = null)
+    public async Task<NotebookDocumentItem> CreateNewNotebookAsync(string title = "New Notebook", string? templateId = null, string? folderPath = null)
     {
         await EnsureInitializedAsync();
         var templates = CodeTemplateLibrary.GetTemplates();
@@ -358,25 +463,116 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
                 : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
         });
 
-        await SaveNotebookAsync(notebook);
+        try
+        {
+            await WriteNewDocumentAsync(notebook.Id, ".frynb", folderPath, JsonSerializer.Serialize(notebook, _jsonOptions));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create notebook '{notebook.Id}': {ex.Message}");
+        }
+
         return notebook;
     }
 
-    public async Task DeleteItemAsync(string id)
+    public Task DeleteItemAsync(string id)
     {
-        var scriptFile = Path.Combine(_scriptsDir, $"{id}.frycs");
-        if (File.Exists(scriptFile))
+        var scriptFile = FindExistingFilePath(id, ".frycs");
+        if (scriptFile != null)
         {
             File.Delete(scriptFile);
         }
 
-        var nbFile = Path.Combine(_notebooksDir, $"{id}.frynb");
-        if (File.Exists(nbFile))
+        var nbFile = FindExistingFilePath(id, ".frynb");
+        if (nbFile != null)
         {
             File.Delete(nbFile);
         }
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
+    }
+
+    public Task<List<string>> LoadFolderPathsAsync()
+    {
+        var result = new List<string>();
+        foreach (var dir in Directory.EnumerateDirectories(_libraryRoot, "*", SearchOption.AllDirectories))
+        {
+            result.Add(Path.GetRelativePath(_libraryRoot, dir).Replace(Path.DirectorySeparatorChar, '/'));
+        }
+        return Task.FromResult(result);
+    }
+
+    public Task<string> CreateFolderAsync(string? parentFolderPath, string desiredName)
+    {
+        var parentDir = string.IsNullOrEmpty(parentFolderPath) ? _libraryRoot : Path.Combine(_libraryRoot, parentFolderPath);
+        Directory.CreateDirectory(parentDir);
+
+        var safeName = SanitizeFolderName(desiredName);
+        var finalName = safeName;
+        var suffix = 1;
+        while (Directory.Exists(Path.Combine(parentDir, finalName)))
+        {
+            suffix++;
+            finalName = $"{safeName} ({suffix})";
+        }
+
+        Directory.CreateDirectory(Path.Combine(parentDir, finalName));
+
+        var relativePath = string.IsNullOrEmpty(parentFolderPath) ? finalName : $"{parentFolderPath}/{finalName}";
+        return Task.FromResult(relativePath);
+    }
+
+    public Task<string> RenameFolderAsync(string folderPath, string newName)
+    {
+        var sourceDir = Path.Combine(_libraryRoot, folderPath);
+        var parentRelative = Path.GetDirectoryName(folderPath)?.Replace(Path.DirectorySeparatorChar, '/') ?? string.Empty;
+        var parentDir = string.IsNullOrEmpty(parentRelative) ? _libraryRoot : Path.Combine(_libraryRoot, parentRelative);
+        var safeName = SanitizeFolderName(newName);
+        var destDir = Path.Combine(parentDir, safeName);
+        var newRelativePath = string.IsNullOrEmpty(parentRelative) ? safeName : $"{parentRelative}/{safeName}";
+
+        if (string.Equals(sourceDir, destDir, StringComparison.Ordinal))
+        {
+            return Task.FromResult(newRelativePath);
+        }
+
+        if (string.Equals(sourceDir, destDir, StringComparison.OrdinalIgnoreCase))
+        {
+            // Case-only rename: case-insensitive-but-preserving filesystems (default on macOS/Windows)
+            // need a two-step move through a temp name, or Directory.Move is a silent no-op.
+            var tempDir = Path.Combine(parentDir, $"{safeName}__rename_{Guid.NewGuid():N}");
+            Directory.Move(sourceDir, tempDir);
+            Directory.Move(tempDir, destDir);
+            return Task.FromResult(newRelativePath);
+        }
+
+        if (Directory.Exists(destDir))
+        {
+            throw new IOException($"A folder named '{safeName}' already exists here.");
+        }
+
+        Directory.Move(sourceDir, destDir);
+        return Task.FromResult(newRelativePath);
+    }
+
+    public Task DeleteFolderAsync(string folderPath)
+    {
+        var dir = Path.Combine(_libraryRoot, folderPath);
+        if (Directory.Exists(dir))
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+        return Task.CompletedTask;
+    }
+
+    private static string SanitizeFolderName(string name)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(name) ? "New Folder" : name.Trim();
+        foreach (var c in Path.GetInvalidFileNameChars())
+        {
+            trimmed = trimmed.Replace(c, '_');
+        }
+        return trimmed;
     }
 
     // Backward compatibility bridges

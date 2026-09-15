@@ -4,8 +4,8 @@
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.DebugHoverDataTipControl">
 
-    <Border Background="#161A22"
-            BorderBrush="#384353"
+    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1"
             CornerRadius="8"
             BoxShadow="0 8 28 0 #70000000"
@@ -15,15 +15,15 @@
             ClipToBounds="True">
         <Grid RowDefinitions="Auto,Auto,*,Auto">
             <!-- 1. Header Bar -->
-            <Border Grid.Row="0" Background="#1F2530" BorderBrush="#2D3748" BorderThickness="0,0,0,1" Padding="10,6">
+            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="10,6">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!-- Left: Variable Badge, Name & Type -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <Border Background="#14344E" CornerRadius="4" Padding="5,1">
-                            <TextBlock Text="(x)" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" />
+                        <Border Background="{DynamicResource M3PrimaryContainerBrush}" CornerRadius="4" Padding="5,1">
+                            <TextBlock Text="(x)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
                         </Border>
-                        <TextBlock Name="VariableNameText" Text="variable" FontSize="12.5" FontWeight="Bold" Foreground="#F8FAFC" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
-                        <TextBlock Name="VariableTypeText" Text=": object" FontSize="11" Foreground="#94A3B8" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
+                        <TextBlock Name="VariableNameText" Text="variable" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
+                        <TextBlock Name="VariableTypeText" Text=": object" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Right: Actions (+ Watch, Copy, Close) -->
@@ -31,15 +31,13 @@
                         <!-- Add to Watch button -->
                         <Button Name="AddWatchButton"
                                 Classes="m3-tonal-btn"
-                                Background="#223347"
-                                Foreground="#38BDF8"
                                 Height="22" MinHeight="0"
                                 Padding="8,0"
                                 CornerRadius="11"
                                 Cursor="Hand"
                                 ToolTip.Tip="Pin expression to Watch panel">
                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="EyePlusOutline" Width="12" Height="12" Foreground="#38BDF8" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="EyePlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSecondaryContainerBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="+ Watch" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
@@ -50,7 +48,7 @@
                                 Width="22" Height="22"
                                 Cursor="Hand"
                                 ToolTip.Tip="Copy value to clipboard">
-                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="#94A3B8" />
+                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </Button>
 
                         <!-- Close button -->
@@ -59,14 +57,14 @@
                                 Width="22" Height="22"
                                 Cursor="Hand"
                                 ToolTip.Tip="Dismiss (Esc)">
-                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="#64748B" />
+                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </Button>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- 2. Value Summary Display -->
-            <Border Grid.Row="1" Background="#0F1218" Margin="8,6,8,4" CornerRadius="5" Padding="8,6">
+            <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}" Margin="8,6,8,4" CornerRadius="5" Padding="8,6">
                 <TextBox Name="ValueDisplayTextBox"
                          IsReadOnly="True"
                          TextWrapping="Wrap"
@@ -74,7 +72,7 @@
                          AcceptsReturn="True"
                          BorderThickness="0"
                          Background="Transparent"
-                         Foreground="#A7F3D0"
+                         Foreground="{DynamicResource M3TertiaryBrush}"
                          FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
                          FontSize="11.5"
                          Padding="0" />
@@ -82,12 +80,12 @@
 
             <!-- 3. Expandable Structured Properties & Children Section -->
             <Grid Grid.Row="2" Name="ChildrenContainer" RowDefinitions="Auto,*" Margin="8,2,8,6">
-                <TextBlock Name="ChildrenHeader" Text="MEMBERS &amp; PROPERTIES" FontSize="9.5" FontWeight="Bold" Foreground="#64748B" Margin="2,2,0,4" />
+                <TextBlock Name="ChildrenHeader" Text="MEMBERS &amp; PROPERTIES" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="2,2,0,4" />
                 <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="180">
                     <ItemsControl Name="ChildrenItemsControl">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:DebugVariableItem">
-                                <Border Padding="4,2" Margin="0,1" CornerRadius="4" Background="#13171F">
+                                <Border Padding="4,2" Margin="0,1" CornerRadius="4" Background="{DynamicResource M3SurfaceContainerBrush}">
                                     <StackPanel Orientation="Vertical">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <!-- Expand toggle arrow (if item has sub-children) -->
@@ -98,18 +96,18 @@
                                                           Width="18" Height="18"
                                                           Padding="0" Margin="0,0,3,0"
                                                           Cursor="Hand">
-                                                <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="12" Height="12" Foreground="#94A3B8" />
+                                                <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                             </ToggleButton>
 
                                             <!-- Property Name and Value -->
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="#93C5FD" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" />
-                                                <TextBlock Text=":" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding ValueDisplay}" FontSize="11" Foreground="#E2E8F0" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="320" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" />
+                                                <TextBlock Text=":" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding ValueDisplay}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="320" VerticalAlignment="Center" />
                                             </StackPanel>
 
                                             <!-- Type badge -->
-                                            <TextBlock Grid.Column="2" Text="{Binding TypeName}" FontSize="9.5" Foreground="#64748B" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" Margin="6,0,2,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding TypeName}" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" Margin="6,0,2,0" />
                                         </Grid>
 
                                         <!-- Nested sub-children (Level 2) -->
@@ -117,9 +115,9 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="models:DebugVariableItem">
                                                     <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,1">
-                                                        <TextBlock Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="#93C5FD" FontFamily="JetBrains Mono, monospace" />
-                                                        <TextBlock Text=":" FontSize="10.5" Foreground="#64748B" />
-                                                        <TextBlock Text="{Binding ValueDisplay}" FontSize="10.5" Foreground="#E2E8F0" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="280" />
+                                                        <TextBlock Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" FontFamily="JetBrains Mono, monospace" />
+                                                        <TextBlock Text=":" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                        <TextBlock Text="{Binding ValueDisplay}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="280" />
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
@@ -133,10 +131,10 @@
             </Grid>
 
             <!-- 4. Subtle Hint Footer -->
-            <Border Grid.Row="3" Background="#13171F" BorderBrush="#222A36" BorderThickness="0,1,0,0" Padding="8,3">
+            <Border Grid.Row="3" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="8,3">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Live Debug Variable Inspector" FontSize="9.5" Foreground="#475569" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" FontSize="9.5" Foreground="#475569" VerticalAlignment="Center" />
+                    <TextBlock Text="Live Debug Variable Inspector" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                 </Grid>
             </Border>
         </Grid>
