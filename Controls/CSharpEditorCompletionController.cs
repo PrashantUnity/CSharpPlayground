@@ -14,7 +14,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 public class CSharpEditorCompletionController : IDisposable
 {
     private readonly TextEditor _editor;
-    private readonly CSharpCompletionService _completionService;
+    private readonly Func<RoslynCompilerService>? _compilerProvider;
+    private CSharpCompletionService? _completionService;
     private CompletionWindow? _completionWindow;
     private CancellationTokenSource? _queryCts;
     private readonly DispatcherTimer _debounceTimer;
@@ -22,9 +23,14 @@ public class CSharpEditorCompletionController : IDisposable
     public ExecutionLanguageMode LanguageMode { get; set; } = ExecutionLanguageMode.Statements;
 
     public CSharpEditorCompletionController(TextEditor editor, RoslynCompilerService compilerService)
+        : this(editor, () => compilerService)
+    {
+    }
+
+    public CSharpEditorCompletionController(TextEditor editor, Func<RoslynCompilerService> compilerProvider)
     {
         _editor = editor;
-        _completionService = new CSharpCompletionService(compilerService);
+        _compilerProvider = compilerProvider;
 
         _debounceTimer = new DispatcherTimer
         {
@@ -150,6 +156,14 @@ public class CSharpEditorCompletionController : IDisposable
         {
             try
             {
+                if (_completionService == null && _compilerProvider != null)
+                {
+                    var compiler = _compilerProvider();
+                    _completionService = new CSharpCompletionService(compiler);
+                }
+
+                if (_completionService == null) return;
+
                 var items = await _completionService.GetCompletionsAsync(text, caretOffset, mode, token);
 
                 if (token.IsCancellationRequested || items.Count == 0) return;

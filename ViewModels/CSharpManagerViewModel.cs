@@ -204,7 +204,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     public async Task CreateNewScriptAsync(string? templateId = null)
     {
         var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
-        var title = template != null ? $"{template.Title} Copy" : "New Automation Script";
+        var title = template?.Title ?? "New Automation Script";
+
+        if (AllItems.Any(i => i.IsScript && string.Equals(i.Title, title, StringComparison.OrdinalIgnoreCase)))
+        {
+            title = $"{title} (Copy)";
+        }
 
         var newScript = await _storageService.CreateNewScriptAsync(title, templateId);
         await LoadWorkspaceItemsAsync();
@@ -215,7 +220,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     public async Task CreateNewNotebookAsync(string? templateId = null)
     {
         var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
-        var title = template != null ? $"{template.Title} Copy" : "New Interactive Notebook";
+        var title = template?.Title ?? "New Interactive Notebook";
+
+        if (AllItems.Any(i => i.IsNotebook && string.Equals(i.Title, title, StringComparison.OrdinalIgnoreCase)))
+        {
+            title = $"{title} (Copy)";
+        }
 
         var newNb = await _storageService.CreateNewNotebookAsync(title, templateId);
         await LoadWorkspaceItemsAsync();
@@ -226,6 +236,19 @@ public partial class CSharpManagerViewModel : ObservableObject
     public async Task LaunchTemplateAsync(CodeTemplate template)
     {
         if (template == null) return;
+
+        // If an existing workspace item matches this template, open it directly rather than generating duplicate copies
+        var existing = AllItems.FirstOrDefault(i =>
+            (template.Kind == WorkspaceItemKind.Notebook && i.IsNotebook || template.Kind == WorkspaceItemKind.Script && i.IsScript) &&
+            (string.Equals(i.Id, template.Id, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(i.Title, template.Title, StringComparison.OrdinalIgnoreCase)));
+
+        if (existing != null)
+        {
+            await OpenItemAsync(existing);
+            return;
+        }
+
         if (template.Kind == WorkspaceItemKind.Notebook)
         {
             await CreateNewNotebookAsync(template.Id);

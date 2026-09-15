@@ -37,7 +37,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private bool _isOutlineOpen = false;
 
     [ObservableProperty]
-    private string _workspaceName = "SKIASHARP";
+    private string _workspaceName = "WORKSPACE";
 
     [ObservableProperty]
     private bool _isWorkspaceExpanded = true;
@@ -182,8 +182,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
 
-        PopulateExplorerTree();
-
         // Initialize primary open tab
         var initialTab = new NotebookTabViewModel(
             _notebook,
@@ -194,6 +192,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         Tabs.Add(initialTab);
         SelectTab(initialTab);
+
+        PopulateExplorerTree();
     }
 
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
@@ -236,6 +236,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         var existing = FindItemByIdOrName(ExplorerRootItems, notebook.Id, fileName);
         if (existing != null)
         {
+            existing.Name = fileName;
             if (!string.IsNullOrEmpty(notebook.Id))
             {
                 existing.DocumentId = notebook.Id;
@@ -319,19 +320,35 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         var codeFolder = ExplorerRootItems.FirstOrDefault(x => x.Name == "Code")
                          ?? ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
 
-        NotebookDocumentItem? newDoc = null;
-        try
+        var newDoc = new NotebookDocumentItem
         {
-            newDoc = _storageService.CreateNewNotebookAsync(title).GetAwaiter().GetResult();
-        }
-        catch
+            Id = Guid.NewGuid().ToString("N"),
+            Title = title,
+            Category = "Interactive",
+            Created = DateTime.UtcNow,
+            LastModified = DateTime.UtcNow
+        };
+
+        newDoc.Cells.Add(new NotebookCellItem
         {
-            newDoc = new NotebookDocumentItem
+            Type = CellType.Markdown,
+            Source = $"# 📓 {title}\nInteractive C# Notebook.",
+            IsMarkdownPreviewMode = true
+        });
+        newDoc.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Code,
+            Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
+        });
+
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                Id = Guid.NewGuid().ToString("N"),
-                Title = title
-            };
-        }
+                await _storageService.SaveNotebookAsync(newDoc);
+            }
+            catch { }
+        });
 
         var newTab = new NotebookTabViewModel(
             newDoc,
@@ -439,40 +456,17 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 LastModified = DateTime.UtcNow
             };
 
-            // Populate sample cells for codefrydev.frynb demo
-            if (fileName.Contains("codefrydev", StringComparison.OrdinalIgnoreCase))
+            loadedDoc.Cells.Add(new NotebookCellItem
             {
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Markdown,
-                    Source = "# 🚀 CodeFryDev Polyglot Workspace\nInteractive multi-cell document automation, SkiaSharp rendering, and dynamic C# scripts.",
-                    IsMarkdownPreviewMode = true
-                });
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Code,
-                    Source = "// Compute Fibonacci sequence\nvar fib = new List<int> { 1, 1 };\nfor (int i = 2; i < 10; i++) fib.Add(fib[i - 1] + fib[i - 2]);\nfib"
-                });
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Code,
-                    Source = "Console.WriteLine($\"Workspace timestamp: {DateTime.Now:T}\");"
-                });
-            }
-            else
+                Type = CellType.Markdown,
+                Source = $"# 📓 {docTitle}\nWrite documentation or notes in this cell.",
+                IsMarkdownPreviewMode = true
+            });
+            loadedDoc.Cells.Add(new NotebookCellItem
             {
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Markdown,
-                    Source = $"# 📓 {docTitle}\nWrite documentation or notes in this cell.",
-                    IsMarkdownPreviewMode = true
-                });
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Code,
-                    Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
-                });
-            }
+                Type = CellType.Code,
+                Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
+            });
 
             _ = _storageService.SaveNotebookAsync(loadedDoc);
             item.DocumentId = loadedDoc.Id;
@@ -921,46 +915,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         ExplorerRootItems.Clear();
 
-        var assets = CreateFolderItem("assets", isExpanded: false, depth: 0);
         var code = CreateFolderItem("Code", isExpanded: true, depth: 0);
-
-        var docNb = new ExplorerItemViewModel
-        {
-            Name = "Document Automation Notebook.frynb",
-            DocumentId = (Notebook != null && string.Equals(Notebook.Title, "Document Automation Notebook", StringComparison.OrdinalIgnoreCase)) ? Notebook.Id : "doc_automation",
-            IsDirectory = false,
-            FileExtension = ".frynb",
-            IsSelected = true,
-            Parent = code,
-            Depth = 1,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
-        };
-        code.Children.Add(docNb);
-
-        var sampleNb = new ExplorerItemViewModel
-        {
-            Name = "codefrydev.frynb",
-            DocumentId = "codefrydev_sample",
-            IsDirectory = false,
-            FileExtension = ".frynb",
-            IsSelected = false,
-            Parent = code,
-            Depth = 1,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
-        };
-        code.Children.Add(sampleNb);
+        ExplorerRootItems.Add(code);
 
         // Load any existing workspace documents from storage
         try
@@ -1019,19 +975,32 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             }
         }
 
-        var docs = CreateFolderItem("docs", isExpanded: false, depth: 0);
-        var notebooks = CreateFolderItem("notebooks", isExpanded: false, depth: 0);
-        var output = CreateFolderItem("output", isExpanded: false, depth: 0);
-        var scripts = CreateFolderItem("scripts", isExpanded: false, depth: 0);
-        var src = CreateFolderItem("src", isExpanded: false, depth: 0);
+        // If no items exist in code folder yet and we have an active notebook, add it
+        if (code.Children.Count == 0 && Notebook != null)
+        {
+            var activeFileName = Notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+                ? Notebook.Title
+                : $"{Notebook.Title}.frynb";
 
-        ExplorerRootItems.Add(assets);
-        ExplorerRootItems.Add(code);
-        ExplorerRootItems.Add(docs);
-        ExplorerRootItems.Add(notebooks);
-        ExplorerRootItems.Add(output);
-        ExplorerRootItems.Add(scripts);
-        ExplorerRootItems.Add(src);
+            var activeItem = new ExplorerItemViewModel
+            {
+                Name = activeFileName,
+                DocumentId = Notebook.Id,
+                IsDirectory = false,
+                FileExtension = ".frynb",
+                IsSelected = true,
+                Parent = code,
+                Depth = 1,
+                OnItemClicked = OnExplorerItemClicked,
+                OnDeleteRequested = DeleteExplorerItem,
+                OnNewFileRequested = NewFileUnderItem,
+                OnNewFolderRequested = NewFolderUnderItem,
+                OnRenameCommitted = OnItemRenamed,
+                OnDuplicateRequested = DuplicateExplorerItem,
+                OnCopyPathRequested = CopyItemPath
+            };
+            code.Children.Add(activeItem);
+        }
 
         if (ActiveTab != null)
         {

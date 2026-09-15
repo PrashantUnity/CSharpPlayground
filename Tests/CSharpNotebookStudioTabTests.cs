@@ -7,25 +7,63 @@ using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
-public class CSharpNotebookStudioTabTests
+public class CSharpNotebookStudioTabTests : IDisposable
 {
-    private CSharpNotebookStudioViewModel CreateStudio()
+    private readonly string _testBaseDir;
+    private readonly LocalScriptStorageService _testStorage;
+
+    public CSharpNotebookStudioTabTests()
     {
-        var initialNotebook = new NotebookDocumentItem
+        _testBaseDir = Path.Combine(Path.GetTempPath(), "FryPDF_TabTests_" + Guid.NewGuid().ToString("N"));
+        _testStorage = new LocalScriptStorageService(_testBaseDir);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_testBaseDir))
+            {
+                Directory.Delete(_testBaseDir, recursive: true);
+            }
+        }
+        catch { }
+    }
+
+    private CSharpNotebookStudioViewModel CreateStudio(NotebookDocumentItem? notebook = null)
+    {
+        var initialNotebook = notebook ?? new NotebookDocumentItem
         {
             Title = "Document Automation Notebook"
         };
-        var storage = new LocalScriptStorageService();
         var compiler = new RoslynCompilerService();
         var engine = new ScriptExecutionEngine();
 
         return new CSharpNotebookStudioViewModel(
             initialNotebook,
-            storage,
+            _testStorage,
             compiler,
             engine,
             backToHubAction: () => { },
             backToHomeAction: () => { });
+    }
+
+    private ExplorerItemViewModel EnsureSecondNotebookItem(CSharpNotebookStudioViewModel studio, string name = "Second_Notebook.frynb")
+    {
+        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
+        var existing = codeFolder?.Children.FirstOrDefault(x => x.Name == name);
+        if (existing != null) return existing;
+
+        var secondItem = new ExplorerItemViewModel
+        {
+            Name = name,
+            DocumentId = "test_doc_second",
+            IsDirectory = false,
+            FileExtension = ".frynb",
+            Parent = codeFolder
+        };
+        codeFolder?.Children.Add(secondItem);
+        return secondItem;
     }
 
     [Fact]
@@ -47,19 +85,15 @@ public class CSharpNotebookStudioTabTests
     {
         var studio = CreateStudio();
 
-        // Find sample file in Explorer tree
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        Assert.NotNull(codeFolder);
-
-        var sampleFile = codeFolder.Children.FirstOrDefault(x => x.Name == "codefrydev.frynb");
-        Assert.NotNull(sampleFile);
+        // Add second notebook in Explorer tree
+        var secondFile = EnsureSecondNotebookItem(studio);
 
         // Open second notebook
-        studio.OpenDocument(sampleFile);
+        studio.OpenDocument(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
-        Assert.Equal("codefrydev.frynb", studio.ActiveTab.Title);
+        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab.Title);
         Assert.True(studio.ActiveTab.IsActive);
         Assert.False(studio.Tabs[0].IsActive);
     }
@@ -85,11 +119,10 @@ public class CSharpNotebookStudioTabTests
     {
         var studio = CreateStudio();
 
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var sampleFile = codeFolder!.Children.FirstOrDefault(x => x.Name == "codefrydev.frynb");
-        studio.OpenDocument(sampleFile!);
+        var secondFile = EnsureSecondNotebookItem(studio);
+        studio.OpenDocument(secondFile);
 
-        Assert.Equal("codefrydev.frynb", studio.ActiveTab!.Title);
+        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
 
         // Switch back to first tab
         studio.SelectTab(studio.Tabs[0]);
@@ -99,7 +132,8 @@ public class CSharpNotebookStudioTabTests
         Assert.False(studio.Tabs[1].IsActive);
 
         // Verify Explorer selection updated
-        var firstItem = codeFolder.Children.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
+        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
+        var firstItem = codeFolder!.Children.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(firstItem);
         Assert.True(firstItem.IsSelected);
     }
@@ -109,12 +143,11 @@ public class CSharpNotebookStudioTabTests
     {
         var studio = CreateStudio();
 
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var sampleFile = codeFolder!.Children.FirstOrDefault(x => x.Name == "codefrydev.frynb");
-        studio.OpenDocument(sampleFile!);
+        var secondFile = EnsureSecondNotebookItem(studio);
+        studio.OpenDocument(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
-        Assert.Equal("codefrydev.frynb", studio.ActiveTab!.Title);
+        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
 
         // Close the active tab
         studio.CloseTab(studio.ActiveTab);
@@ -211,17 +244,16 @@ public class CSharpNotebookStudioTabTests
     {
         var studio = CreateStudio();
 
-        var codeFolder = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Code");
-        var sampleFile = codeFolder!.Children.FirstOrDefault(x => x.Name == "codefrydev.frynb");
-        studio.OpenDocument(sampleFile!);
+        var secondFile = EnsureSecondNotebookItem(studio);
+        studio.OpenDocument(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
 
         // Delete from explorer
-        studio.DeleteExplorerItem(sampleFile!);
+        studio.DeleteExplorerItem(secondFile);
 
         Assert.Single(studio.Tabs);
-        Assert.DoesNotContain(studio.Tabs, t => t.Title == "codefrydev.frynb");
+        Assert.DoesNotContain(studio.Tabs, t => t.Title == "Second_Notebook.frynb");
     }
 
     [Fact]
@@ -425,8 +457,7 @@ Console.WriteLine(yaml.Trim());";
     {
         var studio = CreateStudio();
 
-        // Create and save a notebook in storage
-        var storage = new LocalScriptStorageService();
+        // Create and save a notebook in test storage
         var uniqueTitle = $"StorageTest_{Guid.NewGuid():N}";
         var newNb = new NotebookDocumentItem
         {
@@ -438,7 +469,7 @@ Console.WriteLine(yaml.Trim());";
             Type = CellType.Code,
             Source = "Console.WriteLine(\"Persistent Storage Cell\");"
         });
-        await storage.SaveNotebookAsync(newNb);
+        await _testStorage.SaveNotebookAsync(newNb);
 
         // Add to explorer
         var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
@@ -466,14 +497,14 @@ Console.WriteLine(yaml.Trim());";
         var studio = CreateStudio();
 
         var codeFolder = studio.ExplorerRootItems.First(x => x.Name == "Code");
-        var sampleFile = codeFolder.Children.First(x => x.Name == "codefrydev.frynb");
+        var docFile = codeFolder.Children.First(x => x.Name == "Document Automation Notebook.frynb");
 
-        studio.DuplicateExplorerItem(sampleFile);
+        studio.DuplicateExplorerItem(docFile);
 
-        Assert.Contains(codeFolder.Children, x => x.Name == "codefrydev Copy.frynb");
-        var duplicateItem = codeFolder.Children.First(x => x.Name == "codefrydev Copy.frynb");
+        Assert.Contains(codeFolder.Children, x => x.Name == "Document Automation Notebook Copy.frynb");
+        var duplicateItem = codeFolder.Children.First(x => x.Name == "Document Automation Notebook Copy.frynb");
         Assert.False(string.IsNullOrEmpty(duplicateItem.DocumentId));
-        Assert.Equal("codefrydev Copy.frynb", studio.ActiveTab!.Title);
+        Assert.Equal("Document Automation Notebook Copy.frynb", studio.ActiveTab!.Title);
     }
 
     [Fact]

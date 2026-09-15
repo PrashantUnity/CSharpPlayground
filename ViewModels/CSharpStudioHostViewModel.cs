@@ -37,6 +37,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     /// </summary>
     public Action? RequestClose { get; set; }
 
+    private readonly Task _initTask;
+
     public CSharpManagerViewModel ManagerViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
@@ -58,7 +60,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         // ── Boot the Roslyn compiler service off the UI thread ──
         // ⚠️  DO NOT move RoslynCompilerService or child ViewModel construction back into this
         //     constructor body. See the post-mortem comment on InitializeCompilerAsync below.
-        _ = Task.Run(InitializeCompilerAsync);
+        _initTask = Task.Run(InitializeCompilerAsync);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
@@ -95,6 +97,10 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
         await Task.Run(() =>
         {
+            // Pre-warm static caches off the UI thread
+            RoslynCompilerService.Warmup();
+            NotebookExecutionKernel.Warmup();
+
             _compilerService = new RoslynCompilerService();
             _executionEngine = new ScriptExecutionEngine();
 
@@ -162,18 +168,26 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         }
     }
 
-    public void NavigateToCodeStudio(ScriptDocumentItem script)
+    public async void NavigateToCodeStudio(ScriptDocumentItem script)
     {
-        if (CodeStudioViewModel == null) return; // Engine still loading
+        if (CodeStudioViewModel == null)
+        {
+            await _initTask;
+        }
+        if (CodeStudioViewModel == null) return;
         CodeStudioViewModel.UpdateActiveScript(script);
         CurrentPage = CodeStudioViewModel;
         IsOnManagerPage = false;
         ActiveDocumentTitle = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
     }
 
-    public void NavigateToNotebookStudio(NotebookDocumentItem notebook)
+    public async void NavigateToNotebookStudio(NotebookDocumentItem notebook)
     {
-        if (NotebookStudioViewModel == null) return; // Engine still loading
+        if (NotebookStudioViewModel == null)
+        {
+            await _initTask;
+        }
+        if (NotebookStudioViewModel == null) return;
         NotebookStudioViewModel.UpdateActiveNotebook(notebook);
         CurrentPage = NotebookStudioViewModel;
         IsOnManagerPage = false;

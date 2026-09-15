@@ -39,12 +39,21 @@ public class NotebookExecutionKernel
 
     public bool IsSessionActive => _currentState != null;
 
+    private static readonly Lazy<ScriptOptions> CachedDefaultScriptOptions = new(CreateDefaultScriptOptionsInternal);
+
+    public static ScriptOptions SharedDefaultScriptOptions => CachedDefaultScriptOptions.Value;
+
+    public static void Warmup()
+    {
+        _ = CachedDefaultScriptOptions.Value;
+    }
+
     public NotebookExecutionKernel()
     {
         _nuGetResolver = new NuGetReferenceResolver();
         _assemblyLoader = new InteractiveAssemblyLoader();
         RegisterCoreDependencies(_assemblyLoader);
-        _scriptOptions = CreateDefaultScriptOptions();
+        _scriptOptions = CachedDefaultScriptOptions.Value;
     }
 
     private static void RegisterCoreDependencies(InteractiveAssemblyLoader loader)
@@ -54,65 +63,9 @@ public class NotebookExecutionKernel
         loader.RegisterDependency(typeof(Bitmap).Assembly);
     }
 
-    private ScriptOptions CreateDefaultScriptOptions()
+    private static ScriptOptions CreateDefaultScriptOptionsInternal()
     {
-        var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
-
-        var assemblies = new List<Assembly>
-        {
-            typeof(object).Assembly,
-            typeof(Console).Assembly,
-            typeof(Enumerable).Assembly,
-            typeof(List<>).Assembly,
-            typeof(Task).Assembly,
-            typeof(File).Assembly,
-            typeof(JsonSerializer).Assembly,
-            typeof(Stopwatch).Assembly,
-            typeof(Control).Assembly,
-            typeof(Bitmap).Assembly,
-            typeof(Display).Assembly // Expose Display, DumpExtensions
-        };
-
-        var references = new List<MetadataReference>();
-
-        foreach (var asm in assemblies.Distinct())
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(asm.Location) && File.Exists(asm.Location))
-                {
-                    references.Add(MetadataReference.CreateFromFile(asm.Location));
-                }
-            }
-            catch
-            {
-                // Ignore unresolvable assembly
-            }
-        }
-
-        // Add core runtime DLLs
-        var runtimeDlls = new[]
-        {
-            "System.Runtime.dll",
-            "System.Collections.dll",
-            "System.Collections.NonGeneric.dll",
-            "System.Linq.dll",
-            "System.Text.Json.dll",
-            "netstandard.dll"
-        };
-
-        foreach (var dll in runtimeDlls)
-        {
-            var path = Path.Combine(coreDir, dll);
-            if (File.Exists(path))
-            {
-                try
-                {
-                    references.Add(MetadataReference.CreateFromFile(path));
-                }
-                catch { }
-            }
-        }
+        var references = new List<MetadataReference>(RoslynCompilerService.SharedDefaultReferences);
 
         var defaultImports = new List<string>
         {
@@ -449,7 +402,7 @@ public class NotebookExecutionKernel
         try { _assemblyLoader.Dispose(); } catch { }
         _assemblyLoader = new InteractiveAssemblyLoader();
         RegisterCoreDependencies(_assemblyLoader);
-        _scriptOptions = CreateDefaultScriptOptions();
+        _scriptOptions = CachedDefaultScriptOptions.Value;
     }
 
     private static string FormatValue(object? val)

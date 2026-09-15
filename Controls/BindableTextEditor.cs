@@ -85,7 +85,7 @@ public class BindableTextEditor : TextEditor
         // Install Debug Paused Line Background Renderer
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
-        _completionController = new CSharpEditorCompletionController(this, SharedCompiler.Value);
+        _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value);
 
         TextChanged += OnEditorTextChanged;
     }

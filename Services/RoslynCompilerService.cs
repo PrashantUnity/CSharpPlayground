@@ -24,6 +24,17 @@ public enum ExecutionLanguageMode
 
 public class RoslynCompilerService
 {
+    private static readonly Lazy<(List<MetadataReference> References, List<AssemblyReferenceItem> Items)> CachedDefaultReferences =
+        new(LoadDefaultReferencesInternal);
+
+    public static IReadOnlyList<MetadataReference> SharedDefaultReferences => CachedDefaultReferences.Value.References;
+    public static IReadOnlyList<AssemblyReferenceItem> SharedReferenceItems => CachedDefaultReferences.Value.Items;
+
+    public static void Warmup()
+    {
+        _ = CachedDefaultReferences.Value;
+    }
+
     private readonly List<MetadataReference> _defaultReferences = new();
     private readonly List<AssemblyReferenceItem> _referenceItems = new();
 
@@ -32,11 +43,16 @@ public class RoslynCompilerService
 
     public RoslynCompilerService()
     {
-        InitializeDefaultReferences();
+        var cached = CachedDefaultReferences.Value;
+        _defaultReferences.AddRange(cached.References);
+        _referenceItems.AddRange(cached.Items);
     }
 
-    private void InitializeDefaultReferences()
+    private static (List<MetadataReference> References, List<AssemblyReferenceItem> Items) LoadDefaultReferencesInternal()
     {
+        var references = new List<MetadataReference>();
+        var items = new List<AssemblyReferenceItem>();
+
         var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
 
         var systemAssemblies = new[]
@@ -50,6 +66,7 @@ public class RoslynCompilerService
             typeof(JsonSerializer).Assembly.Location,                          // System.Text.Json
             typeof(Regex).Assembly.Location,                                   // System.Text.RegularExpressions
             typeof(System.Diagnostics.Stopwatch).Assembly.Location,            // System.Diagnostics.Stopwatch
+            typeof(Task).Assembly.Location,                                    // System.Threading.Tasks
             typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
@@ -68,10 +85,10 @@ public class RoslynCompilerService
                 try
                 {
                     var name = Path.GetFileNameWithoutExtension(path);
-                    if (!_referenceItems.Any(r => r.Name == name))
+                    if (!items.Any(r => r.Name == name))
                     {
-                        _defaultReferences.Add(MetadataReference.CreateFromFile(path));
-                        _referenceItems.Add(new AssemblyReferenceItem
+                        references.Add(MetadataReference.CreateFromFile(path));
+                        items.Add(new AssemblyReferenceItem
                         {
                             Name = name,
                             AssemblyPath = path,
@@ -87,6 +104,8 @@ public class RoslynCompilerService
                 }
             }
         }
+
+        return (references, items);
     }
 
     private const string DumpHelperCode = "";
