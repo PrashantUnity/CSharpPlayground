@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,6 +15,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     private readonly IScriptStorageService _storageService;
     private readonly Action<ScriptDocumentItem> _openScriptAction;
     private readonly Action<NotebookDocumentItem> _openNotebookAction;
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     [ObservableProperty]
     private string _searchQuery = string.Empty;
@@ -38,6 +40,9 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     [ObservableProperty]
     private int _totalNotebooks;
+
+    [ObservableProperty]
+    private int _filteredItemCount;
 
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
     public ObservableCollection<WorkspaceItemSummary> FilteredItems { get; } = new();
@@ -86,9 +91,17 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public async Task LoadWorkspaceItemsAsync()
     {
-        IsLoading = true;
+        // The constructor fires this off without awaiting it, and CreateNewScriptAsync/
+        // CreateNewNotebookAsync/etc. call it again afterward — without this lock, two concurrent
+        // calls interleave Clear()/Add() on the same ObservableCollection (not thread-safe for
+        // concurrent mutation), which can throw mid-mutation and silently corrupt AllItems, since
+        // every caller here is itself fire-and-forget from an ICommand.Execute(). Reproduced directly
+        // in CSharpManagerViewModelTests: concurrent loads threw IndexOutOfRangeException and left
+        // AllItems with duplicated entries.
+        await _loadLock.WaitAsync();
         try
         {
+            IsLoading = true;
             var list = await _storageService.LoadWorkspaceSummariesAsync();
             AllItems.Clear();
             foreach (var item in list)
@@ -102,6 +115,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         finally
         {
             IsLoading = false;
+            _loadLock.Release();
         }
     }
 
@@ -175,6 +189,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
 
         HasFilteredItems = FilteredItems.Count > 0;
+        FilteredItemCount = FilteredItems.Count;
     }
 
     [RelayCommand]
@@ -268,5 +283,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         FilteredItems.Remove(item);
         await _storageService.DeleteItemAsync(item.Id);
         UpdateStats();
+        HasFilteredItems = FilteredItems.Count > 0;
+        FilteredItemCount = FilteredItems.Count;
     }
 }

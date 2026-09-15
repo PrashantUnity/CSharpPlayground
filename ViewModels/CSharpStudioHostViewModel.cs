@@ -51,7 +51,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpStudioHostViewModel(IServiceProvider? serviceProvider = null, IPluginSettingsStore? settingsStore = null)
     {
         _storageService = new LocalScriptStorageService();
-        _settingsStore = settingsStore;
+        // Prefer an explicitly-passed store (how the real plugin host wires it, via
+        // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
+        // fall back to resolving it off the plain IServiceProvider — the standalone Runner already
+        // supplies one this way via StandaloneServiceProvider/StandaloneSettingsStore.
+        _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(IPluginSettingsStore)) as IPluginSettingsStore;
 
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(

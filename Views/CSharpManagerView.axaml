@@ -420,7 +420,7 @@
                                     Height="22"
                                     Padding="8,0"
                                     VerticalAlignment="Center">
-                                <TextBlock Text="{Binding FilteredItems.Count}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding FilteredItemCount}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                             </Border>
                         </StackPanel>
 
