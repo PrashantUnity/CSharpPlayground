@@ -29,9 +29,14 @@ public class NotebookCellItem
     public DumpTableSnapshot? TableSnapshot { get; set; }
     public ObjectInspectorSnapshot? InspectorSnapshot { get; set; }
 
+    /// <summary>True if this cell last displayed a live Control (e.g. via Display.Animate/Display.
+    /// Control) — the control itself can't be serialized, so this only records the fact that one was
+    /// there, letting the UI show a "re-run to restore" placeholder instead of silently showing nothing.</summary>
+    public bool HadInteractiveControl { get; set; }
+
     public bool HasImage => ImageBytes != null && ImageBytes.Length > 0;
     public bool HasHtml => !string.IsNullOrEmpty(HtmlContent);
-    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null;
+    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null || HadInteractiveControl;
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
 }

@@ -27,25 +27,17 @@ public class ScriptExecutionEngine
         var result = new ExecutionResult();
         var sw = Stopwatch.StartNew();
 
-        // Console.Out/Error are process-wide statics — serialize the swap against every other
-        // execution engine in the process (notably NotebookExecutionKernel), or a concurrent
-        // notebook cell run and Code Studio run can misattribute output / restore the wrong writer.
-        // Everything from here on is inside the outer try so the gate is released exactly once,
-        // even if something between acquiring it and starting execution throws.
-        await ConsoleRedirectionGate.Gate.WaitAsync(ct);
-        try
+        // ConsoleRoutingContext routes Console.Out/Error to this execution's writer via an
+        // AsyncLocal scope — concurrent executions elsewhere (another notebook tab, or this same
+        // engine running again) stay correctly isolated with no lock needed, unlike the old
+        // ConsoleRedirectionGate this replaced (which held a process-wide semaphore for the whole run).
+        var liveWriter = new LiveStringWriter(text =>
         {
-            var originalOut = Console.Out;
-            var originalError = Console.Error;
+            onLiveOutput?.Invoke(text);
+        });
 
-            var liveWriter = new LiveStringWriter(text =>
-            {
-                onLiveOutput?.Invoke(text);
-            });
-
-            Console.SetOut(liveWriter);
-            Console.SetError(liveWriter);
-
+        using (ConsoleRoutingContext.EnterScope(liveWriter))
+        {
             var context = new CollectibleAssemblyLoadContext();
 
             try
@@ -99,19 +91,12 @@ public class ScriptExecutionEngine
             }
             finally
             {
-                Console.SetOut(originalOut);
-                Console.SetError(originalError);
                 sw.Stop();
-
                 result.Elapsed = sw.Elapsed;
                 result.Output = liveWriter.ToString();
 
                 context.Unload();
             }
-        }
-        finally
-        {
-            ConsoleRedirectionGate.Gate.Release();
         }
 
         return result;

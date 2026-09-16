@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.RichHtmlView">
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="14,10"
+            Margin="0,0,0,12"
+            HorizontalAlignment="Stretch">
+        <StackPanel x:Name="RootPanel" Spacing="0" />
+    </Border>
+</UserControl>

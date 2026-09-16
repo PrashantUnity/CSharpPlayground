@@ -39,8 +39,8 @@ public class NotebookExecutionKernel
     // Per-instance: protects this kernel's own _currentState/_scriptOptions/_additionalReferences from
     // concurrent mutation (e.g. two Run clicks racing in the same tab). Each notebook tab owns its own
     // kernel, so this intentionally no longer serializes execution *across* tabs — that used to happen
-    // by accident because this was `static`. Cross-process Console redirection is handled separately by
-    // ConsoleRedirectionGate, which does need to stay process-wide.
+    // by accident because this was `static`. Console redirection is handled separately by
+    // ConsoleRoutingContext, which is AsyncLocal-scoped per execution and needs no lock at all.
     private readonly SemaphoreSlim _executionLock = new(1, 1);
 
     public bool IsSessionActive => _currentState != null;
@@ -52,6 +52,7 @@ public class NotebookExecutionKernel
     public static void Warmup()
     {
         _ = CachedDefaultScriptOptions.Value;
+        ConsoleRoutingContext.EnsureInstalled();
     }
 
     public NotebookExecutionKernel()
@@ -85,8 +86,12 @@ public class NotebookExecutionKernel
             "System.Text.RegularExpressions",
             "System.Threading.Tasks",
             "Avalonia.Controls",
+            "Avalonia.Media",
             "Avalonia.Media.Imaging",
-            "PdfEditorApp.Plugins.CSharpEditor.Services"
+            "Avalonia.Threading",
+            "Avalonia.Animation",
+            "PdfEditorApp.Plugins.CSharpEditor.Services",
+            "PdfEditorApp.Plugins.CSharpEditor.Controls"
         };
 
         return ScriptOptions.Default
@@ -167,24 +172,19 @@ public class NotebookExecutionKernel
         await _executionLock.WaitAsync(ct);
         try
         {
-            // 2. Intercept Console.Out and live writers. Console.Out/Error are process-wide statics,
-            // so this swap must be serialized against every OTHER execution engine in the process
-            // (see ConsoleRedirectionGate) — the per-instance _executionLock above only protects this
-            // kernel's own state, it says nothing about a concurrent Code Studio "Program" run.
-            await ConsoleRedirectionGate.Gate.WaitAsync(ct);
-            try
+            // 2. Intercept Console.Out and live writers. ConsoleRoutingContext routes Console.Out/
+            // Error per-execution via an AsyncLocal scope (same pattern as InteractiveDisplayContext
+            // just below) instead of a raw global swap — so unlike the old ConsoleRedirectionGate, this
+            // never needs to hold a process-wide lock for the duration of the script run: a concurrent
+            // Code Studio "Program" run or another tab's cell keeps its own output correctly isolated.
+            var liveWriter = new KernelLiveStringWriter(text =>
             {
-                var originalOut = Console.Out;
-                var originalErr = Console.Error;
+                onLiveConsole?.Invoke(text);
+            });
 
-                var liveWriter = new KernelLiveStringWriter(text =>
-                {
-                    onLiveConsole?.Invoke(text);
-                });
-
-                Console.SetOut(liveWriter);
-                Console.SetError(liveWriter);
-
+            using (ConsoleRoutingContext.EnterScope(liveWriter))
+            using (InteractiveCancellationContext.EnterScope(ct))
+            {
                 try
                 {
                     using (InteractiveDisplayContext.EnterScope(richOutput =>
@@ -267,17 +267,10 @@ public class NotebookExecutionKernel
                 }
                 finally
                 {
-                    Console.SetOut(originalOut);
-                    Console.SetError(originalErr);
                     sw.Stop();
-
                     result.Elapsed = sw.Elapsed;
                     result.ConsoleOutput = liveWriter.ToString();
                 }
-            }
-            finally
-            {
-                ConsoleRedirectionGate.Gate.Release();
             }
         }
         finally

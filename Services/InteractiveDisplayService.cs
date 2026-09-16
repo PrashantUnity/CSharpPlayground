@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
@@ -7,7 +8,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -35,6 +38,93 @@ public class RichCellOutput
     public Control? InteractiveControl { get; set; }
     public DumpTableResult? TableResult { get; set; }
     public ObjectInspectorNode? InspectorNode { get; set; }
+
+    // Convenience getters for XAML DataTemplates (e.g. the Code Studio scratchpad's RichOutputs
+    // ItemsControl) — this is a plain POCO set once at emission time and never mutated afterward, so
+    // no INotifyPropertyChanged is needed.
+    public bool IsImageKind => Kind == CellOutputKind.Image;
+    public bool IsHtmlKind => Kind == CellOutputKind.Html;
+    public bool IsControlKind => Kind == CellOutputKind.Control;
+    public bool IsInspectorKind => Kind == CellOutputKind.ObjectInspector;
+
+    private Bitmap? _decodedImage;
+    private bool _decodeAttempted;
+
+    /// <summary>Lazily decodes ImageBytes into a Bitmap the first time it's asked for, caching the
+    /// result (or the fact that decoding failed) — a DataTemplate binding may evaluate this repeatedly.</summary>
+    public Bitmap? DecodedImage
+    {
+        get
+        {
+            if (_decodeAttempted) return _decodedImage;
+            _decodeAttempted = true;
+            if (ImageBytes == null || ImageBytes.Length == 0) return null;
+            try
+            {
+                using var ms = new MemoryStream(ImageBytes);
+                _decodedImage = new Bitmap(ms);
+            }
+            catch
+            {
+                _decodedImage = null;
+            }
+            return _decodedImage;
+        }
+    }
+}
+
+/// <summary>
+/// Cooperative-cancellation counterpart to InteractiveDisplayContext, using the same AsyncLocal
+/// pattern: exposes the current execution's CancellationToken to user code via Display.CancellationToken/
+/// ThrowIfCancellationRequested(), so a frame loop like
+///   for (...) { Display.ThrowIfCancellationRequested(); Display.Image(...); await Task.Delay(16, Display.CancellationToken); }
+/// can actually be stopped by the Stop button / timeout. Without this, user code has no way to observe
+/// the host's cancellation token at all — Roslyn scripting only checks it between whole cell/script
+/// submissions, never inside one, so an unchecked loop (or one using bare Task.Delay with no token)
+/// runs to completion regardless of Stop/timeout.
+/// </summary>
+public static class InteractiveCancellationContext
+{
+    private static readonly AsyncLocal<CancellationToken> _current = new();
+
+    public static CancellationToken Current => _current.Value;
+
+    public static IDisposable EnterScope(CancellationToken token)
+    {
+        var previous = _current.Value;
+        _current.Value = token;
+        return new Scope(() => _current.Value = previous);
+    }
+
+    private sealed class Scope : IDisposable
+    {
+        private readonly Action _onDispose;
+        private bool _disposed;
+        public Scope(Action onDispose) => _onDispose = onDispose;
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _onDispose();
+        }
+    }
+}
+
+/// <summary>
+/// Disposes a live Display.Control(...) output when it's overwritten or discarded, so a
+/// Display.Animate(...) control's DispatcherTimer actually stops instead of leaking forever on cell
+/// re-run, "Clear Outputs", or tab close.
+/// </summary>
+public static class InteractiveControlLifecycle
+{
+    public static void DisposeIfNeeded(Control? control)
+    {
+        if (control is IDisposable disposable)
+        {
+            try { disposable.Dispose(); }
+            catch { /* best-effort teardown */ }
+        }
+    }
 }
 
 public static class InteractiveDisplayContext
@@ -266,6 +356,43 @@ public static class Display
             InteractiveControl = control
         });
     }
+
+    /// <summary>
+    /// Primary way to display a live, self-animating visual: hides the DispatcherTimer + repaint
+    /// boilerplate behind a single call. <paramref name="onFrame"/> is invoked every frame with the
+    /// control's DrawingContext and elapsed time — draw directly into it (immediate-mode, like Avalonia
+    /// controls already draw themselves), no per-frame allocation needed. The returned control keeps
+    /// animating live because it's the same object reference bound into the cell's output area, driven
+    /// by Avalonia's own compositor — it is not re-created or re-serialized on every frame.
+    /// Prefer this over a `for` loop calling Display.Image(...) repeatedly: it doesn't hold any
+    /// execution lock while animating (the cell's script returns almost immediately after this call),
+    /// so it never blocks other tabs, and it keeps animating for as long as you like without needing
+    /// cooperative-cancellation checks. See Display.ThrowIfCancellationRequested() for the frame-loop
+    /// alternative when you specifically want a bounded, finite sequence of frames instead.
+    /// </summary>
+    public static AnimatedRenderControl Animate(
+        Action<DrawingContext, TimeSpan> onFrame,
+        TimeSpan? interval = null,
+        double width = 400,
+        double height = 300)
+    {
+        var control = new AnimatedRenderControl(onFrame, interval, width, height);
+        Control(control);
+        return control;
+    }
+
+    /// <summary>The current cell/script execution's cancellation token (Stop button + timeout), for
+    /// code that wants to cooperatively check it — e.g. inside a bounded frame-rendering loop. See
+    /// ThrowIfCancellationRequested() for the common case, and prefer Display.Animate(...) instead of a
+    /// loop wherever the visual doesn't need to be a fixed, finite number of frames.</summary>
+    public static CancellationToken CancellationToken => InteractiveCancellationContext.Current;
+
+    /// <summary>Throws OperationCanceledException if Stop was pressed or the execution timed out.
+    /// Call this once per loop iteration in a frame-rendering loop so it can actually be interrupted —
+    /// without it, Roslyn scripting only checks cancellation between whole cells, never inside one, so
+    /// an unchecked loop runs to completion regardless of Stop/timeout.</summary>
+    public static void ThrowIfCancellationRequested() =>
+        InteractiveCancellationContext.Current.ThrowIfCancellationRequested();
 
     public static void Table(DumpTableResult table)
     {

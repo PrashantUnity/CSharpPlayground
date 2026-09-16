@@ -262,6 +262,34 @@ public class NuGetReferenceResolver
 
                     try
                     {
+                        // Per-assembly host unification. The top-level "Generic Host Unification" step
+                        // above only matches when the *package id itself* names an already-loaded
+                        // assembly, so it misses this common case: a transitive dependency (e.g. package
+                        // "Avalonia", pulled in because it's a UI-framework package another package like
+                        // ScottPlot.Avalonia depends on) whose nuspec pins a lower-bound version that
+                        // doesn't exactly match whatever the host app currently has loaded. When that
+                        // exact lower-bound version also happens to be sitting in the local NuGet cache
+                        // (e.g. from restoring this very solution against an older Avalonia release), the
+                        // old code below would silently add a second, differently-versioned copy of e.g.
+                        // Avalonia.Controls.dll as its own MetadataReference. Roslyn does not unify same-
+                        // named-but-different-assembly types the way the CLR's loader does, so a type from
+                        // the downloaded copy (like ScottPlot.Avalonia's AvaPlot : Avalonia.Controls.
+                        // UserControl) then fails to convert to the host's own Control type — exactly the
+                        // type Display.Control's parameter uses — even though nothing is wrong with the
+                        // user's code. Checking per-DLL (not just per-package-id) against already-loaded
+                        // host assemblies catches this for every sibling DLL in the resolved package.
+                        var dllSimpleName = Path.GetFileNameWithoutExtension(dll);
+                        var hostMatch = AppDomain.CurrentDomain.GetAssemblies()
+                            .FirstOrDefault(a => string.Equals(a.GetName().Name, dllSimpleName, StringComparison.OrdinalIgnoreCase)
+                                && !string.IsNullOrEmpty(a.Location) && File.Exists(a.Location));
+
+                        if (hostMatch != null)
+                        {
+                            result.References.Add(MetadataReference.CreateFromFile(hostMatch.Location));
+                            result.LoadedAssemblies.Add($"{packageId} ({activeVersion}) -> {fileName} [host-unified to v{hostMatch.GetName().Version}]");
+                            continue;
+                        }
+
                         result.References.Add(MetadataReference.CreateFromFile(dll));
                         result.LoadedAssemblies.Add($"{packageId} ({activeVersion}) -> {fileName}");
 

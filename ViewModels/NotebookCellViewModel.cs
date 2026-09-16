@@ -5,6 +5,7 @@ using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -55,6 +56,13 @@ public partial class NotebookCellViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasInteractiveControl;
+
+    /// <summary>True when this cell previously displayed a live Control (e.g. via Display.Animate)
+    /// that couldn't be persisted (a live control reference isn't serializable) and hasn't been
+    /// restored by re-running the cell yet. Seeded from Model.HadInteractiveControl on load; cleared
+    /// the moment SetInteractiveControl runs again.</summary>
+    [ObservableProperty]
+    private bool _interactiveControlPlaceholderVisible;
 
     [ObservableProperty]
     private string _htmlContent = string.Empty;
@@ -143,6 +151,14 @@ public partial class NotebookCellViewModel : ObservableObject
         {
             _inspectorNode = model.InspectorSnapshot.ToLive();
             _hasInspectorOutput = true;
+        }
+
+        // A live Control (e.g. from Display.Animate) can't be serialized, so it's never in `model` on
+        // load — show a placeholder explaining that instead of silently rendering nothing.
+        if (model.HadInteractiveControl)
+        {
+            _interactiveControlPlaceholderVisible = true;
+            _hasOutput = true;
         }
     }
 
@@ -292,9 +308,17 @@ public partial class NotebookCellViewModel : ObservableObject
             Model.ImageWidth = width;
             Model.ImageHeight = height;
 
+            var previousBitmap = ImageOutputBitmap;
+
             using var ms = new System.IO.MemoryStream(bytes);
             ImageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
             HasImageOutput = true;
+
+            // Dispose the outgoing bitmap only *after* the new one is assigned (never before — disposing
+            // first risks a render race against the compositor still reading the old handle). A cell
+            // that calls Display.Image(...) repeatedly (e.g. a frame-loop animation) would otherwise
+            // leak one native bitmap handle per call.
+            previousBitmap?.Dispose();
 
             ImageDimensionsText = (width.HasValue && height.HasValue)
                 ? $"{width.Value} × {height.Value} px • {format}"
@@ -310,9 +334,26 @@ public partial class NotebookCellViewModel : ObservableObject
 
     public void SetInteractiveControl(Avalonia.Controls.Control control)
     {
+        if (!ReferenceEquals(InteractiveControl, control))
+        {
+            InteractiveControlLifecycle.DisposeIfNeeded(InteractiveControl);
+        }
+
         InteractiveControl = control;
         HasInteractiveControl = true;
         HasOutput = true;
+        Model.HadInteractiveControl = true;
+        InteractiveControlPlaceholderVisible = false;
+    }
+
+    /// <summary>Disposes only this cell's live, non-serializable output (currently just
+    /// InteractiveControl) — safe to call from a "this cell/tab is going away" path without touching
+    /// text/table/etc. data that might still need to be saved.</summary>
+    public void DisposeLiveResources()
+    {
+        InteractiveControlLifecycle.DisposeIfNeeded(InteractiveControl);
+        InteractiveControl = null;
+        HasInteractiveControl = false;
     }
 
     public void SetHtmlContent(string html)
@@ -412,13 +453,17 @@ public partial class NotebookCellViewModel : ObservableObject
         ExecutionTimeText = string.Empty;
         HasError = false;
 
+        ImageOutputBitmap?.Dispose();
         ImageOutputBitmap = null;
         HasImageOutput = false;
         ImageDimensionsText = string.Empty;
         Model.ImageBytes = null;
 
+        InteractiveControlLifecycle.DisposeIfNeeded(InteractiveControl);
         InteractiveControl = null;
         HasInteractiveControl = false;
+        InteractiveControlPlaceholderVisible = false;
+        Model.HadInteractiveControl = false;
 
         HtmlContent = string.Empty;
         HasHtmlContent = false;

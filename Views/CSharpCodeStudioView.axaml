@@ -5,6 +5,7 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:services="using:PdfEditorApp.Plugins.CSharpEditor.Services"
              xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
@@ -717,6 +718,60 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="models:DumpTableResult">
                                                     <views:DumpTableView />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Rendered Rich Outputs: Image / Interactive Control / Object Inspector / Html.
+                                             Table-kind entries render nothing here (DumpResults above already shows them). -->
+                                        <ItemsControl ItemsSource="{Binding RichOutputs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="services:RichCellOutput">
+                                                    <StackPanel Spacing="0">
+
+                                                        <!-- Image -->
+                                                        <Border IsVisible="{Binding IsImageKind}"
+                                                                Background="#080C11"
+                                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="6"
+                                                                Padding="8"
+                                                                Margin="0,0,0,12"
+                                                                HorizontalAlignment="Left">
+                                                            <Image Source="{Binding DecodedImage}"
+                                                                   MaxHeight="450"
+                                                                   Stretch="Uniform"
+                                                                   HorizontalAlignment="Center" />
+                                                        </Border>
+
+                                                        <!-- Interactive Avalonia UI Control (e.g. Display.Animate / Display.Control) -->
+                                                        <Border IsVisible="{Binding IsControlKind}"
+                                                                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="6"
+                                                                Padding="12,8"
+                                                                Margin="0,0,0,12">
+                                                            <Grid RowDefinitions="Auto,*">
+                                                                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                                                                    <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                    <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                </StackPanel>
+                                                                <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                                                            </Grid>
+                                                        </Border>
+
+                                                        <!-- Object Inspector -->
+                                                        <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
+                                                            <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                                                        </Border>
+
+                                                        <!-- HTML / Markdown -->
+                                                        <Border IsVisible="{Binding IsHtmlKind}">
+                                                            <views:RichHtmlView DataContext="{Binding HtmlContent}" />
+                                                        </Border>
+
+                                                    </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>

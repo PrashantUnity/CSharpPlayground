@@ -329,9 +329,21 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }, token);
     }
 
+    /// <summary>Disposes any live Control output (e.g. a Display.Animate control's timer) before
+    /// RichOutputs is cleared — without this, re-running or clearing results leaks a running timer for
+    /// every animated control that was ever displayed in this tab.</summary>
+    private void DisposeRichOutputControls()
+    {
+        foreach (var output in RichOutputs)
+        {
+            InteractiveControlLifecycle.DisposeIfNeeded(output.InteractiveControl);
+        }
+    }
+
     [RelayCommand]
     public void ClearResults()
     {
+        DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
     }
@@ -380,6 +392,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         if (IsExecuting) return;
 
+        DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
         SelectedBottomTabIndex = 0; // Default to Results
@@ -407,6 +420,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                 }
             });
         });
+        // Also covers "Program" mode below: ScriptExecutionEngine has no cancellation-context scope of
+        // its own, so this outer scope is the only place compiled Main() code can observe Display.
+        // CancellationToken/ThrowIfCancellationRequested() at all.
+        using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
         try
         {
@@ -687,6 +704,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         if (IsExecuting || IsDebugging) return;
 
+        DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
         Locals.Clear();

@@ -422,6 +422,29 @@ Console.WriteLine(""Legacy directive executed safely."");";
     }
 
     [Fact]
+    public async Task NotebookKernel_ExecuteTemplate_RichHtmlReports_ExecutesSuccessfully()
+    {
+        var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t => t.Id == "rich_html_reports");
+        Assert.NotNull(template);
+
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? emittedRich = null;
+        var result = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => emittedRich = r);
+
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.NotNull(emittedRich);
+        Assert.Equal(CellOutputKind.Html, emittedRich.Kind);
+        Assert.False(string.IsNullOrEmpty(emittedRich.HtmlContent));
+        Assert.Contains("<h1>", emittedRich.HtmlContent);
+        Assert.Contains("<b>", emittedRich.HtmlContent);
+        Assert.Contains("<a href=", emittedRich.HtmlContent);
+    }
+
+    [Fact]
     public async Task NotebookKernel_ExecuteAnyPackage_NewtonsoftJson_ExecutesSuccessfully()
     {
         var kernel = new NotebookExecutionKernel();
@@ -460,6 +483,131 @@ Console.WriteLine(yaml.Trim());";
         Assert.True(result.Success);
         Assert.Contains("App: FryPDF", result.ConsoleOutput);
         Assert.Contains("Category: UniversalNuGet", result.ConsoleOutput);
+    }
+
+    // Proves the "Live Animation Studio" template's two cells actually compile and run through the
+    // real kernel end to end (same reasoning as the ScottPlot test above: sample code that ships in a
+    // template but is never executed anywhere is exactly the kind of thing that silently rots). Cell 1
+    // is pulled straight from CodeTemplateLibrary, the same way NotebookKernel_ExecuteTemplate_
+    // SkiaSharpGraphics_ExecutesSuccessfully above tests the real shipped InitialCode rather than a
+    // hand-copied duplicate.
+    [Fact]
+    public async Task NotebookKernel_AnimationStudioTemplateCells_BothPatternsExecuteSuccessfully()
+    {
+        var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t => t.Id == "animation_studio");
+        Assert.NotNull(template);
+
+        var kernel = new NotebookExecutionKernel();
+
+        RichCellOutput? animateRich = null;
+        var animateResult = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => animateRich = r);
+        if (!animateResult.Success)
+        {
+            throw new Exception($"Display.Animate cell failed:\nConsole: {animateResult.ConsoleOutput}\nError: {animateResult.ErrorMessage}");
+        }
+        Assert.Equal(CellOutputKind.Control, animateRich?.Kind);
+        Assert.NotNull(animateRich?.InteractiveControl);
+
+        // Secondary pattern: a cancellable frame loop (kept short here for test speed; the shipped
+        // template uses more frames at ~30fps for a smoother visual demo).
+        var frameLoopCell = @"#r ""nuget: SkiaSharp, 3.119.4""
+using System;
+using System.Threading.Tasks;
+using SkiaSharp;
+
+int totalFrames = 5;
+for (int frame = 0; frame < totalFrames; frame++)
+{
+    Display.ThrowIfCancellationRequested();
+
+    var info = new SKImageInfo(300, 120);
+    using var surface = SKSurface.Create(info);
+    var canvas = surface.Canvas;
+    canvas.Clear(new SKColor(21, 27, 43));
+
+    using var paint = new SKPaint { Color = new SKColor(244, 114, 182), IsAntialias = true };
+    float x = 20 + (260 - 20) * frame / (float)(totalFrames - 1);
+    canvas.DrawCircle(x, 60, 14, paint);
+
+    Display.Image(surface.Snapshot());
+    await Task.Delay(5, Display.CancellationToken);
+}
+
+Console.WriteLine($""Rendered {totalFrames} frames."");";
+
+        RichCellOutput? frameLoopRich = null;
+        var frameLoopResult = await kernel.ExecuteCellAsync(frameLoopCell, onRichOutput: r => frameLoopRich = r);
+        if (!frameLoopResult.Success)
+        {
+            throw new Exception($"Frame-loop cell failed:\nConsole: {frameLoopResult.ConsoleOutput}\nError: {frameLoopResult.ErrorMessage}");
+        }
+        Assert.Equal(CellOutputKind.Image, frameLoopRich?.Kind);
+        Assert.True(frameLoopRich?.ImageBytes?.Length > 0);
+        Assert.Contains("Rendered 5 frames.", frameLoopResult.ConsoleOutput);
+    }
+
+    // ScottPlot.Avalonia ships its own Avalonia Control (AvaPlot) rather than just plain managed code
+    // (Newtonsoft.Json/YamlDotNet above) or native-only assets (SkiaSharp above) — this was the one
+    // combination the NuGet-resolver design explicitly flagged as untested: a #r nuget package whose
+    // own type gets handed straight to Display.Control. Version pinned to the latest stable release
+    // published on nuget.org at the time this test was written.
+    //
+    // This test caught a real bug: ScottPlot.Avalonia 5.1.59's nuspec depends on Avalonia >= 12.0.0,
+    // and when that exact lower-bound version also happens to sit in the local NuGet cache (as it does
+    // on any machine that has ever restored this solution against an older Avalonia release), the
+    // resolver added a second, differently-versioned copy of Avalonia.Controls.dll as its own
+    // MetadataReference alongside the host's actual (newer) copy — so ScottPlot's AvaPlot control
+    // failed to convert to Display.Control's Control parameter, two same-named-but-distinct types.
+    // Fixed in NuGetReferenceResolver by unifying per-DLL against already-loaded host assemblies, not
+    // just per top-level package id.
+    [Fact]
+    public async Task NotebookKernel_ExecuteScottPlotAvalonia_NuGetPackageShippingItsOwnAvaloniaControl_ExecutesSuccessfully()
+    {
+        var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t => t.Id == "nuget_charting_scottplot");
+        Assert.NotNull(template);
+
+        var kernel = new NotebookExecutionKernel();
+
+        RichCellOutput? scatterRich = null;
+        var scatterResult = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => scatterRich = r);
+        if (!scatterResult.Success)
+        {
+            throw new Exception($"Scatter-chart cell failed:\nConsole: {scatterResult.ConsoleOutput}\nError: {scatterResult.ErrorMessage}");
+        }
+        Assert.Equal(CellOutputKind.Control, scatterRich?.Kind);
+        Assert.NotNull(scatterRich?.InteractiveControl);
+        Assert.Contains("Live, interactive ScottPlot chart rendered", scatterResult.ConsoleOutput);
+
+        // Second cell, same kernel/session, no #r of its own — proves ScottPlot.Avalonia stays
+        // resolved (and correctly host-unified) across cells, the same way any other cross-cell state
+        // already persists in a notebook.
+        var barCell = @"var barPlot = new AvaPlot { Width = 520, Height = 300 };
+var bp = barPlot.Plot;
+
+string[] categories = { ""PDF"", ""DOCX"", ""XLSX"", ""PPTX"", ""Images"" };
+double[] counts = { 420, 180, 96, 64, 233 };
+
+for (int i = 0; i < categories.Length; i++)
+{
+    bp.Add.Bar(position: i + 1, value: counts[i]);
+}
+
+bp.Axes.Bottom.SetTicks(new double[] { 1, 2, 3, 4, 5 }, categories);
+bp.Title(""Documents Processed by Type"");
+bp.YLabel(""Count"");
+
+Display.Control(barPlot);
+Console.WriteLine(""Second chart rendered!"");";
+
+        RichCellOutput? barRich = null;
+        var barResult = await kernel.ExecuteCellAsync(barCell, onRichOutput: r => barRich = r);
+        if (!barResult.Success)
+        {
+            throw new Exception($"Bar-chart cell failed:\nConsole: {barResult.ConsoleOutput}\nError: {barResult.ErrorMessage}");
+        }
+        Assert.Equal(CellOutputKind.Control, barRich?.Kind);
+        Assert.NotNull(barRich?.InteractiveControl);
+        Assert.Contains("Second chart rendered!", barResult.ConsoleOutput);
     }
 
     // NOTE: a bare `while (true) { }` cannot be tested here — CancellationToken cancellation is
@@ -517,6 +665,74 @@ Console.WriteLine(yaml.Trim());";
         Assert.True(reloadedCellVm.HasInspectorOutput);
         Assert.Equal("Person", reloadedCellVm.InspectorNode!.HeaderTitle);
         Assert.Equal("Name", reloadedCellVm.InspectorNode.Properties[0].Name);
+    }
+
+    [Fact]
+    public async Task ConsoleRoutingContext_ConcurrentScopes_DoNotBlockOrCrossContaminate()
+    {
+        // Regression test for the ConsoleRedirectionGate -> ConsoleRoutingContext migration: the old
+        // gate held a process-wide lock for a cell's *entire* execution, so a long-running cell in one
+        // tab fully stalled every other tab (and Code Studio) for its whole duration. ConsoleRoutingContext
+        // routes Console.Out per-execution via an AsyncLocal scope instead, so concurrent scopes should
+        // neither block each other nor see each other's output. Exercises ConsoleRoutingContext directly
+        // (it's internal; see AssemblyInfo.cs's InternalsVisibleTo) rather than through a full Roslyn
+        // kernel run, so the timing assertion measures only the routing mechanism, not compile overhead.
+        async Task<string> RunScopedAsync(string marker, int delayMs)
+        {
+            var writer = new StringWriter();
+            using (ConsoleRoutingContext.EnterScope(writer))
+            {
+                await Task.Delay(delayMs);
+                Console.WriteLine(marker);
+            }
+            return writer.ToString();
+        }
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var taskA = RunScopedAsync("FROM-A-ONLY", 400);
+        var taskB = RunScopedAsync("FROM-B-ONLY", 400);
+        await Task.WhenAll(taskA, taskB);
+        sw.Stop();
+
+        var outputA = await taskA;
+        var outputB = await taskB;
+
+        Assert.Contains("FROM-A-ONLY", outputA);
+        Assert.DoesNotContain("FROM-B-ONLY", outputA);
+        Assert.Contains("FROM-B-ONLY", outputB);
+        Assert.DoesNotContain("FROM-A-ONLY", outputB);
+
+        // Two 400ms delays running concurrently should take ~400ms total; serialized behind a
+        // process-wide lock (the old bug) would take ~800ms+.
+        Assert.True(sw.ElapsedMilliseconds < 700, $"Expected concurrent execution (~400ms), took {sw.ElapsedMilliseconds}ms — looks serialized.");
+    }
+
+    [Fact]
+    public async Task NotebookKernel_LoopCheckingDisplayCancellationToken_IsActuallyInterruptibleMidCell()
+    {
+        // Proves the point of Display.CancellationToken/ThrowIfCancellationRequested(): unlike a bare
+        // loop (which Roslyn scripting cannot interrupt mid-submission — see the design notes on
+        // InteractiveCancellationContext), a loop that cooperatively checks the token AND passes it into
+        // Task.Delay can be stopped well before it would naturally finish.
+        var kernel = new NotebookExecutionKernel();
+        using var cts = new System.Threading.CancellationTokenSource();
+
+        const string code = @"
+for (int i = 0; i < 1000; i++)
+{
+    Display.ThrowIfCancellationRequested();
+    await Task.Delay(5, Display.CancellationToken);
+}
+Console.WriteLine(""should not be reached"");";
+
+        var executeTask = kernel.ExecuteCellAsync(code, ct: cts.Token);
+        await Task.Delay(60); // let a handful of iterations run (5ms each)
+        cts.Cancel();
+
+        var result = await executeTask;
+
+        Assert.True(result.WasCancelled);
+        Assert.DoesNotContain("should not be reached", result.ConsoleOutput);
     }
 
     [Fact]

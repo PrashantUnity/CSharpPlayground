@@ -277,6 +277,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (tab == null) return;
 
+        tab.DisposeAllCellResources();
+
         var idx = Tabs.IndexOf(tab);
         Tabs.Remove(tab);
 

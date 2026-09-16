@@ -513,6 +513,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public void DeleteCell(NotebookCellViewModel cell)
     {
+        cell.DisposeLiveResources();
         Cells.Remove(cell);
         Notebook.Cells.Remove(cell.Model);
 
@@ -525,6 +526,16 @@ public partial class NotebookTabViewModel : ObservableObject
         if (ActiveCell == cell)
         {
             SelectCell(Cells.LastOrDefault());
+        }
+    }
+
+    /// <summary>Disposes every cell's live output (e.g. a Display.Animate control's timer) — call this
+    /// when the whole tab is closing, so nothing keeps animating/ticking in the background afterward.</summary>
+    public void DisposeAllCellResources()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.DisposeLiveResources();
         }
     }
 

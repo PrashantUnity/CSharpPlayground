@@ -156,6 +156,121 @@ Display.Image(pieSurface.Snapshot());
 Console.WriteLine(""✅ Pie chart generated and displayed in cell output."");"
                     });
                 }
+                else if (t.Id == "animation_studio")
+                {
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 🎞️ Live Animation Studio\nTwo ways to animate inside a notebook cell:\n\n1. **`Display.Animate(...)`** — the recommended way. Hand it a draw callback; it returns a live, self-driving control that keeps animating on its own, without holding up the cell or blocking any other tab. Just call it and move on.\n2. **A cancellable frame loop** — call `Display.Image(...)` yourself in a `for`/`while` loop. This needs an explicit `Display.ThrowIfCancellationRequested()` (or checking `Display.CancellationToken`) every iteration to actually be stoppable — a loop that never checks is just as stuck as a raw `while(true)`. Use this only for short, bounded sequences; reach for `Display.Animate` for anything open-ended.\n\nHit **[ ▶ ]** on each cell below (or **Run All**).",
+                        IsMarkdownPreviewMode = true
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = t.InitialCode
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Secondary pattern: a plain loop calling Display.Image(...) repeatedly. Unlike Display.Animate
+// above, this needs an explicit cancellation check every single iteration to be stoppable at all —
+// prefer Display.Animate for anything long-running or open-ended; reach for this only for a short,
+// bounded, finite sequence of frames.
+#r ""nuget: SkiaSharp, 3.119.4""
+using System.Threading.Tasks;
+using SkiaSharp;
+
+int totalFrames = 40;
+for (int frame = 0; frame < totalFrames; frame++)
+{
+    Display.ThrowIfCancellationRequested();
+
+    var info = new SKImageInfo(300, 120);
+    using var surface = SKSurface.Create(info);
+    var canvas = surface.Canvas;
+    canvas.Clear(new SKColor(21, 27, 43));
+
+    using var paint = new SKPaint { Color = new SKColor(244, 114, 182), IsAntialias = true };
+    float x = 20 + (260 - 20) * frame / (float)(totalFrames - 1);
+    canvas.DrawCircle(x, 60, 14, paint);
+
+    Display.Image(surface.Snapshot());
+    await Task.Delay(33, Display.CancellationToken);
+}
+
+Console.WriteLine($""Rendered {totalFrames} frames — press Stop mid-run to see this one actually halt (unlike a raw while (true) loop, which can't be)."");"
+                    });
+                }
+                else if (t.Id == "rich_html_reports")
+                {
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 📝 Rich Text & Markdown Reports\nFormat cell output as real headings, bold/italic text, inline code, and links with `Display.Markdown(...)` — it reuses the notebook's existing Markdown cell rendering to convert a small Markdown subset into rich output.\n\nFor markup Markdown doesn't reach (like lists), call `Display.Html(...)` directly.\n\nHit **[ ▶ ]** on each cell below!",
+                        IsMarkdownPreviewMode = true
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = t.InitialCode
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Display.Html accepts raw markup the Markdown shorthand doesn't reach, like lists.
+Display.Html(@""<h2>Action Items</h2>
+<ul>
+  <li><b>Finance:</b> reconcile Q3 automation savings against manual baseline.</li>
+  <li><b>Engineering:</b> ship the batch pipeline health dashboard.</li>
+  <li><b>Support:</b> publish the updated <code>PdfDocument</code> migration guide.</li>
+</ul>
+<p>Owner sign-off required by <b>end of week</b>.</p>"");
+
+Console.WriteLine(""Rendered raw HTML directly - useful whenever the Markdown shorthand isn't enough."");"
+                    });
+                }
+                else if (t.Id == "nuget_charting_scottplot")
+                {
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 📈 Charting with ScottPlot (NuGet)\nResolves **ScottPlot.Avalonia** via `#r \"nuget: ...\"` and hands the live chart control straight to `Display.Control(...)` — the same generic `#r nuget` + `Display.Control` mechanism works for any Avalonia-based visualization package, not just this one.\n\nHit **[ ▶ ]** on each cell below!",
+                        IsMarkdownPreviewMode = true
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = t.InitialCode
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 2: A second chart, reusing the ScottPlot.Avalonia package already resolved above.
+var barPlot = new AvaPlot { Width = 520, Height = 300 };
+var bp = barPlot.Plot;
+
+string[] categories = { ""PDF"", ""DOCX"", ""XLSX"", ""PPTX"", ""Images"" };
+double[] counts = { 420, 180, 96, 64, 233 };
+
+for (int i = 0; i < categories.Length; i++)
+{
+    bp.Add.Bar(position: i + 1, value: counts[i]);
+}
+
+bp.Axes.Bottom.SetTicks(new double[] { 1, 2, 3, 4, 5 }, categories);
+bp.Title(""Documents Processed by Type"");
+bp.YLabel(""Count"");
+
+Display.Control(barPlot);
+Console.WriteLine(""A second live chart, reusing ScottPlot.Avalonia resolved by the first cell."");"
+                    });
+                }
                 else
                 {
                     nb.Cells.Add(new NotebookCellItem

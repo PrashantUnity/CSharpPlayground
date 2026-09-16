@@ -1057,6 +1057,40 @@
                                                         </Grid>
                                                     </Border>
 
+                                                    <!-- 5b. Interactive Control Placeholder — the live control itself can't be
+                                                         serialized, so a reloaded notebook shows this instead until the cell is re-run -->
+                                                    <Border IsVisible="{Binding InteractiveControlPlaceholderVisible}"
+                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="12,10">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                            <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                            <TextBlock Text="Interactive widget / animation not restored — re-run this cell to bring it back."
+                                                                       FontSize="11.5"
+                                                                       FontStyle="Italic"
+                                                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                                       TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </Border>
+
+                                                    <!-- 6. HTML / Markdown Rich Output -->
+                                                    <Border IsVisible="{Binding HasHtmlContent}"
+                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6"
+                                                            Padding="12,8">
+                                                        <Grid RowDefinitions="Auto,*">
+                                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                                                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                            </StackPanel>
+                                                            <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
+                                                        </Grid>
+                                                    </Border>
+
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>

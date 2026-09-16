@@ -227,6 +227,98 @@ for (int i = 0; i < 5; i++)
 // Display the rendered image directly in the cell output!
 Display.Image(surface.Snapshot());
 Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
+        },
+        new()
+        {
+            Id = "animation_studio",
+            Title = "Live Animation Studio",
+            Category = "Animation",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Live, self-animating visuals via Display.Animate, plus the cancellable frame-loop pattern for short bounded sequences.",
+            IconKind = MaterialIconKind.MotionOutline,
+            AccentColor = "#F472B6",
+            AccentBackground = "#500724",
+            AccentBorder = "#DB2777",
+            CategoryBadge = "Animation • Live",
+            Tags = new List<string> { "Animation", "Display.Animate", "DrawingContext" },
+            InitialCode = @"using System;
+using Avalonia;
+using Avalonia.Media;
+
+double canvasWidth = 380, canvasHeight = 220;
+double ballRadius = 16;
+var ballBrush = new SolidColorBrush(Color.Parse(""#F472B6""));
+var trackBrush = new SolidColorBrush(Color.Parse(""#151B2B""));
+
+Display.Animate((ctx, elapsed) =>
+{
+    ctx.FillRectangle(trackBrush, new Rect(0, 0, canvasWidth, canvasHeight));
+
+    double t = elapsed.TotalSeconds;
+    double x = ballRadius + (canvasWidth - 2 * ballRadius) * (0.5 + 0.5 * Math.Sin(t * 1.7));
+    double y = ballRadius + (canvasHeight - 2 * ballRadius) * Math.Abs(Math.Sin(t * 2.3));
+
+    ctx.DrawEllipse(ballBrush, null, new Point(x, y), ballRadius, ballRadius);
+}, width: canvasWidth, height: canvasHeight);
+
+Console.WriteLine(""Animating at ~60fps. Try opening another tab or running another cell - this never blocks."");"
+        },
+        new()
+        {
+            Id = "rich_html_reports",
+            Title = "Rich Text & Markdown Reports",
+            Category = "Reporting",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Format notebook output as headings, bold/italic text, links, and lists via Display.Markdown and Display.Html.",
+            IconKind = MaterialIconKind.LanguageMarkdownOutline,
+            AccentColor = "#2DD4BF",
+            AccentBackground = "#042F2E",
+            AccentBorder = "#0D9488",
+            CategoryBadge = "Reporting • Markdown",
+            Tags = new List<string> { "Markdown", "Html", "Reports" },
+            InitialCode = @"Display.Markdown(@""# Quarterly Report
+## Revenue Summary
+
+**Total revenue** increased by *18%* this quarter, driven by the new automation pipeline.
+
+Key figures were pulled via `PdfDocument.GetMetadata()`.
+
+See the [full methodology](https://example.com/methodology) for details."");
+
+Console.WriteLine(""Rendered via Display.Markdown -> Display.Html -> RichHtmlView."");"
+        },
+        new()
+        {
+            Id = "nuget_charting_scottplot",
+            Title = "Charting with ScottPlot (NuGet)",
+            Category = "Charting",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Resolve ScottPlot.Avalonia via #r nuget and display a live, interactive chart control with Display.Control.",
+            IconKind = MaterialIconKind.ChartLine,
+            AccentColor = "#818CF8",
+            AccentBackground = "#1E1B4B",
+            AccentBorder = "#4F46E5",
+            CategoryBadge = "ScottPlot • #r nuget",
+            Tags = new List<string> { "ScottPlot", "#r nuget", "Charts" },
+            InitialCode = @"#r ""nuget: ScottPlot.Avalonia, 5.1.59""
+using ScottPlot.Avalonia;
+
+var avaPlot = new AvaPlot { Width = 520, Height = 300 };
+var plot = avaPlot.Plot;
+
+double[] months = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+double[] revenue = { 12, 15, 14, 18, 22, 26, 24, 28, 31, 29, 34, 38 };
+
+var scatter = plot.Add.Scatter(months, revenue);
+scatter.LineWidth = 2;
+scatter.MarkerSize = 6;
+
+plot.Title(""Monthly Revenue (Thousands, USD)"");
+plot.XLabel(""Month"");
+plot.YLabel(""Revenue ($K)"");
+
+Display.Control(avaPlot);
+Console.WriteLine(""Live, interactive ScottPlot chart rendered via #r nuget + Display.Control."");"
         }
     };
 }
