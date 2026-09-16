@@ -866,4 +866,67 @@ Console.WriteLine(""should not be reached"");";
         Assert.Equal("#E36C28", child.IconColor);
         Assert.Equal("NotebookOutline", child.IconKind);
     }
+
+    // Reproduces a real leak found in a user's actual library: CSharpStudioHostViewModel constructs a
+    // fresh, untouched placeholder notebook on every launch just so Notebook Studio always has a tab
+    // open. Before this fix, BackToHub/BackToHome saved unconditionally, so simply navigating back to
+    // the Hub without ever touching that tab permanently wrote a brand-new junk notebook to disk —
+    // every single time. SaveAsync now skips entirely when the active tab was never modified.
+    [Fact]
+    public async Task SaveAsync_OnUntouchedTab_DoesNotPersistAnything()
+    {
+        // LoadWorkspaceSummariesAsync auto-seeds the 8 starter templates the first time anything asks
+        // this fresh storage instance to load — capture that baseline before acting, exactly like
+        // CSharpManagerViewModelTests does, rather than asserting an empty library outright.
+        var baseline = (await _testStorage.LoadWorkspaceSummariesAsync()).Count;
+
+        var studio = CreateStudio();
+        await studio.SaveAsync();
+
+        var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+        Assert.Equal(baseline, summaries.Count);
+        Assert.DoesNotContain(summaries, s => s.Title == "Document Automation Notebook");
+    }
+
+    [Fact]
+    public async Task BackToHub_OnUntouchedTab_DoesNotPersistAnything()
+    {
+        var baseline = (await _testStorage.LoadWorkspaceSummariesAsync()).Count;
+
+        var backToHubCalls = 0;
+        var compiler = new RoslynCompilerService();
+        var engine = new ScriptExecutionEngine();
+        var studio = new CSharpNotebookStudioViewModel(
+            new NotebookDocumentItem { Title = "Document Automation Notebook" },
+            _testStorage,
+            compiler,
+            engine,
+            backToHubAction: () => backToHubCalls++,
+            backToHomeAction: () => { });
+
+        studio.BackToHub();
+        await Task.Delay(200); // BackToHub fires SaveAsync fire-and-forget; let it finish
+
+        Assert.Equal(1, backToHubCalls);
+        var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+        Assert.Equal(baseline, summaries.Count);
+        Assert.DoesNotContain(summaries, s => s.Title == "Document Automation Notebook");
+    }
+
+    [Fact]
+    public async Task SaveAsync_OnActuallyModifiedTab_PersistsNormally()
+    {
+        var baseline = (await _testStorage.LoadWorkspaceSummariesAsync()).Count;
+
+        var studio = CreateStudio();
+        studio.ActiveTab!.AddCodeCell();
+        Assert.True(studio.ActiveTab.IsModified);
+
+        await studio.SaveAsync();
+
+        var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+        Assert.Equal(baseline + 1, summaries.Count);
+        Assert.Contains(summaries, s => s.Title == "Document Automation Notebook");
+        Assert.False(studio.ActiveTab.IsModified);
+    }
 }

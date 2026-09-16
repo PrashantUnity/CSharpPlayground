@@ -173,4 +173,78 @@ public class LocalScriptStorageServiceTests : IDisposable
         // No default-template seeding should have run, since real content already existed.
         Assert.DoesNotContain(summaries, s => s.Id == "leetcode_two_sum");
     }
+
+    // Reproduces a real bug found in a user's actual library: a notebook whose filename on disk
+    // didn't match its own internal Id (e.g. carried over from an older storage layout, or left behind
+    // after a duplicate cleanup that removed the id-named copy but kept a differently-named one with
+    // real content). LoadWorkspaceSummariesAsync already tolerated this — it reads every file's own
+    // content rather than assuming filename == id — but LoadNotebookAsync/SaveNotebookAsync/
+    // DeleteItemAsync all funneled through a filename-only lookup and silently failed (no exception,
+    // just a null/no-op) for exactly this case. FindExistingFilePath now falls back to scanning file
+    // contents when the filename guess misses.
+    [Fact]
+    public async Task LoadNotebookAsync_FileNameDoesNotMatchInternalId_StillFindsAndLoadsIt()
+    {
+        var storage = new LocalScriptStorageService(_baseDir);
+        await storage.LoadWorkspaceSummariesAsync(); // force initialization/seeding first
+
+        var realId = "mismatched-id-123";
+        var notebook = new NotebookDocumentItem { Id = realId, Title = "Renamed Notebook" };
+        var libraryRoot = Path.Combine(_baseDir, "library");
+        Directory.CreateDirectory(libraryRoot);
+        await File.WriteAllTextAsync(
+            Path.Combine(libraryRoot, "completely-different-filename.frynb"),
+            JsonSerializer.Serialize(notebook, new JsonSerializerOptions { WriteIndented = true }));
+
+        var loaded = await storage.LoadNotebookAsync(realId);
+
+        Assert.NotNull(loaded);
+        Assert.Equal("Renamed Notebook", loaded.Title);
+    }
+
+    [Fact]
+    public async Task SaveNotebookAsync_FileNameDoesNotMatchInternalId_UpdatesExistingFileRatherThanDuplicating()
+    {
+        var storage = new LocalScriptStorageService(_baseDir);
+        await storage.LoadWorkspaceSummariesAsync();
+
+        var realId = "mismatched-id-456";
+        var notebook = new NotebookDocumentItem { Id = realId, Title = "Original Title" };
+        var libraryRoot = Path.Combine(_baseDir, "library");
+        Directory.CreateDirectory(libraryRoot);
+        var mismatchedPath = Path.Combine(libraryRoot, "some-other-filename.frynb");
+        await File.WriteAllTextAsync(mismatchedPath, JsonSerializer.Serialize(notebook, new JsonSerializerOptions { WriteIndented = true }));
+
+        notebook.Title = "Updated Title";
+        var saved = await storage.SaveNotebookAsync(notebook);
+
+        Assert.True(saved);
+        // Must still be exactly one file for this Id — a naive "not found by filename, write a new
+        // one at {id}.frynb" would have created a second, duplicate file instead of updating this one.
+        var matchingFiles = Directory.EnumerateFiles(libraryRoot, "*.frynb", SearchOption.AllDirectories)
+            .Where(f => JsonSerializer.Deserialize<NotebookDocumentItem>(File.ReadAllText(f))?.Id == realId)
+            .ToList();
+        Assert.Single(matchingFiles);
+        Assert.Equal(mismatchedPath, matchingFiles[0]);
+        var reloaded = await storage.LoadNotebookAsync(realId);
+        Assert.Equal("Updated Title", reloaded!.Title);
+    }
+
+    [Fact]
+    public async Task DeleteItemAsync_FileNameDoesNotMatchInternalId_ActuallyDeletesTheFile()
+    {
+        var storage = new LocalScriptStorageService(_baseDir);
+        await storage.LoadWorkspaceSummariesAsync();
+
+        var realId = "mismatched-id-789";
+        var notebook = new NotebookDocumentItem { Id = realId, Title = "To Be Deleted" };
+        var libraryRoot = Path.Combine(_baseDir, "library");
+        Directory.CreateDirectory(libraryRoot);
+        var mismatchedPath = Path.Combine(libraryRoot, "yet-another-filename.frynb");
+        await File.WriteAllTextAsync(mismatchedPath, JsonSerializer.Serialize(notebook, new JsonSerializerOptions { WriteIndented = true }));
+
+        await storage.DeleteItemAsync(realId);
+
+        Assert.False(File.Exists(mismatchedPath));
+    }
 }

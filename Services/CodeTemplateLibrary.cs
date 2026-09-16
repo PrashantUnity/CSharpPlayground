@@ -16,9 +16,9 @@ public static class CodeTemplateLibrary
             Kind = WorkspaceItemKind.Script,
             Description = "Classic Two-Sum problem workspace with test cases, scratchpad notes, and Roslyn execution.",
             IconKind = MaterialIconKind.CodeBraces,
-            AccentColor = "#34D399",
-            AccentBackground = "#064E3B",
-            AccentBorder = "#059669",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "LeetCode • Easy",
             Tags = new List<string> { "Algorithms", "Two-Sum", "Roslyn" },
             Notes = @"# 1. Two Sum
@@ -88,9 +88,9 @@ Console.WriteLine(""All test cases evaluated successfully."");",
             Kind = WorkspaceItemKind.Script,
             Description = "Fast expression & statements scratchpad with instant .Dump() inspection and zero boilerplate.",
             IconKind = MaterialIconKind.LightningBoltOutline,
-            AccentColor = "#FBBF24",
-            AccentBackground = "#451A03",
-            AccentBorder = "#D97706",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "Scratchpad • Instant",
             Tags = new List<string> { "LINQ", ".Dump()", "Top-level" },
             Notes = @"# Interactive C# Scratchpad
@@ -123,54 +123,15 @@ Console.WriteLine(""Script evaluation completed successfully."");"
         },
         new()
         {
-            Id = "pdf_automation",
-            Title = "PDF Document Automation",
-            Category = "Automation",
-            Kind = WorkspaceItemKind.Script,
-            Description = "Simulated document automation, file metadata inspection, and batch pipeline.",
-            IconKind = MaterialIconKind.FilePdfBox,
-            AccentColor = "#F87171",
-            AccentBackground = "#4C0519",
-            AccentBorder = "#E11D48",
-            CategoryBadge = "Studio API • Batch",
-            Tags = new List<string> { "Automation", "Metadata", "Pipeline" },
-            Notes = @"# PDF Document Automation Script
-Inspect metadata, calculate page budgets, and generate simulation logs.",
-            InitialCode = @"using System;
-using System.IO;
-
-public static class Program
-{
-    public static void Main()
-    {
-        Console.WriteLine(""FryPDF Document Automation Pipeline"");
-        Console.WriteLine(""------------------------------------"");
-
-        var metadata = new
-        {
-            Title = ""Annual Performance Review 2026"",
-            Author = ""FryPDF Document Studio"",
-            PageCount = 14,
-            Encrypted = false,
-            ProcessedAt = DateTime.Now
-        };
-
-        metadata.Dump(""PDF Metadata Profile"");
-        Console.WriteLine(""Document automation pipeline completed successfully."");
-    }
-}"
-        },
-        new()
-        {
             Id = "polyglot_notebook",
             Title = "Polyglot Notebook Demo",
             Category = "Notebook",
             Kind = WorkspaceItemKind.Notebook,
             Description = "Multi-cell notebook workflow with Markdown explanations and interactive C# cells.",
             IconKind = MaterialIconKind.NotebookOutline,
-            AccentColor = "#C084FC",
-            AccentBackground = "#261447",
-            AccentBorder = "#6B21A8",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "Notebook • Interactive",
             Tags = new List<string> { "Markdown", "Multi-cell", "Interactive" },
             InitialCode = @"// [Code Cell 1]
@@ -187,9 +148,9 @@ new { Title = docTitle, Pages = totalPages, Status = ""Ready"" }.Dump();"
             Kind = WorkspaceItemKind.Notebook,
             Description = "Generate 2D vector graphics, charts, and visual renderings using SkiaSharp (#r) and Display.Image.",
             IconKind = MaterialIconKind.ImageOutline,
-            AccentColor = "#38BDF8",
-            AccentBackground = "#082F49",
-            AccentBorder = "#0284C7",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "SkiaSharp • Visual",
             Tags = new List<string> { "SkiaSharp", "Images", "#r nuget", "Graphics" },
             InitialCode = @"#r ""nuget: SkiaSharp, 3.119.4""
@@ -236,9 +197,9 @@ Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
             Kind = WorkspaceItemKind.Notebook,
             Description = "Live, self-animating visuals via Display.Animate, plus the cancellable frame-loop pattern for short bounded sequences.",
             IconKind = MaterialIconKind.MotionOutline,
-            AccentColor = "#F472B6",
-            AccentBackground = "#500724",
-            AccentBorder = "#DB2777",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "Animation • Live",
             Tags = new List<string> { "Animation", "Display.Animate", "DrawingContext" },
             InitialCode = @"using System;
@@ -271,9 +232,9 @@ Console.WriteLine(""Animating at ~60fps. Try opening another tab or running anot
             Kind = WorkspaceItemKind.Notebook,
             Description = "Format notebook output as headings, bold/italic text, links, and lists via Display.Markdown and Display.Html.",
             IconKind = MaterialIconKind.LanguageMarkdownOutline,
-            AccentColor = "#2DD4BF",
-            AccentBackground = "#042F2E",
-            AccentBorder = "#0D9488",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "Reporting • Markdown",
             Tags = new List<string> { "Markdown", "Html", "Reports" },
             InitialCode = @"Display.Markdown(@""# Quarterly Report
@@ -295,9 +256,9 @@ Console.WriteLine(""Rendered via Display.Markdown -> Display.Html -> RichHtmlVie
             Kind = WorkspaceItemKind.Notebook,
             Description = "Resolve ScottPlot.Avalonia via #r nuget and display a live, interactive chart control with Display.Control.",
             IconKind = MaterialIconKind.ChartLine,
-            AccentColor = "#818CF8",
-            AccentBackground = "#1E1B4B",
-            AccentBorder = "#4F46E5",
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
             CategoryBadge = "ScottPlot • #r nuget",
             Tags = new List<string> { "ScottPlot", "#r nuget", "Charts" },
             InitialCode = @"#r ""nuget: ScottPlot.Avalonia, 5.1.59""

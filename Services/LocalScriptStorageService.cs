@@ -318,7 +318,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
                     Title = t.Title,
                     Description = t.Description,
                     Category = t.Category,
-                    ExecutionMode = t.Id == "pdf_automation" ? "Program" : "Statements",
+                    ExecutionMode = "Statements",
                     Code = t.InitialCode,
                     Notes = t.Notes,
                     TestCases = t.TestCases ?? new List<TestCaseItem>(),
@@ -338,9 +338,40 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         return rel == "." ? string.Empty : rel.Replace(Path.DirectorySeparatorChar, '/');
     }
 
+    /// <summary>
+    /// Locates a document's file by id. Tries the fast path first (a file literally named
+    /// "{id}{extension}", true for everything created through this service today) and falls back to
+    /// scanning file contents for a matching internal "Id" field if that fails — a document's filename
+    /// doesn't always match its own Id (e.g. documents carried over from an older storage layout, or
+    /// ones that otherwise ended up renamed on disk independently of their content). Load/Save/Delete
+    /// all funnel through here, so all three need this fallback, not just the summary list — which
+    /// already tolerates filename/Id mismatches since it reads every file's own content rather than
+    /// assuming filename == id, but silently failed to ever re-open, re-save, or delete such a file
+    /// before this fix (no exception — LoadNotebookAsync/LoadScriptAsync would just return null).
+    /// </summary>
     private string? FindExistingFilePath(string id, string extension)
     {
-        return Directory.EnumerateFiles(_libraryRoot, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
+        var direct = Directory.EnumerateFiles(_libraryRoot, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
+        if (direct != null) return direct;
+
+        foreach (var file in Directory.EnumerateFiles(_libraryRoot, $"*{extension}", SearchOption.AllDirectories))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                if (doc.RootElement.TryGetProperty("Id", out var idProp) &&
+                    string.Equals(idProp.GetString(), id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return file;
+                }
+            }
+            catch
+            {
+                // Unreadable/corrupted file — treat the same as "not this one" rather than throwing.
+            }
+        }
+
+        return null;
     }
 
     public async Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync()

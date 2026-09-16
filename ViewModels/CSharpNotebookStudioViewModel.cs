@@ -523,7 +523,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [RelayCommand]
     public async Task SaveAsync()
     {
-        if (ActiveTab != null)
+        // Skip entirely for a tab that's never actually been touched (e.g. the blank initial tab
+        // Studio Host constructs so there's always something open) — otherwise navigating back to
+        // the Hub without ever editing anything still persists a brand-new junk notebook to disk
+        // every single time, since BackToHub/BackToHome call this unconditionally.
+        if (ActiveTab != null && ActiveTab.IsModified)
         {
             ActiveTab.Notebook.LastModified = DateTime.UtcNow;
             var saved = await _storageService.SaveNotebookAsync(ActiveTab.Notebook);

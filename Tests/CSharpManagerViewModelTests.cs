@@ -172,4 +172,56 @@ public class CSharpManagerViewModelTests : IDisposable
 
         Assert.Equal(vm.StarterTemplates.Count, scriptOpens + notebookOpens);
     }
+
+    // Reproduces the real reported bug: a template card with no busy-guard let a double-click (or a
+    // click landing before the constructor's own unawaited load finished) create two documents for
+    // the same template instead of one. LaunchTemplateAsync's synchronous prefix (the IsLaunching
+    // check, set before any await) means the second of two back-to-back calls is guaranteed to see
+    // IsLaunching already true and no-op — this isn't a timing-dependent/flaky assertion.
+    [Fact]
+    public async Task LaunchTemplateCommand_CalledTwiceBackToBack_CreatesExactlyOneDocument()
+    {
+        var notebookOpens = 0;
+        var vm = new CSharpManagerViewModel(
+            _storage,
+            openScriptAction: _ => { },
+            openNotebookAction: _ => notebookOpens++,
+            navigateToHomeAction: () => { });
+        await vm.LoadWorkspaceItemsAsync();
+
+        var template = vm.StarterTemplates.First(t => t.Kind == WorkspaceItemKind.Notebook);
+
+        var firstCall = vm.LaunchTemplateAsync(template);
+        var secondCall = vm.LaunchTemplateAsync(template); // fired before firstCall's first await completes
+        await Task.WhenAll(firstCall, secondCall);
+
+        var matches = (await _storage.LoadWorkspaceSummariesAsync())
+            .Count(i => string.Equals(i.Title, template.Title, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, matches);
+        Assert.Equal(1, notebookOpens);
+    }
+
+    // Same guard, exercised via the "New Notebook" entry point directly (no template involved) —
+    // this is the exact path that produced the "New Interactive Notebook (Copy)" artifact found in a
+    // real user's library: two rapid clicks on the plain New Notebook button.
+    [Fact]
+    public async Task CreateNewNotebookCommand_CalledTwiceBackToBack_CreatesExactlyOneDocument()
+    {
+        var notebookOpens = 0;
+        var vm = new CSharpManagerViewModel(
+            _storage,
+            openScriptAction: _ => { },
+            openNotebookAction: _ => notebookOpens++,
+            navigateToHomeAction: () => { });
+        await vm.LoadWorkspaceItemsAsync();
+
+        var firstCall = vm.CreateNewNotebookAsync();
+        var secondCall = vm.CreateNewNotebookAsync();
+        await Task.WhenAll(firstCall, secondCall);
+
+        var matches = (await _storage.LoadWorkspaceSummariesAsync())
+            .Count(i => i.Title.StartsWith("New Interactive Notebook", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, matches);
+        Assert.Equal(1, notebookOpens);
+    }
 }

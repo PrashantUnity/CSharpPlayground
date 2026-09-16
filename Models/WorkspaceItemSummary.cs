@@ -62,72 +62,20 @@ public class WorkspaceItemSummary
             : MaterialIconKind.FileCodeOutline
     };
 
-    // 1. Distinct Leading Icon Container Colors
-    public string IconForeground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#38BDF8" : "#C084FC",
-        _ => IsAlgorithms ? "#34D399"
-            : IsScratchpad ? "#FBBF24"
-            : IsAutomation ? "#F87171"
-            : IsGraphics ? "#38BDF8"
-            : "#60A5FA"
-    };
+    // Rows differentiate by icon shape and text, not by a different accent color per category/kind —
+    // one consistent, muted palette (this app's own M3Primary/M3SurfaceContainerHigh/M3OutlineVariant
+    // dark-theme values) everywhere instead.
+    public string IconForeground => "#9BA1AD";
+    public string IconBackground => "#252C36";
+    public string IconBorder => "#3D4450";
 
-    public string IconBackground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#082F49" : "#261447",
-        _ => IsAlgorithms ? "#064E3B"
-            : IsScratchpad ? "#451A03"
-            : IsAutomation ? "#4C0519"
-            : IsGraphics ? "#082F49"
-            : "#0F2850"
-    };
+    public string KindBadgeForeground => "#9BA1AD";
+    public string KindBadgeBackground => "#252C36";
+    public string KindBadgeBorder => "#3D4450";
 
-    public string IconBorder => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#0284C7" : "#6B21A8",
-        _ => IsAlgorithms ? "#059669"
-            : IsScratchpad ? "#D97706"
-            : IsAutomation ? "#E11D48"
-            : IsGraphics ? "#0284C7"
-            : "#2563EB"
-    };
-
-    // 2. Kind Badge (Script vs Notebook)
-    public string KindBadgeForeground => IsNotebook ? "#E9D5FF" : "#BFDBFE";
-    public string KindBadgeBackground => IsNotebook ? "#261447" : "#0F244A";
-    public string KindBadgeBorder => IsNotebook ? "#6B21A8" : "#2563EB";
-
-    // 3. Category Chip Styling
-    public string CategoryForeground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#BAE6FD" : "#E9D5FF",
-        _ => IsAlgorithms ? "#A7F3D0"
-            : IsScratchpad ? "#FDE68A"
-            : IsAutomation ? "#FECDD3"
-            : IsGraphics ? "#BAE6FD"
-            : "#BFDBFE"
-    };
-
-    public string CategoryBackground => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#082F49" : "#261447",
-        _ => IsAlgorithms ? "#064E3B"
-            : IsScratchpad ? "#451A03"
-            : IsAutomation ? "#4C0519"
-            : IsGraphics ? "#082F49"
-            : "#0F2850"
-    };
-
-    public string CategoryBorder => Kind switch
-    {
-        WorkspaceItemKind.Notebook => IsGraphics ? "#0284C7" : "#6B21A8",
-        _ => IsAlgorithms ? "#059669"
-            : IsScratchpad ? "#D97706"
-            : IsAutomation ? "#E11D48"
-            : IsGraphics ? "#0284C7"
-            : "#2563EB"
-    };
+    public string CategoryForeground => "#9BA1AD";
+    public string CategoryBackground => "#252C36";
+    public string CategoryBorder => "#3D4450";
 
     public string AccentColor => IconForeground;
 
@@ -147,4 +95,12 @@ public class WorkspaceItemSummary
     public string DetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")} • Interactive C#"
         : $"{ExecutionMode} mode • Roslyn C# 13";
+
+    // Compact-row variant of DetailsSnippet: every item in the workspace uses the same Roslyn/
+    // Interactive-C# engine, so repeating that suffix on every single row is pure noise once there
+    // are more than a couple of items — it's still available via DetailsSnippet for detail-on-demand
+    // UI (e.g. an inspector panel) where the extra context is welcome rather than repetitive.
+    public string ShortDetailsSnippet => IsNotebook
+        ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")}"
+        : ExecutionMode;
 }
