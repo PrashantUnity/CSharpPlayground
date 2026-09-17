@@ -62,16 +62,21 @@ public class WorkspaceItemSummary
             : MaterialIconKind.FileCodeOutline
     };
 
-    // Rows differentiate by icon shape and text, not by a different accent color per category/kind —
-    // one consistent, muted palette (this app's own M3Primary/M3SurfaceContainerHigh/M3OutlineVariant
-    // dark-theme values) everywhere instead.
-    public string IconForeground => "#9BA1AD";
-    public string IconBackground => "#252C36";
-    public string IconBorder => "#3D4450";
+    // Notebook = amber (matches Notebook Studio's own Jupyter-style accent), Script = blue (matches
+    // the .cs file color already used in the Notebook explorer tree) — two colors is enough for a
+    // workspace list to scan at a glance without turning into a rainbow of one-off category hues.
+    // Backgrounds/borders are low-alpha tints of the same hue (kept dark enough for this theme).
+    private const string NotebookAccentHex = "#D97706";
+    private const string ScriptAccentHex = "#58A6FF";
+    private string AccentHex => IsNotebook ? NotebookAccentHex : ScriptAccentHex;
 
-    public string KindBadgeForeground => "#9BA1AD";
-    public string KindBadgeBackground => "#252C36";
-    public string KindBadgeBorder => "#3D4450";
+    public string IconForeground => AccentHex;
+    public string IconBackground => "#33" + AccentHex.TrimStart('#');
+    public string IconBorder => "#66" + AccentHex.TrimStart('#');
+
+    public string KindBadgeForeground => AccentHex;
+    public string KindBadgeBackground => "#33" + AccentHex.TrimStart('#');
+    public string KindBadgeBorder => "#66" + AccentHex.TrimStart('#');
 
     public string CategoryForeground => "#9BA1AD";
     public string CategoryBackground => "#252C36";

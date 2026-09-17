@@ -863,7 +863,7 @@ Console.WriteLine(""should not be reached"");";
         };
 
         Assert.Equal(18, child.IndentPadding.Left);
-        Assert.Equal("#E36C28", child.IconColor);
+        Assert.Equal("#D97706", child.IconColor);
         Assert.Equal("NotebookOutline", child.IconKind);
     }
 

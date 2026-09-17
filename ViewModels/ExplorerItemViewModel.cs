@@ -9,6 +9,9 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 public partial class ExplorerItemViewModel : ObservableObject
 {
+    // Canonical Jupyter-style amber accent, shared with the notebook tab strip/selection highlight.
+    private const string NotebookAmberHex = "#D97706";
+
     [ObservableProperty]
     private string _name = string.Empty;
 
@@ -70,11 +73,11 @@ public partial class ExplorerItemViewModel : ObservableObject
     {
         get
         {
-            if (IsDirectory) return "#DDA764";
+            if (IsDirectory) return NotebookAmberHex;
 
             return FileExtension.ToLowerInvariant() switch
             {
-                ".frynb" or ".ipynb" => "#E36C28",
+                ".frynb" or ".ipynb" => NotebookAmberHex,
                 ".cs" or ".frycs" => "#58A6FF",
                 ".json" => "#E5C07B",
                 ".md" => "#4EC9B0",

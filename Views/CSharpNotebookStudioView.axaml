@@ -16,6 +16,11 @@
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
+            <CornerRadius x:Key="NotebookTabTopRadius">4,4,0,0</CornerRadius>
+            <!-- Canonical Jupyter-style amber accent — the one hex used for every notebook-identity
+                 accent (active tab, selected explorer row, breadcrumb folder), replacing four
+                 slightly-different hardcoded ambers that had drifted apart over time. -->
+            <SolidColorBrush x:Key="NotebookAmberBrush" Color="#D97706" />
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -181,7 +186,7 @@
         </Style>
         <Style Selector="Button.explorer-item-btn.selected">
             <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-            <Setter Property="BorderBrush" Value="#E36C28" />
+            <Setter Property="BorderBrush" Value="{StaticResource NotebookAmberBrush}" />
         </Style>
 
         <!-- Hover Action Buttons: Hidden by default, revealed on row hover -->
@@ -231,7 +236,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="CornerRadius" Value="6,6,0,0" />
+            <Setter Property="CornerRadius" Value="{StaticResource NotebookTabTopRadius}" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.1" />
@@ -258,7 +263,7 @@
         <Style Selector="Button.nb-action-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
             <Setter Property="Height" Value="28" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="7,0" />
@@ -284,7 +289,7 @@
         <Style Selector="Button.cell-tool-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
             <Setter Property="Width" Value="22" />
             <Setter Property="Height" Value="22" />
             <Setter Property="MinWidth" Value="0" />
@@ -311,7 +316,7 @@
         <Style Selector="Button.gutter-run-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
             <Setter Property="Width" Value="20" />
             <Setter Property="Height" Value="20" />
             <Setter Property="MinWidth" Value="0" />
@@ -329,7 +334,7 @@
         <Style Selector="Button.gutter-menu-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
             <Setter Property="Width" Value="20" />
             <Setter Property="Height" Value="18" />
             <Setter Property="MinWidth" Value="0" />
@@ -348,7 +353,7 @@
             <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
@@ -516,7 +521,7 @@
                                                     <!-- Top active accent line -->
                                                     <Border Grid.Row="0"
                                                             Height="2"
-                                                            Background="#F59E0B"
+                                                            Background="{StaticResource NotebookAmberBrush}"
                                                             IsVisible="{Binding IsActive}"
                                                             CornerRadius="2,2,0,0" />
                                                     <Button Grid.Row="1"
@@ -590,7 +595,7 @@
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                         <!-- Segment 1: Folder -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="#DDA764" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{StaticResource NotebookAmberBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding BreadcrumbFolder}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
@@ -643,7 +648,7 @@
                             <Border Background="{DynamicResource M3SurfaceContainerBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="6"
+                                    CornerRadius="{StaticResource M3ShapeCornerExtraSmall}"
                                     Padding="2"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
@@ -728,7 +733,7 @@
                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="9999"
+                                    CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                     Height="26"
                                     Padding="10,0"
                                     VerticalAlignment="Center">
@@ -757,14 +762,14 @@
                     <ScrollViewer Grid.Column="0"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="16" Margin="24,20,24,48" HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="16" Margin="20,16,20,40" HorizontalAlignment="Stretch">
 
                             <!-- Cells List -->
                             <ItemsControl ItemsSource="{Binding Cells}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:NotebookCellViewModel">
                                         <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Editor & Output -->
-                                        <Grid ColumnDefinitions="56,*" Margin="0,0,0,14">
+                                        <Grid ColumnDefinitions="56,*" Margin="0,0,0,10">
 
                                             <!-- ======================================== -->
                                             <!-- COLUMN 0: LEFT GUTTER                    -->

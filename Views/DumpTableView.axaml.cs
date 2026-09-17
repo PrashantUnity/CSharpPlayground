@@ -139,10 +139,10 @@ public partial class DumpTableView : UserControl
         // Header Row definition
         _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
 
-        var headerBrush = ResolveBrush("M3SurfaceContainerHighBrush", "#1A2232");
-        var borderBrush = ResolveBrush("M3OutlineVariantBrush", "#2B3648");
-        var onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E8F0");
-        var onSurfaceMutedBrush = ResolveBrush("M3OnSurfaceVariantBrush", "#94A3B8");
+        var headerBrush = ResolveBrush("M3SurfaceContainerHighBrush", "#252C36");
+        var borderBrush = ResolveBrush("M3OutlineVariantBrush", "#3D4450");
+        var onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E2E6");
+        var onSurfaceMutedBrush = ResolveBrush("M3OnSurfaceVariantBrush", "#9BA1AD");
 
         // Build Header Cells
         for (int c = 0; c < colCount; c++)
@@ -193,8 +193,8 @@ public partial class DumpTableView : UserControl
         }
 
         // Data Rows definition and cells
-        var rowBgEven = ResolveBrush("M3SurfaceContainerLowestBrush", "#0F141E");
-        var rowBgOdd = ResolveBrush("M3SurfaceContainerLowBrush", "#141B28");
+        var rowBgEven = ResolveBrush("M3SurfaceContainerLowestBrush", "#0B0E11");
+        var rowBgOdd = ResolveBrush("M3SurfaceContainerLowBrush", "#161A1F");
         var monospaceFont = new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
 
         for (int r = 0; r < table.Rows.Count; r++)

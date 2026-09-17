@@ -16,20 +16,23 @@
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
-        <!-- Workspace Tab Styles (M3 Expressive Segmented Buttons) -->
+        <!-- Workspace Tab Styles — flat, rectangular, monochrome-active (color is reserved for
+             state elsewhere in this view, e.g. Run=green/Stop=red), matching a real IDE tool-deck tab -->
         <Style Selector="Button.ide-tab-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Padding" Value="12,6" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinHeight" Value="0" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                    <BrushTransition Property="Foreground" Duration="0:0:0.12" />
                 </Transitions>
             </Setter>
         </Style>
@@ -38,8 +41,71 @@
             <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
         </Style>
         <Style Selector="Button.ide-tab-btn.active">
-            <Setter Property="Background" Value="{DynamicResource M3SecondaryContainerBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSecondaryContainerBrush}" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+
+        <!-- Flat/dense toolbar buttons — replace the app-wide pill-shaped m3-*-btn family in this
+             view only (that shared family stays untouched for the rest of the app). Small rectangular
+             shape, no hover-scale, color reserved for state (filled defaults to success/green for Run). -->
+        <Style Selector="Button.cs-toolbar-filled, Button.cs-toolbar-tonal, Button.cs-toolbar-outlined">
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.cs-toolbar-filled">
+            <Setter Property="Background" Value="{DynamicResource M3SuccessBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessBrush}" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-filled:pointerover">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-tonal">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-tonal:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-outlined">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-outlined:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        </Style>
+        <Style Selector="Button.cs-toolbar-icon">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.cs-toolbar-icon:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -56,14 +122,8 @@
                 <!-- Left: Scripts Hub Button & Breadcrumbs -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button Command="{Binding BackToHubCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
+                            Classes="cs-toolbar-tonal"
                             VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
                             ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" VerticalAlignment="Center" />
@@ -132,14 +192,8 @@
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <!-- Save Button -->
                     <Button Command="{Binding SaveCommand}"
-                            Classes="m3-tonal-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
+                            Classes="cs-toolbar-tonal"
                             VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Cursor="Hand"
                             ToolTip.Tip="Save Script (Ctrl+S)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15" VerticalAlignment="Center" />
@@ -157,14 +211,10 @@
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Continue (F5) -->
                             <Button Command="{Binding ContinueDebugCommand}"
-                                    Classes="m3-filled-btn"
+                                    Classes="cs-toolbar-filled"
                                     Background="{DynamicResource M3PrimaryBrush}"
                                     Foreground="{DynamicResource M3OnPrimaryBrush}"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="28" MinHeight="0"
-                                    Padding="10,0"
                                     IsVisible="{Binding IsPaused}"
-                                    Cursor="Hand"
                                     ToolTip.Tip="Continue Execution (F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
@@ -174,12 +224,8 @@
 
                             <!-- Step Over (F10) -->
                             <Button Command="{Binding StepOverCommand}"
-                                    Classes="m3-tonal-btn"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="28" MinHeight="0"
-                                    Padding="8,0"
+                                    Classes="cs-toolbar-tonal"
                                     IsVisible="{Binding IsPaused}"
-                                    Cursor="Hand"
                                     ToolTip.Tip="Step Over statement (F10)">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="DebugStepOver" Width="14" Height="14" VerticalAlignment="Center" />
@@ -189,12 +235,8 @@
 
                             <!-- Step Into (F11) -->
                             <Button Command="{Binding StepIntoCommand}"
-                                    Classes="m3-tonal-btn"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="28" MinHeight="0"
-                                    Padding="8,0"
+                                    Classes="cs-toolbar-tonal"
                                     IsVisible="{Binding IsPaused}"
-                                    Cursor="Hand"
                                     ToolTip.Tip="Step Into statement (F11)">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="DebugStepInto" Width="14" Height="14" VerticalAlignment="Center" />
@@ -204,22 +246,16 @@
 
                             <!-- Restart Debugging -->
                             <Button Command="{Binding RestartDebugCommand}"
-                                    Classes="m3-icon-btn"
-                                    Width="26" Height="26"
-                                    Cursor="Hand"
+                                    Classes="cs-toolbar-icon"
                                     ToolTip.Tip="Restart Debugging (Ctrl+Shift+F5)">
                                 <materialIcons:MaterialIcon Kind="Restart" Width="14" Height="14" VerticalAlignment="Center" />
                             </Button>
 
                             <!-- Stop Debugging -->
                             <Button Command="{Binding StopDebugCommand}"
-                                    Classes="m3-outlined-btn"
+                                    Classes="cs-toolbar-outlined"
                                     BorderBrush="{DynamicResource M3ErrorBrush}"
                                     Foreground="{DynamicResource M3ErrorBrush}"
-                                    CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                    Height="28" MinHeight="0"
-                                    Padding="10,0"
-                                    Cursor="Hand"
                                     ToolTip.Tip="Stop Debugging (Shift+F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
@@ -231,17 +267,11 @@
 
                     <!-- Normal Stop Button (Visible during normal execution) -->
                     <Button Command="{Binding StopCommand}"
-                            Classes="m3-outlined-btn"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="12,0"
+                            Classes="cs-toolbar-outlined"
                             VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
                             BorderBrush="{DynamicResource M3ErrorBrush}"
                             Foreground="{DynamicResource M3ErrorBrush}"
-                            IsVisible="{Binding IsNormalExecuting}"
-                            Cursor="Hand">
+                            IsVisible="{Binding IsNormalExecuting}">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Stop" Width="15" Height="15" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Stop" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
@@ -250,18 +280,10 @@
 
                     <!-- Debug Button (F5) - Visible when not debugging -->
                     <Button Command="{Binding DebugCodeCommand}"
-                            Classes="m3-tonal-btn"
-                            Background="{DynamicResource M3SecondaryContainerBrush}"
-                            Foreground="{DynamicResource M3OnSecondaryContainerBrush}"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="14,0"
+                            Classes="cs-toolbar-tonal"
                             VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
                             IsEnabled="{Binding !IsExecuting}"
                             IsVisible="{Binding !IsDebugging}"
-                            Cursor="Hand"
                             ToolTip.Tip="Start Interactive Debugging with Breakpoints (F5)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="BugPlay" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
@@ -271,21 +293,13 @@
 
                     <!-- Run Button (Ctrl+F5) - Visible when not debugging -->
                     <Button Command="{Binding RunCodeCommand}"
-                            Classes="m3-filled-btn"
-                            Background="{DynamicResource M3PrimaryBrush}"
-                            Foreground="{DynamicResource M3OnPrimaryBrush}"
-                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                            Height="32"
-                            MinHeight="0"
-                            Padding="16,0"
+                            Classes="cs-toolbar-filled"
                             VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
                             IsEnabled="{Binding !IsExecuting}"
                             IsVisible="{Binding !IsDebugging}"
-                            Cursor="Hand"
                             ToolTip.Tip="Run C# Script without Debugging (Ctrl+F5)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="{DynamicResource M3OnPrimaryBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Play" Width="15" Height="15" Foreground="{DynamicResource M3OnSuccessBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Run" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -406,14 +420,8 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                                     <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}"
-                                            Classes="m3-tonal-btn"
-                                            CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                            Height="28"
-                                            MinHeight="0"
-                                            Padding="12,0"
-                                            VerticalAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            Cursor="Hand">
+                                            Classes="cs-toolbar-tonal"
+                                            VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" VerticalAlignment="Center" />
                                             <TextBlock Text="Add Case" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -431,14 +439,12 @@
                                                         <Button Grid.Column="1"
                                                                 Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RunTestCaseCommand}"
                                                                 CommandParameter="{Binding}"
-                                                                Classes="m3-tonal-btn"
+                                                                Classes="cs-toolbar-tonal"
                                                                 Background="{DynamicResource M3SuccessContainerBrush}"
                                                                 Foreground="{DynamicResource M3OnSuccessContainerBrush}"
                                                                 Padding="10,4"
                                                                 Height="26"
-                                                                MinHeight="0"
-                                                                CornerRadius="{StaticResource M3ShapeCornerFull}"
-                                                                Cursor="Hand">
+                                                                MinHeight="0">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                 <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" Foreground="{DynamicResource M3OnSuccessContainerBrush}" VerticalAlignment="Center" />
                                                                 <TextBlock Text="Run" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnSuccessContainerBrush}" VerticalAlignment="Center" />
@@ -500,16 +506,14 @@
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Fold All -->
                             <Button Command="{Binding FoldAllCommand}"
-                                    Classes="m3-icon-btn"
-                                    Width="26" Height="26"
+                                    Classes="cs-toolbar-icon"
                                     ToolTip.Tip="Fold All Code Blocks (Ctrl+Shift+[)">
                                 <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 
                             <!-- Unfold All -->
                             <Button Command="{Binding UnfoldAllCommand}"
-                                    Classes="m3-icon-btn"
-                                    Width="26" Height="26"
+                                    Classes="cs-toolbar-icon"
                                     ToolTip.Tip="Unfold All Code Blocks (Ctrl+Shift+])">
                                 <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
@@ -518,24 +522,21 @@
 
                             <!-- Word Wrap Toggle -->
                             <ToggleButton IsChecked="{Binding IsWordWrap, Mode=TwoWay}"
-                                          Classes="m3-icon-btn"
-                                          Width="26" Height="26"
+                                          Classes="cs-toolbar-icon"
                                           ToolTip.Tip="Toggle Word Wrap">
                                 <materialIcons:MaterialIcon Kind="Wrap" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </ToggleButton>
 
                             <!-- Search / Find -->
                             <Button Command="{Binding ToggleSearchCommand}"
-                                    Classes="m3-icon-btn"
-                                    Width="26" Height="26"
+                                    Classes="cs-toolbar-icon"
                                     ToolTip.Tip="Find &amp; Replace (Ctrl+F / ⌘F)">
                                 <materialIcons:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 
                             <!-- Format Code -->
                             <Button Command="{Binding FormatCodeCommand}"
-                                    Classes="m3-icon-btn"
-                                    Width="26" Height="26"
+                                    Classes="cs-toolbar-icon"
                                     ToolTip.Tip="Format Document (Ctrl+K Ctrl+D)">
                                 <materialIcons:MaterialIcon Kind="FormatIndentIncrease" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
@@ -657,21 +658,18 @@
                                 <!-- Right Actions: Clear, Minimizer -->
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="0,0,8,0" VerticalAlignment="Center">
                                     <Button Command="{Binding ClearResultsCommand}"
-                                            Classes="m3-icon-btn"
-                                            ToolTip.Tip="Clear Results &amp; Dumps"
-                                            Cursor="Hand">
+                                            Classes="cs-toolbar-icon"
+                                            ToolTip.Tip="Clear Results &amp; Dumps">
                                         <materialIcons:MaterialIcon Kind="TableRemove" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
                                     <Button Command="{Binding ClearConsoleCommand}"
-                                            Classes="m3-icon-btn"
-                                            ToolTip.Tip="Clear Console"
-                                            Cursor="Hand">
+                                            Classes="cs-toolbar-icon"
+                                            ToolTip.Tip="Clear Console">
                                         <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
                                     <Button Command="{Binding ToggleBottomDeckCommand}"
-                                            Classes="m3-icon-btn"
-                                            ToolTip.Tip="Minimize Deck"
-                                            Cursor="Hand">
+                                            Classes="cs-toolbar-icon"
+                                            ToolTip.Tip="Minimize Deck">
                                         <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
                                 </StackPanel>
@@ -865,12 +863,9 @@
                                                         <Button Grid.Column="1"
                                                                 Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RunTestCaseCommand}"
                                                                 CommandParameter="{Binding}"
-                                                                Classes="m3-tonal-btn"
-                                                                CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                                Classes="cs-toolbar-tonal"
                                                                 Height="26"
-                                                                Padding="10,0"
-                                                                VerticalAlignment="Center"
-                                                                Cursor="Hand">
+                                                                VerticalAlignment="Center">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                 <materialIcons:MaterialIcon Kind="Play" Width="12" Height="12" VerticalAlignment="Center" />
                                                                 <TextBlock Text="Run" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />
@@ -964,10 +959,8 @@
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
                                                 <Button Grid.Column="2" Command="{Binding AddWatchCommand}"
-                                                        Classes="m3-tonal-btn"
-                                                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                        Classes="cs-toolbar-tonal"
                                                         Height="26" MinHeight="0"
-                                                        Padding="10,0"
                                                         Margin="6,0,0,0"
                                                         VerticalAlignment="Center">
                                                     <TextBlock Text="+ Watch" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -997,7 +990,7 @@
                                                                     <Button Grid.Column="2"
                                                                             Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RemoveWatchCommand}"
                                                                             CommandParameter="{Binding}"
-                                                                            Classes="m3-icon-btn" Width="20" Height="20"
+                                                                            Classes="cs-toolbar-icon" Width="20" Height="20"
                                                                             ToolTip.Tip="Remove Watch">
                                                                         <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                                     </Button>
@@ -1029,10 +1022,8 @@
                                                     </Border>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Command="{Binding ClearAllBreakpointsCommand}"
-                                                        Classes="m3-tonal-btn"
-                                                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                        Classes="cs-toolbar-tonal"
                                                         Height="22" MinHeight="0"
-                                                        Padding="8,0"
                                                         IsVisible="{Binding Breakpoints.Count}"
                                                         ToolTip.Tip="Remove all breakpoints">
                                                     <TextBlock Text="Clear All" FontSize="9.5" FontWeight="Medium" VerticalAlignment="Center" />
@@ -1067,7 +1058,7 @@
                                                                         <Button Grid.Column="2"
                                                                                 Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RemoveBreakpointCommand}"
                                                                                 CommandParameter="{Binding}"
-                                                                                Classes="m3-icon-btn" Width="20" Height="20"
+                                                                                Classes="cs-toolbar-icon" Width="20" Height="20"
                                                                                 ToolTip.Tip="Delete Breakpoint">
                                                                             <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                                         </Button>
@@ -1093,7 +1084,7 @@
                                                     <TextBlock Text="IMMEDIATE CONSOLE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Command="{Binding ClearImmediateCommand}"
-                                                        Classes="m3-icon-btn" Width="20" Height="20"
+                                                        Classes="cs-toolbar-icon" Width="20" Height="20"
                                                         ToolTip.Tip="Clear Immediate Console">
                                                     <materialIcons:MaterialIcon Kind="Eraser" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                 </Button>
@@ -1126,10 +1117,8 @@
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
                                                 <Button Grid.Column="1" Command="{Binding EvaluateImmediateCommand}"
-                                                        Classes="m3-tonal-btn"
-                                                        CornerRadius="{StaticResource M3ShapeCornerFull}"
+                                                        Classes="cs-toolbar-tonal"
                                                         Height="26" MinHeight="0"
-                                                        Padding="10,0"
                                                         Margin="6,0,0,0"
                                                         VerticalAlignment="Center">
                                                     <TextBlock Text="Eval" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -1157,13 +1146,12 @@
                 <!-- Left: Console Toggle Button -->
                 <Button Grid.Column="0"
                         Command="{Binding ToggleBottomDeckCommand}"
-                        Classes="m3-icon-btn"
+                        Classes="cs-toolbar-tonal"
+                        Background="Transparent"
+                        BorderThickness="0"
                         Height="24"
                         MinHeight="0"
-                        Padding="8,0"
-                        VerticalAlignment="Center"
-                        VerticalContentAlignment="Center"
-                        Cursor="Hand">
+                        VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="Console" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />

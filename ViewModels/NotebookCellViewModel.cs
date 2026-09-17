@@ -229,9 +229,11 @@ public partial class NotebookCellViewModel : ObservableObject
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
     public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 
-    public string StatusBadgeForeground => HasError ? "#DC2626" : IsExecuting ? "#2563EB" : ExecutionCount.HasValue ? "#2563EB" : "#64748B";
-    public string StatusBadgeBackground => HasError ? "#371B1D" : IsExecuting ? "#1A2840" : ExecutionCount.HasValue ? "#1E2536" : "#1A202C";
-    public string StatusBadgeBorder => HasError ? "#8C1D18" : IsExecuting ? "#385A9E" : ExecutionCount.HasValue ? "#2D374D" : "#2A313E";
+    // Matches this app's actual dark M3 tokens (Error/Primary/Secondary/OnSurfaceVariant families)
+    // instead of the Tailwind light-mode swatches these used to be hardcoded to.
+    public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#9BA1AD";
+    public string StatusBadgeBackground => HasError ? "#93000A" : IsExecuting ? "#0F387D" : ExecutionCount.HasValue ? "#343E4E" : "#252C36";
+    public string StatusBadgeBorder => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#3D4450";
 
     public string MarkdownTitle
     {
