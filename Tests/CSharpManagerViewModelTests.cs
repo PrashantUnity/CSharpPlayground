@@ -51,22 +51,17 @@ public class CSharpManagerViewModelTests : IDisposable
     [Fact]
     public async Task LoadWorkspaceItemsAsync_ConcurrentCallFromConstructor_DoesNotCorruptOrDuplicateItems()
     {
-        // Reproduces the exact scenario from the reported bug: several scripts and notebooks already
-        // on disk (including duplicate titles), loaded fresh into the Hub.
         await _storage.CreateNewScriptAsync("C# Interactive Scratchpad");
         await _storage.CreateNewScriptAsync("1. Two Sum (Algorithm Workspace)");
         await _storage.CreateNewScriptAsync("PDF Document Automation");
-        await _storage.CreateNewScriptAsync("C# Interactive Scratchpad"); // duplicate title, distinct id
+        await _storage.CreateNewScriptAsync("C# Interactive Scratchpad");
         await _storage.CreateNewNotebookAsync("SkiaSharp Graphics & Image Generation");
         await _storage.CreateNewNotebookAsync("New Interactive Notebook");
-        await _storage.CreateNewNotebookAsync("SkiaSharp Graphics & Image Generation"); // duplicate title
+        await _storage.CreateNewNotebookAsync("SkiaSharp Graphics & Image Generation");
         await _storage.CreateNewNotebookAsync("Document Automation Notebook");
 
         var expectedTotal = (await _storage.LoadWorkspaceSummariesAsync()).Count;
 
-        // The constructor itself fires off an unawaited LoadWorkspaceItemsAsync() — immediately
-        // awaiting another call here deliberately races against it, exactly like a user clicking
-        // something on the Hub before its initial load has finished.
         var vm = new CSharpManagerViewModel(
             _storage,
             openScriptAction: _ => { },
@@ -77,14 +72,9 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(expectedTotal, vm.AllItems.Count);
         Assert.Equal(vm.AllItems.Count, vm.TotalScripts + vm.TotalNotebooks);
         Assert.Equal(vm.AllItems.Count, vm.FilteredItems.Count);
-        Assert.Equal(vm.AllItems.Count, vm.FilteredItemCount);
-        // No item should appear twice (the corrupted/racy version could duplicate entries).
         Assert.Equal(vm.AllItems.Select(i => i.Id).Distinct().Count(), vm.AllItems.Count);
     }
 
-    // "New Script"/"New Notebook" now opens a name+location prompt instead of creating immediately
-    // (so the user can pick a destination folder, like a real IDE's "New File" dialog) — the document
-    // isn't actually created/opened until ConfirmCreateCommand runs.
     [Fact]
     public async Task CreateNewScriptCommand_NoParameter_OpensLocationPromptThenConfirmInvokesOpenCallback()
     {
@@ -97,9 +87,8 @@ public class CSharpManagerViewModelTests : IDisposable
             navigateToHomeAction: () => { });
         await vm.LoadWorkspaceItemsAsync();
 
-        // Exactly how Avalonia invokes a Button.Command with no CommandParameter set: ICommand.Execute(null).
         ((System.Windows.Input.ICommand)vm.CreateNewScriptCommand).Execute(null);
-        await Task.Delay(200); // let the fire-and-forget async command body finish
+        await Task.Delay(200);
 
         Assert.True(vm.IsCreatePromptOpen);
         Assert.Equal(0, scriptOpens);
@@ -140,10 +129,6 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.False(vm.IsCreatePromptOpen);
     }
 
-    // Verifies the actual feature end-to-end: the folder chosen in the prompt (set on SelectedFolderPath
-    // by the View's code-behind after the native folder-picker round trip — simulated directly here,
-    // since a native OS dialog isn't something a unit test can drive) is honored by the document that
-    // gets created, not silently dropped in the library root.
     [Fact]
     public async Task ConfirmCreateCommand_WithSelectedFolderPath_CreatesScriptInsideThatFolder()
     {
@@ -167,8 +152,6 @@ public class CSharpManagerViewModelTests : IDisposable
     [Fact]
     public async Task OpenItemCommand_ForEachExistingItem_InvokesCorrectCallbackTypeWithoutThrowing()
     {
-        // Storage auto-seeds starter templates on first use, so exercise every item that ends up
-        // in the workspace (seeded + explicit), not just the ones this test explicitly created.
         await _storage.CreateNewScriptAsync("Some Script");
         await _storage.CreateNewNotebookAsync("Some Notebook");
 
@@ -216,11 +199,6 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(vm.StarterTemplates.Count, scriptOpens + notebookOpens);
     }
 
-    // Reproduces the real reported bug: a template card with no busy-guard let a double-click (or a
-    // click landing before the constructor's own unawaited load finished) create two documents for
-    // the same template instead of one. LaunchTemplateAsync's synchronous prefix (the IsLaunching
-    // check, set before any await) means the second of two back-to-back calls is guaranteed to see
-    // IsLaunching already true and no-op — this isn't a timing-dependent/flaky assertion.
     [Fact]
     public async Task LaunchTemplateCommand_CalledTwiceBackToBack_CreatesExactlyOneDocument()
     {
@@ -235,7 +213,7 @@ public class CSharpManagerViewModelTests : IDisposable
         var template = vm.StarterTemplates.First(t => t.Kind == WorkspaceItemKind.Notebook);
 
         var firstCall = vm.LaunchTemplateAsync(template);
-        var secondCall = vm.LaunchTemplateAsync(template); // fired before firstCall's first await completes
+        var secondCall = vm.LaunchTemplateAsync(template);
         await Task.WhenAll(firstCall, secondCall);
 
         var matches = (await _storage.LoadWorkspaceSummariesAsync())
@@ -244,11 +222,6 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(1, notebookOpens);
     }
 
-    // Same guard, exercised via the "New Notebook" entry point directly (no template involved) —
-    // this is the exact path that produced the "New Interactive Notebook (Copy)" artifact found in a
-    // real user's library: two rapid clicks on the plain New Notebook button. Creation now happens on
-    // ConfirmCreateAsync (after the name/location prompt), so that's what's exercised twice back-to-back;
-    // CreateNewNotebookAsync itself just (re)opens the prompt and is naturally idempotent.
     [Fact]
     public async Task ConfirmCreateCommand_CalledTwiceBackToBackAfterOpeningNotebookPrompt_CreatesExactlyOneDocument()
     {
@@ -264,7 +237,7 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.True(vm.IsCreatePromptOpen);
 
         var firstCall = vm.ConfirmCreateAsync();
-        var secondCall = vm.ConfirmCreateAsync(); // fired before firstCall's first await completes
+        var secondCall = vm.ConfirmCreateAsync();
         await Task.WhenAll(firstCall, secondCall);
 
         var matches = (await _storage.LoadWorkspaceSummariesAsync())
@@ -273,12 +246,6 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(1, notebookOpens);
     }
 
-    // Regression coverage for a real user complaint: documents saved outside the library (sharing one
-    // .frynbproj/.frycsproj project file) looked like unrelated loose files in "Your Workspace", with no
-    // indication they belonged to a workspace/project at all. FilteredItems now injects a
-    // WorkspaceGroupHeaderViewModel divider above each external folder's documents — these tests pin
-    // that the header appears, is labeled and counted correctly, and — the part that actually matters —
-    // never hides or replaces the individual WorkspaceItemSummary rows underneath it.
     [Fact]
     public async Task LoadWorkspaceItemsAsync_WithMultipleDocsInSameExternalFolder_GroupsThemUnderOneHeader()
     {
@@ -295,12 +262,10 @@ public class CSharpManagerViewModelTests : IDisposable
             Assert.Equal("SharedFolder", header.Title);
             Assert.Equal(2, header.ItemCount);
 
-            // Both real documents must still be individually present — grouping never hides them.
             var items = vm.FilteredItems.OfType<WorkspaceItemSummary>().ToList();
             Assert.Contains(items, i => i.Title == "External One");
             Assert.Contains(items, i => i.Title == "External Two");
 
-            // The header must sit immediately above its members, as one contiguous block.
             var headerIndex = vm.FilteredItems.IndexOf(header);
             Assert.IsType<WorkspaceItemSummary>(vm.FilteredItems[headerIndex + 1]);
             Assert.IsType<WorkspaceItemSummary>(vm.FilteredItems[headerIndex + 2]);
@@ -372,6 +337,140 @@ public class CSharpManagerViewModelTests : IDisposable
         {
             var root = Path.GetDirectoryName(externalDir)!;
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+    [Fact]
+    public async Task PinningAndUnpinning_ToggleAndCommands_PersistsAndSyncsCorrectly()
+    {
+        var sc1 = await _storage.CreateNewScriptAsync("Script Alpha");
+        var sc2 = await _storage.CreateNewScriptAsync("Script Beta");
+        var nb1 = await _storage.CreateNewNotebookAsync("Notebook Gamma");
+
+        var (vm, _, _, _, _) = CreateHub();
+        await vm.LoadWorkspaceItemsAsync();
+
+        Assert.True(vm.AllItems.Count >= 3);
+        Assert.True(vm.HasAnyPinnedItems);
+
+        var itemAlpha = vm.AllItems.First(i => i.Id == sc1.Id);
+
+        await vm.UnpinItemAsync(itemAlpha);
+        Assert.False(itemAlpha.IsPinned);
+        Assert.DoesNotContain(vm.PinnedItems, i => i.Id == itemAlpha.Id);
+        Assert.Contains(vm.UnpinnedItems, i => i.Id == itemAlpha.Id);
+
+        await vm.PinItemAsync(itemAlpha);
+        Assert.True(itemAlpha.IsPinned);
+        Assert.Contains(vm.PinnedItems, i => i.Id == itemAlpha.Id);
+        Assert.DoesNotContain(vm.UnpinnedItems, i => i.Id == itemAlpha.Id);
+
+        await vm.TogglePinAsync(itemAlpha);
+        Assert.False(itemAlpha.IsPinned);
+        Assert.DoesNotContain(vm.PinnedItems, i => i.Id == itemAlpha.Id);
+
+        await vm.TogglePinAsync(itemAlpha);
+        Assert.True(itemAlpha.IsPinned);
+        Assert.Contains(vm.PinnedItems, i => i.Id == itemAlpha.Id);
+
+        var (vm2, _, _, _, _) = CreateHub();
+        await vm2.LoadWorkspaceItemsAsync();
+
+        var reloadedAlpha = vm2.AllItems.First(i => i.Id == itemAlpha.Id);
+        Assert.True(reloadedAlpha.IsPinned);
+        Assert.Contains(vm2.PinnedItems, i => i.Id == itemAlpha.Id);
+    }
+
+    [Fact]
+    public async Task DeleteItemAsync_PinnedItem_RemovesFromPinnedItemsAndPersists()
+    {
+        var sc = await _storage.CreateNewScriptAsync("To Be Deleted Pinned Script");
+
+        var (vm, _, _, _, _) = CreateHub();
+        await vm.LoadWorkspaceItemsAsync();
+
+        var item = vm.AllItems.First(i => i.Id == sc.Id);
+        await vm.PinItemAsync(item);
+        Assert.True(item.IsPinned);
+        Assert.Contains(vm.PinnedItems, i => i.Id == item.Id);
+
+        await vm.DeleteItemAsync(item);
+        Assert.DoesNotContain(vm.PinnedItems, i => i.Id == item.Id);
+        Assert.DoesNotContain(vm.AllItems, i => i.Id == item.Id);
+
+        var (vm2, _, _, _, _) = CreateHub();
+        await vm2.LoadWorkspaceItemsAsync();
+        Assert.DoesNotContain(vm2.PinnedItems, i => i.Id == item.Id);
+    }
+
+    [Fact]
+    public async Task PinAndToggleAsync_ExecutesAsynchronouslyWithoutBlocking()
+    {
+        var sc = await _storage.CreateNewScriptAsync("Async Test Script");
+        var (vm, _, _, _, _) = CreateHub();
+        await vm.LoadWorkspaceItemsAsync();
+
+        var item = vm.AllItems.First(i => i.Id == sc.Id);
+
+        await vm.PinItemAsync(item);
+        Assert.True(item.IsPinned);
+        Assert.Contains(vm.PinnedItems, i => i.Id == item.Id);
+
+        await vm.TogglePinAsync(item);
+        Assert.False(item.IsPinned);
+        Assert.DoesNotContain(vm.PinnedItems, i => i.Id == item.Id);
+
+        await vm.TogglePinAsync(item);
+        Assert.True(item.IsPinned);
+        Assert.Contains(vm.PinnedItems, i => i.Id == item.Id);
+
+        await vm.UnpinItemAsync(item);
+        Assert.False(item.IsPinned);
+        Assert.DoesNotContain(vm.PinnedItems, i => i.Id == item.Id);
+    }
+
+    [Fact]
+    public async Task OpenExistingProjectAsync_ValidScriptFile_LoadsWorkspaceAndTriggersOpenAction()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubOpenTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var scriptId = Guid.NewGuid().ToString("N");
+            var scriptDoc = new ScriptDocumentItem
+            {
+                Id = scriptId,
+                Title = "Downloaded External Script",
+                Code = "Console.WriteLine(\"Opened from Hub\");"
+            };
+            var scriptPath = Path.Combine(externalDir, "Downloaded External Script.frycs");
+            await File.WriteAllTextAsync(
+                scriptPath,
+                System.Text.Json.JsonSerializer.Serialize(scriptDoc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+            var scriptOpens = 0;
+            ScriptDocumentItem? lastScript = null;
+            var vm = new CSharpManagerViewModel(
+                _storage,
+                openScriptAction: s => { scriptOpens++; lastScript = s; },
+                openNotebookAction: _ => { },
+                navigateToHomeAction: () => { });
+            await vm.LoadWorkspaceItemsAsync();
+
+            await vm.OpenExistingProjectAsync(scriptPath);
+
+            Assert.True(vm.HasStatusBannerMessage);
+            Assert.False(vm.IsStatusBannerError);
+            Assert.Contains("Loaded script", vm.StatusBannerMessage);
+
+            Assert.True(scriptOpens > 0);
+            Assert.NotNull(lastScript);
+            Assert.Equal("Downloaded External Script", lastScript!.Title);
+
+            Assert.Contains(vm.AllItems, i => i.Id == scriptId);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 }

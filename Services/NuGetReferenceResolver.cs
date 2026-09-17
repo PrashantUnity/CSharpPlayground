@@ -184,9 +184,6 @@ public class NuGetReferenceResolver
     {
         if (!visited.Add(packageId)) return;
 
-        // 1. Generic Host Unification
-        // If the host process already has the assembly loaded, prioritize host runtime compatibility
-        // to avoid dual-identity ALC clashes or native symbol collision.
         var hostAssembly = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => string.Equals(a.GetName().Name, packageId, StringComparison.OrdinalIgnoreCase));
 
@@ -222,7 +219,6 @@ public class NuGetReferenceResolver
             return;
         }
 
-        // 2. Local NuGet Cache or On-Demand Download
         string? selectedVersionDir = null;
         var packageDir = Path.Combine(_globalPackagesFolder, packageId.ToLowerInvariant());
 
@@ -233,7 +229,6 @@ public class NuGetReferenceResolver
 
         if (selectedVersionDir == null)
         {
-            // Attempt on-demand restore from NuGet v3 FlatContainer
             selectedVersionDir = await DownloadAndExtractPackageAsync(packageId, requestedVersion, result, ct);
         }
 
@@ -262,22 +257,6 @@ public class NuGetReferenceResolver
 
                     try
                     {
-                        // Per-assembly host unification. The top-level "Generic Host Unification" step
-                        // above only matches when the *package id itself* names an already-loaded
-                        // assembly, so it misses this common case: a transitive dependency (e.g. package
-                        // "Avalonia", pulled in because it's a UI-framework package another package like
-                        // ScottPlot.Avalonia depends on) whose nuspec pins a lower-bound version that
-                        // doesn't exactly match whatever the host app currently has loaded. When that
-                        // exact lower-bound version also happens to be sitting in the local NuGet cache
-                        // (e.g. from restoring this very solution against an older Avalonia release), the
-                        // old code below would silently add a second, differently-versioned copy of e.g.
-                        // Avalonia.Controls.dll as its own MetadataReference. Roslyn does not unify same-
-                        // named-but-different-assembly types the way the CLR's loader does, so a type from
-                        // the downloaded copy (like ScottPlot.Avalonia's AvaPlot : Avalonia.Controls.
-                        // UserControl) then fails to convert to the host's own Control type — exactly the
-                        // type Display.Control's parameter uses — even though nothing is wrong with the
-                        // user's code. Checking per-DLL (not just per-package-id) against already-loaded
-                        // host assemblies catches this for every sibling DLL in the resolved package.
                         var dllSimpleName = Path.GetFileNameWithoutExtension(dll);
                         var hostMatch = AppDomain.CurrentDomain.GetAssemblies()
                             .FirstOrDefault(a => string.Equals(a.GetName().Name, dllSimpleName, StringComparison.OrdinalIgnoreCase)
@@ -310,13 +289,11 @@ public class NuGetReferenceResolver
             }
         }
 
-        // 3. Universal Native Asset Resolution
         if (firstLoadedAssembly != null)
         {
             EnsureNativeAssetsResolved(firstLoadedAssembly, result, selectedVersionDir);
         }
 
-        // 4. Universal Transitive Dependency Resolution (.nuspec)
         await ResolveTransitiveDependenciesAsync(selectedVersionDir, packageId, result, visited, ct);
     }
 
@@ -486,7 +463,6 @@ public class NuGetReferenceResolver
 
         var candidateDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Host Application Directories
         var hostBases = new[] { AppDomain.CurrentDomain.BaseDirectory, AppContext.BaseDirectory }.Distinct();
         foreach (var hb in hostBases)
         {
@@ -501,7 +477,6 @@ public class NuGetReferenceResolver
             discovered.AddRange(directMatches);
         }
 
-        // 2. Package Directory runtimes
         if (!string.IsNullOrEmpty(packageDir) && Directory.Exists(packageDir))
         {
             foreach (var rid in rids)
@@ -512,7 +487,6 @@ public class NuGetReferenceResolver
             candidateDirs.Add(Path.Combine(packageDir, "native"));
         }
 
-        // 3. Satellite Native Packages in Global Cache (matched by active version or assembly version)
         if (Directory.Exists(_globalPackagesFolder))
         {
             var asmLower = asmName.ToLowerInvariant();
@@ -528,7 +502,6 @@ public class NuGetReferenceResolver
             {
                 string? matchedVerDir = null;
 
-                // Priority 1: Exact version match with active version
                 if (!string.IsNullOrEmpty(activeVersion))
                 {
                     var exact = Path.Combine(satPkg, activeVersion);
@@ -538,7 +511,6 @@ public class NuGetReferenceResolver
                     }
                 }
 
-                // Priority 2: Filter by assembly version (Major.Minor)
                 if (matchedVerDir == null)
                 {
                     var versions = Directory.GetDirectories(satPkg);

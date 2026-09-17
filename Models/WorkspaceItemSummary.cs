@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -10,33 +11,47 @@ public enum WorkspaceItemKind
     Notebook
 }
 
-public class WorkspaceItemSummary
+public class WorkspaceItemSummary : ObservableObject
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = "General";
     public WorkspaceItemKind Kind { get; set; } = WorkspaceItemKind.Script;
-    public string FolderPath { get; set; } = string.Empty; // "" = root; e.g. "Reports/Q1" — computed from real storage, never persisted in the document itself
+    public string FolderPath { get; set; } = string.Empty;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public int ExecutionCount { get; set; }
-    public int CellCount { get; set; } // Only relevant for Notebooks
-    public string ExecutionMode { get; set; } = "Statements"; // Only relevant for Scripts
+    public int CellCount { get; set; }
+    public string ExecutionMode { get; set; } = "Statements";
+
+    private bool _isPinned;
+    public bool IsPinned
+    {
+        get => _isPinned;
+        set => SetProperty(ref _isPinned, value);
+    }
+
+    public string DisplayLocation => IsExternal
+        ? (!string.IsNullOrEmpty(ExternalWorkspaceName) ? $"Workspace: {ExternalWorkspaceName}" : FolderPath)
+        : (!string.IsNullOrEmpty(FolderPath) ? $"~/{FolderPath.TrimStart('/', '\\')}/" : "~/library/");
+
+    public string DisplayLocationTooltip => !string.IsNullOrEmpty(FolderPath)
+        ? FolderPath
+        : "Internal FryPDF Document Library";
 
     public bool IsNotebook => Kind == WorkspaceItemKind.Notebook;
     public bool IsScript => Kind == WorkspaceItemKind.Script;
     public string KindLabel => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeText => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeColor => KindBadgeForeground;
+    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : "Roslyn C# 13";
+    public bool HasRuntimeDot => IsScript;
 
-    // A rooted FolderPath means this document lives in a real folder outside the library, tracked via
-    // a .frynbproj/.frycsproj project file saved into that same folder (see LocalScriptStorageService).
     public bool IsExternal => !string.IsNullOrEmpty(FolderPath) && Path.IsPathRooted(FolderPath);
     public string ExternalWorkspaceName => IsExternal
         ? (Path.GetFileName(FolderPath.TrimEnd('/', '\\')) is { Length: > 0 } name ? name : FolderPath)
         : string.Empty;
 
-    // Category & Domain Pattern Recognition
     private bool IsAlgorithms =>
         Category.Equals("Algorithms", StringComparison.OrdinalIgnoreCase) ||
         Title.Contains("Two Sum", StringComparison.OrdinalIgnoreCase) ||
@@ -70,10 +85,6 @@ public class WorkspaceItemSummary
             : MaterialIconKind.FileCodeOutline
     };
 
-    // Notebook = amber (matches Notebook Studio's own Jupyter-style accent), Script = blue (matches
-    // the .cs file color already used in the Notebook explorer tree) — two colors is enough for a
-    // workspace list to scan at a glance without turning into a rainbow of one-off category hues.
-    // Backgrounds/borders are low-alpha tints of the same hue (kept dark enough for this theme).
     private const string NotebookAccentHex = "#D97706";
     private const string ScriptAccentHex = "#58A6FF";
     private string AccentHex => IsNotebook ? NotebookAccentHex : ScriptAccentHex;
@@ -109,10 +120,6 @@ public class WorkspaceItemSummary
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")} • Interactive C#"
         : $"{ExecutionMode} mode • Roslyn C# 13";
 
-    // Compact-row variant of DetailsSnippet: every item in the workspace uses the same Roslyn/
-    // Interactive-C# engine, so repeating that suffix on every single row is pure noise once there
-    // are more than a couple of items — it's still available via DetailsSnippet for detail-on-demand
-    // UI (e.g. an inspector panel) where the extra context is welcome rather than repetitive.
     public string ShortDetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")}"
         : ExecutionMode;

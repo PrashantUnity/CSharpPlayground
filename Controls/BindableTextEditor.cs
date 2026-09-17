@@ -79,10 +79,7 @@ public class BindableTextEditor : TextEditor
         ApplyThemeVariant();
         ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
-        // Install Breakpoint Gutter Margin at index 0 (left of line numbers)
         TextArea.LeftMargins.Insert(0, _breakpointMargin);
-
-        // Install Debug Paused Line Background Renderer
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value);
@@ -258,7 +255,6 @@ public class BindableTextEditor : TextEditor
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        // F9 to toggle breakpoint on caret line
         if (e.Key == Key.F9)
         {
             var line = TextArea.Caret.Line;
@@ -274,7 +270,6 @@ public class BindableTextEditor : TextEditor
             return;
         }
 
-        // Shift+Enter to execute cell and advance to next
         if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             if (ExecuteAndNextCommand != null && ExecuteAndNextCommand.CanExecute(null))
@@ -285,7 +280,6 @@ public class BindableTextEditor : TextEditor
             }
         }
 
-        // Ctrl+Enter or Cmd+Enter to execute the cell
         if (e.Key == Key.Enter && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
         {
             if (ExecuteCommand != null && ExecuteCommand.CanExecute(null))

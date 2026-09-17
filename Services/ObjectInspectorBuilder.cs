@@ -59,7 +59,6 @@ public static class ObjectInspectorBuilder
 
         visited.Add(obj);
 
-        // 1. Dictionaries
         if (obj is IDictionary dict)
         {
             foreach (DictionaryEntry entry in dict)
@@ -72,7 +71,6 @@ public static class ObjectInspectorBuilder
             return node;
         }
 
-        // 2. Collections / Arrays (Non-string)
         if (obj is IEnumerable enumerable and not string)
         {
             int idx = 0;
@@ -94,7 +92,6 @@ public static class ObjectInspectorBuilder
             return node;
         }
 
-        // 3. Complex Objects: Inspect public instance properties
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
             .ToList();
@@ -115,7 +112,6 @@ public static class ObjectInspectorBuilder
             node.Properties.Add(row);
         }
 
-        // Also inspect public instance fields that are not compiler-generated backing fields
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
             .Where(f => !f.Name.Contains("<") && !f.Name.Contains("k__BackingField"))
             .ToList();
@@ -159,7 +155,6 @@ public static class ObjectInspectorBuilder
 
         var valType = val.GetType();
 
-        // 1. Primitive / String / Scalar
         if (IsScalarType(valType))
         {
             return new ObjectInspectorPropertyRow
@@ -170,7 +165,6 @@ public static class ObjectInspectorBuilder
             };
         }
 
-        // 2. 1D Array or Collection of Scalars -> Format inline like "[ 1, 34, 45, 235, 25 ]"
         if (val is IEnumerable enumerable && IsCollectionOfScalars(val, out var inlineFormatted))
         {
             return new ObjectInspectorPropertyRow
@@ -181,7 +175,6 @@ public static class ObjectInspectorBuilder
             };
         }
 
-        // 3. Complex Nested Object
         if (depth <= maxDepth)
         {
             var childNode = BuildNode(val, depth, maxDepth, visited);

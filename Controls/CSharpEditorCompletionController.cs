@@ -51,7 +51,6 @@ public class CSharpEditorCompletionController : IDisposable
     {
         if (_completionWindow != null && !string.IsNullOrEmpty(e.Text))
         {
-            // If user types a dot while completion is open, close so dot triggers fresh member access
             if (e.Text == ".")
             {
                 _completionWindow.Close();
@@ -65,7 +64,6 @@ public class CSharpEditorCompletionController : IDisposable
 
         var ch = e.Text[0];
 
-        // 1. Immediate trigger on dot '.' for member access
         if (ch == '.')
         {
             _debounceTimer.Stop();
@@ -73,7 +71,6 @@ public class CSharpEditorCompletionController : IDisposable
             return;
         }
 
-        // 2. Debounced trigger when typing alphanumeric identifier characters
         if (char.IsLetterOrDigit(ch) || ch == '_')
         {
             if (_completionWindow == null)
@@ -98,7 +95,6 @@ public class CSharpEditorCompletionController : IDisposable
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        // Ctrl+Space or Cmd+Space manual trigger
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
         if (isModifier && e.Key == Key.Space)
         {
@@ -128,7 +124,6 @@ public class CSharpEditorCompletionController : IDisposable
 
         bool isDot = caretOffset > 0 && text[caretOffset - 1] == '.';
 
-        // Calculate start offset of current token/member
         int startOffset;
         string initialQuery = string.Empty;
 
@@ -172,7 +167,6 @@ public class CSharpEditorCompletionController : IDisposable
                 {
                     if (token.IsCancellationRequested) return;
 
-                    // Support focus within editor or its TextArea child
                     bool hasFocus = _editor.IsKeyboardFocusWithin || _editor.TextArea.IsFocused || explicitTrigger;
                     if (!hasFocus) return;
 
@@ -182,13 +176,12 @@ public class CSharpEditorCompletionController : IDisposable
                     {
                         StartOffset = startOffset,
                         CloseAutomatically = true,
-                        CloseWhenCaretAtBeginning = !isDot, // For dot completion, do NOT close when caret is at beginning!
+                        CloseWhenCaretAtBeginning = !isDot,
                         ExpectInsertionBeforeStart = false,
                         MaxHeight = 280,
                         MaxWidth = 480
                     };
 
-                    // Material Design 3 Expressive dark styling
                     _completionWindow.CompletionList.Background = new SolidColorBrush(Color.Parse("#14171F"));
                     _completionWindow.CompletionList.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
                     _completionWindow.CompletionList.BorderBrush = new SolidColorBrush(Color.Parse("#30363D"));
@@ -209,7 +202,6 @@ public class CSharpEditorCompletionController : IDisposable
 
                     _completionWindow.Show();
 
-                    // Immediately select best matching item upon opening
                     var currentCaret = _editor.CaretOffset;
                     var currentText = _editor.Text ?? string.Empty;
                     var effectiveQuery = initialQuery;
@@ -230,11 +222,9 @@ public class CSharpEditorCompletionController : IDisposable
             }
             catch (OperationCanceledException)
             {
-                // Debouncing cancellation
             }
             catch
             {
-                // Resiliently ignore UI threading or window dismiss errors
             }
         }, token);
     }

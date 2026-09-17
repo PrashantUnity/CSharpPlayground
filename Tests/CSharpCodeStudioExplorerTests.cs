@@ -11,11 +11,6 @@ using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
-// Code Studio had no Explorer/file-tree at all before this — Notebook Studio was the only place you
-// could browse folders, rename, delete, or duplicate. These tests cover the same ground for scripts:
-// tree building (including the external-project relevance filter, ported from Notebook Studio), and
-// the load-bearing part that's genuinely new here — switching which script is open WITHOUT leaving the
-// page, which Notebook Studio never had to solve since it uses tabs instead of one shared document.
 public class CSharpCodeStudioExplorerTests : IDisposable
 {
     private readonly string _testBaseDir;
@@ -86,9 +81,6 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         }
     }
 
-    // Same relevance rule as Notebook Studio: an external project only shows up while the currently
-    // open document belongs to it. Code Studio has just one open script (no tabs), so this is a
-    // simpler, single-folder version of the same filter.
     [Fact]
     public async Task PopulateExplorerTree_WithUnrelatedExternalScript_DoesNotShowIt()
     {
@@ -115,12 +107,6 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         }
     }
 
-    // The load-bearing scenario: Code Studio reuses one ViewModel instance across every script you
-    // open, so switching via the Explorer (as opposed to leaving and re-entering the page) never
-    // changes the View's DataContext reference. This verifies the VM-level half of that fix: Script
-    // and Code actually reflect the newly selected document, and RequestReloadEditorText fires so the
-    // View knows to push the new Code into the editor control (which OnDataContextChanged alone would
-    // never do for an in-place switch).
     [Fact]
     public async Task SwitchToScriptAsync_ToDifferentScript_UpdatesScriptAndCodeAndFiresReloadEvent()
     {
@@ -145,8 +131,6 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         Assert.Equal("// second script code", studio.Code);
         Assert.True(reloadFired);
 
-        // Switching away must have auto-saved the in-memory edit to the first script (mirrors the
-        // existing silent-save-before-navigating-away behavior of Back to Hub/Home).
         var reloadedFirst = await _testStorage.LoadScriptAsync(first.Id);
         Assert.Equal("// edited in memory, unsaved", reloadedFirst!.Code);
     }
@@ -210,14 +194,10 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
         try
         {
-            // Keep an unrelated script open so deleting the external one doesn't also have to decide
-            // what happens to the "currently open script no longer exists" case — that's not this test.
             var openScript = await _testStorage.CreateNewScriptAsync("Kept Open");
             await _testStorage.CreateNewScriptAsync("Only External", folderPath: externalDir);
             var studio = CreateStudio(openScript);
 
-            // The external group isn't relevant to "Kept Open" yet (relevance filter) — bring it into
-            // view the same way a user would: switch to the external script first.
             var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
             var externalDocId = summaries.Single(s => s.Title == "Only External").Id;
             var tempItem = new ExplorerItemViewModel { DocumentId = externalDocId, IsDirectory = false };
@@ -277,15 +257,6 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         Assert.Equal("New Name", reloaded!.Title);
     }
 
-    // Regression test for a real production hang: UpdateActiveScript used to finish by calling
-    // PopulateExplorerTree(), which blocks via GetAwaiter().GetResult() on tasks that can genuinely
-    // yield (LocalScriptStorageService's external project-file reads use real async file I/O). Called
-    // from a UI-thread event handler (NavigateToCodeStudio, an Explorer click) with a captured
-    // SynchronizationContext, that blocking wait deadlocks the instant the I/O needs to resume back on
-    // the very thread that's blocked waiting for it — "opening a script hangs the app". xUnit's default
-    // execution context doesn't reproduce this (no captured context to deadlock against), so this test
-    // installs a minimal single-threaded pump standing in for Avalonia's UI dispatcher and fails via
-    // timeout instead of hanging forever if UpdateActiveScriptAsync ever regresses to a blocking wait.
     [Fact]
     public async Task UpdateActiveScriptAsync_OnSingleThreadedUiLikeContext_DoesNotDeadlock()
     {
@@ -337,10 +308,30 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         }
     }
 
-    // Minimal stand-in for a UI dispatcher: a SynchronizationContext that queues posted callbacks and
-    // runs them one at a time on whichever thread calls RunOnCurrentThread(). Good enough to make an
-    // `await` capture "this thread" the same way Avalonia's dispatcher context does, which is exactly
-    // what a sync-over-async (`.GetAwaiter().GetResult()`) call needs in order to deadlock.
+    [Fact]
+    public async Task OpenExternalProjectAsync_ValidScriptFile_UpdatesActiveScriptAndExplorer()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioOpenTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var externalFile = Path.Combine(externalDir, "ImportedScript.cs");
+            await File.WriteAllTextAsync(externalFile, "System.Console.WriteLine(\"Imported!\");");
+
+            var initialScript = await _testStorage.CreateNewScriptAsync("Initial");
+            var studio = CreateStudio(initialScript);
+
+            await studio.OpenExternalProjectAsync(externalFile);
+
+            Assert.Equal("ImportedScript", studio.Script.Title);
+            Assert.Contains("Imported!", studio.Code);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
     private sealed class SingleThreadSynchronizationContext : SynchronizationContext
     {
         private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = new();

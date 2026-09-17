@@ -79,7 +79,6 @@ public partial class NotebookTabViewModel : ObservableObject
                     .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                     .FirstOrDefault()?.Trim() ?? string.Empty;
 
-                // Clean markdown heading tokens (#, ##, emojis)
                 line = line.TrimStart('#').Trim();
                 if (line.Length > 36) line = line.Substring(0, 33) + "...";
                 return string.IsNullOrWhiteSpace(line) ? "Markdown Cell" : $"Markdown: {line}";
@@ -219,17 +218,6 @@ public partial class NotebookTabViewModel : ObservableObject
             runAndSelectNextAction: RunCellAndSelectNextAsync);
     }
 
-    /// <summary>
-    /// Requests cooperative cancellation of whatever this tab's kernel is currently doing. This is
-    /// best-effort, not a guarantee: it reliably stops a cell before it starts, and stops genuinely
-    /// cancellable work (e.g. the NuGet resolver's network calls), but CancellationToken cancellation
-    /// cannot forcibly interrupt an already-running, non-yielding synchronous loop like `while(true){}`
-    /// — Roslyn scripting doesn't inject cancellation checks into the compiled loop body, and .NET has
-    /// no safe way to abort a running thread from outside it. Forcibly killing that case would need an
-    /// out-of-process (or at least a separately-killable-thread) execution model — a materially larger
-    /// change than this fix, and not attempted here. LINQPad solves this the same way: a separate,
-    /// killable child process, not a cancellation token.
-    /// </summary>
     [RelayCommand]
     public void InterruptExecution()
     {
@@ -253,9 +241,6 @@ public partial class NotebookTabViewModel : ObservableObject
         cell.ExecutionCount = ExecutionCounter;
         KernelStatusText = $"Executing Cell [{cell.ExecutionCount}]...";
 
-        // Starting a new run interrupts whatever this tab's kernel was previously doing — a tab has
-        // only one logical "current execution", mirroring Script Studio's Run/Stop semantics. This is
-        // also the safety net for a stuck cell: starting any other cell frees the kernel.
         _executionCts?.Cancel();
         _executionCts?.Dispose();
         _executionCts = new CancellationTokenSource();
@@ -529,8 +514,6 @@ public partial class NotebookTabViewModel : ObservableObject
         }
     }
 
-    /// <summary>Disposes every cell's live output (e.g. a Display.Animate control's timer) — call this
-    /// when the whole tab is closing, so nothing keeps animating/ticking in the background afterward.</summary>
     public void DisposeAllCellResources()
     {
         foreach (var cell in Cells)

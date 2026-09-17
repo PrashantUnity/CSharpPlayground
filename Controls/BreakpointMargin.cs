@@ -99,20 +99,19 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
 
     public override void Render(DrawingContext drawingContext)
     {
-        // 1. Draw a transparent hit-testable rectangle covering the entire margin
         drawingContext.DrawRectangle(Brushes.Transparent, null, new Rect(Bounds.Size));
 
         var textView = TextView;
         if (textView == null || !textView.VisualLinesValid) return;
 
-        var bpBrush = new SolidColorBrush(Color.Parse("#EF4444")); // M3 Red
+        var bpBrush = new SolidColorBrush(Color.Parse("#EF4444"));
         var bpPen = new Pen(new SolidColorBrush(Color.Parse("#B91C1C")), 1.2);
 
-        var pausedBrush = new SolidColorBrush(Color.Parse("#FBBF24")); // Amber Gold
+        var pausedBrush = new SolidColorBrush(Color.Parse("#FBBF24"));
         var pausedPen = new Pen(new SolidColorBrush(Color.Parse("#D97706")), 1.2);
 
-        var hoverBrush = new SolidColorBrush(Color.FromArgb(110, 239, 68, 68)); // Ghost hover helper fill
-        var hoverPen = new Pen(new SolidColorBrush(Color.FromArgb(190, 220, 38, 38)), 1.2); // Ghost border
+        var hoverBrush = new SolidColorBrush(Color.FromArgb(110, 239, 68, 68));
+        var hoverPen = new Pen(new SolidColorBrush(Color.FromArgb(190, 220, 38, 38)), 1.2);
         var highlightRingPen = new Pen(new SolidColorBrush(Color.FromArgb(120, 239, 68, 68)), 1.5);
 
         var centerX = Bounds.Width > 0 ? Bounds.Width / 2.0 : 12.0;
@@ -128,10 +127,8 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
             var hasBp = _breakpoints.Contains(lineNum);
             var isHovered = lineNum == _hoveredLine;
 
-            // 1. Active Breakpoint
             if (hasBp)
             {
-                // Hover highlight ring around active breakpoint
                 if (isHovered)
                 {
                     drawingContext.DrawEllipse(null, highlightRingPen, new Point(centerX, centerY), 7.5, 7.5);
@@ -139,7 +136,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
 
                 drawingContext.DrawEllipse(bpBrush, bpPen, new Point(centerX, centerY), 5.5, 5.5);
 
-                // If paused on this exact breakpoint, overlay a white play arrow
                 if (isPausedLine)
                 {
                     var arrowGeom = new StreamGeometry();
@@ -153,7 +149,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
                     drawingContext.DrawGeometry(Brushes.White, null, arrowGeom);
                 }
             }
-            // 2. Paused Line (without explicit breakpoint)
             else if (isPausedLine)
             {
                 var geometry = new StreamGeometry();
@@ -167,7 +162,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
 
                 drawingContext.DrawGeometry(pausedBrush, pausedPen, geometry);
             }
-            // 3. Hover Helper Ghost Indicator (VS Code / Visual Studio style)
             else if (isHovered)
             {
                 drawingContext.DrawEllipse(hoverBrush, hoverPen, new Point(centerX, centerY), 5.5, 5.5);
@@ -182,7 +176,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
 
         var pos = e.GetPosition(this);
 
-        // 1. Match against currently rendered VisualLines (pixel-perfect alignment with Render)
         foreach (var vl in textView.VisualLines)
         {
             var top = vl.VisualTop - textView.VerticalOffset;
@@ -193,7 +186,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
             }
         }
 
-        // 2. If pointer is past the bottom of all visual lines, do not select any line
         if (textView.VisualLines.Count > 0)
         {
             var lastVl = textView.VisualLines[^1];
@@ -204,7 +196,6 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
             }
         }
 
-        // 3. Fallback to TextView visual coordinate lookup
         var visualY = pos.Y + textView.VerticalOffset;
         var fallbackVl = textView.GetVisualLineFromVisualTop(visualY);
         return fallbackVl?.FirstDocumentLine.LineNumber ?? -1;

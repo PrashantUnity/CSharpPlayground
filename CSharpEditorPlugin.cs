@@ -69,9 +69,6 @@ public class CSharpEditorPlugin : IFryPlugin
 
     public Task ApplyAsync(IFryPluginContext ctx, CancellationToken ct = default)
     {
-        // Tracks the live host instance so shortcut/command-palette/ribbon actions (which only receive
-        // an IServiceProvider, not the ViewModel) can reach whichever Code Studio / Notebook Studio page
-        // is actually on screen. Reassigned every time ViewFactory runs (e.g. navigating away and back).
         CSharpStudioHostViewModel? activeHost = null;
 
         void NavigateToStudio(IServiceProvider sp)
@@ -84,7 +81,6 @@ public class CSharpEditorPlugin : IFryPlugin
             }
         }
 
-        // 1. Register Full-Viewport Workspace Studio Page in Left Sidebar Navigation
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
         {
             Id = "CSharpStudio",
@@ -105,7 +101,6 @@ public class CSharpEditorPlugin : IFryPlugin
             }
         });
 
-        // 2. Command Palette Integration
         var cmdReg = ctx.RegisterCommand(new CommandPaletteDescriptor
         {
             Id = "cmd.studio.csharpeditor",
@@ -118,7 +113,6 @@ public class CSharpEditorPlugin : IFryPlugin
             Action = NavigateToStudio
         });
 
-        // 3. Status Bar Widget Indicator
         var statusReg = ctx.RegisterStatusBarWidget(new StatusBarWidgetDescriptor
         {
             WidgetId = "frypdf.status.csharpeditor",
@@ -132,7 +126,6 @@ public class CSharpEditorPlugin : IFryPlugin
             }
         });
 
-        // 4. Dynamic Ribbon Action in Plugins Tab
         var ribbonActionReg = ctx.RegisterRibbonAction(new RibbonActionDescriptor
         {
             Id = "frypdf.ribbon.action.csharpeditor",
@@ -145,11 +138,6 @@ public class CSharpEditorPlugin : IFryPlugin
             Action = NavigateToStudio
         });
 
-        // 5. Register Keyboard Shortcuts. Every Action below calls the SAME ViewModel command the raw
-        // key handlers in CSharpCodeStudioView.axaml.cs / CSharpNotebookStudioView.axaml.cs /
-        // BindableTextEditor.cs already call for a plain keypress — so triggering these from the
-        // command palette or a shortcuts-settings UI (not just a raw keypress with the right control
-        // focused) now actually does something, instead of the previous `Action = _ => { }` no-ops.
         var shortcuts = new List<IDisposable>
         {
             ctx.RegisterShortcut(new ShortcutDescriptor
@@ -406,7 +394,6 @@ public class CSharpEditorPlugin : IFryPlugin
             })
         };
 
-        // 6. Clean Teardown
         ctx.RegisterEffect(() =>
         {
             navReg.Dispose();

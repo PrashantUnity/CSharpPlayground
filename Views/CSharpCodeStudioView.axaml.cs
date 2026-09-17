@@ -4,6 +4,7 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaEdit;
@@ -53,34 +54,21 @@ public partial class CSharpCodeStudioView : UserControl
             ApplyThemeVariant();
             ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
-            // 3. Editor Options: Active line highlight, tab indentation
             _editor.Options.HighlightCurrentLine = true;
             _editor.Options.ConvertTabsToSpaces = true;
             _editor.Options.IndentationSize = 4;
 
-            // 4. C# Smart Indentation
             _editor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(_editor.Options);
-
-            // 5. Code Folding Manager (Collapsible blocks, #region, comments, etc.)
             _foldingManager = FoldingManager.Install(_editor.TextArea);
-
-            // 6. Clean Gutter Margins: Remove ugly DottedLineMargin and style FoldingMargin
             PolishLeftMargins();
 
-            // 7. Install Breakpoint Gutter Margin & Debug Highlight Renderer
             _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
-            // 8. Integrated Search & Replace Panel (Ctrl+F / Cmd+F)
             _searchPanel = SearchPanel.Install(_editor);
-
-            // 9. Interactive Live Debug Hover Data Tip Controller — constructed in OnAttachedToVisualTree
-            // and disposed in OnDetachedFromVisualTree (see those overrides below) rather than here, so
-            // it doesn't outlive the view and leak its two DispatcherTimers + event subscriptions.
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
 
-            // 10. Event listeners
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
             _editor.KeyDown += OnEditorKeyDown;
@@ -88,6 +76,9 @@ public partial class CSharpCodeStudioView : UserControl
 
         DataContextChanged += OnDataContextChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
@@ -96,7 +87,13 @@ public partial class CSharpCodeStudioView : UserControl
 
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
-        // Ctrl+S / Cmd+S: Save Script
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.O)
+        {
+            _ = OpenProjectOrFileDialogAsync();
+            e.Handled = true;
+            return;
+        }
+
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
         {
             _ = _currentVm.SaveCommand.ExecuteAsync(null);
@@ -104,7 +101,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // F5: Debug or Continue
         if (e.Key == Key.F5 && !e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             if (_currentVm.IsPaused)
@@ -121,7 +117,6 @@ public partial class CSharpCodeStudioView : UserControl
             }
         }
 
-        // Shift+F5: Stop Debugging / Execution
         if (e.Key == Key.F5 && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (_currentVm.IsDebugging || _currentVm.IsExecuting))
         {
             if (_currentVm.IsDebugging)
@@ -136,7 +131,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // Ctrl+Shift+P / Cmd+Shift+P: References
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
         {
             _currentVm.SelectedLeftTabIndex = _currentVm.SelectedLeftTabIndex == 1 ? 0 : 1;
@@ -204,7 +198,6 @@ public partial class CSharpCodeStudioView : UserControl
     {
         if (_editor == null) return;
 
-        // Eliminate DottedLineMargin to remove the awkward dotted vertical gutter line
         for (int i = _editor.TextArea.LeftMargins.Count - 1; i >= 0; i--)
         {
             var margin = _editor.TextArea.LeftMargins[i];
@@ -298,10 +291,6 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
-    // Fired only when the underlying script identity actually changes (UpdateActiveScriptAsync, e.g. from
-    // the Explorer sidebar) — not on every keystroke — so this can safely push text into the editor
-    // without the _isUpdatingText guard here ever fighting normal typing. Mirrors the exact one-time
-    // push already done in OnDataContextChanged for the initial script.
     private void OnReloadEditorText()
     {
         if (_editor == null || _currentVm == null) return;
@@ -341,7 +330,6 @@ public partial class CSharpCodeStudioView : UserControl
 
         _currentVm.Code = _editor.Text;
 
-        // Debounce code folding update
         _foldingTimer.Stop();
         _foldingTimer.Start();
     }
@@ -358,7 +346,6 @@ public partial class CSharpCodeStudioView : UserControl
     {
         if (_editor == null) return;
 
-        // F9: Toggle breakpoint on caret line
         if (e.Key == Key.F9)
         {
             _currentVm?.ToggleBreakpoint(_editor.TextArea.Caret.Line);
@@ -366,7 +353,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // F5: Debug or Continue
         if (e.Key == Key.F5 && !e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             if (_currentVm?.IsPaused == true)
@@ -383,7 +369,6 @@ public partial class CSharpCodeStudioView : UserControl
             }
         }
 
-        // F10: Step Over
         if (e.Key == Key.F10 && _currentVm?.IsPaused == true)
         {
             _currentVm.StepOver();
@@ -391,7 +376,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // F11: Step Into
         if (e.Key == Key.F11 && _currentVm?.IsPaused == true)
         {
             _currentVm.StepInto();
@@ -399,7 +383,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // Shift+F5: Stop Debugging
         if (e.Key == Key.F5 && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _currentVm?.IsDebugging == true)
         {
             _currentVm.StopDebug();
@@ -411,7 +394,6 @@ public partial class CSharpCodeStudioView : UserControl
 
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
-        // Ctrl+Shift+[ to fold block at caret
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemOpenBrackets || e.Key == Key.Oem4))
         {
             ToggleFoldAtCaret(fold: true);
@@ -419,7 +401,6 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        // Ctrl+Shift+] to unfold block at caret
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemCloseBrackets || e.Key == Key.Oem6))
         {
             ToggleFoldAtCaret(fold: false);
@@ -494,6 +475,85 @@ public partial class CSharpCodeStudioView : UserControl
         catch
         {
             // Ignore invalid line index if text modified
+        }
+    }
+
+    public async void OnOpenProjectClick(object? sender, RoutedEventArgs e)
+    {
+        await OpenProjectOrFileDialogAsync();
+    }
+
+    private async Task OpenProjectOrFileDialogAsync()
+    {
+        if (_currentVm == null) return;
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.StorageProvider is not { } storageProvider) return;
+
+        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open Project or Script File",
+            AllowMultiple = false,
+            FileTypeFilter = new List<FilePickerFileType>
+            {
+                new("FryPDF Project / Document (*.frycsproj, *.frynbproj, *.frycs, *.frynb, *.csproj, *.cs, *.csx, *.zip)")
+                {
+                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.csproj", "*.cs", "*.csx", "*.zip" }
+                },
+                new("C# Files (*.cs, *.csx, *.frycs)")
+                {
+                    Patterns = new[] { "*.cs", "*.csx", "*.frycs" }
+                },
+                new("C# Notebooks (*.frynb, *.frynbproj)")
+                {
+                    Patterns = new[] { "*.frynb", "*.frynbproj" }
+                },
+                new("Project Archives (*.zip)")
+                {
+                    Patterns = new[] { "*.zip" }
+                },
+                new("All Files (*.*)")
+                {
+                    Patterns = new[] { "*.*" }
+                }
+            }
+        });
+
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)
+        {
+            await _currentVm.OpenExternalProjectAsync(filePath);
+        }
+    }
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        if (e.DataTransfer.Contains(DataFormat.File))
+        {
+            e.DragEffects = DragDropEffects.Copy;
+            e.Handled = true;
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
+        }
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        if (_currentVm == null) return;
+
+        if (e.DataTransfer.Contains(DataFormat.File))
+        {
+            var files = e.DataTransfer.TryGetFiles();
+            if (files != null)
+            {
+                var first = files.FirstOrDefault();
+                if (first != null && first.TryGetLocalPath() is { } localPath)
+                {
+                    await _currentVm.OpenExternalProjectAsync(localPath);
+                    e.Handled = true;
+                }
+            }
         }
     }
 }

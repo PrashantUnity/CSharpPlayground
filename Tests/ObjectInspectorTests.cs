@@ -51,23 +51,18 @@ public class ObjectInspectorTests
         Assert.NotNull(node);
         Assert.Equal("TestPeople", node.HeaderTitle);
         Assert.True(node.IsExpanded);
-
-        // Find Name property
         var nameProp = node.Properties.FirstOrDefault(p => p.Name == "Name");
         Assert.NotNull(nameProp);
         Assert.Equal(string.Empty, nameProp.SimpleValueText);
 
-        // Find Class property
         var classProp = node.Properties.FirstOrDefault(p => p.Name == "Class");
         Assert.NotNull(classProp);
         Assert.Equal(string.Empty, classProp.SimpleValueText);
 
-        // Find Numbers property (should be formatted inline array)
         var numbersProp = node.Properties.FirstOrDefault(p => p.Name == "Numbers");
         Assert.NotNull(numbersProp);
         Assert.Equal("[ 1, 34, 45, 235, 25 ]", numbersProp.SimpleValueText);
 
-        // Find Another property (should be <null>)
         var anotherProp = node.Properties.FirstOrDefault(p => p.Name == "Another");
         Assert.NotNull(anotherProp);
         Assert.True(anotherProp.IsNull);
@@ -82,9 +77,8 @@ public class ObjectInspectorTests
             Name = "Code",
             Class = "II"
         };
-        people.Another = people; // Circular self-reference!
+        people.Another = people;
 
-        // Must not throw StackOverflowException or loop forever!
         var node = ObjectInspectorBuilder.Build(people);
 
         Assert.NotNull(node);
@@ -98,7 +92,6 @@ public class ObjectInspectorTests
         Assert.NotNull(classProp);
         Assert.Equal("II", classProp.SimpleValueText);
 
-        // Another should be a complex child node pointing back to TestPeople
         var anotherProp = node.Properties.FirstOrDefault(p => p.Name == "Another");
         Assert.NotNull(anotherProp);
         Assert.True(anotherProp.IsComplexChild);
@@ -137,7 +130,6 @@ public class ObjectInspectorTests
     {
         var kernel = new NotebookExecutionKernel();
 
-        // 1. Array/List inline evaluation (matches Screenshot 1)
         string liveConsole = "";
         RichCellOutput? richOutput = null;
 
@@ -149,7 +141,6 @@ public class ObjectInspectorTests
         Assert.True(r1.Success);
         Assert.Contains("[ 1, 3, 4, 5, 6, 7, 8, 10 ]", liveConsole);
 
-        // 2. Class definition (matches Screenshot 1 & 2)
         var r2 = await kernel.ExecuteCellAsync(@"
 public class NotebookSamplePerson
 {
@@ -159,7 +150,6 @@ public class NotebookSamplePerson
 }");
         Assert.True(r2.Success);
 
-        // 3. Object evaluation (matches Screenshot 2 & 3)
         liveConsole = "";
         richOutput = null;
         var r3 = await kernel.ExecuteCellAsync(

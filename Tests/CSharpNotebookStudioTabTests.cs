@@ -47,9 +47,6 @@ public class CSharpNotebookStudioTabTests : IDisposable
             backToHubAction: () => { },
             backToHomeAction: () => { });
     }
-
-    /// <summary>Adds a second root-level notebook item directly to the tree, bypassing storage — used
-    /// by tests that just need a second openable item, not a full create-and-persist round trip.</summary>
     private ExplorerItemViewModel EnsureSecondNotebookItem(CSharpNotebookStudioViewModel studio, string name = "Second_Notebook.frynb")
     {
         var existing = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == name);
@@ -106,7 +103,6 @@ public class CSharpNotebookStudioTabTests : IDisposable
         var docFile = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(docFile);
 
-        // Click same file again
         await studio.OpenDocumentAsync(docFile);
 
         Assert.Single(studio.Tabs);
@@ -123,14 +119,12 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
 
-        // Switch back to first tab
         studio.SelectTab(studio.Tabs[0]);
 
         Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab.Title);
         Assert.True(studio.Tabs[0].IsActive);
         Assert.False(studio.Tabs[1].IsActive);
 
-        // Verify Explorer selection updated
         var firstItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(firstItem);
         Assert.True(firstItem.IsSelected);
@@ -147,7 +141,6 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.Equal(2, studio.Tabs.Count);
         Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
 
-        // Close the active tab
         studio.CloseTab(studio.ActiveTab);
 
         Assert.Single(studio.Tabs);
@@ -186,14 +179,12 @@ public class CSharpNotebookStudioTabTests : IDisposable
         activeTab.Cells.Add(mdCellVm);
         activeTab.SelectCell(mdCellVm);
 
-        // Verify breadcrumb segment formatting
         Assert.Equal("Library", studio.BreadcrumbFolder);
         Assert.Equal("Document Automation Notebook.frynb", studio.BreadcrumbDocument);
         Assert.Equal("Markdown: 📓 Polyglot Notebook Demo Copy", activeTab.ActiveCellBadgeText);
         Assert.Equal("FormatHeaderPound", activeTab.ActiveCellTypeIcon);
         Assert.Equal("#4EC9B0", activeTab.ActiveCellTypeColor);
 
-        // Ensure no bizarre "> C# # 📓" concatenation
         Assert.DoesNotContain("C# #", studio.BreadcrumbText);
         Assert.DoesNotContain("> C#", studio.BreadcrumbText);
     }
@@ -245,7 +236,6 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal(2, studio.Tabs.Count);
 
-        // Delete from explorer
         await studio.DeleteExplorerItemAsync(secondFile);
 
         Assert.Single(studio.Tabs);
@@ -263,7 +253,6 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.NotNull(folder);
         Assert.Equal("New Folder", folder.Name);
 
-        // Simulate the tree being rebuilt (e.g. app restart / manual refresh)
         await studio.RefreshExplorer();
 
         Assert.Contains(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == "New Folder");
@@ -306,7 +295,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
         var child = folder.Children.First();
         var childId = child.DocumentId!;
 
-        Assert.Equal(2, studio.Tabs.Count); // initial tab + the new file (opened automatically)
+        Assert.Equal(2, studio.Tabs.Count);
 
         await studio.DeleteExplorerItemAsync(folder);
 
@@ -379,7 +368,6 @@ Console.WriteLine(""Success!"");";
     public async Task NotebookKernel_ExecuteSkiaSharpLegacy4Preview_GracefullyBindsToHostRuntime()
     {
         var kernel = new NotebookExecutionKernel();
-        // Legacy directive that previously triggered TypeInitializationException
         var code = @"#r ""nuget: SkiaSharp, 4.154.0-preview.1.26454.9""
 using SkiaSharp;
 
@@ -485,12 +473,6 @@ Console.WriteLine(yaml.Trim());";
         Assert.Contains("Category: UniversalNuGet", result.ConsoleOutput);
     }
 
-    // Proves the "Live Animation Studio" template's two cells actually compile and run through the
-    // real kernel end to end (same reasoning as the ScottPlot test above: sample code that ships in a
-    // template but is never executed anywhere is exactly the kind of thing that silently rots). Cell 1
-    // is pulled straight from CodeTemplateLibrary, the same way NotebookKernel_ExecuteTemplate_
-    // SkiaSharpGraphics_ExecutesSuccessfully above tests the real shipped InitialCode rather than a
-    // hand-copied duplicate.
     [Fact]
     public async Task NotebookKernel_AnimationStudioTemplateCells_BothPatternsExecuteSuccessfully()
     {
@@ -508,8 +490,6 @@ Console.WriteLine(yaml.Trim());";
         Assert.Equal(CellOutputKind.Control, animateRich?.Kind);
         Assert.NotNull(animateRich?.InteractiveControl);
 
-        // Secondary pattern: a cancellable frame loop (kept short here for test speed; the shipped
-        // template uses more frames at ~30fps for a smoother visual demo).
         var frameLoopCell = @"#r ""nuget: SkiaSharp, 3.119.4""
 using System;
 using System.Threading.Tasks;
@@ -546,20 +526,6 @@ Console.WriteLine($""Rendered {totalFrames} frames."");";
         Assert.Contains("Rendered 5 frames.", frameLoopResult.ConsoleOutput);
     }
 
-    // ScottPlot.Avalonia ships its own Avalonia Control (AvaPlot) rather than just plain managed code
-    // (Newtonsoft.Json/YamlDotNet above) or native-only assets (SkiaSharp above) — this was the one
-    // combination the NuGet-resolver design explicitly flagged as untested: a #r nuget package whose
-    // own type gets handed straight to Display.Control. Version pinned to the latest stable release
-    // published on nuget.org at the time this test was written.
-    //
-    // This test caught a real bug: ScottPlot.Avalonia 5.1.59's nuspec depends on Avalonia >= 12.0.0,
-    // and when that exact lower-bound version also happens to sit in the local NuGet cache (as it does
-    // on any machine that has ever restored this solution against an older Avalonia release), the
-    // resolver added a second, differently-versioned copy of Avalonia.Controls.dll as its own
-    // MetadataReference alongside the host's actual (newer) copy — so ScottPlot's AvaPlot control
-    // failed to convert to Display.Control's Control parameter, two same-named-but-distinct types.
-    // Fixed in NuGetReferenceResolver by unifying per-DLL against already-loaded host assemblies, not
-    // just per top-level package id.
     [Fact]
     public async Task NotebookKernel_ExecuteScottPlotAvalonia_NuGetPackageShippingItsOwnAvaloniaControl_ExecutesSuccessfully()
     {
@@ -578,9 +544,6 @@ Console.WriteLine($""Rendered {totalFrames} frames."");";
         Assert.NotNull(scatterRich?.InteractiveControl);
         Assert.Contains("Live, interactive ScottPlot chart rendered", scatterResult.ConsoleOutput);
 
-        // Second cell, same kernel/session, no #r of its own — proves ScottPlot.Avalonia stays
-        // resolved (and correctly host-unified) across cells, the same way any other cross-cell state
-        // already persists in a notebook.
         var barCell = @"var barPlot = new AvaPlot { Width = 520, Height = 300 };
 var bp = barPlot.Plot;
 
@@ -610,13 +573,6 @@ Console.WriteLine(""Second chart rendered!"");";
         Assert.Contains("Second chart rendered!", barResult.ConsoleOutput);
     }
 
-    // NOTE: a bare `while (true) { }` cannot be tested here — CancellationToken cancellation is
-    // cooperative, and Roslyn scripting does not inject cancellation checks into the compiled loop
-    // body. An already-running, non-yielding synchronous loop cannot be interrupted this way (same
-    // fundamental limitation as ScriptExecutionEngine's "Program" mode). Confirmed empirically: an
-    // earlier version of this test with that exact code hung the whole run at 100% CPU. What the
-    // cancellation plumbing DOES reliably guarantee is covered below: a token already cancelled before
-    // execution starts is honored immediately, without ever running the cell body.
     [Fact]
     public async Task NotebookKernel_AlreadyCancelledToken_ReturnsWasCancelledWithoutRunning()
     {
@@ -670,13 +626,6 @@ Console.WriteLine(""Second chart rendered!"");";
     [Fact]
     public async Task ConsoleRoutingContext_ConcurrentScopes_DoNotBlockOrCrossContaminate()
     {
-        // Regression test for the ConsoleRedirectionGate -> ConsoleRoutingContext migration: the old
-        // gate held a process-wide lock for a cell's *entire* execution, so a long-running cell in one
-        // tab fully stalled every other tab (and Code Studio) for its whole duration. ConsoleRoutingContext
-        // routes Console.Out per-execution via an AsyncLocal scope instead, so concurrent scopes should
-        // neither block each other nor see each other's output. Exercises ConsoleRoutingContext directly
-        // (it's internal; see AssemblyInfo.cs's InternalsVisibleTo) rather than through a full Roslyn
-        // kernel run, so the timing assertion measures only the routing mechanism, not compile overhead.
         async Task<string> RunScopedAsync(string marker, int delayMs)
         {
             var writer = new StringWriter();
@@ -702,18 +651,12 @@ Console.WriteLine(""Second chart rendered!"");";
         Assert.Contains("FROM-B-ONLY", outputB);
         Assert.DoesNotContain("FROM-A-ONLY", outputB);
 
-        // Two 400ms delays running concurrently should take ~400ms total; serialized behind a
-        // process-wide lock (the old bug) would take ~800ms+.
         Assert.True(sw.ElapsedMilliseconds < 700, $"Expected concurrent execution (~400ms), took {sw.ElapsedMilliseconds}ms — looks serialized.");
     }
 
     [Fact]
     public async Task NotebookKernel_LoopCheckingDisplayCancellationToken_IsActuallyInterruptibleMidCell()
     {
-        // Proves the point of Display.CancellationToken/ThrowIfCancellationRequested(): unlike a bare
-        // loop (which Roslyn scripting cannot interrupt mid-submission — see the design notes on
-        // InteractiveCancellationContext), a loop that cooperatively checks the token AND passes it into
-        // Task.Delay can be stopped well before it would naturally finish.
         var kernel = new NotebookExecutionKernel();
         using var cts = new System.Threading.CancellationTokenSource();
 
@@ -726,7 +669,7 @@ for (int i = 0; i < 1000; i++)
 Console.WriteLine(""should not be reached"");";
 
         var executeTask = kernel.ExecuteCellAsync(code, ct: cts.Token);
-        await Task.Delay(60); // let a handful of iterations run (5ms each)
+        await Task.Delay(60);
         cts.Cancel();
 
         var result = await executeTask;
@@ -775,7 +718,6 @@ Console.WriteLine(""should not be reached"");";
         Assert.NotNull(studio.ActiveTab);
         Assert.Equal("SkiaSharp Graphics & Image Generation Copy.frynb", studio.ActiveTab.Title);
 
-        // Verify document was added to the Explorer tree root and selected
         var expItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
         Assert.NotNull(expItem);
         Assert.True(expItem.IsSelected);
@@ -787,7 +729,6 @@ Console.WriteLine(""should not be reached"");";
     {
         var studio = CreateStudio();
 
-        // Create and save a notebook in test storage
         var uniqueTitle = $"StorageTest_{Guid.NewGuid():N}";
         var newNb = new NotebookDocumentItem
         {
@@ -801,7 +742,6 @@ Console.WriteLine(""should not be reached"");";
         });
         await _testStorage.SaveNotebookAsync(newNb);
 
-        // Add to explorer root
         var itemVm = new ExplorerItemViewModel
         {
             Name = $"{uniqueTitle}.frynb",
@@ -813,7 +753,6 @@ Console.WriteLine(""should not be reached"");";
         };
         studio.ExplorerRootItems.Add(itemVm);
 
-        // Click to open document
         await studio.OpenDocumentAsync(itemVm);
 
         Assert.Equal(2, studio.Tabs.Count);
@@ -867,17 +806,9 @@ Console.WriteLine(""should not be reached"");";
         Assert.Equal("NotebookOutline", child.IconKind);
     }
 
-    // Reproduces a real leak found in a user's actual library: CSharpStudioHostViewModel constructs a
-    // fresh, untouched placeholder notebook on every launch just so Notebook Studio always has a tab
-    // open. Before this fix, BackToHub/BackToHome saved unconditionally, so simply navigating back to
-    // the Hub without ever touching that tab permanently wrote a brand-new junk notebook to disk —
-    // every single time. SaveAsync now skips entirely when the active tab was never modified.
     [Fact]
     public async Task SaveAsync_OnUntouchedTab_DoesNotPersistAnything()
     {
-        // LoadWorkspaceSummariesAsync auto-seeds the 8 starter templates the first time anything asks
-        // this fresh storage instance to load — capture that baseline before acting, exactly like
-        // CSharpManagerViewModelTests does, rather than asserting an empty library outright.
         var baseline = (await _testStorage.LoadWorkspaceSummariesAsync()).Count;
 
         var studio = CreateStudio();
@@ -905,7 +836,7 @@ Console.WriteLine(""should not be reached"");";
             backToHomeAction: () => { });
 
         studio.BackToHub();
-        await Task.Delay(200); // BackToHub fires SaveAsync fire-and-forget; let it finish
+        await Task.Delay(200);
 
         Assert.Equal(1, backToHubCalls);
         var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
@@ -930,12 +861,6 @@ Console.WriteLine(""should not be reached"");";
         Assert.False(studio.ActiveTab.IsModified);
     }
 
-    // Reproduces the real reported bug: a notebook saved outside the library (via the Manager's
-    // native folder-browser flow) has an absolute path for its FolderPath, and feeding that straight
-    // into the same folder-tree builder used for real library-relative paths shredded it into a chain
-    // of fake nested "folders" — one per path segment (e.g. "Users" > "yourname" > "Downloads" >
-    // "MyExternalFolder") — none of which exist in the library. It must instead show as a single
-    // group node named after just the immediate containing folder.
     [Fact]
     public async Task PopulateExplorerTree_ForExternallySavedDocument_GroupsUnderSingleParentFolderNode()
     {
@@ -944,13 +869,8 @@ Console.WriteLine(""should not be reached"");";
         {
             var doc = await _testStorage.CreateNewNotebookAsync("External Doc", folderPath: externalDir);
 
-            // The external project only shows up once something from it is actually open (see
-            // RebuildExplorerTree's relevance filter) — pass it as the studio's initial document
-            // rather than the default, matching how a user would really reach this state.
             var studio = CreateStudio(doc);
 
-            // Exactly one directory-type node at the root — the single group node — not a chain of
-            // fake folders matching every segment of the absolute path.
             var directoryRoots = studio.ExplorerRootItems.Where(x => x.IsDirectory).ToList();
             var groupNode = Assert.Single(directoryRoots);
             Assert.Equal("MyExternalFolder", groupNode.Name);
@@ -969,10 +889,6 @@ Console.WriteLine(""should not be reached"");";
         }
     }
 
-    // Defense in depth: even if something bypasses the "Delete" menu item's IsVisible="{Binding
-    // !IsExternalGroup}" guard, DeleteExplorerItemAsync itself must refuse to act on this node —
-    // otherwise DeleteFolderAsync would resolve its FullPath as-is (a real absolute directory outside
-    // the library) and recursively delete a folder on the user's computer this app doesn't manage.
     [Fact]
     public async Task DeleteExplorerItemAsync_OnExternalGroupNode_LeavesRealFolderAndTreeNodeIntact()
     {
@@ -995,11 +911,6 @@ Console.WriteLine(""should not be reached"");";
         }
     }
 
-    // Reproduces a second real bug found alongside the fake-folder one: SaveNotebookAsync (which
-    // Duplicate uses to persist a brand-new copy) had no way to know which folder a never-before-saved
-    // document belonged in, so it always fell back to the library root — duplicating a notebook that
-    // lived outside the library silently moved the copy back into the library instead of keeping it
-    // next to the original.
     [Fact]
     public async Task DuplicateExplorerItemAsync_ForExternallySavedNotebook_KeepsCopyInSameExternalFolder()
     {
@@ -1025,10 +936,6 @@ Console.WriteLine(""should not be reached"");";
         }
     }
 
-    // Reproduces the real reported bug: opening one notebook from one external folder ("hello") also
-    // showed a totally unrelated external folder ("I guess") in the same sidebar, just because
-    // something had been saved there at some point — every external folder ever touched was merged
-    // into one big workspace instead of only showing what's actually relevant to what's open.
     [Fact]
     public async Task PopulateExplorerTree_WithUnrelatedExternalProject_DoesNotShowTheUnrelatedOne()
     {
@@ -1039,7 +946,6 @@ Console.WriteLine(""should not be reached"");";
             var helloDoc = await _testStorage.CreateNewNotebookAsync("h", folderPath: helloDir);
             await _testStorage.CreateNewNotebookAsync("New I", folderPath: iGuessDir);
 
-            // Only "hello" is opened.
             var studio = CreateStudio(helloDoc);
 
             var externalGroups = studio.ExplorerRootItems.Where(x => x.IsExternalGroup).ToList();
@@ -1057,9 +963,6 @@ Console.WriteLine(""should not be reached"");";
         }
     }
 
-    // The external-group node is purely a display convenience (see RebuildExplorerTree) — once its
-    // last real document is deleted, it must disappear too rather than lingering as an empty folder
-    // until the next full tree rebuild.
     [Fact]
     public async Task DeleteExplorerItemAsync_LastDocumentInExternalGroup_RemovesTheNowEmptyGroupNode()
     {
@@ -1082,8 +985,6 @@ Console.WriteLine(""should not be reached"");";
         }
     }
 
-    // Companion to the test above: deleting one of SEVERAL documents in the same external folder must
-    // NOT remove the group node — only an empty group should ever be pruned.
     [Fact]
     public async Task DeleteExplorerItemAsync_OneOfMultipleDocumentsInExternalGroup_KeepsGroupNodeWithRemainingDocument()
     {
@@ -1093,8 +994,6 @@ Console.WriteLine(""should not be reached"");";
             var first = await _testStorage.CreateNewNotebookAsync("First", folderPath: externalDir);
             await _testStorage.CreateNewNotebookAsync("Second", folderPath: externalDir);
 
-            // Only "First" is opened, but "Second" must still appear too — the relevance filter shows
-            // the whole project once anything in it is open, not just the one document that's open.
             var studio = CreateStudio(first);
             var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
             Assert.Equal(2, groupNode.Children.Count);
@@ -1110,6 +1009,43 @@ Console.WriteLine(""should not be reached"");";
         {
             var root = Path.GetDirectoryName(externalDir)!;
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_ValidNotebookFile_LoadsNotebookAndSelectsTab()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_NotebookOpenTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var externalFile = Path.Combine(externalDir, "ImportedNotebook.frynb");
+            var doc = new NotebookDocumentItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = "ImportedNotebook",
+                Category = "Interactive",
+                Created = DateTime.UtcNow,
+                LastModified = DateTime.UtcNow
+            };
+            doc.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "Console.WriteLine(\"Notebook Imported\");"
+            });
+            var json = System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(externalFile, json);
+
+            var studio = CreateStudio();
+
+            await studio.OpenExternalProjectAsync(externalFile);
+
+            Assert.Contains(studio.Tabs, t => t.Notebook.Title == "ImportedNotebook");
+            Assert.Equal("ImportedNotebook", studio.ActiveTab?.Notebook.Title);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 }

@@ -455,6 +455,9 @@
                                 <Button Command="{Binding NewFolderCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Folder">
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
+                                <Button Click="OnOpenProjectClick" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Open Project or File... (Ctrl+O)">
+                                    <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
                                 <Button Command="{Binding RefreshExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Refresh Explorer">
                                     <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>

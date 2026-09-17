@@ -8,11 +8,10 @@ public static class ExpressionUnderCursorFinder
     {
         if (string.IsNullOrEmpty(lineText)) return (string.Empty, string.Empty, 0, 0);
 
-        int col0 = column1Based - 1; // Convert 1-based column to 0-based index
+        int col0 = column1Based - 1;
         if (col0 < 0) col0 = 0;
         if (col0 > lineText.Length) col0 = lineText.Length;
 
-        // If pointer is at end of line or on whitespace/delimiters, allow one step back
         if (col0 == lineText.Length || (!char.IsLetterOrDigit(lineText[col0]) && lineText[col0] != '_'))
         {
             if (col0 > 0 && (char.IsLetterOrDigit(lineText[col0 - 1]) || lineText[col0 - 1] == '_'))
@@ -25,7 +24,6 @@ public static class ExpressionUnderCursorFinder
             }
         }
 
-        // 1. Find identifier bounds [idStart, idEnd)
         int idStart = col0;
         while (idStart > 0 && (char.IsLetterOrDigit(lineText[idStart - 1]) || lineText[idStart - 1] == '_'))
         {
@@ -45,7 +43,6 @@ public static class ExpressionUnderCursorFinder
 
         string identifier = lineText.Substring(idStart, idEnd - idStart);
 
-        // 2. Expand backwards to find leading dotted chain (e.g. "environment" in "environment.Application")
         int chainStart = idStart;
         while (chainStart >= 2 && lineText[chainStart - 1] == '.' && (char.IsLetterOrDigit(lineText[chainStart - 2]) || lineText[chainStart - 2] == '_'))
         {
@@ -58,7 +55,6 @@ public static class ExpressionUnderCursorFinder
             chainStart = prevWordStart;
         }
 
-        // 3. Expand forwards to find trailing dotted chain (e.g. "Application" in "environment.Application")
         int chainEnd = idEnd;
         while (chainEnd < lineText.Length - 1 && lineText[chainEnd] == '.' && (char.IsLetterOrDigit(lineText[chainEnd + 1]) || lineText[chainEnd + 1] == '_'))
         {

@@ -186,7 +186,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
 
-        // Initialize primary open tab
         var initialTab = new NotebookTabViewModel(
             _notebook,
             folderName: "Library",
@@ -233,12 +232,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Idempotently makes sure a notebook is represented somewhere in the tree — used for tabs that
-    /// were opened before their document had a real place on disk. Since the tree is now derived
-    /// purely from real storage, a not-yet-persisted document is placed at the workspace root; once
-    /// saved into a real folder, the next refresh picks up its true location.
-    /// </summary>
     public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook)
     {
         var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
@@ -267,8 +260,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         if (tab == null) return;
 
         ActiveTab = tab;
-
-        // Highlight matching item in explorer
         HighlightExplorerItem(tab.Title);
     }
 
@@ -329,9 +320,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         newExpItem.StartRename();
     }
 
-    /// <summary>Fire-and-forget wrapper — required because ExplorerItemViewModel.OnItemClicked is a
-    /// plain Action, which can't hold an async method. Non-blocking, unlike the old .GetAwaiter()
-    /// .GetResult() call this replaces.</summary>
     private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
 
     public void OpenDocument(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
@@ -523,10 +511,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [RelayCommand]
     public async Task SaveAsync()
     {
-        // Skip entirely for a tab that's never actually been touched (e.g. the blank initial tab
-        // Studio Host constructs so there's always something open) — otherwise navigating back to
-        // the Hub without ever editing anything still persists a brand-new junk notebook to disk
-        // every single time, since BackToHub/BackToHome call this unconditionally.
         if (ActiveTab != null && ActiveTab.IsModified)
         {
             ActiveTab.Notebook.LastModified = DateTime.UtcNow;
@@ -592,17 +576,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (item == null) return;
 
-        // Defense in depth beyond hiding the "Delete" menu item: this node's FullPath is a real
-        // absolute directory outside the library (see RebuildExplorerTree) — DeleteFolderAsync would
-        // otherwise resolve it as-is (Path.Combine discards _libraryRoot for a rooted second argument)
-        // and recursively delete a real folder on the user's computer that this app doesn't manage.
         if (item.IsExternalGroup) return;
 
         if (item.IsDirectory)
         {
-            // Cascading delete: close every open tab for a document nested under this folder, then let
-            // the OS recursively delete the whole subtree in one call — no orphaned documents resurface
-            // on the next refresh, unlike the old fake-tree version of this method.
             var descendantIds = CollectDescendantDocumentIds(item);
             if (descendantIds.Count > 0)
             {
@@ -648,9 +625,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var parent = item.Parent;
             parent.Children.Remove(item);
 
-            // An external-group node is a lightweight visual grouping (see RebuildExplorerTree), not
-            // a real library folder — once the last document under it is gone, remove the now-empty
-            // node too instead of leaving it sitting in the tree until the next full refresh.
             if (parent.IsExternalGroup && parent.Children.Count == 0)
             {
                 ExplorerRootItems.Remove(parent);
@@ -734,10 +708,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             });
         }
 
-        // copyDoc has never been saved before, so SaveNotebookAsync's folderPath is what decides
-        // where it's actually written — without passing the original's external folder through here,
-        // duplicating a notebook that lives outside the library silently moved the copy back into the
-        // library root instead of keeping it next to the original.
         var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
         await _storageService.SaveNotebookAsync(copyDoc, externalFolderPath);
 
@@ -844,6 +814,49 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task OpenExternalProjectAsync(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            var result = await _storageService.OpenExternalProjectAsync(path);
+            if (!result.Success)
+            {
+                if (ActiveTab != null)
+                {
+                    ActiveTab.KernelStatusText = result.Message;
+                }
+                return;
+            }
+
+            await RefreshExplorer();
+
+            if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+            {
+                var loaded = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
+                if (loaded != null)
+                {
+                    UpdateActiveNotebook(loaded);
+                }
+            }
+
+            if (ActiveTab != null)
+            {
+                ActiveTab.KernelStatusText = result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
+            if (ActiveTab != null)
+            {
+                ActiveTab.KernelStatusText = $"Error opening project: {ex.Message}";
+            }
+        }
+    }
+
+    [RelayCommand]
     public async Task RefreshExplorer()
     {
         try
@@ -879,11 +892,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Synchronous entry point used ONLY from the constructor, which the host always constructs off the
-    /// UI thread (see CSharpStudioHostViewModel's Task.Run wrapping around child-ViewModel creation) —
-    /// safe to block here. Any UI-triggered refresh must go through the async RefreshExplorer() command.
-    /// </summary>
     public void PopulateExplorerTree()
     {
         try
@@ -899,12 +907,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Builds the visible tree purely from real storage: real folders (from LoadFolderPathsAsync) plus
-    /// real notebooks (from LoadWorkspaceSummariesAsync, placed under their actual FolderPath). No
-    /// hardcoded decorative folders and no fabricated demo documents — if it's not really on disk, it
-    /// doesn't appear here.
-    /// </summary>
     private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
     {
         ExplorerRootItems.Clear();
@@ -931,13 +933,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             GetOrCreateFolder(path);
         }
 
-        // A document saved outside the library (see LocalScriptStorageService's external-document
-        // tracking) has an absolute filesystem path for FolderPath, not a library-relative one.
-        // GetOrCreateFolder only understands the latter — feeding it an absolute path would shred it
-        // into a chain of fake nested "folders" (e.g. "Users" > "yourname" > "Downloads" > "Another")
-        // that don't correspond to anything in the library. Group these under a single node instead,
-        // named after just the immediate containing folder, keyed by the full absolute path so
-        // multiple documents from the same external folder still land together under one node.
         var externalGroupNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
 
         ExplorerItemViewModel GetOrCreateExternalGroup(string absolutePath)
@@ -946,7 +941,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
             var trimmed = absolutePath.TrimEnd('/', '\\');
             var name = Path.GetFileName(trimmed);
-            if (string.IsNullOrEmpty(name)) name = trimmed; // e.g. a drive root
+            if (string.IsNullOrEmpty(name)) name = trimmed;
 
             var node = CreateFolderItem(name, absolutePath, isExpanded: false, parent: null, isExternalGroup: true);
             AddToTree(null, node);
@@ -954,13 +949,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             return node;
         }
 
-        // Every external folder ever saved to is tracked forever (see LocalScriptStorageService), but
-        // that doesn't mean every one of them belongs in this sidebar at once — unlike the library,
-        // which is genuinely "everything you have," an external folder is closer to its own separate
-        // project. Only show one if something from it is actually open right now, the same way a real
-        // IDE doesn't dump every project you've ever opened into today's window. A project stays
-        // visible for as long as at least one of its documents has an open tab; closing the last one
-        // just means it won't reappear until the next refresh, not an immediate disappearance.
         var openDocumentIds = new HashSet<string>(Tabs.Select(t => t.Notebook.Id), StringComparer.OrdinalIgnoreCase);
         var relevantExternalFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var s in summaries)
@@ -995,7 +983,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             AddToTree(parent, docItem);
         }
 
-        // Ensure every open tab is represented even if its document hasn't reached storage yet
         foreach (var tab in Tabs.ToList())
         {
             EnsureDocumentInExplorer(tab.Notebook);
@@ -1115,15 +1102,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
 
-    // internal (not private) so tests can await the real rename flow directly instead of racing the
-    // fire-and-forget wrapper above, which UI callers use because ExplorerItemViewModel's callback
-    // properties are plain Action delegates that can't hold an async method.
     internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
-            // Same reasoning as DeleteExplorerItemAsync's guard: this node's FullPath is a real
-            // external directory, and RenameFolderAsync would otherwise act on it directly.
             if (item.IsExternalGroup) return;
 
             try
@@ -1146,9 +1128,6 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             ? item.Name.Substring(0, item.Name.Length - 6)
             : item.Name;
 
-        // Persist by DocumentId unconditionally — the old version only saved the rename if a tab
-        // happened to be open for this exact item, so renaming a closed file silently reverted on
-        // the next refresh.
         var openTab = Tabs.FirstOrDefault(t => string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase));
         if (openTab != null)
         {

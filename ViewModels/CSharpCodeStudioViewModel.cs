@@ -40,10 +40,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private string _notes = string.Empty;
 
     [ObservableProperty]
-    private int _selectedLeftTabIndex = 0; // 0 = Description & Notes, 1 = References, 2 = Testcases
+    private int _selectedLeftTabIndex = 0;
 
     [ObservableProperty]
-    private int _selectedBottomTabIndex = 0; // 0 = Results (.Dump), 1 = Console Output, 2 = Problems, 3 = Test Cases
+    private int _selectedBottomTabIndex = 0;
 
     [ObservableProperty]
     private bool _isBottomDeckExpanded = true;
@@ -93,7 +93,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
 
-    // --- Interactive Debugging State & Collections ---
     [ObservableProperty]
     private bool _isDebugging;
 
@@ -118,13 +117,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public event Action<int>? RequestSetPausedLine;
     public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
-    // Code Studio reuses one long-lived ViewModel instance across every script you open (see
-    // CSharpStudioHostViewModel.NavigateToCodeStudio -> UpdateActiveScriptAsync), so switching scripts from
-    // the Explorer sidebar without leaving the page never actually changes the View's DataContext
-    // reference — nothing re-fires OnDataContextChanged, which is the only place the editor's text is
-    // normally pushed in. Without an explicit signal here, the editor would keep showing the PREVIOUS
-    // script's code while the title/breadcrumb/everything else correctly shows the new one, and a
-    // subsequent Save would overwrite the new script's file with the old script's content.
     public event Action? RequestReloadEditorText;
 
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
@@ -168,7 +160,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }
         catch
         {
-            // Ignore format errors if code has syntax errors
         }
     }
 
@@ -232,13 +223,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         PopulateExplorerTree();
     }
 
-    // Must be awaited, never called fire-and-forget-then-blocked-on: the Explorer refresh at the end
-    // touches storage that now does genuine async file I/O (see LocalScriptStorageService's project-file
-    // reads), and this is called directly from UI-thread event handlers (NavigateToCodeStudio, Explorer
-    // clicks). A synchronous PopulateExplorerTree().GetAwaiter().GetResult() here previously deadlocked
-    // the UI thread the moment that I/O actually needed to yield — that's the "opening a script hangs
-    // the app" bug. PopulateExplorerTree()'s own blocking wait stays safe only because the host
-    // constructs both studio ViewModels inside Task.Run, off the UI thread.
     public async Task UpdateActiveScriptAsync(ScriptDocumentItem script)
     {
         Script = script;
@@ -348,14 +332,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             }
             catch (OperationCanceledException)
             {
-                // Debouncing
             }
         }, token);
     }
 
-    /// <summary>Disposes any live Control output (e.g. a Display.Animate control's timer) before
-    /// RichOutputs is cleared — without this, re-running or clearing results leaks a running timer for
-    /// every animated control that was ever displayed in this tab.</summary>
     private void DisposeRichOutputControls()
     {
         foreach (var output in RichOutputs)
@@ -419,7 +399,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
-        SelectedBottomTabIndex = 0; // Default to Results
+        SelectedBottomTabIndex = 0;
         IsBottomDeckExpanded = true;
         ConsoleOutput = "🚀 Running C# code (.Dump enabled)...\n";
         CompilerStatusText = "Executing...";
@@ -440,20 +420,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                 if (richOutput.TableResult != null)
                 {
                     DumpResults.Add(richOutput.TableResult);
-                    SelectedBottomTabIndex = 0; // Automatically show Results tab
+                    SelectedBottomTabIndex = 0;
                 }
             });
         });
-        // Also covers "Program" mode below: ScriptExecutionEngine has no cancellation-context scope of
-        // its own, so this outer scope is the only place compiled Main() code can observe Display.
-        // CancellationToken/ThrowIfCancellationRequested() at all.
         using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
         try
         {
             if (CurrentLanguageMode == ExecutionLanguageMode.Statements || CurrentLanguageMode == ExecutionLanguageMode.Expression)
             {
-                // Execute via Roslyn Scripting Kernel (Supports top-level statements, collection expressions, #r nuget, .Dump)
                 _kernel.ResetSession();
 
                 var codeToRun = Code;
@@ -522,17 +498,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                         }
                         ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
                         WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
-                        SelectedBottomTabIndex = 2; // Problems tab
+                        SelectedBottomTabIndex = 2;
                     }
                     else
                     {
-                        SelectedBottomTabIndex = 1; // Console Output
+                        SelectedBottomTabIndex = 1;
                     }
                 }
             }
             else
             {
-                // Program mode: compile full class/Main to assembly
                 var (success, bytes, diagnostics) = await Task.Run(() =>
                     _compilerService.CompileToAssembly(Code, CurrentLanguageMode));
 
@@ -544,7 +519,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                         ConsoleOutput += $"  • {diag.LocationString}: {diag.Id} {diag.Message}\n";
                     }
                     CompilerStatusText = "Build Failed";
-                    SelectedBottomTabIndex = 2; // Jump to Problems
+                    SelectedBottomTabIndex = 2;
                     return;
                 }
 
@@ -618,7 +593,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         try
         {
-            // Execute script and check output
             await RunCodeAsync();
             testCase.ActualOutput = ConsoleOutput;
             if (!string.IsNullOrEmpty(testCase.ExpectedOutput) && ConsoleOutput.Contains(testCase.ExpectedOutput))
@@ -719,10 +693,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         CaretColumn = col;
     }
 
-    // =========================================================================
-    // INTERACTIVE DEBUGGING COMMANDS & LOGIC
-    // =========================================================================
-
     [RelayCommand]
     public async Task DebugCodeAsync()
     {
@@ -733,8 +703,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         RichOutputs.Clear();
         Locals.Clear();
         CallStack.Clear();
-        GlobalVariableCache.Clear(); // Guarantee a clean slate — a prior session's stale values must never leak into this one
-        SelectedBottomTabIndex = 4; // Automatically focus Debugger tab
+        GlobalVariableCache.Clear();
+        SelectedBottomTabIndex = 4;
         IsBottomDeckExpanded = true;
         ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
         CompilerStatusText = "Compiling for Debug...";
@@ -760,7 +730,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             }
             ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
             WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
-            SelectedBottomTabIndex = 2; // Problems tab
+            SelectedBottomTabIndex = 2;
             CompilerStatusText = "Build Failed";
             IsExecuting = false;
             IsDebugging = false;
@@ -801,7 +771,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
                 _ = UpdateWatchExpressionsAsync();
 
-                SelectedBottomTabIndex = 4; // Ensure Debugger tab is active
+                SelectedBottomTabIndex = 4;
                 IsBottomDeckExpanded = true;
 
                 RequestSetPausedLine?.Invoke(line);
@@ -861,7 +831,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         finally
         {
             ScriptDebugSession.EndSession();
-            GlobalVariableCache.Clear(); // Don't leave this session's locals around for the next one to read
+            GlobalVariableCache.Clear();
             IsExecuting = false;
             IsDebugging = false;
             IsPaused = false;
@@ -1054,12 +1024,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         ImmediateOutput.Clear();
     }
 
-    // ================================================================
-    // EXPLORER (script/folder tree) — mirrors CSharpNotebookStudioViewModel's Explorer, adapted for
-    // Code Studio's single-open-document model (no tab strip): "opening" a different script switches
-    // this same ViewModel's Script/Code in place via UpdateActiveScriptAsync rather than adding a tab.
-    // ================================================================
-
     public void PopulateExplorerTree()
     {
         try
@@ -1091,15 +1055,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Builds the visible tree purely from real storage: real folders (LoadFolderPathsAsync) plus real
-    /// scripts (LoadWorkspaceSummariesAsync, placed under their actual FolderPath). Same shape as
-    /// Notebook Studio's tree, including the external-project relevance filter — an externally-saved
-    /// script's project only shows up while the currently open Script belongs to it, rather than
-    /// merging every external folder you've ever saved a script to into one workspace. Code Studio has
-    /// just one open document at a time, so that's at most a single relevant external folder (versus
-    /// Notebook Studio's set-of-open-tabs version of the same filter).
-    /// </summary>
     private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
     {
         ExplorerRootItems.Clear();
@@ -1176,7 +1131,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             AddToTree(parent, docItem);
         }
 
-        // Ensure the currently open script is represented even if it hasn't reached storage yet.
         if (Script != null && !string.IsNullOrEmpty(Script.Id) && FindByDocumentId(ExplorerRootItems, Script.Id) == null)
         {
             var fileName = Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
@@ -1302,12 +1256,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = SwitchToScriptAsync(item);
 
-    /// <summary>
-    /// The Code Studio equivalent of "open this document": since there's only ever one script open at
-    /// a time (no tab strip), clicking a different script in the Explorer auto-saves the current one
-    /// first — matching the existing silent-save-before-navigating-away behavior already used by Back
-    /// to Hub/Home — then switches this same ViewModel onto the clicked script in place.
-    /// </summary>
     public async Task SwitchToScriptAsync(ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
@@ -1376,11 +1324,41 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }
     }
 
-    // Header-toolbar entry points (no specific tree item to hang off of) — resolve a target folder
-    // from whatever's currently selected, falling back to a plain root-level create when nothing is
-    // selected, exactly like Notebook Studio's NewFile/NewFolder. NewFileUnderItemAsync/
-    // NewFolderUnderItemAsync always assume a non-null target, so this guard is what keeps the
-    // header buttons from passing one through as null.
+    [RelayCommand]
+    public async Task OpenExternalProjectAsync(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            var result = await _storageService.OpenExternalProjectAsync(path);
+            if (!result.Success)
+            {
+                CompilerStatusText = result.Message;
+                return;
+            }
+
+            await RefreshExplorerAsync();
+
+            if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+            {
+                var loaded = await _storageService.LoadScriptAsync(result.PrimaryDocumentId);
+                if (loaded != null)
+                {
+                    await SaveAsync();
+                    await UpdateActiveScriptAsync(loaded);
+                }
+            }
+
+            CompilerStatusText = result.Message;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
+            CompilerStatusText = $"Error opening project: {ex.Message}";
+        }
+    }
+
     [RelayCommand]
     public async Task NewScript()
     {
@@ -1490,8 +1468,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         var copyTitle = $"{originalTitle} Copy";
         var copyFileName = $"{copyTitle}.frycs";
 
-        // Duplicating the currently open (possibly unsaved) script copies its live in-memory state;
-        // any other script is duplicated from whatever's already on disk.
         var isActive = Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase);
         var origDoc = isActive ? Script : await _storageService.LoadScriptAsync(item.DocumentId);
 
@@ -1511,10 +1487,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             LastModified = DateTime.UtcNow
         };
 
-        // copyDoc has never been saved before, so SaveScriptAsync's folderPath is what decides where
-        // it's actually written — without passing the original's external folder through here,
-        // duplicating a script that lives outside the library would silently move the copy back into
-        // the library root instead of keeping it next to the original.
         var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
         await _storageService.SaveScriptAsync(copyDoc, externalFolderPath);
 
@@ -1532,8 +1504,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         if (item.IsDirectory)
         {
-            // This node's FullPath is a real external directory when IsExternalGroup — RenameFolderAsync
-            // would otherwise act on it directly (see the identical guard in Notebook Studio).
             if (item.IsExternalGroup) return;
 
             try

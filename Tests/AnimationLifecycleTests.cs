@@ -20,7 +20,7 @@ public class AnimationLifecycleTests
     {
         var control = new AnimatedRenderControl((ctx, t) => { }, interval: TimeSpan.FromMilliseconds(50));
         control.Dispose();
-        control.Dispose(); // must not throw a second time
+        control.Dispose();
     }
 
     [Fact]
@@ -30,7 +30,6 @@ public class AnimationLifecycleTests
         InteractiveControlLifecycle.DisposeIfNeeded(disposable);
         Assert.True(disposable.WasDisposed);
 
-        // Non-disposable control (e.g. a plain Border) and null must not throw.
         var nonDisposable = new Avalonia.Controls.Border();
         InteractiveControlLifecycle.DisposeIfNeeded(nonDisposable);
         InteractiveControlLifecycle.DisposeIfNeeded(null);

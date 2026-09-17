@@ -57,10 +57,6 @@ public partial class NotebookCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasInteractiveControl;
 
-    /// <summary>True when this cell previously displayed a live Control (e.g. via Display.Animate)
-    /// that couldn't be persisted (a live control reference isn't serializable) and hasn't been
-    /// restored by re-running the cell yet. Seeded from Model.HadInteractiveControl on load; cleared
-    /// the moment SetInteractiveControl runs again.</summary>
     [ObservableProperty]
     private bool _interactiveControlPlaceholderVisible;
 
@@ -153,8 +149,6 @@ public partial class NotebookCellViewModel : ObservableObject
             _hasInspectorOutput = true;
         }
 
-        // A live Control (e.g. from Display.Animate) can't be serialized, so it's never in `model` on
-        // load — show a placeholder explaining that instead of silently rendering nothing.
         if (model.HadInteractiveControl)
         {
             _interactiveControlPlaceholderVisible = true;
@@ -229,8 +223,6 @@ public partial class NotebookCellViewModel : ObservableObject
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
     public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 
-    // Matches this app's actual dark M3 tokens (Error/Primary/Secondary/OnSurfaceVariant families)
-    // instead of the Tailwind light-mode swatches these used to be hardcoded to.
     public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#9BA1AD";
     public string StatusBadgeBackground => HasError ? "#93000A" : IsExecuting ? "#0F387D" : ExecutionCount.HasValue ? "#343E4E" : "#252C36";
     public string StatusBadgeBorder => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#3D4450";
@@ -316,10 +308,6 @@ public partial class NotebookCellViewModel : ObservableObject
             ImageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
             HasImageOutput = true;
 
-            // Dispose the outgoing bitmap only *after* the new one is assigned (never before — disposing
-            // first risks a render race against the compositor still reading the old handle). A cell
-            // that calls Display.Image(...) repeatedly (e.g. a frame-loop animation) would otherwise
-            // leak one native bitmap handle per call.
             previousBitmap?.Dispose();
 
             ImageDimensionsText = (width.HasValue && height.HasValue)
@@ -348,9 +336,6 @@ public partial class NotebookCellViewModel : ObservableObject
         InteractiveControlPlaceholderVisible = false;
     }
 
-    /// <summary>Disposes only this cell's live, non-serializable output (currently just
-    /// InteractiveControl) — safe to call from a "this cell/tab is going away" path without touching
-    /// text/table/etc. data that might still need to be saved.</summary>
     public void DisposeLiveResources()
     {
         InteractiveControlLifecycle.DisposeIfNeeded(InteractiveControl);
@@ -387,7 +372,6 @@ public partial class NotebookCellViewModel : ObservableObject
         get
         {
             if (string.IsNullOrEmpty(ExecutionTimeText)) return string.Empty;
-            // If ExecutionTimeText is like "700 ms", convert to "0.7s"
             if (ExecutionTimeText.EndsWith(" ms", StringComparison.OrdinalIgnoreCase))
             {
                 var numStr = ExecutionTimeText.Substring(0, ExecutionTimeText.Length - 3).Trim();
@@ -413,7 +397,6 @@ public partial class NotebookCellViewModel : ObservableObject
 
         if (topLevel?.Clipboard != null && ImageOutputBitmap != null)
         {
-            // Avalonia Clipboard supports SetBitmapAsync or base64 fallback
             try
             {
                 var base64 = Convert.ToBase64String(Model.ImageBytes);

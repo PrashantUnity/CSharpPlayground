@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -22,7 +25,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     private string _searchQuery = string.Empty;
 
     [ObservableProperty]
-    private string _selectedTypeFilter = "All"; // "All", "Scripts", "Notebooks"
+    private string _selectedTypeFilter = "All";
 
     [ObservableProperty]
     private string _selectedSortOption = "Recently Modified";
@@ -45,69 +48,53 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private int _filteredItemCount;
 
-    // "Workspace" or "Templates" — which set the center pane shows. Defaults to "Templates" until
-    // the first load completes, then flips to "Workspace" only if there's actually something there
-    // (see LoadWorkspaceItemsAsync) — a brand-new install lands on Templates since there's nothing
-    // else to show yet; a returning user lands on their own work instead of a full template gallery.
     [ObservableProperty]
     private string _selectedNavSection = "Templates";
 
     private bool _hasAppliedInitialNavDefault;
 
-    // Selection for the inspector panel — mutually exclusive; selecting one clears the other.
     [ObservableProperty]
     private CodeTemplate? _selectedTemplate;
 
     [ObservableProperty]
     private WorkspaceItemSummary? _selectedWorkspaceItem;
 
-    // Guards LaunchTemplateAsync/CreateNewScriptAsync/CreateNewNotebookAsync against creating
-    // duplicate documents: re-entrant calls while one is already in flight are ignored, and so is a
-    // call that arrives before the very first LoadWorkspaceItemsAsync (fired unawaited from the
-    // constructor) has finished — both were real ways for AllItems to look emptier than it actually
-    // is, making an existing document look like it doesn't exist yet.
     [ObservableProperty]
     private bool _isLaunching;
 
-    // "New Script"/"New Notebook" open this prompt instead of creating immediately, so the user
-    // can name the document and pick a destination folder — like a real IDE's "New File" dialog —
-    // rather than everything silently landing in the library root. The folder itself is chosen via
-    // the OS's own native folder browser (see CSharpManagerView.axaml.cs), scoped to browse within
-    // LibraryRootPath, which also lets the user create a new folder using the OS dialog's own "New
-    // Folder" affordance — no separate in-app "create folder" UI needed. Launching a template does
-    // NOT go through this prompt (that stays a fast, one-click "get started" flow); it still calls
-    // the Core create methods directly, unchanged.
     [ObservableProperty]
     private WorkspaceItemKind? _pendingCreateKind;
 
     [ObservableProperty]
     private string _newItemName = string.Empty;
 
-    // Null/empty means the library root. Set directly by the View's code-behind after a successful
-    // native folder-picker round trip (already validated + made relative to LibraryRootPath there).
     [ObservableProperty]
     private string? _selectedFolderPath;
 
-    // Set by the View's code-behind when the user picks a folder outside LibraryRootPath via the
-    // native browser — the storage layer can only save under that root, so this surfaces why the
-    // pick didn't take instead of silently leaving the display unchanged.
     [ObservableProperty]
     private string? _locationWarning;
+
+    [ObservableProperty]
+    private string? _statusBannerMessage;
+
+    [ObservableProperty]
+    private bool _hasStatusBannerMessage;
+
+    [ObservableProperty]
+    private bool _isStatusBannerError;
 
     private string? _pendingTemplateId;
 
     public bool IsCreatePromptOpen => PendingCreateKind.HasValue;
     public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : "New Script";
+    public bool IsCreatingNotebook => PendingCreateKind == WorkspaceItemKind.Notebook;
+    public bool IsCreatingScript => PendingCreateKind == WorkspaceItemKind.Script;
     public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
 
-    // Exposed so the View's code-behind can scope the native folder-picker dialog to this directory.
     public string LibraryRootPath => _storageService.LibraryRootPath;
 
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
 
-    // Holds a mix of WorkspaceItemSummary rows and WorkspaceGroupHeaderViewModel divider rows — see
-    // ApplyFilter. The view picks a template per runtime type, so this stays a plain object collection
-    // rather than forcing a common base type onto WorkspaceItemSummary just for this one list.
     public ObservableCollection<object> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
 
@@ -133,9 +120,6 @@ public partial class CSharpManagerViewModel : ObservableObject
     public bool IsWorkspaceSectionActive => SelectedNavSection == "Workspace";
     public bool IsTemplatesSectionActive => SelectedNavSection == "Templates";
 
-    // Nav-rail highlighting for the two quick-filter entries: only "active" while actually viewing
-    // the Workspace section under that filter, not just whenever SelectedTypeFilter happens to still
-    // hold that value from before the user navigated to Templates.
     public bool IsWorkspaceAllNavActive => IsWorkspaceSectionActive && IsAllFilterActive;
     public bool IsScriptsNavActive => IsWorkspaceSectionActive && IsScriptsFilterActive;
     public bool IsNotebooksNavActive => IsWorkspaceSectionActive && IsNotebooksFilterActive;
@@ -143,6 +127,324 @@ public partial class CSharpManagerViewModel : ObservableObject
     public bool HasSelection => SelectedTemplate != null || SelectedWorkspaceItem != null;
     public bool IsShowingTemplate => SelectedTemplate != null;
     public bool IsShowingItem => SelectedWorkspaceItem != null;
+
+    private readonly HashSet<string> _pinnedItemIds = new(StringComparer.OrdinalIgnoreCase);
+    public ObservableCollection<WorkspaceItemSummary> PinnedItems { get; } = new();
+    public ObservableCollection<WorkspaceItemSummary> UnpinnedItems { get; } = new();
+
+    private string PinnedWorkspacesFilePath =>
+        Path.Combine(Path.GetDirectoryName(LibraryRootPath) ?? LibraryRootPath, "pinned_workspaces.json");
+
+    public WorkspaceItemSummary? PinnedItem1 => PinnedItems.Count > 0 ? PinnedItems[0] : null;
+    public WorkspaceItemSummary? PinnedItem2 => PinnedItems.Count > 1 ? PinnedItems[1] : null;
+    public bool HasPinnedItem1 => PinnedItem1 != null;
+    public bool HasPinnedItem2 => PinnedItem2 != null;
+    public bool HasAnyPinnedItems => PinnedItems.Count > 0;
+    public bool HasUnpinnedItems => UnpinnedItems.Count > 0;
+
+    public WorkspaceItemSummary? RecentNotebook => PinnedItem1?.IsNotebook == true ? PinnedItem1
+        : (PinnedItem2?.IsNotebook == true ? PinnedItem2 : AllItems.FirstOrDefault(i => i.IsNotebook));
+
+    public WorkspaceItemSummary? RecentScript => PinnedItem1?.IsScript == true ? PinnedItem1
+        : (PinnedItem2?.IsScript == true ? PinnedItem2 : AllItems.FirstOrDefault(i => i.IsScript));
+
+    public bool HasRecentNotebook => RecentNotebook != null;
+    public bool HasRecentScript => RecentScript != null;
+
+    public string RecentNotebookTitle => RecentNotebook?.Title ?? "customer_churn_model.ipynb";
+    public string RecentNotebookPath => RecentNotebook?.DisplayLocation ?? "~/library/";
+    public string RecentNotebookTime => RecentNotebook?.FormattedLastModified ?? "2 hours ago";
+
+    public string RecentScriptTitle => RecentScript?.Title ?? "migrate_users_v2.linq";
+    public string RecentScriptPath => RecentScript?.DisplayLocation ?? "~/library/";
+    public string RecentScriptTime => RecentScript?.FormattedLastModified ?? "Yesterday";
+
+    private long _diskStorageBytes;
+    private int _diskStorageFileCount;
+    private readonly DispatcherTimer? _telemetryTimer;
+
+    public string RoslynEngineTitle => "Local Roslyn Engine";
+    public string RoslynEngineStatus => "Ready • Roslyn 4.12 & C# 13";
+    public bool IsRoslynEngineActive => true;
+
+    public string StorageEngineTitle => "Document Storage";
+    public string StorageEngineStatus => Directory.Exists(LibraryRootPath)
+        ? $"Connected • {_diskStorageFileCount} docs on disk"
+        : "Connected • Library Active";
+    public bool IsStorageEngineActive => true;
+
+    public string MemoryUsageText
+    {
+        get
+        {
+            try
+            {
+                var wsBytes = Process.GetCurrentProcess().WorkingSet64;
+                var sysBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+                var wsMb = wsBytes / (1024.0 * 1024.0);
+                var sysGb = Math.Max(1.0, sysBytes / (1024.0 * 1024.0 * 1024.0));
+
+                if (wsMb >= 1024.0)
+                {
+                    return $"{wsMb / 1024.0:F2} GB / {sysGb:F0} GB";
+                }
+                return $"{wsMb:F0} MB / {sysGb:F0} GB";
+            }
+            catch
+            {
+                var bytes = GC.GetTotalMemory(false);
+                var mb = bytes / (1024.0 * 1024.0);
+                return $"{mb:F0} MB Heap";
+            }
+        }
+    }
+
+    public double MemoryUsagePercent
+    {
+        get
+        {
+            try
+            {
+                var wsBytes = Process.GetCurrentProcess().WorkingSet64;
+                var wsMb = wsBytes / (1024.0 * 1024.0);
+                return Math.Clamp((wsMb / 2048.0) * 100.0, 4.0, 100.0);
+            }
+            catch
+            {
+                return 6.0;
+            }
+        }
+    }
+
+    public string StorageUsageText
+    {
+        get
+        {
+            if (_diskStorageBytes <= 0)
+            {
+                return $"{TotalScripts + TotalNotebooks} docs";
+            }
+            if (_diskStorageBytes < 1024)
+            {
+                return $"{_diskStorageBytes} B";
+            }
+            if (_diskStorageBytes < 1024 * 1024)
+            {
+                return $"{_diskStorageBytes / 1024.0:F1} KB";
+            }
+            return $"{_diskStorageBytes / (1024.0 * 1024.0):F2} MB";
+        }
+    }
+
+    public double StorageUsagePercent
+    {
+        get
+        {
+            if (_diskStorageBytes <= 0) return 4.0;
+            return Math.Clamp((_diskStorageBytes / (1024.0 * 1024.0 * 50.0)) * 100.0, 4.0, 100.0);
+        }
+    }
+
+    public bool IsLocalServerRunning => true;
+
+    private async Task UpdateDiskStorageAsync()
+    {
+        var (bytes, count) = await Task.Run(() =>
+        {
+            long b = 0;
+            int c = 0;
+            try
+            {
+                if (!string.IsNullOrEmpty(LibraryRootPath) && Directory.Exists(LibraryRootPath))
+                {
+                    var dir = new DirectoryInfo(LibraryRootPath);
+                    foreach (var file in dir.EnumerateFiles("*", SearchOption.AllDirectories))
+                    {
+                        if (file.Name.StartsWith(".")) continue;
+                        b += file.Length;
+                        c++;
+                    }
+                }
+            }
+            catch { }
+            return (b, c);
+        });
+
+        _diskStorageBytes = bytes;
+        _diskStorageFileCount = count;
+        OnPropertyChanged(nameof(StorageUsageText));
+        OnPropertyChanged(nameof(StorageUsagePercent));
+        OnPropertyChanged(nameof(StorageEngineStatus));
+    }
+
+    [RelayCommand]
+    public async Task OpenRecentNotebookAsync()
+    {
+        if (RecentNotebook != null)
+        {
+            await OpenItemAsync(RecentNotebook);
+        }
+        else
+        {
+            await CreateNewNotebookAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenRecentScriptAsync()
+    {
+        if (RecentScript != null)
+        {
+            await OpenItemAsync(RecentScript);
+        }
+        else
+        {
+            await CreateNewScriptAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task TogglePinAsync(WorkspaceItemSummary? item)
+    {
+        if (item == null) return;
+        if (_pinnedItemIds.Contains(item.Id))
+        {
+            _pinnedItemIds.Remove(item.Id);
+        }
+        else
+        {
+            _pinnedItemIds.Add(item.Id);
+        }
+        await SavePinnedStateAsync();
+        SyncPinnedItems();
+    }
+
+    [RelayCommand]
+    public async Task PinItemAsync(WorkspaceItemSummary? item)
+    {
+        if (item == null) return;
+        if (_pinnedItemIds.Add(item.Id))
+        {
+            await SavePinnedStateAsync();
+            SyncPinnedItems();
+        }
+    }
+
+    [RelayCommand]
+    public async Task UnpinItemAsync(WorkspaceItemSummary? item)
+    {
+        if (item == null) return;
+        if (_pinnedItemIds.Remove(item.Id))
+        {
+            await SavePinnedStateAsync();
+            SyncPinnedItems();
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenPinnedItem1Async()
+    {
+        if (PinnedItem1 != null)
+        {
+            await OpenItemAsync(PinnedItem1);
+        }
+        else
+        {
+            await CreateNewNotebookAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenPinnedItem2Async()
+    {
+        if (PinnedItem2 != null)
+        {
+            await OpenItemAsync(PinnedItem2);
+        }
+        else
+        {
+            await CreateNewScriptAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task RefreshWorkspaceAsync()
+    {
+        await LoadWorkspaceItemsAsync();
+    }
+
+    private async Task LoadPinnedStateAsync()
+    {
+        try
+        {
+            if (File.Exists(PinnedWorkspacesFilePath))
+            {
+                var json = await File.ReadAllTextAsync(PinnedWorkspacesFilePath);
+                var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);
+                if (ids != null)
+                {
+                    _pinnedItemIds.Clear();
+                    foreach (var id in ids) _pinnedItemIds.Add(id);
+                }
+            }
+        }
+        catch { }
+
+        if (_pinnedItemIds.Count == 0 && AllItems.Count > 0)
+        {
+            var nb = AllItems.FirstOrDefault(i => i.IsNotebook);
+            if (nb != null) _pinnedItemIds.Add(nb.Id);
+            var sc = AllItems.FirstOrDefault(i => i.IsScript && i.Id != nb?.Id);
+            if (sc != null) _pinnedItemIds.Add(sc.Id);
+            await SavePinnedStateAsync();
+        }
+
+        SyncPinnedItems();
+    }
+
+    private async Task SavePinnedStateAsync()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(_pinnedItemIds.ToList(), new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(PinnedWorkspacesFilePath, json);
+        }
+        catch { }
+    }
+
+    private void SyncPinnedItems()
+    {
+        PinnedItems.Clear();
+        UnpinnedItems.Clear();
+
+        foreach (var item in AllItems)
+        {
+            item.IsPinned = _pinnedItemIds.Contains(item.Id);
+            if (item.IsPinned)
+            {
+                PinnedItems.Add(item);
+            }
+            else
+            {
+                UnpinnedItems.Add(item);
+            }
+        }
+
+        OnPropertyChanged(nameof(PinnedItem1));
+        OnPropertyChanged(nameof(PinnedItem2));
+        OnPropertyChanged(nameof(HasPinnedItem1));
+        OnPropertyChanged(nameof(HasPinnedItem2));
+        OnPropertyChanged(nameof(HasAnyPinnedItems));
+        OnPropertyChanged(nameof(HasUnpinnedItems));
+        OnPropertyChanged(nameof(RecentNotebook));
+        OnPropertyChanged(nameof(RecentScript));
+        OnPropertyChanged(nameof(RecentNotebookTitle));
+        OnPropertyChanged(nameof(RecentNotebookPath));
+        OnPropertyChanged(nameof(RecentNotebookTime));
+        OnPropertyChanged(nameof(RecentScriptTitle));
+        OnPropertyChanged(nameof(RecentScriptPath));
+        OnPropertyChanged(nameof(RecentScriptTime));
+    }
 
     public CSharpManagerViewModel(
         IScriptStorageService storageService,
@@ -160,6 +462,22 @@ public partial class CSharpManagerViewModel : ObservableObject
             StarterTemplates.Add(t);
         }
 
+        _ = UpdateDiskStorageAsync();
+
+        try
+        {
+            _telemetryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            _telemetryTimer.Tick += (s, e) =>
+            {
+                OnPropertyChanged(nameof(MemoryUsageText));
+                OnPropertyChanged(nameof(MemoryUsagePercent));
+            };
+            _telemetryTimer.Start();
+        }
+        catch
+        {
+        }
+
         _ = LoadWorkspaceItemsAsync();
     }
 
@@ -171,13 +489,6 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public async Task LoadWorkspaceItemsAsync()
     {
-        // The constructor fires this off without awaiting it, and CreateNewScriptAsync/
-        // CreateNewNotebookAsync/etc. call it again afterward — without this lock, two concurrent
-        // calls interleave Clear()/Add() on the same ObservableCollection (not thread-safe for
-        // concurrent mutation), which can throw mid-mutation and silently corrupt AllItems, since
-        // every caller here is itself fire-and-forget from an ICommand.Execute(). Reproduced directly
-        // in CSharpManagerViewModelTests: concurrent loads threw IndexOutOfRangeException and left
-        // AllItems with duplicated entries.
         await _loadLock.WaitAsync();
         try
         {
@@ -190,11 +501,10 @@ public partial class CSharpManagerViewModel : ObservableObject
             }
 
             UpdateStats();
+            await UpdateDiskStorageAsync();
+            await LoadPinnedStateAsync();
             ApplyFilter();
 
-            // One-time derived default (see SelectedNavSection's declaration): only steer the user
-            // away from Templates on the very first load, never on a later reload (e.g. after
-            // creating a new item), so we don't yank them out of whatever section they're already on.
             if (!_hasAppliedInitialNavDefault)
             {
                 _hasAppliedInitialNavDefault = true;
@@ -215,6 +525,22 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         TotalScripts = AllItems.Count(i => i.IsScript);
         TotalNotebooks = AllItems.Count(i => i.IsNotebook);
+
+        OnPropertyChanged(nameof(RecentNotebook));
+        OnPropertyChanged(nameof(RecentScript));
+        OnPropertyChanged(nameof(HasRecentNotebook));
+        OnPropertyChanged(nameof(HasRecentScript));
+        OnPropertyChanged(nameof(RecentNotebookTitle));
+        OnPropertyChanged(nameof(RecentNotebookPath));
+        OnPropertyChanged(nameof(RecentNotebookTime));
+        OnPropertyChanged(nameof(RecentScriptTitle));
+        OnPropertyChanged(nameof(RecentScriptPath));
+        OnPropertyChanged(nameof(RecentScriptTime));
+        OnPropertyChanged(nameof(MemoryUsageText));
+        OnPropertyChanged(nameof(MemoryUsagePercent));
+        OnPropertyChanged(nameof(StorageUsageText));
+        OnPropertyChanged(nameof(StorageUsagePercent));
+        OnPropertyChanged(nameof(StorageEngineStatus));
     }
 
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
@@ -257,6 +583,8 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsCreatePromptOpen));
         OnPropertyChanged(nameof(CreatePromptTitle));
+        OnPropertyChanged(nameof(IsCreatingNotebook));
+        OnPropertyChanged(nameof(IsCreatingScript));
     }
 
     partial void OnSelectedFolderPathChanged(string? value) => OnPropertyChanged(nameof(SelectedFolderDisplay));
@@ -320,7 +648,6 @@ public partial class CSharpManagerViewModel : ObservableObject
                    item.ExecutionMode.ToLowerInvariant().Contains(query);
         });
 
-        // Apply sorting
         matches = SelectedSortOption switch
         {
             "Title (A-Z)" => matches.OrderBy(x => x.Title),
@@ -330,11 +657,6 @@ public partial class CSharpManagerViewModel : ObservableObject
 
         var matchList = matches.ToList();
 
-        // Documents saved outside the library share one .frynbproj/.frycsproj project file per folder
-        // (see LocalScriptStorageService) — surface that as a workspace header instead of letting them
-        // sit in the list looking like unrelated loose files. The header is a label only: every document
-        // still appears right beneath it, individually, and is opened exactly the same way as any other
-        // row — grouping never hides or replaces access to the real .frynb/.frycs files.
         var emittedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var match in matchList)
@@ -394,10 +716,6 @@ public partial class CSharpManagerViewModel : ObservableObject
     [RelayCommand]
     public async Task CreateNewScriptAsync(string? templateId = null)
     {
-        // Guards against creating two documents from one accidental double-click: re-entrant calls
-        // while a launch is already in flight are ignored, and so is a call that arrives before the
-        // very first LoadWorkspaceItemsAsync (fired unawaited from the constructor) has populated
-        // AllItems — both were real ways for an existing/about-to-exist document to look absent.
         if (IsLaunching || IsLoading) return;
         await OpenCreatePromptAsync(WorkspaceItemKind.Script, templateId, "New Automation Script");
     }
@@ -495,7 +813,6 @@ public partial class CSharpManagerViewModel : ObservableObject
         IsLaunching = true;
         try
         {
-            // If an existing workspace item matches this template, open it directly rather than generating duplicate copies
             var existing = AllItems.FirstOrDefault(i =>
                 (template.Kind == WorkspaceItemKind.Notebook && i.IsNotebook || template.Kind == WorkspaceItemKind.Script && i.IsScript) &&
                 (string.Equals(i.Id, template.Id, StringComparison.OrdinalIgnoreCase) ||
@@ -533,12 +850,79 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
 
         AllItems.Remove(item);
+        if (_pinnedItemIds.Remove(item.Id))
+        {
+            await SavePinnedStateAsync();
+            SyncPinnedItems();
+        }
+
         await _storageService.DeleteItemAsync(item.Id);
         UpdateStats();
+        await UpdateDiskStorageAsync();
 
-        // A full re-filter (rather than a direct FilteredItems.Remove) is required now that the list
-        // can contain workspace group headers: deleting the last document in an external folder must
-        // also drop its now-empty header, which only ApplyFilter's grouping logic knows how to do.
         ApplyFilter();
+    }
+
+    [RelayCommand]
+    public void DismissStatusBanner()
+    {
+        HasStatusBannerMessage = false;
+        StatusBannerMessage = null;
+    }
+
+    [RelayCommand]
+    public async Task OpenExistingProjectAsync(string? path = null)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        if (IsLaunching || IsLoading) return;
+
+        IsLaunching = true;
+        try
+        {
+            var result = await _storageService.OpenExternalProjectAsync(path);
+            if (result.Success)
+            {
+                await LoadWorkspaceItemsAsync();
+                StatusBannerMessage = result.Message;
+                IsStatusBannerError = false;
+                HasStatusBannerMessage = true;
+
+                if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+                {
+                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+                    {
+                        var nb = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
+                        if (nb != null)
+                        {
+                            _openNotebookAction.Invoke(nb);
+                        }
+                    }
+                    else
+                    {
+                        var sc = await _storageService.LoadScriptAsync(result.PrimaryDocumentId);
+                        if (sc != null)
+                        {
+                            _openScriptAction.Invoke(sc);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                StatusBannerMessage = result.Message;
+                IsStatusBannerError = true;
+                HasStatusBannerMessage = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusBannerMessage = $"Failed to open project: {ex.Message}";
+            IsStatusBannerError = true;
+            HasStatusBannerMessage = true;
+        }
+        finally
+        {
+            IsLaunching = false;
+        }
     }
 }

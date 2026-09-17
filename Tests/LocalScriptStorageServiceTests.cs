@@ -88,9 +88,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         var paths = await storage.LoadFolderPathsAsync();
         Assert.Contains("New Name", paths);
         Assert.DoesNotContain("Old Name", paths);
-
-        // Storage resolves documents by id via a recursive scan, so renaming the folder on disk must
-        // not orphan the document.
         var loaded = await storage.LoadNotebookAsync(nb.Id);
         Assert.NotNull(loaded);
 
@@ -119,10 +116,6 @@ public class LocalScriptStorageServiceTests : IDisposable
     {
         var storage = new LocalScriptStorageService(_baseDir);
         var scriptId = Guid.NewGuid().ToString("N");
-
-        // Force a real write failure: put a DIRECTORY at the exact path the new script would be
-        // written to (title-based filename, not the id), so File.WriteAllTextAsync throws instead of
-        // silently overwriting.
         var libraryRoot = Path.Combine(_baseDir, "library");
         Directory.CreateDirectory(Path.Combine(libraryRoot, "Blocked.frycs"));
 
@@ -130,26 +123,14 @@ public class LocalScriptStorageServiceTests : IDisposable
         var saved = await storage.SaveScriptAsync(script);
 
         Assert.False(saved);
-
-        // Sanity: a normal save still succeeds (proves the storage instance itself is healthy, and
-        // the failure above was specific to the blocked path, not a broken instance).
         var normalScript = new ScriptDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = "Fine" };
         Assert.True(await storage.SaveScriptAsync(normalScript));
     }
-
-    // Reproduces a real bug found in a user's actual library: a notebook whose filename on disk
-    // didn't match its own internal Id (e.g. carried over from an older storage layout, or left behind
-    // after a duplicate cleanup that removed the id-named copy but kept a differently-named one with
-    // real content). LoadWorkspaceSummariesAsync already tolerated this — it reads every file's own
-    // content rather than assuming filename == id — but LoadNotebookAsync/SaveNotebookAsync/
-    // DeleteItemAsync all funneled through a filename-only lookup and silently failed (no exception,
-    // just a null/no-op) for exactly this case. FindExistingFilePath now falls back to scanning file
-    // contents when the filename guess misses.
     [Fact]
     public async Task LoadNotebookAsync_FileNameDoesNotMatchInternalId_StillFindsAndLoadsIt()
     {
         var storage = new LocalScriptStorageService(_baseDir);
-        await storage.LoadWorkspaceSummariesAsync(); // force initialization/seeding first
+        await storage.LoadWorkspaceSummariesAsync();
 
         var realId = "mismatched-id-123";
         var notebook = new NotebookDocumentItem { Id = realId, Title = "Renamed Notebook" };
@@ -181,9 +162,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         notebook.Title = "Updated Title";
         var saved = await storage.SaveNotebookAsync(notebook);
 
-        Assert.True(saved);
-        // Must still be exactly one file for this Id — a naive "not found by filename, write a new
-        // one at {id}.frynb" would have created a second, duplicate file instead of updating this one.
         var matchingFiles = Directory.EnumerateFiles(libraryRoot, "*.frynb", SearchOption.AllDirectories)
             .Where(f => JsonSerializer.Deserialize<NotebookDocumentItem>(File.ReadAllText(f))?.Id == realId)
             .ToList();
@@ -211,9 +189,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         Assert.False(File.Exists(mismatchedPath));
     }
 
-    // A rooted folderPath means "save exactly here, outside the library" (used by the Manager's
-    // native folder-browser flow) — these verify a document saved that way is still fully usable:
-    // found by id, listed in the workspace, editable, and deletable, exactly like an internal one.
     [Fact]
     public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_SavesFileAtExactlyThatLocation()
     {
@@ -255,10 +230,6 @@ public class LocalScriptStorageServiceTests : IDisposable
     [Fact]
     public async Task ExternalDocument_PersistsAcrossServiceInstances()
     {
-        // Simulates an app restart: a brand-new LocalScriptStorageService pointed at the same
-        // _baseDir must still find a document that was saved outside the library by a previous
-        // instance — proving the external-document index is actually persisted to disk, not just
-        // held in memory for the lifetime of the service that created it.
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"));
         try
         {
@@ -297,7 +268,6 @@ public class LocalScriptStorageServiceTests : IDisposable
             var reloaded = await storage.LoadScriptAsync(script.Id);
             Assert.Equal("Console.WriteLine(\"edited\");", reloaded!.Code);
 
-            // Only the one file at the external location — no stray copy landed in the library root.
             var expectedFile = Path.Combine(externalDir, $"{script.Title}.frycs");
             Assert.True(File.Exists(expectedFile));
             Assert.False(File.Exists(Path.Combine(_baseDir, "library", $"{script.Title}.frycs")));
@@ -322,8 +292,6 @@ public class LocalScriptStorageServiceTests : IDisposable
             await storage.DeleteItemAsync(script.Id);
             Assert.False(File.Exists(file));
 
-            // Deleting must also prune the persisted index — otherwise a restart would resurrect a
-            // dangling entry pointing at a file that no longer exists.
             var afterRestart = new LocalScriptStorageService(_baseDir);
             var summaries = await afterRestart.LoadWorkspaceSummariesAsync();
             Assert.DoesNotContain(summaries, s => s.Id == script.Id);
@@ -334,10 +302,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         }
     }
 
-    // Verifies the actual artifact, not just the resulting behavior: an external save produces a real,
-    // visible ".frycsproj"/".frynbproj" file sitting in the chosen folder — named after that folder,
-    // like a real IDE's project file — rather than only a hidden entry in the plugin's own data
-    // directory. This is what makes the folder self-describing/portable, unlike a purely internal index.
     [Fact]
     public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_CreatesNamedProjectFileInThatFolder()
     {
@@ -361,8 +325,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         }
     }
 
-    // The core benefit of a per-folder project file over a per-document index: two documents saved to
-    // the same external folder share ONE project file (and one tracked entry), not two independent ones.
     [Fact]
     public async Task CreateNewNotebookAsync_TwiceInSameExternalFolder_SharesOneProjectFileWithBothDocuments()
     {
@@ -392,11 +354,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         }
     }
 
-    // Regression coverage for a real user report: new documents were saved as "<guid>.frycs" instead
-    // of a name reflecting the title the user actually typed, because WriteNewDocumentAsync named the
-    // file after the document's internal Id. Lookups key off the Id stored inside the JSON (or, for
-    // external docs, the project file's Documents entry) rather than the filename, so switching to a
-    // title-based name is purely cosmetic for every existing code path — these tests pin that filename.
     [Fact]
     public async Task CreateNewScriptAsync_NamesFileAfterTitle_NotTheGuidId()
     {
@@ -426,14 +383,11 @@ public class LocalScriptStorageServiceTests : IDisposable
     {
         var storage = new LocalScriptStorageService(_baseDir);
 
-        // "/" is a path separator (an invalid filename char on every platform this runs on) — a
-        // realistic case a user could actually type, e.g. titling a script "Q1/Q2 Report".
         var script = await storage.CreateNewScriptAsync("Q1/Q2 Report");
 
         var libraryRoot = Path.Combine(_baseDir, "library");
         Assert.True(File.Exists(Path.Combine(libraryRoot, "Q1_Q2 Report.frycs")));
 
-        // Sanitization must only affect the on-disk filename — the stored title stays exactly as typed.
         var loaded = await storage.LoadScriptAsync(script.Id);
         Assert.Equal("Q1/Q2 Report", loaded!.Title);
     }
@@ -450,7 +404,6 @@ public class LocalScriptStorageServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(libraryRoot, "Duplicate Title.frycs")));
         Assert.True(File.Exists(Path.Combine(libraryRoot, "Duplicate Title (2).frycs")));
 
-        // Both documents must still independently resolve by Id despite the similar filenames.
         Assert.Equal(first.Id, (await storage.LoadScriptAsync(first.Id))!.Id);
         Assert.Equal(second.Id, (await storage.LoadScriptAsync(second.Id))!.Id);
     }
@@ -472,5 +425,199 @@ public class LocalScriptStorageServiceTests : IDisposable
         {
             if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithValidFryCsProjFile_RegistersAndLoadsDocuments()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_OpenProjTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var scriptId = Guid.NewGuid().ToString("N");
+            var scriptDoc = new ScriptDocumentItem
+            {
+                Id = scriptId,
+                Title = "Downloaded Script",
+                Code = "Console.WriteLine(\"Hello\");"
+            };
+            await File.WriteAllTextAsync(
+                Path.Combine(externalDir, "Downloaded Script.frycs"),
+                JsonSerializer.Serialize(scriptDoc, new JsonSerializerOptions { WriteIndented = true }));
+
+            var projFilePath = Path.Combine(externalDir, "MyExternalProject.frycsproj");
+            var projJson = @"{
+                ""Kind"": ""Script"",
+                ""Documents"": [
+                    { ""Id"": """ + scriptId + @""", ""File"": ""Downloaded Script.frycs"" }
+                ]
+            }";
+            await File.WriteAllTextAsync(projFilePath, projJson);
+
+            var storage = new LocalScriptStorageService(_baseDir);
+            var result = await storage.OpenExternalProjectAsync(projFilePath);
+
+            Assert.True(result.Success);
+            Assert.Equal(scriptId, result.PrimaryDocumentId);
+            Assert.Equal(WorkspaceItemKind.Script, result.PrimaryDocumentKind);
+            Assert.Equal(1, result.DocumentsLoadedCount);
+
+            var loadedScript = await storage.LoadScriptAsync(scriptId);
+            Assert.NotNull(loadedScript);
+            Assert.Equal("Downloaded Script", loadedScript!.Title);
+
+            var summaries = await storage.LoadWorkspaceSummariesAsync();
+            Assert.Contains(summaries, s => s.Id == scriptId);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithWindowsBackslashesInProjectFile_NormalizesAndResolvesOnUnix()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_OpenProjTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var scriptId = Guid.NewGuid().ToString("N");
+            var scriptDoc = new ScriptDocumentItem
+            {
+                Id = scriptId,
+                Title = "Windows Script",
+                Code = "Console.WriteLine(\"Windows\");"
+            };
+            await File.WriteAllTextAsync(
+                Path.Combine(externalDir, "Windows Script.frycs"),
+                JsonSerializer.Serialize(scriptDoc, new JsonSerializerOptions { WriteIndented = true }));
+
+            var projFilePath = Path.Combine(externalDir, "WindowsProject.frycsproj");
+            var projJson = @"{
+                ""Kind"": ""Script"",
+                ""Documents"": [
+                    { ""Id"": """ + scriptId + @""", ""File"": ""subdir\\Windows Script.frycs"" }
+                ]
+            }";
+            await File.WriteAllTextAsync(projFilePath, projJson);
+
+            var storage = new LocalScriptStorageService(_baseDir);
+            var result = await storage.OpenExternalProjectAsync(projFilePath);
+
+            Assert.True(result.Success);
+            Assert.Equal(scriptId, result.PrimaryDocumentId);
+
+            var loadedScript = await storage.LoadScriptAsync(scriptId);
+            Assert.NotNull(loadedScript);
+            Assert.Equal("Windows Script", loadedScript!.Title);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithFolderContainingLooseScripts_AutoGeneratesProjectFileAndIndexes()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_OpenProjTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var scriptDoc = new ScriptDocumentItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = "Loose Script",
+                Code = "Console.WriteLine(\"Loose\");"
+            };
+            await File.WriteAllTextAsync(
+                Path.Combine(externalDir, "Loose Script.frycs"),
+                JsonSerializer.Serialize(scriptDoc, new JsonSerializerOptions { WriteIndented = true }));
+
+            var storage = new LocalScriptStorageService(_baseDir);
+            var result = await storage.OpenExternalProjectAsync(externalDir);
+
+            Assert.True(result.Success);
+            Assert.Equal(1, result.DocumentsLoadedCount);
+            Assert.Equal(scriptDoc.Id, result.PrimaryDocumentId);
+
+            var summaries = await storage.LoadWorkspaceSummariesAsync();
+            Assert.Contains(summaries, s => s.Id == scriptDoc.Id);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithLooseFryNbFile_RegistersFolderAndLoadsNotebook()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_OpenProjTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var nbDoc = new NotebookDocumentItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = "Loose Notebook"
+            };
+            var nbPath = Path.Combine(externalDir, "Loose Notebook.frynb");
+            await File.WriteAllTextAsync(nbPath, JsonSerializer.Serialize(nbDoc, new JsonSerializerOptions { WriteIndented = true }));
+
+            var storage = new LocalScriptStorageService(_baseDir);
+            var result = await storage.OpenExternalProjectAsync(nbPath);
+
+            Assert.True(result.Success);
+            Assert.Equal(nbDoc.Id, result.PrimaryDocumentId);
+            Assert.Equal(WorkspaceItemKind.Notebook, result.PrimaryDocumentKind);
+
+            var loaded = await storage.LoadNotebookAsync(nbDoc.Id);
+            Assert.NotNull(loaded);
+            Assert.Equal("Loose Notebook", loaded!.Title);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithRawCsFile_WrapsIntoScriptDocumentAndRegisters()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_OpenProjTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var csPath = Path.Combine(externalDir, "QuickScript.cs");
+            await File.WriteAllTextAsync(csPath, "Console.WriteLine(\"From C# file\");");
+
+            var storage = new LocalScriptStorageService(_baseDir);
+            var result = await storage.OpenExternalProjectAsync(csPath);
+
+            Assert.True(result.Success);
+            Assert.Equal(WorkspaceItemKind.Script, result.PrimaryDocumentKind);
+            Assert.NotNull(result.PrimaryDocumentId);
+
+            var loaded = await storage.LoadScriptAsync(result.PrimaryDocumentId!);
+            Assert.NotNull(loaded);
+            Assert.Equal("QuickScript", loaded!.Title);
+            Assert.Contains("From C# file", loaded.Code);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithNonExistentPath_ReturnsFailureResult()
+    {
+        var storage = new LocalScriptStorageService(_baseDir);
+        var result = await storage.OpenExternalProjectAsync("/path/does/not/exist/anywhere/test.frycsproj");
+
+        Assert.False(result.Success);
+        Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

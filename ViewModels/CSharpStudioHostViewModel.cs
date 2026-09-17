@@ -101,13 +101,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     // ══════════════════════════════════════════════════════════════════════════════════════
     private async Task InitializeCompilerAsync()
     {
-        // Build ALL heavy objects on a background thread — none of them require the UI thread
         CSharpCodeStudioViewModel? codeVm = null;
         CSharpNotebookStudioViewModel? notebookVm = null;
 
         await Task.Run(() =>
         {
-            // Pre-warm static caches off the UI thread
             RoslynCompilerService.Warmup();
             NotebookExecutionKernel.Warmup();
 
@@ -145,7 +143,6 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 getTimeoutSeconds: GetExecutionTimeoutSeconds);
         });
 
-        // Only lightweight property assignments go back to the UI thread
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             CodeStudioViewModel = codeVm;
@@ -159,10 +156,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToHome()
     {
-        // 1. Notify standalone runner or external host listener
         RequestClose?.Invoke();
 
-        // 2. Signal FryPDF shell to restore Home workspace nav state and unhide sidebar
         try
         {
             var msgType = Type.GetType("PdfEditorApp.Messages.NavigateToHomeMessage, PdfEditorApp");
@@ -176,7 +171,6 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         }
         catch
         {
-            // Fallback for runner or standalone test environment
         }
     }
 
@@ -213,6 +207,13 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         CurrentPage = ManagerViewModel;
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";
+    }
+
+    [RelayCommand]
+    public async Task OpenExistingProjectAsync(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        await ManagerViewModel.OpenExistingProjectAsync(path);
     }
 
     /// <summary>

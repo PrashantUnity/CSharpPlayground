@@ -20,7 +20,6 @@ public class CSharpEditorShortcutRegistrationTests
 
         var shortcuts = scopedCtx.GetRegisteredShortcuts().ToList();
 
-        // Verify key shortcuts exist
         Assert.Contains(shortcuts, s => s.Id == "csharp.studio.launch" && s.Scope == ShortcutScope.Global);
         Assert.Contains(shortcuts, s => s.Id == "csharp.editor.run" && s.DefaultGesture == "F5");
         Assert.Contains(shortcuts, s => s.Id == "csharp.editor.stop" && s.DefaultGesture == "Shift+F5");
@@ -34,7 +33,6 @@ public class CSharpEditorShortcutRegistrationTests
         Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_above" && s.DefaultGesture == "Ctrl+Shift+A");
         Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.delete_cell" && s.DefaultGesture == "Ctrl+Shift+D");
 
-        // Verify Mac gestures adapt correctly
         var saveShortcut = shortcuts.First(s => s.Id == "csharp.editor.save");
         Assert.Equal("Cmd+S", saveShortcut.MacGesture);
 
@@ -54,10 +52,8 @@ public class CSharpEditorShortcutRegistrationTests
 
         Assert.NotEmpty(rootCtx.GetRegisteredShortcuts());
 
-        // Unload plugin
         scope.Dispose();
 
-        // Zero dangling shortcuts
         Assert.Empty(rootCtx.GetRegisteredShortcuts());
     }
 }
