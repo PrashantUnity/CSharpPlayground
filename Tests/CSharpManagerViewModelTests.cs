@@ -272,4 +272,106 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(1, matches);
         Assert.Equal(1, notebookOpens);
     }
+
+    // Regression coverage for a real user complaint: documents saved outside the library (sharing one
+    // .frynbproj/.frycsproj project file) looked like unrelated loose files in "Your Workspace", with no
+    // indication they belonged to a workspace/project at all. FilteredItems now injects a
+    // WorkspaceGroupHeaderViewModel divider above each external folder's documents — these tests pin
+    // that the header appears, is labeled and counted correctly, and — the part that actually matters —
+    // never hides or replaces the individual WorkspaceItemSummary rows underneath it.
+    [Fact]
+    public async Task LoadWorkspaceItemsAsync_WithMultipleDocsInSameExternalFolder_GroupsThemUnderOneHeader()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SharedFolder");
+        try
+        {
+            await _storage.CreateNewScriptAsync("External One", folderPath: externalDir);
+            await _storage.CreateNewNotebookAsync("External Two", folderPath: externalDir);
+
+            var (vm, _, _, _, _) = CreateHub();
+            await vm.LoadWorkspaceItemsAsync();
+
+            var header = Assert.Single(vm.FilteredItems.OfType<WorkspaceGroupHeaderViewModel>());
+            Assert.Equal("SharedFolder", header.Title);
+            Assert.Equal(2, header.ItemCount);
+
+            // Both real documents must still be individually present — grouping never hides them.
+            var items = vm.FilteredItems.OfType<WorkspaceItemSummary>().ToList();
+            Assert.Contains(items, i => i.Title == "External One");
+            Assert.Contains(items, i => i.Title == "External Two");
+
+            // The header must sit immediately above its members, as one contiguous block.
+            var headerIndex = vm.FilteredItems.IndexOf(header);
+            Assert.IsType<WorkspaceItemSummary>(vm.FilteredItems[headerIndex + 1]);
+            Assert.IsType<WorkspaceItemSummary>(vm.FilteredItems[headerIndex + 2]);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task LoadWorkspaceItemsAsync_WithInternalDocumentsOnly_NeverAddsGroupHeaders()
+    {
+        await _storage.CreateNewScriptAsync("Local Script");
+        await _storage.CreateNewNotebookAsync("Local Notebook");
+
+        var (vm, _, _, _, _) = CreateHub();
+        await vm.LoadWorkspaceItemsAsync();
+
+        Assert.Empty(vm.FilteredItems.OfType<WorkspaceGroupHeaderViewModel>());
+        Assert.Equal(vm.AllItems.Count, vm.FilteredItems.OfType<WorkspaceItemSummary>().Count());
+    }
+
+    [Fact]
+    public async Task DeleteItemAsync_LastDocumentInExternalFolder_RemovesTheNowEmptyGroupHeaderToo()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
+        try
+        {
+            var script = await _storage.CreateNewScriptAsync("Only External", folderPath: externalDir);
+
+            var (vm, _, _, _, _) = CreateHub();
+            await vm.LoadWorkspaceItemsAsync();
+
+            var toDelete = vm.AllItems.Single(i => i.Id == script.Id);
+            await vm.DeleteItemAsync(toDelete);
+
+            Assert.Empty(vm.FilteredItems.OfType<WorkspaceGroupHeaderViewModel>());
+            Assert.DoesNotContain(vm.FilteredItems.OfType<WorkspaceItemSummary>(), i => i.Id == script.Id);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteItemAsync_OneOfSeveralDocumentsInExternalFolder_KeepsHeaderWithUpdatedCount()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SharedFolder");
+        try
+        {
+            var first = await _storage.CreateNewScriptAsync("Keep Me", folderPath: externalDir);
+            var second = await _storage.CreateNewScriptAsync("Delete Me", folderPath: externalDir);
+
+            var (vm, _, _, _, _) = CreateHub();
+            await vm.LoadWorkspaceItemsAsync();
+
+            var toDelete = vm.AllItems.Single(i => i.Id == second.Id);
+            await vm.DeleteItemAsync(toDelete);
+
+            var header = Assert.Single(vm.FilteredItems.OfType<WorkspaceGroupHeaderViewModel>());
+            Assert.Equal(1, header.ItemCount);
+            Assert.Contains(vm.FilteredItems.OfType<WorkspaceItemSummary>(), i => i.Id == first.Id);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
 }

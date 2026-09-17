@@ -104,7 +104,11 @@ public partial class CSharpManagerViewModel : ObservableObject
     public string LibraryRootPath => _storageService.LibraryRootPath;
 
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
-    public ObservableCollection<WorkspaceItemSummary> FilteredItems { get; } = new();
+
+    // Holds a mix of WorkspaceItemSummary rows and WorkspaceGroupHeaderViewModel divider rows — see
+    // ApplyFilter. The view picks a template per runtime type, so this stays a plain object collection
+    // rather than forcing a common base type onto WorkspaceItemSummary just for this one list.
+    public ObservableCollection<object> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
 
     public IEnumerable<CodeTemplate> ScriptTemplates => StarterTemplates.Where(t => !t.IsNotebook);
@@ -324,13 +328,44 @@ public partial class CSharpManagerViewModel : ObservableObject
             _ => matches.OrderByDescending(x => x.LastModified)
         };
 
-        foreach (var match in matches)
+        var matchList = matches.ToList();
+
+        // Documents saved outside the library share one .frynbproj/.frycsproj project file per folder
+        // (see LocalScriptStorageService) — surface that as a workspace header instead of letting them
+        // sit in the list looking like unrelated loose files. The header is a label only: every document
+        // still appears right beneath it, individually, and is opened exactly the same way as any other
+        // row — grouping never hides or replaces access to the real .frynb/.frycs files.
+        var emittedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var match in matchList)
         {
-            FilteredItems.Add(match);
+            if (!match.IsExternal)
+            {
+                FilteredItems.Add(match);
+                continue;
+            }
+
+            if (!emittedGroups.Add(match.FolderPath)) continue;
+
+            var groupMembers = matchList
+                .Where(m => m.IsExternal && string.Equals(m.FolderPath, match.FolderPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            FilteredItems.Add(new WorkspaceGroupHeaderViewModel
+            {
+                Title = match.ExternalWorkspaceName,
+                FolderPath = match.FolderPath,
+                ItemCount = groupMembers.Count
+            });
+
+            foreach (var member in groupMembers)
+            {
+                FilteredItems.Add(member);
+            }
         }
 
-        HasFilteredItems = FilteredItems.Count > 0;
-        FilteredItemCount = FilteredItems.Count;
+        HasFilteredItems = matchList.Count > 0;
+        FilteredItemCount = matchList.Count;
     }
 
     [RelayCommand]
@@ -498,10 +533,12 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
 
         AllItems.Remove(item);
-        FilteredItems.Remove(item);
         await _storageService.DeleteItemAsync(item.Id);
         UpdateStats();
-        HasFilteredItems = FilteredItems.Count > 0;
-        FilteredItemCount = FilteredItems.Count;
+
+        // A full re-filter (rather than a direct FilteredItems.Remove) is required now that the list
+        // can contain workspace group headers: deleting the last document in an external folder must
+        // also drop its now-empty header, which only ApplyFilter's grouping logic knows how to do.
+        ApplyFilter();
     }
 }

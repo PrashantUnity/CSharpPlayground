@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Material.Icons;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -27,6 +28,13 @@ public class WorkspaceItemSummary
     public string KindLabel => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeText => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeColor => KindBadgeForeground;
+
+    // A rooted FolderPath means this document lives in a real folder outside the library, tracked via
+    // a .frynbproj/.frycsproj project file saved into that same folder (see LocalScriptStorageService).
+    public bool IsExternal => !string.IsNullOrEmpty(FolderPath) && Path.IsPathRooted(FolderPath);
+    public string ExternalWorkspaceName => IsExternal
+        ? (Path.GetFileName(FolderPath.TrimEnd('/', '\\')) is { Length: > 0 } name ? name : FolderPath)
+        : string.Empty;
 
     // Category & Domain Pattern Recognition
     private bool IsAlgorithms =>
