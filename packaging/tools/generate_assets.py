@@ -19,6 +19,17 @@ import subprocess
 import sys
 from PIL import Image, ImageDraw, ImageFilter
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import branding as b
 import icoformat
 
@@ -293,7 +304,7 @@ def main() -> int:
     generate_macos_icons(master)
     generate_dmg_backgrounds(master)
 
-    print("\n✨ All FrySharp packaging artwork generated successfully!")
+    print("\n[SUCCESS] All FrySharp packaging artwork generated successfully!")
     return 0
 
 

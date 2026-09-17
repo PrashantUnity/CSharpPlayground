@@ -5,6 +5,17 @@ import pathlib
 import sys
 from PIL import Image
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 PACKAGING_DIR = SCRIPT_DIR.parent
 RUNNER_DIR = PACKAGING_DIR.parent / "Runner"
@@ -39,10 +50,10 @@ def main() -> int:
             print(f"  [OK]      {p.name} ({p.stat().st_size:,} bytes)")
 
     if failed > 0:
-        print(f"\n❌ {failed} packaging asset(s) failed verification!")
+        print(f"\n[FAIL] {failed} packaging asset(s) failed verification!")
         return 1
 
-    print("\n✅ All packaging assets verified successfully!")
+    print("\n[SUCCESS] All packaging assets verified successfully!")
     return 0
 
 if __name__ == "__main__":
