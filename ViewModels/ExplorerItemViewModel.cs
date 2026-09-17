@@ -42,6 +42,16 @@ public partial class ExplorerItemViewModel : ObservableObject
     [ObservableProperty]
     private int _depth;
 
+    // True only for the single synthetic grouping folder created for a document saved outside the
+    // library (see CSharpNotebookStudioViewModel.RebuildExplorerTree) — its FullPath is a real
+    // absolute filesystem path, not a library-relative one, so folder-management operations that
+    // assume the latter (rename, delete, "new file/folder here") must not be offered for it: acting
+    // on them could otherwise touch a real directory outside anything this app actually manages.
+    [ObservableProperty]
+    private bool _isExternalGroup;
+
+    public bool IsManageableDirectory => IsDirectory && !IsExternalGroup;
+
     public ExplorerItemViewModel? Parent { get; set; }
 
     public ObservableCollection<ExplorerItemViewModel> Children { get; } = new();

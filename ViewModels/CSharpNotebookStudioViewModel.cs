@@ -592,6 +592,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (item == null) return;
 
+        // Defense in depth beyond hiding the "Delete" menu item: this node's FullPath is a real
+        // absolute directory outside the library (see RebuildExplorerTree) — DeleteFolderAsync would
+        // otherwise resolve it as-is (Path.Combine discards _libraryRoot for a rooted second argument)
+        // and recursively delete a real folder on the user's computer that this app doesn't manage.
+        if (item.IsExternalGroup) return;
+
         if (item.IsDirectory)
         {
             // Cascading delete: close every open tab for a document nested under this folder, then let
@@ -639,7 +645,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         if (item.Parent != null)
         {
-            item.Parent.Children.Remove(item);
+            var parent = item.Parent;
+            parent.Children.Remove(item);
+
+            // An external-group node is a lightweight visual grouping (see RebuildExplorerTree), not
+            // a real library folder — once the last document under it is gone, remove the now-empty
+            // node too instead of leaving it sitting in the tree until the next full refresh.
+            if (parent.IsExternalGroup && parent.Children.Count == 0)
+            {
+                ExplorerRootItems.Remove(parent);
+            }
         }
         else
         {
@@ -719,7 +734,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             });
         }
 
-        await _storageService.SaveNotebookAsync(copyDoc);
+        // copyDoc has never been saved before, so SaveNotebookAsync's folderPath is what decides
+        // where it's actually written — without passing the original's external folder through here,
+        // duplicating a notebook that lives outside the library silently moved the copy back into the
+        // library root instead of keeping it next to the original.
+        var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
+        await _storageService.SaveNotebookAsync(copyDoc, externalFolderPath);
 
         var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
         var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);
@@ -911,11 +931,59 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             GetOrCreateFolder(path);
         }
 
+        // A document saved outside the library (see LocalScriptStorageService's external-document
+        // tracking) has an absolute filesystem path for FolderPath, not a library-relative one.
+        // GetOrCreateFolder only understands the latter — feeding it an absolute path would shred it
+        // into a chain of fake nested "folders" (e.g. "Users" > "yourname" > "Downloads" > "Another")
+        // that don't correspond to anything in the library. Group these under a single node instead,
+        // named after just the immediate containing folder, keyed by the full absolute path so
+        // multiple documents from the same external folder still land together under one node.
+        var externalGroupNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        ExplorerItemViewModel GetOrCreateExternalGroup(string absolutePath)
+        {
+            if (externalGroupNodes.TryGetValue(absolutePath, out var existing)) return existing;
+
+            var trimmed = absolutePath.TrimEnd('/', '\\');
+            var name = Path.GetFileName(trimmed);
+            if (string.IsNullOrEmpty(name)) name = trimmed; // e.g. a drive root
+
+            var node = CreateFolderItem(name, absolutePath, isExpanded: false, parent: null, isExternalGroup: true);
+            AddToTree(null, node);
+            externalGroupNodes[absolutePath] = node;
+            return node;
+        }
+
+        // Every external folder ever saved to is tracked forever (see LocalScriptStorageService), but
+        // that doesn't mean every one of them belongs in this sidebar at once — unlike the library,
+        // which is genuinely "everything you have," an external folder is closer to its own separate
+        // project. Only show one if something from it is actually open right now, the same way a real
+        // IDE doesn't dump every project you've ever opened into today's window. A project stays
+        // visible for as long as at least one of its documents has an open tab; closing the last one
+        // just means it won't reappear until the next refresh, not an immediate disappearance.
+        var openDocumentIds = new HashSet<string>(Tabs.Select(t => t.Notebook.Id), StringComparer.OrdinalIgnoreCase);
+        var relevantExternalFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var s in summaries)
+        {
+            if (s.IsNotebook && openDocumentIds.Contains(s.Id) && !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath))
+            {
+                relevantExternalFolders.Add(s.FolderPath);
+            }
+        }
+
         foreach (var s in summaries.Where(x => x.IsNotebook).OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
             var name = s.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}.frynb";
-            var parent = GetOrCreateFolder(s.FolderPath);
-            var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
+            var isExternal = !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath);
+            if (isExternal && !relevantExternalFolders.Contains(s.FolderPath!))
+            {
+                continue;
+            }
+
+            var parent = isExternal ? GetOrCreateExternalGroup(s.FolderPath!) : GetOrCreateFolder(s.FolderPath);
+            var fullPath = isExternal
+                ? $"{s.FolderPath!.TrimEnd('/', '\\')}/{name}"
+                : (string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}");
 
             var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
             if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
@@ -959,12 +1027,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null)
+    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
     {
         return new ExplorerItemViewModel
         {
             Name = name,
             IsDirectory = true,
+            IsExternalGroup = isExternalGroup,
             IsExpanded = isExpanded,
             Parent = parent,
             Depth = (parent?.Depth ?? -1) + 1,
@@ -1053,6 +1122,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (item.IsDirectory)
         {
+            // Same reasoning as DeleteExplorerItemAsync's guard: this node's FullPath is a real
+            // external directory, and RenameFolderAsync would otherwise act on it directly.
+            if (item.IsExternalGroup) return;
+
             try
             {
                 var oldPath = item.FullPath;

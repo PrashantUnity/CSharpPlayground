@@ -187,7 +187,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             await _initTask;
         }
         if (CodeStudioViewModel == null) return;
-        CodeStudioViewModel.UpdateActiveScript(script);
+        await CodeStudioViewModel.UpdateActiveScriptAsync(script);
         CurrentPage = CodeStudioViewModel;
         IsOnManagerPage = false;
         ActiveDocumentTitle = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;

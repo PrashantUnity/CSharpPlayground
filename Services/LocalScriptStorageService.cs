@@ -14,11 +14,37 @@ public class LocalScriptStorageService : IScriptStorageService
 {
     private readonly string _baseDir;
     private readonly string _libraryRoot;
-    private readonly string _legacyScriptsDir;
-    private readonly string _legacyNotebooksDir;
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private volatile bool _initialized;
+
+    // A document created with an absolute (rooted) folderPath is saved exactly where the user chose
+    // instead of under _libraryRoot. To find it again, this service writes a small project file
+    // (".frynbproj" for notebooks, ".frycsproj" for scripts, named after the folder itself) directly
+    // INTO that external folder, listing every document of that kind saved there — one project file
+    // per external folder per kind, not one index row per document, so several documents saved to the
+    // same external folder share a single entry. This mirrors a real IDE's project file (.csproj/.sln):
+    // it's a visible, portable artifact that travels with the folder, rather than a hidden id -> path
+    // mapping trapped in this plugin's own private data directory. The plugin still needs to remember
+    // WHERE each project file is, though — that's the one thing that doesn't survive the folder being
+    // moved — so the (much smaller) list of known project-file paths is persisted to its own file
+    // here, never matched by the *.frycs/*.frynb library scan.
+    private readonly string _externalProjectsIndexPath;
+    private List<string> _externalProjectPaths = new();
+
+    private class ExternalProjectFile
+    {
+        public string Kind { get; set; } = nameof(WorkspaceItemKind.Notebook);
+        public List<ExternalProjectDocument> Documents { get; set; } = new();
+    }
+
+    private class ExternalProjectDocument
+    {
+        public string Id { get; set; } = string.Empty;
+        public string File { get; set; } = string.Empty;
+    }
+
+    public string LibraryRootPath => _libraryRoot;
 
     public LocalScriptStorageService(string? customBaseDir = null)
     {
@@ -31,8 +57,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 "com.frypdf.plugin.csharpeditor");
 
         _libraryRoot = Path.Combine(_baseDir, "library");
-        _legacyScriptsDir = Path.Combine(_baseDir, "scripts");
-        _legacyNotebooksDir = Path.Combine(_baseDir, "notebooks");
+        _externalProjectsIndexPath = Path.Combine(_baseDir, "external_projects.json");
 
         Directory.CreateDirectory(_libraryRoot);
     }
@@ -46,7 +71,7 @@ public class LocalScriptStorageService : IScriptStorageService
         {
             if (_initialized) return;
 
-            MigrateLegacyLayout();
+            await LoadExternalProjectsIndexAsync();
 
             var hasAnyDocument = Directory.EnumerateFiles(_libraryRoot, "*", SearchOption.AllDirectories)
                 .Any(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase));
@@ -64,36 +89,123 @@ public class LocalScriptStorageService : IScriptStorageService
         }
     }
 
-    /// <summary>
-    /// One-time, idempotent migration from the old flat "scripts/" + "notebooks/" layout into the
-    /// unified "library/" root. Legacy filenames are already "{id}.ext" with globally-unique GUID ids,
-    /// so a straight move can never collide. Leaves the (now empty) legacy folders in place — their
-    /// emptiness is itself the "already migrated" signal, so no separate version flag is needed.
-    /// </summary>
-    private void MigrateLegacyLayout()
+    private async Task LoadExternalProjectsIndexAsync()
     {
-        MigrateLegacyDirectory(_legacyScriptsDir, "*.frycs");
-        MigrateLegacyDirectory(_legacyNotebooksDir, "*.frynb");
+        if (!File.Exists(_externalProjectsIndexPath)) return;
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(_externalProjectsIndexPath);
+            var loaded = JsonSerializer.Deserialize<List<string>>(json);
+            if (loaded != null)
+            {
+                _externalProjectPaths = loaded;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load external projects index: {ex.Message}");
+        }
     }
 
-    private void MigrateLegacyDirectory(string legacyDir, string searchPattern)
+    private async Task SaveExternalProjectsIndexAsync()
     {
-        if (!Directory.Exists(legacyDir)) return;
-
-        foreach (var file in Directory.GetFiles(legacyDir, searchPattern))
+        try
         {
-            try
+            var json = JsonSerializer.Serialize(_externalProjectPaths, _jsonOptions);
+            await File.WriteAllTextAsync(_externalProjectsIndexPath, json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save external projects index: {ex.Message}");
+        }
+    }
+
+    private async Task<ExternalProjectFile?> ReadProjectFileAsync(string projectFilePath)
+    {
+        if (!File.Exists(projectFilePath)) return null;
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(projectFilePath);
+            return JsonSerializer.Deserialize<ExternalProjectFile>(json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to read external project file '{projectFilePath}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task WriteProjectFileAsync(string projectFilePath, ExternalProjectFile project)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(project, _jsonOptions);
+            await File.WriteAllTextAsync(projectFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to write external project file '{projectFilePath}': {ex.Message}");
+        }
+    }
+
+    private static string GetProjectFilePath(string targetDir, WorkspaceItemKind kind)
+    {
+        var folderName = Path.GetFileName(targetDir.TrimEnd('/', '\\'));
+        if (string.IsNullOrEmpty(folderName)) folderName = "Project";
+        var ext = kind == WorkspaceItemKind.Notebook ? ".frynbproj" : ".frycsproj";
+        return Path.Combine(targetDir, folderName + ext);
+    }
+
+    private async Task RegisterExternalDocumentAsync(string id, string extension, string targetDir, string fileName)
+    {
+        var kind = extension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ? WorkspaceItemKind.Notebook : WorkspaceItemKind.Script;
+        var projectFilePath = GetProjectFilePath(targetDir, kind);
+
+        var project = await ReadProjectFileAsync(projectFilePath) ?? new ExternalProjectFile { Kind = kind.ToString() };
+        if (!project.Documents.Any(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)))
+        {
+            project.Documents.Add(new ExternalProjectDocument { Id = id, File = fileName });
+        }
+        await WriteProjectFileAsync(projectFilePath, project);
+
+        if (!_externalProjectPaths.Contains(projectFilePath, StringComparer.OrdinalIgnoreCase))
+        {
+            _externalProjectPaths.Add(projectFilePath);
+            await SaveExternalProjectsIndexAsync();
+        }
+    }
+
+    private async Task RemoveFromExternalProjectIfPresentAsync(string id)
+    {
+        foreach (var projectFilePath in _externalProjectPaths.ToList())
+        {
+            var project = await ReadProjectFileAsync(projectFilePath);
+            if (project == null) continue;
+
+            var removed = project.Documents.RemoveAll(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (removed == 0) continue;
+
+            if (project.Documents.Count == 0)
             {
-                var destination = Path.Combine(_libraryRoot, Path.GetFileName(file));
-                if (!File.Exists(destination))
+                try
                 {
-                    File.Move(file, destination);
+                    File.Delete(projectFilePath);
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete empty external project file '{projectFilePath}': {ex.Message}");
+                }
+                _externalProjectPaths.Remove(projectFilePath);
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to migrate legacy file '{file}': {ex.Message}");
+                await WriteProjectFileAsync(projectFilePath, project);
             }
+
+            await SaveExternalProjectsIndexAsync();
+            return; // an id can only ever belong to one project file
         }
     }
 
@@ -349,8 +461,24 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
     /// assuming filename == id, but silently failed to ever re-open, re-save, or delete such a file
     /// before this fix (no exception — LoadNotebookAsync/LoadScriptAsync would just return null).
     /// </summary>
-    private string? FindExistingFilePath(string id, string extension)
+    private async Task<string?> FindExistingFilePathAsync(string id, string extension)
     {
+        foreach (var projectFilePath in _externalProjectPaths)
+        {
+            var project = await ReadProjectFileAsync(projectFilePath);
+            var doc = project?.Documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (doc == null) continue;
+
+            var projectDir = Path.GetDirectoryName(projectFilePath);
+            if (projectDir == null) continue;
+
+            var candidatePath = Path.Combine(projectDir, doc.File);
+            if (candidatePath.EndsWith(extension, StringComparison.OrdinalIgnoreCase) && File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+        }
+
         var direct = Directory.EnumerateFiles(_libraryRoot, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
         if (direct != null) return direct;
 
@@ -358,7 +486,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         {
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(file));
                 if (doc.RootElement.TryGetProperty("Id", out var idProp) &&
                     string.Equals(idProp.GetString(), id, StringComparison.OrdinalIgnoreCase))
                 {
@@ -437,13 +565,81 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
             }
         }
 
+        // 3. Load externally-saved documents, tracked via .frynbproj/.frycsproj project files that
+        // live inside their own external folder (see RegisterExternalDocumentAsync). A project file
+        // that no longer exists — its folder moved or deleted from outside the app — is just skipped
+        // here rather than pruned, since this is a read path; DeleteItemAsync is what actually prunes
+        // the index.
+        foreach (var projectFilePath in _externalProjectPaths)
+        {
+            var project = await ReadProjectFileAsync(projectFilePath);
+            if (project == null) continue;
+
+            var folderPath = Path.GetDirectoryName(projectFilePath);
+            if (folderPath == null) continue;
+
+            foreach (var doc in project.Documents)
+            {
+                var path = Path.Combine(folderPath, doc.File);
+                if (!File.Exists(path)) continue;
+
+                try
+                {
+                    var json = await File.ReadAllTextAsync(path);
+
+                    if (path.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var script = JsonSerializer.Deserialize<ScriptDocumentItem>(json);
+                        if (script != null)
+                        {
+                            list.Add(new WorkspaceItemSummary
+                            {
+                                Id = script.Id,
+                                Title = script.Title,
+                                Description = script.Description,
+                                Category = script.Category,
+                                Kind = WorkspaceItemKind.Script,
+                                LastModified = script.LastModified,
+                                ExecutionCount = script.ExecutionCount,
+                                ExecutionMode = script.ExecutionMode,
+                                FolderPath = folderPath
+                            });
+                        }
+                    }
+                    else if (path.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
+                        if (nb != null)
+                        {
+                            list.Add(new WorkspaceItemSummary
+                            {
+                                Id = nb.Id,
+                                Title = nb.Title,
+                                Description = nb.Description,
+                                Category = nb.Category,
+                                Kind = WorkspaceItemKind.Notebook,
+                                LastModified = nb.LastModified,
+                                ExecutionCount = nb.ExecutionCount,
+                                CellCount = nb.Cells.Count,
+                                FolderPath = folderPath
+                            });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted external document '{path}': {ex.Message}");
+                }
+            }
+        }
+
         return list.OrderByDescending(x => x.LastModified).ToList();
     }
 
     public async Task<ScriptDocumentItem?> LoadScriptAsync(string id)
     {
         await EnsureInitializedAsync();
-        var file = FindExistingFilePath(id, ".frycs");
+        var file = await FindExistingFilePathAsync(id, ".frycs");
         if (file == null) return null;
 
         try
@@ -458,14 +654,24 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         }
     }
 
-    public async Task<bool> SaveScriptAsync(ScriptDocumentItem script)
+    public async Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null)
     {
         try
         {
-            var file = FindExistingFilePath(script.Id, ".frycs") ?? Path.Combine(_libraryRoot, $"{script.Id}.frycs");
             script.LastModified = DateTime.UtcNow;
             var json = JsonSerializer.Serialize(script, _jsonOptions);
-            await File.WriteAllTextAsync(file, json);
+
+            var existing = await FindExistingFilePathAsync(script.Id, ".frycs");
+            if (existing != null)
+            {
+                await File.WriteAllTextAsync(existing, json);
+                return true;
+            }
+
+            // Never saved anywhere before (e.g. a fresh copy from Duplicate): route through the same
+            // path CreateNewScriptAsync uses, so an explicit external folderPath is honored and
+            // registered in that folder's project file instead of silently landing in the library root.
+            await WriteNewDocumentAsync(script.Id, ".frycs", folderPath, json, script.Title);
             return true;
         }
         catch (Exception ex)
@@ -478,7 +684,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
     public async Task<NotebookDocumentItem?> LoadNotebookAsync(string id)
     {
         await EnsureInitializedAsync();
-        var file = FindExistingFilePath(id, ".frynb");
+        var file = await FindExistingFilePathAsync(id, ".frynb");
         if (file == null) return null;
 
         try
@@ -510,14 +716,24 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         }
     }
 
-    public async Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook)
+    public async Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook, string? folderPath = null)
     {
         try
         {
-            var file = FindExistingFilePath(notebook.Id, ".frynb") ?? Path.Combine(_libraryRoot, $"{notebook.Id}.frynb");
             notebook.LastModified = DateTime.UtcNow;
             var json = JsonSerializer.Serialize(notebook, _jsonOptions);
-            await File.WriteAllTextAsync(file, json);
+
+            var existing = await FindExistingFilePathAsync(notebook.Id, ".frynb");
+            if (existing != null)
+            {
+                await File.WriteAllTextAsync(existing, json);
+                return true;
+            }
+
+            // Never saved anywhere before (e.g. a fresh copy from Duplicate): route through the same
+            // path CreateNewNotebookAsync uses, so an explicit external folderPath is honored and
+            // registered in that folder's project file instead of silently landing in the library root.
+            await WriteNewDocumentAsync(notebook.Id, ".frynb", folderPath, json, notebook.Title);
             return true;
         }
         catch (Exception ex)
@@ -532,13 +748,38 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
     /// CreateNew*Async factory methods — SaveScriptAsync/SaveNotebookAsync intentionally fall back to
     /// the library root for "not found anywhere" documents, which would silently ignore a requested
     /// folder for a document that has never been written before.
+    ///
+    /// A rooted (absolute) folderPath means the caller picked a folder outside the library entirely
+    /// (via the OS's own native folder browser) — that document is saved exactly there and registered
+    /// into a ".frynbproj"/".frycsproj" project file inside that same folder (see
+    /// RegisterExternalDocumentAsync) so every later load/save/delete can still find it; a relative
+    /// folderPath keeps the existing library-root-relative behavior.
     /// </summary>
-    private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json)
+    private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json, string title)
     {
-        var targetDir = string.IsNullOrEmpty(folderPath) ? _libraryRoot : Path.Combine(_libraryRoot, folderPath);
+        var isExternal = !string.IsNullOrEmpty(folderPath) && Path.IsPathRooted(folderPath);
+        var targetDir = isExternal ? folderPath! : (string.IsNullOrEmpty(folderPath) ? _libraryRoot : Path.Combine(_libraryRoot, folderPath));
         Directory.CreateDirectory(targetDir);
-        var file = Path.Combine(targetDir, $"{id}{extension}");
+
+        // Named after the document's title (like every other IDE), not its internal id — the id still
+        // lives inside the JSON and is what every lookup (FindExistingFilePathAsync, project-file
+        // Documents entries) actually keys off, so this is purely the on-disk display name.
+        var safeName = SanitizeName(title, "Untitled");
+        var finalName = safeName;
+        var suffix = 1;
+        while (File.Exists(Path.Combine(targetDir, $"{finalName}{extension}")))
+        {
+            suffix++;
+            finalName = $"{safeName} ({suffix})";
+        }
+
+        var file = Path.Combine(targetDir, $"{finalName}{extension}");
         await File.WriteAllTextAsync(file, json);
+
+        if (isExternal)
+        {
+            await RegisterExternalDocumentAsync(id, extension, targetDir, Path.GetFileName(file));
+        }
     }
 
     public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null)
@@ -564,7 +805,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
 
         try
         {
-            await WriteNewDocumentAsync(script.Id, ".frycs", folderPath, JsonSerializer.Serialize(script, _jsonOptions));
+            await WriteNewDocumentAsync(script.Id, ".frycs", folderPath, JsonSerializer.Serialize(script, _jsonOptions), script.Title);
         }
         catch (Exception ex)
         {
@@ -611,7 +852,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
 
         try
         {
-            await WriteNewDocumentAsync(notebook.Id, ".frynb", folderPath, JsonSerializer.Serialize(notebook, _jsonOptions));
+            await WriteNewDocumentAsync(notebook.Id, ".frynb", folderPath, JsonSerializer.Serialize(notebook, _jsonOptions), notebook.Title);
         }
         catch (Exception ex)
         {
@@ -621,21 +862,21 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         return notebook;
     }
 
-    public Task DeleteItemAsync(string id)
+    public async Task DeleteItemAsync(string id)
     {
-        var scriptFile = FindExistingFilePath(id, ".frycs");
+        var scriptFile = await FindExistingFilePathAsync(id, ".frycs");
         if (scriptFile != null)
         {
             File.Delete(scriptFile);
         }
 
-        var nbFile = FindExistingFilePath(id, ".frynb");
+        var nbFile = await FindExistingFilePathAsync(id, ".frynb");
         if (nbFile != null)
         {
             File.Delete(nbFile);
         }
 
-        return Task.CompletedTask;
+        await RemoveFromExternalProjectIfPresentAsync(id);
     }
 
     public Task<List<string>> LoadFolderPathsAsync()
@@ -653,7 +894,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         var parentDir = string.IsNullOrEmpty(parentFolderPath) ? _libraryRoot : Path.Combine(_libraryRoot, parentFolderPath);
         Directory.CreateDirectory(parentDir);
 
-        var safeName = SanitizeFolderName(desiredName);
+        var safeName = SanitizeName(desiredName, "New Folder");
         var finalName = safeName;
         var suffix = 1;
         while (Directory.Exists(Path.Combine(parentDir, finalName)))
@@ -673,7 +914,7 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         var sourceDir = Path.Combine(_libraryRoot, folderPath);
         var parentRelative = Path.GetDirectoryName(folderPath)?.Replace(Path.DirectorySeparatorChar, '/') ?? string.Empty;
         var parentDir = string.IsNullOrEmpty(parentRelative) ? _libraryRoot : Path.Combine(_libraryRoot, parentRelative);
-        var safeName = SanitizeFolderName(newName);
+        var safeName = SanitizeName(newName, "New Folder");
         var destDir = Path.Combine(parentDir, safeName);
         var newRelativePath = string.IsNullOrEmpty(parentRelative) ? safeName : $"{parentRelative}/{safeName}";
 
@@ -711,9 +952,9 @@ Console.WriteLine($""Created live interactive Slider control initialized to tota
         return Task.CompletedTask;
     }
 
-    private static string SanitizeFolderName(string name)
+    private static string SanitizeName(string name, string fallback)
     {
-        var trimmed = string.IsNullOrWhiteSpace(name) ? "New Folder" : name.Trim();
+        var trimmed = string.IsNullOrWhiteSpace(name) ? fallback : name.Trim();
         foreach (var c in Path.GetInvalidFileNameChars())
         {
             trimmed = trimmed.Replace(c, '_');

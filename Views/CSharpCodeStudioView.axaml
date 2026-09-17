@@ -13,6 +13,140 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpCodeStudioView"
              x:DataType="vm:CSharpCodeStudioViewModel">
 
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:ExplorerItemViewModel">
+            <StackPanel>
+                <!-- Tree Row Item -->
+                <Button Command="{Binding ToggleExpandCommand}"
+                        Classes="explorer-item-btn"
+                        Classes.selected="{Binding IsSelected}"
+                        HorizontalAlignment="Stretch">
+                    <Button.ContextFlyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                            <MenuItem Header="Open" Command="{Binding SelectCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FileEyeOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="New Script Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsManageableDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsManageableDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Rename" Command="{Binding StartRenameCommand}" IsVisible="{Binding !IsExternalGroup}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Duplicate" Command="{Binding RequestDuplicateCommand}" IsVisible="{Binding !IsDirectory}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}" IsVisible="{Binding !IsExternalGroup}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Copy Path" Command="{Binding RequestCopyPathCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </Button.ContextFlyout>
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="{Binding IndentPadding}">
+                        <!-- Col 0: Chevron Expander for Folders -->
+                        <Border Grid.Column="0" Width="16" Height="16" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="{Binding ChevronKind}"
+                                                        Width="12" Height="12"
+                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center"
+                                                        IsVisible="{Binding IsDirectory}" />
+                        </Border>
+
+                        <!-- Col 1: Icon (Folder / Script) -->
+                        <materialIcons:MaterialIcon Grid.Column="1"
+                                                    Kind="{Binding IconKind}"
+                                                    Width="15" Height="15"
+                                                    Foreground="{Binding IconColor}"
+                                                    VerticalAlignment="Center"
+                                                    Margin="2,0,6,0" />
+
+                        <!-- Col 2: Name (Normal View) -->
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Name}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   IsVisible="{Binding !IsRenaming}" />
+
+                        <!-- Col 2: Rename TextBox (Edit View) -->
+                        <TextBox Grid.Column="2"
+                                 Text="{Binding EditName, Mode=TwoWay}"
+                                 FontSize="11.5"
+                                 Height="22"
+                                 Padding="4,1"
+                                 Margin="0,0,4,0"
+                                 IsVisible="{Binding IsRenaming}"
+                                 controls:FocusOnTrueBehavior.IsActive="{Binding IsRenaming}"
+                                 VerticalAlignment="Center" />
+
+                        <!-- Col 3: Action Buttons (Only visible on hover!) -->
+                        <StackPanel Grid.Column="3"
+                                    Classes="explorer-row-actions"
+                                    Orientation="Horizontal"
+                                    Spacing="2"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0">
+                            <Button Command="{Binding RequestNewFileCommand}"
+                                    Classes="explorer-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="New Script Here"
+                                    IsVisible="{Binding IsManageableDirectory}">
+                                <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Command="{Binding RequestNewFolderCommand}"
+                                    Classes="explorer-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="New Folder Here"
+                                    IsVisible="{Binding IsManageableDirectory}">
+                                <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Command="{Binding RequestDuplicateCommand}"
+                                    Classes="explorer-tool-btn"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="Duplicate Script"
+                                    IsVisible="{Binding !IsDirectory}">
+                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                            <Button Command="{Binding RequestDeleteCommand}"
+                                    Classes="explorer-tool-btn delete-tool"
+                                    Width="19" Height="19"
+                                    ToolTip.Tip="Delete"
+                                    IsVisible="{Binding !IsExternalGroup}">
+                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Button>
+
+                <!-- Recursive Nested Children -->
+                <ItemsControl ItemsSource="{Binding Children}"
+                              IsVisible="{Binding IsExpanded}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
@@ -106,6 +240,73 @@
         <Style Selector="Button.cs-toolbar-icon:pointerover">
             <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+
+        <!-- Explorer tree row — same shape as Notebook Studio's own local explorer-item-btn, kept as
+             its own local copy here rather than shared, following this codebase's per-view style
+             convention. Selection uses M3PrimaryBrush (this view's own blue identity) instead of
+             Notebook Studio's amber, so the two Explorers still read as visually distinct. -->
+        <Style Selector="Button.explorer-item-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Height" Value="25" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.08" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.08" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.explorer-item-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        </Style>
+        <Style Selector="Button.explorer-item-btn.selected">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <!-- Hover Action Buttons: hidden by default, revealed on row hover -->
+        <Style Selector="StackPanel.explorer-row-actions">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.explorer-item-btn:pointerover StackPanel.explorer-row-actions">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <!-- Small inline icon buttons used inside explorer rows and the explorer header toolbar -->
+        <Style Selector="Button.explorer-tool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        </Style>
+        <Style Selector="Button.explorer-tool-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+        <Style Selector="Button.explorer-tool-btn.delete-tool:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3ErrorContainerBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3ErrorBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -310,11 +511,58 @@
         <!-- ============================================================ -->
         <!-- 2. MAIN WORKSPACE: LeetCode-Inspired Split Panels             -->
         <!-- ============================================================ -->
-        <Grid Grid.Row="1" ColumnDefinitions="420,4,*">
+        <Grid Grid.Row="1" ColumnDefinitions="220,4,420,4,*">
+            <!-- ======================================================== -->
+            <!-- 2X. EXPLORER SIDEBAR: Script/Folder Tree                  -->
+            <!-- ======================================================== -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Height="36"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="14,0,6,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="EXPLORER"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                       VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <Button Command="{Binding NewScriptCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Script">
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding NewFolderCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Folder">
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding RefreshExplorerCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Refresh Explorer">
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                                <Button Command="{Binding CollapseAllExplorerCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Collapse Folders">
+                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ExplorerRootItems}" Margin="2,4,2,8" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          Background="{DynamicResource M3OutlineVariantBrush}"
+                          ResizeDirection="Columns"
+                          Cursor="SizeWestEast" />
+
             <!-- ======================================================== -->
             <!-- 2A. LEFT PANEL: Description, Problem Notes & References   -->
             <!-- ======================================================== -->
-            <Border Grid.Column="0"
+            <Border Grid.Column="2"
                     Background="{DynamicResource M3SurfaceContainerLowBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,0,1,0">
@@ -475,7 +723,7 @@
             </Border>
 
             <!-- Column Splitter (Left vs Right) -->
-            <GridSplitter Grid.Column="1"
+            <GridSplitter Grid.Column="3"
                           Width="4"
                           Background="{DynamicResource M3OutlineVariantBrush}"
                           ResizeDirection="Columns"
@@ -484,7 +732,7 @@
             <!-- ======================================================== -->
             <!-- 2B. RIGHT PANEL: C# Code Editor + Bottom Tool Deck        -->
             <!-- ======================================================== -->
-            <Grid Grid.Column="2" RowDefinitions="Auto,*,4,280">
+            <Grid Grid.Column="4" RowDefinitions="Auto,*,4,280">
                 <!-- Editor Sub-Toolbar: Folding, Word Wrap, Find, Format -->
                 <Border Grid.Row="0"
                         Background="{DynamicResource M3SurfaceContainerLowBrush}"

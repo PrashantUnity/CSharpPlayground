@@ -69,6 +69,40 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLaunching;
 
+    // "New Script"/"New Notebook" open this prompt instead of creating immediately, so the user
+    // can name the document and pick a destination folder — like a real IDE's "New File" dialog —
+    // rather than everything silently landing in the library root. The folder itself is chosen via
+    // the OS's own native folder browser (see CSharpManagerView.axaml.cs), scoped to browse within
+    // LibraryRootPath, which also lets the user create a new folder using the OS dialog's own "New
+    // Folder" affordance — no separate in-app "create folder" UI needed. Launching a template does
+    // NOT go through this prompt (that stays a fast, one-click "get started" flow); it still calls
+    // the Core create methods directly, unchanged.
+    [ObservableProperty]
+    private WorkspaceItemKind? _pendingCreateKind;
+
+    [ObservableProperty]
+    private string _newItemName = string.Empty;
+
+    // Null/empty means the library root. Set directly by the View's code-behind after a successful
+    // native folder-picker round trip (already validated + made relative to LibraryRootPath there).
+    [ObservableProperty]
+    private string? _selectedFolderPath;
+
+    // Set by the View's code-behind when the user picks a folder outside LibraryRootPath via the
+    // native browser — the storage layer can only save under that root, so this surfaces why the
+    // pick didn't take instead of silently leaving the display unchanged.
+    [ObservableProperty]
+    private string? _locationWarning;
+
+    private string? _pendingTemplateId;
+
+    public bool IsCreatePromptOpen => PendingCreateKind.HasValue;
+    public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : "New Script";
+    public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
+
+    // Exposed so the View's code-behind can scope the native folder-picker dialog to this directory.
+    public string LibraryRootPath => _storageService.LibraryRootPath;
+
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
     public ObservableCollection<WorkspaceItemSummary> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
@@ -215,6 +249,14 @@ public partial class CSharpManagerViewModel : ObservableObject
         OnPropertyChanged(nameof(IsShowingItem));
     }
 
+    partial void OnPendingCreateKindChanged(WorkspaceItemKind? value)
+    {
+        OnPropertyChanged(nameof(IsCreatePromptOpen));
+        OnPropertyChanged(nameof(CreatePromptTitle));
+    }
+
+    partial void OnSelectedFolderPathChanged(string? value) => OnPropertyChanged(nameof(SelectedFolderDisplay));
+
     [RelayCommand]
     private void SetSelectedTypeFilter(string filter)
     {
@@ -322,58 +364,89 @@ public partial class CSharpManagerViewModel : ObservableObject
         // very first LoadWorkspaceItemsAsync (fired unawaited from the constructor) has populated
         // AllItems — both were real ways for an existing/about-to-exist document to look absent.
         if (IsLaunching || IsLoading) return;
-        IsLaunching = true;
-        try
-        {
-            await CreateNewScriptCoreAsync(templateId);
-        }
-        finally
-        {
-            IsLaunching = false;
-        }
-    }
-
-    private async Task CreateNewScriptCoreAsync(string? templateId)
-    {
-        var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
-        var title = template?.Title ?? "New Automation Script";
-
-        if (AllItems.Any(i => i.IsScript && string.Equals(i.Title, title, StringComparison.OrdinalIgnoreCase)))
-        {
-            title = $"{title} (Copy)";
-        }
-
-        var newScript = await _storageService.CreateNewScriptAsync(title, templateId);
-        await LoadWorkspaceItemsAsync();
-        _openScriptAction.Invoke(newScript);
+        await OpenCreatePromptAsync(WorkspaceItemKind.Script, templateId, "New Automation Script");
     }
 
     [RelayCommand]
     public async Task CreateNewNotebookAsync(string? templateId = null)
     {
         if (IsLaunching || IsLoading) return;
+        await OpenCreatePromptAsync(WorkspaceItemKind.Notebook, templateId, "New Interactive Notebook");
+    }
+
+    private Task OpenCreatePromptAsync(WorkspaceItemKind kind, string? templateId, string defaultName)
+    {
+        _pendingTemplateId = templateId;
+        var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
+        NewItemName = template?.Title ?? defaultName;
+        SelectedFolderPath = null;
+        LocationWarning = null;
+        PendingCreateKind = kind;
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private void CancelCreatePrompt()
+    {
+        PendingCreateKind = null;
+    }
+
+    [RelayCommand]
+    public async Task ConfirmCreateAsync()
+    {
+        if (PendingCreateKind is not { } kind) return;
+        if (IsLaunching || IsLoading) return;
+
         IsLaunching = true;
         try
         {
-            await CreateNewNotebookCoreAsync(templateId);
+            var folderPath = SelectedFolderPath;
+            var title = string.IsNullOrWhiteSpace(NewItemName)
+                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : "New Automation Script")
+                : NewItemName.Trim();
+
+            if (kind == WorkspaceItemKind.Notebook)
+            {
+                await CreateNewNotebookCoreAsync(_pendingTemplateId, folderPath, title);
+            }
+            else
+            {
+                await CreateNewScriptCoreAsync(_pendingTemplateId, folderPath, title);
+            }
         }
         finally
         {
             IsLaunching = false;
+            PendingCreateKind = null;
         }
     }
 
-    private async Task CreateNewNotebookCoreAsync(string? templateId)
+    private async Task CreateNewScriptCoreAsync(string? templateId, string? folderPath = null, string? explicitTitle = null)
     {
         var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
-        var title = template?.Title ?? "New Interactive Notebook";
+        var title = explicitTitle ?? template?.Title ?? "New Automation Script";
+
+        if (AllItems.Any(i => i.IsScript && string.Equals(i.Title, title, StringComparison.OrdinalIgnoreCase)))
+        {
+            title = $"{title} (Copy)";
+        }
+
+        var newScript = await _storageService.CreateNewScriptAsync(title, templateId, folderPath);
+        await LoadWorkspaceItemsAsync();
+        _openScriptAction.Invoke(newScript);
+    }
+
+    private async Task CreateNewNotebookCoreAsync(string? templateId, string? folderPath = null, string? explicitTitle = null)
+    {
+        var template = StarterTemplates.FirstOrDefault(t => t.Id == templateId);
+        var title = explicitTitle ?? template?.Title ?? "New Interactive Notebook";
 
         if (AllItems.Any(i => i.IsNotebook && string.Equals(i.Title, title, StringComparison.OrdinalIgnoreCase)))
         {
             title = $"{title} (Copy)";
         }
 
-        var newNb = await _storageService.CreateNewNotebookAsync(title, templateId);
+        var newNb = await _storageService.CreateNewNotebookAsync(title, templateId, folderPath);
         await LoadWorkspaceItemsAsync();
         _openNotebookAction.Invoke(newNb);
     }

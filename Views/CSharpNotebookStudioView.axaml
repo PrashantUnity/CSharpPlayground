@@ -39,18 +39,18 @@
                                     <materialIcons:MaterialIcon Kind="FileEyeOutline" Width="14" Height="14" />
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="New Notebook Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsDirectory}">
+                            <MenuItem Header="New Notebook Here" Command="{Binding RequestNewFileCommand}" IsVisible="{Binding IsManageableDirectory}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsDirectory}">
+                            <MenuItem Header="New Folder Here" Command="{Binding RequestNewFolderCommand}" IsVisible="{Binding IsManageableDirectory}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
                                 </MenuItem.Icon>
                             </MenuItem>
                             <Separator />
-                            <MenuItem Header="Rename" Command="{Binding StartRenameCommand}">
+                            <MenuItem Header="Rename" Command="{Binding StartRenameCommand}" IsVisible="{Binding !IsExternalGroup}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="RenameOutline" Width="14" Height="14" />
                                 </MenuItem.Icon>
@@ -60,7 +60,7 @@
                                     <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}">
+                            <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}" IsVisible="{Binding !IsExternalGroup}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
                                 </MenuItem.Icon>
@@ -124,14 +124,14 @@
                                     Classes="cell-tool-btn"
                                     Width="19" Height="19"
                                     ToolTip.Tip="New Notebook Here"
-                                    IsVisible="{Binding IsDirectory}">
+                                    IsVisible="{Binding IsManageableDirectory}">
                                 <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
                             <Button Command="{Binding RequestNewFolderCommand}"
                                     Classes="cell-tool-btn"
                                     Width="19" Height="19"
                                     ToolTip.Tip="New Folder Here"
-                                    IsVisible="{Binding IsDirectory}">
+                                    IsVisible="{Binding IsManageableDirectory}">
                                 <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
                             <!-- File actions on hover -->
@@ -145,7 +145,8 @@
                             <Button Command="{Binding RequestDeleteCommand}"
                                     Classes="cell-tool-btn delete-tool"
                                     Width="19" Height="19"
-                                    ToolTip.Tip="Delete">
+                                    ToolTip.Tip="Delete"
+                                    IsVisible="{Binding !IsExternalGroup}">
                                 <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
                         </StackPanel>

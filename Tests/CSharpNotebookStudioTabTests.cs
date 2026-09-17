@@ -929,4 +929,187 @@ Console.WriteLine(""should not be reached"");";
         Assert.Contains(summaries, s => s.Title == "Document Automation Notebook");
         Assert.False(studio.ActiveTab.IsModified);
     }
+
+    // Reproduces the real reported bug: a notebook saved outside the library (via the Manager's
+    // native folder-browser flow) has an absolute path for its FolderPath, and feeding that straight
+    // into the same folder-tree builder used for real library-relative paths shredded it into a chain
+    // of fake nested "folders" — one per path segment (e.g. "Users" > "yourname" > "Downloads" >
+    // "MyExternalFolder") — none of which exist in the library. It must instead show as a single
+    // group node named after just the immediate containing folder.
+    [Fact]
+    public async Task PopulateExplorerTree_ForExternallySavedDocument_GroupsUnderSingleParentFolderNode()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
+        try
+        {
+            var doc = await _testStorage.CreateNewNotebookAsync("External Doc", folderPath: externalDir);
+
+            // The external project only shows up once something from it is actually open (see
+            // RebuildExplorerTree's relevance filter) — pass it as the studio's initial document
+            // rather than the default, matching how a user would really reach this state.
+            var studio = CreateStudio(doc);
+
+            // Exactly one directory-type node at the root — the single group node — not a chain of
+            // fake folders matching every segment of the absolute path.
+            var directoryRoots = studio.ExplorerRootItems.Where(x => x.IsDirectory).ToList();
+            var groupNode = Assert.Single(directoryRoots);
+            Assert.Equal("MyExternalFolder", groupNode.Name);
+            Assert.True(groupNode.IsExternalGroup);
+            Assert.False(groupNode.IsManageableDirectory);
+            Assert.Equal(externalDir, groupNode.FullPath);
+
+            var docItem = Assert.Single(groupNode.Children);
+            Assert.Equal("External Doc.frynb", docItem.Name);
+            Assert.False(docItem.IsDirectory);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Defense in depth: even if something bypasses the "Delete" menu item's IsVisible="{Binding
+    // !IsExternalGroup}" guard, DeleteExplorerItemAsync itself must refuse to act on this node —
+    // otherwise DeleteFolderAsync would resolve its FullPath as-is (a real absolute directory outside
+    // the library) and recursively delete a folder on the user's computer this app doesn't manage.
+    [Fact]
+    public async Task DeleteExplorerItemAsync_OnExternalGroupNode_LeavesRealFolderAndTreeNodeIntact()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
+        try
+        {
+            var doc = await _testStorage.CreateNewNotebookAsync("External Doc", folderPath: externalDir);
+            var studio = CreateStudio(doc);
+            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
+
+            await studio.DeleteExplorerItemAsync(groupNode);
+
+            Assert.True(Directory.Exists(externalDir));
+            Assert.Contains(studio.ExplorerRootItems, x => ReferenceEquals(x, groupNode));
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Reproduces a second real bug found alongside the fake-folder one: SaveNotebookAsync (which
+    // Duplicate uses to persist a brand-new copy) had no way to know which folder a never-before-saved
+    // document belonged in, so it always fell back to the library root — duplicating a notebook that
+    // lived outside the library silently moved the copy back into the library instead of keeping it
+    // next to the original.
+    [Fact]
+    public async Task DuplicateExplorerItemAsync_ForExternallySavedNotebook_KeepsCopyInSameExternalFolder()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "DupFolder");
+        try
+        {
+            var doc = await _testStorage.CreateNewNotebookAsync("Original", folderPath: externalDir);
+            var studio = CreateStudio(doc);
+            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
+            var originalItem = groupNode.Children.Single();
+
+            await studio.DuplicateExplorerItemAsync(originalItem);
+
+            var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+            var copy = Assert.Single(summaries, s => s.Title == "Original Copy");
+            Assert.Equal(externalDir, copy.FolderPath);
+            Assert.Contains(groupNode.Children, c => c.DocumentId == copy.Id);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Reproduces the real reported bug: opening one notebook from one external folder ("hello") also
+    // showed a totally unrelated external folder ("I guess") in the same sidebar, just because
+    // something had been saved there at some point — every external folder ever touched was merged
+    // into one big workspace instead of only showing what's actually relevant to what's open.
+    [Fact]
+    public async Task PopulateExplorerTree_WithUnrelatedExternalProject_DoesNotShowTheUnrelatedOne()
+    {
+        var helloDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "hello");
+        var iGuessDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "I guess");
+        try
+        {
+            var helloDoc = await _testStorage.CreateNewNotebookAsync("h", folderPath: helloDir);
+            await _testStorage.CreateNewNotebookAsync("New I", folderPath: iGuessDir);
+
+            // Only "hello" is opened.
+            var studio = CreateStudio(helloDoc);
+
+            var externalGroups = studio.ExplorerRootItems.Where(x => x.IsExternalGroup).ToList();
+            var visible = Assert.Single(externalGroups);
+            Assert.Equal("hello", visible.Name);
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsExternalGroup && x.Name == "I guess");
+        }
+        finally
+        {
+            foreach (var dir in new[] { helloDir, iGuessDir })
+            {
+                var root = Path.GetDirectoryName(dir)!;
+                if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    // The external-group node is purely a display convenience (see RebuildExplorerTree) — once its
+    // last real document is deleted, it must disappear too rather than lingering as an empty folder
+    // until the next full tree rebuild.
+    [Fact]
+    public async Task DeleteExplorerItemAsync_LastDocumentInExternalGroup_RemovesTheNowEmptyGroupNode()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
+        try
+        {
+            var doc = await _testStorage.CreateNewNotebookAsync("Only Doc", folderPath: externalDir);
+            var studio = CreateStudio(doc);
+            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
+            var docItem = groupNode.Children.Single();
+
+            await studio.DeleteExplorerItemAsync(docItem);
+
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsExternalGroup);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // Companion to the test above: deleting one of SEVERAL documents in the same external folder must
+    // NOT remove the group node — only an empty group should ever be pruned.
+    [Fact]
+    public async Task DeleteExplorerItemAsync_OneOfMultipleDocumentsInExternalGroup_KeepsGroupNodeWithRemainingDocument()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MultiFolder");
+        try
+        {
+            var first = await _testStorage.CreateNewNotebookAsync("First", folderPath: externalDir);
+            await _testStorage.CreateNewNotebookAsync("Second", folderPath: externalDir);
+
+            // Only "First" is opened, but "Second" must still appear too — the relevance filter shows
+            // the whole project once anything in it is open, not just the one document that's open.
+            var studio = CreateStudio(first);
+            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
+            Assert.Equal(2, groupNode.Children.Count);
+            var firstItem = groupNode.Children.Single(c => c.Name == "First.frynb");
+
+            await studio.DeleteExplorerItemAsync(firstItem);
+
+            var survivingGroup = Assert.Single(studio.ExplorerRootItems, x => x.IsExternalGroup);
+            var remaining = Assert.Single(survivingGroup.Children);
+            Assert.Equal("Second.frynb", remaining.Name);
+        }
+        finally
+        {
+            var root = Path.GetDirectoryName(externalDir)!;
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
 }

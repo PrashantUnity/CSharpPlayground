@@ -257,6 +257,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestToggleSearch -= ToggleSearch;
             _currentVm.RequestSetPausedLine -= OnSetPausedLine;
             _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
+            _currentVm.RequestReloadEditorText -= OnReloadEditorText;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
@@ -272,6 +273,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestToggleSearch += ToggleSearch;
             _currentVm.RequestSetPausedLine += OnSetPausedLine;
             _currentVm.RequestSyncBreakpoints += OnSyncBreakpoints;
+            _currentVm.RequestReloadEditorText += OnReloadEditorText;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
             _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
@@ -293,6 +295,26 @@ public partial class CSharpCodeStudioView : UserControl
             {
                 _isUpdatingText = false;
             }
+        }
+    }
+
+    // Fired only when the underlying script identity actually changes (UpdateActiveScriptAsync, e.g. from
+    // the Explorer sidebar) — not on every keystroke — so this can safely push text into the editor
+    // without the _isUpdatingText guard here ever fighting normal typing. Mirrors the exact one-time
+    // push already done in OnDataContextChanged for the initial script.
+    private void OnReloadEditorText()
+    {
+        if (_editor == null || _currentVm == null) return;
+
+        _isUpdatingText = true;
+        try
+        {
+            _editor.Text = _currentVm.Code ?? string.Empty;
+            UpdateCodeFolding();
+        }
+        finally
+        {
+            _isUpdatingText = false;
         }
     }
 

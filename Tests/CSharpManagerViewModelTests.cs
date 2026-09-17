@@ -82,8 +82,11 @@ public class CSharpManagerViewModelTests : IDisposable
         Assert.Equal(vm.AllItems.Select(i => i.Id).Distinct().Count(), vm.AllItems.Count);
     }
 
+    // "New Script"/"New Notebook" now opens a name+location prompt instead of creating immediately
+    // (so the user can pick a destination folder, like a real IDE's "New File" dialog) — the document
+    // isn't actually created/opened until ConfirmCreateCommand runs.
     [Fact]
-    public async Task CreateNewScriptCommand_NoParameter_InvokesOpenCallbackWithoutThrowing()
+    public async Task CreateNewScriptCommand_NoParameter_OpensLocationPromptThenConfirmInvokesOpenCallback()
     {
         var scriptOpens = 0;
         ScriptDocumentItem? opened = null;
@@ -98,12 +101,20 @@ public class CSharpManagerViewModelTests : IDisposable
         ((System.Windows.Input.ICommand)vm.CreateNewScriptCommand).Execute(null);
         await Task.Delay(200); // let the fire-and-forget async command body finish
 
+        Assert.True(vm.IsCreatePromptOpen);
+        Assert.Equal(0, scriptOpens);
+        Assert.Null(opened);
+
+        ((System.Windows.Input.ICommand)vm.ConfirmCreateCommand).Execute(null);
+        await Task.Delay(200);
+
         Assert.Equal(1, scriptOpens);
         Assert.NotNull(opened);
+        Assert.False(vm.IsCreatePromptOpen);
     }
 
     [Fact]
-    public async Task CreateNewNotebookCommand_NoParameter_InvokesOpenCallbackWithoutThrowing()
+    public async Task CreateNewNotebookCommand_NoParameter_OpensLocationPromptThenConfirmInvokesOpenCallback()
     {
         var notebookOpens = 0;
         NotebookDocumentItem? opened = null;
@@ -117,8 +128,40 @@ public class CSharpManagerViewModelTests : IDisposable
         ((System.Windows.Input.ICommand)vm.CreateNewNotebookCommand).Execute(null);
         await Task.Delay(200);
 
+        Assert.True(vm.IsCreatePromptOpen);
+        Assert.Equal(0, notebookOpens);
+        Assert.Null(opened);
+
+        ((System.Windows.Input.ICommand)vm.ConfirmCreateCommand).Execute(null);
+        await Task.Delay(200);
+
         Assert.Equal(1, notebookOpens);
         Assert.NotNull(opened);
+        Assert.False(vm.IsCreatePromptOpen);
+    }
+
+    // Verifies the actual feature end-to-end: the folder chosen in the prompt (set on SelectedFolderPath
+    // by the View's code-behind after the native folder-picker round trip — simulated directly here,
+    // since a native OS dialog isn't something a unit test can drive) is honored by the document that
+    // gets created, not silently dropped in the library root.
+    [Fact]
+    public async Task ConfirmCreateCommand_WithSelectedFolderPath_CreatesScriptInsideThatFolder()
+    {
+        var vm = new CSharpManagerViewModel(
+            _storage,
+            openScriptAction: _ => { },
+            openNotebookAction: _ => { },
+            navigateToHomeAction: () => { });
+        await vm.LoadWorkspaceItemsAsync();
+
+        await vm.CreateNewScriptAsync();
+        vm.SelectedFolderPath = "Reports";
+        vm.NewItemName = "Quarterly Export";
+
+        await vm.ConfirmCreateAsync();
+
+        var created = (await _storage.LoadWorkspaceSummariesAsync()).Single(i => i.Title == "Quarterly Export");
+        Assert.Equal("Reports", created.FolderPath);
     }
 
     [Fact]
@@ -203,9 +246,11 @@ public class CSharpManagerViewModelTests : IDisposable
 
     // Same guard, exercised via the "New Notebook" entry point directly (no template involved) —
     // this is the exact path that produced the "New Interactive Notebook (Copy)" artifact found in a
-    // real user's library: two rapid clicks on the plain New Notebook button.
+    // real user's library: two rapid clicks on the plain New Notebook button. Creation now happens on
+    // ConfirmCreateAsync (after the name/location prompt), so that's what's exercised twice back-to-back;
+    // CreateNewNotebookAsync itself just (re)opens the prompt and is naturally idempotent.
     [Fact]
-    public async Task CreateNewNotebookCommand_CalledTwiceBackToBack_CreatesExactlyOneDocument()
+    public async Task ConfirmCreateCommand_CalledTwiceBackToBackAfterOpeningNotebookPrompt_CreatesExactlyOneDocument()
     {
         var notebookOpens = 0;
         var vm = new CSharpManagerViewModel(
@@ -215,8 +260,11 @@ public class CSharpManagerViewModelTests : IDisposable
             navigateToHomeAction: () => { });
         await vm.LoadWorkspaceItemsAsync();
 
-        var firstCall = vm.CreateNewNotebookAsync();
-        var secondCall = vm.CreateNewNotebookAsync();
+        await vm.CreateNewNotebookAsync();
+        Assert.True(vm.IsCreatePromptOpen);
+
+        var firstCall = vm.ConfirmCreateAsync();
+        var secondCall = vm.ConfirmCreateAsync(); // fired before firstCall's first await completes
         await Task.WhenAll(firstCall, secondCall);
 
         var matches = (await _storage.LoadWorkspaceSummariesAsync())

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,6 +118,17 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public event Action<int>? RequestSetPausedLine;
     public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
+    // Code Studio reuses one long-lived ViewModel instance across every script you open (see
+    // CSharpStudioHostViewModel.NavigateToCodeStudio -> UpdateActiveScriptAsync), so switching scripts from
+    // the Explorer sidebar without leaving the page never actually changes the View's DataContext
+    // reference — nothing re-fires OnDataContextChanged, which is the only place the editor's text is
+    // normally pushed in. Without an explicit signal here, the editor would keep showing the PREVIOUS
+    // script's code while the title/breadcrumb/everything else correctly shows the new one, and a
+    // subsequent Save would overwrite the new script's file with the old script's content.
+    public event Action? RequestReloadEditorText;
+
+    public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
+
     public ObservableCollection<string> LanguageModes { get; } = new()
     {
         "C# Statements",
@@ -215,9 +229,17 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }
 
         TriggerDiagnosticsCheck();
+        PopulateExplorerTree();
     }
 
-    public void UpdateActiveScript(ScriptDocumentItem script)
+    // Must be awaited, never called fire-and-forget-then-blocked-on: the Explorer refresh at the end
+    // touches storage that now does genuine async file I/O (see LocalScriptStorageService's project-file
+    // reads), and this is called directly from UI-thread event handlers (NavigateToCodeStudio, Explorer
+    // clicks). A synchronous PopulateExplorerTree().GetAwaiter().GetResult() here previously deadlocked
+    // the UI thread the moment that I/O actually needed to yield — that's the "opening a script hangs
+    // the app" bug. PopulateExplorerTree()'s own blocking wait stays safe only because the host
+    // constructs both studio ViewModels inside Task.Run, off the UI thread.
+    public async Task UpdateActiveScriptAsync(ScriptDocumentItem script)
     {
         Script = script;
         Code = script.Code;
@@ -245,8 +267,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         }
 
         RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+        RequestReloadEditorText?.Invoke();
 
         TriggerDiagnosticsCheck();
+        await RefreshExplorerAsync();
     }
 
     partial void OnCodeChanged(string value)
@@ -1028,5 +1052,565 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public void ClearImmediate()
     {
         ImmediateOutput.Clear();
+    }
+
+    // ================================================================
+    // EXPLORER (script/folder tree) — mirrors CSharpNotebookStudioViewModel's Explorer, adapted for
+    // Code Studio's single-open-document model (no tab strip): "opening" a different script switches
+    // this same ViewModel's Script/Code in place via UpdateActiveScriptAsync rather than adding a tab.
+    // ================================================================
+
+    public void PopulateExplorerTree()
+    {
+        try
+        {
+            var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
+            var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
+            RebuildExplorerTree(folderPaths, summaries);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to populate script explorer tree: {ex.Message}");
+            ExplorerRootItems.Clear();
+        }
+    }
+
+
+    [RelayCommand]
+    public async Task RefreshExplorerAsync()
+    {
+        try
+        {
+            var folderPaths = await _storageService.LoadFolderPathsAsync();
+            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
+            RebuildExplorerTree(folderPaths, summaries);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh script explorer tree: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Builds the visible tree purely from real storage: real folders (LoadFolderPathsAsync) plus real
+    /// scripts (LoadWorkspaceSummariesAsync, placed under their actual FolderPath). Same shape as
+    /// Notebook Studio's tree, including the external-project relevance filter — an externally-saved
+    /// script's project only shows up while the currently open Script belongs to it, rather than
+    /// merging every external folder you've ever saved a script to into one workspace. Code Studio has
+    /// just one open document at a time, so that's at most a single relevant external folder (versus
+    /// Notebook Studio's set-of-open-tabs version of the same filter).
+    /// </summary>
+    private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
+    {
+        ExplorerRootItems.Clear();
+        var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
+        {
+            if (string.IsNullOrEmpty(relativePath)) return null;
+            if (folderNodes.TryGetValue(relativePath, out var existing)) return existing;
+
+            var lastSlash = relativePath.LastIndexOf('/');
+            var name = lastSlash >= 0 ? relativePath[(lastSlash + 1)..] : relativePath;
+            var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
+            var parent = GetOrCreateFolder(parentPath);
+
+            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            AddToTree(parent, node);
+            folderNodes[relativePath] = node;
+            return node;
+        }
+
+        foreach (var path in folderPaths.OrderBy(p => p.Count(c => c == '/')).ThenBy(p => p, StringComparer.OrdinalIgnoreCase))
+        {
+            GetOrCreateFolder(path);
+        }
+
+        var externalGroupNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        ExplorerItemViewModel GetOrCreateExternalGroup(string absolutePath)
+        {
+            if (externalGroupNodes.TryGetValue(absolutePath, out var existing)) return existing;
+
+            var trimmed = absolutePath.TrimEnd('/', '\\');
+            var name = Path.GetFileName(trimmed);
+            if (string.IsNullOrEmpty(name)) name = trimmed;
+
+            var node = CreateFolderItem(name, absolutePath, isExpanded: false, parent: null, isExternalGroup: true);
+            AddToTree(null, node);
+            externalGroupNodes[absolutePath] = node;
+            return node;
+        }
+
+        string? relevantExternalFolder = null;
+        if (Script != null)
+        {
+            var activeSummary = summaries.FirstOrDefault(s => string.Equals(s.Id, Script.Id, StringComparison.OrdinalIgnoreCase));
+            if (activeSummary != null && !string.IsNullOrEmpty(activeSummary.FolderPath) && Path.IsPathRooted(activeSummary.FolderPath))
+            {
+                relevantExternalFolder = activeSummary.FolderPath;
+            }
+        }
+
+        foreach (var s in summaries.Where(x => x.IsScript).OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
+        {
+            var name = s.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}.frycs";
+            var isExternal = !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath);
+            if (isExternal && !string.Equals(s.FolderPath, relevantExternalFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var parent = isExternal ? GetOrCreateExternalGroup(s.FolderPath!) : GetOrCreateFolder(s.FolderPath);
+            var fullPath = isExternal
+                ? $"{s.FolderPath!.TrimEnd('/', '\\')}/{name}"
+                : (string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}");
+
+            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
+            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var docItem = CreateFileItem(name, s.Id, parent, fullPath);
+            AddToTree(parent, docItem);
+        }
+
+        // Ensure the currently open script is represented even if it hasn't reached storage yet.
+        if (Script != null && !string.IsNullOrEmpty(Script.Id) && FindByDocumentId(ExplorerRootItems, Script.Id) == null)
+        {
+            var fileName = Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
+            var expItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName);
+            ExplorerRootItems.Add(expItem);
+        }
+
+        SortExplorerTree(ExplorerRootItems);
+        HighlightExplorerItem(Script?.Id);
+    }
+
+    private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
+    {
+        var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        if (!sorted.SequenceEqual(items))
+        {
+            items.Clear();
+            foreach (var item in sorted) items.Add(item);
+        }
+
+        foreach (var folder in items.Where(i => i.IsDirectory))
+        {
+            SortExplorerTree(folder.Children);
+        }
+    }
+
+    private void DeselectAll(IEnumerable<ExplorerItemViewModel> items)
+    {
+        foreach (var it in items)
+        {
+            it.IsSelected = false;
+            if (it.Children.Count > 0) DeselectAll(it.Children);
+        }
+    }
+
+    private void HighlightExplorerItem(string? documentId)
+    {
+        DeselectAll(ExplorerRootItems);
+        if (string.IsNullOrEmpty(documentId)) return;
+
+        var match = FindByDocumentId(ExplorerRootItems, documentId);
+        if (match != null)
+        {
+            match.IsSelected = true;
+            var parent = match.Parent;
+            while (parent != null)
+            {
+                parent.IsExpanded = true;
+                parent = parent.Parent;
+            }
+        }
+    }
+
+    private ExplorerItemViewModel? FindByDocumentId(IEnumerable<ExplorerItemViewModel> items, string documentId)
+    {
+        foreach (var item in items)
+        {
+            if (!item.IsDirectory && string.Equals(item.DocumentId, documentId, StringComparison.OrdinalIgnoreCase)) return item;
+            var childMatch = FindByDocumentId(item.Children, documentId);
+            if (childMatch != null) return childMatch;
+        }
+        return null;
+    }
+
+    private ExplorerItemViewModel? FindSelectedItem(IEnumerable<ExplorerItemViewModel> items)
+    {
+        foreach (var item in items)
+        {
+            if (item.IsSelected) return item;
+            var childMatch = FindSelectedItem(item.Children);
+            if (childMatch != null) return childMatch;
+        }
+        return null;
+    }
+
+    private void AddToTree(ExplorerItemViewModel? parent, ExplorerItemViewModel child)
+    {
+        if (parent != null) parent.Children.Add(child);
+        else ExplorerRootItems.Add(child);
+    }
+
+    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
+    {
+        return new ExplorerItemViewModel
+        {
+            Name = name,
+            IsDirectory = true,
+            IsExternalGroup = isExternalGroup,
+            IsExpanded = isExpanded,
+            Parent = parent,
+            Depth = (parent?.Depth ?? -1) + 1,
+            FullPath = fullPath,
+            OnItemClicked = OnExplorerItemClicked,
+            OnDeleteRequested = DeleteExplorerItem,
+            OnNewFileRequested = NewScriptUnderItem,
+            OnNewFolderRequested = NewFolderUnderItem,
+            OnRenameCommitted = OnItemRenamed,
+            OnDuplicateRequested = DuplicateExplorerItem,
+            OnCopyPathRequested = CopyItemPath
+        };
+    }
+
+    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath)
+    {
+        return new ExplorerItemViewModel
+        {
+            Name = name,
+            DocumentId = documentId,
+            IsDirectory = false,
+            FileExtension = Path.GetExtension(name),
+            Parent = parent,
+            Depth = (parent?.Depth ?? -1) + 1,
+            FullPath = fullPath,
+            OnItemClicked = OnExplorerItemClicked,
+            OnDeleteRequested = DeleteExplorerItem,
+            OnNewFileRequested = NewScriptUnderItem,
+            OnNewFolderRequested = NewFolderUnderItem,
+            OnRenameCommitted = OnItemRenamed,
+            OnDuplicateRequested = DuplicateExplorerItem,
+            OnCopyPathRequested = CopyItemPath
+        };
+    }
+
+    private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = SwitchToScriptAsync(item);
+
+    /// <summary>
+    /// The Code Studio equivalent of "open this document": since there's only ever one script open at
+    /// a time (no tab strip), clicking a different script in the Explorer auto-saves the current one
+    /// first — matching the existing silent-save-before-navigating-away behavior already used by Back
+    /// to Hub/Home — then switches this same ViewModel onto the clicked script in place.
+    /// </summary>
+    public async Task SwitchToScriptAsync(ExplorerItemViewModel item)
+    {
+        if (item.IsDirectory)
+        {
+            item.IsExpanded = !item.IsExpanded;
+            return;
+        }
+
+        if (string.IsNullOrEmpty(item.DocumentId)) return;
+        if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
+        {
+            HighlightExplorerItem(item.DocumentId);
+            return;
+        }
+
+        await SaveAsync();
+
+        var loaded = await _storageService.LoadScriptAsync(item.DocumentId);
+        if (loaded == null) return;
+
+        await UpdateActiveScriptAsync(loaded);
+    }
+
+    public void DeleteExplorerItem(ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
+
+    [RelayCommand]
+    public async Task DeleteExplorerItemAsync(ExplorerItemViewModel item)
+    {
+        if (item == null || item.IsExternalGroup) return;
+
+        if (item.IsDirectory)
+        {
+            try
+            {
+                await _storageService.DeleteFolderAsync(item.FullPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete folder '{item.FullPath}': {ex.Message}");
+            }
+        }
+        else if (!string.IsNullOrEmpty(item.DocumentId))
+        {
+            try
+            {
+                await _storageService.DeleteItemAsync(item.DocumentId);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete '{item.DocumentId}': {ex.Message}");
+            }
+        }
+
+        if (item.Parent != null)
+        {
+            var parent = item.Parent;
+            parent.Children.Remove(item);
+            if (parent.IsExternalGroup && parent.Children.Count == 0)
+            {
+                ExplorerRootItems.Remove(parent);
+            }
+        }
+        else
+        {
+            ExplorerRootItems.Remove(item);
+        }
+    }
+
+    // Header-toolbar entry points (no specific tree item to hang off of) — resolve a target folder
+    // from whatever's currently selected, falling back to a plain root-level create when nothing is
+    // selected, exactly like Notebook Studio's NewFile/NewFolder. NewFileUnderItemAsync/
+    // NewFolderUnderItemAsync always assume a non-null target, so this guard is what keeps the
+    // header buttons from passing one through as null.
+    [RelayCommand]
+    public async Task NewScript()
+    {
+        var selected = FindSelectedItem(ExplorerRootItems);
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
+
+        if (targetFolder != null)
+        {
+            await NewScriptUnderItemAsync(targetFolder);
+            return;
+        }
+
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Script_{timestamp}";
+        ScriptDocumentItem newDoc;
+        try
+        {
+            newDoc = await _storageService.CreateNewScriptAsync(title);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create script: {ex.Message}");
+            return;
+        }
+
+        await SaveAsync();
+        await UpdateActiveScriptAsync(newDoc);
+        FindByDocumentId(ExplorerRootItems, newDoc.Id)?.StartRename();
+    }
+
+    [RelayCommand]
+    public async Task NewFolder()
+    {
+        var selected = FindSelectedItem(ExplorerRootItems);
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
+        await CreateFolderCoreAsync(targetFolder);
+    }
+
+    public void NewScriptUnderItem(ExplorerItemViewModel target) => _ = NewScriptUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewScriptUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Script_{timestamp}";
+        var folderPath = folder?.FullPath;
+
+        ScriptDocumentItem newDoc;
+        try
+        {
+            newDoc = await _storageService.CreateNewScriptAsync(title, folderPath: folderPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create script: {ex.Message}");
+            return;
+        }
+
+        await SaveAsync();
+        await UpdateActiveScriptAsync(newDoc);
+
+        var newItem = FindByDocumentId(ExplorerRootItems, newDoc.Id);
+        newItem?.StartRename();
+    }
+
+    public void NewFolderUnderItem(ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewFolderUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        await CreateFolderCoreAsync(folder);
+    }
+
+    private async Task CreateFolderCoreAsync(ExplorerItemViewModel? parentFolder)
+    {
+        string newRelativePath;
+        try
+        {
+            newRelativePath = await _storageService.CreateFolderAsync(parentFolder?.FullPath, "New Folder");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create folder: {ex.Message}");
+            return;
+        }
+
+        var name = newRelativePath.Contains('/') ? newRelativePath[(newRelativePath.LastIndexOf('/') + 1)..] : newRelativePath;
+        var newFolder = CreateFolderItem(name, newRelativePath, isExpanded: true, parent: parentFolder);
+        AddToTree(parentFolder, newFolder);
+        if (parentFolder != null) parentFolder.IsExpanded = true;
+        newFolder.StartRename();
+    }
+
+    public void DuplicateExplorerItem(ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
+
+    [RelayCommand]
+    public async Task DuplicateExplorerItemAsync(ExplorerItemViewModel item)
+    {
+        if (item == null || item.IsDirectory || string.IsNullOrEmpty(item.DocumentId)) return;
+
+        var parent = item.Parent;
+        var originalTitle = item.Name.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)
+            ? item.Name.Substring(0, item.Name.Length - 6)
+            : item.Name;
+        var copyTitle = $"{originalTitle} Copy";
+        var copyFileName = $"{copyTitle}.frycs";
+
+        // Duplicating the currently open (possibly unsaved) script copies its live in-memory state;
+        // any other script is duplicated from whatever's already on disk.
+        var isActive = Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase);
+        var origDoc = isActive ? Script : await _storageService.LoadScriptAsync(item.DocumentId);
+
+        var copyDoc = new ScriptDocumentItem
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Title = copyTitle,
+            Category = origDoc?.Category ?? "Custom",
+            Description = origDoc?.Description ?? "",
+            ExecutionMode = origDoc?.ExecutionMode ?? "Statements",
+            Code = origDoc?.Code ?? string.Empty,
+            Notes = origDoc?.Notes ?? string.Empty,
+            TestCases = origDoc?.TestCases?
+                .Select(tc => new TestCaseItem { Name = tc.Name, Input = tc.Input, ExpectedOutput = tc.ExpectedOutput })
+                .ToList() ?? new List<TestCaseItem>(),
+            Created = DateTime.UtcNow,
+            LastModified = DateTime.UtcNow
+        };
+
+        // copyDoc has never been saved before, so SaveScriptAsync's folderPath is what decides where
+        // it's actually written — without passing the original's external folder through here,
+        // duplicating a script that lives outside the library would silently move the copy back into
+        // the library root instead of keeping it next to the original.
+        var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
+        await _storageService.SaveScriptAsync(copyDoc, externalFolderPath);
+
+        var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
+        var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);
+        AddToTree(parent, copyItem);
+        if (parent != null) parent.IsExpanded = true;
+
+        await SwitchToScriptAsync(copyItem);
+    }
+
+    private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
+
+    internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
+    {
+        if (item.IsDirectory)
+        {
+            // This node's FullPath is a real external directory when IsExternalGroup — RenameFolderAsync
+            // would otherwise act on it directly (see the identical guard in Notebook Studio).
+            if (item.IsExternalGroup) return;
+
+            try
+            {
+                var oldPath = item.FullPath;
+                var newPath = await _storageService.RenameFolderAsync(oldPath, item.Name);
+                UpdateDescendantFullPaths(item, oldPath, newPath);
+                item.FullPath = newPath;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to rename folder '{item.FullPath}': {ex.Message}");
+            }
+            return;
+        }
+
+        if (string.IsNullOrEmpty(item.DocumentId)) return;
+
+        var newTitle = item.Name.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)
+            ? item.Name.Substring(0, item.Name.Length - 6)
+            : item.Name;
+
+        if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
+        {
+            Script.Title = newTitle;
+            OnPropertyChanged(nameof(Script));
+            await SaveAsync();
+        }
+        else
+        {
+            var doc = await _storageService.LoadScriptAsync(item.DocumentId);
+            if (doc != null)
+            {
+                doc.Title = newTitle;
+                await _storageService.SaveScriptAsync(doc);
+            }
+        }
+    }
+
+    private void UpdateDescendantFullPaths(ExplorerItemViewModel node, string oldPrefix, string newPrefix)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.FullPath.StartsWith(oldPrefix, StringComparison.Ordinal))
+            {
+                child.FullPath = newPrefix + child.FullPath[oldPrefix.Length..];
+            }
+            UpdateDescendantFullPaths(child, oldPrefix, newPrefix);
+        }
+    }
+
+    [RelayCommand]
+    public void CopyItemPath(ExplorerItemViewModel item)
+    {
+        if (item == null) return;
+        var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        CompilerStatusText = $"Path: {path}";
+    }
+
+    [RelayCommand]
+    public void CollapseAllExplorer()
+    {
+        foreach (var item in ExplorerRootItems)
+        {
+            CollapseItemRecursive(item);
+        }
+    }
+
+    private void CollapseItemRecursive(ExplorerItemViewModel item)
+    {
+        if (item.IsDirectory)
+        {
+            item.IsExpanded = false;
+            foreach (var child in item.Children)
+            {
+                CollapseItemRecursive(child);
+            }
+        }
     }
 }
