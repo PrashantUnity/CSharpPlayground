@@ -7,7 +7,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin.Runner/Material3ExpressiveTokens.axaml" />
+                <ResourceInclude Source="avares://FrySharp/Material3ExpressiveTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
@@ -16,6 +16,6 @@
         <FluentTheme />
         <materialIcons:MaterialIconStyles />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin.Runner/Material3ExpressiveStyles.axaml" />
+        <StyleInclude Source="avares://FrySharp/Material3ExpressiveStyles.axaml" />
     </Application.Styles>
 </Application>

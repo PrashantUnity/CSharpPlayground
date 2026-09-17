@@ -5,8 +5,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>13</LangVersion>
-    <AssemblyName>CSharpEditorPlugin.Runner</AssemblyName>
+    <AssemblyName>FrySharp</AssemblyName>
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor.Runner</RootNamespace>
+    <PackageId>CodeFryDev.FrySharp</PackageId>
+    <Product>FrySharp</Product>
+    <Title>FrySharp - C# Code Studio</Title>
+    <Version>1.0.1</Version>
+    <Company>Code Fry Dev</Company>
+    <Copyright>Copyright © 2026 Code Fry Dev</Copyright>
+    <Description>Interactive C# Development Studio and Script Automation Workspace</Description>
+    <ApplicationIcon>Assets/app-logo.ico</ApplicationIcon>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +26,7 @@
     <!-- Local copies of M3 Expressive tokens and styles (no longer depends on FryPdf.Runner.Shared) -->
     <AvaloniaResource Include="Material3ExpressiveTokens.axaml" />
     <AvaloniaResource Include="Material3ExpressiveStyles.axaml" />
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
   <ItemGroup>
