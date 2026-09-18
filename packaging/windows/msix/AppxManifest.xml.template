@@ -23,11 +23,11 @@
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate" />
+    <Resource Language="en-us" />
   </Resources>
 
   <Applications>
-    <Application Id="App"
+    <Application Id="FrySharp"
                  Executable="FrySharp.exe"
                  EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="FrySharp"
