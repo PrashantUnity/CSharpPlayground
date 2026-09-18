@@ -19,6 +19,9 @@ public class NotebookCellItem
     public string ExecutionTimeText { get; set; } = string.Empty;
     public bool HasError { get; set; }
     public bool IsMarkdownPreviewMode { get; set; } = false;
+    public bool IsInputCollapsed { get; set; } = false;
+    public bool IsOutputCollapsed { get; set; } = false;
+    public bool IsOutputScrolled { get; set; } = false;
 
     // Rich Media Outputs
     public byte[]? ImageBytes { get; set; }

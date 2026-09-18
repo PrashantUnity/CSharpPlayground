@@ -544,4 +544,99 @@ public partial class NotebookTabViewModel : ObservableObject
             cell.ClearOutput();
         }
     }
+
+    [RelayCommand]
+    public void CollapseAllInputs()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsInputCollapsed = true;
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void ExpandAllInputs()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsInputCollapsed = false;
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void CollapseAllOutputs()
+    {
+        foreach (var cell in Cells)
+        {
+            if (cell.HasOutput)
+            {
+                cell.IsOutputCollapsed = true;
+            }
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void ExpandAllOutputs()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsOutputCollapsed = false;
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void CollapseAllCells()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsInputCollapsed = true;
+            if (cell.HasOutput)
+            {
+                cell.IsOutputCollapsed = true;
+            }
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void ExpandAllCells()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsInputCollapsed = false;
+            cell.IsOutputCollapsed = false;
+        }
+        IsModified = true;
+    }
+
+    [RelayCommand]
+    public void FoldAllCodeBlocks()
+    {
+        foreach (var cell in Cells.Where(c => c.IsCodeCell))
+        {
+            cell.FoldAllCode();
+        }
+    }
+
+    [RelayCommand]
+    public void UnfoldAllCodeBlocks()
+    {
+        foreach (var cell in Cells.Where(c => c.IsCodeCell))
+        {
+            cell.UnfoldAllCode();
+        }
+    }
+
+    [RelayCommand]
+    public void FormatAllCodeCells()
+    {
+        foreach (var cell in Cells.Where(c => c.IsCodeCell))
+        {
+            cell.FormatCode();
+        }
+    }
 }

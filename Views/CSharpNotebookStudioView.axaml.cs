@@ -84,6 +84,20 @@ public partial class CSharpNotebookStudioView : UserControl
             return;
         }
 
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemOpenBrackets || e.Key == Key.Oem4))
+        {
+            vm.ActiveTab?.ActiveCell?.FoldAllCode();
+            e.Handled = true;
+            return;
+        }
+
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemCloseBrackets || e.Key == Key.Oem6))
+        {
+            vm.ActiveTab?.ActiveCell?.UnfoldAllCode();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.F5 && !e.KeyModifiers.HasFlag(KeyModifiers.Control) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             _ = vm.RunAllCellsAsync();

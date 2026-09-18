@@ -390,6 +390,86 @@
             <Setter Property="Opacity" Value="1.0" />
             <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
         </Style>
+
+        <!-- Collapsed Input & Output Banners -->
+        <Style Selector="Border.notebook-collapsed-banner">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.notebook-collapsed-banner:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <Style Selector="Border.notebook-collapsed-output-banner">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.notebook-collapsed-output-banner:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
+
+        <!-- Collapsed Banner Button (Makes entire banner clickable) -->
+        <Style Selector="Button.collapsed-banner-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!-- Gutter Fold Button -->
+        <Style Selector="Button.gutter-fold-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.65" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.gutter-fold-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+
+        <!-- Scrolled Output ScrollViewer -->
+        <Style Selector="ScrollViewer.notebook-output-scroll.scrolled">
+            <Setter Property="MaxHeight" Value="360" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector="ScrollViewer.notebook-output-scroll:not(.scrolled)">
+            <Setter Property="MaxHeight" Value="NaN" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto" Background="{DynamicResource M3SurfaceBrush}">
@@ -700,6 +780,67 @@
                                 </StackPanel>
                             </Button>
 
+                            <!-- Collapse / View Options Dropdown -->
+                            <Button Classes="nb-action-btn" ToolTip.Tip="Collapse or Expand Cells and Outputs">
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Collapse All Inputs" Command="{Binding CollapseAllInputsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="UnfoldLessHorizontal" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Expand All Inputs" Command="{Binding ExpandAllInputsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Header="Collapse All Outputs" Command="{Binding CollapseAllOutputsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Expand All Outputs" Command="{Binding ExpandAllOutputsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Header="Collapse All Cells" Command="{Binding CollapseAllCellsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="FolderOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Expand All Cells" Command="{Binding ExpandAllCellsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Header="Fold All Code Blocks (Ctrl+Shift+[)" Command="{Binding FoldAllCodeBlocksCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Unfold All Code Blocks (Ctrl+Shift+])" Command="{Binding UnfoldAllCodeBlocksCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Format All Code Cells (Ctrl+K Ctrl+D)" Command="{Binding FormatAllCodeCellsCommand}">
+                                            <MenuItem.Icon>
+                                                <materialIcons:MaterialIcon Kind="FormatIndentIncrease" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    <TextBlock Text="Collapse" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
                             <Rectangle Width="1" Height="18" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="6,0" VerticalAlignment="Center" />
 
                             <!-- Outline Toggle -->
@@ -779,20 +920,35 @@
                                             <!-- COLUMN 0: LEFT GUTTER                    -->
                                             <!-- ======================================== -->
                                             <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,3,8,0">
-                                                <!-- Row 1: Gutter Run Button & Execution Badge: ▶ [1] -->
-                                                <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right" IsVisible="{Binding IsCodeCell}">
+                                                <!-- Row 1: Gutter Input Fold, Run Button & Execution Badge: ▾ ▶ [1] -->
+                                                <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                                                    <!-- Gutter Input Fold/Collapse Toggle -->
+                                                    <Button Command="{Binding ToggleInputCollapseCommand}"
+                                                            Classes="gutter-fold-btn"
+                                                            ToolTip.Tip="{Binding ToggleInputCollapseTooltip}">
+                                                        <Panel Width="10" Height="10">
+                                                            <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding !IsInputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding IsInputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Panel>
+                                                    </Button>
+
+                                                    <!-- Gutter Run Button (Code Cells) -->
                                                     <Button Command="{Binding RunCellCommand}"
                                                             Classes="gutter-run-btn"
                                                             Width="16" Height="16"
+                                                            IsVisible="{Binding IsCodeCell}"
                                                             ToolTip.Tip="Execute Cell (Ctrl+Enter)">
                                                         <materialIcons:MaterialIcon Kind="Play" Width="10" Height="10" Foreground="{DynamicResource M3SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Button>
+
+                                                    <!-- Execution Badge [1] (Code Cells) -->
                                                     <TextBlock Text="{Binding ExecutionBadgeText}"
                                                                FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
                                                                FontSize="11"
                                                                FontWeight="SemiBold"
                                                                Foreground="{Binding StatusBadgeForeground}"
-                                                               VerticalAlignment="Center" />
+                                                               VerticalAlignment="Center"
+                                                               IsVisible="{Binding IsCodeCell}" />
                                                 </StackPanel>
 
                                                 <!-- Row 2: Execution Duration: ✓ 0.1s -->
@@ -809,6 +965,19 @@
                                                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                                VerticalAlignment="Center" />
                                                 </StackPanel>
+
+                                                <!-- Row 3: Gutter Output Fold Button (Visible when cell has output) -->
+                                                <Button Command="{Binding ToggleOutputCollapseCommand}"
+                                                        Classes="gutter-fold-btn"
+                                                        IsVisible="{Binding HasOutput}"
+                                                        ToolTip.Tip="{Binding ToggleOutputCollapseTooltip}"
+                                                        HorizontalAlignment="Right"
+                                                        Margin="0,2,0,0">
+                                                    <Panel Width="10" Height="10">
+                                                        <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding !IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Panel>
+                                                </Button>
                                             </StackPanel>
 
                                             <!-- ======================================== -->
@@ -816,8 +985,8 @@
                                             <!-- ======================================== -->
                                             <StackPanel Grid.Column="1" Spacing="6">
 
-                                                <!-- Code / Markdown Editor Box with Overlay Action Bar (No Dead Space) -->
-                                                <Border Classes="notebook-editor-box">
+                                                <!-- Code / Markdown Editor Box with Overlay Action Bar (Visible when !IsInputCollapsed) -->
+                                                <Border Classes="notebook-editor-box" IsVisible="{Binding IsInputVisible}">
                                                     <Grid>
                                                         <!-- Editor Content (Code or Markdown) -->
                                                         <Panel Margin="4,2,4,2">
@@ -880,6 +1049,41 @@
                                                                 <!-- Thin Separator -->
                                                                 <Rectangle Width="1" Height="12" Fill="{DynamicResource M3OutlineVariantBrush}" VerticalAlignment="Center" Margin="1,0" />
 
+                                                                <!-- Fold Code in Cell -->
+                                                                <Button Command="{Binding FoldAllCodeCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        IsVisible="{Binding IsCodeCell}"
+                                                                        ToolTip.Tip="Fold Code Blocks (Ctrl+Shift+[)">
+                                                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="11" Height="11" />
+                                                                </Button>
+
+                                                                <!-- Unfold Code in Cell -->
+                                                                <Button Command="{Binding UnfoldAllCodeCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        IsVisible="{Binding IsCodeCell}"
+                                                                        ToolTip.Tip="Unfold Code Blocks (Ctrl+Shift+])">
+                                                                    <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="11" Height="11" />
+                                                                </Button>
+
+                                                                <!-- Format Code in Cell -->
+                                                                <Button Command="{Binding FormatCodeCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        IsVisible="{Binding IsCodeCell}"
+                                                                        ToolTip.Tip="Format Code (Ctrl+K Ctrl+D)">
+                                                                    <materialIcons:MaterialIcon Kind="FormatIndentIncrease" Width="11" Height="11" />
+                                                                </Button>
+
+                                                                <!-- Collapse Input Action -->
+                                                                <Button Command="{Binding ToggleInputCollapseCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        ToolTip.Tip="Collapse Cell Input">
+                                                                    <materialIcons:MaterialIcon Kind="ChevronUp" Width="12" Height="12" />
+                                                                </Button>
+
                                                                 <!-- Run Action -->
                                                                 <Button Command="{Binding RunCellCommand}"
                                                                         Classes="cell-tool-btn"
@@ -938,6 +1142,43 @@
                                                                                 </MenuItem.Icon>
                                                                             </MenuItem>
                                                                             <Separator />
+                                                                            <MenuItem Header="{Binding ToggleInputCollapseText}" Command="{Binding ToggleInputCollapseCommand}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="UnfoldLessHorizontal" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="{Binding ToggleOutputCollapseText}" Command="{Binding ToggleOutputCollapseCommand}" IsVisible="{Binding HasOutput}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="{Binding ToggleOutputScrolledText}" Command="{Binding ToggleOutputScrolledCommand}" IsVisible="{Binding HasOutput}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="FormatLineSpacing" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="{Binding ToggleCellCollapseText}" Command="{Binding ToggleCellCollapseCommand}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="FolderOutline" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <Separator IsVisible="{Binding IsCodeCell}" />
+                                                                            <MenuItem Header="Fold Code Blocks (Ctrl+Shift+[)" Command="{Binding FoldAllCodeCommand}" IsVisible="{Binding IsCodeCell}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="Unfold Code Blocks (Ctrl+Shift+])" Command="{Binding UnfoldAllCodeCommand}" IsVisible="{Binding IsCodeCell}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="Format Code (Ctrl+K Ctrl+D)" Command="{Binding FormatCodeCommand}" IsVisible="{Binding IsCodeCell}">
+                                                                                <MenuItem.Icon>
+                                                                                    <materialIcons:MaterialIcon Kind="FormatIndentIncrease" Width="14" Height="14" />
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <Separator />
                                                                             <MenuItem Header="Insert Code Below" Command="{Binding AddCodeBelowCommand}">
                                                                                 <MenuItem.Icon>
                                                                                     <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" />
@@ -974,132 +1215,265 @@
                                                     </Grid>
                                                 </Border>
 
+                                                <!-- Collapsed Input Placeholder Banner (Visible when IsInputCollapsed) -->
+                                                <Border Classes="notebook-collapsed-banner" IsVisible="{Binding IsInputCollapsed}">
+                                                    <Button Command="{Binding ToggleInputCollapseCommand}"
+                                                            Classes="collapsed-banner-btn"
+                                                            ToolTip.Tip="Click to expand cell input"
+                                                            HorizontalAlignment="Stretch">
+                                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                                            <materialIcons:MaterialIcon Grid.Column="0"
+                                                                                        Kind="ChevronRight"
+                                                                                        Width="14" Height="14"
+                                                                                        Foreground="{DynamicResource M3PrimaryBrush}"
+                                                                                        VerticalAlignment="Center"
+                                                                                        Margin="0,0,6,0" />
+
+                                                            <Border Grid.Column="1"
+                                                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                                    CornerRadius="3"
+                                                                    Padding="5,1"
+                                                                    VerticalAlignment="Center"
+                                                                    Margin="0,0,8,0">
+                                                                <TextBlock Text="{Binding LanguageTag}"
+                                                                           FontSize="10"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                            </Border>
+
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding InputCollapsedSummaryText}"
+                                                                       FontSize="11.5"
+                                                                       FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       VerticalAlignment="Center" />
+
+                                                            <Border Grid.Column="3"
+                                                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                                    CornerRadius="3"
+                                                                    Padding="6,2"
+                                                                    VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                    <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="Expand Input" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Button>
+                                                </Border>
+
                                                 <!-- ============================================================ -->
                                                 <!-- INLINE OUTPUT STREAM (Directly underneath, flush with editor) -->
                                                 <!-- ============================================================ -->
-                                                <StackPanel Spacing="6" Margin="0,3,0,0" IsVisible="{Binding HasOutput}">
+                                                <StackPanel Spacing="4" Margin="0,3,0,0" IsVisible="{Binding HasOutput}">
 
-                                                    <!-- 1. Interactive Object Inspector Tree (▼ Submission#16+People) -->
-                                                    <Border IsVisible="{Binding HasInspectorOutput}" Margin="0,1,0,3">
-                                                        <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
-                                                    </Border>
+                                                    <!-- Collapsed Output Banner (Visible when IsOutputCollapsedBarVisible) -->
+                                                    <Border Classes="notebook-collapsed-output-banner"
+                                                            IsVisible="{Binding IsOutputCollapsedBarVisible}">
+                                                        <Button Command="{Binding ToggleOutputCollapseCommand}"
+                                                                Classes="collapsed-banner-btn"
+                                                                ToolTip.Tip="Click to expand cell output"
+                                                                HorizontalAlignment="Stretch">
+                                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                                                <materialIcons:MaterialIcon Grid.Column="0"
+                                                                                            Kind="ChevronRight"
+                                                                                            Width="14" Height="14"
+                                                                                            Foreground="{DynamicResource M3PrimaryBrush}"
+                                                                                            VerticalAlignment="Center"
+                                                                                            Margin="0,0,6,0" />
 
-                                                    <!-- 2. Plain Console Stdout Text Output (e.g. test is test, [ 1, 3, 4, ... ]) -->
-                                                    <TextBox Text="{Binding OutputText, Mode=OneWay}"
-                                                             FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
-                                                             FontSize="12"
-                                                             Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                             Background="Transparent"
-                                                             BorderThickness="0"
-                                                             Padding="0"
-                                                             IsReadOnly="True"
-                                                             TextWrapping="Wrap"
-                                                             IsVisible="{Binding OutputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                                <materialIcons:MaterialIcon Grid.Column="1"
+                                                                                            Kind="Console"
+                                                                                            Width="14" Height="14"
+                                                                                            Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                                                            VerticalAlignment="Center"
+                                                                                            Margin="0,0,8,0" />
 
-                                                    <!-- 3. Tabular Output (.Dump()) -->
-                                                    <Border IsVisible="{Binding HasTableOutput}">
-                                                        <views:DumpTableView DataContext="{Binding TableResult}" />
-                                                    </Border>
+                                                                <TextBlock Grid.Column="2"
+                                                                           Text="{Binding OutputCollapsedSummaryText}"
+                                                                           FontSize="11.5"
+                                                                           Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           VerticalAlignment="Center" />
 
-                                                    <!-- 4. Rendered Graphic / Image Output -->
-                                                    <Border IsVisible="{Binding HasImageOutput}"
-                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6"
-                                                            Padding="10">
-                                                        <Grid RowDefinitions="Auto,*">
-                                                            <!-- Image Output Header -->
-                                                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
-                                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                                    <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                                </StackPanel>
-
-                                                                <Border Grid.Column="1" HorizontalAlignment="Left" Margin="8,0,0,0"
+                                                                <Border Grid.Column="3"
                                                                         Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                                                        CornerRadius="4" Padding="6,1">
-                                                                    <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                        CornerRadius="3"
+                                                                        Padding="6,2"
+                                                                        VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                        <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                        <TextBlock Text="Expand Output" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Button>
+                                                    </Border>
+
+                                                    <!-- Active Output Stream Container (Visible when IsOutputVisible) -->
+                                                    <StackPanel Spacing="4" IsVisible="{Binding IsOutputVisible}">
+
+                                                        <!-- Output Control Bar -->
+                                                        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
+                                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                <materialIcons:MaterialIcon Kind="Console" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Output" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                                <Button Command="{Binding ToggleOutputScrolledCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        ToolTip.Tip="{Binding OutputScrolledTooltip}">
+                                                                    <Panel Width="12" Height="12">
+                                                                        <materialIcons:MaterialIcon Kind="FormatLineSpacing" IsVisible="{Binding IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                        <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" IsVisible="{Binding !IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                    </Panel>
+                                                                </Button>
+                                                                <Button Command="{Binding ToggleOutputCollapseCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        ToolTip.Tip="Collapse Output">
+                                                                    <materialIcons:MaterialIcon Kind="ChevronUp" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                </Button>
+                                                                <Button Command="{Binding ClearOutputCommand}"
+                                                                        Classes="cell-tool-btn"
+                                                                        Width="20" Height="20"
+                                                                        ToolTip.Tip="Clear Output">
+                                                                    <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Grid>
+
+                                                        <!-- Output Elements (Scrollable when IsOutputScrolled is true) -->
+                                                        <ScrollViewer Classes="notebook-output-scroll"
+                                                                      Classes.scrolled="{Binding IsOutputScrolled}">
+                                                            <StackPanel Spacing="6">
+
+                                                                <!-- 1. Interactive Object Inspector Tree (▼ Submission#16+People) -->
+                                                                <Border IsVisible="{Binding HasInspectorOutput}" Margin="0,1,0,3">
+                                                                    <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
                                                                 </Border>
 
-                                                                <!-- Image Actions: Copy & Save -->
-                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                                    <Button Command="{Binding CopyImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Image">
-                                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
-                                                                    </Button>
-                                                                    <Button Command="{Binding SaveImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Save PNG">
-                                                                        <materialIcons:MaterialIcon Kind="DownloadOutline" Width="12" Height="12" />
-                                                                    </Button>
-                                                                </StackPanel>
-                                                            </Grid>
+                                                                <!-- 2. Plain Console Stdout Text Output (e.g. test is test, [ 1, 3, 4, ... ]) -->
+                                                                <TextBox Text="{Binding OutputText, Mode=OneWay}"
+                                                                         FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                                         FontSize="12"
+                                                                         Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                         Background="Transparent"
+                                                                         BorderThickness="0"
+                                                                         Padding="0"
+                                                                         IsReadOnly="True"
+                                                                         TextWrapping="Wrap"
+                                                                         IsVisible="{Binding OutputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                                                            <!-- Image Canvas -->
-                                                            <Border Grid.Row="1"
-                                                                    Background="#080C11"
-                                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                                    BorderThickness="1"
-                                                                    CornerRadius="4"
-                                                                    Padding="8"
-                                                                    HorizontalAlignment="Stretch">
-                                                                <Image Source="{Binding ImageOutputBitmap}"
-                                                                       MaxHeight="450"
-                                                                       Stretch="Uniform"
-                                                                       HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center" />
-                                                            </Border>
-                                                        </Grid>
-                                                    </Border>
+                                                                <!-- 3. Tabular Output (.Dump()) -->
+                                                                <Border IsVisible="{Binding HasTableOutput}">
+                                                                    <views:DumpTableView DataContext="{Binding TableResult}" />
+                                                                </Border>
 
-                                                    <!-- 5. Interactive Avalonia UI Control -->
-                                                    <Border IsVisible="{Binding HasInteractiveControl}"
-                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6"
-                                                            Padding="12,8">
-                                                        <Grid RowDefinitions="Auto,*">
-                                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
-                                                                <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                                <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                <!-- 4. Rendered Graphic / Image Output -->
+                                                                <Border IsVisible="{Binding HasImageOutput}"
+                                                                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="6"
+                                                                        Padding="10">
+                                                                    <Grid RowDefinitions="Auto,*">
+                                                                        <!-- Image Output Header -->
+                                                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                                                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                                <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                                <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                            </StackPanel>
+
+                                                                            <Border Grid.Column="1" HorizontalAlignment="Left" Margin="8,0,0,0"
+                                                                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                                                    CornerRadius="4" Padding="6,1">
+                                                                                <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                            </Border>
+
+                                                                            <!-- Image Actions: Copy & Save -->
+                                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                                                <Button Command="{Binding CopyImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Image">
+                                                                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                                                                                </Button>
+                                                                                <Button Command="{Binding SaveImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Save PNG">
+                                                                                    <materialIcons:MaterialIcon Kind="DownloadOutline" Width="12" Height="12" />
+                                                                                </Button>
+                                                                            </StackPanel>
+                                                                        </Grid>
+
+                                                                        <!-- Image Canvas -->
+                                                                        <Border Grid.Row="1"
+                                                                                Background="#080C11"
+                                                                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                                BorderThickness="1"
+                                                                                CornerRadius="4"
+                                                                                Padding="8"
+                                                                                HorizontalAlignment="Stretch">
+                                                                            <Image Source="{Binding ImageOutputBitmap}"
+                                                                                   MaxHeight="450"
+                                                                                   Stretch="Uniform"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   VerticalAlignment="Center" />
+                                                                        </Border>
+                                                                    </Grid>
+                                                                </Border>
+
+                                                                <!-- 5. Interactive Avalonia UI Control -->
+                                                                <Border IsVisible="{Binding HasInteractiveControl}"
+                                                                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="6"
+                                                                        Padding="12,8">
+                                                                    <Grid RowDefinitions="Auto,*">
+                                                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                                                            <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                            <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                        </StackPanel>
+                                                                        <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                                                                    </Grid>
+                                                                </Border>
+
+                                                                <!-- 5b. Interactive Control Placeholder — the live control itself can't be
+                                                                     serialized, so a reloaded notebook shows this instead until the cell is re-run -->
+                                                                <Border IsVisible="{Binding InteractiveControlPlaceholderVisible}"
+                                                                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="6"
+                                                                        Padding="12,10">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                        <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                        <TextBlock Text="Interactive widget / animation not restored — re-run this cell to bring it back."
+                                                                                   FontSize="11.5"
+                                                                                   FontStyle="Italic"
+                                                                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                                                   TextWrapping="Wrap" />
+                                                                    </StackPanel>
+                                                                </Border>
+
+                                                                <!-- 6. HTML / Markdown Rich Output -->
+                                                                <Border IsVisible="{Binding HasHtmlContent}"
+                                                                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                                                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="6"
+                                                                        Padding="12,8">
+                                                                    <Grid RowDefinitions="Auto,*">
+                                                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                                                            <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                            <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                        </StackPanel>
+                                                                        <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
+                                                                    </Grid>
+                                                                </Border>
+
                                                             </StackPanel>
-                                                            <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
-                                                        </Grid>
-                                                    </Border>
-
-                                                    <!-- 5b. Interactive Control Placeholder — the live control itself can't be
-                                                         serialized, so a reloaded notebook shows this instead until the cell is re-run -->
-                                                    <Border IsVisible="{Binding InteractiveControlPlaceholderVisible}"
-                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6"
-                                                            Padding="12,10">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                            <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                                            <TextBlock Text="Interactive widget / animation not restored — re-run this cell to bring it back."
-                                                                       FontSize="11.5"
-                                                                       FontStyle="Italic"
-                                                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                                                       TextWrapping="Wrap" />
-                                                        </StackPanel>
-                                                    </Border>
-
-                                                    <!-- 6. HTML / Markdown Rich Output -->
-                                                    <Border IsVisible="{Binding HasHtmlContent}"
-                                                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                                                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6"
-                                                            Padding="12,8">
-                                                        <Grid RowDefinitions="Auto,*">
-                                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
-                                                                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                                <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                            </StackPanel>
-                                                            <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
-                                                        </Grid>
-                                                    </Border>
-
+                                                        </ScrollViewer>
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>

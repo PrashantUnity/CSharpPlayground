@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Input.Platform;
@@ -41,6 +42,15 @@ public partial class NotebookCellViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isMarkdownPreviewMode;
+
+    [ObservableProperty]
+    private bool _isInputCollapsed;
+
+    [ObservableProperty]
+    private bool _isOutputCollapsed;
+
+    [ObservableProperty]
+    private bool _isOutputScrolled;
 
     [ObservableProperty]
     private Avalonia.Media.Imaging.Bitmap? _imageOutputBitmap;
@@ -110,6 +120,9 @@ public partial class NotebookCellViewModel : ObservableObject
         _hasError = model.HasError;
         _hasOutput = model.HasOutput;
         _isMarkdownPreviewMode = model.IsMarkdownPreviewMode;
+        _isInputCollapsed = model.IsInputCollapsed;
+        _isOutputCollapsed = model.IsOutputCollapsed;
+        _isOutputScrolled = model.IsOutputScrolled;
 
         _runAction = runAction;
         _deleteAction = deleteAction;
@@ -161,6 +174,7 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.Source = value;
         OnPropertyChanged(nameof(MarkdownTitle));
         OnPropertyChanged(nameof(MarkdownBody));
+        OnPropertyChanged(nameof(InputCollapsedSummaryText));
     }
 
     partial void OnTypeChanged(CellType value)
@@ -171,12 +185,116 @@ public partial class NotebookCellViewModel : ObservableObject
         OnPropertyChanged(nameof(LanguageTag));
         OnPropertyChanged(nameof(IsEditingMarkdown));
         OnPropertyChanged(nameof(IsViewingMarkdown));
+        OnPropertyChanged(nameof(InputCollapsedSummaryText));
     }
 
     partial void OnOutputTextChanged(string value)
     {
         Model.OutputText = value;
-        HasOutput = !string.IsNullOrEmpty(value);
+        HasOutput = !string.IsNullOrEmpty(value) || HasImageOutput || HasHtmlContent || HasTableOutput || HasInspectorOutput || HasInteractiveControl || InteractiveControlPlaceholderVisible;
+    }
+
+    partial void OnIsInputCollapsedChanged(bool value)
+    {
+        Model.IsInputCollapsed = value;
+        OnPropertyChanged(nameof(IsInputVisible));
+        OnPropertyChanged(nameof(InputCollapsedSummaryText));
+        OnPropertyChanged(nameof(InputCollapseIcon));
+        OnPropertyChanged(nameof(ToggleInputCollapseTooltip));
+        OnPropertyChanged(nameof(ToggleInputCollapseText));
+        OnPropertyChanged(nameof(IsEntireCellCollapsed));
+    }
+
+    partial void OnIsOutputCollapsedChanged(bool value)
+    {
+        Model.IsOutputCollapsed = value;
+        OnPropertyChanged(nameof(IsOutputVisible));
+        OnPropertyChanged(nameof(IsOutputCollapsedBarVisible));
+        OnPropertyChanged(nameof(OutputCollapsedSummaryText));
+        OnPropertyChanged(nameof(OutputCollapseIcon));
+        OnPropertyChanged(nameof(ToggleOutputCollapseTooltip));
+        OnPropertyChanged(nameof(ToggleOutputCollapseText));
+        OnPropertyChanged(nameof(IsEntireCellCollapsed));
+    }
+
+    partial void OnIsOutputScrolledChanged(bool value)
+    {
+        Model.IsOutputScrolled = value;
+        OnPropertyChanged(nameof(OutputScrolledIcon));
+        OnPropertyChanged(nameof(OutputScrolledTooltip));
+        OnPropertyChanged(nameof(ToggleOutputScrolledText));
+    }
+
+    partial void OnHasOutputChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsOutputVisible));
+        OnPropertyChanged(nameof(IsOutputCollapsedBarVisible));
+        OnPropertyChanged(nameof(OutputCollapsedSummaryText));
+        OnPropertyChanged(nameof(IsEntireCellCollapsed));
+    }
+
+    public bool IsInputVisible => !IsInputCollapsed;
+    public bool IsOutputVisible => HasOutput && !IsOutputCollapsed;
+    public bool IsOutputCollapsedBarVisible => HasOutput && IsOutputCollapsed;
+    public bool IsEntireCellCollapsed => IsInputCollapsed && (IsOutputCollapsed || !HasOutput);
+
+    public string InputCollapseIcon => IsInputCollapsed ? "ChevronRight" : "ChevronDown";
+    public string OutputCollapseIcon => IsOutputCollapsed ? "ChevronRight" : "ChevronDown";
+    public string OutputScrolledIcon => IsOutputScrolled ? "FormatLineSpacing" : "UnfoldMoreHorizontal";
+    public string OutputScrolledTooltip => IsOutputScrolled ? "Disable Scrolled Output (Full Height)" : "Enable Scrolled Output (Fixed Height)";
+    public string ToggleInputCollapseTooltip => IsInputCollapsed ? "Expand Cell Input" : "Collapse Cell Input";
+    public string ToggleOutputCollapseTooltip => IsOutputCollapsed ? "Expand Cell Output" : "Collapse Cell Output";
+    public string ToggleInputCollapseText => IsInputCollapsed ? "Expand Input" : "Collapse Input";
+    public string ToggleOutputCollapseText => IsOutputCollapsed ? "Expand Output" : "Collapse Output";
+    public string ToggleOutputScrolledText => IsOutputScrolled ? "Disable Scrolled Output" : "Enable Scrolled Output";
+    public string ToggleCellCollapseText => IsEntireCellCollapsed ? "Expand Entire Cell" : "Collapse Entire Cell";
+
+    public string InputCollapsedSummaryText
+    {
+        get
+        {
+            var raw = Source ?? string.Empty;
+            var lines = raw.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
+            var nonEmpty = lines.Select(l => l.Trim()).FirstOrDefault(l => !string.IsNullOrEmpty(l)) ?? string.Empty;
+            var count = lines.Length;
+
+            if (IsMarkdownCell)
+            {
+                var title = MarkdownTitle;
+                return count <= 1
+                    ? $"Markdown: {title}"
+                    : $"Markdown ({count} lines): {title}";
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(nonEmpty)) nonEmpty = "// Empty code block";
+                if (nonEmpty.Length > 60) nonEmpty = nonEmpty.Substring(0, 57) + "...";
+                return count <= 1
+                    ? $"Code: {nonEmpty}"
+                    : $"Code ({count} lines): {nonEmpty}";
+            }
+        }
+    }
+
+    public string OutputCollapsedSummaryText
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(OutputText))
+            {
+                var lineCount = OutputText.Split('\n').Length;
+                parts.Add(lineCount == 1 ? "1 line output" : $"{lineCount} lines output");
+            }
+            if (HasImageOutput) parts.Add("Image");
+            if (HasTableOutput) parts.Add("Table");
+            if (HasInspectorOutput) parts.Add("Object Inspector");
+            if (HasInteractiveControl || InteractiveControlPlaceholderVisible) parts.Add("UI Widget");
+            if (HasHtmlContent) parts.Add("HTML");
+
+            if (parts.Count == 0) return "Output collapsed — Click to expand";
+            return $"Output collapsed ({string.Join(", ", parts)}) — Click to expand";
+        }
     }
 
     partial void OnExecutionCountChanged(int? value)
@@ -463,7 +581,74 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.InspectorSnapshot = null;
 
         HasOutput = false;
+        IsOutputCollapsed = false;
         OnPropertyChanged(nameof(ExecutionDurationShortText));
+    }
+
+    [RelayCommand]
+    public void ToggleInputCollapse()
+    {
+        IsInputCollapsed = !IsInputCollapsed;
+    }
+
+    [RelayCommand]
+    public void ToggleOutputCollapse()
+    {
+        if (!HasOutput) return;
+        IsOutputCollapsed = !IsOutputCollapsed;
+    }
+
+    [RelayCommand]
+    public void ToggleOutputScrolled()
+    {
+        IsOutputScrolled = !IsOutputScrolled;
+    }
+
+    [RelayCommand]
+    public void ToggleCellCollapse()
+    {
+        if (IsEntireCellCollapsed)
+        {
+            IsInputCollapsed = false;
+            IsOutputCollapsed = false;
+        }
+        else
+        {
+            IsInputCollapsed = true;
+            if (HasOutput)
+            {
+                IsOutputCollapsed = true;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void CollapseInput() => IsInputCollapsed = true;
+
+    [RelayCommand]
+    public void ExpandInput() => IsInputCollapsed = false;
+
+    [RelayCommand]
+    public void CollapseOutput()
+    {
+        if (HasOutput) IsOutputCollapsed = true;
+    }
+
+    [RelayCommand]
+    public void ExpandOutput() => IsOutputCollapsed = false;
+
+    [RelayCommand]
+    public void CollapseCell()
+    {
+        IsInputCollapsed = true;
+        if (HasOutput) IsOutputCollapsed = true;
+    }
+
+    [RelayCommand]
+    public void ExpandCell()
+    {
+        IsInputCollapsed = false;
+        IsOutputCollapsed = false;
     }
 
     [RelayCommand]
@@ -506,5 +691,41 @@ public partial class NotebookCellViewModel : ObservableObject
     private void ToggleType()
     {
         Type = Type == CellType.Code ? CellType.Markdown : CellType.Code;
+    }
+
+    public event Action? RequestFoldAllCode;
+    public event Action? RequestUnfoldAllCode;
+    public event Action? RequestFormatCode;
+
+    [RelayCommand]
+    public void FoldAllCode()
+    {
+        RequestFoldAllCode?.Invoke();
+    }
+
+    [RelayCommand]
+    public void UnfoldAllCode()
+    {
+        RequestUnfoldAllCode?.Invoke();
+    }
+
+    [RelayCommand]
+    public void FormatCode()
+    {
+        if (Type != CellType.Code || string.IsNullOrWhiteSpace(Source)) return;
+
+        try
+        {
+            var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Source);
+            var root = tree.GetRoot();
+            var formatted = Microsoft.CodeAnalysis.SyntaxNodeExtensions.NormalizeWhitespace(root).ToFullString();
+            if (formatted != Source)
+            {
+                Source = formatted;
+            }
+        }
+        catch { }
+
+        RequestFormatCode?.Invoke();
     }
 }

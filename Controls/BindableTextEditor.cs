@@ -7,9 +7,12 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
+using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 
@@ -52,6 +55,9 @@ public class BindableTextEditor : TextEditor
     private bool _isSyncing;
     private readonly FoldingManager? _foldingManager;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
+    private readonly DispatcherTimer _foldingTimer;
+    private readonly SearchPanel? _searchPanel;
+    private NotebookCellViewModel? _cellVm;
     private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
     private readonly CSharpEditorCompletionController _completionController;
     private readonly BreakpointMargin _breakpointMargin = new();
@@ -76,6 +82,18 @@ public class BindableTextEditor : TextEditor
         TextArea.IndentationStrategy = new AvaloniaEdit.Indentation.CSharp.CSharpIndentationStrategy(Options);
 
         _foldingManager = AvaloniaEdit.Folding.FoldingManager.Install(TextArea);
+        _foldingTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        _foldingTimer.Tick += (s, e) =>
+        {
+            _foldingTimer.Stop();
+            UpdateCodeFolding();
+        };
+
+        _searchPanel = SearchPanel.Install(this);
+
         ApplyThemeVariant();
         ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
@@ -152,13 +170,45 @@ public class BindableTextEditor : TextEditor
         }
     }
 
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        UnsubscribeCellVm();
+        if (DataContext is NotebookCellViewModel vm)
+        {
+            _cellVm = vm;
+            _cellVm.RequestFoldAllCode += FoldAll;
+            _cellVm.RequestUnfoldAllCode += UnfoldAll;
+            _cellVm.RequestFormatCode += FormatCode;
+        }
+    }
+
+    private void UnsubscribeCellVm()
+    {
+        if (_cellVm != null)
+        {
+            _cellVm.RequestFoldAllCode -= FoldAll;
+            _cellVm.RequestUnfoldAllCode -= UnfoldAll;
+            _cellVm.RequestFormatCode -= FormatCode;
+            _cellVm = null;
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        UnsubscribeCellVm();
+        _foldingTimer?.Stop();
+    }
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         ApplyThemeVariant();
+        UpdateCodeFolding();
     }
 
-    private void UpdateCodeFolding()
+    public void UpdateCodeFolding()
     {
         if (_foldingManager != null && Document != null)
         {
@@ -168,6 +218,54 @@ public class BindableTextEditor : TextEditor
             }
             catch { }
         }
+    }
+
+    public void ToggleFoldAtCaret(bool? fold = null)
+    {
+        if (_foldingManager == null) return;
+        int offset = CaretOffset;
+        var foldings = _foldingManager.GetFoldingsContaining(offset);
+        var target = foldings.OrderByDescending(f => f.StartOffset).FirstOrDefault();
+        if (target != null)
+        {
+            target.IsFolded = fold ?? !target.IsFolded;
+        }
+    }
+
+    public void FoldAll()
+    {
+        if (_foldingManager == null) return;
+        foreach (var fold in _foldingManager.AllFoldings)
+        {
+            fold.IsFolded = true;
+        }
+    }
+
+    public void UnfoldAll()
+    {
+        if (_foldingManager == null) return;
+        foreach (var fold in _foldingManager.AllFoldings)
+        {
+            fold.IsFolded = false;
+        }
+    }
+
+    public void FormatCode()
+    {
+        if (string.IsNullOrWhiteSpace(Text)) return;
+        try
+        {
+            var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Text);
+            var root = tree.GetRoot();
+            var formatted = Microsoft.CodeAnalysis.SyntaxNodeExtensions.NormalizeWhitespace(root).ToFullString();
+            if (formatted != Text)
+            {
+                Text = formatted;
+                TextContent = formatted;
+                UpdateCodeFolding();
+            }
+        }
+        catch { }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -199,13 +297,13 @@ public class BindableTextEditor : TextEditor
             try
             {
                 Text = TextContent;
-                UpdateCodeFolding();
             }
             finally
             {
                 _isSyncing = false;
             }
         }
+        UpdateCodeFolding();
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -227,6 +325,9 @@ public class BindableTextEditor : TextEditor
         {
             _isSyncing = false;
         }
+
+        _foldingTimer.Stop();
+        _foldingTimer.Start();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -245,6 +346,7 @@ public class BindableTextEditor : TextEditor
                 {
                     Text = newText;
                 }
+                UpdateCodeFolding();
             }
             finally
             {
@@ -288,6 +390,41 @@ public class BindableTextEditor : TextEditor
                 e.Handled = true;
                 return;
             }
+        }
+
+        var isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // Ctrl+Shift+[ => fold code block at caret
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemOpenBrackets || e.Key == Key.Oem4))
+        {
+            ToggleFoldAtCaret(fold: true);
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Shift+] => unfold code block at caret
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemCloseBrackets || e.Key == Key.Oem6))
+        {
+            ToggleFoldAtCaret(fold: false);
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+F => search panel
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.F)
+        {
+            _searchPanel?.Open();
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Alt+L or Ctrl+Shift+I => format code
+        if (isCmdOrCtrl && (e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key == Key.L ||
+                           (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.I)))
+        {
+            FormatCode();
+            e.Handled = true;
+            return;
         }
 
         base.OnKeyDown(e);

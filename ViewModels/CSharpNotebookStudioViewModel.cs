@@ -475,6 +475,60 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void CollapseAllInputs()
+    {
+        ActiveTab?.CollapseAllInputs();
+    }
+
+    [RelayCommand]
+    public void ExpandAllInputs()
+    {
+        ActiveTab?.ExpandAllInputs();
+    }
+
+    [RelayCommand]
+    public void CollapseAllOutputs()
+    {
+        ActiveTab?.CollapseAllOutputs();
+    }
+
+    [RelayCommand]
+    public void ExpandAllOutputs()
+    {
+        ActiveTab?.ExpandAllOutputs();
+    }
+
+    [RelayCommand]
+    public void CollapseAllCells()
+    {
+        ActiveTab?.CollapseAllCells();
+    }
+
+    [RelayCommand]
+    public void ExpandAllCells()
+    {
+        ActiveTab?.ExpandAllCells();
+    }
+
+    [RelayCommand]
+    public void FoldAllCodeBlocks()
+    {
+        ActiveTab?.FoldAllCodeBlocks();
+    }
+
+    [RelayCommand]
+    public void UnfoldAllCodeBlocks()
+    {
+        ActiveTab?.UnfoldAllCodeBlocks();
+    }
+
+    [RelayCommand]
+    public void FormatAllCodeCells()
+    {
+        ActiveTab?.FormatAllCodeCells();
+    }
+
+    [RelayCommand]
     public void SelectCell(NotebookCellViewModel? cell)
     {
         ActiveTab?.SelectCell(cell);
@@ -689,7 +743,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                     Id = Guid.NewGuid().ToString("N"),
                     Type = cell.Type,
                     Source = cell.Source,
-                    IsMarkdownPreviewMode = cell.IsMarkdownPreviewMode
+                    IsMarkdownPreviewMode = cell.IsMarkdownPreviewMode,
+                    IsInputCollapsed = cell.IsInputCollapsed,
+                    IsOutputCollapsed = cell.IsOutputCollapsed,
+                    IsOutputScrolled = cell.IsOutputScrolled
                 });
             }
         }
