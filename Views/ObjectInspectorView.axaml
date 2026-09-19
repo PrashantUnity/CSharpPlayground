@@ -8,6 +8,17 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.ObjectInspectorView"
              x:DataType="models:ObjectInspectorNode">
 
+    <UserControl.Styles>
+        <Style Selector="Border.inspector-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+        <Style Selector="Border.inspector-row:pointerover">
+            <Setter Property="Background" Value="#161B22" />
+        </Style>
+    </UserControl.Styles>
+
     <StackPanel Spacing="3" Margin="0,1">
         <!-- 1. Header Row (e.g. ▼ Submission#16+People) -->
         <Button Command="{Binding ToggleExpandCommand}"
@@ -18,7 +29,7 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <!-- Triangle Disclosure Arrow -->
+                <!-- Disclosure Icon -->
                 <TextBlock Text="{Binding ToggleIcon}"
                            FontSize="10"
                            FontWeight="Bold"
@@ -26,85 +37,105 @@
                            VerticalAlignment="Center"
                            Width="12" />
 
-                <!-- Type Name Chip -->
-                <Border Background="{DynamicResource M3SecondaryContainerBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                <!-- Type Name Chip with VS Code Type Styling -->
+                <Border Background="#141B26"
+                        BorderBrush="#253245"
                         BorderThickness="1"
                         CornerRadius="4"
-                        Padding="6,1"
+                        Padding="7,2"
                         VerticalAlignment="Center">
-                    <TextBlock Text="{Binding HeaderTitle}"
-                               FontFamily="Consolas, Menlo, Cascadia Code, monospace"
-                               FontSize="11.5"
-                               FontWeight="SemiBold"
-                               FontStyle="Italic"
-                               Foreground="{DynamicResource M3OnSecondaryContainerBrush}"
-                               VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Border Width="6" Height="6" CornerRadius="3" Background="#4EC9B0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding HeaderTitle}"
+                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="#4EC9B0"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
                 </Border>
             </StackPanel>
         </Button>
 
-        <!-- 2. Properties Key-Value Table (Visible only when expanded) -->
-        <ItemsControl ItemsSource="{Binding Properties}"
-                      IsVisible="{Binding IsExpanded}"
-                      Margin="16,2,0,2">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="models:ObjectInspectorPropertyRow">
-                    <Panel Margin="0,1.5">
-                        <!-- Case A: Simple Scalar or Inline Array Property Row -->
-                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsComplexChild}">
-                            <!-- Column 0: Property Name -->
-                            <TextBlock Grid.Column="0"
-                                       Text="{Binding Name}"
-                                       MinWidth="120"
-                                       FontFamily="Consolas, Menlo, Cascadia Code, monospace"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,16,0" />
+        <!-- 2. Properties Key-Value Table (with VS Code tree guideline) -->
+        <Border BorderBrush="#252D3A"
+                BorderThickness="1,0,0,0"
+                Margin="5,2,0,2"
+                Padding="10,0,0,0"
+                IsVisible="{Binding IsExpanded}">
+            <ItemsControl ItemsSource="{Binding Properties}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ObjectInspectorPropertyRow">
+                        <Border Classes="inspector-row" Margin="0,1">
+                            <Panel>
+                                <!-- Case A: Simple Scalar or Inline Array Property Row -->
+                                <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsComplexChild}">
+                                    <!-- Column 0: Property Name in VS Code Identifier Blue (#9CDCFE) -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" MinWidth="130" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   FontWeight="Medium"
+                                                   Foreground="#9CDCFE"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text=":"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   Foreground="#8B949E"
+                                                   Margin="2,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
 
-                            <!-- Column 1: Value Display -->
-                            <Panel Grid.Column="1" VerticalAlignment="Center">
-                                <!-- Null Value (<null>) -->
-                                <TextBlock Text="&lt;null&gt;"
-                                           FontFamily="Consolas, Menlo, Cascadia Code, monospace"
-                                           FontSize="12"
-                                           FontStyle="Italic"
-                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                           IsVisible="{Binding IsNull}"
-                                           VerticalAlignment="Center" />
+                                    <!-- Column 1: Value Display (Colored by Syntax Type) -->
+                                    <Panel Grid.Column="1" VerticalAlignment="Center">
+                                        <!-- Null Value (<null>) -->
+                                        <TextBlock Text="&lt;null&gt;"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   FontStyle="Italic"
+                                                   Foreground="#808080"
+                                                   IsVisible="{Binding IsNull}"
+                                                   VerticalAlignment="Center" />
 
-                                <!-- Non-Null Simple Value / Formatted Array -->
-                                <TextBlock Text="{Binding SimpleValueText}"
-                                           FontFamily="Consolas, Menlo, Cascadia Code, monospace"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                           IsVisible="{Binding !IsNull}"
-                                           VerticalAlignment="Center"
-                                           TextWrapping="Wrap" />
+                                        <!-- Non-Null Value / Formatted Array -->
+                                        <TextBlock Text="{Binding SimpleValueText}"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   Foreground="{Binding ValueForeground}"
+                                                   IsVisible="{Binding !IsNull}"
+                                                   VerticalAlignment="Center"
+                                                   TextWrapping="Wrap" />
+                                    </Panel>
+                                </Grid>
+
+                                <!-- Case B: Complex Child Object (Recursive Nested Inspector) -->
+                                <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsComplexChild}">
+                                    <!-- Column 0: Property Name -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" MinWidth="130" Margin="0,3,12,0" VerticalAlignment="Top">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   FontWeight="Medium"
+                                                   Foreground="#9CDCFE"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text=":"
+                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontSize="11.5"
+                                                   Foreground="#8B949E"
+                                                   Margin="2,0,0,0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Column 1: Nested Child Object Inspector -->
+                                    <views:ObjectInspectorView Grid.Column="1"
+                                                               DataContext="{Binding ChildNode}"
+                                                               VerticalAlignment="Center" />
+                                </Grid>
                             </Panel>
-                        </Grid>
-
-                        <!-- Case B: Complex Child Object (Recursive Nested Inspector) -->
-                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsComplexChild}">
-                            <!-- Column 0: Property Name -->
-                            <TextBlock Grid.Column="0"
-                                       Text="{Binding Name}"
-                                       MinWidth="120"
-                                       FontFamily="Consolas, Menlo, Cascadia Code, monospace"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                       VerticalAlignment="Top"
-                                       Margin="0,3,16,0" />
-
-                            <!-- Column 1: Nested Child Object Inspector -->
-                            <views:ObjectInspectorView Grid.Column="1"
-                                                       DataContext="{Binding ChildNode}"
-                                                       VerticalAlignment="Center" />
-                        </Grid>
-                    </Panel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
     </StackPanel>
 </UserControl>

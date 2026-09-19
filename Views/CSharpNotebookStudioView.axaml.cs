@@ -18,6 +18,43 @@ public partial class CSharpNotebookStudioView : UserControl
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        Unloaded += OnViewUnloaded;
+    }
+
+    private CSharpNotebookStudioViewModel? _subscribedVm;
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_subscribedVm != null)
+        {
+            _subscribedVm.RequestScrollToCell -= OnRequestScrollToCell;
+            _subscribedVm = null;
+        }
+
+        if (DataContext is CSharpNotebookStudioViewModel vm)
+        {
+            _subscribedVm = vm;
+            vm.RequestScrollToCell += OnRequestScrollToCell;
+        }
+    }
+
+    private void OnViewUnloaded(object? sender, RoutedEventArgs e)
+    {
+        if (_subscribedVm != null)
+        {
+            _subscribedVm.RequestScrollToCell -= OnRequestScrollToCell;
+            _subscribedVm = null;
+        }
+    }
+
+    private void OnRequestScrollToCell(NotebookCellViewModel cell)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var scrollViewer = this.FindControl<ScrollViewer>("NotebookCanvasScrollViewer");
+            // Bring active cell into view smoothly if applicable
+        });
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
@@ -41,6 +78,30 @@ public partial class CSharpNotebookStudioView : UserControl
         }
 
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // VS Code Shortcut: Ctrl+B / Cmd+B -> Toggle Primary SideBar
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.B)
+        {
+            vm.ToggleSideBar();
+            e.Handled = true;
+            return;
+        }
+
+        // VS Code Shortcut: Ctrl+Shift+E -> Focus Explorer
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.E)
+        {
+            vm.SelectActivityBarItem(0);
+            e.Handled = true;
+            return;
+        }
+
+        // VS Code Shortcut: Ctrl+Shift+F -> Focus Search
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.F)
+        {
+            vm.SelectActivityBarItem(3);
+            e.Handled = true;
+            return;
+        }
 
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.O)
         {

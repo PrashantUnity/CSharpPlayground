@@ -27,6 +27,144 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private NotebookDocumentItem _notebook;
 
     [ObservableProperty]
+    private int _selectedActivityBarIndex = 0;
+
+    [ObservableProperty]
+    private bool _isSideBarVisible = true;
+
+    [ObservableProperty]
+    private Avalonia.Controls.GridLength _sideBarGridLength = new(270, Avalonia.Controls.GridUnitType.Pixel);
+
+    private double _savedSideBarWidth = 270;
+
+    partial void OnIsSideBarVisibleChanged(bool value)
+    {
+        if (value)
+        {
+            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 270, Avalonia.Controls.GridUnitType.Pixel);
+        }
+        else
+        {
+            if (SideBarGridLength.IsAbsolute && SideBarGridLength.Value > 120)
+            {
+                _savedSideBarWidth = SideBarGridLength.Value;
+            }
+            SideBarGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+        }
+
+        UpdateToolVisibilityFlags();
+    }
+
+    [ObservableProperty]
+    private string _sideBarTitle = "EXPLORER";
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    public bool IsExplorerActive => SelectedActivityBarIndex == 0;
+    public bool IsOutlineActive => SelectedActivityBarIndex == 1;
+    public bool IsVariablesActive => SelectedActivityBarIndex == 2;
+    public bool IsSearchActive => SelectedActivityBarIndex == 3;
+
+    public event Action<NotebookCellViewModel>? RequestScrollToCell;
+
+    partial void OnSelectedActivityBarIndexChanged(int value)
+    {
+        SideBarTitle = value switch
+        {
+            1 => "OUTLINE",
+            2 => "LIVE VARIABLES",
+            3 => "SEARCH",
+            _ => "EXPLORER"
+        };
+
+        OnPropertyChanged(nameof(IsExplorerActive));
+        OnPropertyChanged(nameof(IsOutlineActive));
+        OnPropertyChanged(nameof(IsVariablesActive));
+        OnPropertyChanged(nameof(IsSearchActive));
+
+        if (value == 2 && IsSideBarVisible)
+        {
+            ActiveTab?.UpdateVariables();
+        }
+
+        UpdateToolVisibilityFlags();
+    }
+
+    private void UpdateToolVisibilityFlags()
+    {
+        IsExplorerOpen = IsSideBarVisible && IsExplorerActive;
+        IsOutlineOpen = IsSideBarVisible && IsOutlineActive;
+        IsVariableInspectorOpen = IsSideBarVisible && IsVariablesActive;
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(FilteredCells));
+        OnPropertyChanged(nameof(SearchResultsCount));
+    }
+
+    public IEnumerable<NotebookCellViewModel> FilteredCells
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(SearchText)) return Cells;
+            return Cells.Where(c => (c.Source ?? string.Empty).Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                    (c.OutputText ?? string.Empty).Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    public int SearchResultsCount => FilteredCells.Count();
+
+    [RelayCommand]
+    public void SelectActivityBarItem(string? indexStr)
+    {
+        if (int.TryParse(indexStr, out var index))
+        {
+            SelectActivityBarItem(index);
+        }
+    }
+
+    public void SelectActivityBarItem(int index)
+    {
+        if (SelectedActivityBarIndex == index)
+        {
+            IsSideBarVisible = !IsSideBarVisible;
+        }
+        else
+        {
+            SelectedActivityBarIndex = index;
+            IsSideBarVisible = true;
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleSideBar()
+    {
+        IsSideBarVisible = !IsSideBarVisible;
+    }
+
+    [RelayCommand]
+    public void SelectCellFromOutline(NotebookCellViewModel? cell)
+    {
+        if (cell == null || ActiveTab == null) return;
+        ActiveTab.SelectCell(cell);
+        RequestScrollToCell?.Invoke(cell);
+    }
+
+    [RelayCommand]
+    public void InsertCodeCellAfter(NotebookCellViewModel? cell)
+    {
+        ActiveTab?.AddCodeCell(cell);
+    }
+
+    [RelayCommand]
+    public void InsertMarkdownCellAfter(NotebookCellViewModel? cell)
+    {
+        ActiveTab?.AddMarkdownCell(cell);
+    }
+
+    [ObservableProperty]
     private bool _isVariableInspectorOpen = false;
 
     [ObservableProperty]
@@ -543,17 +681,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [RelayCommand]
     public void ToggleOutline()
     {
-        IsOutlineOpen = !IsOutlineOpen;
+        SelectActivityBarItem(1);
     }
 
     [RelayCommand]
     public void ToggleVariableInspector()
     {
-        IsVariableInspectorOpen = !IsVariableInspectorOpen;
-        if (IsVariableInspectorOpen)
-        {
-            ActiveTab?.UpdateVariables();
-        }
+        SelectActivityBarItem(2);
     }
 
     [RelayCommand]

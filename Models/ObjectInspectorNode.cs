@@ -25,6 +25,31 @@ public partial class ObjectInspectorPropertyRow : ObservableObject
 
     [ObservableProperty]
     private ObjectInspectorNode? _childNode;
+
+    public string ValueForeground
+    {
+        get
+        {
+            if (IsNull) return "#808080";
+            if (string.IsNullOrEmpty(SimpleValueText)) return "#E2E2E6";
+            if (SimpleValueText.StartsWith("\"") || SimpleValueText.StartsWith("'")) return "#CE9178";
+            if (bool.TryParse(SimpleValueText, out _)) return "#569CD6";
+            if (char.IsDigit(SimpleValueText[0]) || (SimpleValueText.Length > 1 && (SimpleValueText[0] == '-' || SimpleValueText[0] == '+') && char.IsDigit(SimpleValueText[1])))
+                return "#B5CEA8";
+            if (SimpleValueText.StartsWith("[") && SimpleValueText.EndsWith("]")) return "#4EC9B0";
+            return "#D4D4D4";
+        }
+    }
+
+    partial void OnSimpleValueTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(ValueForeground));
+    }
+
+    partial void OnIsNullChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ValueForeground));
+    }
 }
 
 /// <summary>

@@ -120,7 +120,7 @@ public class BindableTextEditor : TextEditor
         if (isDark)
         {
             SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
-            Background = new SolidColorBrush(Color.Parse("#14171F"));
+            Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
             TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
@@ -130,7 +130,7 @@ public class BindableTextEditor : TextEditor
         else
         {
             SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
-            Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
+            Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
             TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
