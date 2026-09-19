@@ -103,14 +103,17 @@
 
                         <!-- Col 2: Rename TextBox (Edit View) -->
                         <TextBox Grid.Column="2"
+                                 Classes="explorer-rename-box"
                                  Text="{Binding EditName, Mode=TwoWay}"
-                                 FontSize="11.5"
-                                 Height="22"
-                                 Padding="4,1"
-                                 Margin="0,0,4,0"
+                                 Margin="0,0,6,0"
                                  IsVisible="{Binding IsRenaming}"
                                  controls:FocusOnTrueBehavior.IsActive="{Binding IsRenaming}"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding CommitRenameCommand}" />
+                                <KeyBinding Gesture="Escape" Command="{Binding CancelRenameCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
 
                         <!-- Col 3: Action Buttons (Only visible on hover!) -->
                         <StackPanel Grid.Column="3"
@@ -466,9 +469,52 @@
             <Setter Property="MaxHeight" Value="360" />
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
         </Style>
-        <Style Selector="ScrollViewer.notebook-output-scroll:not(.scrolled)">
-            <Setter Property="MaxHeight" Value="NaN" />
-            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+        <!-- VS Code Inline Explorer Rename / New Item Input Box -->
+        <Style Selector="TextBox.explorer-rename-box">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CaretBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource M3OnPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBox.explorer-rename-box:focus">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="TextBox.explorer-rename-box:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="TextBox.explorer-rename-box /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="TextBox.explorer-rename-box:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="TextBox.explorer-rename-box:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="MinHeight" Value="0" />
         </Style>
     </UserControl.Styles>
 

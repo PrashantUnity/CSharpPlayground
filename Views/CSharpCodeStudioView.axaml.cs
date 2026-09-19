@@ -85,6 +85,22 @@ public partial class CSharpCodeStudioView : UserControl
     {
         if (_currentVm == null) return;
 
+        if (e.Source is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
+        {
+            if (e.Key == Key.Enter)
+            {
+                itemVm.CommitRenameCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                itemVm.CancelRenameCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+        }
+
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.O)
@@ -127,6 +143,55 @@ public partial class CSharpCodeStudioView : UserControl
             {
                 _currentVm.StopCommand.Execute(null);
             }
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.B)
+        {
+            _currentVm.ToggleSideBarCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.J)
+        {
+            _currentVm.ToggleBottomDeckCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.E)
+        {
+            _currentVm.SelectActivityBarItem(0); // Explorer
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.F)
+        {
+            _currentVm.SelectActivityBarItem(1); // Search
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.D)
+        {
+            _currentVm.SelectActivityBarItem(2); // Debug
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.X)
+        {
+            _currentVm.SelectActivityBarItem(3); // NuGet / Dependencies
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.M)
+        {
+            _currentVm.ShowProblemsTabCommand.Execute(null);
             e.Handled = true;
             return;
         }
@@ -554,6 +619,14 @@ public partial class CSharpCodeStudioView : UserControl
                     e.Handled = true;
                 }
             }
+        }
+    }
+
+    private void OnRenameTextBoxLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
+        {
+            itemVm.CommitRenameCommand.Execute(null);
         }
     }
 }

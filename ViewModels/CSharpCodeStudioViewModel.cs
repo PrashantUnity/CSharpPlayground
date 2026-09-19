@@ -39,14 +39,151 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [ObservableProperty]
     private string _notes = string.Empty;
 
+    // ── VS Code Multi-Tab Document Strip ──
+    public ObservableCollection<StudioTabItemViewModel> OpenTabs { get; } = new();
+
+    // ── VS Code Layout: Activity Bar & Primary Side Bar ──
+    // 0=Explorer, 1=Search, 2=Debug, 3=NuGet, 4=Scratchpad, 5=Problems
     [ObservableProperty]
-    private int _selectedLeftTabIndex = 0;
+    private int _selectedActivityBarIndex = 0;
+
+    [ObservableProperty]
+    private bool _isSideBarVisible = true;
+
+    [ObservableProperty]
+    private Avalonia.Controls.GridLength _sideBarGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
+
+    private double _savedSideBarWidth = 280;
+
+    partial void OnIsSideBarVisibleChanged(bool value)
+    {
+        if (value)
+        {
+            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 280, Avalonia.Controls.GridUnitType.Pixel);
+        }
+        else
+        {
+            if (SideBarGridLength.IsAbsolute && SideBarGridLength.Value > 120)
+            {
+                _savedSideBarWidth = SideBarGridLength.Value;
+            }
+            SideBarGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+        }
+    }
+
+    [ObservableProperty]
+    private string _sideBarTitle = "EXPLORER";
+
+    [ObservableProperty]
+    private int _selectedLeftTabIndex = -1;
+
+    public bool IsExplorerActive => SelectedActivityBarIndex == 0;
+    public bool IsSearchActive => SelectedActivityBarIndex == 1;
+    public bool IsDebugActive => SelectedActivityBarIndex == 2;
+    public bool IsDependenciesActive => SelectedActivityBarIndex == 3;
+    public bool IsScratchpadActive => SelectedActivityBarIndex == 4;
+    public bool IsProblemsActive => SelectedActivityBarIndex == 5;
+
+    partial void OnSelectedActivityBarIndexChanged(int value)
+    {
+        SideBarTitle = value switch
+        {
+            1 => "SEARCH",
+            2 => "RUN AND DEBUG",
+            3 => "DEPENDENCIES & NUGET",
+            4 => "SCRATCHPAD & NOTES",
+            5 => "PROBLEMS",
+            _ => "EXPLORER"
+        };
+
+        OnPropertyChanged(nameof(IsExplorerActive));
+        OnPropertyChanged(nameof(IsSearchActive));
+        OnPropertyChanged(nameof(IsDebugActive));
+        OnPropertyChanged(nameof(IsDependenciesActive));
+        OnPropertyChanged(nameof(IsScratchpadActive));
+        OnPropertyChanged(nameof(IsProblemsActive));
+    }
+
+    partial void OnSelectedLeftTabIndexChanged(int value)
+    {
+        switch (value)
+        {
+            case 0:
+                SelectedActivityBarIndex = 4; // Scratchpad & Notes
+                IsSideBarVisible = true;
+                break;
+            case 1:
+                SelectedActivityBarIndex = 3; // Dependencies & NuGet
+                IsSideBarVisible = true;
+                break;
+            case 2:
+                SelectedBottomTabIndex = 3; // Test Cases
+                IsBottomDeckExpanded = true;
+                break;
+        }
+    }
+
+    // ── VS Code Search in Script ──
+    [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    [ObservableProperty]
+    private string _replaceQuery = string.Empty;
+
+    [ObservableProperty]
+    private bool _searchMatchCase;
+
+    [ObservableProperty]
+    private bool _searchWholeWord;
+
+    [ObservableProperty]
+    private bool _searchUseRegex;
+
+    [ObservableProperty]
+    private string _searchStatusText = string.Empty;
+
+    public ObservableCollection<SearchResultItem> SearchMatches { get; } = new();
+
+    partial void OnSearchQueryChanged(string value) => ExecuteSearch();
+    partial void OnSearchMatchCaseChanged(bool value) => ExecuteSearch();
+    partial void OnSearchWholeWordChanged(bool value) => ExecuteSearch();
+    partial void OnSearchUseRegexChanged(bool value) => ExecuteSearch();
+
+    // ── VS Code Code Templates ──
+    [ObservableProperty]
+    private string _templateFilterQuery = string.Empty;
+
+    public ObservableCollection<CodeTemplate> FilteredTemplates { get; } = new();
+    private readonly List<CodeTemplate> _allTemplates = new();
+
+    partial void OnTemplateFilterQueryChanged(string value) => RefreshFilteredTemplates();
 
     [ObservableProperty]
     private int _selectedBottomTabIndex = 0;
 
     [ObservableProperty]
     private bool _isBottomDeckExpanded = true;
+
+    [ObservableProperty]
+    private Avalonia.Controls.GridLength _bottomDeckGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
+
+    private double _savedBottomDeckHeight = 280;
+
+    partial void OnIsBottomDeckExpandedChanged(bool value)
+    {
+        if (value)
+        {
+            BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+        }
+        else
+        {
+            if (BottomDeckGridLength.IsAbsolute && BottomDeckGridLength.Value > 60)
+            {
+                _savedBottomDeckHeight = BottomDeckGridLength.Value;
+            }
+            BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+        }
+    }
 
     [ObservableProperty]
     private int _selectedLanguageModeIndex = 0;
@@ -219,8 +356,77 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
         }
 
+        _allTemplates.AddRange(CodeTemplateLibrary.GetTemplates());
+        RefreshFilteredTemplates();
+
+        OpenTabs.Add(CreateTab(script, isActive: true));
+
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
+    }
+
+    private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
+    {
+        var tab = new StudioTabItemViewModel(document, isActive)
+        {
+            OnSelect = t => _ = SwitchToTabAsync(t),
+            OnClose = t => _ = CloseTabAsync(t)
+        };
+        return tab;
+    }
+
+    public async Task SwitchToTabAsync(StudioTabItemViewModel tab)
+    {
+        if (tab.Id == Script.Id && tab.IsActive) return;
+
+        // Save active script state
+        Script.Code = Code;
+        Script.Notes = Notes;
+
+        foreach (var t in OpenTabs)
+        {
+            t.IsActive = (t.Id == tab.Id);
+        }
+
+        await UpdateActiveScriptAsync(tab.Document);
+    }
+
+    public async Task CloseTabAsync(StudioTabItemViewModel tab)
+    {
+        if (OpenTabs.Count <= 1)
+        {
+            return;
+        }
+
+        int index = OpenTabs.IndexOf(tab);
+        OpenTabs.Remove(tab);
+
+        if (tab.IsActive)
+        {
+            var nextTab = (index < OpenTabs.Count) ? OpenTabs[index] : OpenTabs[^1];
+            await SwitchToTabAsync(nextTab);
+        }
+    }
+
+    private void AddOrActivateTab(ScriptDocumentItem document)
+    {
+        var existing = OpenTabs.FirstOrDefault(t => t.Id == document.Id);
+        if (existing != null)
+        {
+            foreach (var t in OpenTabs)
+            {
+                t.IsActive = (t.Id == document.Id);
+            }
+        }
+        else
+        {
+            foreach (var t in OpenTabs)
+            {
+                t.IsActive = false;
+            }
+            var newTab = CreateTab(document, isActive: true);
+            OpenTabs.Add(newTab);
+        }
     }
 
     public async Task UpdateActiveScriptAsync(ScriptDocumentItem script)
@@ -234,6 +440,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             "Expression" => 2,
             _ => 0
         };
+
+        AddOrActivateTab(script);
 
         ConsoleOutput = string.Empty;
         ExecutionTimeText = string.Empty;
@@ -261,6 +469,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         Script.Code = value;
         Script.LastModified = DateTime.UtcNow;
+        var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (activeTab != null) activeTab.IsDirty = true;
         TriggerDiagnosticsCheck();
     }
 
@@ -640,6 +850,13 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Script.LastModified = DateTime.UtcNow;
         var saved = await _storageService.SaveScriptAsync(Script);
         CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
+
+        var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (activeTab != null)
+        {
+            activeTab.IsDirty = false;
+            activeTab.NotifyTitleChanged();
+        }
     }
 
     [RelayCommand]
@@ -682,9 +899,192 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleBottomDeck()
+    public void ToggleBottomDeck()
     {
         IsBottomDeckExpanded = !IsBottomDeckExpanded;
+    }
+
+    [RelayCommand]
+    public void ToggleSideBar()
+    {
+        IsSideBarVisible = !IsSideBarVisible;
+    }
+
+    [RelayCommand]
+    public void SelectActivityBarItem(string? indexStr)
+    {
+        if (int.TryParse(indexStr, out var index))
+        {
+            SelectActivityBarItem(index);
+        }
+    }
+
+    public void SelectActivityBarItem(int index)
+    {
+        if (SelectedActivityBarIndex == index)
+        {
+            IsSideBarVisible = !IsSideBarVisible;
+        }
+        else
+        {
+            SelectedActivityBarIndex = index;
+            IsSideBarVisible = true;
+        }
+    }
+
+    [RelayCommand]
+    public void ExecuteSearch()
+    {
+        SearchMatches.Clear();
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            SearchStatusText = string.Empty;
+            return;
+        }
+
+        var lines = (Code ?? string.Empty).Split('\n');
+        var query = SearchQuery;
+        var comparison = SearchMatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+            int idx = 0;
+            while (idx < line.Length)
+            {
+                int foundIdx = line.IndexOf(query, idx, comparison);
+                if (foundIdx < 0) break;
+
+                SearchMatches.Add(new SearchResultItem
+                {
+                    LineNumber = i + 1,
+                    Column = foundIdx + 1,
+                    Length = query.Length,
+                    LineText = line.Trim()
+                });
+
+                idx = foundIdx + Math.Max(1, query.Length);
+            }
+        }
+
+        SearchStatusText = SearchMatches.Count == 1 ? "1 result" : $"{SearchMatches.Count} results";
+    }
+
+    [RelayCommand]
+    public void NavigateToSearchMatch(SearchResultItem? match)
+    {
+        if (match == null) return;
+        CaretLine = match.LineNumber;
+        CaretColumn = match.Column;
+        RequestNavigateToCaret?.Invoke(match.LineNumber, match.Column);
+    }
+
+    [RelayCommand]
+    public void ReplaceNext()
+    {
+        if (string.IsNullOrEmpty(SearchQuery) || SearchMatches.Count == 0) return;
+        var match = SearchMatches[0];
+        var lines = (Code ?? string.Empty).Split('\n');
+        if (match.LineNumber - 1 < lines.Length)
+        {
+            var line = lines[match.LineNumber - 1];
+            var colIdx = match.Column - 1;
+            if (colIdx >= 0 && colIdx + match.Length <= line.Length)
+            {
+                lines[match.LineNumber - 1] = line.Remove(colIdx, match.Length).Insert(colIdx, ReplaceQuery ?? string.Empty);
+                Code = string.Join("\n", lines);
+                ExecuteSearch();
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ReplaceAll()
+    {
+        if (string.IsNullOrEmpty(SearchQuery)) return;
+        if (SearchMatchCase)
+        {
+            Code = (Code ?? string.Empty).Replace(SearchQuery, ReplaceQuery ?? string.Empty);
+        }
+        else
+        {
+            Code = System.Text.RegularExpressions.Regex.Replace(
+                Code ?? string.Empty,
+                System.Text.RegularExpressions.Regex.Escape(SearchQuery),
+                ReplaceQuery ?? string.Empty,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        ExecuteSearch();
+    }
+
+    public void RefreshFilteredTemplates()
+    {
+        FilteredTemplates.Clear();
+        var q = TemplateFilterQuery?.Trim();
+        foreach (var t in _allTemplates)
+        {
+            if (string.IsNullOrEmpty(q) ||
+                t.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                t.Tags.Any(tag => tag.Contains(q, StringComparison.OrdinalIgnoreCase)))
+            {
+                FilteredTemplates.Add(t);
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void InsertTemplate(CodeTemplate? template)
+    {
+        if (template == null) return;
+        if (string.IsNullOrWhiteSpace(Code))
+        {
+            Code = template.InitialCode;
+            Notes = template.Notes;
+        }
+        else
+        {
+            Code += "\n\n" + template.InitialCode;
+            if (!string.IsNullOrWhiteSpace(template.Notes))
+            {
+                Notes = string.IsNullOrWhiteSpace(Notes) ? template.Notes : Notes + "\n\n" + template.Notes;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ShowProblemsTab()
+    {
+        SelectedBottomTabIndex = 2;
+        IsBottomDeckExpanded = true;
+    }
+
+    [RelayCommand]
+    public void ShowConsoleTab()
+    {
+        SelectedBottomTabIndex = 1;
+        IsBottomDeckExpanded = true;
+    }
+
+    [RelayCommand]
+    public void ShowDumpResultsTab()
+    {
+        SelectedBottomTabIndex = 0;
+        IsBottomDeckExpanded = true;
+    }
+
+    [RelayCommand]
+    public void ShowTestCasesTab()
+    {
+        SelectedBottomTabIndex = 3;
+        IsBottomDeckExpanded = true;
+    }
+
+    [RelayCommand]
+    public void ShowDebuggerTab()
+    {
+        SelectedBottomTabIndex = 4;
+        IsBottomDeckExpanded = true;
     }
 
     public void SetCaretPosition(int line, int col)
