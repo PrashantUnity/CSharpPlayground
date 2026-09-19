@@ -45,6 +45,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedNavSection = "Templates";
 
+    [ObservableProperty]
+    private string _activeDashboardView = "Workspaces";
+
+    public bool IsWorkspacesTabActive => ActiveDashboardView == "Workspaces";
+    public bool IsTemplatesTabActive => ActiveDashboardView == "Templates";
+
     private bool _hasAppliedInitialNavDefault;
 
     [ObservableProperty]
@@ -97,7 +103,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
-        "All", "Scripts", "Notebooks"
+        "All", "Notebooks", "Scripts", "Pinned"
     };
 
     public ObservableCollection<string> SortOptions { get; } = new()
@@ -108,8 +114,10 @@ public partial class CSharpManagerViewModel : ObservableObject
     private readonly Action? _navigateToHomeAction;
 
     public bool IsAllFilterActive => SelectedTypeFilter == "All";
-    public bool IsScriptsFilterActive => SelectedTypeFilter == "Scripts";
     public bool IsNotebooksFilterActive => SelectedTypeFilter == "Notebooks";
+    public bool IsScriptsFilterActive => SelectedTypeFilter == "Scripts";
+    public bool IsPinnedFilterActive => SelectedTypeFilter == "Pinned";
+    public int PinnedCount => PinnedItems.Count;
 
     public bool IsWorkspaceSectionActive => SelectedNavSection == "Workspace";
     public bool IsTemplatesSectionActive => SelectedNavSection == "Templates";
@@ -131,8 +139,10 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public WorkspaceItemSummary? PinnedItem1 => PinnedItems.Count > 0 ? PinnedItems[0] : null;
     public WorkspaceItemSummary? PinnedItem2 => PinnedItems.Count > 1 ? PinnedItems[1] : null;
+    public WorkspaceItemSummary? PinnedItem3 => PinnedItems.Count > 2 ? PinnedItems[2] : null;
     public bool HasPinnedItem1 => PinnedItem1 != null;
     public bool HasPinnedItem2 => PinnedItem2 != null;
+    public bool HasPinnedItem3 => PinnedItem3 != null;
     public bool HasAnyPinnedItems => PinnedItems.Count > 0;
     public bool HasUnpinnedItems => UnpinnedItems.Count > 0;
 
@@ -362,6 +372,19 @@ public partial class CSharpManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task OpenPinnedItem3Async()
+    {
+        if (PinnedItem3 != null)
+        {
+            await OpenItemAsync(PinnedItem3);
+        }
+        else
+        {
+            SetActiveDashboardView("Templates");
+        }
+    }
+
+    [RelayCommand]
     public async Task RefreshWorkspaceAsync()
     {
         await LoadWorkspaceItemsAsync();
@@ -426,10 +449,13 @@ public partial class CSharpManagerViewModel : ObservableObject
 
         OnPropertyChanged(nameof(PinnedItem1));
         OnPropertyChanged(nameof(PinnedItem2));
+        OnPropertyChanged(nameof(PinnedItem3));
         OnPropertyChanged(nameof(HasPinnedItem1));
         OnPropertyChanged(nameof(HasPinnedItem2));
+        OnPropertyChanged(nameof(HasPinnedItem3));
         OnPropertyChanged(nameof(HasAnyPinnedItems));
         OnPropertyChanged(nameof(HasUnpinnedItems));
+        OnPropertyChanged(nameof(PinnedCount));
         OnPropertyChanged(nameof(RecentNotebook));
         OnPropertyChanged(nameof(RecentScript));
         OnPropertyChanged(nameof(RecentNotebookTitle));
@@ -541,14 +567,35 @@ public partial class CSharpManagerViewModel : ObservableObject
     partial void OnSelectedTypeFilterChanged(string value)
     {
         OnPropertyChanged(nameof(IsAllFilterActive));
-        OnPropertyChanged(nameof(IsScriptsFilterActive));
         OnPropertyChanged(nameof(IsNotebooksFilterActive));
+        OnPropertyChanged(nameof(IsScriptsFilterActive));
+        OnPropertyChanged(nameof(IsPinnedFilterActive));
         OnPropertyChanged(nameof(IsWorkspaceAllNavActive));
         OnPropertyChanged(nameof(IsScriptsNavActive));
         OnPropertyChanged(nameof(IsNotebooksNavActive));
         ApplyFilter();
     }
     partial void OnSelectedSortOptionChanged(string value) => ApplyFilter();
+
+    partial void OnActiveDashboardViewChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsWorkspacesTabActive));
+        OnPropertyChanged(nameof(IsTemplatesTabActive));
+        if (value == "Templates")
+        {
+            SelectedNavSection = "Templates";
+        }
+        else
+        {
+            SelectedNavSection = "Workspace";
+        }
+    }
+
+    [RelayCommand]
+    public void SetActiveDashboardView(string view)
+    {
+        ActiveDashboardView = view;
+    }
 
     partial void OnSelectedNavSectionChanged(string value)
     {
@@ -557,6 +604,14 @@ public partial class CSharpManagerViewModel : ObservableObject
         OnPropertyChanged(nameof(IsWorkspaceAllNavActive));
         OnPropertyChanged(nameof(IsScriptsNavActive));
         OnPropertyChanged(nameof(IsNotebooksNavActive));
+        if (value == "Templates")
+        {
+            ActiveDashboardView = "Templates";
+        }
+        else if (value == "Workspace")
+        {
+            ActiveDashboardView = "Workspaces";
+        }
     }
 
     partial void OnSelectedTemplateChanged(CodeTemplate? value)
@@ -588,12 +643,21 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         SelectedTypeFilter = filter;
         SelectedNavSection = "Workspace";
+        ActiveDashboardView = "Workspaces";
     }
 
     [RelayCommand]
     private void SetSelectedNavSection(string section)
     {
         SelectedNavSection = section;
+        if (section == "Templates")
+        {
+            ActiveDashboardView = "Templates";
+        }
+        else
+        {
+            ActiveDashboardView = "Workspaces";
+        }
     }
 
     [RelayCommand]
@@ -633,13 +697,15 @@ public partial class CSharpManagerViewModel : ObservableObject
         {
             if (typeFilter == "Scripts" && !item.IsScript) return false;
             if (typeFilter == "Notebooks" && !item.IsNotebook) return false;
+            if (typeFilter == "Pinned" && !item.IsPinned) return false;
 
             if (string.IsNullOrEmpty(query)) return true;
 
             return item.Title.ToLowerInvariant().Contains(query) ||
                    item.Description.ToLowerInvariant().Contains(query) ||
                    item.Category.ToLowerInvariant().Contains(query) ||
-                   item.ExecutionMode.ToLowerInvariant().Contains(query);
+                   item.ExecutionMode.ToLowerInvariant().Contains(query) ||
+                   item.DisplayLocation.ToLowerInvariant().Contains(query);
         });
 
         matches = SelectedSortOption switch
