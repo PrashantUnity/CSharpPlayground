@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="35"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioTabBarControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal">
+            <ItemsControl ItemsSource="{Binding OpenTabs}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:StudioTabItemViewModel">
+                        <Border Classes="vscode-tab"
+                                Classes.active="{Binding IsActive}"
+                                Background="Transparent"
+                                PointerPressed="OnTabPointerPressed">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Close" Command="{Binding CloseCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Close Others" Command="{Binding CloseOthersCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="CloseBoxMultipleOutline" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Close to the Right" Command="{Binding CloseToTheRightCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="ArrowRightBoldOutline" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Close All" Command="{Binding CloseAllCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="CloseOctagonOutline" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Header="Copy Path" Command="{Binding CopyPathCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Reveal in Explorer" Command="{Binding RevealInExplorerCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
+                                <Button Grid.Column="0"
+                                        Command="{Binding SelectCommand}"
+                                        Background="Transparent" BorderThickness="0" Padding="0"
+                                        Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="14" Height="14"
+                                                                    Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontSize="12"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <!-- Unsaved dirty dot -->
+                                        <Ellipse Width="6" Height="6"
+                                                 Fill="{DynamicResource M3PrimaryBrush}"
+                                                 Margin="2,0,0,0"
+                                                 VerticalAlignment="Center"
+                                                 IsVisible="{Binding IsDirty}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Tab Close Button (×) -->
+                                <Button Grid.Column="2"
+                                        Command="{Binding CloseCommand}"
+                                        Classes="cs-toolbar-icon"
+                                        Width="18" Height="18"
+                                        Margin="8,0,0,0"
+                                        ToolTip.Tip="Close Script">
+                                    <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11"
+                                                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- New Tab (+) Button -->
+            <Button Command="{Binding NewScriptCommand}"
+                    Classes="cs-toolbar-icon"
+                    Width="24" Height="24"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="New Script">
+                <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+            </Button>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="48" d:DesignHeight="800"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioActivityBarControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Border Width="48"
+            Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="*,Auto">
+            <!-- Top Activity Tool Buttons -->
+            <StackPanel Grid.Row="0" Spacing="0">
+                <!-- Explorer (0) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="0"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsExplorerActive}"
+                        ToolTip.Tip="Explorer (Ctrl+Shift+E)">
+                    <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20" />
+                </Button>
+
+                <!-- Search (1) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="1"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsSearchActive}"
+                        ToolTip.Tip="Search (Ctrl+Shift+F)">
+                    <materialIcons:MaterialIcon Kind="Magnify" Width="20" Height="20" />
+                </Button>
+
+                <!-- Run and Debug (2) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="2"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsDebugActive}"
+                        ToolTip.Tip="Run &amp; Debug (Ctrl+Shift+D)">
+                    <Grid>
+                        <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="20" Height="20" />
+                        <Border Background="{DynamicResource M3WarningBrush}" Width="7" Height="7" CornerRadius="4"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-2,0"
+                                IsVisible="{Binding IsPaused}" />
+                    </Grid>
+                </Button>
+
+                <!-- NuGet & Dependencies (3) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsDependenciesActive}"
+                        ToolTip.Tip="Dependencies &amp; NuGet (Ctrl+Shift+X)">
+                    <materialIcons:MaterialIcon Kind="PackageVariantClosed" Width="20" Height="20" />
+                </Button>
+
+                <!-- Scratchpad & Notes (4) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="4"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsScratchpadActive}"
+                        ToolTip.Tip="Scratchpad &amp; Notes">
+                    <materialIcons:MaterialIcon Kind="FileDocumentOutline" Width="20" Height="20" />
+                </Button>
+
+                <!-- Problems (5) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="5"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsProblemsActive}"
+                        ToolTip.Tip="Problems &amp; Diagnostics (Ctrl+Shift+M)">
+                    <Grid>
+                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" />
+                        <Border Background="{DynamicResource M3ErrorBrush}" CornerRadius="7"
+                                Height="14" MinWidth="14" Padding="3,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
+                                IsVisible="{Binding ErrorCount}">
+                            <TextBlock Text="{Binding ErrorCount}" FontSize="8.5" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                       Foreground="{DynamicResource M3OnErrorBrush}" />
+                        </Border>
+                    </Grid>
+                </Button>
+            </StackPanel>
+
+            <!-- Bottom Utility Buttons -->
+            <StackPanel Grid.Row="1" Spacing="0" Margin="0,0,0,4">
+                <!-- Return to Scripts Hub -->
+                <Button Command="{Binding BackToHubCommand}"
+                        Classes="activity-bar-btn"
+                        ToolTip.Tip="Return to Scripts Hub">
+                    <materialIcons:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

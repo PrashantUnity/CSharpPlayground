@@ -110,3 +110,13 @@ Every studio view must register and honor standard VS Code shortcuts:
 - `Models/`: Immutable or POCO data models for scripts, notebooks, cells, diagnostics, and test cases.
 - `Services/`: Isolated headless engines for compilation, execution, debugging, storage, and NuGet resolution.
 - `Controls/`: Reusable specialized Avalonia controls (margins, hover tips, syntax themes).
+
+---
+
+## 6. Component Architecture & Codebase Health Mandate
+All contributors and agents must follow `.agents/rules/component_architecture_and_reuse_mandate.md`:
+- **Line budgets**: AXAML views < 400 lines, View code-behind < 150 lines, ViewModels < 400 lines per file (use domain partials e.g. `.Explorer.cs`, `.Debugging.cs`), Services < 500 lines.
+- **Mandatory Control Reusability**: Shared UI (Activity Bar, Status Bar, Bottom Tool Deck, Explorer Panel, Search Panel, Breadcrumbs, Tab Bar) must be implemented as reusable controls in `Controls/`.
+- **Shared Styles**: Centralize styles in `Controls/SharedStudioStyles.axaml`. Never duplicate hundreds of lines in individual `<UserControl.Styles>`.
+- **100% Backward Compatibility**: All 237+ automated unit tests must continue to pass with 0 warnings and 0 errors.
+

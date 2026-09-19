@@ -1,0 +1,290 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:services="using:PdfEditorApp.Plugins.CSharpEditor.Services"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="300"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioBottomDeckControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Border MinHeight="100"
+            VerticalAlignment="Stretch"
+            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="0,1,0,0">
+        <Grid RowDefinitions="Auto,*">
+            <!-- Bottom Deck Tab Bar -->
+            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <!-- Tab 0: Results (.Dump) -->
+                        <Button Command="{Binding SetBottomTabCommand}" CommandParameter="0"
+                                Classes="ide-tab-btn"
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="Table" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <TextBlock Text="Results (.Dump)" VerticalAlignment="Center" />
+                                <Border Classes="ide-tab-badge"
+                                        Background="{DynamicResource M3PrimaryBrush}"
+                                        IsVisible="{Binding DumpResults.Count}">
+                                    <TextBlock Text="{Binding DumpResults.Count}" Foreground="{DynamicResource M3OnPrimaryBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 1: Terminal / Console -->
+                        <Button Command="{Binding SetBottomTabCommand}" CommandParameter="1"
+                                Classes="ide-tab-btn"
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" />
+                                <TextBlock Text="Terminal / Console" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 2: Problems -->
+                        <Button Command="{Binding SetBottomTabCommand}" CommandParameter="2"
+                                Classes="ide-tab-btn"
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource M3WarningBrush}" />
+                                <TextBlock Text="Problems" VerticalAlignment="Center" />
+                                <Border Classes="ide-tab-badge"
+                                        Background="{DynamicResource M3ErrorBrush}"
+                                        IsVisible="{Binding ErrorCount}">
+                                    <TextBlock Text="{Binding ErrorCount}" Foreground="{DynamicResource M3OnErrorBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 3: Test Cases -->
+                        <Button Command="{Binding SetBottomTabCommand}" CommandParameter="3"
+                                Classes="ide-tab-btn"
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="CheckboxMarkedCircleOutline" Width="14" Height="14" />
+                                <TextBlock Text="Test Cases" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 4: Interactive Debugger (REPL) -->
+                        <Button Command="{Binding SetBottomTabCommand}" CommandParameter="4"
+                                Classes="ide-tab-btn"
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <TextBlock Text="Debug Console" VerticalAlignment="Center" />
+                                <Border Classes="ide-tab-badge"
+                                        Background="{DynamicResource M3WarningBrush}"
+                                        Padding="5,0"
+                                        IsVisible="{Binding IsPaused}">
+                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="{DynamicResource M3OnWarningBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Right Actions: Clear, Minimize -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Button Command="{Binding ClearResultsCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Clear Results">
+                            <materialIcons:MaterialIcon Kind="TableRemove" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                        <Button Command="{Binding ClearConsoleCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Clear Console">
+                            <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                        <Button Command="{Binding ToggleBottomDeckCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Minimize Deck (Ctrl+J)">
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Bottom Deck Content -->
+            <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedBottomTabIndex}">
+                <!-- Tab 0: Results (.Dump) -->
+                <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,10">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <Border IsVisible="{Binding !DumpResults.Count}" Padding="24,30" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Call .Dump() on any variable, collection, or object to inspect it in a rich interactive table." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding DumpResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:DumpTableResult">
+                                        <views:DumpTableView />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <ItemsControl ItemsSource="{Binding RichOutputs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:RichCellOutput">
+                                        <StackPanel Spacing="0">
+                                            <Border IsVisible="{Binding IsImageKind}" Background="#080C11" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
+                                                <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
+                                            </Border>
+                                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                                <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                                            </Border>
+                                            <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
+                                                <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                                            </Border>
+                                            <Border IsVisible="{Binding IsHtmlKind}">
+                                                <views:RichHtmlView DataContext="{Binding HtmlContent}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Tab 1: Terminal / Console Output -->
+                <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
+                                 FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="12"
+                                 Background="Transparent" Foreground="{DynamicResource M3PrimaryBrush}"
+                                 BorderThickness="0" IsReadOnly="True" TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Tab 2: Problems / Diagnostics -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12,8">
+                        <TextBlock Text="No problems detected in script." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
+                        <ItemsControl ItemsSource="{Binding Diagnostics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
+                                    <Border Background="Transparent" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+                                        <Button Command="{Binding NavigateCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Cursor="Hand">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIconKind}" Foreground="{Binding SeverityColorHex}" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11.5" Foreground="{Binding SeverityColorHex}" />
+                                                    <TextBlock Text="{Binding Message}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding LocationString}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                            </Grid>
+                                        </Button>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Tab 3: Test Cases -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="14,10" Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Automated Test Cases Runner" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}" Classes="cs-toolbar-tonal">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                                    <TextBlock Text="Add Test Case" FontSize="11" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding TestCases}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:TestCaseItem">
+                                    <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.RunTestCaseCommand}" CommandParameter="{Binding}" Classes="cs-toolbar-tonal" Margin="6,0">
+                                                <TextBlock Text="Run" FontSize="10.5" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Tab 4: Debug Console & Immediate REPL -->
+                <Grid ColumnDefinitions="*,4,*">
+                    <!-- Left: Locals Inspection -->
+                    <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                        <Grid RowDefinitions="Auto,*">
+                            <TextBlock Grid.Row="0" Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,4" />
+                            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Locals}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DebugVariableItem">
+                                            <Border Background="{DynamicResource M3SurfaceContainerBrush}" CornerRadius="4" Padding="6,3" Margin="0,0,0,3">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource M3PrimaryBrush}" Margin="0,0,6,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding TypeName}" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,6,0" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding ValueDisplay}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" Width="4" Background="{DynamicResource M3OutlineVariantBrush}" ResizeDirection="Columns" />
+
+                    <!-- Right: Immediate REPL Console -->
+                    <Border Grid.Column="2" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                                <TextBlock Grid.Column="0" Text="IMMEDIATE REPL CONSOLE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Command="{Binding ClearImmediateCommand}" Classes="cs-toolbar-icon" Width="20" Height="20">
+                                    <materialIcons:MaterialIcon Kind="Eraser" Width="12" Height="12" />
+                                </Button>
+                            </Grid>
+
+                            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding ImmediateOutput}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" TextWrapping="Wrap" Margin="0,1" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                <TextBox Grid.Column="0" Text="{Binding ImmediateInputText, Mode=TwoWay}"
+                                         FontFamily="Consolas, monospace" FontSize="11"
+                                         Classes="sidebar-search-box" PlaceholderText="> Evaluate C# expression...">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding EvaluateImmediateCommand}" />
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                                <Button Grid.Column="1" Command="{Binding EvaluateImmediateCommand}" Classes="cs-toolbar-tonal" Height="28" MinHeight="0" Margin="4,0,0,0">
+                                    <TextBlock Text="Eval" FontSize="10" FontWeight="Bold" />
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+            </Carousel>
+        </Grid>
+    </Border>
+</UserControl>

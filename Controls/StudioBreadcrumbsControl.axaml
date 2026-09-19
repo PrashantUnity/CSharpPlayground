@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="24"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioBreadcrumbsControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="12,2">
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="scripts" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0">
+                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+            </Border>
+        </StackPanel>
+    </Border>
+</UserControl>

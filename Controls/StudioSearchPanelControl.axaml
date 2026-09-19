@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             mc:Ignorable="d" d:DesignWidth="280" d:DesignHeight="600"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioSearchPanelControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+
+        <Style Selector="Button.explorer-tool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.explorer-tool-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <!-- Search & Replace Inputs -->
+        <StackPanel Grid.Row="0" Margin="10,10,10,6" Spacing="6">
+            <!-- Search Row -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0" Text="{Binding SearchQuery, Mode=TwoWay}"
+                         Classes="sidebar-search-box"
+                         PlaceholderText="Search in script..." />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="4,0,0,0">
+                    <ToggleButton IsChecked="{Binding SearchMatchCase, Mode=TwoWay}"
+                                  Classes="sidebar-option-toggle"
+                                  ToolTip.Tip="Match Case (Alt+C)">
+                        <TextBlock Text="Aa" FontSize="11" FontWeight="Bold" />
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding SearchWholeWord, Mode=TwoWay}"
+                                  Classes="sidebar-option-toggle"
+                                  ToolTip.Tip="Match Whole Word (Alt+W)">
+                        <TextBlock Text="|ab|" FontSize="10" FontWeight="Bold" />
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding SearchUseRegex, Mode=TwoWay}"
+                                  Classes="sidebar-option-toggle"
+                                  ToolTip.Tip="Use Regular Expression (Alt+R)">
+                        <TextBlock Text=".*" FontSize="11" FontWeight="Bold" />
+                    </ToggleButton>
+                </StackPanel>
+            </Grid>
+
+            <!-- Replace Row -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0" Text="{Binding ReplaceQuery, Mode=TwoWay}"
+                         Classes="sidebar-search-box"
+                         PlaceholderText="Replace..." />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="4,0,0,0">
+                    <Button Command="{Binding ReplaceNextCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Replace (Ctrl+Shift+1)">
+                        <materialIcons:MaterialIcon Kind="FindReplace" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                    <Button Command="{Binding ReplaceAllCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Replace All (Ctrl+Alt+Enter)">
+                        <materialIcons:MaterialIcon Kind="SelectAll" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+        <!-- Results Summary Header -->
+        <Border Grid.Row="1" Padding="12,4" Background="{DynamicResource M3SurfaceContainerBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding SearchStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Search Matches List -->
+        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="6,4">
+                <TextBlock Text="Type a search query above to inspect occurrences."
+                           FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                           Margin="8" IsVisible="{Binding !SearchMatches.Count}" />
+
+                <ItemsControl ItemsSource="{Binding SearchMatches}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:SearchResultItem">
+                            <Button Command="{Binding $parent[UserControl].DataContext.NavigateToSearchMatchCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="Transparent" BorderThickness="0"
+                                    Padding="6,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                    Cursor="Hand">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <Border Grid.Column="0" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FormattedLocation}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding LineText}" FontSize="11.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
