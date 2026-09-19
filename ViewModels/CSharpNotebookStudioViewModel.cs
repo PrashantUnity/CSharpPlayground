@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -15,7 +16,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly ScriptExecutionEngine _executionEngine;
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
+    private readonly Action<ScriptDocumentItem>? _openScriptAction;
     private readonly Func<int> _getTimeoutSeconds;
+
+    public QuickOpenViewModel QuickOpen { get; } = new();
 
     private readonly ObservableCollection<NotebookCellViewModel> _emptyCells = new();
     private readonly ObservableCollection<NotebookVariableInfo> _emptyVariables = new();
@@ -308,7 +312,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         ScriptExecutionEngine executionEngine,
         Action backToHubAction,
         Action? backToHomeAction = null,
-        Func<int>? getTimeoutSeconds = null)
+        Func<int>? getTimeoutSeconds = null,
+        Action<ScriptDocumentItem>? openScriptAction = null)
     {
         _notebook = notebook;
         _storageService = storageService;
@@ -316,6 +321,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _executionEngine = executionEngine;
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
+        _openScriptAction = openScriptAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
 
         var initialTab = new NotebookTabViewModel(
@@ -326,9 +332,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             onCloseTab: CloseTab,
             getTimeoutSeconds: _getTimeoutSeconds);
 
+        ConfigureNotebookTab(initialTab);
         Tabs.Add(initialTab);
         SelectTab(initialTab);
 
+        InitializeQuickOpenCommands();
+        RefreshQuickOpenDocuments();
         PopulateExplorerTree();
     }
 
@@ -359,8 +368,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 onCloseTab: CloseTab,
                 getTimeoutSeconds: _getTimeoutSeconds);
 
+            ConfigureNotebookTab(newTab);
             Tabs.Add(newTab);
             SelectTab(newTab);
+            RefreshQuickOpenDocuments();
         }
     }
 
@@ -444,12 +455,193 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             onCloseTab: CloseTab,
             getTimeoutSeconds: _getTimeoutSeconds);
 
+        ConfigureNotebookTab(newTab);
         Tabs.Add(newTab);
         SelectTab(newTab);
+        RefreshQuickOpenDocuments();
 
         var newExpItem = EnsureDocumentInExplorer(newDoc);
         HighlightExplorerItem(newExpItem.Name);
         newExpItem.StartRename();
+    }
+
+    private void ConfigureNotebookTab(NotebookTabViewModel tab)
+    {
+        tab.OnCloseOthers = t => CloseOtherTabs(t);
+        tab.OnCloseToTheRight = t => CloseTabsToTheRight(t);
+        tab.OnCloseAll = _ => CloseAllTabs();
+        tab.OnCopyPath = t => CopyNotebookTabPath(t);
+        tab.OnRevealInExplorer = t => RevealNotebookTabInExplorer(t);
+    }
+
+    [RelayCommand]
+    public void CloseOtherTabs(NotebookTabViewModel? tab)
+    {
+        if (tab == null || Tabs.Count <= 1) return;
+        var toRemove = Tabs.Where(t => t != tab).ToList();
+        foreach (var t in toRemove)
+        {
+            t.DisposeAllCellResources();
+            Tabs.Remove(t);
+        }
+        if (ActiveTab != tab)
+        {
+            SelectTab(tab);
+        }
+        RefreshQuickOpenDocuments();
+    }
+
+    [RelayCommand]
+    public void CloseTabsToTheRight(NotebookTabViewModel? tab)
+    {
+        if (tab == null) return;
+        int idx = Tabs.IndexOf(tab);
+        if (idx < 0 || idx >= Tabs.Count - 1) return;
+        var toRemove = Tabs.Skip(idx + 1).ToList();
+        foreach (var t in toRemove)
+        {
+            t.DisposeAllCellResources();
+            Tabs.Remove(t);
+        }
+        if (ActiveTab != null && !Tabs.Contains(ActiveTab))
+        {
+            SelectTab(tab);
+        }
+        RefreshQuickOpenDocuments();
+    }
+
+    [RelayCommand]
+    public void CloseAllTabs()
+    {
+        foreach (var t in Tabs)
+        {
+            t.DisposeAllCellResources();
+        }
+        Tabs.Clear();
+        _ = NewNotebookTab();
+        RefreshQuickOpenDocuments();
+    }
+
+    public void CopyNotebookTabPath(NotebookTabViewModel? tab)
+    {
+        if (tab == null) return;
+        try
+        {
+            var text = !string.IsNullOrEmpty(tab.FilePath) ? tab.FilePath : tab.Title;
+            _ = CopyTextToClipboardAsync(text);
+        }
+        catch
+        {
+        }
+    }
+
+    public void RevealNotebookTabInExplorer(NotebookTabViewModel? tab)
+    {
+        if (tab == null) return;
+        SelectedActivityBarIndex = 0; // Explorer
+        IsSideBarVisible = true;
+        HighlightExplorerItem(tab.Title);
+    }
+
+    [RelayCommand]
+    public void ShowQuickOpen(string? mode = null)
+    {
+        RefreshQuickOpenDocuments();
+        var qMode = mode?.ToLowerInvariant() switch
+        {
+            "commands" => QuickOpenMode.Commands,
+            "line" => QuickOpenMode.GoToLine,
+            _ => QuickOpenMode.Files
+        };
+        QuickOpen.Show(qMode);
+    }
+
+    [RelayCommand]
+    public void ShowCommandPalette() => ShowQuickOpen("commands");
+
+    [RelayCommand]
+    public async Task ExportActiveNotebookAsIpynbAsync()
+    {
+        if (ActiveTab == null) return;
+        var content = DocumentExportService.ExportNotebookToIpynb(ActiveTab.Notebook);
+        await CopyTextToClipboardAsync(content);
+        Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Jupyter .ipynb and copied to clipboard!");
+    }
+
+    [RelayCommand]
+    public async Task ExportActiveNotebookAsMarkdownAsync()
+    {
+        if (ActiveTab == null) return;
+        var content = DocumentExportService.ExportNotebookToMarkdown(ActiveTab.Notebook);
+        await CopyTextToClipboardAsync(content);
+        Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Markdown .md and copied to clipboard!");
+    }
+
+    private static async Task CopyTextToClipboardAsync(string text)
+    {
+        try
+        {
+            var clipboard = Avalonia.Application.Current?.ApplicationLifetime switch
+            {
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop => desktop.MainWindow?.Clipboard,
+                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView => Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
+                _ => null
+            };
+            if (clipboard != null)
+            {
+                await clipboard.SetTextAsync(text);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void InitializeQuickOpenCommands()
+    {
+        var cmds = new List<QuickOpenItem>
+        {
+            new() { Title = "Notebook: Run Active Cell", Subtitle = "Execute currently selected cell (Shift+Enter)", Category = "Notebook", IconKind = "Play", IconColorHex = "#75D59A", ShortcutHint = "Shift+Enter", ExecuteAction = () => { if (ActiveTab?.ActiveCell != null) ActiveTab.ActiveCell.RunCellCommand.Execute(null); } },
+            new() { Title = "Notebook: Run All Cells", Subtitle = "Sequential execution of all code cells", Category = "Notebook", IconKind = "FastForward", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Shift+Enter", ExecuteAction = () => { _ = RunAllCellsAsync(); } },
+            new() { Title = "Notebook: Add Code Cell Below", Subtitle = "Insert a new C# code cell below active cell", Category = "Notebook", IconKind = "CodeBraces", IconColorHex = "#58A6FF", ExecuteAction = () => AddCodeCell(ActiveTab?.ActiveCell) },
+            new() { Title = "Notebook: Add Markdown Cell", Subtitle = "Insert a new documentation cell", Category = "Notebook", IconKind = "FormatHeaderPound", IconColorHex = "#4EC9B0", ExecuteAction = () => AddMarkdownCell(ActiveTab?.ActiveCell) },
+            new() { Title = "Notebook: Format All Cells", Subtitle = "Format C# code across all cells", Category = "Notebook", IconKind = "FormatPaint", IconColorHex = "#75D59A", ExecuteAction = FormatAllCodeCells },
+            new() { Title = "Notebook: Clear All Outputs", Subtitle = "Clear stdout, stderr, and rich visuals", Category = "Notebook", IconKind = "Broom", IconColorHex = "#8B949E", ExecuteAction = ClearAllOutputs },
+            new() { Title = "Export: Export to Jupyter Notebook (.ipynb)", Subtitle = "Copy standard Jupyter v4 JSON to clipboard", Category = "Export", IconKind = "ExportVariant", IconColorHex = "#D97706", ExecuteAction = () => _ = ExportActiveNotebookAsIpynbAsync() },
+            new() { Title = "Export: Export to Markdown (.md)", Subtitle = "Copy GitHub Markdown formatted document to clipboard", Category = "Export", IconKind = "ExportVariant", IconColorHex = "#75D59A", ExecuteAction = () => _ = ExportActiveNotebookAsMarkdownAsync() },
+            new() { Title = "File: Save Notebook", Subtitle = "Persist current notebook changes", Category = "File", IconKind = "ContentSaveOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+S", ExecuteAction = () => { _ = SaveAsync(); } },
+            new() { Title = "File: New Notebook Tab", Subtitle = "Open a new interactive notebook tab", Category = "File", IconKind = "FilePlusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+N", ExecuteAction = () => { _ = NewNotebookTab(); } },
+            new() { Title = "File: Close Active Tab", Subtitle = "Close the current notebook tab", Category = "Tabs", IconKind = "Close", IconColorHex = "#E5534B", ShortcutHint = "Ctrl+W", ExecuteAction = () => CloseTab(ActiveTab) },
+            new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except active", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => CloseOtherTabs(ActiveTab) },
+            new() { Title = "File: Close All Tabs", Subtitle = "Close all open notebook tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = CloseAllTabs },
+            new() { Title = "View: Toggle Primary Side Bar", Subtitle = "Expand or collapse activity sidebar", Category = "View", IconKind = "DockLeft", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+B", ExecuteAction = ToggleSideBar },
+            new() { Title = "View: Show Explorer", Subtitle = "Browse workspace notebooks and scripts", Category = "Navigation", IconKind = "FolderMultipleOutline", IconColorHex = "#D97706", ShortcutHint = "Ctrl+Shift+E", ExecuteAction = () => SelectActivityBarItem(0) },
+            new() { Title = "View: Show Outline", Subtitle = "Navigate cells in table of contents", Category = "Navigation", IconKind = "FormatListBulleted", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+Shift+O", ExecuteAction = () => SelectActivityBarItem(1) },
+            new() { Title = "View: Show Live Variables", Subtitle = "Inspect session state and memory values", Category = "Navigation", IconKind = "VariableBox", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Shift+V", ExecuteAction = () => SelectActivityBarItem(2) },
+            new() { Title = "Hub: Return to Workspace Manager", Subtitle = "Navigate back to Hub dashboard", Category = "Navigation", IconKind = "HomeOutline", IconColorHex = "#58A6FF", ExecuteAction = BackToHub }
+        };
+        QuickOpen.RegisterCommands(cmds);
+    }
+
+    public void RefreshQuickOpenDocuments()
+    {
+        var docs = new List<QuickOpenItem>();
+
+        foreach (var tab in Tabs)
+        {
+            docs.Add(new QuickOpenItem
+            {
+                Title = tab.Title,
+                Subtitle = tab.IsActive ? "Currently Active Notebook" : "Open Tab",
+                Category = "Open Tabs",
+                IconKind = "NotebookOutline",
+                IconColorHex = "#D97706",
+                Kind = QuickOpenItemKind.Document,
+                ExecuteAction = () => SelectTab(tab)
+            });
+        }
+
+        QuickOpen.RegisterDocuments(docs);
     }
 
     private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
@@ -466,6 +658,20 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
+
+        if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
+            item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_openScriptAction != null && !string.IsNullOrEmpty(item.DocumentId))
+            {
+                var sc = await _storageService.LoadScriptAsync(item.DocumentId);
+                if (sc != null)
+                {
+                    _openScriptAction.Invoke(sc);
+                    return;
+                }
+            }
+        }
 
         var fileName = item.Name;
         var folderName = item.Parent?.Name ?? "Library";
@@ -1144,9 +1350,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             }
         }
 
-        foreach (var s in summaries.Where(x => x.IsNotebook).OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
+        foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
-            var name = s.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}.frynb";
+            var ext = s.IsNotebook ? ".frynb" : ".frycs";
+            var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
             var isExternal = !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath);
             if (isExternal && !relevantExternalFolders.Contains(s.FolderPath!))
             {

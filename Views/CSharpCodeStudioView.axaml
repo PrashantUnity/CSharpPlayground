@@ -980,7 +980,43 @@
                                         <DataTemplate x:DataType="vm:StudioTabItemViewModel">
                                             <Border Classes="vscode-tab"
                                                     Classes.active="{Binding IsActive}"
-                                                    Background="Transparent">
+                                                    Background="Transparent"
+                                                    PointerPressed="OnTabPointerPressed">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Close" Command="{Binding CloseCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close Others" Command="{Binding CloseOthersCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="CloseBoxMultipleOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close to the Right" Command="{Binding CloseToTheRightCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="ArrowRightBoldOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close All" Command="{Binding CloseAllCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="CloseOctagonOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="Copy Path" Command="{Binding CopyPathCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Reveal in Explorer" Command="{Binding RevealInExplorerCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
                                                 <Grid ColumnDefinitions="Auto,Auto,Auto" VerticalAlignment="Center">
                                                     <Button Grid.Column="0"
                                                             Command="{Binding SelectCommand}"
@@ -1480,12 +1516,38 @@
                            IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                 <!-- Right: Ln, Col, Indentation, Encoding, Language, Bottom Deck Toggle -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding CaretColumn, StringFormat='{}Col {0}'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="Spaces: 4" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <!-- Clickable Ln, Col -> Go To Line Dialog -->
+                    <Button Command="{Binding ShowGoToLineCommand}"
+                            Classes="cs-toolbar-icon" Height="18" MinHeight="0" Padding="4,0"
+                            ToolTip.Tip="Go to Line/Column (Ctrl+G)">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CaretColumn, StringFormat='{}, Col {0}'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Indentation Toggle Button -->
+                    <Button Command="{Binding ToggleIndentationCommand}"
+                            Classes="cs-toolbar-icon" Height="18" MinHeight="0" Padding="4,0"
+                            ToolTip.Tip="Toggle Indentation (2 vs 4 Spaces)">
+                        <TextBlock Text="{Binding IndentationStatusText}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </Button>
+
                     <TextBlock Text="UTF-8" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="C# (.NET 10 Roslyn)" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+
+                    <!-- Language Mode Selector Flyout -->
+                    <Button Classes="cs-toolbar-icon" Height="18" MinHeight="0" Padding="4,0"
+                            ToolTip.Tip="Select C# Execution Mode">
+                        <Button.Flyout>
+                            <MenuFlyout Placement="TopEdgeAlignedRight">
+                                <MenuItem Header="C# Top-Level Statements" Command="{Binding SetLanguageModeCommand}" CommandParameter="0" />
+                                <MenuItem Header="C# Program with Main()" Command="{Binding SetLanguageModeCommand}" CommandParameter="1" />
+                                <MenuItem Header="C# Single Expression" Command="{Binding SetLanguageModeCommand}" CommandParameter="2" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                        <TextBlock Text="{Binding LanguageModeStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </Button>
 
                     <!-- Bottom Deck Toggle Button -->
                     <Button Command="{Binding ToggleBottomDeckCommand}" Classes="cs-toolbar-icon" Width="20" Height="18" ToolTip.Tip="Toggle Terminal Panel (Ctrl+J)">
@@ -1494,5 +1556,14 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- ============================================================ -->
+        <!-- 3. QUICK OPEN & COMMAND PALETTE OVERLAY MODAL                -->
+        <!-- ============================================================ -->
+        <controls:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
+                                          Grid.RowSpan="2"
+                                          ZIndex="999"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch" />
     </Grid>
 </UserControl>

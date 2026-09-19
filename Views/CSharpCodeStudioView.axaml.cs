@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
@@ -204,9 +205,81 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
+        // ── VS Code Command Palette (Ctrl+Shift+P / Cmd+Shift+P) ──
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
         {
-            _currentVm.SelectedLeftTabIndex = _currentVm.SelectedLeftTabIndex == 1 ? 0 : 1;
+            _currentVm.ShowCommandPalette();
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Quick Open (Ctrl+P / Cmd+P) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
+        {
+            _currentVm.ShowQuickOpen("files");
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Go to Line (Ctrl+G / Cmd+G) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.G)
+        {
+            _currentVm.ShowGoToLine();
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Close Active Tab (Ctrl+W / Cmd+W) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.W)
+        {
+            CloseActiveTab();
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code New Script (Ctrl+N / Cmd+N) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.N)
+        {
+            _ = _currentVm.NewScriptCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Toggle Line Comment (Ctrl+/ / Cmd+/) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemQuestion || e.Key == Key.Oem2 || e.Key == Key.Divide))
+        {
+            ToggleLineComment();
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Format Document (Shift+Alt+F or Ctrl+K, Ctrl+D) ──
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key == Key.F)
+        {
+            _currentVm.FormatCode();
+            e.Handled = true;
+            return;
+        }
+
+        // ── VS Code Toggle Word Wrap (Alt+Z) ──
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt) && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.Z)
+        {
+            _currentVm.ToggleWordWrap();
+            e.Handled = true;
+            return;
+        }
+
+        // ── Global F10/F11 Debugging Stepping ──
+        if (e.Key == Key.F10 && _currentVm.IsPaused)
+        {
+            _currentVm.StepOver();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F11 && _currentVm.IsPaused)
+        {
+            _currentVm.StepInto();
             e.Handled = true;
             return;
         }
@@ -351,6 +424,7 @@ public partial class CSharpCodeStudioView : UserControl
         if (_currentVm != null)
         {
             _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
+            _currentVm.RequestGoToLine -= ScrollToAndSelectLine;
             _currentVm.RequestFoldAll -= FoldAll;
             _currentVm.RequestUnfoldAll -= UnfoldAll;
             _currentVm.RequestToggleSearch -= ToggleSearch;
@@ -368,6 +442,7 @@ public partial class CSharpCodeStudioView : UserControl
         if (_currentVm != null && _editor != null)
         {
             _currentVm.RequestNavigateToCaret += OnNavigateToCaret;
+            _currentVm.RequestGoToLine += ScrollToAndSelectLine;
             _currentVm.RequestFoldAll += FoldAll;
             _currentVm.RequestUnfoldAll += UnfoldAll;
             _currentVm.RequestToggleSearch += ToggleSearch;
@@ -385,6 +460,10 @@ public partial class CSharpCodeStudioView : UserControl
             };
 
             _editor.WordWrap = _currentVm.IsWordWrap;
+            if (_editor.Options != null)
+            {
+                _editor.Options.IndentationSize = _currentVm.IndentationSize;
+            }
 
             _isUpdatingText = true;
             try
@@ -476,6 +555,13 @@ public partial class CSharpCodeStudioView : UserControl
             if (_completionController != null)
             {
                 _completionController.LanguageMode = _currentVm.CurrentLanguageMode;
+            }
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IndentationSize))
+        {
+            if (_editor.Options != null)
+            {
+                _editor.Options.IndentationSize = _currentVm.IndentationSize;
             }
         }
     }
@@ -725,6 +811,96 @@ public partial class CSharpCodeStudioView : UserControl
         if (sender is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
         {
             itemVm.CommitRenameCommand.Execute(null);
+        }
+    }
+
+    private void CloseActiveTab()
+    {
+        if (_currentVm == null) return;
+        var activeTab = _currentVm.OpenTabs.FirstOrDefault(t => t.IsActive);
+        if (activeTab != null)
+        {
+            _ = _currentVm.CloseTabAsync(activeTab);
+        }
+    }
+
+    public void ScrollToAndSelectLine(int lineNumber)
+    {
+        if (_editor?.Document == null) return;
+        if (lineNumber < 1) lineNumber = 1;
+        if (lineNumber > _editor.Document.LineCount) lineNumber = _editor.Document.LineCount;
+
+        var line = _editor.Document.GetLineByNumber(lineNumber);
+        _editor.CaretOffset = line.Offset;
+        _editor.ScrollTo(lineNumber, 1);
+        _editor.Focus();
+    }
+
+    public void ToggleLineComment()
+    {
+        if (_editor?.Document == null) return;
+        var document = _editor.Document;
+        var selection = _editor.TextArea.Selection;
+        int startLine;
+        int endLine;
+
+        if (!selection.IsEmpty)
+        {
+            startLine = document.GetLineByOffset(selection.SurroundingSegment.Offset).LineNumber;
+            endLine = document.GetLineByOffset(selection.SurroundingSegment.EndOffset).LineNumber;
+        }
+        else
+        {
+            startLine = document.GetLineByOffset(_editor.CaretOffset).LineNumber;
+            endLine = startLine;
+        }
+
+        using (document.RunUpdate())
+        {
+            bool allCommented = true;
+            for (int i = startLine; i <= endLine; i++)
+            {
+                var line = document.GetLineByNumber(i);
+                var lineText = document.GetText(line.Offset, line.Length).TrimStart();
+                if (!string.IsNullOrEmpty(lineText) && !lineText.StartsWith("//"))
+                {
+                    allCommented = false;
+                    break;
+                }
+            }
+
+            for (int i = startLine; i <= endLine; i++)
+            {
+                var line = document.GetLineByNumber(i);
+                var lineText = document.GetText(line.Offset, line.Length);
+                if (allCommented)
+                {
+                    int slashIdx = lineText.IndexOf("//");
+                    if (slashIdx >= 0)
+                    {
+                        int removeLen = (slashIdx + 2 < lineText.Length && lineText[slashIdx + 2] == ' ') ? 3 : 2;
+                        document.Remove(line.Offset + slashIdx, removeLen);
+                    }
+                }
+                else
+                {
+                    int indent = 0;
+                    while (indent < lineText.Length && char.IsWhiteSpace(lineText[indent])) indent++;
+                    document.Insert(line.Offset + indent, "// ");
+                }
+            }
+        }
+    }
+
+    public void OnTabPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
+        {
+            if (sender is Visual v && v.DataContext is StudioTabItemViewModel tabVm)
+            {
+                tabVm.Close();
+                e.Handled = true;
+            }
         }
     }
 }

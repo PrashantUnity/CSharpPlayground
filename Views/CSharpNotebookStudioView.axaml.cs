@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -78,6 +79,33 @@ public partial class CSharpNotebookStudioView : UserControl
         }
 
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // VS Code Quick Open (Ctrl+P / Cmd+P)
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
+        {
+            vm.ShowQuickOpen();
+            e.Handled = true;
+            return;
+        }
+
+        // VS Code Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
+        {
+            vm.ShowCommandPalette();
+            e.Handled = true;
+            return;
+        }
+
+        // VS Code Close Tab (Ctrl+W / Cmd+W)
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.W)
+        {
+            if (vm.ActiveTab != null)
+            {
+                vm.CloseTab(vm.ActiveTab);
+            }
+            e.Handled = true;
+            return;
+        }
 
         // VS Code Shortcut: Ctrl+B / Cmd+B -> Toggle Primary SideBar
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.B)
@@ -242,6 +270,18 @@ public partial class CSharpNotebookStudioView : UserControl
                     await vm.OpenExternalProjectAsync(localPath);
                     e.Handled = true;
                 }
+            }
+        }
+    }
+
+    public void OnTabPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
+        {
+            if (sender is Visual v && v.DataContext is NotebookTabViewModel tabVm)
+            {
+                tabVm.CloseTabCommand.Execute(null);
+                e.Handled = true;
             }
         }
     }

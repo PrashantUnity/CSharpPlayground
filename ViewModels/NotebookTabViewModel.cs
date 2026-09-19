@@ -149,6 +149,27 @@ public partial class NotebookTabViewModel : ObservableObject
         _onCloseTab?.Invoke(this);
     }
 
+    public Action<NotebookTabViewModel>? OnCloseOthers { get; set; }
+    public Action<NotebookTabViewModel>? OnCloseToTheRight { get; set; }
+    public Action<NotebookTabViewModel>? OnCloseAll { get; set; }
+    public Action<NotebookTabViewModel>? OnCopyPath { get; set; }
+    public Action<NotebookTabViewModel>? OnRevealInExplorer { get; set; }
+
+    [RelayCommand]
+    public void CloseOthers() => OnCloseOthers?.Invoke(this);
+
+    [RelayCommand]
+    public void CloseToTheRight() => OnCloseToTheRight?.Invoke(this);
+
+    [RelayCommand]
+    public void CloseAll() => OnCloseAll?.Invoke(this);
+
+    [RelayCommand]
+    public void CopyPath() => OnCopyPath?.Invoke(this);
+
+    [RelayCommand]
+    public void RevealInExplorer() => OnRevealInExplorer?.Invoke(this);
+
     public void PopulateCells()
     {
         Cells.Clear();

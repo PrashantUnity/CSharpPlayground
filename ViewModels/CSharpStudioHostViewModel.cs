@@ -121,11 +121,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 _executionEngine,
                 backToHubAction: NavigateToManager,
                 backToHomeAction: NavigateToHome,
-                getTimeoutSeconds: GetExecutionTimeoutSeconds);
+                getTimeoutSeconds: GetExecutionTimeoutSeconds,
+                openNotebookAction: NavigateToNotebookStudio);
 
             var initialNotebook = new NotebookDocumentItem
             {
-                Title = "Document Automation Notebook"
+                Title = "Interactive C# Notebook"
             };
 
             notebookVm = new CSharpNotebookStudioViewModel(
@@ -135,7 +136,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 _executionEngine,
                 backToHubAction: NavigateToManager,
                 backToHomeAction: NavigateToHome,
-                getTimeoutSeconds: GetExecutionTimeoutSeconds);
+                getTimeoutSeconds: GetExecutionTimeoutSeconds,
+                openScriptAction: NavigateToCodeStudio);
         });
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>

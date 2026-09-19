@@ -63,6 +63,11 @@ public partial class StudioTabItemViewModel : ObservableObject
 
     public Action<StudioTabItemViewModel>? OnSelect { get; set; }
     public Action<StudioTabItemViewModel>? OnClose { get; set; }
+    public Action<StudioTabItemViewModel>? OnCloseOthers { get; set; }
+    public Action<StudioTabItemViewModel>? OnCloseToTheRight { get; set; }
+    public Action<StudioTabItemViewModel>? OnCloseAll { get; set; }
+    public Action<StudioTabItemViewModel>? OnCopyPath { get; set; }
+    public Action<StudioTabItemViewModel>? OnRevealInExplorer { get; set; }
 
     public StudioTabItemViewModel(ScriptDocumentItem document, bool isActive = false)
     {
@@ -76,6 +81,21 @@ public partial class StudioTabItemViewModel : ObservableObject
 
     [RelayCommand]
     public void Close() => OnClose?.Invoke(this);
+
+    [RelayCommand]
+    public void CloseOthers() => OnCloseOthers?.Invoke(this);
+
+    [RelayCommand]
+    public void CloseToTheRight() => OnCloseToTheRight?.Invoke(this);
+
+    [RelayCommand]
+    public void CloseAll() => OnCloseAll?.Invoke(this);
+
+    [RelayCommand]
+    public void CopyPath() => OnCopyPath?.Invoke(this);
+
+    [RelayCommand]
+    public void RevealInExplorer() => OnRevealInExplorer?.Invoke(this);
 
     public void NotifyTitleChanged()
     {

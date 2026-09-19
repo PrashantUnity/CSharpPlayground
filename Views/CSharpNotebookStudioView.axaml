@@ -977,7 +977,44 @@
                                             <Border Classes="studio-tab-item"
                                                     Classes.active="{Binding IsActive}"
                                                     Height="31"
-                                                    VerticalAlignment="Bottom">
+                                                    VerticalAlignment="Bottom"
+                                                    Background="Transparent"
+                                                    PointerPressed="OnTabPointerPressed">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Close" Command="{Binding CloseTabCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close Others" Command="{Binding CloseOthersCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="CloseBoxMultipleOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close to the Right" Command="{Binding CloseToTheRightCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="ArrowRightBoldOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Close All" Command="{Binding CloseAllCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="CloseOctagonOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="Copy Path" Command="{Binding CopyPathCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="Reveal in Explorer" Command="{Binding RevealInExplorerCommand}">
+                                                            <MenuItem.Icon>
+                                                                <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
                                                 <Grid RowDefinitions="2,*">
                                                     <!-- Top active accent line -->
                                                     <Border Grid.Row="0"
@@ -1969,5 +2006,14 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- ============================================================ -->
+        <!-- QUICK OPEN & COMMAND PALETTE OVERLAY MODAL                   -->
+        <!-- ============================================================ -->
+        <controls:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
+                                          Grid.RowSpan="2"
+                                          ZIndex="999"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch" />
     </Grid>
 </UserControl>
