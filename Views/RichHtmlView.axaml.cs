@@ -1,21 +1,28 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Material.Icons;
+using Material.Icons.Avalonia;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
 /// <summary>
-/// Lenient, never-throwing renderer for the small HTML subset Display.Html/Display.Markdown
-/// produce: headings, bold/italic, inline code, links (styled only, not clickable), paragraphs/
-/// line breaks, and simple lists. Rebuilt imperatively from a plain string DataContext, the same
-/// "bare panel shell rebuilt on DataContextChanged" pattern DumpTableView uses for tables.
-/// Unrecognized tags are silently swallowed (not rendered as literal text) and any parse failure
-/// falls back to plain, tag-stripped text — this must never throw into the UI.
+/// Dual-mode HTML renderer for C# notebook cell outputs and scratchpads:
+/// 1. Full HTML documents, games, dashboards, and interactive scripts (containing &lt;canvas&gt;,
+///    &lt;script&gt;, &lt;style&gt;, or full HTML5 page markup) are hosted in a real NativeWebView
+///    (backed by WKWebView on macOS and WebView2 on Windows) with toolbar controls for reload,
+///    external browser launch, and viewport height expansion.
+/// 2. Simple markdown-derived markup (&lt;h1-6&gt;, &lt;p&gt;, &lt;ul&gt;, bold, italic, code, links)
+///    is rendered via lightweight native Avalonia text blocks with M3 theme brushes and full
+///    sanitization (swallowing unknown tags and stripping raw CSS/JS blocks so code never leaks as text).
 /// </summary>
 public partial class RichHtmlView : UserControl
 {
@@ -37,13 +44,25 @@ public partial class RichHtmlView : UserControl
         "href\\s*=\\s*[\"']([^\"']*)[\"']", RegexOptions.IgnoreCase);
 
     private static readonly Regex TagStripRegex = new("<[^>]*>", RegexOptions.Singleline);
+    private static readonly Regex CommentRegex = new(@"<!--.*?-->", RegexOptions.Singleline);
+    private static readonly Regex StyleBlockRegex = new(@"<style[^>]*>.*?</style>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+    private static readonly Regex ScriptBlockRegex = new(@"<script[^>]*>.*?</script>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+    private static readonly Regex DoctypeRegex = new(@"<!DOCTYPE[^>]*>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+    private static readonly Regex TitleRegex = new(@"<\s*title[^>]*>(?<title>.*?)<\s*/\s*title\s*>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
     private static readonly FontFamily MonospaceFont =
         new("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
 
+    private const double CompactHeight = 500;
+    private const double ExpandedHeight = 750;
+
     private IBrush _onSurfaceBrush = Brushes.White;
     private IBrush _linkBrush = Brushes.CornflowerBlue;
     private IBrush _codeBrush = Brushes.Orange;
+
+    private NativeWebView? _currentWebView;
+    private string? _currentHtml;
+    private bool _isExpanded;
 
     public RichHtmlView()
     {
@@ -60,6 +79,63 @@ public partial class RichHtmlView : UserControl
         Rebuild();
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        CleanupWebView();
+    }
+
+    /// <summary>
+    /// Determines whether the HTML string represents a full HTML5 document, game, or rich web app
+    /// requiring a real browser engine (NativeWebView) instead of plain text blocks.
+    /// </summary>
+    public static bool IsFullHtmlDocument(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return false;
+
+        // Check for full document markers or interactive/scripted components
+        if (DoctypeRegex.IsMatch(html)) return true;
+        if (Regex.IsMatch(html, @"<\s*html\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*head\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*body\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*canvas\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*script\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*style\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*iframe\b", RegexOptions.IgnoreCase)) return true;
+        if (Regex.IsMatch(html, @"<\s*svg\b", RegexOptions.IgnoreCase)) return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Extracts the &lt;title&gt; text from HTML if available, or returns a fallback descriptor.
+    /// </summary>
+    public static string ExtractTitle(string? html, string fallback = "HTML5 Interactive Web Document")
+    {
+        if (string.IsNullOrWhiteSpace(html)) return fallback;
+        var match = TitleRegex.Match(html);
+        if (match.Success)
+        {
+            var title = WebUtility.HtmlDecode(match.Groups["title"].Value).Trim();
+            if (!string.IsNullOrEmpty(title)) return title;
+        }
+        return fallback;
+    }
+
+    /// <summary>
+    /// Strips raw &lt;style&gt; and &lt;script&gt; blocks (including their inner code) so stylesheets
+    /// and JS functions never leak as literal text in the fallback text renderer.
+    /// </summary>
+    public static string SanitizeHtmlForText(string? html)
+    {
+        if (string.IsNullOrEmpty(html)) return string.Empty;
+        var sanitized = CommentRegex.Replace(html, string.Empty);
+        sanitized = StyleBlockRegex.Replace(sanitized, string.Empty);
+        sanitized = ScriptBlockRegex.Replace(sanitized, string.Empty);
+        sanitized = DoctypeRegex.Replace(sanitized, string.Empty);
+        return sanitized;
+    }
+
     private IBrush ResolveBrush(string resourceKey, string fallbackHex)
     {
         if (this.TryFindResource(resourceKey, out var res) && res is IBrush b) return b;
@@ -69,30 +145,178 @@ public partial class RichHtmlView : UserControl
 
     private void Rebuild()
     {
+        var textContainer = this.FindControl<Border>("TextContainer");
+        var webContainer = this.FindControl<Border>("WebContainer");
         var root = this.FindControl<StackPanel>("RootPanel");
-        if (root == null) return;
-
-        root.Children.Clear();
 
         if (DataContext is not string html || string.IsNullOrWhiteSpace(html))
         {
+            if (textContainer != null) textContainer.IsVisible = false;
+            if (webContainer != null) webContainer.IsVisible = false;
+            root?.Children.Clear();
+            CleanupWebView();
             return;
         }
 
+        _currentHtml = html;
         _onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E8F0");
         _linkBrush = ResolveBrush("M3PrimaryBrush", "#7C9CFF");
         _codeBrush = ResolveBrush("M3TertiaryBrush", "#F4B860");
 
+        if (IsFullHtmlDocument(html))
+        {
+            try
+            {
+                RenderWebView(html);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RichHtmlView] NativeWebView initialization fallback: {ex.Message}");
+                // Fall back gracefully to sanitized text rendering
+            }
+        }
+
+        RenderText(html);
+    }
+
+    private void RenderWebView(string html)
+    {
+        var textContainer = this.FindControl<Border>("TextContainer");
+        var webContainer = this.FindControl<Border>("WebContainer");
+        var webViewHost = this.FindControl<Border>("WebViewHost");
+        var titleText = this.FindControl<TextBlock>("WebTitleText");
+        var reloadBtn = this.FindControl<Button>("ReloadButton");
+        var openBrowserBtn = this.FindControl<Button>("OpenBrowserButton");
+        var heightToggleBtn = this.FindControl<Button>("HeightToggleButton");
+
+        if (textContainer != null) textContainer.IsVisible = false;
+        if (webContainer != null) webContainer.IsVisible = true;
+
+        if (titleText != null)
+        {
+            titleText.Text = ExtractTitle(html);
+        }
+
+        if (webViewHost != null)
+        {
+            CleanupWebView();
+
+            _currentWebView = new NativeWebView
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
+
+            webViewHost.Child = _currentWebView;
+            _currentWebView.NavigateToString(html);
+        }
+
+        if (reloadBtn != null)
+        {
+            reloadBtn.Click -= OnReloadClicked;
+            reloadBtn.Click += OnReloadClicked;
+        }
+
+        if (openBrowserBtn != null)
+        {
+            openBrowserBtn.Click -= OnOpenBrowserClicked;
+            openBrowserBtn.Click += OnOpenBrowserClicked;
+        }
+
+        if (heightToggleBtn != null)
+        {
+            heightToggleBtn.Click -= OnHeightToggleClicked;
+            heightToggleBtn.Click += OnHeightToggleClicked;
+        }
+    }
+
+    private void OnReloadClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_currentWebView != null && !string.IsNullOrEmpty(_currentHtml))
+        {
+            _currentWebView.NavigateToString(_currentHtml);
+        }
+    }
+
+    private void OnOpenBrowserClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_currentHtml)) return;
+
         try
         {
-            RenderBlocks(root, html);
+            var tempFile = Path.Combine(Path.GetTempPath(), $"frypdf_preview_{Guid.NewGuid():N}.html");
+            File.WriteAllText(tempFile, _currentHtml, System.Text.Encoding.UTF8);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = tempFile,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RichHtmlView] Could not open preview in external browser: {ex.Message}");
+        }
+    }
+
+    private void OnHeightToggleClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var webViewHost = this.FindControl<Border>("WebViewHost");
+        var symbol = this.FindControl<TextBlock>("HeightToggleSymbol");
+        if (webViewHost == null) return;
+
+        _isExpanded = !_isExpanded;
+        webViewHost.Height = _isExpanded ? ExpandedHeight : CompactHeight;
+
+        if (symbol != null)
+        {
+            symbol.Text = _isExpanded ? "⤡" : "⤢";
+        }
+    }
+
+    private void CleanupWebView()
+    {
+        var webViewHost = this.FindControl<Border>("WebViewHost");
+        if (webViewHost != null)
+        {
+            webViewHost.Child = null;
+        }
+
+        if (_currentWebView is IDisposable disposable)
+        {
+            try { disposable.Dispose(); }
+            catch { /* best-effort cleanup */ }
+        }
+        _currentWebView = null;
+    }
+
+    private void RenderText(string html)
+    {
+        var textContainer = this.FindControl<Border>("TextContainer");
+        var webContainer = this.FindControl<Border>("WebContainer");
+        var root = this.FindControl<StackPanel>("RootPanel");
+
+        CleanupWebView();
+
+        if (webContainer != null) webContainer.IsVisible = false;
+        if (textContainer != null) textContainer.IsVisible = true;
+        if (root == null) return;
+
+        root.Children.Clear();
+
+        var sanitized = SanitizeHtmlForText(html);
+
+        try
+        {
+            RenderBlocks(root, sanitized);
         }
         catch
         {
             root.Children.Clear();
             root.Children.Add(new SelectableTextBlock
             {
-                Text = TagStripRegex.Replace(html, string.Empty),
+                Text = TagStripRegex.Replace(sanitized, string.Empty),
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 13,
                 Foreground = _onSurfaceBrush

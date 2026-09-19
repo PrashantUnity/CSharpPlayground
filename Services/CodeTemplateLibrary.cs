@@ -280,6 +280,61 @@ plot.YLabel(""Revenue ($K)"");
 
 Display.Control(avaPlot);
 Console.WriteLine(""Live, interactive ScottPlot chart rendered via #r nuget + Display.Control."");"
+        },
+        new()
+        {
+            Id = "html5_webapp_studio",
+            Title = "HTML5 Canvas & Web App Studio",
+            Category = "Web",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Render interactive HTML5 web applications, games, and canvas scripts directly via Display.Html.",
+            IconKind = MaterialIconKind.LanguageHtml5,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "HTML5 • Interactive",
+            Tags = new List<string> { "HTML5", "Canvas", "JavaScript", "Display.Html" },
+            InitialCode = @"// Render full interactive HTML5 canvas apps, games, or dashboards via Display.Html
+Display.Html(@""<!DOCTYPE html>
+<html>
+<head>
+<title>Interactive Canvas Demo</title>
+<style>
+  body { background: #0b0f19; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .card { background: #131927; padding: 24px; border-radius: 14px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  h2 { margin: 0 0 12px 0; color: #20c477; font-size: 1.25rem; }
+  canvas { border-radius: 8px; background: #0e121e; display: block; }
+</style>
+</head>
+<body>
+<div class='card'>
+  <h2>Interactive HTML5 Canvas</h2>
+  <canvas id='c' width='360' height='200'></canvas>
+</div>
+<script>
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+  let t = 0;
+  function loop() {
+    ctx.fillStyle = '#0e121e';
+    ctx.fillRect(0, 0, 360, 200);
+    for (let i = 0; i < 6; i++) {
+      const x = 180 + Math.cos(t + i * 0.8) * 80;
+      const y = 100 + Math.sin(t * 1.4 + i * 0.8) * 45;
+      ctx.fillStyle = i % 2 === 0 ? '#20c477' : '#7C9CFF';
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    t += 0.04;
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>"");
+
+Console.WriteLine(""Live HTML5 canvas rendering in NativeWebView via Display.Html."");"
         }
     };
 }

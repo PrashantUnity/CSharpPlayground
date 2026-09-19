@@ -35,6 +35,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
     <PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
+    <PackageReference Include="Avalonia.Controls.WebView" Version="12.1.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
     <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" />

@@ -30,6 +30,7 @@
   <ItemGroup>
     <!-- Code Editor & Roslyn compilation dependencies bundled with plugin -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageReference Include="Avalonia.Controls.WebView" Version="12.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
   </ItemGroup>
@@ -52,6 +53,7 @@
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.dll" />
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
       <PluginFiles Include="$(TargetDir)AvaloniaEdit.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.dll')" />
+      <PluginFiles Include="$(TargetDir)Avalonia.Controls.WebView.dll" Condition="Exists('$(TargetDir)Avalonia.Controls.WebView.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll')" />

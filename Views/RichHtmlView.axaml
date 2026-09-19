@@ -2,16 +2,95 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.RichHtmlView">
 
-    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-            BorderThickness="1"
-            CornerRadius="6"
-            Padding="14,10"
-            Margin="0,0,0,12"
-            HorizontalAlignment="Stretch">
-        <StackPanel x:Name="RootPanel" Spacing="0" />
-    </Border>
+    <UserControl.Styles>
+        <Style Selector="Button.html-action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        </Style>
+        <Style Selector="Button.html-action-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel HorizontalAlignment="Stretch">
+        <!-- 1. Text / Markdown Render Container -->
+        <Border x:Name="TextContainer"
+                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,0,0,12"
+                HorizontalAlignment="Stretch"
+                IsVisible="True">
+            <StackPanel x:Name="RootPanel" Spacing="0" />
+        </Border>
+
+        <!-- 2. Rich Interactive Web Viewport Container -->
+        <Border x:Name="WebContainer"
+                Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Margin="0,0,0,12"
+                HorizontalAlignment="Stretch"
+                ClipToBounds="True"
+                IsVisible="False">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Web Toolbar Header -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="10,6">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Document / App Info -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="5,2" VerticalAlignment="Center">
+                                <TextBlock Text="&lt;/&gt;" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            </Border>
+                            <TextBlock x:Name="WebTitleText" Text="HTML5 Interactive Web Document" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                                <TextBlock Text="LIVE PREVIEW" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Action Toolbar -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <!-- Reload Content -->
+                            <Button x:Name="ReloadButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Reload Web Content">
+                                <TextBlock Text="↻" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+
+                            <!-- Open in External Browser -->
+                            <Button x:Name="OpenBrowserButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Open in Default Web Browser">
+                                <TextBlock Text="↗" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+
+                            <!-- Toggle Viewport Height -->
+                            <Button x:Name="HeightToggleButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Toggle Expanded Viewport">
+                                <TextBlock x:Name="HeightToggleSymbol" Text="⤢" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Embedded Web Viewport Host -->
+                <Border Grid.Row="1"
+                        x:Name="WebViewHost"
+                        MinHeight="480"
+                        Height="500"
+                        Background="#0b0f19"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch" />
+            </Grid>
+        </Border>
+    </Panel>
 </UserControl>
