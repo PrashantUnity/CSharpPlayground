@@ -169,22 +169,13 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;";
         }
 
         // In C# top-level statements, types (classes, records, structs) must appear AFTER all statements.
-        // We separate any user-defined types from top-level statements so both can be declared in Statements mode!
-        var (statements, types) = SeparateStatementsAndTypes(remainingCode);
+        // We ensure statements precede types while strictly preserving 1:1 line mappings to script.cs!
+        var (_, formattedCode) = FormatStatementsAndTypes(remainingCode);
 
         var sb = new StringBuilder();
         sb.AppendLine(allUsings);
         sb.AppendLine();
-        sb.AppendLine("#line 1 \"script.cs\"");
-        sb.AppendLine(statements);
-        sb.AppendLine();
-        if (!string.IsNullOrWhiteSpace(types))
-        {
-            sb.AppendLine("#line default");
-            sb.AppendLine("// User declared types:");
-            sb.AppendLine(types);
-            sb.AppendLine();
-        }
+        sb.AppendLine(formattedCode);
 
         return sb.ToString();
     }
@@ -215,39 +206,69 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;";
         return (hoisted, remaining);
     }
 
-    private static (string Statements, string Types) SeparateStatementsAndTypes(string code)
+    private static (bool Reordered, string FormattedCode) FormatStatementsAndTypes(string code)
     {
         try
         {
             var tree = CSharpSyntaxTree.ParseText(code);
             var root = tree.GetCompilationUnitRoot();
 
-            var types = new List<string>();
-            var statements = new List<string>();
+            var types = new List<MemberDeclarationSyntax>();
+            var statements = new List<MemberDeclarationSyntax>();
+
+            bool sawType = false;
+            bool reorderingNeeded = false;
 
             foreach (var member in root.Members)
             {
                 if (member is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax or EnumDeclarationSyntax)
                 {
-                    types.Add(member.ToFullString());
+                    types.Add(member);
+                    sawType = true;
                 }
                 else
                 {
-                    statements.Add(member.ToFullString());
+                    statements.Add(member);
+                    if (sawType)
+                    {
+                        // A top-level statement appeared AFTER a type declaration!
+                        // In C#, top-level statements must precede type declarations.
+                        reorderingNeeded = true;
+                    }
                 }
             }
 
-            if (types.Count > 0)
+            if (!reorderingNeeded)
             {
-                return (string.Join("\n", statements), string.Join("\n", types));
+                // Statements already precede types (or file contains only statements or only types).
+                // Preserve 1:1 original source code lines directly.
+                return (false, "#line 1 \"script.cs\"\n" + code);
             }
+
+            // Reordering needed: statements first, then types.
+            // Explicitly preserve original line numbers for every member using #line directives!
+            var sb = new StringBuilder();
+
+            foreach (var stmt in statements)
+            {
+                var line = stmt.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                sb.AppendLine($"#line {line} \"script.cs\"");
+                sb.AppendLine(stmt.WithoutLeadingTrivia().ToFullString());
+            }
+
+            foreach (var type in types)
+            {
+                var line = type.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                sb.AppendLine($"#line {line} \"script.cs\"");
+                sb.AppendLine(type.WithoutLeadingTrivia().ToFullString());
+            }
+
+            return (true, sb.ToString());
         }
         catch
         {
-            // Fallback to raw code
+            return (false, "#line 1 \"script.cs\"\n" + code);
         }
-
-        return (code, string.Empty);
     }
 
     public IReadOnlyList<DiagnosticItem> CheckDiagnostics(string sourceCode, ExecutionLanguageMode mode = ExecutionLanguageMode.Statements)

@@ -68,8 +68,9 @@ public class ScriptDebuggerService
             return (false, null, diagnosticItems);
         }
 
-        // 3. Instrument the syntax tree with debug probes
-        var instrumentedTree = DebugInstrumentationRewriter.Instrument(syntaxTree);
+        // 3. Instrument the syntax tree with debug probes using semantic model for symbol verification
+        var semanticModel = preCompilation.GetSemanticModel(syntaxTree);
+        var instrumentedTree = DebugInstrumentationRewriter.Instrument(syntaxTree, semanticModel);
 
         // 4. Compile instrumented code with Debug optimizations
         var compilation = CSharpCompilation.Create(
@@ -121,9 +122,10 @@ public class ScriptDebuggerService
         byte[] assemblyBytes,
         IEnumerable<BreakpointItem> breakpoints,
         CancellationTokenSource cts,
-        Action<string>? onLiveOutput = null)
+        Action<string>? onLiveOutput = null,
+        string? scriptId = null)
     {
-        var session = ScriptDebugSession.BeginSession(breakpoints, cts);
+        var session = ScriptDebugSession.BeginSession(breakpoints, cts, scriptId);
 
         try
         {

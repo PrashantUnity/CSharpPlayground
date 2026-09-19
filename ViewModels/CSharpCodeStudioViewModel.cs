@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -255,6 +249,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
     public event Action? RequestReloadEditorText;
+    public event Action<StudioTabItemViewModel>? RequestSwitchTabDocument;
 
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
@@ -367,28 +362,117 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
-        var tab = new StudioTabItemViewModel(document, isActive)
+        return new StudioTabItemViewModel(document, isActive)
         {
             OnSelect = t => _ = SwitchToTabAsync(t),
             OnClose = t => _ = CloseTabAsync(t)
         };
-        return tab;
     }
 
     public async Task SwitchToTabAsync(StudioTabItemViewModel tab)
     {
         if (tab.Id == Script.Id && tab.IsActive) return;
 
-        // Save active script state
-        Script.Code = Code;
-        Script.Notes = Notes;
+        // 1. Save state of current active tab
+        var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (currentTab != null)
+        {
+            currentTab.Document.Code = Code;
+            currentTab.Document.Notes = Notes;
+            currentTab.ConsoleOutput = ConsoleOutput;
+            currentTab.ExecutionTimeText = ExecutionTimeText;
+            currentTab.CompilerStatusText = CompilerStatusText;
+            currentTab.PausedLine = CurrentPausedLine;
+            currentTab.IsExecuting = IsExecuting;
+            currentTab.IsDebugging = IsDebugging;
+            currentTab.IsPaused = IsPaused;
+            currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
 
+            currentTab.Diagnostics.Clear();
+            foreach (var d in Diagnostics) currentTab.Diagnostics.Add(d);
+
+            currentTab.DumpResults.Clear();
+            foreach (var r in DumpResults) currentTab.DumpResults.Add(r);
+
+            currentTab.RichOutputs.Clear();
+            foreach (var ro in RichOutputs) currentTab.RichOutputs.Add(ro);
+
+            currentTab.Locals.Clear();
+            foreach (var l in Locals) currentTab.Locals.Add(l);
+
+            currentTab.CallStack.Clear();
+            foreach (var cs in CallStack) currentTab.CallStack.Add(cs);
+        }
+
+        // 2. Mark active flags
         foreach (var t in OpenTabs)
         {
             t.IsActive = (t.Id == tab.Id);
         }
 
-        await UpdateActiveScriptAsync(tab.Document);
+        // 3. Restore target tab state into active studio context
+        Script = tab.Document;
+        Code = tab.Document.Code ?? string.Empty;
+        Notes = tab.Document.Notes;
+        SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
+        {
+            "Program" => 1,
+            "Expression" => 2,
+            _ => 0
+        };
+
+        ConsoleOutput = tab.ConsoleOutput;
+        ExecutionTimeText = tab.ExecutionTimeText;
+        CompilerStatusText = tab.CompilerStatusText;
+        CurrentPausedLine = tab.PausedLine;
+        IsExecuting = tab.IsExecuting;
+        IsDebugging = tab.IsDebugging;
+        IsPaused = tab.IsPaused;
+        SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
+
+        Diagnostics.Clear();
+        foreach (var d in tab.Diagnostics) Diagnostics.Add(d);
+
+        DumpResults.Clear();
+        foreach (var r in tab.DumpResults) DumpResults.Add(r);
+
+        RichOutputs.Clear();
+        foreach (var ro in tab.RichOutputs) RichOutputs.Add(ro);
+
+        Locals.Clear();
+        foreach (var l in tab.Locals) Locals.Add(l);
+
+        CallStack.Clear();
+        foreach (var cs in tab.CallStack) CallStack.Add(cs);
+
+        TestCases.Clear();
+        foreach (var tc in tab.Document.TestCases)
+        {
+            TestCases.Add(tc);
+        }
+
+        Breakpoints.Clear();
+        foreach (var bpLine in tab.Document.Breakpoints)
+        {
+            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
+        }
+
+        RequestSwitchTabDocument?.Invoke(tab);
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+        RequestSetPausedLine?.Invoke(CurrentPausedLine > 0 ? CurrentPausedLine : -1);
+        RequestReloadEditorText?.Invoke();
+
+        if (Diagnostics.Count == 0 && !string.IsNullOrWhiteSpace(Code))
+        {
+            TriggerDiagnosticsCheck();
+        }
+        else
+        {
+            ErrorCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
+            WarningCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
+        }
+
+        await RefreshExplorerAsync();
     }
 
     public async Task CloseTabAsync(StudioTabItemViewModel tab)
@@ -431,38 +515,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     public async Task UpdateActiveScriptAsync(ScriptDocumentItem script)
     {
-        Script = script;
-        Code = script.Code;
-        Notes = script.Notes;
-        SelectedLanguageModeIndex = script.ExecutionMode switch
+        var existing = OpenTabs.FirstOrDefault(t => t.Id == script.Id);
+        if (existing != null)
         {
-            "Program" => 1,
-            "Expression" => 2,
-            _ => 0
-        };
-
-        AddOrActivateTab(script);
-
-        ConsoleOutput = string.Empty;
-        ExecutionTimeText = string.Empty;
-
-        TestCases.Clear();
-        foreach (var tc in script.TestCases)
-        {
-            TestCases.Add(tc);
+            await SwitchToTabAsync(existing);
+            return;
         }
 
-        Breakpoints.Clear();
-        foreach (var bpLine in script.Breakpoints)
-        {
-            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
-        }
-
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        RequestReloadEditorText?.Invoke();
-
-        TriggerDiagnosticsCheck();
-        await RefreshExplorerAsync();
+        var newTab = CreateTab(script, isActive: false);
+        OpenTabs.Add(newTab);
+        await SwitchToTabAsync(newTab);
     }
 
     partial void OnCodeChanged(string value)
@@ -470,7 +532,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Script.Code = value;
         Script.LastModified = DateTime.UtcNow;
         var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        if (activeTab != null) activeTab.IsDirty = true;
+        if (activeTab != null)
+        {
+            activeTab.IsDirty = true;
+            activeTab.Document.Code = value;
+        }
         TriggerDiagnosticsCheck();
     }
 
@@ -497,6 +563,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _diagnosticsCts = new CancellationTokenSource();
         var token = _diagnosticsCts.Token;
 
+        var targetScriptId = Script.Id;
         var codeSnapshot = Code;
         var mode = CurrentLanguageMode;
 
@@ -507,38 +574,67 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                 await Task.Delay(350, token);
                 if (token.IsCancellationRequested) return;
 
-                CompilerStatusText = "Analyzing...";
+                if (Script.Id == targetScriptId)
+                {
+                    CompilerStatusText = "Analyzing...";
+                }
                 var items = _compilerService.CheckDiagnostics(codeSnapshot, mode);
 
                 if (token.IsCancellationRequested) return;
 
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                Action applyDiagnostics = () =>
                 {
-                    Diagnostics.Clear();
-                    foreach (var item in items)
+                    var targetTab = OpenTabs.FirstOrDefault(t => t.Id == targetScriptId);
+                    if (targetTab != null)
                     {
-                        Diagnostics.Add(new DiagnosticItemViewModel(item, (l, c) =>
+                        targetTab.Diagnostics.Clear();
+                        foreach (var item in items)
                         {
-                            RequestNavigateToCaret?.Invoke(l, c);
-                        }));
+                            targetTab.Diagnostics.Add(new DiagnosticItemViewModel(item, (l, c) =>
+                            {
+                                RequestNavigateToCaret?.Invoke(l, c);
+                            }));
+                        }
                     }
 
-                    ErrorCount = items.Count(i => i.Severity == DiagnosticSeverity.Error);
-                    WarningCount = items.Count(i => i.Severity == DiagnosticSeverity.Warning);
+                    if (Script.Id == targetScriptId)
+                    {
+                        Diagnostics.Clear();
+                        foreach (var item in items)
+                        {
+                            Diagnostics.Add(new DiagnosticItemViewModel(item, (l, c) =>
+                            {
+                                SetCaretPosition(l, c);
+                                RequestNavigateToCaret?.Invoke(l, c);
+                            }));
+                        }
 
-                    if (ErrorCount > 0)
-                    {
-                        CompilerStatusText = $"{ErrorCount} Error{(ErrorCount > 1 ? "s" : "")}";
+                        ErrorCount = items.Count(i => i.Severity == DiagnosticSeverity.Error);
+                        WarningCount = items.Count(i => i.Severity == DiagnosticSeverity.Warning);
+
+                        if (ErrorCount > 0)
+                        {
+                            CompilerStatusText = $"{ErrorCount} Error{(ErrorCount > 1 ? "s" : "")}";
+                        }
+                        else if (WarningCount > 0)
+                        {
+                            CompilerStatusText = $"{WarningCount} Warning{(WarningCount > 1 ? "s" : "")}";
+                        }
+                        else
+                        {
+                            CompilerStatusText = "Ready";
+                        }
                     }
-                    else if (WarningCount > 0)
-                    {
-                        CompilerStatusText = $"{WarningCount} Warning{(WarningCount > 1 ? "s" : "")}";
-                    }
-                    else
-                    {
-                        CompilerStatusText = "Ready";
-                    }
-                });
+                };
+
+                if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(applyDiagnostics);
+                }
+                else
+                {
+                    applyDiagnostics();
+                }
             }
             catch (OperationCanceledException)
             {
@@ -606,6 +702,15 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         if (IsExecuting) return;
 
+        var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (runningTab != null)
+        {
+            runningTab.IsExecuting = true;
+            runningTab.ConsoleOutput = "🚀 Running C# code (.Dump enabled)...\n";
+            runningTab.DumpResults.Clear();
+            runningTab.RichOutputs.Clear();
+        }
+
         DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
@@ -617,6 +722,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         _executionCts?.Cancel();
         _executionCts = new CancellationTokenSource();
+        if (runningTab != null) runningTab.ExecutionCts = _executionCts;
+
         var timeoutSeconds = Math.Max(1, _getTimeoutSeconds());
         using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_executionCts.Token, timeoutCts.Token);
@@ -626,11 +733,22 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                RichOutputs.Add(richOutput);
-                if (richOutput.TableResult != null)
+                if (runningTab != null)
                 {
-                    DumpResults.Add(richOutput.TableResult);
-                    SelectedBottomTabIndex = 0;
+                    runningTab.RichOutputs.Add(richOutput);
+                    if (richOutput.TableResult != null)
+                    {
+                        runningTab.DumpResults.Add(richOutput.TableResult);
+                    }
+                }
+                if (runningTab == null || runningTab.IsActive)
+                {
+                    RichOutputs.Add(richOutput);
+                    if (richOutput.TableResult != null)
+                    {
+                        DumpResults.Add(richOutput.TableResult);
+                        SelectedBottomTabIndex = 0;
+                    }
                 }
             });
         });
@@ -654,40 +772,95 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
                     ct: token,
                     onLiveConsole: liveText =>
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        Action append = () =>
                         {
-                            ConsoleOutput += liveText;
-                        });
+                            if (runningTab != null)
+                            {
+                                runningTab.ConsoleOutput += liveText;
+                                if (runningTab.IsActive)
+                                {
+                                    ConsoleOutput = runningTab.ConsoleOutput;
+                                }
+                            }
+                            else
+                            {
+                                ConsoleOutput += liveText;
+                            }
+                        };
+
+                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                        {
+                            Avalonia.Threading.Dispatcher.UIThread.Post(append);
+                        }
+                        else
+                        {
+                            append();
+                        }
                     },
                     onRichOutput: rich =>
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        Action appendRich = () =>
                         {
-                            RichOutputs.Add(rich);
-                            if (rich.TableResult != null)
+                            if (runningTab != null)
                             {
-                                DumpResults.Add(rich.TableResult);
-                                SelectedBottomTabIndex = 0;
+                                runningTab.RichOutputs.Add(rich);
+                                if (rich.TableResult != null)
+                                {
+                                    runningTab.DumpResults.Add(rich.TableResult);
+                                }
                             }
-                        });
+                            if (runningTab == null || runningTab.IsActive)
+                            {
+                                RichOutputs.Add(rich);
+                                if (rich.TableResult != null)
+                                {
+                                    DumpResults.Add(rich.TableResult);
+                                    SelectedBottomTabIndex = 0;
+                                }
+                            }
+                        };
+
+                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                        {
+                            Avalonia.Threading.Dispatcher.UIThread.Post(appendRich);
+                        }
+                        else
+                        {
+                            appendRich();
+                        }
                     });
 
                 if (kernelResult.Success)
                 {
-                    ExecutionTimeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
-                    CompilerStatusText = DumpResults.Count > 0
+                    var timeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
+                    var statusText = DumpResults.Count > 0
                         ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
                         : "Completed";
                     Script.ExecutionCount++;
                     _ = _storageService.SaveScriptAsync(Script);
 
-                    if (DumpResults.Count > 0)
+                    if (runningTab != null)
                     {
-                        SelectedBottomTabIndex = 0;
+                        if (!string.IsNullOrEmpty(kernelResult.ConsoleOutput) && !runningTab.ConsoleOutput.Contains(kernelResult.ConsoleOutput))
+                        {
+                            runningTab.ConsoleOutput += kernelResult.ConsoleOutput;
+                        }
+                        runningTab.ExecutionTimeText = timeText;
+                        runningTab.CompilerStatusText = statusText;
                     }
-                    else
+                    if (runningTab == null || runningTab.IsActive)
                     {
-                        SelectedBottomTabIndex = 1;
+                        if (runningTab != null)
+                        {
+                            ConsoleOutput = runningTab.ConsoleOutput;
+                        }
+                        else if (!string.IsNullOrEmpty(kernelResult.ConsoleOutput) && !ConsoleOutput.Contains(kernelResult.ConsoleOutput))
+                        {
+                            ConsoleOutput += kernelResult.ConsoleOutput;
+                        }
+                        ExecutionTimeText = timeText;
+                        CompilerStatusText = statusText;
+                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
                     }
                 }
                 else if (kernelResult.WasCancelled)
@@ -723,74 +896,133 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
                 if (!success || bytes == null)
                 {
-                    ConsoleOutput += "❌ Compilation failed. Check the Problems tab for details.\n";
+                    var failMsg = "❌ Compilation failed. Check the Problems tab for details.\n";
                     foreach (var diag in diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
                     {
-                        ConsoleOutput += $"  • {diag.LocationString}: {diag.Id} {diag.Message}\n";
+                        failMsg += $"  • {diag.LocationString}: {diag.Id} {diag.Message}\n";
                     }
-                    CompilerStatusText = "Build Failed";
-                    SelectedBottomTabIndex = 2;
+                    if (runningTab != null) runningTab.ConsoleOutput += failMsg;
+                    if (runningTab == null || runningTab.IsActive)
+                    {
+                        ConsoleOutput += failMsg;
+                        CompilerStatusText = "Build Failed";
+                        SelectedBottomTabIndex = 2;
+                    }
                     return;
                 }
 
-                ConsoleOutput += "✨ Build succeeded! Executing in-memory...\n";
-                ConsoleOutput += "--------------------------------------------------\n";
-                CompilerStatusText = "Running...";
+                var startMsg = "✨ Build succeeded! Executing in-memory...\n--------------------------------------------------\n";
+                if (runningTab != null) runningTab.ConsoleOutput += startMsg;
+                if (runningTab == null || runningTab.IsActive)
+                {
+                    ConsoleOutput += startMsg;
+                    CompilerStatusText = "Running...";
+                }
 
                 var result = await _executionEngine.ExecuteAsync(
                     bytes,
                     liveText =>
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        Action appendOutput = () =>
                         {
-                            ConsoleOutput += liveText;
-                        });
+                            if (runningTab != null)
+                            {
+                                runningTab.ConsoleOutput += liveText;
+                                if (runningTab.IsActive)
+                                {
+                                    ConsoleOutput = runningTab.ConsoleOutput;
+                                }
+                            }
+                            else
+                            {
+                                ConsoleOutput += liveText;
+                            }
+                        };
+
+                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                        {
+                            Avalonia.Threading.Dispatcher.UIThread.Post(appendOutput);
+                        }
+                        else
+                        {
+                            appendOutput();
+                        }
                     },
                     token);
 
-                ConsoleOutput += "\n--------------------------------------------------\n";
+                var endMsg = "\n--------------------------------------------------\n";
                 if (result.Success)
                 {
-                    ConsoleOutput += $"✅ Execution finished in {result.Elapsed.TotalMilliseconds:N0} ms\n";
-                    ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
-                    CompilerStatusText = DumpResults.Count > 0
+                    endMsg += $"✅ Execution finished in {result.Elapsed.TotalMilliseconds:N0} ms\n";
+                    var timeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
+                    var statusText = DumpResults.Count > 0
                         ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
                         : "Completed";
                     Script.ExecutionCount++;
                     _ = _storageService.SaveScriptAsync(Script);
 
-                    if (DumpResults.Count > 0)
+                    if (runningTab != null)
                     {
-                        SelectedBottomTabIndex = 0;
+                        runningTab.ConsoleOutput += endMsg;
+                        runningTab.ExecutionTimeText = timeText;
+                        runningTab.CompilerStatusText = statusText;
                     }
-                    else
+                    if (runningTab == null || runningTab.IsActive)
                     {
-                        SelectedBottomTabIndex = 1;
+                        ConsoleOutput += endMsg;
+                        ExecutionTimeText = timeText;
+                        CompilerStatusText = statusText;
+                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
                     }
                 }
                 else if (result.WasCancelled)
                 {
-                    if (timeoutCts.IsCancellationRequested)
+                    var cancelMsg = timeoutCts.IsCancellationRequested
+                        ? $"⏱️ Execution timed out after {timeoutSeconds}s.\n"
+                        : "⚠️ Execution was cancelled.\n";
+                    var statusText = timeoutCts.IsCancellationRequested
+                        ? $"⏱️ Timed out after {timeoutSeconds}s"
+                        : "🛑 Cancelled";
+
+                    if (runningTab != null)
                     {
-                        ConsoleOutput += $"⏱️ Execution timed out after {timeoutSeconds}s.\n";
-                        CompilerStatusText = $"⏱️ Timed out after {timeoutSeconds}s";
+                        runningTab.ConsoleOutput += cancelMsg;
+                        runningTab.CompilerStatusText = statusText;
                     }
-                    else
+                    if (runningTab == null || runningTab.IsActive)
                     {
-                        ConsoleOutput += "⚠️ Execution was cancelled.\n";
-                        CompilerStatusText = "🛑 Cancelled";
+                        ConsoleOutput += cancelMsg;
+                        CompilerStatusText = statusText;
                     }
                 }
                 else
                 {
-                    ConsoleOutput += $"❌ Execution failed: {result.Error}\n";
-                    CompilerStatusText = "Runtime Error";
+                    var errText = $"❌ Execution failed: {result.Error}\n";
+                    if (runningTab != null)
+                    {
+                        runningTab.ConsoleOutput += errText;
+                        runningTab.CompilerStatusText = "Runtime Error";
+                    }
+                    if (runningTab == null || runningTab.IsActive)
+                    {
+                        ConsoleOutput += errText;
+                        CompilerStatusText = "Runtime Error";
+                    }
                 }
             }
         }
         finally
         {
-            IsExecuting = false;
+            if (runningTab != null)
+            {
+                runningTab.IsExecuting = false;
+                runningTab.ExecutionTimeText = ExecutionTimeText;
+                runningTab.CompilerStatusText = CompilerStatusText;
+            }
+            if (runningTab == null || runningTab.IsActive)
+            {
+                IsExecuting = false;
+            }
         }
     }
 
@@ -837,8 +1069,16 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private void Stop()
     {
         if (!IsExecuting) return;
+        var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        targetTab?.ExecutionCts?.Cancel();
         _executionCts?.Cancel();
+        if (targetTab != null)
+        {
+            targetTab.ConsoleOutput += "\n🛑 Cancellation requested by user...\n";
+            targetTab.CompilerStatusText = "Stopping...";
+        }
         ConsoleOutput += "\n🛑 Cancellation requested by user...\n";
+        CompilerStatusText = "Stopping...";
     }
 
     [RelayCommand]
@@ -1098,12 +1338,29 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         if (IsExecuting || IsDebugging) return;
 
+        var debuggingTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+
         DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
         Locals.Clear();
         CallStack.Clear();
         GlobalVariableCache.Clear();
+
+        if (debuggingTab != null)
+        {
+            debuggingTab.DumpResults.Clear();
+            debuggingTab.RichOutputs.Clear();
+            debuggingTab.Locals.Clear();
+            debuggingTab.CallStack.Clear();
+            debuggingTab.IsExecuting = true;
+            debuggingTab.IsDebugging = true;
+            debuggingTab.IsPaused = false;
+            debuggingTab.PausedLine = -1;
+            debuggingTab.ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
+            debuggingTab.CompilerStatusText = "Compiling for Debug...";
+        }
+
         SelectedBottomTabIndex = 4;
         IsBottomDeckExpanded = true;
         ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
@@ -1113,8 +1370,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         IsPaused = false;
         CurrentPausedLine = -1;
 
+        debuggingTab?.ExecutionCts?.Cancel();
         _executionCts?.Cancel();
         _executionCts = new CancellationTokenSource();
+        if (debuggingTab != null) debuggingTab.ExecutionCts = _executionCts;
         var token = _executionCts.Token;
 
         var (compileOk, bytes, diagnostics) = await Task.Run(() =>
@@ -1122,121 +1381,249 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         if (!compileOk || bytes == null)
         {
-            ConsoleOutput += "❌ Debug compilation failed. Check the Problems tab for details.\n";
-            Diagnostics.Clear();
-            foreach (var d in diagnostics)
+            var failMsg = "❌ Debug compilation failed. Check the Problems tab for details.\n";
+            if (debuggingTab != null)
             {
-                Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                debuggingTab.ConsoleOutput += failMsg;
+                debuggingTab.Diagnostics.Clear();
+                foreach (var d in diagnostics)
+                {
+                    debuggingTab.Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                }
+                debuggingTab.CompilerStatusText = "Build Failed";
+                debuggingTab.IsExecuting = false;
+                debuggingTab.IsDebugging = false;
             }
-            ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
-            WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
-            SelectedBottomTabIndex = 2;
-            CompilerStatusText = "Build Failed";
-            IsExecuting = false;
-            IsDebugging = false;
+
+            if (debuggingTab == null || debuggingTab.IsActive)
+            {
+                ConsoleOutput += failMsg;
+                Diagnostics.Clear();
+                foreach (var d in diagnostics)
+                {
+                    Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                }
+                ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
+                WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
+                SelectedBottomTabIndex = 2;
+                CompilerStatusText = "Build Failed";
+                IsExecuting = false;
+                IsDebugging = false;
+            }
             return;
         }
 
-        ConsoleOutput += "✨ Instrumentation ready! Executing in-memory...\n";
-        ConsoleOutput += "--------------------------------------------------\n";
-        CompilerStatusText = "Debugging...";
+        var readyMsg = "✨ Instrumentation ready! Executing in-memory...\n--------------------------------------------------\n";
+        if (debuggingTab != null)
+        {
+            debuggingTab.ConsoleOutput += readyMsg;
+            debuggingTab.CompilerStatusText = "Debugging...";
+        }
+        if (debuggingTab == null || debuggingTab.IsActive)
+        {
+            ConsoleOutput += readyMsg;
+            CompilerStatusText = "Debugging...";
+        }
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         try
         {
-            var session = ScriptDebugSession.BeginSession(Breakpoints, _executionCts);
+            var session = ScriptDebugSession.BeginSession(Breakpoints, _executionCts, Script.Id);
 
             session.Paused += (line, locals) =>
             {
-                IsPaused = true;
-                CurrentPausedLine = line;
-                CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
-
-                Locals.Clear();
-                foreach (var l in locals)
+                if (debuggingTab != null)
                 {
-                    Locals.Add(l);
+                    debuggingTab.IsPaused = true;
+                    debuggingTab.PausedLine = line;
+                    debuggingTab.CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
+                    debuggingTab.Locals.Clear();
+                    foreach (var l in locals) debuggingTab.Locals.Add(l);
+                    debuggingTab.CallStack.Clear();
+                    debuggingTab.CallStack.Add(new CallStackFrameItem
+                    {
+                        FrameIndex = 0,
+                        MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
+                        LineNumber = line,
+                        FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
+                        IsCurrentFrame = true
+                    });
                 }
 
-                CallStack.Clear();
-                CallStack.Add(new CallStackFrameItem
+                if (debuggingTab == null || debuggingTab.IsActive)
                 {
-                    FrameIndex = 0,
-                    MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
-                    LineNumber = line,
-                    FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
-                    IsCurrentFrame = true
-                });
+                    IsPaused = true;
+                    CurrentPausedLine = line;
+                    CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
 
-                _ = UpdateWatchExpressionsAsync();
+                    Locals.Clear();
+                    foreach (var l in locals)
+                    {
+                        Locals.Add(l);
+                    }
 
-                SelectedBottomTabIndex = 4;
-                IsBottomDeckExpanded = true;
+                    CallStack.Clear();
+                    CallStack.Add(new CallStackFrameItem
+                    {
+                        FrameIndex = 0,
+                        MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
+                        LineNumber = line,
+                        FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
+                        IsCurrentFrame = true
+                    });
 
-                RequestSetPausedLine?.Invoke(line);
-                RequestNavigateToCaret?.Invoke(line, 1);
+                    _ = UpdateWatchExpressionsAsync();
+
+                    SelectedBottomTabIndex = 4;
+                    IsBottomDeckExpanded = true;
+
+                    RequestSetPausedLine?.Invoke(line);
+                    RequestNavigateToCaret?.Invoke(line, 1);
+                }
             };
 
             session.Resumed += () =>
             {
-                IsPaused = false;
-                CurrentPausedLine = -1;
-                CompilerStatusText = "Debugging...";
-                RequestSetPausedLine?.Invoke(-1);
+                if (debuggingTab != null)
+                {
+                    debuggingTab.IsPaused = false;
+                    debuggingTab.PausedLine = -1;
+                    debuggingTab.CompilerStatusText = "Debugging...";
+                }
+
+                if (debuggingTab == null || debuggingTab.IsActive)
+                {
+                    IsPaused = false;
+                    CurrentPausedLine = -1;
+                    CompilerStatusText = "Debugging...";
+                    RequestSetPausedLine?.Invoke(-1);
+                }
             };
 
             session.Stopped += () =>
             {
-                IsPaused = false;
-                CurrentPausedLine = -1;
-                RequestSetPausedLine?.Invoke(-1);
+                if (debuggingTab != null)
+                {
+                    debuggingTab.IsPaused = false;
+                    debuggingTab.PausedLine = -1;
+                }
+
+                if (debuggingTab == null || debuggingTab.IsActive)
+                {
+                    IsPaused = false;
+                    CurrentPausedLine = -1;
+                    RequestSetPausedLine?.Invoke(-1);
+                }
             };
 
             var result = await _executionEngine.ExecuteAsync(
                 bytes,
                 liveText =>
                 {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    Action appendDebugOutput = () =>
                     {
-                        ConsoleOutput += liveText;
-                    });
+                        if (debuggingTab != null)
+                        {
+                            debuggingTab.ConsoleOutput += liveText;
+                            if (debuggingTab.IsActive)
+                            {
+                                ConsoleOutput = debuggingTab.ConsoleOutput;
+                            }
+                        }
+                        else
+                        {
+                            ConsoleOutput += liveText;
+                        }
+                    };
+
+                    if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(appendDebugOutput);
+                    }
+                    else
+                    {
+                        appendDebugOutput();
+                    }
                 },
                 token);
 
             sw.Stop();
-            ExecutionTimeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
+            var timeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
+            var endBorder = "\n--------------------------------------------------\n";
 
-            ConsoleOutput += "\n--------------------------------------------------\n";
             if (result.Success)
             {
-                ConsoleOutput += $"🏁 Debugging finished in {sw.Elapsed.TotalMilliseconds:N0} ms\n";
-                CompilerStatusText = DumpResults.Count > 0
+                var successMsg = $"{endBorder}🏁 Debugging finished in {sw.Elapsed.TotalMilliseconds:N0} ms\n";
+                var statusText = DumpResults.Count > 0
                     ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
                     : "Completed";
                 Script.ExecutionCount++;
                 _ = _storageService.SaveScriptAsync(Script);
+
+                if (debuggingTab != null)
+                {
+                    debuggingTab.ConsoleOutput += successMsg;
+                    debuggingTab.ExecutionTimeText = timeText;
+                    debuggingTab.CompilerStatusText = statusText;
+                }
+                if (debuggingTab == null || debuggingTab.IsActive)
+                {
+                    ConsoleOutput += successMsg;
+                    ExecutionTimeText = timeText;
+                    CompilerStatusText = statusText;
+                }
             }
             else if (result.WasCancelled)
             {
-                ConsoleOutput += "🛑 Debug session stopped by user.\n";
-                CompilerStatusText = "Stopped";
+                var cancelMsg = $"{endBorder}🛑 Debug session stopped by user.\n";
+                if (debuggingTab != null)
+                {
+                    debuggingTab.ConsoleOutput += cancelMsg;
+                    debuggingTab.CompilerStatusText = "Stopped";
+                }
+                if (debuggingTab == null || debuggingTab.IsActive)
+                {
+                    ConsoleOutput += cancelMsg;
+                    CompilerStatusText = "Stopped";
+                }
             }
             else
             {
-                ConsoleOutput += $"❌ Runtime Error: {result.Error}\n";
-                CompilerStatusText = "Runtime Error";
+                var errorMsg = $"{endBorder}❌ Runtime Error: {result.Error}\n";
+                if (debuggingTab != null)
+                {
+                    debuggingTab.ConsoleOutput += errorMsg;
+                    debuggingTab.CompilerStatusText = "Runtime Error";
+                }
+                if (debuggingTab == null || debuggingTab.IsActive)
+                {
+                    ConsoleOutput += errorMsg;
+                    CompilerStatusText = "Runtime Error";
+                }
             }
         }
         finally
         {
             ScriptDebugSession.EndSession();
             GlobalVariableCache.Clear();
-            IsExecuting = false;
-            IsDebugging = false;
-            IsPaused = false;
-            CurrentPausedLine = -1;
-            RequestSetPausedLine?.Invoke(-1);
+
+            if (debuggingTab != null)
+            {
+                debuggingTab.IsExecuting = false;
+                debuggingTab.IsDebugging = false;
+                debuggingTab.IsPaused = false;
+                debuggingTab.PausedLine = -1;
+            }
+
+            if (debuggingTab == null || debuggingTab.IsActive)
+            {
+                IsExecuting = false;
+                IsDebugging = false;
+                IsPaused = false;
+                CurrentPausedLine = -1;
+                RequestSetPausedLine?.Invoke(-1);
+            }
         }
     }
 
@@ -1261,8 +1648,31 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [RelayCommand]
     public void StopDebug()
     {
+        var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        targetTab?.ExecutionCts?.Cancel();
         ScriptDebugSession.Current?.Stop();
         _executionCts?.Cancel();
+
+        if (targetTab != null)
+        {
+            targetTab.IsDebugging = false;
+            targetTab.IsExecuting = false;
+            targetTab.IsPaused = false;
+            targetTab.PausedLine = -1;
+            targetTab.ConsoleOutput += "\n🛑 Debug session stopped by user.\n";
+            targetTab.CompilerStatusText = "Stopped";
+        }
+
+        if (targetTab == null || targetTab.IsActive)
+        {
+            IsDebugging = false;
+            IsExecuting = false;
+            IsPaused = false;
+            CurrentPausedLine = -1;
+            RequestSetPausedLine?.Invoke(-1);
+            ConsoleOutput += "\n🛑 Debug session stopped by user.\n";
+            CompilerStatusText = "Stopped";
+        }
     }
 
     [RelayCommand]

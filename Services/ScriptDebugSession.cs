@@ -35,6 +35,7 @@ public class ScriptDebugSession
     private TaskCompletionSource<bool>? _stepGate;
     private CancellationTokenSource? _cts;
 
+    public string? ScriptId { get; }
     public DebugSessionState State { get; private set; } = DebugSessionState.Idle;
     public DebugStepMode StepMode { get; private set; } = DebugStepMode.None;
     public int PausedLine { get; private set; } = -1;
@@ -48,9 +49,10 @@ public class ScriptDebugSession
     public event Action? Resumed;
     public event Action? Stopped;
 
-    public static ScriptDebugSession BeginSession(IEnumerable<BreakpointItem> breakpoints, CancellationTokenSource cts)
+    public static ScriptDebugSession BeginSession(IEnumerable<BreakpointItem> breakpoints, CancellationTokenSource cts, string? scriptId = null)
     {
-        var session = new ScriptDebugSession(breakpoints, cts);
+        EndSession();
+        var session = new ScriptDebugSession(breakpoints, cts, scriptId);
         _current = session;
         return session;
     }
@@ -65,8 +67,9 @@ public class ScriptDebugSession
         }
     }
 
-    private ScriptDebugSession(IEnumerable<BreakpointItem> breakpoints, CancellationTokenSource cts)
+    private ScriptDebugSession(IEnumerable<BreakpointItem> breakpoints, CancellationTokenSource cts, string? scriptId = null)
     {
+        ScriptId = scriptId;
         Breakpoints.AddRange(breakpoints);
         _cts = cts;
         State = DebugSessionState.Running;
@@ -150,10 +153,17 @@ public class ScriptDebugSession
 
         // Notify UI thread
         var localsSnapshot = CapturedLocals.ToList();
-        Dispatcher.UIThread.Post(() =>
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
         {
-            Paused?.Invoke(lineNumber, localsSnapshot);
-        });
+            Dispatcher.UIThread.Post(() =>
+            {
+                Paused?.Invoke(lineNumber, localsSnapshot);
+            });
+        }
+        else
+        {
+            Task.Run(() => Paused?.Invoke(lineNumber, localsSnapshot));
+        }
 
         // Wait asynchronously without blocking the UI thread (execution runs on Task.Run worker)
         try
@@ -178,7 +188,14 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        }
+        else
+        {
+            Resumed?.Invoke();
+        }
     }
 
     public void StepOver()
@@ -191,7 +208,14 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        }
+        else
+        {
+            Resumed?.Invoke();
+        }
     }
 
     public void StepInto()
@@ -204,7 +228,14 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
+        }
+        else
+        {
+            Resumed?.Invoke();
+        }
     }
 
     public void Stop()
@@ -216,7 +247,14 @@ public class ScriptDebugSession
             _cts?.Cancel();
             _stepGate?.TrySetCanceled();
         }
-        Dispatcher.UIThread.Post(() => Stopped?.Invoke());
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Stopped?.Invoke());
+        }
+        else
+        {
+            Stopped?.Invoke();
+        }
     }
 
     private static DebugVariableItem CreateVariableItem(string name, object? value)

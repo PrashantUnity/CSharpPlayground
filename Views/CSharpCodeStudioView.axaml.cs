@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaEdit;
+using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation.CSharp;
 using AvaloniaEdit.Search;
@@ -59,9 +60,6 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.Options.IndentationSize = 4;
 
             _editor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(_editor.Options);
-            _foldingManager = FoldingManager.Install(_editor.TextArea);
-            PolishLeftMargins();
-
             _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
@@ -72,6 +70,16 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
             _editor.KeyDown += OnEditorKeyDown;
+
+            // Automatically manage FoldingManager lifetime to guarantee 1:1 match with active Document
+            _editor.PropertyChanged += (s, e) =>
+            {
+                if (e.Property == TextEditor.DocumentProperty)
+                {
+                    OnEditorDocumentChanged(_editor.Document);
+                }
+            };
+            OnEditorDocumentChanged(_editor.Document);
         }
 
         DataContextChanged += OnDataContextChanged;
@@ -305,6 +313,39 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    private void OnEditorDocumentChanged(TextDocument? newDoc)
+    {
+        if (_editor == null) return;
+
+        if (_foldingManager != null)
+        {
+            try
+            {
+                FoldingManager.Uninstall(_foldingManager);
+            }
+            catch
+            {
+            }
+            _foldingManager = null;
+        }
+
+        if (newDoc != null)
+        {
+            try
+            {
+                _foldingManager = FoldingManager.Install(_editor.TextArea);
+                var isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
+                             (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light &&
+                              (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+                PolishLeftMargins(isDark);
+                UpdateCodeFolding();
+            }
+            catch
+            {
+            }
+        }
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         if (_currentVm != null)
@@ -316,6 +357,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestSetPausedLine -= OnSetPausedLine;
             _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
             _currentVm.RequestReloadEditorText -= OnReloadEditorText;
+            _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
@@ -332,6 +374,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestSetPausedLine += OnSetPausedLine;
             _currentVm.RequestSyncBreakpoints += OnSyncBreakpoints;
             _currentVm.RequestReloadEditorText += OnReloadEditorText;
+            _currentVm.RequestSwitchTabDocument += OnSwitchTabDocument;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
             _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
@@ -346,13 +389,50 @@ public partial class CSharpCodeStudioView : UserControl
             _isUpdatingText = true;
             try
             {
-                _editor.Text = _currentVm.Code ?? string.Empty;
+                var activeTab = _currentVm.OpenTabs.FirstOrDefault(t => t.IsActive) ?? _currentVm.OpenTabs.FirstOrDefault();
+                if (activeTab?.DocumentModel != null)
+                {
+                    _editor.Document = activeTab.DocumentModel;
+                }
+                else
+                {
+                    _editor.Text = _currentVm.Code ?? string.Empty;
+                }
                 UpdateCodeFolding();
             }
             finally
             {
                 _isUpdatingText = false;
             }
+        }
+    }
+
+    private void OnSwitchTabDocument(StudioTabItemViewModel tab)
+    {
+        if (_editor == null) return;
+
+        _isUpdatingText = true;
+        try
+        {
+            var doc = tab.DocumentModel;
+            var targetCode = tab.Document.Code ?? string.Empty;
+            if (doc.Text != targetCode)
+            {
+                doc.Text = targetCode;
+            }
+            _editor.Document = doc;
+
+            UpdateCodeFolding();
+
+            var maxLines = Math.Max(1, _editor.Document?.LineCount ?? 1);
+            var targetLine = Math.Clamp(tab.CaretLine, 1, maxLines);
+            _editor.TextArea.Caret.Line = targetLine;
+            _editor.TextArea.Caret.Column = Math.Max(1, tab.CaretColumn);
+            _editor.ScrollTo(targetLine, Math.Max(1, tab.CaretColumn));
+        }
+        finally
+        {
+            _isUpdatingText = false;
         }
     }
 
@@ -363,7 +443,18 @@ public partial class CSharpCodeStudioView : UserControl
         _isUpdatingText = true;
         try
         {
-            _editor.Text = _currentVm.Code ?? string.Empty;
+            var targetCode = _currentVm.Code ?? string.Empty;
+            if (_editor.Document != null)
+            {
+                if (_editor.Document.Text != targetCode)
+                {
+                    _editor.Document.Text = targetCode;
+                }
+            }
+            else
+            {
+                _editor.Text = targetCode;
+            }
             UpdateCodeFolding();
         }
         finally
@@ -405,6 +496,13 @@ public partial class CSharpCodeStudioView : UserControl
 
         var caret = _editor.TextArea.Caret;
         _currentVm.SetCaretPosition(caret.Line, caret.Column);
+
+        var activeTab = _currentVm.OpenTabs.FirstOrDefault(t => t.Id == _currentVm.Script.Id);
+        if (activeTab != null)
+        {
+            activeTab.CaretLine = caret.Line;
+            activeTab.CaretColumn = caret.Column;
+        }
     }
 
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)

@@ -9,25 +9,205 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
 public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 {
+    private readonly SemanticModel? _semanticModel;
     private HashSet<string> _declaredVariables = new();
 
-    public static SyntaxTree Instrument(SyntaxTree syntaxTree)
+    public DebugInstrumentationRewriter(SemanticModel? semanticModel = null)
+    {
+        _semanticModel = semanticModel;
+    }
+
+    public static SyntaxTree Instrument(SyntaxTree syntaxTree, SemanticModel? semanticModel = null)
     {
         var root = syntaxTree.GetRoot();
-        var rewriter = new DebugInstrumentationRewriter();
+        var rewriter = new DebugInstrumentationRewriter(semanticModel);
         var newRoot = rewriter.Visit(root);
         return syntaxTree.WithChangedText(newRoot.GetText());
     }
+
+    #region Scope Boundary Interception (Classes, Structs, Records, Interfaces)
+
+    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) =>
+        VisitTypeDeclaration(node, () => base.VisitClassDeclaration(node));
+
+    public override SyntaxNode? VisitStructDeclaration(StructDeclarationSyntax node) =>
+        VisitTypeDeclaration(node, () => base.VisitStructDeclaration(node));
+
+    public override SyntaxNode? VisitRecordDeclaration(RecordDeclarationSyntax node) =>
+        VisitTypeDeclaration(node, () => base.VisitRecordDeclaration(node));
+
+    public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node) =>
+        VisitTypeDeclaration(node, () => base.VisitInterfaceDeclaration(node));
+
+    private SyntaxNode? VisitTypeDeclaration<T>(T node, Func<SyntaxNode?> visitBase) where T : SyntaxNode
+    {
+        // By C# language specification, types declared in a top-level file are separate sibling types.
+        // Members of a type CANNOT access top-level local variables or local functions.
+        // When entering a type, we isolate the scope completely (empty).
+        var outerScope = _declaredVariables;
+        _declaredVariables = new HashSet<string>();
+        try
+        {
+            return visitBase();
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    #endregion
+
+    #region Function & Member Boundaries (Methods, Constructors, Operators, Local Functions)
+
+    public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        var outerScope = _declaredVariables;
+        var methodScope = new HashSet<string>(outerScope);
+
+        // Parameters of the method are in scope
+        if (node.ParameterList != null)
+        {
+            foreach (var param in node.ParameterList.Parameters)
+            {
+                if (!IsRefOrOutOrIn(param))
+                {
+                    methodScope.Add(param.Identifier.Text);
+                }
+            }
+        }
+
+        _declaredVariables = methodScope;
+        try
+        {
+            return base.VisitMethodDeclaration(node);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    public override SyntaxNode? VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    {
+        var outerScope = _declaredVariables;
+        var ctorScope = new HashSet<string>(outerScope);
+
+        if (node.ParameterList != null)
+        {
+            foreach (var param in node.ParameterList.Parameters)
+            {
+                if (!IsRefOrOutOrIn(param))
+                {
+                    ctorScope.Add(param.Identifier.Text);
+                }
+            }
+        }
+
+        _declaredVariables = ctorScope;
+        try
+        {
+            return base.VisitConstructorDeclaration(node);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    public override SyntaxNode? VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+    {
+        var outerScope = _declaredVariables;
+        var opScope = new HashSet<string>(outerScope);
+
+        if (node.ParameterList != null)
+        {
+            foreach (var param in node.ParameterList.Parameters)
+            {
+                if (!IsRefOrOutOrIn(param))
+                {
+                    opScope.Add(param.Identifier.Text);
+                }
+            }
+        }
+
+        _declaredVariables = opScope;
+        try
+        {
+            return base.VisitOperatorDeclaration(node);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    public override SyntaxNode? VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
+    {
+        var outerScope = _declaredVariables;
+        var opScope = new HashSet<string>(outerScope);
+
+        if (node.ParameterList != null)
+        {
+            foreach (var param in node.ParameterList.Parameters)
+            {
+                if (!IsRefOrOutOrIn(param))
+                {
+                    opScope.Add(param.Identifier.Text);
+                }
+            }
+        }
+
+        _declaredVariables = opScope;
+        try
+        {
+            return base.VisitConversionOperatorDeclaration(node);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    public override SyntaxNode? VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
+    {
+        var outerScope = _declaredVariables;
+        var isStatic = node.Modifiers.Any(SyntaxKind.StaticKeyword);
+
+        // A static local function cannot capture enclosing variables
+        var localFuncScope = isStatic ? new HashSet<string>() : new HashSet<string>(outerScope);
+
+        if (node.ParameterList != null)
+        {
+            foreach (var param in node.ParameterList.Parameters)
+            {
+                if (!IsRefOrOutOrIn(param))
+                {
+                    localFuncScope.Add(param.Identifier.Text);
+                }
+            }
+        }
+
+        _declaredVariables = localFuncScope;
+        try
+        {
+            return base.VisitLocalFunctionStatement(node);
+        }
+        finally
+        {
+            _declaredVariables = outerScope;
+        }
+    }
+
+    #endregion
+
+    #region Statement & Block Rewriting
 
     public override SyntaxNode? VisitBlock(BlockSyntax node)
     {
         var newStatements = new List<StatementSyntax>();
 
-        // Enter a new lexical scope: start from whatever the caller had accumulated so far (outer-scope
-        // locals stay visible), let this block add its own declarations, then restore on the way out —
-        // exactly like real C# block-scoping rules. Threading the scope through the *field* (instead of
-        // a throwaway local, which was the bug: nested Visit() calls always saw an empty field) is what
-        // lets a breakpoint inside a nested if/while/for still see variables from the enclosing block.
+        // Enter a new lexical scope inheriting outer visible variables
         var outerScope = _declaredVariables;
         var localScopeVars = new HashSet<string>(outerScope);
         _declaredVariables = localScopeVars;
@@ -45,20 +225,31 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
                 var line = GetLineNumber(statement);
                 if (line > 0)
                 {
-                    var probe = CreateProbeStatement(line, localScopeVars);
+                    var probe = CreateProbeStatement(line, localScopeVars, statement);
                     newStatements.Add(probe);
                 }
 
-                // If this statement is a local declaration, record newly introduced variables for subsequent statements
+                // If this statement introduces local variables, record them for subsequent statements
                 if (statement is LocalDeclarationStatementSyntax localDecl)
                 {
-                    foreach (var v in localDecl.Declaration.Variables)
+                    if (!localDecl.Modifiers.Any(SyntaxKind.RefKeyword))
                     {
-                        localScopeVars.Add(v.Identifier.Text);
+                        var typeText = localDecl.Declaration.Type.ToString();
+                        if (!typeText.StartsWith("Span<") && !typeText.StartsWith("ReadOnlySpan<") &&
+                            typeText != "Span" && typeText != "ReadOnlySpan")
+                        {
+                            foreach (var v in localDecl.Declaration.Variables)
+                            {
+                                if (v.Initializer != null && v.Initializer.Value is not StackAllocArrayCreationExpressionSyntax)
+                                {
+                                    localScopeVars.Add(v.Identifier.Text);
+                                }
+                            }
+                        }
                     }
                 }
 
-                // Recurse into nested structures (blocks, loops, conditionals)
+                // Recurse into nested structures (nested blocks, loops, conditionals)
                 var visited = (StatementSyntax)Visit(statement);
                 newStatements.Add(visited);
             }
@@ -75,10 +266,6 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
     {
         var newMembers = new List<MemberDeclarationSyntax>();
 
-        // Top-level statements are the default "Statements" execution mode — the common case — so this
-        // needs the same fix as VisitBlock: write into _declaredVariables directly instead of a separate
-        // untracked local, or a breakpoint inside the very first nested if/while/for at the top level
-        // would still show none of the top-level variables declared before it.
         foreach (var member in node.Members)
         {
             if (member is GlobalStatementSyntax globalStatement)
@@ -88,15 +275,26 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 
                 if (line > 0 && !IsSyntheticProbe(statement))
                 {
-                    var probe = CreateProbeStatement(line, _declaredVariables);
+                    var probe = CreateProbeStatement(line, _declaredVariables, statement);
                     newMembers.Add(SyntaxFactory.GlobalStatement(probe));
                 }
 
                 if (statement is LocalDeclarationStatementSyntax localDecl)
                 {
-                    foreach (var v in localDecl.Declaration.Variables)
+                    if (!localDecl.Modifiers.Any(SyntaxKind.RefKeyword))
                     {
-                        _declaredVariables.Add(v.Identifier.Text);
+                        var typeText = localDecl.Declaration.Type.ToString();
+                        if (!typeText.StartsWith("Span<") && !typeText.StartsWith("ReadOnlySpan<") &&
+                            typeText != "Span" && typeText != "ReadOnlySpan")
+                        {
+                            foreach (var v in localDecl.Declaration.Variables)
+                            {
+                                if (v.Initializer != null && v.Initializer.Value is not StackAllocArrayCreationExpressionSyntax)
+                                {
+                                    _declaredVariables.Add(v.Identifier.Text);
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -119,7 +317,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         if (visitedStatement is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);
-            var probe = CreateProbeStatement(line, _declaredVariables);
+            var probe = CreateProbeStatement(line, _declaredVariables, node.Statement);
             visitedStatement = SyntaxFactory.Block(probe, visitedStatement);
         }
 
@@ -130,7 +328,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
             if (visitedElse is not BlockSyntax && visitedElse is not IfStatementSyntax)
             {
                 var line = GetLineNumber(node.Else.Statement);
-                var probe = CreateProbeStatement(line, _declaredVariables);
+                var probe = CreateProbeStatement(line, _declaredVariables, node.Else.Statement);
                 visitedElse = SyntaxFactory.Block(probe, visitedElse);
             }
             elseClause = node.Else.WithStatement(visitedElse);
@@ -145,7 +343,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         if (visited is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);
-            var probe = CreateProbeStatement(line, _declaredVariables);
+            var probe = CreateProbeStatement(line, _declaredVariables, node.Statement);
             visited = SyntaxFactory.Block(probe, visited);
         }
         return node.WithStatement(visited);
@@ -163,8 +361,6 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
             }
         }
 
-        // The loop variable(s) must be visible while recursing into the body, so a breakpoint inside
-        // "for (int i = 0; ...) { ... }" can see `i` — not just in the no-braces single-statement case.
         _declaredVariables = varsInLoop;
         StatementSyntax visited;
         try
@@ -179,7 +375,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         if (visited is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);
-            var probe = CreateProbeStatement(line, varsInLoop);
+            var probe = CreateProbeStatement(line, varsInLoop, node.Statement);
             visited = SyntaxFactory.Block(probe, visited);
         }
         return node.WithStatement(visited);
@@ -207,11 +403,15 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         if (visited is not BlockSyntax)
         {
             var line = GetLineNumber(node.Statement);
-            var probe = CreateProbeStatement(line, varsInLoop);
+            var probe = CreateProbeStatement(line, varsInLoop, node.Statement);
             visited = SyntaxFactory.Block(probe, visited);
         }
         return node.WithStatement(visited);
     }
+
+    #endregion
+
+    #region Probe Construction & Symbol Filtering
 
     private static int GetLineNumber(SyntaxNode node)
     {
@@ -230,22 +430,55 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         return statement.ToFullString().Contains("ScriptDebugSession.Hit");
     }
 
-    private static StatementSyntax CreateProbeStatement(int lineNumber, IEnumerable<string> variables)
+    private static bool IsRefOrOutOrIn(ParameterSyntax param)
     {
-        var distinctVars = variables
+        return param.Modifiers.Any(m =>
+            m.IsKind(SyntaxKind.RefKeyword) ||
+            m.IsKind(SyntaxKind.OutKeyword) ||
+            m.IsKind(SyntaxKind.InKeyword));
+    }
+
+    private StatementSyntax CreateProbeStatement(int lineNumber, IEnumerable<string> variables, SyntaxNode? contextNode = null)
+    {
+        var candidates = variables
             .Where(v => !string.IsNullOrWhiteSpace(v) && !v.StartsWith("_") && IsValidIdentifier(v))
             .Distinct()
-            .Take(30)
             .ToList();
 
+        var validVars = new List<string>();
+
+        foreach (var v in candidates)
+        {
+            if (_semanticModel != null && contextNode != null)
+            {
+                try
+                {
+                    var symbols = _semanticModel.LookupSymbols(contextNode.SpanStart, name: v);
+                    var sym = symbols.FirstOrDefault(s => s is ILocalSymbol or IParameterSymbol);
+                    if (sym != null)
+                    {
+                        if (sym is ILocalSymbol local && (local.IsRef || local.Type.IsRefLikeType)) continue;
+                        if (sym is IParameterSymbol param && (param.RefKind != RefKind.None || param.Type.IsRefLikeType)) continue;
+                    }
+                }
+                catch
+                {
+                    // Proceed with candidate if symbol lookup throws
+                }
+            }
+
+            validVars.Add(v);
+            if (validVars.Count >= 30) break;
+        }
+
         string probeCode;
-        if (distinctVars.Count == 0)
+        if (validVars.Count == 0)
         {
             probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.Hit({lineNumber}, null);";
         }
         else
         {
-            var entries = string.Join(", ", distinctVars.Select(v => $"{{ \"{v}\", (object?){v} }}"));
+            var entries = string.Join(", ", validVars.Select(v => $"{{ \"{v}\", (object?){v} }}"));
             probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.Hit({lineNumber}, () => new System.Collections.Generic.Dictionary<string, object?> {{ {entries} }});";
         }
 
@@ -259,4 +492,6 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         if (!char.IsLetter(name[0]) && name[0] != '_') return false;
         return name.All(c => char.IsLetterOrDigit(c) || c == '_');
     }
+
+    #endregion
 }
