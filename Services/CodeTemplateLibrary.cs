@@ -4,9 +4,18 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
-public static class CodeTemplateLibrary
+public static partial class CodeTemplateLibrary
 {
-    public static IReadOnlyList<CodeTemplate> GetTemplates() => new List<CodeTemplate>
+    public static IReadOnlyList<CodeTemplate> GetTemplates()
+    {
+        var list = new List<CodeTemplate>(GetCoreTemplates());
+        list.AddRange(GetVisualizerTemplates());
+        list.AddRange(GetTreeTemplates());
+        list.AddRange(GetGraphTemplates());
+        return list;
+    }
+
+    private static IEnumerable<CodeTemplate> GetCoreTemplates() => new List<CodeTemplate>
     {
         new()
         {

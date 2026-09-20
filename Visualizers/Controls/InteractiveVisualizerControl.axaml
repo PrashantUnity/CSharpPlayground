@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="380"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.InteractiveVisualizerControl">
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="12,10">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- Header Toolbar -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                <!-- Left: Title & Summary Pill -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Name="HeaderVisualizerIcon" Kind="Grid" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Name="VisualizerTitleText" Text="Data Structure Visualizer" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+
+                    <!-- Stats Pill -->
+                    <Border Name="StatsPillBorder"
+                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="StatsSummaryText" Text="Grid: 0×0" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Canvas Controls & Export -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Name="ZoomInBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom In">
+                        <materialIcons:MaterialIcon Kind="MagnifyPlusOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Name="ZoomOutBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom Out">
+                        <materialIcons:MaterialIcon Kind="MagnifyMinusOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Name="ResetViewBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Reset View (100%)">
+                        <materialIcons:MaterialIcon Kind="FitToPageOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Name="ToggleValuesBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Cell Values">
+                        <materialIcons:MaterialIcon Kind="EyeOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Name="ToggleCoordsBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Coordinates">
+                        <materialIcons:MaterialIcon Kind="Numeric" Width="13" Height="13" />
+                    </Button>
+                    <Button Name="CopyDataBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Data (CSV / TSV)">
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Vector Canvas -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Height="300"
+                    MinHeight="240"
+                    ClipToBounds="True">
+                <visControls:VisualizerCanvasControl Name="CanvasControl" />
+            </Border>
+
+            <!-- Step-by-Step Time-Travel Playback Bar -->
+            <visControls:VisualizerPlaybackControl Grid.Row="2" Name="PlaybackControl" Margin="0,4,0,0" />
+        </Grid>
+    </Border>
+</UserControl>

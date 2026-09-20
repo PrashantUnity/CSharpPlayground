@@ -13,6 +13,7 @@ using Avalonia.Media.Imaging;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -25,7 +26,8 @@ public enum CellOutputKind
     Error,
     Table,
     ObjectInspector,
-    Chart
+    Chart,
+    Visualizer
 }
 
 public class RichCellOutput
@@ -41,15 +43,18 @@ public class RichCellOutput
     public DumpTableResult? TableResult { get; set; }
     public ObjectInspectorNode? InspectorNode { get; set; }
     public ChartOptions? ChartOptions { get; set; }
+    public VisualizerOptions? VisualizerOptions { get; set; }
+    public VisualizerSequence? VisualizerSequence => VisualizerOptions?.Sequence;
 
     // Convenience getters for XAML DataTemplates (e.g. the Code Studio scratchpad's RichOutputs
     // ItemsControl) — this is a plain POCO set once at emission time and never mutated afterward, so
     // no INotifyPropertyChanged is needed.
     public bool IsImageKind => Kind == CellOutputKind.Image;
     public bool IsHtmlKind => Kind == CellOutputKind.Html;
-    public bool IsControlKind => Kind == CellOutputKind.Control || Kind == CellOutputKind.Chart;
+    public bool IsControlKind => Kind == CellOutputKind.Control || Kind == CellOutputKind.Chart || Kind == CellOutputKind.Visualizer;
     public bool IsInspectorKind => Kind == CellOutputKind.ObjectInspector;
     public bool IsChartKind => Kind == CellOutputKind.Chart;
+    public bool IsVisualizerKind => Kind == CellOutputKind.Visualizer;
 
     private Bitmap? _decodedImage;
     private bool _decodeAttempted;

@@ -330,6 +330,16 @@ public partial class NotebookTabViewModel : ObservableObject
                                     cell.SetChartOutput(rich.ChartOptions);
                                 }
                                 break;
+                            case CellOutputKind.Visualizer:
+                                if (rich.InteractiveControl != null)
+                                {
+                                    cell.SetInteractiveControl(rich.InteractiveControl);
+                                }
+                                if (rich.VisualizerOptions != null)
+                                {
+                                    cell.SetVisualizerOutput(rich.VisualizerOptions);
+                                }
+                                break;
                         }
                     }
 

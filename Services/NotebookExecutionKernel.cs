@@ -17,6 +17,9 @@ using Microsoft.CodeAnalysis.Scripting;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -98,7 +101,10 @@ public class NotebookExecutionKernel
             "PdfEditorApp.Plugins.CSharpEditor.Controls",
             "PdfEditorApp.Plugins.CSharpEditor.Charting.Models",
             "PdfEditorApp.Plugins.CSharpEditor.Charting.Controls",
-            "PdfEditorApp.Plugins.CSharpEditor.Charting.Services"
+            "PdfEditorApp.Plugins.CSharpEditor.Charting.Services",
+            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models",
+            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls",
+            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services"
         };
 
         return ScriptOptions.Default
@@ -299,6 +305,47 @@ public class NotebookExecutionKernel
                 Kind = CellOutputKind.Chart,
                 InteractiveControl = chartControl,
                 ChartOptions = chartOpts
+            });
+            return;
+        }
+
+        if (returnValue is VisualizerOptions visOpts)
+        {
+            var visControl = new InteractiveVisualizerControl(visOpts);
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Visualizer,
+                InteractiveControl = visControl,
+                VisualizerOptions = visOpts
+            });
+            return;
+        }
+
+        if (returnValue is VisualizerRecorder recorder)
+        {
+            var visControl = new InteractiveVisualizerControl(recorder.Options);
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Visualizer,
+                InteractiveControl = visControl,
+                VisualizerOptions = recorder.Options
+            });
+            return;
+        }
+
+        if (returnValue is VisualizerSequence seq)
+        {
+            var options = new VisualizerOptions
+            {
+                Sequence = seq,
+                Kind = seq.CurrentStep?.Kind ?? VisualizerKind.Matrix
+            };
+            var visControl = new InteractiveVisualizerControl(options);
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Visualizer,
+                InteractiveControl = visControl,
+                VisualizerOptions = options
             });
             return;
         }

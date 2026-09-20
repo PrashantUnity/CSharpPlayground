@@ -6,6 +6,7 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:charting="using:PdfEditorApp.Plugins.CSharpEditor.Charting.Controls"
+             xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl"
              x:DataType="vm:NotebookCellViewModel">
@@ -152,6 +153,18 @@
                                 </StackPanel>
                             </Button>
 
+                            <!-- Tab: Interactive Visualizer -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Visualizer"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsVisualizerTabSelected}"
+                                    IsVisible="{Binding HasVisualizerOutput}"
+                                    ToolTip.Tip="Switch to Algorithmic Data Structure Visualizer">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Grid" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Visualizer" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
                             <!-- Tab: HTML Content -->
                             <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Html"
                                     Classes="cell-output-tab-btn"
@@ -275,6 +288,11 @@
                     <!-- 3b. Interactive Native Vector Chart -->
                     <Border IsVisible="{Binding IsChartTabActive}">
                         <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
+                    </Border>
+
+                    <!-- 3c. Interactive Native Vector Data Structure Visualizer -->
+                    <Border IsVisible="{Binding IsVisualizerTabActive}">
+                        <visControls:InteractiveVisualizerControl Options="{Binding VisualizerOptions}" />
                     </Border>
 
                     <!-- 4. Rendered Graphic / Image Output -->
