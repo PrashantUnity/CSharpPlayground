@@ -996,6 +996,7 @@
 
                     <!-- Notebook Canvas ScrollViewer -->
                     <ScrollViewer x:Name="NotebookCanvasScrollViewer"
+                                  ScrollViewer.BringIntoViewOnFocusChange="False"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="0" Margin="24,16,24,48" HorizontalAlignment="Stretch">

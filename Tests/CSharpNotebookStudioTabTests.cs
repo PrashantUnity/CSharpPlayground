@@ -212,6 +212,23 @@ public class CSharpNotebookStudioTabTests : IDisposable
     }
 
     [Fact]
+    public void SelectCell_WhenAlreadySelected_PreservesSelectionWithoutStateChurn()
+    {
+        var studio = CreateStudio();
+        var activeTab = studio.ActiveTab!;
+        var firstCell = activeTab.Cells[0];
+
+        Assert.True(firstCell.IsSelected);
+        Assert.Same(firstCell, activeTab.ActiveCell);
+
+        // Re-selecting the already active cell should remain stable
+        activeTab.SelectCell(firstCell);
+
+        Assert.True(firstCell.IsSelected);
+        Assert.Same(firstCell, activeTab.ActiveCell);
+    }
+
+    [Fact]
     public async Task NewNotebookTab_CreatesTabAndAddsToExplorer()
     {
         var studio = CreateStudio();

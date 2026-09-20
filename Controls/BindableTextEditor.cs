@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
@@ -8,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Search;
@@ -103,6 +105,9 @@ public class BindableTextEditor : TextEditor
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value);
 
         TextChanged += OnEditorTextChanged;
+
+        // Prevent oversized cell editors from snapping the parent notebook ScrollViewer to the top of the cell
+        AddHandler(RequestBringIntoViewEvent, OnRequestBringIntoView, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
     public void SetPausedLine(int line)
@@ -309,7 +314,6 @@ public class BindableTextEditor : TextEditor
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
-        Focus();
     }
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
@@ -428,5 +432,62 @@ public class BindableTextEditor : TextEditor
         }
 
         base.OnKeyDown(e);
+    }
+
+    private void OnRequestBringIntoView(object? sender, RequestBringIntoViewEventArgs e)
+    {
+        // Stop default BringIntoView from bubbling to the outer ScrollViewer.
+        // When cell content exceeds viewport height, default ScrollViewer bring-into-view
+        // forces newOffset.Y = rect.Top, causing the notebook to violently snap back to the cell top.
+        e.Handled = true;
+
+        // Instead, perform smooth caret-only visibility checks:
+        ScrollCaretIntoViewIfNeeded();
+    }
+
+    public void ScrollCaretIntoViewIfNeeded()
+    {
+        try
+        {
+            var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
+            if (scrollViewer == null) return;
+
+            var caret = TextArea?.Caret;
+            var textView = TextArea?.TextView;
+            if (caret == null || textView == null || !textView.IsVisible) return;
+
+            // Compute visual position of the caret
+            var caretBottom = textView.GetVisualPosition(caret.Position, AvaloniaEdit.Rendering.VisualYPosition.LineBottom);
+            var caretTop = textView.GetVisualPosition(caret.Position, AvaloniaEdit.Rendering.VisualYPosition.LineTop);
+            var caretHeight = Math.Max(18, caretBottom.Y - caretTop.Y);
+
+            // Translate points to scrollViewer coordinates
+            var pInScroll = this.TranslatePoint(caretBottom, scrollViewer);
+            if (!pInScroll.HasValue) return;
+
+            var caretYInScroll = pInScroll.Value.Y;
+            var viewportHeight = scrollViewer.Viewport.Height;
+            if (viewportHeight <= 0) return;
+
+            const double padding = 28.0;
+            var currentOffset = scrollViewer.Offset;
+
+            if (caretYInScroll > viewportHeight - padding)
+            {
+                // Caret is below viewport -> scroll down just enough to reveal it
+                var delta = caretYInScroll - (viewportHeight - padding);
+                scrollViewer.Offset = new Vector(currentOffset.X, currentOffset.Y + delta);
+            }
+            else if (caretYInScroll - caretHeight < padding)
+            {
+                // Caret is above viewport -> scroll up just enough to reveal it
+                var delta = (caretYInScroll - caretHeight) - padding;
+                scrollViewer.Offset = new Vector(currentOffset.X, Math.Max(0, currentOffset.Y + delta));
+            }
+        }
+        catch
+        {
+            // Defensive guard against layout passes during rapid typing
+        }
     }
 }

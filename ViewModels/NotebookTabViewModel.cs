@@ -497,6 +497,7 @@ public partial class NotebookTabViewModel : ObservableObject
     public void SelectCell(NotebookCellViewModel? cell)
     {
         if (cell == null) return;
+        if (ActiveCell == cell && cell.IsSelected) return;
         foreach (var c in Cells)
         {
             c.IsSelected = (c == cell);
