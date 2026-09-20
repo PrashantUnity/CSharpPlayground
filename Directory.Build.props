@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <!-- Suppress transitive package vulnerability warnings on legacy ImageSharp / Avalonia sub-dependencies -->
+    <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
+
+    <!-- Shared Metadata for CSharpPlayground -->
+    <Authors>PrashantUnity; Code Fry Dev</Authors>
+    <Company>Code Fry Dev</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/PrashantUnity/CSharpPlayground</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/PrashantUnity/CSharpPlayground</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('README.md')">
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

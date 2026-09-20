@@ -1,0 +1,36 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+publish/
+dist/
+*.app/
+.venv-dmg/
+
+## Visual Studio / JetBrains Rider / VS Code cache
+.vs/
+.idea/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+.vscode/
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Temporary files & caches
+*.tmp
+*.temp
+*.log
+.cache/
+*.metadata.json

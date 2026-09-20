@@ -1,66 +1,91 @@
-# FryPDF C# Code Studio Plugin (`com.frypdf.plugin.csharpeditor`)
+# CSharpPlayground (FrySharp)
 
-An interactive in-app C# development and script automation studio for **FryPDF** (.NET 10 cross-platform document studio).
+[![CI](https://github.com/PrashantUnity/CSharpPlayground/actions/workflows/ci.yml/badge.svg)](https://github.com/PrashantUnity/CSharpPlayground/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
 
-Inspired by [arklumpus/CSharpEditor](https://github.com/arklumpus/CSharpEditor), this plugin provides a dual-page workflow:
-1. **Script Management Hub**: Organize, create, search, and duplicate scripts with a starter template gallery.
-2. **Dedicated C# Code Studio**: Rich code editor powered by `Avalonia.AvaloniaEdit`, real-time Roslyn diagnostics, and in-memory execution with live console output redirection.
+**CSharpPlayground** (standalone executable: **FrySharp**) is an interactive C# code studio, interactive Jupyter-style notebook environment, and script automation engine for .NET 10 and Avalonia UI.
+
+It operates both as:
+1. **A Standalone Desktop Application (`FrySharp`)**: Native desktop app for macOS (`.dmg`) and Windows (`.msix` / `.exe` installer) with an authentic VS Code-inspired 5-zone IDE layout.
+2. **A FryPDF Ecosystem Plugin (`com.frypdf.plugin.csharpeditor`)**: Edge-to-edge full-viewport workspace studio and document automation plugin for FryPDF.
 
 ---
 
 ## 🌟 Key Features
 
-- **Two-Page Architecture**:
-  - **Management Hub**: Browse saved scripts, view LOC statistics, search by tags, and spawn scripts from starter templates.
-  - **Code Editor Studio**: Full-screen coding workspace with run/stop controls, error navigation, and console output.
-- **Hardware-Accelerated Code Editor**:
-  - Powered by `Avalonia.AvaloniaEdit 12.0.0` with full C# syntax highlighting, line numbers, word wrap, and dark code palette.
+- **Authentic VS Code Layout & Ergonomics**:
+  - **Activity Bar**: Explorer, Search, Run & Debug, NuGet Package Manager, Scratchpad, and Problems badges.
+  - **Primary Side Bar**: File tree, project explorer, and script management hub.
+  - **Multi-Tab Editor**: Smooth horizontal tab bar with dirty indicators (`●`), quick close, and isolated execution states.
+  - **Bottom Tool Deck**: Roslyn Problems, Output, Terminal Console, Debug REPL, and Rich Results.
+  - **Status Bar**: Execution timer (`⏱ 14ms`), line/column coordinates, spaces, UTF-8, and compiler status.
+- **Interactive Jupyter-Style C# Notebooks**:
+  - Stateful cell execution kernel chaining submissions using Roslyn Scripting API.
+  - NuGet package resolution directly in scripts (`#r "nuget: ..."`).
+  - Rich output display: text, images, charts, and custom Avalonia controls (`Display.Image(...)`, `Display.Control(...)`).
+  - Cell input/output collapsing, folding, and export.
+- **Tabular Data Analytics**:
+  - Native display and profiling for `DataTable`, `DataView`, and Microsoft.Data.Analysis `DataFrame`.
+  - Column summaries, data types, row counts, and inline search.
 - **Real-Time Roslyn Diagnostics**:
   - Debounced (350ms) background analysis via `Microsoft.CodeAnalysis.CSharp`.
   - "Problems" drawer with error/warning counts, line/column coordinates, and click-to-jump navigation.
-- **In-Memory Script Execution**:
-  - Dynamic compilation into memory stream (`CSharpCompilation.Emit`).
-  - Isolated loading via collectible `AssemblyLoadContext`.
-  - Captures `Console.Out` and `Console.Error` to a live terminal viewer with execution duration timing.
-  - User cancellation and timeout protection.
-- **Starter Template Library**:
-  - Hello World Console
-  - PDF Document Automation & Inspection
-  - LINQ & Allocation High-Performance Benchmark
-  - JSON Serialization with `System.Text.Json`
-- **Zero Overlay / Full-Viewport Workspace**:
-  - Mounts directly into FryPDF's left sidebar navigation as a dedicated full-viewport workspace studio page.
-  - Deep integration with Command Palette (`Ctrl+Alt+E`), Status Bar (`{ } C# Studio`), and Ribbon Plugins Tab.
+- **Interactive Debugging**:
+  - Visual gutter breakpoints, line highlighting, and stepping controls (F5 Continue, F10 Step Over, F11 Step Into, Shift+F5 Stop).
+  - Variable inspector and immediate REPL evaluation.
 
 ---
 
-## 🚀 Instant F5 Standalone Testing
+## 🚀 Quick Start
 
-You can develop, test, and debug the plugin without running the main FryPDF application:
+### Prerequisites
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
-1. Open `examples/CSharpEditorPlugin/CSharpEditorPlugin.slnx` in Rider or Visual Studio.
-2. Set `CSharpEditorPlugin.Runner` as the startup project.
-3. Hit **Run (F5)**!
-
-Or run from terminal:
+### Run Standalone Desktop App (FrySharp)
 ```bash
-dotnet run --project examples/CSharpEditorPlugin/Runner/CSharpEditorPlugin.Runner.csproj
+# Clone the repository
+git clone https://github.com/PrashantUnity/CSharpPlayground.git
+cd CSharpPlayground
+
+# Run standalone desktop app
+dotnet run --project Runner/CSharpEditorPlugin.Runner.csproj
+```
+
+### Run Automated Unit Tests
+```bash
+# Run all 244 unit tests
+dotnet test CSharpEditorPlugin.slnx
 ```
 
 ---
 
-## 📦 Building & Packaging
+## 📦 Solution Structure
 
-To compile and package the release `.fryplugin` distribution archive:
-
-```bash
-# Automated packaging CLI
-python3 tools/package_plugin.py CSharpEditor
+```
+CSharpPlayground/
+├── CSharpEditorPlugin.slnx         # Modern XML solution (Engine + Runner + Tests)
+├── CSharpEditorPlugin.csproj       # Core Studio & Plugin library (.NET 10)
+├── CSharpEditorPlugin.cs           # IFryPlugin entrypoint
+├── plugin.json                     # FryPDF marketplace manifest
+├── Controls/                       # VS Code activity bar, status bar, tabs, editor
+├── Models/                         # POCO models for scripts, cells, diagnostics
+├── Services/                       # Roslyn compiler, kernel, completion, debugger
+├── ViewModels/                     # Reactive MVVM view models
+├── Views/                          # Avalonia XAML views (Studio, Notebook, Manager)
+├── Runner/                         # Standalone desktop executable (FrySharp)
+│   ├── CSharpEditorPlugin.Runner.csproj
+│   ├── Program.cs / App.axaml
+│   └── MainWindow.axaml
+├── Tests/                          # Comprehensive xUnit test suite (244 tests)
+│   └── CSharpEditorPlugin.Tests.csproj
+└── packaging/                      # macOS DMG & Windows MSIX/Inno packaging assets
 ```
 
-The output `CSharpEditor.fryplugin` will be generated and staged in `plugins/com.frypdf.plugin.csharpeditor/`.
+---
 
-## Architecture: How Jupyter / .NET Interactive Stateful Execution Works
+## 🏗 Architecture: Stateful Notebook Execution
 
 ```mermaid
 flowchart TD
@@ -98,3 +123,8 @@ flowchart TD
     S1 --> Out2
     S2 --> Out3
 ```
+
+---
+
+## 📜 License
+MIT License. See [LICENSE](LICENSE) for details.
