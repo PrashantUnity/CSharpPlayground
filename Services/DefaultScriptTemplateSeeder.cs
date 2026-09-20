@@ -185,6 +185,31 @@ Display.Control(barPlot);
 Console.WriteLine(""A second live chart, reusing ScottPlot.Avalonia resolved by the first cell."");"
                     });
                 }
+                else if (t.Id == "nuget_dataframe_analysis")
+                {
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Markdown,
+                        Source = "# 📊 Data Science with Microsoft.Data.Analysis\nAnalyze, manipulate, and explore tabular datasets using Microsoft's official DataFrame library for .NET.\nIn FryPDF C# Code Studio, **evaluating a `DataFrame` directly** or calling **`Display.Table(df)`** / **`df.Dump()`** renders a native interactive table with export to Excel/TSV, CSV, and JSON!\n\nHit **[ ▶ ]** to run the cell below!",
+                        IsMarkdownPreviewMode = true
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = t.InitialCode
+                    });
+
+                    nb.Cells.Add(new NotebookCellItem
+                    {
+                        Type = CellType.Code,
+                        Source = @"// Step 2: Compute computed metrics and filter rows
+df[""Total Value ($)""] = (SingleDataFrameColumn)df[""Unit Price ($)""] * (Int32DataFrameColumn)df[""Stock Qty""];
+
+// Display updated table with calculated inventory values
+Display.Table(df, ""Computed Inventory Valuations"");"
+                    });
+                }
                 else
                 {
                     nb.Cells.Add(new NotebookCellItem

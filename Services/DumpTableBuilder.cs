@@ -23,6 +23,17 @@ public static class DumpTableBuilder
             return nullTable;
         }
 
+        if (obj is DumpTableResult dtr)
+        {
+            return dtr;
+        }
+
+        // Dedicated Tabular Data Formats (Microsoft.Data.Analysis.DataFrame, System.Data.DataTable, System.Data.DataView)
+        if (IsTabularObject(obj, out var tabularResult, label))
+        {
+            return tabularResult!;
+        }
+
         var type = obj.GetType();
 
         // 1. IDictionary (e.g. Dictionary<string, int>, Hashtable, etc.)
@@ -192,12 +203,7 @@ public static class DumpTableBuilder
         if (type == typeof(string)) return "String";
         if (type == typeof(char)) return "Char";
         if (type == typeof(object)) return "Object";
-
-        // Anonymous types: e.g. <>f__AnonymousType0`2
-        if (type.Name.Contains("AnonymousType"))
-        {
-            return "AnonymousType";
-        }
+        if (type.Name.Contains("AnonymousType")) return "AnonymousType";
 
         // Generics: e.g. List<string> -> List<String>
         if (type.IsGenericType)
@@ -269,5 +275,232 @@ public static class DumpTableBuilder
             IsBoolean = b,
             IsNull = false
         };
+    }
+
+    /// <summary>
+    /// Checks whether the specified object is a first-class tabular dataset (such as
+    /// Microsoft.Data.Analysis.DataFrame, System.Data.DataTable, or System.Data.DataView)
+    /// and constructs a structured DumpTableResult with schema and cell values.
+    /// </summary>
+    public static bool IsTabularObject(object? obj, out DumpTableResult? result, string? label = null)
+    {
+        result = null;
+        if (obj == null) return false;
+
+        // 1. ADO.NET System.Data.DataTable
+        if (obj is System.Data.DataTable dataTable)
+        {
+            result = BuildFromDataTable(dataTable, label);
+            return true;
+        }
+
+        // 2. ADO.NET System.Data.DataView
+        if (obj is System.Data.DataView dataView)
+        {
+            result = BuildFromDataView(dataView, label);
+            return true;
+        }
+
+        // 3. Microsoft.Data.Analysis.DataFrame (detected via duck-typing reflection)
+        if (IsDataFrame(obj, out var dfTable, label))
+        {
+            result = dfTable;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static DumpTableResult BuildFromDataTable(System.Data.DataTable dt, string? label = null)
+    {
+        var title = string.IsNullOrEmpty(dt.TableName)
+            ? $"DataTable [{dt.Rows.Count:N0} rows × {dt.Columns.Count} cols]"
+            : $"DataTable: {dt.TableName} [{dt.Rows.Count:N0} rows × {dt.Columns.Count} cols]";
+
+        var table = new DumpTableResult(title, label);
+        foreach (System.Data.DataColumn col in dt.Columns)
+        {
+            table.Columns.Add(new DumpTableColumn
+            {
+                Header = col.ColumnName,
+                IsNumeric = IsNumericType(col.DataType)
+            });
+        }
+
+        const int MaxPreviewRows = 1000;
+        int renderRows = Math.Min(dt.Rows.Count, MaxPreviewRows);
+
+        for (int r = 0; r < renderRows; r++)
+        {
+            var row = dt.Rows[r];
+            var cells = new List<DumpTableCell>(dt.Columns.Count);
+            for (int c = 0; c < dt.Columns.Count; c++)
+            {
+                var val = row.IsNull(c) ? null : row[c];
+                cells.Add(CreateCell(val, IsNumericType(dt.Columns[c].DataType)));
+            }
+            table.Rows.Add(new DumpTableRow(r, cells));
+        }
+
+        return table;
+    }
+
+    public static DumpTableResult BuildFromDataView(System.Data.DataView dv, string? label = null)
+    {
+        var dt = dv.Table;
+        var tableName = dt != null && !string.IsNullOrEmpty(dt.TableName) ? dt.TableName : "View";
+        var colCount = dt?.Columns.Count ?? 0;
+        var title = $"DataView: {tableName} [{dv.Count:N0} rows × {colCount} cols]";
+
+        var table = new DumpTableResult(title, label);
+        if (dt != null)
+        {
+            foreach (System.Data.DataColumn col in dt.Columns)
+            {
+                table.Columns.Add(new DumpTableColumn
+                {
+                    Header = col.ColumnName,
+                    IsNumeric = IsNumericType(col.DataType)
+                });
+            }
+        }
+
+        const int MaxPreviewRows = 1000;
+        int renderRows = Math.Min(dv.Count, MaxPreviewRows);
+
+        for (int r = 0; r < renderRows; r++)
+        {
+            var rowView = dv[r];
+            var cells = new List<DumpTableCell>(colCount);
+            for (int c = 0; c < colCount; c++)
+            {
+                var val = dt != null && rowView.Row.IsNull(c) ? null : rowView[c];
+                var isNum = dt != null && IsNumericType(dt.Columns[c].DataType);
+                cells.Add(CreateCell(val, isNum));
+            }
+            table.Rows.Add(new DumpTableRow(r, cells));
+        }
+
+        return table;
+    }
+
+    private static bool IsDataFrame(object obj, out DumpTableResult? result, string? label)
+    {
+        result = null;
+        var type = obj.GetType();
+        var typeName = type.FullName ?? type.Name;
+
+        // Check for Microsoft.Data.Analysis.DataFrame or duck-typed DataFrame
+        bool nameMatches = typeName.Contains("DataFrame") ||
+                           typeName.StartsWith("Microsoft.Data.Analysis", StringComparison.OrdinalIgnoreCase);
+
+        if (!nameMatches) return false;
+
+        var colsProp = type.GetProperty("Columns", BindingFlags.Public | BindingFlags.Instance);
+        if (colsProp == null) return false;
+
+        var colsObj = colsProp.GetValue(obj) as IEnumerable;
+        if (colsObj == null) return false;
+
+        // Count rows
+        long rowCount = 0;
+        var rowCountProp = type.GetProperty("RowCount", BindingFlags.Public | BindingFlags.Instance);
+        if (rowCountProp != null)
+        {
+            rowCount = Convert.ToInt64(rowCountProp.GetValue(obj));
+        }
+        else
+        {
+            var rowsProp = type.GetProperty("Rows", BindingFlags.Public | BindingFlags.Instance);
+            var rowsObj = rowsProp?.GetValue(obj);
+            if (rowsObj != null)
+            {
+                var countProp = rowsObj.GetType().GetProperty("Count", BindingFlags.Public | BindingFlags.Instance);
+                if (countProp != null)
+                {
+                    rowCount = Convert.ToInt64(countProp.GetValue(rowsObj));
+                }
+            }
+        }
+
+        // Extract column information
+        var colList = new List<(string Name, Type DataType, object ColObj, MethodInfo? Getter, PropertyInfo? Indexer)>();
+        foreach (var c in colsObj)
+        {
+            if (c == null) continue;
+            var cType = c.GetType();
+            var nameProp = cType.GetProperty("Name", BindingFlags.Public | BindingFlags.Instance);
+            var dtProp = cType.GetProperty("DataType", BindingFlags.Public | BindingFlags.Instance);
+            var name = nameProp?.GetValue(c)?.ToString() ?? "Column";
+            var colDataType = dtProp?.GetValue(c) as Type ?? typeof(object);
+
+            // Indexer this[long] or this[int]
+            var indexer = cType.GetProperties()
+                .FirstOrDefault(p => p.GetIndexParameters().Length == 1 &&
+                                     (p.GetIndexParameters()[0].ParameterType == typeof(long) ||
+                                      p.GetIndexParameters()[0].ParameterType == typeof(int)));
+
+            // Getter method GetValue(long) or GetValue(int)
+            var getter = cType.GetMethod("GetValue", new[] { typeof(long) }) ??
+                         cType.GetMethod("GetValue", new[] { typeof(int) });
+
+            colList.Add((name, colDataType, c, getter, indexer));
+        }
+
+        if (rowCount == 0 && colList.Count > 0)
+        {
+            var lenProp = colList[0].ColObj.GetType().GetProperty("Length", BindingFlags.Public | BindingFlags.Instance);
+            if (lenProp != null)
+            {
+                rowCount = Convert.ToInt64(lenProp.GetValue(colList[0].ColObj));
+            }
+        }
+
+        var table = new DumpTableResult($"DataFrame [{rowCount:N0} rows × {colList.Count} cols]", label);
+        foreach (var (name, dt, _, _, _) in colList)
+        {
+            table.Columns.Add(new DumpTableColumn
+            {
+                Header = name,
+                IsNumeric = IsNumericType(dt)
+            });
+        }
+
+        const int MaxPreviewRows = 1000;
+        int renderRows = (int)Math.Min(rowCount, MaxPreviewRows);
+
+        for (int r = 0; r < renderRows; r++)
+        {
+            var cells = new List<DumpTableCell>(colList.Count);
+            for (int c = 0; c < colList.Count; c++)
+            {
+                var (_, dt, colObj, getter, indexer) = colList[c];
+                object? val = null;
+                try
+                {
+                    if (indexer != null)
+                    {
+                        var paramType = indexer.GetIndexParameters()[0].ParameterType;
+                        object arg = paramType == typeof(long) ? (long)r : r;
+                        val = indexer.GetValue(colObj, new[] { arg });
+                    }
+                    else if (getter != null)
+                    {
+                        var paramType = getter.GetParameters()[0].ParameterType;
+                        object arg = paramType == typeof(long) ? (long)r : r;
+                        val = getter.Invoke(colObj, new[] { arg });
+                    }
+                }
+                catch
+                {
+                    // Fallback
+                }
+                cells.Add(CreateCell(val, IsNumericType(dt)));
+            }
+            table.Rows.Add(new DumpTableRow(r, cells));
+        }
+
+        result = table;
+        return true;
     }
 }

@@ -403,6 +403,18 @@ public static class Display
         });
     }
 
+    public static void Table(object anyTableOrCollection, string? label = null)
+    {
+        if (anyTableOrCollection is DumpTableResult table)
+        {
+            Table(table);
+            return;
+        }
+
+        var result = DumpTableBuilder.Create(anyTableOrCollection, label);
+        Table(result);
+    }
+
     public static void Inspector(ObjectInspectorNode node)
     {
         InteractiveDisplayContext.Emit(new RichCellOutput

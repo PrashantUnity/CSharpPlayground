@@ -283,6 +283,36 @@ Console.WriteLine(""Live, interactive ScottPlot chart rendered via #r nuget + Di
         },
         new()
         {
+            Id = "nuget_dataframe_analysis",
+            Title = "Data Science with DataFrame (NuGet)",
+            Category = "Data Science",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Resolve Microsoft.Data.Analysis via #r nuget, construct a DataFrame, filter and manipulate columns, and visualize interactive tables natively.",
+            IconKind = MaterialIconKind.TableLarge,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Data Science • DataFrame",
+            Tags = new List<string> { "DataFrame", "#r nuget", "Data Science", "Table" },
+            InitialCode = @"#r ""nuget: Microsoft.Data.Analysis""
+using System;
+using System.Collections.Generic;
+using Microsoft.Data.Analysis;
+
+// 1. Build DataFrame columns with strongly-typed data
+var productCol = new StringDataFrameColumn(""Product"", new[] { ""Espresso Pro"", ""Coffee Beans (1kg)"", ""Milk Frother"", ""Grinder Core"", ""Ceramic Mug"" });
+var categoryCol = new StringDataFrameColumn(""Category"", new[] { ""Equipment"", ""Consumables"", ""Accessories"", ""Equipment"", ""Accessories"" });
+var priceCol = new SingleDataFrameColumn(""Unit Price ($)"", new[] { 549.99f, 24.50f, 39.99f, 189.00f, 14.50f });
+var stockCol = new Int32DataFrameColumn(""Stock Qty"", new[] { 12, 150, 45, 28, 200 });
+
+// 2. Create the DataFrame
+var df = new DataFrame(productCol, categoryCol, priceCol, stockCol);
+
+// 3. Simply evaluate 'df' or call Display.Table(df) to view the rich interactive table!
+df"
+        },
+        new()
+        {
             Id = "html5_webapp_studio",
             Title = "HTML5 Canvas & Web App Studio",
             Category = "Web",

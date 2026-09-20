@@ -68,6 +68,7 @@ public class NotebookExecutionKernel
         loader.RegisterDependency(typeof(Display).Assembly);
         loader.RegisterDependency(typeof(Control).Assembly);
         loader.RegisterDependency(typeof(Bitmap).Assembly);
+        loader.RegisterDependency(typeof(System.Data.DataTable).Assembly);
     }
 
     private static ScriptOptions CreateDefaultScriptOptionsInternal()
@@ -78,6 +79,7 @@ public class NotebookExecutionKernel
         {
             "System",
             "System.IO",
+            "System.Data",
             "System.Linq",
             "System.Collections",
             "System.Collections.Generic",
@@ -361,6 +363,28 @@ public class NotebookExecutionKernel
             {
                 Kind = CellOutputKind.Html,
                 HtmlContent = str
+            });
+            return;
+        }
+
+        // Direct DumpTableResult
+        if (returnValue is DumpTableResult dumpTable)
+        {
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Table,
+                TableResult = dumpTable
+            });
+            return;
+        }
+
+        // Dedicated Tabular Data (e.g. DataFrame, DataTable, DataView)
+        if (DumpTableBuilder.IsTabularObject(returnValue, out var tabularTable))
+        {
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Table,
+                TableResult = tabularTable
             });
             return;
         }

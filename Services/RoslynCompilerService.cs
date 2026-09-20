@@ -70,9 +70,11 @@ public class RoslynCompilerService
             typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
+            typeof(System.Data.DataTable).Assembly.Location,                   // System.Data.Common
             Path.Combine(coreDir, "System.Runtime.dll"),                       // System.Runtime
             Path.Combine(coreDir, "System.Collections.dll"),                   // System.Collections
             Path.Combine(coreDir, "System.Collections.NonGeneric.dll"),        // System.Collections.NonGeneric
+            Path.Combine(coreDir, "System.Data.Common.dll"),                   // System.Data.Common
             Path.Combine(coreDir, "System.Linq.dll"),                          // System.Linq
             Path.Combine(coreDir, "System.Text.Json.dll"),                     // System.Text.Json
             Path.Combine(coreDir, "netstandard.dll")                           // netstandard
