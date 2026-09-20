@@ -1,0 +1,3040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSharpPlayground (FrySharp) — High-Performance .NET 10 C# Studio & Interactive Notebooks</title>
+  <meta name="description" content="Authentic VS Code-inspired C# development studio, interactive Jupyter-style notebooks, Roslyn scripting engine, and document automation for .NET 10 and Avalonia UI.">
+  <meta name="keywords" content="CSharp, .NET 10, Roslyn, Avalonia, IDE, C# Notebook, Jupyter, Scripting, FryPDF, FrySharp">
+  <meta name="author" content="Code Fry Dev">
+
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:title" content="CSharpPlayground (FrySharp) — .NET 10 C# Code Studio">
+  <meta property="og:description" content="Authentic VS Code ergonomics, stateful Roslyn notebooks, interactive debugging, and tabular data analytics for .NET 10.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts: Inter (UI) and JetBrains Mono (Code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------
+       DESIGN SYSTEM & CSS TOKENS (VS Code Dark+ Curated Palette)
+       ------------------------------------------------------------- */
+    :root {
+      /* VS Code Dark+ Base Colors */
+      --bg-base: #181818;
+      --bg-surface: #1e1e1e;
+      --bg-surface-elevated: #252526;
+      --bg-sidebar: #252526;
+      --bg-activity: #333333;
+      --bg-deck: #1e1e1e;
+      --bg-canvas: #1e1e1e;
+      --bg-hover: #2a2d2e;
+      --bg-active: #37373d;
+      --bg-input: #3c3c3c;
+      --border-subtle: #2d2d2d;
+      --border-strong: #3e3e42;
+      --border-focus: #007acc;
+
+      /* Brand & Syntax Colors */
+      --brand-primary: #007acc;
+      --brand-primary-hover: #1f8ad2;
+      --brand-accent: #4ec9b0;
+      --brand-glow: rgba(0, 122, 204, 0.35);
+      --accent-keyword: #569cd6;
+      --accent-type: #4ec9b0;
+      --accent-method: #dcdcaa;
+      --accent-string: #ce9178;
+      --accent-control: #c586c0;
+      --accent-number: #b5cea8;
+      --accent-comment: #6a9955;
+      --accent-warning: #cca700;
+      --accent-error: #f14c4c;
+      --accent-success: #89d185;
+      --accent-info: #75beff;
+
+      /* Text Colors */
+      --text-main: #cccccc;
+      --text-heading: #ffffff;
+      --text-muted: #858585;
+      --text-dim: #6e6e6e;
+
+      /* Typography */
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-code: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+
+      /* Spacing & Radii */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-floating: 0 12px 36px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 25px rgba(0, 122, 204, 0.25);
+
+      /* Transition */
+      --transition-fast: 0.15s ease;
+      --transition-normal: 0.25s ease;
+    }
+
+    /* Base Reset & Box Sizing */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-active);
+      border-radius: 5px;
+      border: 2px solid var(--bg-surface);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brand-primary);
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* -------------------------------------------------------------
+       HEADER & NAVIGATION BAR
+       ------------------------------------------------------------- */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(24, 24, 24, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: border-color var(--transition-normal);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo-badge {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #007acc 0%, #4ec9b0 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 122, 204, 0.4);
+      color: #ffffff;
+      font-family: var(--font-code);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.2px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--accent-type);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link:hover {
+      color: var(--brand-primary-hover);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+      font-family: var(--font-ui);
+    }
+
+    .btn-primary {
+      background-color: var(--brand-primary);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(0, 122, 204, 0.3);
+    }
+    .btn-primary:hover {
+      background-color: var(--brand-primary-hover);
+      box-shadow: 0 4px 16px rgba(0, 122, 204, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-heading);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover {
+      background-color: var(--bg-hover);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    /* -------------------------------------------------------------
+       HERO SECTION
+       ------------------------------------------------------------- */
+    .hero-section {
+      position: relative;
+      padding: 72px 0 54px;
+      overflow: hidden;
+    }
+
+    .hero-glow-blob-1 {
+      position: absolute;
+      top: -100px;
+      left: 20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0, 122, 204, 0.15) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-glow-blob-2 {
+      position: absolute;
+      top: 50px;
+      right: 15%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(78, 201, 176, 0.12) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .hero-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      background: rgba(0, 122, 204, 0.12);
+      border: 1px solid rgba(0, 122, 204, 0.35);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #75beff;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .hero-badge-pill .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-success);
+      box-shadow: 0 0 8px var(--accent-success);
+      animation: pulseAnimation 2s infinite;
+    }
+
+    @keyframes pulseAnimation {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px var(--accent-success); }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .hero-headline {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1.2px;
+      color: var(--text-heading);
+      margin-bottom: 20px;
+    }
+
+    .hero-headline .gradient-text {
+      background: linear-gradient(135deg, #75beff 0%, #4ec9b0 50%, #c586c0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-lead {
+      font-size: 18px;
+      color: #a0a0a0;
+      max-width: 780px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .hero-badges-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .shield-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      font-size: 11.5px;
+      font-family: var(--font-ui);
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .shield-badge:hover {
+      transform: translateY(-1px);
+      border-color: var(--brand-primary);
+    }
+    .shield-label {
+      padding: 4px 8px;
+      background: #2d2d2d;
+      color: #cccccc;
+    }
+    .shield-value {
+      padding: 4px 8px;
+      color: #ffffff;
+    }
+    .shield-val-blue { background: #007acc; }
+    .shield-val-green { background: #388e3c; }
+    .shield-val-purple { background: #68217a; }
+    .shield-val-red { background: #d32f2f; }
+
+    /* -------------------------------------------------------------
+       ⭐️ INTERACTIVE 5-ZONE VS CODE STUDIO SIMULATOR
+       ------------------------------------------------------------- */
+    .simulator-section {
+      padding: 40px 0 70px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Main IDE Frame */
+    .ide-window {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow-floating), 0 0 40px rgba(0, 122, 204, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 780px;
+      position: relative;
+    }
+
+    /* Window Title Bar */
+    .ide-title-bar {
+      height: 38px;
+      background: #1f1f1f;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      width: 70px;
+    }
+
+    .mac-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .mac-dot.close { background: #ff5f56; }
+    .mac-dot.minimize { background: #ffbd2e; }
+    .mac-dot.maximize { background: #27c93f; }
+
+    .window-title {
+      color: #999999;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .window-title strong {
+      color: #ffffff;
+    }
+
+    .window-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .window-btn-pill {
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      color: #cccccc;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background var(--transition-fast);
+    }
+    .window-btn-pill:hover {
+      background: var(--bg-active);
+      color: #ffffff;
+    }
+
+    /* 5-Zone IDE Body */
+    .ide-body {
+      display: flex;
+      flex: 1;
+      min-height: 0; /* Important for flex scrolling */
+      position: relative;
+    }
+
+    /* Zone 1: Activity Bar */
+    .zone-activity-bar {
+      width: 48px;
+      background: var(--bg-activity);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      user-select: none;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .activity-icons-top, .activity-icons-bottom {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .activity-item {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      transition: color var(--transition-fast), background var(--transition-fast);
+    }
+
+    .activity-item:hover {
+      color: #ffffff;
+    }
+
+    .activity-item.active {
+      color: #ffffff;
+    }
+
+    .activity-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: var(--brand-primary);
+    }
+
+    .activity-item .badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--brand-primary);
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 9px;
+      min-width: 15px;
+      text-align: center;
+      line-height: 12px;
+    }
+
+    /* Zone 2: Primary Side Bar */
+    .zone-sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: width var(--transition-normal), opacity var(--transition-fast);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .zone-sidebar.collapsed {
+      width: 0 !important;
+      border-right: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-header {
+      height: 35px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      color: #bbbbbb;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sidebar-action-icon {
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 2px;
+      border-radius: 3px;
+    }
+    .sidebar-action-icon:hover {
+      color: #ffffff;
+      background: var(--bg-hover);
+    }
+
+    .sidebar-view-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    /* Tree View Items */
+    .tree-section-title {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px 5px 24px;
+      font-size: 13px;
+      color: #cccccc;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .tree-item:hover {
+      background: var(--bg-hover);
+      color: #ffffff;
+    }
+
+    .tree-item.active {
+      background: var(--bg-active);
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .tree-item-icon {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+    }
+    .icon-cs { color: #89d185; }
+    .icon-dib { color: #4ec9b0; }
+    .icon-pdf { color: #f14c4c; }
+    .icon-json { color: #cca700; }
+
+    /* Zone 3 & 4 Container (Editor Area + Bottom Deck) */
+    .zone-main-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg-canvas);
+    }
+
+    /* Zone 3: Editor Area */
+    .zone-editor-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* Tab Bar */
+    .editor-tab-bar {
+      height: 35px;
+      background: #1f1f1f;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      overflow-x: auto;
+      user-select: none;
+    }
+
+    .tab-list {
+      display: flex;
+      height: 100%;
+    }
+
+    .editor-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      height: 100%;
+      background: #2d2d2d;
+      color: #969696;
+      border-right: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+      position: relative;
+    }
+
+    .editor-tab:hover {
+      color: #cccccc;
+    }
+
+    .editor-tab.active {
+      background: var(--bg-canvas);
+      color: #ffffff;
+      border-top: 2px solid var(--brand-primary);
+    }
+
+    .tab-dirty-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #cccccc;
+      display: inline-block;
+    }
+
+    .tab-close-icon {
+      font-size: 13px;
+      opacity: 0.7;
+      padding: 2px;
+      border-radius: 3px;
+    }
+    .tab-close-icon:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Editor Toolbar */
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-right: 10px;
+    }
+
+    .editor-tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      transition: all var(--transition-fast);
+    }
+    .editor-tool-btn:hover {
+      color: #ffffff;
+      background: var(--bg-hover);
+    }
+    .editor-tool-btn.primary {
+      color: #89d185;
+      font-weight: 600;
+    }
+    .editor-tool-btn.primary:hover {
+      background: rgba(137, 209, 133, 0.15);
+    }
+
+    /* Breadcrumbs */
+    .editor-breadcrumbs {
+      height: 24px;
+      background: var(--bg-canvas);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      user-select: none;
+      gap: 6px;
+    }
+    .breadcrumb-segment {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .breadcrumb-segment:last-child {
+      color: #cccccc;
+      font-weight: 500;
+    }
+
+    /* Code Canvas */
+    .code-canvas-wrapper {
+      flex: 1;
+      display: flex;
+      overflow-y: auto;
+      font-family: var(--font-code);
+      font-size: 13px;
+      line-height: 20px;
+      background: var(--bg-canvas);
+      position: relative;
+    }
+
+    .gutter-column {
+      width: 52px;
+      padding: 12px 0;
+      background: var(--bg-canvas);
+      color: #858585;
+      text-align: right;
+      user-select: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+    }
+
+    .gutter-line {
+      height: 20px;
+      padding-right: 12px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .gutter-line:hover::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(241, 76, 76, 0.4);
+    }
+
+    .gutter-line.breakpoint::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f14c4c;
+      box-shadow: 0 0 6px #f14c4c;
+    }
+
+    .code-content-area {
+      flex: 1;
+      padding: 12px 16px;
+      overflow-x: auto;
+      color: #d4d4d4;
+      white-space: pre;
+    }
+
+    .code-line {
+      height: 20px;
+      position: relative;
+    }
+
+    .code-line.stepping-active {
+      background: rgba(255, 235, 59, 0.15);
+      border-left: 3px solid #ffe835;
+      margin-left: -16px;
+      padding-left: 13px;
+    }
+
+    /* Syntax Highlighting Tokens */
+    .token-keyword { color: var(--accent-keyword); }
+    .token-type { color: var(--accent-type); }
+    .token-method { color: var(--accent-method); }
+    .token-string { color: var(--accent-string); }
+    .token-control { color: var(--accent-control); }
+    .token-number { color: var(--accent-number); }
+    .token-comment { color: var(--accent-comment); font-style: italic; }
+    .token-symbol { color: #d4d4d4; }
+    .token-variable { color: #9cdcfe; cursor: help; border-bottom: 1px dotted rgba(156, 220, 254, 0.4); }
+
+    /* Hover Data Tip Tooltip */
+    .hover-data-tip {
+      position: absolute;
+      background: #252526;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      color: #cccccc;
+      box-shadow: var(--shadow-floating);
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+      max-width: 320px;
+    }
+    .hover-tip-header {
+      font-family: var(--font-code);
+      color: var(--accent-type);
+      font-weight: 600;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 4px;
+    }
+
+    /* Zone 4: Bottom Panel / Tool Deck */
+    .zone-bottom-deck {
+      height: 250px;
+      background: var(--bg-deck);
+      border-top: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: height var(--transition-normal);
+      position: relative;
+    }
+
+    .zone-bottom-deck.collapsed {
+      height: 0 !important;
+      border-top: none;
+      overflow: hidden;
+    }
+
+    .deck-header-bar {
+      height: 35px;
+      background: #1f1f1f;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 10px;
+      user-select: none;
+    }
+
+    .deck-tab-list {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .deck-tab {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 35px;
+      position: relative;
+      transition: color var(--transition-fast);
+    }
+    .deck-tab:hover {
+      color: #ffffff;
+    }
+    .deck-tab.active {
+      color: #ffffff;
+    }
+    .deck-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--brand-primary);
+    }
+
+    .deck-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .deck-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+      font-family: var(--font-code);
+      font-size: 12.5px;
+    }
+
+    /* Terminal/Console Output */
+    .console-line {
+      line-height: 1.6;
+      display: flex;
+      gap: 8px;
+    }
+    .console-time { color: var(--text-dim); }
+    .console-success { color: var(--accent-success); }
+    .console-info { color: var(--accent-info); }
+    .console-warn { color: var(--accent-warning); }
+    .console-error { color: var(--accent-error); }
+    .console-dim { color: var(--text-muted); }
+
+    /* Interactive REPL Prompt */
+    .repl-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-subtle);
+    }
+    .repl-prompt-symbol {
+      color: var(--accent-type);
+      font-weight: 700;
+    }
+    .repl-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-family: var(--font-code);
+      font-size: 12.5px;
+    }
+
+    /* Rich Data Table (.Dump results) */
+    .dump-table-wrapper {
+      overflow-x: auto;
+      margin-top: 6px;
+    }
+    .dump-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      background: #252526;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+    .dump-table th {
+      background: #2d2d2d;
+      color: #cccccc;
+      padding: 6px 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-strong);
+    }
+    .dump-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: #e0e0e0;
+      font-family: var(--font-code);
+    }
+    .dump-table tr:hover {
+      background: var(--bg-hover);
+    }
+    .table-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+    .badge-pass { background: rgba(137, 209, 133, 0.2); color: var(--accent-success); }
+    .badge-info { background: rgba(0, 122, 204, 0.2); color: #75beff; }
+
+    /* Zone 5: Status Bar */
+    .zone-status-bar {
+      height: 22px;
+      background: var(--brand-primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-size: 11px;
+      user-select: none;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .status-left, .status-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+    .status-pill:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* -------------------------------------------------------------
+       FEATURE CARDS & ARCHITECTURE SECTION
+       ------------------------------------------------------------- */
+    .features-section {
+      padding: 70px 0;
+      background: #141414;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      transition: all var(--transition-normal);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--brand-primary);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--brand-primary), transparent);
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+    }
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon-box {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-md);
+      background: rgba(0, 122, 204, 0.12);
+      border: 1px solid rgba(0, 122, 204, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: #75beff;
+    }
+
+    .feature-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 10px;
+    }
+
+    .feature-text {
+      color: #a0a0a0;
+      font-size: 14px;
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .feature-bullets {
+      list-style: none;
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feature-bullets li {
+      font-size: 13px;
+      color: #cccccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-bullets li::before {
+      content: '✓';
+      color: var(--accent-type);
+      font-weight: 700;
+    }
+
+    /* -------------------------------------------------------------
+       JUPYTER NOTEBOOK SHOWCASE SECTION
+       ------------------------------------------------------------- */
+    .notebook-section {
+      padding: 80px 0;
+      position: relative;
+    }
+
+    .notebook-demo-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-floating);
+      margin-top: 36px;
+    }
+
+    .notebook-header {
+      background: #252526;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .notebook-cells-flow {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .notebook-cell {
+      background: #181818;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color var(--transition-fast);
+    }
+    .notebook-cell:hover {
+      border-color: var(--border-strong);
+    }
+    .notebook-cell.focused {
+      border-left: 3px solid var(--brand-primary);
+    }
+
+    .cell-input-header {
+      background: #222222;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .cell-exec-badge {
+      font-family: var(--font-code);
+      color: var(--accent-type);
+      font-weight: 600;
+    }
+
+    .cell-code-box {
+      padding: 14px 18px;
+      font-family: var(--font-code);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .cell-output-box {
+      background: #1b1b1b;
+      padding: 12px 18px;
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--font-code);
+      font-size: 12.5px;
+    }
+
+    /* -------------------------------------------------------------
+       ARCHITECTURE & ROSLYN KERNEL DIAGRAM
+       ------------------------------------------------------------- */
+    .arch-diagram-wrapper {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      margin-top: 36px;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .arch-step-card {
+      flex: 1;
+      min-width: 200px;
+      background: #252526;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .arch-step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+
+    .arch-step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 6px;
+    }
+
+    .arch-step-desc {
+      font-size: 12px;
+      color: #a0a0a0;
+      line-height: 1.5;
+    }
+
+    .arch-arrow {
+      color: var(--text-muted);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* -------------------------------------------------------------
+       KEYBOARD SHORTCUTS TABLE
+       ------------------------------------------------------------- */
+    .shortcuts-section {
+      padding: 70px 0;
+      background: #141414;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 36px;
+    }
+
+    .shortcut-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .shortcut-desc {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #cccccc;
+    }
+
+    .kbd-combo {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    kbd {
+      background: #2d2d2d;
+      border: 1px solid #454545;
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: 11.5px;
+      font-family: var(--font-code);
+      color: #ffffff;
+      box-shadow: 0 2px 0 #1f1f1f;
+    }
+
+    /* -------------------------------------------------------------
+       QUICK START & CLI COMMANDS
+       ------------------------------------------------------------- */
+    .quickstart-section {
+      padding: 70px 0;
+    }
+
+    .cli-box {
+      background: #181818;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-top: 24px;
+    }
+
+    .cli-header {
+      background: #252526;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .cli-code {
+      padding: 16px 20px;
+      font-family: var(--font-code);
+      font-size: 13.5px;
+      color: #89d185;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .copy-btn {
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      color: #cccccc;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+    .copy-btn:hover {
+      background: var(--brand-primary);
+      color: #ffffff;
+      border-color: var(--brand-primary);
+    }
+
+    /* -------------------------------------------------------------
+       FOOTER
+       ------------------------------------------------------------- */
+    .site-footer {
+      background: #111111;
+      border-top: 1px solid var(--border-subtle);
+      padding: 48px 0 32px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    .footer-bottom {
+      padding-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      .hero-headline { font-size: 34px; }
+      .nav-links { display: none; }
+      .ide-window { height: 680px; }
+      .zone-sidebar { width: 210px; }
+    }
+    @media (max-width: 650px) {
+      .zone-sidebar { display: none; }
+      .ide-window { height: 560px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       SITE HEADER
+       ========================================================= -->
+  <header class="site-header" id="topHeader">
+    <div class="container header-inner">
+      <a href="#top" class="brand-group" id="brandHomeLink">
+        <div class="brand-logo-badge">C#</div>
+        <div class="brand-text">
+          <span class="brand-title">CSharpPlayground</span>
+          <span class="brand-subtitle">FrySharp Studio & Notebooks</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#simulator" class="nav-link">Live IDE Demo</a></li>
+          <li><a href="#notebooks" class="nav-link">Jupyter Notebooks</a></li>
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#architecture" class="nav-link">Architecture</a></li>
+          <li><a href="#shortcuts" class="nav-link">Shortcuts</a></li>
+          <li><a href="#quickstart" class="nav-link">Quick Start</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <a href="https://github.com/PrashantUnity/CSharpPlayground" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" id="githubRepoBtn">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+        <a href="#simulator" class="btn btn-primary btn-sm" id="launchStudioBtn">Launch Studio</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================
+       HERO SECTION
+       ========================================================= -->
+  <section class="hero-section" id="top">
+    <div class="hero-glow-blob-1"></div>
+    <div class="hero-glow-blob-2"></div>
+
+    <div class="container hero-content">
+      <div class="hero-badge-pill">
+        <span class="pulse-dot"></span>
+        .NET 10 & Avalonia 12.1.2 Ready
+      </div>
+
+      <h1 class="hero-headline">
+        High-Performance .NET 10 C# Studio &amp;<br>
+        <span class="gradient-text">Interactive Jupyter Notebooks</span>
+      </h1>
+
+      <p class="hero-lead">
+        <strong>CSharpPlayground (FrySharp)</strong> delivers authentic Visual Studio Code ergonomics, stateful Roslyn script execution, visual gutter debugging, and rich tabular analytics — both as a standalone native desktop IDE and as an edge-to-edge FryPDF automation plugin.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#simulator" class="btn btn-primary" id="tryPlaygroundCta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Try Live IDE Simulator
+        </a>
+        <a href="#notebooks" class="btn btn-secondary" id="exploreNotebooksCta">Explore C# Notebooks</a>
+        <a href="#architecture" class="btn btn-secondary" id="viewArchitectureCta">View Architecture</a>
+      </div>
+
+      <!-- Live Badges Row -->
+      <div class="hero-badges-row">
+        <div class="shield-badge">
+          <span class="shield-label">Build</span>
+          <span class="shield-value shield-val-green">Passing</span>
+        </div>
+        <div class="shield-badge">
+          <span class="shield-label">Runtime</span>
+          <span class="shield-value shield-val-purple">.NET 10.0</span>
+        </div>
+        <div class="shield-badge">
+          <span class="shield-label">UI Framework</span>
+          <span class="shield-value shield-val-red">Avalonia 12.1.2</span>
+        </div>
+        <div class="shield-badge">
+          <span class="shield-label">Unit Tests</span>
+          <span class="shield-value shield-val-blue">244 Passed (100%)</span>
+        </div>
+        <div class="shield-badge">
+          <span class="shield-label">License</span>
+          <span class="shield-value shield-val-blue">MIT</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       ⭐️ INTERACTIVE 5-ZONE VS CODE STUDIO SIMULATOR
+       ========================================================= -->
+  <section class="simulator-section" id="simulator">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Authentic 5-Zone VS Code Studio Simulator</h2>
+        <p class="section-desc">
+          Experience the identical 5-zone IDE architecture mandated for FrySharp. Click tabs, toggle gutter breakpoints, run code (F5), inspect variables, evaluate REPL expressions, and browse tabular data.
+        </p>
+      </div>
+
+      <!-- IDE Outer Window Frame -->
+      <div class="ide-window" id="ideSimulator">
+
+        <!-- Window Title Bar -->
+        <div class="ide-title-bar">
+          <div class="window-controls">
+            <span class="mac-dot close"></span>
+            <span class="mac-dot minimize"></span>
+            <span class="mac-dot maximize"></span>
+          </div>
+          <div class="window-title">
+            <span>TwoSum.csx — <strong>CSharpPlayground (FrySharp)</strong> — .NET 10 Roslyn</span>
+          </div>
+          <div class="window-actions">
+            <button class="window-btn-pill" id="toggleSideBarTopBtn" title="Toggle Side Bar (Ctrl+B)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm6 2v14h12V5H9z"/></svg>
+              Ctrl+B
+            </button>
+            <button class="window-btn-pill" id="toggleDeckTopBtn" title="Toggle Bottom Deck (Ctrl+J)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm2 2v10h14V5H5zm0 12v2h14v-2H5z"/></svg>
+              Ctrl+J
+            </button>
+          </div>
+        </div>
+
+        <!-- 5-Zone Body -->
+        <div class="ide-body">
+
+          <!-- ==========================================
+               ZONE 1: ACTIVITY BAR (48px)
+               ========================================== -->
+          <aside class="zone-activity-bar" id="activityBar">
+            <div class="activity-icons-top">
+              <div class="activity-item active" data-view="explorer" id="actExplorer" title="Explorer (Ctrl+Shift+E)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 20H4a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2h6l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2zM4 6v12h15V8h-7.17l-2-2H4z"/></svg>
+              </div>
+              <div class="activity-item" data-view="search" id="actSearch" title="Search (Ctrl+Shift+F)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              </div>
+              <div class="activity-item" data-view="debug" id="actDebug" title="Run & Debug (Ctrl+Shift+D)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>
+              </div>
+              <div class="activity-item" data-view="nuget" id="actNuget" title="NuGet Dependencies">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              </div>
+              <div class="activity-item" data-view="scratchpad" id="actScratchpad" title="Scratchpad & Notes">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+              </div>
+              <div class="activity-item" data-view="problems" id="actProblems" title="Problems (Ctrl+Shift+M)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span class="badge" id="activityProblemsBadge">0</span>
+              </div>
+            </div>
+            <div class="activity-icons-bottom">
+              <div class="activity-item" id="actSettings" title="Settings">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+              </div>
+            </div>
+          </aside>
+
+          <!-- ==========================================
+               ZONE 2: PRIMARY SIDE BAR (~260px)
+               ========================================== -->
+          <section class="zone-sidebar" id="primarySideBar">
+            <div class="sidebar-header">
+              <span id="sideBarTitle">EXPLORER: CSHARP PLAYGROUND</span>
+              <div class="sidebar-header-actions">
+                <span class="sidebar-action-icon" id="actionNewFile" title="New C# Script (Ctrl+N)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"/></svg>
+                </span>
+                <span class="sidebar-action-icon" id="actionRefresh" title="Refresh">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                </span>
+                <span class="sidebar-action-icon" id="actionCollapseSidebar" title="Collapse Side Bar (Ctrl+B)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </span>
+              </div>
+            </div>
+
+            <!-- Dynamic View Container -->
+            <div class="sidebar-view-container" id="sideBarContent">
+
+              <!-- Explorer View (Default) -->
+              <div id="viewExplorerContent">
+                <div class="tree-section-title">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  SCRIPTS &amp; TEMPLATES
+                </div>
+                <div class="tree-item active" data-script="two-sum" id="fileTwoSum">
+                  <span class="tree-item-icon icon-cs">#</span>
+                  <span>TwoSum.csx</span>
+                </div>
+                <div class="tree-item" data-script="data-analysis" id="fileDataAnalysis">
+                  <span class="tree-item-icon icon-dib">📓</span>
+                  <span>DataAnalysis.dib</span>
+                </div>
+                <div class="tree-item" data-script="pdf-automation" id="filePdfAutomation">
+                  <span class="tree-item-icon icon-pdf">📄</span>
+                  <span>PdfReport.csx</span>
+                </div>
+                <div class="tree-item" data-script="linq-benchmark" id="fileLinqBenchmark">
+                  <span class="tree-item-icon icon-cs">#</span>
+                  <span>LINQBenchmark.csx</span>
+                </div>
+
+                <div class="tree-section-title" style="margin-top: 14px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  NUGET PACKAGES (#r)
+                </div>
+                <div class="tree-item" style="font-size: 11.5px; color: #858585;">
+                  <span class="tree-item-icon">📦</span>
+                  <span>Microsoft.Data.Analysis 0.20.1</span>
+                </div>
+                <div class="tree-item" style="font-size: 11.5px; color: #858585;">
+                  <span class="tree-item-icon">📦</span>
+                  <span>Newtonsoft.Json 13.0.3</span>
+                </div>
+                <div class="tree-item" style="font-size: 11.5px; color: #858585;">
+                  <span class="tree-item-icon">📦</span>
+                  <span>SkiaSharp 2.88.8</span>
+                </div>
+              </div>
+
+              <!-- Search View (Hidden by default) -->
+              <div id="viewSearchContent" style="display: none; padding: 0 12px;">
+                <input type="text" placeholder="Search in scripts..." id="sidebarSearchInput" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-subtle); color: #fff; padding: 6px 8px; font-size: 12px; border-radius: 3px; outline: none; margin-bottom: 10px;">
+                <div style="font-size: 12px; color: var(--text-muted);">Matches found in 3 files.</div>
+              </div>
+
+              <!-- Debug View (Hidden by default) -->
+              <div id="viewDebugContent" style="display: none; padding: 0 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">BREAKPOINTS</div>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px;">
+                  <input type="checkbox" checked id="bpCheck1">
+                  <label for="bpCheck1" style="cursor: pointer;">Line 18: <code>map[nums[i]] = i;</code></label>
+                </div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 14px 0 8px;">WATCH EXPRESSIONS</div>
+                <div style="font-size: 12px; font-family: var(--font-code); color: #9cdcfe;">nums: int[4]</div>
+                <div style="font-size: 12px; font-family: var(--font-code); color: #9cdcfe;">target: 9</div>
+              </div>
+
+              <!-- NuGet View (Hidden by default) -->
+              <div id="viewNugetContent" style="display: none; padding: 0 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">PACKAGE RESOLVER</div>
+                <div style="font-size: 12px; color: var(--text-muted);">Directly reference any NuGet package using Roslyn syntax:</div>
+                <pre style="background: #181818; padding: 6px; border-radius: 4px; font-size: 11.5px; margin-top: 6px; color: #4ec9b0;">#r "nuget: SkiaSharp, 2.88.8"</pre>
+              </div>
+
+              <!-- Scratchpad Notes View (Hidden by default) -->
+              <div id="viewScratchpadContent" style="display: none; padding: 0 14px;">
+                <div style="font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 6px;">LeetCode 1: Two Sum</div>
+                <span style="display: inline-block; background: rgba(137, 209, 133, 0.2); color: #89d185; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 10px;">Easy • Array • Hash Table</span>
+                <p style="font-size: 12px; color: #a0a0a0; line-height: 1.5;">
+                  Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers such that they add up to <code>target</code>.
+                </p>
+              </div>
+
+              <!-- Problems View (Hidden by default) -->
+              <div id="viewProblemsContent" style="display: none; padding: 0 12px;">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #89d185;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                  No syntax or semantic diagnostics found.
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ==========================================
+               ZONE 3 & 4: MAIN STAGE (EDITOR + DECK)
+               ========================================== -->
+          <div class="zone-main-stage">
+
+            <!-- ZONE 3: EDITOR AREA -->
+            <div class="zone-editor-area">
+
+              <!-- Multi-Tab Bar -->
+              <div class="editor-tab-bar">
+                <div class="tab-list">
+                  <div class="editor-tab active" data-tab="two-sum" id="tabTwoSum">
+                    <span class="icon-cs">#</span>
+                    <span>TwoSum.csx</span>
+                    <span class="tab-close-icon">×</span>
+                  </div>
+                  <div class="editor-tab" data-tab="data-analysis" id="tabDataAnalysis">
+                    <span class="icon-dib">📓</span>
+                    <span>DataAnalysis.dib</span>
+                    <span class="tab-close-icon">×</span>
+                  </div>
+                  <div class="editor-tab" data-tab="pdf-automation" id="tabPdfAutomation">
+                    <span class="icon-pdf">📄</span>
+                    <span>PdfReport.csx</span>
+                    <span class="tab-close-icon">×</span>
+                  </div>
+                </div>
+
+                <!-- Editor Action Toolbar -->
+                <div class="editor-toolbar">
+                  <button class="editor-tool-btn primary" id="btnRunScript" title="Run Script (F5)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Run (F5)
+                  </button>
+                  <button class="editor-tool-btn" id="btnStepOver" title="Step Over (F10)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 12h-6V6l-7 7 7 7v-6h6v-2z"/></svg>
+                    Step (F10)
+                  </button>
+                  <button class="editor-tool-btn" id="btnFormatDoc" title="Format Document (Ctrl+K Ctrl+D)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21h18v-2H3v2zm0-4h18v-2H3v2zm0-4h18v-2H3v2zm0-4h18V7H3v2zm0-6v2h18V3H3z"/></svg>
+                  </button>
+                  <button class="editor-tool-btn" id="btnResetCode" title="Reset Code Template">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                  </button>
+                  <button class="editor-tool-btn" id="btnToggleBottomDeck" title="Toggle Tool Deck (Ctrl+J)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm2 2v10h14V5H5zm0 12v2h14v-2H5z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Breadcrumbs Bar (24px) -->
+              <div class="editor-breadcrumbs">
+                <span class="breadcrumb-segment">workspace</span>
+                <span>›</span>
+                <span class="breadcrumb-segment">scripts</span>
+                <span>›</span>
+                <span class="breadcrumb-segment" id="breadcrumbFilename">TwoSum.csx</span>
+                <span>›</span>
+                <span class="breadcrumb-segment" style="color: var(--accent-type);">C# (.NET 10 Roslyn)</span>
+              </div>
+
+              <!-- Code Canvas with Line Numbers & Breakpoint Gutter -->
+              <div class="code-canvas-wrapper" id="codeCanvasWrapper">
+                <div class="gutter-column" id="gutterCol">
+                  <!-- Gutter lines generated by JS -->
+                </div>
+                <div class="code-content-area" id="codeLinesArea">
+                  <!-- Code lines generated by JS -->
+                </div>
+
+                <!-- Debug Hover Tooltip -->
+                <div class="hover-data-tip" id="hoverDataTip">
+                  <div class="hover-tip-header" id="hoverTipHeader">int[] nums</div>
+                  <div id="hoverTipBody">Input integer array: { 2, 7, 11, 15 }</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- ==========================================
+                 ZONE 4: BOTTOM TOOL DECK (Ctrl+J)
+                 ========================================== -->
+            <div class="zone-bottom-deck" id="bottomDeck">
+              <div class="deck-header-bar">
+                <div class="deck-tab-list">
+                  <div class="deck-tab active" data-deck="terminal" id="deckTabTerminal">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.57 9H8l4 4-4 4H5.57l4.01-4z"/></svg>
+                    Terminal / Console
+                  </div>
+                  <div class="deck-tab" data-deck="dump" id="deckTabDump">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                    Results (.Dump)
+                  </div>
+                  <div class="deck-tab" data-deck="repl" id="deckTabRepl">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                    Debug REPL
+                  </div>
+                  <div class="deck-tab" data-deck="problems" id="deckTabProblems">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Problems (0)
+                  </div>
+                  <div class="deck-tab" data-deck="output" id="deckTabOutput">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/></svg>
+                    Output
+                  </div>
+                  <div class="deck-tab" data-deck="tests" id="deckTabTests">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    Test Cases (3/3)
+                  </div>
+                </div>
+
+                <div class="deck-actions">
+                  <button class="editor-tool-btn" id="btnClearOutput" title="Clear Console Output">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    Clear
+                  </button>
+                  <button class="editor-tool-btn" id="btnCloseDeck" title="Close Panel (Ctrl+J)">×</button>
+                </div>
+              </div>
+
+              <!-- Deck Body Container -->
+              <div class="deck-body" id="deckBody">
+
+                <!-- Terminal / Console View -->
+                <div id="deckViewTerminal">
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-info">▶ Roslyn ScriptEngine v10.0.0 initializing...</span>
+                  </div>
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-success">✔ Assembly compilation succeeded (0 warnings, 0 errors)</span>
+                  </div>
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-dim">Evaluating: Solution.TwoSum([2, 7, 11, 15], target = 9)...</span>
+                  </div>
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-success">Test Case 1 (Target = 9) =&gt; [0, 1] (Found in 1 iteration)</span>
+                  </div>
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-success">Test Case 2 (Target = 6) =&gt; [1, 2]</span>
+                  </div>
+                  <div class="console-line">
+                    <span class="console-time">[16:04:12]</span>
+                    <span class="console-info">⏱ Script execution completed in 14ms. Ready.</span>
+                  </div>
+                </div>
+
+                <!-- Results .Dump Tab -->
+                <div id="deckViewDump" style="display: none;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-size: 12px; color: #a0a0a0;">Object Inspection: <strong>DataFrame &amp; Dump Table</strong> (3 rows, 5 columns)</span>
+                    <input type="text" placeholder="Filter rows..." id="tableFilterInput" style="background: var(--bg-input); border: 1px solid var(--border-subtle); color: #fff; padding: 2px 8px; font-size: 11px; border-radius: 3px; outline: none;">
+                  </div>
+                  <div class="dump-table-wrapper">
+                    <table class="dump-table" id="interactiveDumpTable">
+                      <thead>
+                        <tr>
+                          <th>Row</th>
+                          <th>Test Case</th>
+                          <th>Input Array</th>
+                          <th>Target</th>
+                          <th>Computed Result</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>0</td>
+                          <td>Case 1</td>
+                          <td>[2, 7, 11, 15]</td>
+                          <td>9</td>
+                          <td>[0, 1]</td>
+                          <td><span class="table-badge badge-pass">PASSED</span></td>
+                        </tr>
+                        <tr>
+                          <td>1</td>
+                          <td>Case 2</td>
+                          <td>[3, 2, 4]</td>
+                          <td>6</td>
+                          <td>[1, 2]</td>
+                          <td><span class="table-badge badge-pass">PASSED</span></td>
+                        </tr>
+                        <tr>
+                          <td>2</td>
+                          <td>Case 3</td>
+                          <td>[3, 3]</td>
+                          <td>6</td>
+                          <td>[0, 1]</td>
+                          <td><span class="table-badge badge-pass">PASSED</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Debug REPL Tab -->
+                <div id="deckViewRepl" style="display: none;">
+                  <div style="color: #858585; font-size: 11.5px; margin-bottom: 8px;">
+                    C# Immediate REPL Session (Interactive Evaluation). Type any C# expression or method call and press Enter.
+                  </div>
+                  <div id="replHistory">
+                    <div class="console-line"><span class="repl-prompt-symbol">&gt;</span> <span style="color: #ffffff;">sol.TwoSum(new int[] { 2, 7, 11, 15 }, 9)</span></div>
+                    <div class="console-line"><span class="console-time">&lt;</span> <span style="color: #4ec9b0;">int[2] { 0, 1 }</span></div>
+                    <div class="console-line"><span class="repl-prompt-symbol">&gt;</span> <span style="color: #ffffff;">Math.Pow(2, 10)</span></div>
+                    <div class="console-line"><span class="console-time">&lt;</span> <span style="color: #b5cea8;">1024</span></div>
+                  </div>
+                  <div class="repl-input-row">
+                    <span class="repl-prompt-symbol">&gt;</span>
+                    <input type="text" id="replInputBox" class="repl-input" placeholder="e.g. sol.TwoSum(new[] { 3, 2, 4 }, 6)" autocomplete="off">
+                  </div>
+                </div>
+
+                <!-- Problems Tab -->
+                <div id="deckViewProblems" style="display: none;">
+                  <div style="display: flex; align-items: center; gap: 8px; color: #89d185;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <span>Roslyn Compiler Diagnostics: 0 Errors, 0 Warnings, 0 Informationals.</span>
+                  </div>
+                </div>
+
+                <!-- Output Tab -->
+                <div id="deckViewOutput" style="display: none;">
+                  <div class="console-line"><span class="console-dim">[Roslyn] Parsing syntax trees with CSharpParseOptions(LanguageVersion.CSharp13)...</span></div>
+                  <div class="console-line"><span class="console-dim">[Roslyn] Binding symbols against .NET 10 System.Runtime and Avalonia core...</span></div>
+                  <div class="console-line"><span class="console-success">[Roslyn] Compilation finished with Success = true. Emitted IL size = 4.2 KB.</span></div>
+                </div>
+
+                <!-- Test Cases Tab -->
+                <div id="deckViewTests" style="display: none;">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                    <div style="background: #252526; padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <strong>Case 1</strong> <span class="table-badge badge-pass">PASSED</span>
+                      </div>
+                      <div style="font-size: 11.5px; color: #a0a0a0;">Input: <code>nums = [2,7,11,15], target = 9</code></div>
+                      <div style="font-size: 11.5px; color: #89d185; margin-top: 4px;">Expected: [0, 1] | Actual: [0, 1]</div>
+                    </div>
+                    <div style="background: #252526; padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <strong>Case 2</strong> <span class="table-badge badge-pass">PASSED</span>
+                      </div>
+                      <div style="font-size: 11.5px; color: #a0a0a0;">Input: <code>nums = [3,2,4], target = 6</code></div>
+                      <div style="font-size: 11.5px; color: #89d185; margin-top: 4px;">Expected: [1, 2] | Actual: [1, 2]</div>
+                    </div>
+                    <div style="background: #252526; padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <strong>Case 3</strong> <span class="table-badge badge-pass">PASSED</span>
+                      </div>
+                      <div style="font-size: 11.5px; color: #a0a0a0;">Input: <code>nums = [3,3], target = 6</code></div>
+                      <div style="font-size: 11.5px; color: #89d185; margin-top: 4px;">Expected: [0, 1] | Actual: [0, 1]</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ==========================================
+             ZONE 5: STATUS BAR (22px)
+             ========================================== -->
+        <footer class="zone-status-bar" id="statusBar">
+          <div class="status-left">
+            <span class="status-pill" id="statusWorkspacePill" title="Active Workspace">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              &gt;&lt; C# Studio
+            </span>
+            <span class="status-pill" id="statusProblemsPill" title="Diagnostics">
+              (× 0 ! 0)
+            </span>
+            <span class="status-pill" id="statusCompilerState">
+              Ready
+            </span>
+          </div>
+
+          <div class="status-right">
+            <span class="status-pill" id="statusExecutionTimer">
+              ⏱ 14ms
+            </span>
+            <span class="status-pill" id="statusCursorCoords">
+              Ln 18, Col 4
+            </span>
+            <span class="status-pill">
+              Spaces: 4
+            </span>
+            <span class="status-pill">
+              UTF-8
+            </span>
+            <span class="status-pill" style="font-weight: 600;">
+              C# (.NET 10 Roslyn)
+            </span>
+            <span class="status-pill" id="statusToggleDeckBtn" title="Toggle Tool Deck">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm2 2v10h14V5H5zm0 12v2h14v-2H5z"/></svg>
+            </span>
+          </div>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       INTERACTIVE JUPYTER NOTEBOOK SHOWCASE
+       ========================================================= -->
+  <section class="notebook-section" id="notebooks">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Stateful Interactive C# Notebooks</h2>
+        <p class="section-desc">
+          Chained cell execution powered by <code>NotebookExecutionKernel</code> and Roslyn's <code>ScriptState.ContinueWithAsync</code>. Variables declared in earlier cells remain in-scope for subsequent cells without re-executing your entire script.
+        </p>
+      </div>
+
+      <div class="notebook-demo-card">
+        <div class="notebook-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">📓</span>
+            <strong style="color: #ffffff;">DataPipelineDemo.dib</strong>
+            <span class="table-badge badge-info">Persistent Roslyn Session</span>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnRunAllCells">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Run All Cells
+          </button>
+        </div>
+
+        <div class="notebook-cells-flow">
+
+          <!-- Notebook Cell 1 -->
+          <div class="notebook-cell focused" id="cell1">
+            <div class="cell-input-header">
+              <span class="cell-exec-badge">[1] In:</span>
+              <span style="font-size: 11px;">#r "nuget: Microsoft.Data.Analysis, 0.20.1"</span>
+            </div>
+            <div class="cell-code-box">
+              <span class="token-keyword">using</span> System;<br>
+              <span class="token-keyword">using</span> System.Collections.Generic;<br>
+              <br>
+              <span class="token-comment">// Declare stateful session variable</span><br>
+              <span class="token-keyword">var</span> numbers = <span class="token-keyword">new</span> <span class="token-type">List</span>&lt;<span class="token-keyword">int</span>&gt; { 12, 45, 68, 92, 105, 144, 210 };<br>
+              <span class="token-type">Console</span>.<span class="token-method">WriteLine</span>(<span class="token-string">$"Loaded {numbers.Count} records into session memory."</span>);
+            </div>
+            <div class="cell-output-box">
+              <span class="console-success">Loaded 7 records into session memory.</span>
+            </div>
+          </div>
+
+          <!-- Notebook Cell 2 -->
+          <div class="notebook-cell" id="cell2">
+            <div class="cell-input-header">
+              <span class="cell-exec-badge">[2] In:</span>
+              <span style="font-size: 11px;">Chained Submission #1</span>
+            </div>
+            <div class="cell-code-box">
+              <span class="token-comment">// Directly access 'numbers' from Cell 1</span><br>
+              <span class="token-keyword">var</span> squared = numbers.Select(n =&gt; n * n).ToList();<br>
+              squared.<span class="token-method">Dump</span>(<span class="token-string">"Squared Values"</span>);
+            </div>
+            <div class="cell-output-box">
+              <span class="console-dim">Squared Values =&gt; [ 144, 2025, 4624, 8464, 11025, 20736, 44100 ]</span>
+            </div>
+          </div>
+
+          <!-- Notebook Cell 3 -->
+          <div class="notebook-cell" id="cell3">
+            <div class="cell-input-header">
+              <span class="cell-exec-badge">[3] In:</span>
+              <span style="font-size: 11px;">Rich Media Visualization</span>
+            </div>
+            <div class="cell-code-box">
+              <span class="token-comment">// Emit rich UI control to notebook canvas</span><br>
+              <span class="token-type">Display</span>.<span class="token-method">Chart</span>(squared, title: <span class="token-string">"Quadratic Growth"</span>, color: <span class="token-string">"#4ec9b0"</span>);
+            </div>
+            <div class="cell-output-box" style="text-align: center; padding: 20px;">
+              <svg width="400" height="120" viewBox="0 0 400 120" style="max-width: 100%;">
+                <path d="M 20 100 Q 150 90 220 50 T 380 15" fill="none" stroke="#4ec9b0" stroke-width="3"/>
+                <circle cx="20" cy="100" r="4" fill="#4ec9b0"/>
+                <circle cx="80" cy="95" r="4" fill="#4ec9b0"/>
+                <circle cx="150" cy="85" r="4" fill="#4ec9b0"/>
+                <circle cx="220" cy="65" r="4" fill="#4ec9b0"/>
+                <circle cx="290" cy="40" r="4" fill="#4ec9b0"/>
+                <circle cx="380" cy="15" r="4" fill="#4ec9b0"/>
+                <text x="20" y="115" fill="#858585" font-size="10">0</text>
+                <text x="360" y="115" fill="#858585" font-size="10">210</text>
+              </svg>
+              <div style="font-size: 11px; color: #858585; margin-top: 6px;">Visualized using SkiaSharp + Avalonia Native Surface</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       FEATURES GRID
+       ========================================================= -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Engineered for Developer Productivity</h2>
+        <p class="section-desc">
+          Built from the ground up for .NET 10 document automation, Roslyn compilation, and full-viewport desktop ergonomics.
+        </p>
+      </div>
+
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          </div>
+          <h3 class="feature-title">Authentic 5-Zone VS Code Layout</h3>
+          <p class="feature-text">
+            Complies strictly with VS Code chrome standards: 48px fixed Activity Bar, collapsible 260px Side Bar, multi-tab editor with dirty indicators, resizable Bottom Tool Deck, and 22px Status Bar.
+          </p>
+          <ul class="feature-bullets">
+            <li>Single primary side bar rule (no redundant columns)</li>
+            <li>Zero layout shifts with fluid splitters</li>
+            <li>Dark+ high-contrast theme styling</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>
+          </div>
+          <h3 class="feature-title">Interactive Debugging Engine</h3>
+          <p class="feature-text">
+            Rich step-through debugging powered by Roslyn syntax instrumentation: visual red gutter breakpoints, yellow line stepping highlighter, locals/watch inspector, and immediate expression REPL.
+          </p>
+          <ul class="feature-bullets">
+            <li>F5 (Continue), F10 (Step Over), F11 (Step Into)</li>
+            <li>Hover variable data tips over expressions</li>
+            <li>Non-intrusive background session pausing</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3 class="feature-title">Tabular Data &amp; DataFrame Profiling</h3>
+          <p class="feature-text">
+            Native interactive inspectors for <code>Microsoft.Data.Analysis.DataFrame</code>, <code>DataTable</code>, and <code>DataView</code>. Search, sort, paginate, and profile large data structures without freezing the UI.
+          </p>
+          <ul class="feature-bullets">
+            <li>Type inference and null-count summaries</li>
+            <li>Interactive .Dump() table builder</li>
+            <li>Export to CSV, JSON, and Markdown</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          </div>
+          <h3 class="feature-title">FryPDF Document Automation</h3>
+          <p class="feature-text">
+            Deeply integrated into the FryPDF ecosystem. Script document generation, PDF merging, digital signatures, table extraction, and batch workflow automation using pure C# code.
+          </p>
+          <ul class="feature-bullets">
+            <li>Full-viewport studio plugin integration</li>
+            <li>Pre-seeded script automation templates</li>
+            <li>Direct access to FryPDF document APIs</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
+          <h3 class="feature-title">244 Unit Tests &amp; 100% Pass Rate</h3>
+          <p class="feature-text">
+            Rock-solid codebase stability verified through 244 comprehensive automated unit tests covering compilation, debugging sessions, kernel execution, storage, and UI controls.
+          </p>
+          <ul class="feature-bullets">
+            <li>Zero build warnings, zero test errors</li>
+            <li>CI automated checks on every pull request</li>
+            <li>Memory-safe script disposal &amp; cancellation</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v12H4V6zm2 2v8h12V8H6z"/></svg>
+          </div>
+          <h3 class="feature-title">Cross-Platform Packaging</h3>
+          <p class="feature-text">
+            Build and distribute native standalone binaries for macOS (`.dmg`) and Windows (`.msix` / Inno Setup installer), or ship as an isolated plugin for host applications.
+          </p>
+          <ul class="feature-bullets">
+            <li>Standalone runner executable (`FrySharp`)</li>
+            <li>Packaging scripts in <code>packaging/</code></li>
+            <li>Self-contained .NET 10 native deployment</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       ARCHITECTURE SECTION
+       ========================================================= -->
+  <section class="quickstart-section" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Zero UI-Thread Freeze Architecture</h2>
+        <p class="section-desc">
+          How Roslyn compilation, NuGet resolution, and script evaluation execute asynchronously without blocking the 60fps Avalonia UI render loop.
+        </p>
+      </div>
+
+      <div class="arch-diagram-wrapper">
+        <div class="arch-flow">
+          <div class="arch-step-card">
+            <div class="arch-step-num">1</div>
+            <h4 class="arch-step-title">AvaloniaEdit</h4>
+            <p class="arch-step-desc">Debounced user input (350ms) triggers background diagnostic queue with CancellationToken.</p>
+          </div>
+          <div class="arch-arrow">➔</div>
+          <div class="arch-step-card">
+            <div class="arch-step-num">2</div>
+            <h4 class="arch-step-title">Roslyn Compiler</h4>
+            <p class="arch-step-desc">Headless syntax analysis, symbol binding, and AST diagnostic collection via Task.Run.</p>
+          </div>
+          <div class="arch-arrow">➔</div>
+          <div class="arch-step-card">
+            <div class="arch-step-num">3</div>
+            <h4 class="arch-step-title">Stateful Kernel</h4>
+            <p class="arch-step-desc">ScriptState.ContinueWithAsync executes IL in memory, maintaining live variable heap.</p>
+          </div>
+          <div class="arch-arrow">➔</div>
+          <div class="arch-step-card">
+            <div class="arch-step-num">4</div>
+            <h4 class="arch-step-title">Dispatcher.Post</h4>
+            <p class="arch-step-desc">Safe UI thread post streams stdout, updates line highlighter, and populates .Dump grid.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       KEYBOARD SHORTCUTS SECTION
+       ========================================================= -->
+  <section class="shortcuts-section" id="shortcuts">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Visual Studio Code Keyboard Shortcuts</h2>
+        <p class="section-desc">
+          Every shortcut you rely on in VS Code is mapped and honored inside the C# Code Studio.
+        </p>
+      </div>
+
+      <div class="shortcuts-grid">
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Toggle Primary Side Bar</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>B</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Toggle Bottom Tool Deck</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>J</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Start / Continue Debugging</span>
+          <div class="kbd-combo"><kbd>F5</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Run Script (No Debug)</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>F5</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Step Over Line</span>
+          <div class="kbd-combo"><kbd>F10</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Step Into Method</span>
+          <div class="kbd-combo"><kbd>F11</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Stop Execution</span>
+          <div class="kbd-combo"><kbd>Shift</kbd> + <kbd>F5</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Format Document</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>K</kbd>, <kbd>Ctrl</kbd> + <kbd>D</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Focus File Explorer</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Focus Search Panel</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Focus Run &amp; Debug</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></div>
+        </div>
+        <div class="shortcut-card">
+          <span class="shortcut-desc">Focus Problems Deck</span>
+          <div class="kbd-combo"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       QUICK START & CLI SECTION
+       ========================================================= -->
+  <section class="quickstart-section" id="quickstart">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Quick Start &amp; Setup</h2>
+        <p class="section-desc">
+          Clone the repository, run the desktop application, or run the complete 244-test test suite in seconds.
+        </p>
+      </div>
+
+      <!-- Command 1: Run Desktop App -->
+      <div class="cli-box">
+        <div class="cli-header">
+          <span>Run Standalone Desktop App (FrySharp)</span>
+          <span>Bash / Zsh</span>
+        </div>
+        <div class="cli-code">
+          <code id="cmdRunApp">dotnet run --project Runner/CSharpEditorPlugin.Runner.csproj</code>
+          <button class="copy-btn" onclick="copyText('cmdRunApp')">Copy</button>
+        </div>
+      </div>
+
+      <!-- Command 2: Run Unit Tests -->
+      <div class="cli-box">
+        <div class="cli-header">
+          <span>Run All 244 Automated Unit Tests</span>
+          <span>Bash / Zsh</span>
+        </div>
+        <div class="cli-code">
+          <code id="cmdRunTests">dotnet test CSharpEditorPlugin.slnx</code>
+          <button class="copy-btn" onclick="copyText('cmdRunTests')">Copy</button>
+        </div>
+      </div>
+
+      <!-- Command 3: Build macOS DMG -->
+      <div class="cli-box">
+        <div class="cli-header">
+          <span>Package macOS .DMG Installer</span>
+          <span>macOS Shell</span>
+        </div>
+        <div class="cli-code">
+          <code id="cmdPackageMac">./packaging/macos/create-dmg.sh</code>
+          <button class="copy-btn" onclick="copyText('cmdPackageMac')">Copy</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================
+       SITE FOOTER
+       ========================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="brand-group">
+          <div class="brand-logo-badge">C#</div>
+          <div class="brand-text">
+            <span class="brand-title">CSharpPlayground (FrySharp)</span>
+            <span class="brand-subtitle">High-Performance .NET 10 IDE &amp; Automation</span>
+          </div>
+        </div>
+
+        <ul class="footer-links">
+          <li><a href="#simulator">Studio Simulator</a></li>
+          <li><a href="#notebooks">Notebooks</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#shortcuts">Shortcuts</a></li>
+          <li><a href="https://github.com/PrashantUnity/CSharpPlayground" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-bottom">
+        <span>&copy; 2026 Code Fry Dev. Licensed under the MIT License.</span>
+        <span>Built for .NET 10, Avalonia 12.1.2 &amp; FryPDF Ecosystem</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =========================================================
+       INTERACTIVE JAVASCRIPT ENGINE
+       ========================================================= -->
+  <script>
+    // Script Templates Library
+    const SCRIPT_TEMPLATES = {
+      'two-sum': {
+        filename: 'TwoSum.csx',
+        code: `using System;
+using System.Collections.Generic;
+
+public class Solution 
+{
+    public int[] TwoSum(int[] nums, int target) 
+    {
+        var map = new Dictionary<int, int>();
+        for (int i = 0; i < nums.Length; i++) 
+        {
+            int complement = target - nums[i];
+            if (map.TryGetValue(complement, out int index)) 
+            {
+                return new int[] { index, i };
+            }
+            map[nums[i]] = i;
+        }
+        return Array.Empty<int>();
+    }
+}
+
+// Execute test cases
+var sol = new Solution();
+
+int[] test1 = sol.TwoSum(new int[] { 2, 7, 11, 15 }, 9);
+test1.Dump("Test Case 1 (Target = 9)");
+
+int[] test2 = sol.TwoSum(new int[] { 3, 2, 4 }, 6);
+test2.Dump("Test Case 2 (Target = 6)");
+
+Console.WriteLine("All test cases evaluated successfully.");`,
+        activeLine: 18,
+        tableRows: [
+          { row: 0, caseName: 'Case 1', input: '[2, 7, 11, 15]', target: 9, result: '[0, 1]', status: 'PASSED' },
+          { row: 1, caseName: 'Case 2', input: '[3, 2, 4]', target: 6, result: '[1, 2]', status: 'PASSED' },
+          { row: 2, caseName: 'Case 3', input: '[3, 3]', target: 6, result: '[0, 1]', status: 'PASSED' }
+        ]
+      },
+      'data-analysis': {
+        filename: 'DataAnalysis.dib',
+        code: `using System;
+using System.Linq;
+using Microsoft.Data.Analysis;
+
+// Create sample tabular DataFrame
+var colDate = new DateTimeDataFrameColumn("Date", Enumerable.Range(1, 5).Select(d => new DateTime(2026, 9, d)));
+var colTemp = new PrimitiveDataFrameColumn<double>("Temperature", new double[] { 22.4, 24.1, 19.8, 25.6, 21.0 });
+var colHumidity = new PrimitiveDataFrameColumn<int>("Humidity", new int[] { 45, 52, 68, 40, 55 });
+
+var df = new DataFrame(colDate, colTemp, colHumidity);
+
+// Profile DataFrame column statistics
+df.Dump("Weather DataFrame Profile");
+Console.WriteLine($"Computed {df.Rows.Count} rows across {df.Columns.Count} columns.");`,
+        activeLine: 12,
+        tableRows: [
+          { row: 0, caseName: 'Record 1', input: '2026-09-01', target: 22.4, result: '45% RH', status: 'OK' },
+          { row: 1, caseName: 'Record 2', input: '2026-09-02', target: 24.1, result: '52% RH', status: 'OK' },
+          { row: 2, caseName: 'Record 3', input: '2026-09-03', target: 19.8, result: '68% RH', status: 'OK' }
+        ]
+      },
+      'pdf-automation': {
+        filename: 'PdfReport.csx',
+        code: `using System;
+using FryPdf.Core;
+using FryPdf.Documents;
+
+// Automated PDF Report Generator
+var doc = new PdfDocument("Quarterly_Report_2026.pdf");
+var page = doc.AddPage(PageSize.A4);
+
+page.DrawHeader("Q3 Executive Document Summary", font: "Inter Bold", size: 18);
+page.DrawTable(headers: new[] { "Metric", "Value", "Delta" }, rows: new[,] {
+    { "Active Sessions", "14,280", "+22%" },
+    { "Compilation Latency", "14ms", "-35%" },
+    { "Roslyn Scripts", "1,894", "+48%" }
+});
+
+doc.Save();
+Console.WriteLine("PDF generated and saved to workspace successfully.");`,
+        activeLine: 14,
+        tableRows: [
+          { row: 0, caseName: 'Page 1', input: 'Header & Metrics', target: 'A4', result: 'Saved', status: 'SUCCESS' },
+          { row: 1, caseName: 'Page 2', input: 'Charts & Tables', target: 'A4', result: 'Saved', status: 'SUCCESS' }
+        ]
+      },
+      'linq-benchmark': {
+        filename: 'LINQBenchmark.csx',
+        code: `using System;
+using System.Diagnostics;
+using System.Linq;
+
+// LINQ High-Performance Micro-Benchmark
+var data = Enumerable.Range(1, 1_000_000).ToArray();
+var sw = Stopwatch.StartNew();
+
+var result = data.Where(x => x % 2 == 0).Select(x => x * 3).Sum(x => (long)x);
+
+sw.Stop();
+Console.WriteLine($"Computed sum: {result:N0} in {sw.ElapsedMilliseconds}ms.");
+result.Dump("LINQ Aggregation Result");`,
+        activeLine: 10,
+        tableRows: [
+          { row: 0, caseName: 'Batch 1M', input: '1,000,000 ints', target: 'Sum(x)', result: '750,000,000,000', status: 'DONE' }
+        ]
+      }
+    };
+
+    let currentScriptKey = 'two-sum';
+    let breakpoints = new Set([18]);
+    let activeSteppingLine = 18;
+
+    // Syntax Highlighting Engine
+    function renderCode(codeText) {
+      const lines = codeText.split('\n');
+      const gutterCol = document.getElementById('gutterCol');
+      const codeLinesArea = document.getElementById('codeLinesArea');
+
+      gutterCol.innerHTML = '';
+      codeLinesArea.innerHTML = '';
+
+      lines.forEach((lineText, idx) => {
+        const lineNum = idx + 1;
+
+        // Gutter Line
+        const gLine = document.createElement('div');
+        gLine.className = 'gutter-line' + (breakpoints.has(lineNum) ? ' breakpoint' : '');
+        gLine.dataset.line = lineNum;
+        gLine.textContent = lineNum;
+        gLine.title = 'Click to toggle breakpoint on line ' + lineNum;
+        gLine.addEventListener('click', () => toggleBreakpoint(lineNum));
+        gutterCol.appendChild(gLine);
+
+        // Code Line
+        const cLine = document.createElement('div');
+        cLine.className = 'code-line' + (lineNum === activeSteppingLine ? ' stepping-active' : '');
+        cLine.dataset.line = lineNum;
+        cLine.innerHTML = highlightSyntax(lineText);
+        codeLinesArea.appendChild(cLine);
+      });
+
+      attachHoverTooltips();
+    }
+
+    // Highlighting parser
+    function highlightSyntax(raw) {
+      if (!raw) return '&nbsp;';
+      let escaped = raw
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Comments
+      if (escaped.trim().startsWith('//')) {
+        return `<span class="token-comment">${escaped}</span>`;
+      }
+
+      // Strings
+      escaped = escaped.replace(/("(?:\\"|[^"])*")/g, '<span class="token-string">$1</span>');
+
+      // Keywords
+      const keywords = ['using', 'public', 'class', 'var', 'for', 'int', 'return', 'if', 'new', 'long', 'double', 'void'];
+      keywords.forEach(kw => {
+        const reg = new RegExp(`\\b(${kw})\\b`, 'g');
+        escaped = escaped.replace(reg, '<span class="token-keyword">$1</span>');
+      });
+
+      // Types
+      const types = ['Solution', 'Dictionary', 'Array', 'Console', 'DataFrame', 'PdfDocument', 'Stopwatch', 'DateTime', 'List'];
+      types.forEach(t => {
+        const reg = new RegExp(`\\b(${t})\\b`, 'g');
+        escaped = escaped.replace(reg, '<span class="token-type">$1</span>');
+      });
+
+      // Methods
+      escaped = escaped.replace(/\.([A-Za-z0-9_]+)\(/g, '.<span class="token-method">$1</span>(');
+
+      // Numbers
+      escaped = escaped.replace(/\b(\d+)\b/g, '<span class="token-number">$1</span>');
+
+      // Variables to inspect
+      escaped = escaped.replace(/\b(nums|target|map|sol|df)\b/g, '<span class="token-variable" data-var="$1">$1</span>');
+
+      return escaped;
+    }
+
+    // Breakpoints Toggle
+    function toggleBreakpoint(lineNum) {
+      if (breakpoints.has(lineNum)) {
+        breakpoints.delete(lineNum);
+      } else {
+        breakpoints.add(lineNum);
+      }
+      renderCode(SCRIPT_TEMPLATES[currentScriptKey].code);
+    }
+
+    // Tooltip Hover Handlers
+    function attachHoverTooltips() {
+      const tip = document.getElementById('hoverDataTip');
+      const header = document.getElementById('hoverTipHeader');
+      const body = document.getElementById('hoverTipBody');
+      const varElements = document.querySelectorAll('.token-variable');
+
+      varElements.forEach(el => {
+        el.addEventListener('mouseenter', (e) => {
+          const v = el.dataset.var;
+          if (v === 'nums') {
+            header.textContent = 'int[] nums';
+            body.textContent = 'Input collection: [2, 7, 11, 15] (Count: 4)';
+          } else if (v === 'target') {
+            header.textContent = 'int target';
+            body.textContent = 'Constant evaluation target value = 9';
+          } else if (v === 'map') {
+            header.textContent = 'Dictionary<int, int> map';
+            body.textContent = 'Hash lookup table: { [2]: 0 }';
+          } else if (v === 'sol') {
+            header.textContent = 'Solution sol';
+            body.textContent = 'Allocated instance of Solution class';
+          } else if (v === 'df') {
+            header.textContent = 'DataFrame df';
+            body.textContent = 'Tabular dataset with 3 columns, 5 rows';
+          }
+
+          const rect = el.getBoundingClientRect();
+          tip.style.left = rect.left + 'px';
+          tip.style.top = (rect.top - 65) + 'px';
+          tip.style.display = 'block';
+        });
+
+        el.addEventListener('mouseleave', () => {
+          tip.style.display = 'none';
+        });
+      });
+    }
+
+    // Switch Script Tab
+    function switchScript(key) {
+      if (!SCRIPT_TEMPLATES[key]) return;
+      currentScriptKey = key;
+      const data = SCRIPT_TEMPLATES[key];
+
+      // Update Breadcrumbs & Status Bar
+      document.getElementById('breadcrumbFilename').textContent = data.filename;
+
+      // Update Tabs
+      document.querySelectorAll('.editor-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === key);
+      });
+
+      // Update SideBar Tree
+      document.querySelectorAll('.tree-item[data-script]').forEach(item => {
+        item.classList.toggle('active', item.dataset.script === key);
+      });
+
+      activeSteppingLine = data.activeLine;
+      renderCode(data.code);
+      populateDumpTable(data.tableRows);
+    }
+
+    // Populate Dump Table
+    function populateDumpTable(rows) {
+      const tbody = document.querySelector('#interactiveDumpTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.row}</td>
+          <td>${r.caseName}</td>
+          <td>${r.input}</td>
+          <td>${r.target}</td>
+          <td>${r.result}</td>
+          <td><span class="table-badge badge-pass">${r.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Activity Bar Navigation
+    const activityItems = document.querySelectorAll('.activity-item[data-view]');
+    const sideBarViews = {
+      'explorer': document.getElementById('viewExplorerContent'),
+      'search': document.getElementById('viewSearchContent'),
+      'debug': document.getElementById('viewDebugContent'),
+      'nuget': document.getElementById('viewNugetContent'),
+      'scratchpad': document.getElementById('viewScratchpadContent'),
+      'problems': document.getElementById('viewProblemsContent')
+    };
+    const sideBarTitles = {
+      'explorer': 'EXPLORER: CSHARP PLAYGROUND',
+      'search': 'SEARCH IN SCRIPTS',
+      'debug': 'RUN AND DEBUG',
+      'nuget': 'NUGET DEPENDENCIES',
+      'scratchpad': 'SCRATCHPAD & NOTES',
+      'problems': 'PROBLEMS'
+    };
+
+    activityItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const viewName = item.dataset.view;
+        const sideBar = document.getElementById('primarySideBar');
+
+        // If clicking active item, toggle sidebar collapse
+        if (item.classList.contains('active')) {
+          sideBar.classList.toggle('collapsed');
+          return;
+        }
+
+        // Switch active activity item
+        activityItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // Ensure sidebar is open
+        sideBar.classList.remove('collapsed');
+
+        // Switch view contents
+        document.getElementById('sideBarTitle').textContent = sideBarTitles[viewName] || 'EXPLORER';
+        Object.keys(sideBarViews).forEach(k => {
+          if (sideBarViews[k]) {
+            sideBarViews[k].style.display = (k === viewName) ? 'block' : 'none';
+          }
+        });
+      });
+    });
+
+    // Toggle SideBar (Ctrl+B)
+    function toggleSideBar() {
+      const sideBar = document.getElementById('primarySideBar');
+      sideBar.classList.toggle('collapsed');
+    }
+    document.getElementById('toggleSideBarTopBtn').addEventListener('click', toggleSideBar);
+    document.getElementById('actionCollapseSidebar').addEventListener('click', toggleSideBar);
+
+    // Bottom Tool Deck Navigation
+    const deckTabs = document.querySelectorAll('.deck-tab[data-deck]');
+    const deckViews = {
+      'terminal': document.getElementById('deckViewTerminal'),
+      'dump': document.getElementById('deckViewDump'),
+      'repl': document.getElementById('deckViewRepl'),
+      'problems': document.getElementById('deckViewProblems'),
+      'output': document.getElementById('deckViewOutput'),
+      'tests': document.getElementById('deckViewTests')
+    };
+
+    deckTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const deckName = tab.dataset.deck;
+        deckTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        Object.keys(deckViews).forEach(k => {
+          if (deckViews[k]) {
+            deckViews[k].style.display = (k === deckName) ? 'block' : 'none';
+          }
+        });
+      });
+    });
+
+    // Toggle Bottom Deck (Ctrl+J)
+    function toggleBottomDeck() {
+      const deck = document.getElementById('bottomDeck');
+      deck.classList.toggle('collapsed');
+    }
+    document.getElementById('btnToggleBottomDeck').addEventListener('click', toggleBottomDeck);
+    document.getElementById('toggleDeckTopBtn').addEventListener('click', toggleBottomDeck);
+    document.getElementById('btnCloseDeck').addEventListener('click', toggleBottomDeck);
+    document.getElementById('statusToggleDeckBtn').addEventListener('click', toggleBottomDeck);
+
+    // Tab Click Listeners
+    document.querySelectorAll('.editor-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        switchScript(tab.dataset.tab);
+      });
+    });
+    document.querySelectorAll('.tree-item[data-script]').forEach(item => {
+      item.addEventListener('click', () => {
+        switchScript(item.dataset.script);
+      });
+    });
+
+    // Run Script Simulation (F5)
+    document.getElementById('btnRunScript').addEventListener('click', runScriptSimulation);
+
+    function runScriptSimulation() {
+      const term = document.getElementById('deckViewTerminal');
+      const timerPill = document.getElementById('statusExecutionTimer');
+      const compilerState = document.getElementById('statusCompilerState');
+
+      // Switch to terminal tab
+      document.querySelector('.deck-tab[data-deck="terminal"]').click();
+      document.getElementById('bottomDeck').classList.remove('collapsed');
+
+      compilerState.textContent = 'Compiling...';
+      compilerState.style.color = '#ffe835';
+
+      const now = new Date();
+      const timeStr = `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+
+      const startMs = performance.now();
+
+      setTimeout(() => {
+        const elapsed = Math.round(performance.now() - startMs + 12);
+        compilerState.textContent = 'Ready';
+        compilerState.style.color = '#ffffff';
+        timerPill.textContent = `⏱ ${elapsed}ms`;
+
+        const log = document.createElement('div');
+        log.className = 'console-line';
+        log.innerHTML = `<span class="console-time">${timeStr}</span> <span class="console-success">▶ Execution completed successfully in ${elapsed}ms.</span>`;
+        term.appendChild(log);
+        term.scrollTop = term.scrollHeight;
+      }, 350);
+    }
+
+    // Step Over Simulation (F10)
+    document.getElementById('btnStepOver').addEventListener('click', () => {
+      activeSteppingLine = (activeSteppingLine >= 25) ? 10 : activeSteppingLine + 1;
+      document.getElementById('statusCursorCoords').textContent = `Ln ${activeSteppingLine}, Col 8`;
+      renderCode(SCRIPT_TEMPLATES[currentScriptKey].code);
+    });
+
+    // Reset Code
+    document.getElementById('btnResetCode').addEventListener('click', () => {
+      renderCode(SCRIPT_TEMPLATES[currentScriptKey].code);
+    });
+
+    // Clear Terminal Output
+    document.getElementById('btnClearOutput').addEventListener('click', () => {
+      document.getElementById('deckViewTerminal').innerHTML = '<div class="console-line"><span class="console-dim">Terminal cleared.</span></div>';
+    });
+
+    // REPL Interactive Evaluation
+    const replInput = document.getElementById('replInputBox');
+    if (replInput) {
+      replInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const expr = replInput.value.trim();
+          if (!expr) return;
+          const hist = document.getElementById('replHistory');
+
+          // User Command
+          const userLine = document.createElement('div');
+          userLine.className = 'console-line';
+          userLine.innerHTML = `<span class="repl-prompt-symbol">&gt;</span> <span style="color: #ffffff;">${expr}</span>`;
+          hist.appendChild(userLine);
+
+          // Evaluation
+          let result = 'null';
+          try {
+            if (expr.includes('TwoSum') || expr.includes('nums')) {
+              result = 'int[2] { 0, 1 }';
+            } else if (expr.includes('+') || expr.includes('*') || expr.includes('-') || expr.includes('/')) {
+              result = String(eval(expr.replace(/Math\./g, 'Math.')));
+            } else if (expr.includes('Length') || expr.includes('Count')) {
+              result = '4';
+            } else {
+              result = `Evaluated: [${expr}] =&gt; Result OK`;
+            }
+          } catch (err) {
+            result = 'Error evaluating expression';
+          }
+
+          const resLine = document.createElement('div');
+          resLine.className = 'console-line';
+          resLine.innerHTML = `<span class="console-time">&lt;</span> <span style="color: #4ec9b0;">${result}</span>`;
+          hist.appendChild(resLine);
+
+          replInput.value = '';
+          document.getElementById('deckBody').scrollTop = document.getElementById('deckBody').scrollHeight;
+        }
+      });
+    }
+
+    // Data Table Filter
+    const tableFilterInput = document.getElementById('tableFilterInput');
+    if (tableFilterInput) {
+      tableFilterInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#interactiveDumpTable tbody tr');
+        rows.forEach(r => {
+          r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+      });
+    }
+
+    // Global Keybindings Listeners (Ctrl+B, Ctrl+J, F5, F10)
+    window.addEventListener('keydown', (e) => {
+      // Don't intercept when typing in inputs
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSideBar();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        toggleBottomDeck();
+      } else if (e.key === 'F5') {
+        e.preventDefault();
+        runScriptSimulation();
+      } else if (e.key === 'F10') {
+        e.preventDefault();
+        document.getElementById('btnStepOver').click();
+      }
+    });
+
+    // Copy to Clipboard Utility
+    function copyText(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText || el.textContent).then(() => {
+        const btn = el.parentElement.querySelector('.copy-btn');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1800);
+        }
+      });
+    }
+
+    // Run All Notebook Cells Button
+    const btnRunAll = document.getElementById('btnRunAllCells');
+    if (btnRunAll) {
+      btnRunAll.addEventListener('click', () => {
+        const cells = [document.getElementById('cell1'), document.getElementById('cell2'), document.getElementById('cell3')];
+        cells.forEach((c, idx) => {
+          setTimeout(() => {
+            cells.forEach(item => item.classList.remove('focused'));
+            c.classList.add('focused');
+            c.style.transform = 'scale(1.01)';
+            setTimeout(() => { c.style.transform = 'none'; }, 200);
+          }, idx * 400);
+        });
+      });
+    }
+
+    // Initial Render
+    renderCode(SCRIPT_TEMPLATES['two-sum'].code);
+    populateDumpTable(SCRIPT_TEMPLATES['two-sum'].tableRows);
+  </script>
+
+</body>
+</html>
