@@ -27,6 +27,9 @@
         <DataTemplate DataType="vm:CSharpNotebookStudioViewModel">
             <views:CSharpNotebookStudioView />
         </DataTemplate>
+        <DataTemplate DataType="vm:CSharpDocsViewModel">
+            <views:CSharpDocsView />
+        </DataTemplate>
     </UserControl.DataTemplates>
 
     <!-- Studio Host Active Page -->

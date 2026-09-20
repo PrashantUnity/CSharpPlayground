@@ -85,6 +85,13 @@
 
             <!-- Bottom Utility Buttons -->
             <StackPanel Grid.Row="1" Spacing="0" Margin="0,0,0,4">
+                <!-- Documentation & Learning Center -->
+                <Button Command="{Binding NavigateToDocsCommand}"
+                        Classes="activity-bar-btn"
+                        ToolTip.Tip="Documentation &amp; Visualizer API Guide">
+                    <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="18" Height="18" />
+                </Button>
+
                 <!-- Return to Scripts Hub -->
                 <Button Command="{Binding BackToHubCommand}"
                         Classes="activity-bar-btn"

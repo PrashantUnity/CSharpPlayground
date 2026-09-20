@@ -1,0 +1,361 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpDocsView"
+             x:DataType="vm:CSharpDocsViewModel"
+             Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="52,*">
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- HEADER BAR                                                     -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="14,0">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                <!-- Back to Hub Button -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding BackToHubCommand}"
+                            Classes="snippet-action-btn"
+                            ToolTip.Tip="Return to Hub (Esc)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="16" Height="16" />
+                            <TextBlock Text="Hub" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Rectangle Width="1" Height="20" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+                </StackPanel>
+
+                <!-- Title & Badge -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
+                    <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="22" Height="22" Foreground="#38BDF8" />
+                    <TextBlock Text="Documentation &amp; Learning Center"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                               VerticalAlignment="Center" />
+                    <Border Background="#1C2D3D" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="#38BDF8" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Search Box -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Height="34"
+                        MaxWidth="480"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        Margin="12,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16"
+                                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                    Margin="10,0,6,0" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding SearchQuery, Mode=TwoWay}"
+                                 PlaceholderText="Search docs, APIs, VisualizerRecorder, shortcuts..."
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="12"
+                                 VerticalAlignment="Center" />
+                        <Button Grid.Column="2"
+                                Command="{Binding ClearSearchCommand}"
+                                IsVisible="{Binding HasSearchQuery}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="8,0" Cursor="Hand">
+                            <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Action Links -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding OpenCodeStudioCommand}"
+                            Classes="snippet-action-btn"
+                            ToolTip.Tip="Open C# Code Studio">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="#38BDF8" />
+                            <TextBlock Text="Script Studio" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding OpenNotebookStudioCommand}"
+                            Classes="snippet-action-btn"
+                            ToolTip.Tip="Open C# Notebook Studio">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="#4EC9B0" />
+                            <TextBlock Text="Notebook Studio" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- MAIN BODY (2 PANES)                                            -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1" ColumnDefinitions="280,*">
+            <!-- LEFT NAVIGATION RAIL -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16" Margin="12,14">
+                        <!-- Search Results View -->
+                        <StackPanel IsVisible="{Binding HasSearchQuery}" Spacing="6">
+                            <TextBlock Text="SEARCH RESULTS" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="8,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding FilteredArticles}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:DocArticle">
+                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="doc-nav-item">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                <TextBlock Text="{Binding Subtitle}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" MaxLines="1" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="No matching topics found."
+                                       IsVisible="{Binding !FilteredArticles.Count}"
+                                       FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="8,10" />
+                        </StackPanel>
+
+                        <!-- Standard Categories Tree -->
+                        <ItemsControl ItemsSource="{Binding Categories}" IsVisible="{Binding !HasSearchQuery}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:DocCategory">
+                                    <StackPanel Spacing="4" Margin="0,0,0,14">
+                                        <!-- Category Header -->
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="8,0,8,6">
+                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentColor}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                            <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="8" Padding="6,1">
+                                                <TextBlock Text="{Binding Badge}" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Articles inside Category -->
+                                        <ItemsControl ItemsSource="{Binding Articles}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:DocArticle">
+                                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Classes="doc-nav-item">
+                                                        <Grid ColumnDefinitions="Auto,*">
+                                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="14" Height="14"
+                                                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- RIGHT ARTICLE CONTENT VIEWER -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel MaxWidth="880" HorizontalAlignment="Left" Spacing="20" Margin="36,24,36,40">
+                    <!-- Breadcrumbs Strip -->
+                    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" CornerRadius="6" Padding="12,6" HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding ActiveBreadcrumb}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Border>
+
+                    <!-- Article Title & Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding SelectedArticle.Title}"
+                                   FontSize="26" FontWeight="Bold"
+                                   Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        <TextBlock Text="{Binding SelectedArticle.Subtitle}"
+                                   FontSize="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
+                            <Border Background="#1F2A38" BorderBrush="#2F81F7" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                <TextBlock Text="{Binding SelectedCategory.Badge}" FontSize="10.5" FontWeight="SemiBold" Foreground="#58A6FF" />
+                            </Border>
+                            <TextBlock Text="{Binding SelectedArticle.ReadingTime}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Summary Callout Box -->
+                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="16,12">
+                        <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13" Foreground="#C9D1D9" TextWrapping="Wrap" LineHeight="20" />
+                    </Border>
+
+                    <!-- Article Sections -->
+                    <ItemsControl ItemsSource="{Binding SelectedArticle.Sections}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:DocSection">
+                                <StackPanel Spacing="10" Margin="0,0,0,16">
+                                    <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <TextBlock Text="{Binding Content}" FontSize="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" LineHeight="20" />
+
+                                    <!-- Callout box -->
+                                    <Border IsVisible="{Binding HasCallout}"
+                                            Background="#172A45" BorderBrush="#38BDF8" BorderThickness="1,0,0,0"
+                                            CornerRadius="0,6,6,0" Padding="12,10" Margin="0,4">
+                                        <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="#E2E8F0" TextWrapping="Wrap" />
+                                    </Border>
+
+                                    <!-- Bullet points -->
+                                    <ItemsControl ItemsSource="{Binding BulletPoints}" IsVisible="{Binding HasBullets}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="Auto,*" Margin="4,2,0,2">
+                                                    <TextBlock Grid.Column="0" Text="• " FontSize="13" Foreground="#38BDF8" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding}" FontSize="12.5" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" LineHeight="18" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- API Signatures -->
+                    <StackPanel IsVisible="{Binding SelectedArticle.HasApiSignatures}" Spacing="10">
+                        <TextBlock Text="API Reference" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        <ItemsControl ItemsSource="{Binding SelectedArticle.ApiSignatures}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:DocApiSignature">
+                                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,8">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding FullSignature}" FontFamily="Consolas, Menlo, monospace" FontSize="12.5" FontWeight="Bold" Foreground="#4EC9B0" />
+                                            <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Code Snippets with Try in Studio & Copy -->
+                    <StackPanel IsVisible="{Binding SelectedArticle.HasCodeSnippets}" Spacing="12">
+                        <TextBlock Text="Live Code Examples" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        <ItemsControl ItemsSource="{Binding SelectedArticle.CodeSnippets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:DocCodeSnippet">
+                                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+                                        <StackPanel Spacing="10">
+                                            <!-- Snippet Top Bar -->
+                                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                    <TextBlock Text="{Binding Description}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                </StackPanel>
+                                                <!-- Copy Button -->
+                                                <Button Grid.Column="1"
+                                                        Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).CopySnippetCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Classes="snippet-action-btn"
+                                                        Margin="0,0,8,0">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                                                        <TextBlock Text="Copy Code" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <!-- Try in Studio Button -->
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).TryInStudioCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Classes="snippet-run-btn"
+                                                        ToolTip.Tip="Launch this code sample directly in C# Code Studio">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" />
+                                                        <TextBlock Text="Try in Studio" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Code Block Canvas -->
+                                            <Border Background="#0D1117" BorderBrush="#21262D" BorderThickness="1" CornerRadius="6" Padding="12">
+                                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                                    <TextBox Text="{Binding Code}"
+                                                             IsReadOnly="True"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             FontFamily="Consolas, Menlo, monospace"
+                                                             FontSize="12"
+                                                             Foreground="#E6EDF3"
+                                                             LineHeight="19" />
+                                                </ScrollViewer>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Keyboard Shortcuts Table -->
+                    <StackPanel IsVisible="{Binding SelectedArticle.HasShortcuts}" Spacing="10">
+                        <TextBlock Text="Shortcut Reference" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <ItemsControl ItemsSource="{Binding SelectedArticle.Shortcuts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:DocShortcutItem">
+                                        <Border BorderBrush="#21262D" BorderThickness="0,0,0,1" Padding="6,8">
+                                            <Grid ColumnDefinitions="180,90,110,*">
+                                                <TextBlock Grid.Column="0" Text="{Binding Action}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                                <Border Grid.Column="1" Background="#21262D" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" Foreground="#58A6FF" />
+                                                </Border>
+                                                <Border Grid.Column="2" Background="#21262D" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" />
+                                                </Border>
+                                                <TextBlock Grid.Column="3" Text="{Binding Description}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Footer Navigation (Prev / Next Topic) -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,16,0,0">
+                        <Button Grid.Column="0"
+                                Command="{Binding PreviousArticleCommand}"
+                                IsVisible="{Binding HasPreviousArticle}"
+                                Classes="snippet-action-btn">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="16" Height="16" />
+                                <TextBlock Text="Previous Topic" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="2"
+                                Command="{Binding NextArticleCommand}"
+                                IsVisible="{Binding HasNextArticle}"
+                                Classes="snippet-action-btn">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="Next Topic" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

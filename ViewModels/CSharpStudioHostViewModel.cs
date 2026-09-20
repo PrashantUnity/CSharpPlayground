@@ -40,6 +40,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     private readonly Task _initTask;
 
     public CSharpManagerViewModel ManagerViewModel { get; }
+    public CSharpDocsViewModel DocsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
@@ -52,12 +53,20 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         // supplies one this way via StandaloneServiceProvider/StandaloneSettingsStore.
         _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(IPluginSettingsStore)) as IPluginSettingsStore;
 
+        // ── Initialize Documentation & Learning Center page ──
+        DocsViewModel = new CSharpDocsViewModel(
+            docService: DocumentationService.Instance,
+            backToHubAction: NavigateToManager,
+            openScriptAction: NavigateToCodeStudio,
+            openNotebookAction: NavigateToNotebookStudio);
+
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(
             _storageService,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio,
-            navigateToHomeAction: NavigateToHome);
+            navigateToHomeAction: NavigateToHome,
+            navigateToDocsAction: () => NavigateToDocs());
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -122,7 +131,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 backToHubAction: NavigateToManager,
                 backToHomeAction: NavigateToHome,
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
-                openNotebookAction: NavigateToNotebookStudio);
+                openNotebookAction: NavigateToNotebookStudio,
+                navigateToDocsAction: () => NavigateToDocs());
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -137,7 +147,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 backToHubAction: NavigateToManager,
                 backToHomeAction: NavigateToHome,
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
-                openScriptAction: NavigateToCodeStudio);
+                openScriptAction: NavigateToCodeStudio,
+                navigateToDocsAction: () => NavigateToDocs());
         });
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -204,6 +215,18 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         CurrentPage = ManagerViewModel;
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";
+    }
+
+    [RelayCommand]
+    public void NavigateToDocs(string? articleId = null)
+    {
+        if (!string.IsNullOrEmpty(articleId))
+        {
+            DocsViewModel.SelectTopic(articleId);
+        }
+        CurrentPage = DocsViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = "Documentation";
     }
 
     [RelayCommand]

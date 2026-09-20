@@ -112,6 +112,13 @@ public partial class CSharpManagerViewModel : ObservableObject
     };
 
     private readonly Action? _navigateToHomeAction;
+    private readonly Action? _navigateToDocsAction;
+
+    [RelayCommand]
+    public void NavigateToDocs()
+    {
+        _navigateToDocsAction?.Invoke();
+    }
 
     public bool IsAllFilterActive => SelectedTypeFilter == "All";
     public bool IsNotebooksFilterActive => SelectedTypeFilter == "Notebooks";
@@ -470,12 +477,14 @@ public partial class CSharpManagerViewModel : ObservableObject
         IScriptStorageService storageService,
         Action<ScriptDocumentItem> openScriptAction,
         Action<NotebookDocumentItem> openNotebookAction,
-        Action? navigateToHomeAction = null)
+        Action? navigateToHomeAction = null,
+        Action? navigateToDocsAction = null)
     {
         _storageService = storageService;
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
         _navigateToHomeAction = navigateToHomeAction;
+        _navigateToDocsAction = navigateToDocsAction;
 
         foreach (var t in CodeTemplateLibrary.GetTemplates())
         {
@@ -649,6 +658,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     [RelayCommand]
     private void SetSelectedNavSection(string section)
     {
+        if (section == "Docs")
+        {
+            NavigateToDocs();
+            return;
+        }
+
         SelectedNavSection = section;
         if (section == "Templates")
         {

@@ -17,6 +17,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+    private readonly Action? _navigateToDocsAction;
 
     public QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
@@ -181,7 +182,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Action backToHubAction,
         Action? backToHomeAction = null,
         Func<int>? getTimeoutSeconds = null,
-        Action<NotebookDocumentItem>? openNotebookAction = null)
+        Action<NotebookDocumentItem>? openNotebookAction = null,
+        Action? navigateToDocsAction = null)
     {
         _script = script;
         _storageService = storageService;
@@ -191,6 +193,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
+        _navigateToDocsAction = navigateToDocsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
         _kernel = new NotebookExecutionKernel();
 
@@ -304,6 +307,13 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     {
         _ = SaveAsync();
         _backToHomeAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private void NavigateToDocs()
+    {
+        _ = SaveAsync();
+        _navigateToDocsAction?.Invoke();
     }
 
     [RelayCommand]

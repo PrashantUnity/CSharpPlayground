@@ -317,4 +317,57 @@
         <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
     </Style>
 
+    <!-- ============================================================ -->
+    <!-- 8. DOCUMENTATION & LEARNING CENTER STYLES                    -->
+    <!-- ============================================================ -->
+    <Style Selector="Button.doc-nav-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.doc-nav-item:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.doc-nav-item.active">
+        <Setter Property="Background" Value="#172A45" />
+        <Setter Property="Foreground" Value="#38BDF8" />
+    </Style>
+
+    <Style Selector="Button.snippet-action-btn">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.snippet-action-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.snippet-run-btn">
+        <Setter Property="Background" Value="#0E4429" />
+        <Setter Property="Foreground" Value="#3FB950" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#238636" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.snippet-run-btn:pointerover">
+        <Setter Property="Background" Value="#238636" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
 </Styles>
