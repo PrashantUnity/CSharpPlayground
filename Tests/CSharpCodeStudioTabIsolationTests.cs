@@ -99,16 +99,24 @@ public class CSharpCodeStudioTabIsolationTests : IDisposable
 
         var studio = CreateStudio(doc1);
 
-        // Wait a moment for diagnostics check on Tab 1
-        await Task.Delay(400);
+        // Wait for diagnostics check on Tab 1 (debounced 350ms in background)
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (studio.ErrorCount == 0 && sw.ElapsedMilliseconds < 3000)
+        {
+            await Task.Delay(50);
+        }
 
         var tab1 = studio.OpenTabs.First(t => t.Id == doc1.Id);
         // Switch to Tab 2 (clean)
         await studio.UpdateActiveScriptAsync(doc2);
         var tab2 = studio.OpenTabs.First(t => t.Id == doc2.Id);
 
-        // Wait for clean diagnostics check
-        await Task.Delay(400);
+        // Wait for clean diagnostics check to settle
+        sw.Restart();
+        while (studio.ErrorCount > 0 && sw.ElapsedMilliseconds < 3000)
+        {
+            await Task.Delay(50);
+        }
 
         // Tab 2 has clean code, so 0 compile errors
         Assert.Equal(0, studio.ErrorCount);
