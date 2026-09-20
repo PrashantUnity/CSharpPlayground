@@ -87,15 +87,13 @@ public class CSharpManagerViewModelTests : IDisposable
             navigateToHomeAction: () => { });
         await vm.LoadWorkspaceItemsAsync();
 
-        ((System.Windows.Input.ICommand)vm.CreateNewScriptCommand).Execute(null);
-        await Task.Delay(200);
+        await vm.CreateNewScriptCommand.ExecuteAsync(null);
 
         Assert.True(vm.IsCreatePromptOpen);
         Assert.Equal(0, scriptOpens);
         Assert.Null(opened);
 
-        ((System.Windows.Input.ICommand)vm.ConfirmCreateCommand).Execute(null);
-        await Task.Delay(200);
+        await vm.ConfirmCreateCommand.ExecuteAsync(null);
 
         Assert.Equal(1, scriptOpens);
         Assert.NotNull(opened);
@@ -114,15 +112,13 @@ public class CSharpManagerViewModelTests : IDisposable
             navigateToHomeAction: () => { });
         await vm.LoadWorkspaceItemsAsync();
 
-        ((System.Windows.Input.ICommand)vm.CreateNewNotebookCommand).Execute(null);
-        await Task.Delay(200);
+        await vm.CreateNewNotebookCommand.ExecuteAsync(null);
 
         Assert.True(vm.IsCreatePromptOpen);
         Assert.Equal(0, notebookOpens);
         Assert.Null(opened);
 
-        ((System.Windows.Input.ICommand)vm.ConfirmCreateCommand).Execute(null);
-        await Task.Delay(200);
+        await vm.ConfirmCreateCommand.ExecuteAsync(null);
 
         Assert.Equal(1, notebookOpens);
         Assert.NotNull(opened);

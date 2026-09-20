@@ -186,8 +186,7 @@ public class CSharpManagerUxEnhancementsTests : IDisposable
         Assert.Equal(thirdPinnedItem.Id, vm.PinnedItem3!.Id);
 
         // Test executing OpenPinnedItem3Command directly
-        ((ICommand)vm.OpenPinnedItem3Command).Execute(null);
-        await Task.Delay(100);
+        await vm.OpenPinnedItem3Command.ExecuteAsync(null);
 
         Assert.Equal(1, scriptOpens);
         Assert.NotNull(lastScript);
@@ -223,8 +222,7 @@ public class CSharpManagerUxEnhancementsTests : IDisposable
         var notebookItem = vm.AllItems.First(i => i.Id == nb.Id);
 
         // Execute OpenItemCommand directly on the script row
-        ((ICommand)vm.OpenItemCommand).Execute(scriptItem);
-        await Task.Delay(100);
+        await vm.OpenItemCommand.ExecuteAsync(scriptItem);
 
         Assert.Equal(1, scriptOpens);
         Assert.Equal(0, notebookOpens);
@@ -232,8 +230,7 @@ public class CSharpManagerUxEnhancementsTests : IDisposable
         Assert.Equal(sc.Id, openedScript!.Id);
 
         // Execute OpenItemCommand directly on the notebook row
-        ((ICommand)vm.OpenItemCommand).Execute(notebookItem);
-        await Task.Delay(100);
+        await vm.OpenItemCommand.ExecuteAsync(notebookItem);
 
         Assert.Equal(1, scriptOpens);
         Assert.Equal(1, notebookOpens);
