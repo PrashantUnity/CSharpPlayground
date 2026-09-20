@@ -643,22 +643,24 @@ Console.WriteLine(""Second chart rendered!"");";
     [Fact]
     public async Task ConsoleRoutingContext_ConcurrentScopes_DoNotBlockOrCrossContaminate()
     {
-        async Task<string> RunScopedAsync(string marker, int delayMs)
+        var aInsideScope = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bInsideScope = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<string> RunScopedAsync(string marker, TaskCompletionSource<bool> myReady, TaskCompletionSource<bool> otherReady)
         {
             var writer = new StringWriter();
             using (ConsoleRoutingContext.EnterScope(writer))
             {
-                await Task.Delay(delayMs);
+                myReady.TrySetResult(true);
+                await otherReady.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 Console.WriteLine(marker);
             }
             return writer.ToString();
         }
 
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var taskA = RunScopedAsync("FROM-A-ONLY", 400);
-        var taskB = RunScopedAsync("FROM-B-ONLY", 400);
-        await Task.WhenAll(taskA, taskB);
-        sw.Stop();
+        var taskA = Task.Run(() => RunScopedAsync("FROM-A-ONLY", aInsideScope, bInsideScope));
+        var taskB = Task.Run(() => RunScopedAsync("FROM-B-ONLY", bInsideScope, aInsideScope));
+        await Task.WhenAll(taskA, taskB).WaitAsync(TimeSpan.FromSeconds(10));
 
         var outputA = await taskA;
         var outputB = await taskB;
@@ -667,8 +669,6 @@ Console.WriteLine(""Second chart rendered!"");";
         Assert.DoesNotContain("FROM-B-ONLY", outputA);
         Assert.Contains("FROM-B-ONLY", outputB);
         Assert.DoesNotContain("FROM-A-ONLY", outputB);
-
-        Assert.True(sw.ElapsedMilliseconds < 700, $"Expected concurrent execution (~400ms), took {sw.ElapsedMilliseconds}ms — looks serialized.");
     }
 
     [Fact]

@@ -169,7 +169,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
         if (cell.Heat.HasValue)
         {
-            details += $" • Heat: {cell.Heat.Value:P0}";
+            details += $" • Heat: {(int)Math.Round(cell.Heat.Value * 100)}%";
         }
 
         if (cell.ClusterId.HasValue)

@@ -563,7 +563,7 @@ Display.Islands(grid, title: ""Islands in Notebook"", recordSteps: true);
         Assert.Equal(1, hit.Col);
         Assert.Contains("Frontier", hit.Details);
         Assert.Contains("cost=15", hit.Details);
-        Assert.Contains("Heat: 75%", hit.Details);
+        Assert.True(hit.Details.Contains("Heat: 75%") || hit.Details.Contains("Heat: 75 %"), $"Expected 'Heat: 75%' in '{hit.Details}'");
         Assert.Contains("Heuristic: 10", hit.Details);
     }
 
