@@ -232,7 +232,8 @@ public partial class NotebookTabViewModel : ObservableObject
             deleteAction: DeleteCell,
             moveAction: MoveCell,
             addBelowAction: AddCellBelow,
-            runAndSelectNextAction: RunCellAndSelectNextAsync);
+            runAndSelectNextAction: RunCellAndSelectNextAsync,
+            runCellsAboveAction: RunCellsAboveAsync);
     }
 
     [RelayCommand]
@@ -274,14 +275,18 @@ public partial class NotebookTabViewModel : ObservableObject
                 ct: linkedCts.Token,
                 onLiveConsole: text =>
                 {
-                    Dispatcher.UIThread.Post(() =>
+                    if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
                     {
                         cell.OutputText += text;
-                    });
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(() => cell.OutputText += text);
+                    }
                 },
                 onRichOutput: rich =>
                 {
-                    Dispatcher.UIThread.Post(() =>
+                    void ApplyRich()
                     {
                         switch (rich.Kind)
                         {
@@ -315,13 +320,44 @@ public partial class NotebookTabViewModel : ObservableObject
                                     cell.SetInspectorOutput(rich.InspectorNode);
                                 }
                                 break;
+                            case CellOutputKind.Chart:
+                                if (rich.InteractiveControl != null)
+                                {
+                                    cell.SetInteractiveControl(rich.InteractiveControl);
+                                }
+                                if (rich.ChartOptions != null)
+                                {
+                                    cell.SetChartOutput(rich.ChartOptions);
+                                }
+                                break;
                         }
-                    });
+                    }
+
+                    if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
+                    {
+                        ApplyRich();
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(ApplyRich);
+                    }
                 });
 
             if (!result.Success)
             {
                 cell.HasError = true;
+                var missingVarDiag = result.Diagnostics.FirstOrDefault(d => d.Id == "CS0103");
+                if (missingVarDiag != null)
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(
+                        missingVarDiag.Message,
+                        @"The name '(.+?)' does not exist in the current context");
+                    if (match.Success)
+                    {
+                        cell.MissingVariableName = match.Groups[1].Value;
+                        cell.HasMissingVariableError = true;
+                    }
+                }
             }
 
             cell.ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
@@ -344,6 +380,40 @@ public partial class NotebookTabViewModel : ObservableObject
         finally
         {
             cell.IsExecuting = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task RunCellsAboveAsync(NotebookCellViewModel? targetCell = null)
+    {
+        targetCell ??= ActiveCell;
+        if (targetCell == null || IsExecuting) return;
+
+        IsExecuting = true;
+        KernelStatusText = "Executing cells above...";
+
+        try
+        {
+            var targetIndex = Cells.IndexOf(targetCell);
+            if (targetIndex < 0) return;
+
+            for (int i = 0; i <= targetIndex; i++)
+            {
+                var cell = Cells[i];
+                if (cell.Type == CellType.Code)
+                {
+                    await RunSingleCellAsync(cell);
+                    if (cell.HasError)
+                    {
+                        KernelStatusText = $"Stopped at cell {i + 1} due to error";
+                        break;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            IsExecuting = false;
         }
     }
 
@@ -393,7 +463,7 @@ public partial class NotebookTabViewModel : ObservableObject
     public void UpdateVariables()
     {
         var active = Kernel.GetActiveVariables();
-        Dispatcher.UIThread.Post(() =>
+        void ApplyVars()
         {
             Variables.Clear();
             foreach (var v in active)
@@ -401,7 +471,16 @@ public partial class NotebookTabViewModel : ObservableObject
                 Variables.Add(v);
             }
             OnPropertyChanged(nameof(Variables));
-        });
+        }
+
+        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyVars();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(ApplyVars);
+        }
     }
 
     [RelayCommand]

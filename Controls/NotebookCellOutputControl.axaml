@@ -1,0 +1,375 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:charting="using:PdfEditorApp.Plugins.CSharpEditor.Charting.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl"
+             x:DataType="vm:NotebookCellViewModel">
+
+    <StackPanel Spacing="4">
+        <!-- Subtle separator between input and output -->
+        <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" Opacity="0.4" Margin="0,0,0,4" />
+
+        <!-- Collapsed Output Banner -->
+        <Border Classes="notebook-collapsed-output-banner"
+                IsVisible="{Binding IsOutputCollapsedBarVisible}">
+            <Button Command="{Binding ToggleOutputCollapseCommand}"
+                    Classes="collapsed-banner-btn"
+                    ToolTip.Tip="Click to expand cell output"
+                    HorizontalAlignment="Stretch">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                    <materialIcons:MaterialIcon Grid.Column="0"
+                                                Kind="ChevronRight"
+                                                Width="14" Height="14"
+                                                Foreground="{DynamicResource M3PrimaryBrush}"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,6,0" />
+
+                    <materialIcons:MaterialIcon Grid.Column="1"
+                                                Kind="Console"
+                                                Width="14" Height="14"
+                                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,8,0" />
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding OutputCollapsedSummaryText}"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="3"
+                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Expand Output" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Button>
+        </Border>
+
+        <!-- Active Output Stream Container (Visible when IsOutputVisible) -->
+        <StackPanel Spacing="4" IsVisible="{Binding IsOutputVisible}">
+            <!-- Output Control & Tab Bar -->
+            <Grid ColumnDefinitions="*,Auto" Margin="0,1,0,2">
+                <!-- Left: Tabs when multiple outputs exist, or single output status when 1 exists -->
+                <Panel Grid.Column="0" VerticalAlignment="Center">
+                    <!-- Single Output Kind Header (e.g. only Console or only Table) -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                IsVisible="{Binding !HasMultipleOutputKinds}">
+                        <materialIcons:MaterialIcon Kind="{Binding SingleOutputIconKind}" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SingleOutputTitle}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Multiple Output Kinds: Sleek Segmented Tab Strip -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  IsVisible="{Binding HasMultipleOutputKinds}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <!-- Tab: Table (.Dump) -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Table"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsTableTabSelected}"
+                                    IsVisible="{Binding HasTableOutput}"
+                                    ToolTip.Tip="Switch to Visual Table Output">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Table" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Table" VerticalAlignment="Center" />
+                                    <Border Classes="cell-output-tab-badge" IsVisible="{Binding TableRowCountText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <TextBlock Text="{Binding TableRowCountText}" />
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: Console / Raw Text -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Console"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsConsoleTabSelected}"
+                                    IsVisible="{Binding HasTextOutput}"
+                                    ToolTip.Tip="Switch to Console / Text Output">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Console" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Console" VerticalAlignment="Center" />
+                                    <Border Classes="cell-output-tab-badge" IsVisible="{Binding ConsoleLineCountText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <TextBlock Text="{Binding ConsoleLineCountText}" />
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: Object Inspector -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Inspector"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsInspectorTabSelected}"
+                                    IsVisible="{Binding HasInspectorOutput}"
+                                    ToolTip.Tip="Switch to Object Inspector Tree">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="CodeJson" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Inspector" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: Image / Graphic -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Image"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsImageTabSelected}"
+                                    IsVisible="{Binding HasImageOutput}"
+                                    ToolTip.Tip="Switch to Graphic / Image Output">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Image" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: Interactive UI Widget -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Widget"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsWidgetTabSelected}"
+                                    IsVisible="{Binding HasInteractiveControl}"
+                                    ToolTip.Tip="Switch to Interactive UI Widget">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Widget" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: Interactive Chart -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Chart"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsChartTabSelected}"
+                                    IsVisible="{Binding HasChartOutput}"
+                                    ToolTip.Tip="Switch to Interactive Chart Output">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="ChartLine" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="Chart" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: HTML Content -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="Html"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsHtmlTabSelected}"
+                                    IsVisible="{Binding HasHtmlContent}"
+                                    ToolTip.Tip="Switch to HTML / Markdown Output">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="HTML" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Tab: All Outputs (Stacked) -->
+                            <Button Command="{Binding SetOutputTabCommand}" CommandParameter="All"
+                                    Classes="cell-output-tab-btn"
+                                    Classes.active="{Binding IsAllTabSelected}"
+                                    ToolTip.Tip="Show all available outputs stacked simultaneously">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="ViewAgendaOutline" Width="12" Height="12" VerticalAlignment="Center" />
+                                    <TextBlock Text="All" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Panel>
+
+                <!-- Right: Output Toolbar Actions -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button Command="{Binding CopyOutputCommand}"
+                            Classes="cell-tool-btn"
+                            Width="20" Height="20"
+                            IsVisible="{Binding HasTextOutput}"
+                            ToolTip.Tip="Copy Console Text">
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                    <Button Command="{Binding ToggleOutputScrolledCommand}"
+                            Classes="cell-tool-btn"
+                            Width="20" Height="20"
+                            ToolTip.Tip="{Binding OutputScrolledTooltip}">
+                        <Panel Width="12" Height="12">
+                            <materialIcons:MaterialIcon Kind="FormatLineSpacing" IsVisible="{Binding IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" IsVisible="{Binding !IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Panel>
+                    </Button>
+                    <Button Command="{Binding ToggleOutputCollapseCommand}"
+                            Classes="cell-tool-btn"
+                            Width="20" Height="20"
+                            ToolTip.Tip="Collapse Output">
+                        <materialIcons:MaterialIcon Kind="ChevronUp" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                    <Button Command="{Binding ClearOutputCommand}"
+                            Classes="cell-tool-btn"
+                            Width="20" Height="20"
+                            ToolTip.Tip="Clear Output">
+                        <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Output Elements -->
+            <ScrollViewer Classes="notebook-output-scroll"
+                          Classes.scrolled="{Binding IsOutputScrolled}">
+                <StackPanel Spacing="6">
+                    <!-- Missing Variable Smart Hint (CS0103) -->
+                    <Border IsVisible="{Binding HasMissingVariableError}"
+                            Background="#251619"
+                            BorderBrush="#E06C75"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            Margin="0,0,0,2">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="#E5C07B" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E5C07B" />
+                                <TextBlock Text="This variable may be defined in an earlier cell. Run previous cells to initialize it in this session."
+                                           FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Command="{Binding RunCellAndAboveCommand}"
+                                    Classes="cell-output-tab-btn active"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    ToolTip.Tip="Execute all cells from the top down to this cell">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="FastForward" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Run All Above" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- 1. Interactive Object Inspector Tree -->
+                    <Border IsVisible="{Binding IsInspectorTabActive}" Margin="0,1,0,3">
+                        <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                    </Border>
+
+                    <!-- 2. Dark Terminal Card for Console Stdout Output -->
+                    <Border Background="#080C10"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            IsVisible="{Binding IsConsoleTabActive}">
+                        <TextBox Text="{Binding OutputText, Mode=OneWay}"
+                                 FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0"
+                                 IsReadOnly="True"
+                                 TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- 3. Tabular Output (.Dump()) -->
+                    <Border IsVisible="{Binding IsTableTabActive}">
+                        <views:DumpTableView DataContext="{Binding TableResult}" />
+                    </Border>
+
+                    <!-- 3b. Interactive Native Vector Chart -->
+                    <Border IsVisible="{Binding IsChartTabActive}">
+                        <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
+                    </Border>
+
+                    <!-- 4. Rendered Graphic / Image Output -->
+                    <Border IsVisible="{Binding IsImageTabActive}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10">
+                        <Grid RowDefinitions="Auto,*">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="1" HorizontalAlignment="Left" Margin="8,0,0,0"
+                                        Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                        CornerRadius="4" Padding="6,1">
+                                    <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                </Border>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <Button Command="{Binding CopyImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Image">
+                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                                    </Button>
+                                    <Button Command="{Binding SaveImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Save PNG">
+                                        <materialIcons:MaterialIcon Kind="DownloadOutline" Width="12" Height="12" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                            <Border Grid.Row="1"
+                                    Background="#080C11"
+                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8"
+                                    HorizontalAlignment="Stretch">
+                                <Image Source="{Binding ImageOutputBitmap}"
+                                       MaxHeight="450"
+                                       Stretch="Uniform"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- 5. Interactive Avalonia UI Control -->
+                    <Border IsVisible="{Binding IsWidgetTabActive}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <Grid RowDefinitions="Auto,*">
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            </StackPanel>
+                            <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 5b. Interactive Control Placeholder -->
+                    <Border IsVisible="{Binding InteractiveControlPlaceholderVisible}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,10">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <TextBlock Text="Interactive widget / animation not restored — re-run this cell to bring it back."
+                                       FontSize="11.5"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 6. HTML / Markdown Rich Output -->
+                    <Border IsVisible="{Binding IsHtmlTabActive}"
+                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <Grid RowDefinitions="Auto,*">
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            </StackPanel>
+                            <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

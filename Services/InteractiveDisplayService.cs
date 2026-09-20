@@ -10,6 +10,7 @@ using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -23,7 +24,8 @@ public enum CellOutputKind
     Control,
     Error,
     Table,
-    ObjectInspector
+    ObjectInspector,
+    Chart
 }
 
 public class RichCellOutput
@@ -38,14 +40,16 @@ public class RichCellOutput
     public Control? InteractiveControl { get; set; }
     public DumpTableResult? TableResult { get; set; }
     public ObjectInspectorNode? InspectorNode { get; set; }
+    public ChartOptions? ChartOptions { get; set; }
 
     // Convenience getters for XAML DataTemplates (e.g. the Code Studio scratchpad's RichOutputs
     // ItemsControl) — this is a plain POCO set once at emission time and never mutated afterward, so
     // no INotifyPropertyChanged is needed.
     public bool IsImageKind => Kind == CellOutputKind.Image;
     public bool IsHtmlKind => Kind == CellOutputKind.Html;
-    public bool IsControlKind => Kind == CellOutputKind.Control;
+    public bool IsControlKind => Kind == CellOutputKind.Control || Kind == CellOutputKind.Chart;
     public bool IsInspectorKind => Kind == CellOutputKind.ObjectInspector;
+    public bool IsChartKind => Kind == CellOutputKind.Chart;
 
     private Bitmap? _decodedImage;
     private bool _decodeAttempted;
@@ -151,7 +155,7 @@ public static class InteractiveDisplayContext
     }
 }
 
-public static class Display
+public static partial class Display
 {
     public static void Image(byte[] bytes, string format = "PNG")
     {
@@ -425,7 +429,7 @@ public static class Display
     }
 }
 
-public static class DisplayExtensions
+public static partial class DisplayExtensions
 {
     public static T Dump<T>(this T obj, string? label = null)
     {

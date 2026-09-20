@@ -98,6 +98,7 @@ public partial class NotebookCellViewModel : ObservableObject
     private readonly Action<NotebookCellViewModel, int>? _moveAction;
     private readonly Action<NotebookCellViewModel, CellType>? _addBelowAction;
     private readonly Func<NotebookCellViewModel, Task>? _runAndSelectNextAction;
+    private readonly Func<NotebookCellViewModel, Task>? _runCellsAboveAction;
 
     public NotebookCellViewModel(
         NotebookCellItem model,
@@ -105,7 +106,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Action<NotebookCellViewModel>? deleteAction = null,
         Action<NotebookCellViewModel, int>? moveAction = null,
         Action<NotebookCellViewModel, CellType>? addBelowAction = null,
-        Func<NotebookCellViewModel, Task>? runAndSelectNextAction = null)
+        Func<NotebookCellViewModel, Task>? runAndSelectNextAction = null,
+        Func<NotebookCellViewModel, Task>? runCellsAboveAction = null)
     {
         Model = model;
         _type = model.Type;
@@ -125,6 +127,7 @@ public partial class NotebookCellViewModel : ObservableObject
         _moveAction = moveAction;
         _addBelowAction = addBelowAction;
         _runAndSelectNextAction = runAndSelectNextAction;
+        _runCellsAboveAction = runCellsAboveAction;
 
         if (model.ImageBytes != null && model.ImageBytes.Length > 0)
         {
@@ -163,6 +166,31 @@ public partial class NotebookCellViewModel : ObservableObject
             _interactiveControlPlaceholderVisible = true;
             _hasOutput = true;
         }
+
+        if (_hasTableOutput)
+        {
+            _selectedOutputTab = CellOutputTab.Table;
+        }
+        else if (_hasInspectorOutput)
+        {
+            _selectedOutputTab = CellOutputTab.Inspector;
+        }
+        else if (_hasImageOutput)
+        {
+            _selectedOutputTab = CellOutputTab.Image;
+        }
+        else if (_hasHtmlContent)
+        {
+            _selectedOutputTab = CellOutputTab.Html;
+        }
+        else if (_hasInteractiveControl || _interactiveControlPlaceholderVisible)
+        {
+            _selectedOutputTab = CellOutputTab.Widget;
+        }
+        else
+        {
+            _selectedOutputTab = CellOutputTab.Console;
+        }
     }
 
     partial void OnSourceChanged(string value)
@@ -188,6 +216,11 @@ public partial class NotebookCellViewModel : ObservableObject
     {
         Model.OutputText = value;
         HasOutput = !string.IsNullOrEmpty(value) || HasImageOutput || HasHtmlContent || HasTableOutput || HasInspectorOutput || HasInteractiveControl || InteractiveControlPlaceholderVisible;
+        if (!HasTableOutput && !HasInspectorOutput && !HasImageOutput && !HasHtmlContent && !HasInteractiveControl && !InteractiveControlPlaceholderVisible)
+        {
+            SelectedOutputTab = CellOutputTab.Console;
+        }
+        NotifyOutputTabStateChanged();
     }
 
     partial void OnIsInputCollapsedChanged(bool value)
@@ -429,6 +462,8 @@ public partial class NotebookCellViewModel : ObservableObject
                 : $"{format} Image";
 
             HasOutput = true;
+            SelectedOutputTab = CellOutputTab.Image;
+            NotifyOutputTabStateChanged();
         }
         catch (Exception ex)
         {
@@ -448,6 +483,8 @@ public partial class NotebookCellViewModel : ObservableObject
         HasOutput = true;
         Model.HadInteractiveControl = true;
         InteractiveControlPlaceholderVisible = false;
+        SelectedOutputTab = CellOutputTab.Widget;
+        NotifyOutputTabStateChanged();
     }
 
     public void DisposeLiveResources()
@@ -463,6 +500,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.HtmlContent = html;
         HasHtmlContent = !string.IsNullOrEmpty(html);
         HasOutput = true;
+        SelectedOutputTab = CellOutputTab.Html;
+        NotifyOutputTabStateChanged();
     }
 
     public void SetTableOutput(DumpTableResult table)
@@ -471,6 +510,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.TableSnapshot = table.ToSnapshot();
         HasTableOutput = true;
         HasOutput = true;
+        SelectedOutputTab = CellOutputTab.Table;
+        NotifyOutputTabStateChanged();
     }
 
     public void SetInspectorOutput(ObjectInspectorNode inspector)
@@ -479,6 +520,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Model.InspectorSnapshot = inspector.ToSnapshot();
         HasInspectorOutput = true;
         HasOutput = true;
+        SelectedOutputTab = CellOutputTab.Inspector;
+        NotifyOutputTabStateChanged();
     }
 
     public string ExecutionDurationShortText
@@ -576,8 +619,15 @@ public partial class NotebookCellViewModel : ObservableObject
         HasInspectorOutput = false;
         Model.InspectorSnapshot = null;
 
+        ChartOptions = null;
+        HasChartOutput = false;
+        MissingVariableName = null;
+        HasMissingVariableError = false;
+
         HasOutput = false;
         IsOutputCollapsed = false;
+        SelectedOutputTab = CellOutputTab.Table;
+        NotifyOutputTabStateChanged();
         OnPropertyChanged(nameof(ExecutionDurationShortText));
     }
 

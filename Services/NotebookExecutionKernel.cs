@@ -14,6 +14,8 @@ using Avalonia.Media.Imaging;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -93,7 +95,10 @@ public class NotebookExecutionKernel
             "Avalonia.Threading",
             "Avalonia.Animation",
             "PdfEditorApp.Plugins.CSharpEditor.Services",
-            "PdfEditorApp.Plugins.CSharpEditor.Controls"
+            "PdfEditorApp.Plugins.CSharpEditor.Controls",
+            "PdfEditorApp.Plugins.CSharpEditor.Charting.Models",
+            "PdfEditorApp.Plugins.CSharpEditor.Charting.Controls",
+            "PdfEditorApp.Plugins.CSharpEditor.Charting.Services"
         };
 
         return ScriptOptions.Default
@@ -286,6 +291,18 @@ public class NotebookExecutionKernel
         Action<string>? onLiveConsole,
         Action<RichCellOutput>? onRichOutput)
     {
+        if (returnValue is ChartOptions chartOpts)
+        {
+            var chartControl = new InteractiveChartControl(chartOpts);
+            onRichOutput?.Invoke(new RichCellOutput
+            {
+                Kind = CellOutputKind.Chart,
+                InteractiveControl = chartControl,
+                ChartOptions = chartOpts
+            });
+            return;
+        }
+
         if (returnValue is Control control)
         {
             onRichOutput?.Invoke(new RichCellOutput

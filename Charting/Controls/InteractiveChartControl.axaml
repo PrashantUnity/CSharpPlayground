@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:charting="using:PdfEditorApp.Plugins.CSharpEditor.Charting.Controls"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="320"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Charting.Controls.InteractiveChartControl">
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="12,10">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- Header Toolbar -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                <!-- Left: Title & Stats -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Name="HeaderChartIcon" Kind="ChartLine" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Name="ChartTitleText" Text="Chart" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+
+                    <!-- Stats Pill -->
+                    <Border Name="StatsPillBorder"
+                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="StatsSummaryText" Text="N: 0" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Chart Type Switcher & Actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <!-- Type Switchers -->
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="2"
+                            Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal" Spacing="1">
+                            <Button Name="LineTypeBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Line Chart">
+                                <materialIcons:MaterialIcon Kind="ChartLine" Width="13" Height="13" />
+                            </Button>
+                            <Button Name="AreaTypeBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Area Chart">
+                                <materialIcons:MaterialIcon Kind="ChartAreaspline" Width="13" Height="13" />
+                            </Button>
+                            <Button Name="BarTypeBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Bar Chart">
+                                <materialIcons:MaterialIcon Kind="ChartBar" Width="13" Height="13" />
+                            </Button>
+                            <Button Name="ScatterTypeBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Scatter Plot">
+                                <materialIcons:MaterialIcon Kind="ChartScatterPlot" Width="13" Height="13" />
+                            </Button>
+                            <Button Name="PieTypeBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Pie / Donut Chart">
+                                <materialIcons:MaterialIcon Kind="ChartPie" Width="13" Height="13" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Toggle Grid -->
+                    <Button Name="GridToggleBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Grid Lines">
+                        <materialIcons:MaterialIcon Kind="Grid" Width="12" Height="12" />
+                    </Button>
+
+                    <!-- Copy CSV -->
+                    <Button Name="CopyCsvBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Copy Data as CSV">
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Chart Canvas -->
+            <Border Grid.Row="1"
+                    Background="#070B10"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="4"
+                    HorizontalAlignment="Stretch">
+                <charting:ChartCanvasControl Name="CanvasControl"
+                                             Height="260"
+                                             MinHeight="180"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch" />
+            </Border>
+
+            <!-- Multi-Series Legend Footer (Optional) -->
+            <ItemsControl Name="SeriesLegendPanel" Grid.Row="2" Margin="0,6,0,0" IsVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </Grid>
+    </Border>
+</UserControl>
