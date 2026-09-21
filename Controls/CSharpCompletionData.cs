@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -29,9 +30,28 @@ public class CSharpCompletionData : ICompletionData
 
     public double Priority => _item.Priority;
 
-    public object Content => _cachedContent ??= BuildContentControl();
+    public object Content => _cachedContent ??= SafeBuild(BuildContentControl, nameof(BuildContentControl));
 
-    public object Description => _cachedDescription ??= BuildDescriptionControl();
+    public object Description => _cachedDescription ??= SafeBuild(BuildDescriptionControl, nameof(BuildDescriptionControl));
+
+    private Control SafeBuild(Func<Control> build, string source)
+    {
+        try
+        {
+            return build();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpCompletionData] {source} failed for '{_item.DisplayText}': {ex}");
+            return new TextBlock
+            {
+                Text = _item.DisplayText,
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Color.Parse("#E6EDF3")),
+                Margin = new Thickness(4, 2)
+            };
+        }
+    }
 
     private Control BuildContentControl()
     {

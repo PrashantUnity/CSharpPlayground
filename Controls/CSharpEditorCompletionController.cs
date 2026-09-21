@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -195,36 +197,72 @@ public class CSharpEditorCompletionController : IDisposable
                         data.Add(new CSharpCompletionData(item));
                     }
 
-                    _completionWindow.Closed += (s, e) =>
+                    var window = _completionWindow;
+                    var completionList = window.CompletionList;
+
+                    void ApplySelection()
                     {
-                        _completionWindow = null;
+                        if (!ReferenceEquals(_completionWindow, window)) return;
+
+                        var currentCaret = _editor.CaretOffset;
+                        var currentText = _editor.Text ?? string.Empty;
+                        var effectiveQuery = initialQuery;
+                        if (currentCaret > startOffset && currentCaret <= currentText.Length)
+                        {
+                            effectiveQuery = currentText.Substring(startOffset, currentCaret - startOffset);
+                        }
+
+                        if (!string.IsNullOrEmpty(effectiveQuery))
+                        {
+                            completionList.SelectItem(effectiveQuery);
+                        }
+                        else if (data.Count > 0)
+                        {
+                            completionList.SelectedItem = data[0];
+                        }
+                    }
+
+                    void OnTemplateApplied(object? s, TemplateAppliedEventArgs e)
+                    {
+                        completionList.TemplateApplied -= OnTemplateApplied;
+                        ApplySelection();
+                    }
+
+                    window.Closed += (s, e) =>
+                    {
+                        completionList.TemplateApplied -= OnTemplateApplied;
+                        if (ReferenceEquals(_completionWindow, window)) _completionWindow = null;
                     };
 
-                    _completionWindow.Show();
+                    window.Show();
 
-                    var currentCaret = _editor.CaretOffset;
-                    var currentText = _editor.Text ?? string.Empty;
-                    var effectiveQuery = initialQuery;
-                    if (currentCaret > startOffset && currentCaret <= currentText.Length)
+                    // AvaloniaEdit has a known upstream timing bug (AvaloniaUI/AvaloniaEdit
+                    // issues #308 and #357): TemplatedControl.ApplyTemplate() silently no-ops
+                    // if styling hasn't resolved CompletionList's ControlTemplate yet, leaving
+                    // its internal ListBox null - Show() does not guarantee it's ready. That's
+                    // harmless under light UI load (template resolves before the next frame)
+                    // but under FryPDF's heavier UI thread it can still be unresolved right
+                    // here, silently dropping the selection/highlight instead of crashing (the
+                    // crash itself is now caught by Dispatcher.UIThread.UnhandledException, but
+                    // that only stops the abort - it doesn't make the popup usable). Wait for
+                    // the template to genuinely finish applying before touching ListBox-backed
+                    // members if it isn't ready the instant Show() returns.
+                    if (completionList.ListBox != null)
                     {
-                        effectiveQuery = currentText.Substring(startOffset, currentCaret - startOffset);
+                        ApplySelection();
                     }
-
-                    if (!string.IsNullOrEmpty(effectiveQuery))
+                    else
                     {
-                        _completionWindow.CompletionList.SelectItem(effectiveQuery);
-                    }
-                    else if (data.Count > 0)
-                    {
-                        _completionWindow.CompletionList.SelectedItem = data[0];
+                        completionList.TemplateApplied += OnTemplateApplied;
                     }
                 });
             }
             catch (OperationCanceledException)
             {
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[CSharpEditorCompletionController] TriggerCompletion failed: {ex}");
             }
         }, token);
     }
