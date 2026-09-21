@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # needed to create GitHub Releases
+
+jobs:
+  # ── 1. Gate: run the full test matrix before publishing ────────────────────
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore CSharpEditorPlugin.slnx
+
+      - name: Build
+        run: dotnet build CSharpEditorPlugin.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test CSharpEditorPlugin.slnx -c Release --no-build --verbosity normal
+
+  # ── 2. Build the .fryplugin archive and publish the GitHub Release ──────────
+  release:
+    name: Build & Publish Release
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore CSharpEditorPlugin.slnx
+
+      # Release build triggers the PackageFryPlugin MSBuild target which
+      # produces  bin/Release/net10.0/CSharpEditor.fryplugin
+      - name: Build Release (produces .fryplugin)
+        run: dotnet build CSharpEditorPlugin.csproj -c Release --no-restore
+
+      # Derive the clean version string from the tag (strips leading 'v')
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Locate the produced archive so later steps can reference it
+      - name: Locate .fryplugin artifact
+        id: artifact
+        run: |
+          FRYPLUGIN=$(find . -name "*.fryplugin" | head -1)
+          echo "PATH=$FRYPLUGIN" >> "$GITHUB_OUTPUT"
+          echo "Found: $FRYPLUGIN"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "C# Code Studio ${{ github.ref_name }}"
+          body: |
+            ## C# Code Studio ${{ github.ref_name }}
+
+            ### Installation
+            1. Download `CSharpEditor.fryplugin` below.
+            2. In FryPDF, open **Plugins → Install from file** and select the downloaded archive.
+
+            ### What's new
+            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for the full list of commits in this release.
+
+            ---
+            **Plugin ID:** `com.frypdf.plugin.csharpeditor`  
+            **Version:** `${{ steps.version.outputs.VERSION }}`  
+            **Target:** `.NET 10 / Roslyn 4.12`
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: ${{ steps.artifact.outputs.PATH }}
+          fail_on_unmatched_files: true
