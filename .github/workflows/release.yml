@@ -1,15 +1,56 @@
-name: Release
+name: Release & Publish
 
 on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.2; leave blank to infer from tag or csproj)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Dry run — build, test & pack only; skip GitHub Release and NuGet publish'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
-  contents: write   # needed to create GitHub Releases
+  id-token: write  # OIDC federation for keyless NuGet publish
+  contents: write  # create GitHub Releases
 
+# ──────────────────────────────────────────────────────────────────────────────
 jobs:
-  # ── 1. Gate: run the full test matrix before publishing ────────────────────
+
+  # ── 0. Determine the clean SemVer string ─────────────────────────────────
+  determine-version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Resolve version from tag / input / csproj
+        id: version
+        shell: bash
+        run: |
+          RAW_VER=""
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            RAW_VER="${{ github.event.inputs.version }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            RAW_VER="${GITHUB_REF_NAME}"
+          fi
+
+          # Strip leading v / V prefix
+          CLEAN_VER=$(echo "$RAW_VER" | sed -E 's/^[vV]//')
+          echo "version=${CLEAN_VER}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${CLEAN_VER:-'(using csproj defaults)'}"
+
+  # ── 1. Gate: full test suite on all platforms ────────────────────────────
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -18,8 +59,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -35,15 +75,17 @@ jobs:
       - name: Test
         run: dotnet test CSharpEditorPlugin.slnx -c Release --no-build --verbosity normal
 
-  # ── 2. Build the .fryplugin archive and publish the GitHub Release ──────────
-  release:
-    name: Build & Publish Release
-    needs: test
+  # ── 2. Pack NuGet + .fryplugin ───────────────────────────────────────────
+  build-and-pack:
+    name: Build, Pack & Stage Artifacts
+    needs: [determine-version, test]
     runs-on: ubuntu-latest
-
+    env:
+      VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -53,44 +95,111 @@ jobs:
       - name: Restore
         run: dotnet restore CSharpEditorPlugin.slnx
 
-      # Release build triggers the PackageFryPlugin MSBuild target which
-      # produces  bin/Release/net10.0/CSharpEditor.fryplugin
+      # Release build → triggers PackageFryPlugin MSBuild target → CSharpEditor.fryplugin
       - name: Build Release (produces .fryplugin)
-        run: dotnet build CSharpEditorPlugin.csproj -c Release --no-restore
-
-      # Derive the clean version string from the tag (strips leading 'v')
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      # Locate the produced archive so later steps can reference it
-      - name: Locate .fryplugin artifact
-        id: artifact
         run: |
-          FRYPLUGIN=$(find . -name "*.fryplugin" | head -1)
-          echo "PATH=$FRYPLUGIN" >> "$GITHUB_OUTPUT"
+          VER_ARG=""
+          [ -n "$VERSION" ] && VER_ARG="-p:Version=$VERSION -p:AssemblyVersion=$VERSION -p:FileVersion=$VERSION"
+          dotnet build CSharpEditorPlugin.csproj -c Release --no-restore $VER_ARG
+
+      # Pack NuGet package (.nupkg + .snupkg)
+      - name: Pack NuGet
+        run: |
+          mkdir -p ./artifacts
+          VER_ARG=""
+          [ -n "$VERSION" ] && VER_ARG="-p:PackageVersion=$VERSION -p:Version=$VERSION"
+          dotnet pack CSharpEditorPlugin.csproj -c Release --no-build $VER_ARG --output ./artifacts
+
+      # Stage .fryplugin alongside .nupkg so one upload covers everything
+      - name: Stage .fryplugin artifact
+        run: |
+          FRYPLUGIN=$(find . -name "CSharpEditor.fryplugin" | head -1)
           echo "Found: $FRYPLUGIN"
+          cp "$FRYPLUGIN" ./artifacts/CSharpEditor.fryplugin
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "C# Code Studio ${{ github.ref_name }}"
-          body: |
-            ## C# Code Studio ${{ github.ref_name }}
+          name: release-artifacts
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+            ./artifacts/CSharpEditor.fryplugin
+          if-no-files-found: error
 
-            ### Installation
-            1. Download `CSharpEditor.fryplugin` below.
-            2. In FryPDF, open **Plugins → Install from file** and select the downloaded archive.
+  # ── 3. Publish NuGet packages (keyless OIDC) ─────────────────────────────
+  nuget-publish:
+    name: Publish to NuGet.org
+    needs: [determine-version, build-and-pack]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
 
-            ### What's new
-            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for the full list of commits in this release.
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-            ---
-            **Plugin ID:** `com.frypdf.plugin.csharpeditor`  
-            **Version:** `${{ steps.version.outputs.VERSION }}`  
-            **Target:** `.NET 10 / Roslyn 4.12`
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          files: ${{ steps.artifact.outputs.PATH }}
-          fail_on_unmatched_files: true
+      - name: Login to NuGet.org (OIDC — no API key secret needed)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER || vars.NUGET_USER || 'prashantunity' }}
+
+      - name: Push .nupkg to NuGet.org
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" \
+            --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+
+  # ── 4. Create / update the GitHub Release ────────────────────────────────
+  github-release:
+    name: Create GitHub Release
+    needs: [determine-version, build-and-pack]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.determine-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts
+
+      - name: Create or update GitHub Release
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          # For workflow_dispatch without a tag, synthesise one
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            TAG_NAME="v${VERSION}"
+          fi
+
+          # Collect assets
+          ASSETS=()
+          for f in artifacts/*.nupkg artifacts/*.snupkg artifacts/CSharpEditor.fryplugin; do
+            [ -f "$f" ] && ASSETS+=("$f")
+          done
+
+          echo "Tag: $TAG_NAME"
+          echo "Assets:"
+          printf '  - %s\n' "${ASSETS[@]}"
+
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists — uploading/replacing assets..."
+            gh release upload "$TAG_NAME" "${ASSETS[@]}" --clobber
+          else
+            echo "Creating release $TAG_NAME..."
+            gh release create "$TAG_NAME" "${ASSETS[@]}" \
+              --title "C# Code Studio $TAG_NAME" \
+              --generate-notes \
+              --prerelease=${{ contains(github.ref_name, '-') }}
+          fi
