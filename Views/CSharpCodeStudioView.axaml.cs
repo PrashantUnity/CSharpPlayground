@@ -301,6 +301,7 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
             _editor.TextArea.SelectionForeground = null;
             _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+            _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
         }
         else
         {
@@ -311,6 +312,7 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
             _editor.TextArea.SelectionForeground = null;
             _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
+            _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
         }
 
         PolishLeftMargins(isDark);

@@ -88,6 +88,7 @@ public class NotebookExecutionKernel
             "System.Linq",
             "System.Collections",
             "System.Collections.Generic",
+            "System.Net.Http",
             "System.Text",
             "System.Text.Json",
             "System.Text.RegularExpressions",

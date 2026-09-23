@@ -67,6 +67,7 @@ public class RoslynCompilerService
             typeof(Regex).Assembly.Location,                                   // System.Text.RegularExpressions
             typeof(System.Diagnostics.Stopwatch).Assembly.Location,            // System.Diagnostics.Stopwatch
             typeof(Task).Assembly.Location,                                    // System.Threading.Tasks
+            typeof(HttpClient).Assembly.Location,              // System.Net.Http
             typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
@@ -135,6 +136,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;

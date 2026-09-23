@@ -131,6 +131,7 @@ public class BindableTextEditor : TextEditor
             TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
             TextArea.SelectionForeground = null;
             TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
+            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
         }
         else
         {
@@ -141,6 +142,7 @@ public class BindableTextEditor : TextEditor
             TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
             TextArea.SelectionForeground = null;
             TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
+            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
         }
 
         PolishLeftMargins(isDark);
