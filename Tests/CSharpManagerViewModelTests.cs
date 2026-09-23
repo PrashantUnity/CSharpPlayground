@@ -243,19 +243,23 @@ public class CSharpManagerViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task LoadWorkspaceItemsAsync_WithMultipleDocsInSameExternalFolder_GroupsThemUnderOneHeader()
+    public async Task LoadWorkspaceItemsAsync_WithOpenedExternalFolder_GroupsDocsUnderOneHeader()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SharedFolder");
+        // The Hub gallery scopes to the active workspace root just like the Explorer, so a folder's
+        // documents only appear (grouped under one header) once that folder is actually opened.
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            await _storage.CreateNewScriptAsync("External One", folderPath: externalDir);
-            await _storage.CreateNewNotebookAsync("External Two", folderPath: externalDir);
+            await _storage.OpenExternalProjectAsync(externalDir);
+            await _storage.CreateNewScriptAsync("External One");
+            await _storage.CreateNewNotebookAsync("External Two");
 
             var (vm, _, _, _, _) = CreateHub();
             await vm.LoadWorkspaceItemsAsync();
 
             var header = Assert.Single(vm.FilteredItems.OfType<WorkspaceGroupHeaderViewModel>());
-            Assert.Equal("SharedFolder", header.Title);
+            Assert.Equal(Path.GetFileName(externalDir), header.Title);
             Assert.Equal(2, header.ItemCount);
 
             var items = vm.FilteredItems.OfType<WorkspaceItemSummary>().ToList();
@@ -268,8 +272,7 @@ public class CSharpManagerViewModelTests : IDisposable
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
@@ -287,12 +290,14 @@ public class CSharpManagerViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteItemAsync_LastDocumentInExternalFolder_RemovesTheNowEmptyGroupHeaderToo()
+    public async Task DeleteItemAsync_LastDocumentInOpenedExternalFolder_RemovesTheNowEmptyGroupHeaderToo()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var script = await _storage.CreateNewScriptAsync("Only External", folderPath: externalDir);
+            await _storage.OpenExternalProjectAsync(externalDir);
+            var script = await _storage.CreateNewScriptAsync("Only External");
 
             var (vm, _, _, _, _) = CreateHub();
             await vm.LoadWorkspaceItemsAsync();
@@ -305,19 +310,20 @@ public class CSharpManagerViewModelTests : IDisposable
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
     [Fact]
-    public async Task DeleteItemAsync_OneOfSeveralDocumentsInExternalFolder_KeepsHeaderWithUpdatedCount()
+    public async Task DeleteItemAsync_OneOfSeveralDocumentsInOpenedExternalFolder_KeepsHeaderWithUpdatedCount()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"), "SharedFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_HubExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var first = await _storage.CreateNewScriptAsync("Keep Me", folderPath: externalDir);
-            var second = await _storage.CreateNewScriptAsync("Delete Me", folderPath: externalDir);
+            await _storage.OpenExternalProjectAsync(externalDir);
+            var first = await _storage.CreateNewScriptAsync("Keep Me");
+            var second = await _storage.CreateNewScriptAsync("Delete Me");
 
             var (vm, _, _, _, _) = CreateHub();
             await vm.LoadWorkspaceItemsAsync();
@@ -331,8 +337,7 @@ public class CSharpManagerViewModelTests : IDisposable
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
     [Fact]
@@ -462,7 +467,9 @@ public class CSharpManagerViewModelTests : IDisposable
             Assert.NotNull(lastScript);
             Assert.Equal("Downloaded External Script", lastScript!.Title);
 
-            Assert.Contains(vm.AllItems, i => i.Id == scriptId);
+            // Opening a single loose file doesn't switch the active workspace root, so it opens as a
+            // tab but doesn't join the root-scoped Hub gallery.
+            Assert.DoesNotContain(vm.AllItems, i => i.Id == scriptId);
         }
         finally
         {

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -238,6 +239,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
+
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
     }
 
     partial void OnCodeChanged(string value)

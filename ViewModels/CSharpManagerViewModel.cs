@@ -92,6 +92,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
 
     public string LibraryRootPath => _storageService.LibraryRootPath;
+    public string ActiveWorkspaceRootPath => _storageService.ActiveWorkspaceRootPath;
 
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
 
@@ -508,6 +509,8 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
 
         _ = LoadWorkspaceItemsAsync();
+
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = LoadWorkspaceItemsAsync());
     }
 
     [RelayCommand]
@@ -732,7 +735,10 @@ public partial class CSharpManagerViewModel : ObservableObject
 
         var matchList = matches.ToList();
 
-        var emittedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // At most one workspace root is ever active at a time, so all external matches belong to the
+        // same opened folder and share a single group header (subfolders differ in FolderPath but not
+        // in which workspace they belong to).
+        var emittedExternalHeader = false;
 
         foreach (var match in matchList)
         {
@@ -742,16 +748,15 @@ public partial class CSharpManagerViewModel : ObservableObject
                 continue;
             }
 
-            if (!emittedGroups.Add(match.FolderPath)) continue;
+            if (emittedExternalHeader) continue;
+            emittedExternalHeader = true;
 
-            var groupMembers = matchList
-                .Where(m => m.IsExternal && string.Equals(m.FolderPath, match.FolderPath, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            var groupMembers = matchList.Where(m => m.IsExternal).ToList();
 
             FilteredItems.Add(new WorkspaceGroupHeaderViewModel
             {
                 Title = match.ExternalWorkspaceName,
-                FolderPath = match.FolderPath,
+                FolderPath = _storageService.ActiveWorkspaceRootPath,
                 ItemCount = groupMembers.Count
             });
 

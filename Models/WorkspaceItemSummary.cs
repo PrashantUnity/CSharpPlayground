@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 
@@ -31,13 +30,16 @@ public class WorkspaceItemSummary : ObservableObject
         set => SetProperty(ref _isPinned, value);
     }
 
+    /// <summary>Set by the storage service: true when this item's active workspace root is an opened external folder rather than the internal library.</summary>
+    public bool IsExternalRoot { get; set; }
+    /// <summary>Set by the storage service: the opened folder's name, when <see cref="IsExternalRoot"/> is true.</summary>
+    public string? WorkspaceRootName { get; set; }
+
     public string DisplayLocation => IsExternal
-        ? (!string.IsNullOrEmpty(ExternalWorkspaceName) ? $"Workspace: {ExternalWorkspaceName}" : FolderPath)
+        ? (!string.IsNullOrEmpty(ExternalWorkspaceName) ? $"Workspace: {ExternalWorkspaceName}{(!string.IsNullOrEmpty(FolderPath) ? $"/{FolderPath}" : string.Empty)}" : FolderPath)
         : (!string.IsNullOrEmpty(FolderPath) ? $"~/{FolderPath.TrimStart('/', '\\')}/" : "~/library/");
 
-    public string DisplayLocationTooltip => !string.IsNullOrEmpty(FolderPath)
-        ? FolderPath
-        : "Internal FryPDF Document Library";
+    public string DisplayLocationTooltip => DisplayLocation;
 
     public bool IsNotebook => Kind == WorkspaceItemKind.Notebook;
     public bool IsScript => Kind == WorkspaceItemKind.Script;
@@ -47,10 +49,8 @@ public class WorkspaceItemSummary : ObservableObject
     public string RuntimeBadgeText => IsNotebook ? ".NET 10" : "Roslyn C# 13";
     public bool HasRuntimeDot => IsScript;
 
-    public bool IsExternal => !string.IsNullOrEmpty(FolderPath) && Path.IsPathRooted(FolderPath);
-    public string ExternalWorkspaceName => IsExternal
-        ? (Path.GetFileName(FolderPath.TrimEnd('/', '\\')) is { Length: > 0 } name ? name : FolderPath)
-        : string.Empty;
+    public bool IsExternal => IsExternalRoot;
+    public string ExternalWorkspaceName => IsExternalRoot ? (WorkspaceRootName ?? string.Empty) : string.Empty;
 
     private bool IsAlgorithms =>
         Category.Equals("Algorithms", StringComparison.OrdinalIgnoreCase) ||

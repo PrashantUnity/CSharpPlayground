@@ -40,11 +40,9 @@ public partial class ExplorerItemViewModel : ObservableObject
     [ObservableProperty]
     private int _depth;
 
-    // True only for the single synthetic grouping folder created for a document saved outside the
-    // library (see CSharpNotebookStudioViewModel.RebuildExplorerTree) — its FullPath is a real
-    // absolute filesystem path, not a library-relative one, so folder-management operations that
-    // assume the latter (rename, delete, "new file/folder here") must not be offered for it: acting
-    // on them could otherwise touch a real directory outside anything this app actually manages.
+    // Never set true anymore: the Explorer tree now always reflects a single active workspace root
+    // (the internal library or one opened folder), so there is no synthetic cross-root grouping node
+    // left to represent. Kept because the context-menu XAML still binds IsManageableDirectory/!IsExternalGroup.
     [ObservableProperty]
     private bool _isExternalGroup;
 

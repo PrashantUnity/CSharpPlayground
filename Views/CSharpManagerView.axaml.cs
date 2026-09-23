@@ -130,8 +130,8 @@ public partial class CSharpManagerView : UserControl
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.StorageProvider is not { } storageProvider) return;
 
-        var libraryRoot = vm.LibraryRootPath;
-        var startFolder = await storageProvider.TryGetFolderFromPathAsync(new Uri(libraryRoot));
+        var activeRoot = vm.ActiveWorkspaceRootPath;
+        var startFolder = await storageProvider.TryGetFolderFromPathAsync(new Uri(activeRoot));
 
         var result = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
@@ -145,13 +145,13 @@ public partial class CSharpManagerView : UserControl
             return;
         }
 
-        var relative = Path.GetRelativePath(libraryRoot, pickedPath).Replace(Path.DirectorySeparatorChar, '/');
+        var relative = Path.GetRelativePath(activeRoot, pickedPath).Replace(Path.DirectorySeparatorChar, '/');
         var isOutsideRoot = relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative);
 
         if (isOutsideRoot)
         {
             vm.SelectedFolderPath = pickedPath;
-            vm.LocationWarning = "This document will be saved outside your script library, at the exact folder you chose.";
+            vm.LocationWarning = "This document will be saved outside the current workspace folder, at the exact folder you chose.";
         }
         else
         {

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using Avalonia.Input.Platform;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -342,6 +343,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
         PopulateExplorerTree();
+
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
     }
 
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
@@ -1109,8 +1112,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             });
         }
 
-        var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
-        await _storageService.SaveNotebookAsync(copyDoc, externalFolderPath);
+        await _storageService.SaveNotebookAsync(copyDoc, parent?.FullPath);
 
         var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
         var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);
@@ -1334,46 +1336,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             GetOrCreateFolder(path);
         }
 
-        var externalGroupNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
-
-        ExplorerItemViewModel GetOrCreateExternalGroup(string absolutePath)
-        {
-            if (externalGroupNodes.TryGetValue(absolutePath, out var existing)) return existing;
-
-            var trimmed = absolutePath.TrimEnd('/', '\\');
-            var name = Path.GetFileName(trimmed);
-            if (string.IsNullOrEmpty(name)) name = trimmed;
-
-            var node = CreateFolderItem(name, absolutePath, isExpanded: false, parent: null, isExternalGroup: true);
-            AddToTree(null, node);
-            externalGroupNodes[absolutePath] = node;
-            return node;
-        }
-
-        var openDocumentIds = new HashSet<string>(Tabs.Select(t => t.Notebook.Id), StringComparer.OrdinalIgnoreCase);
-        var relevantExternalFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var s in summaries)
-        {
-            if (s.IsNotebook && openDocumentIds.Contains(s.Id) && !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath))
-            {
-                relevantExternalFolders.Add(s.FolderPath);
-            }
-        }
-
         foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
             var ext = s.IsNotebook ? ".frynb" : ".frycs";
             var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
-            var isExternal = !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath);
-            if (isExternal && !relevantExternalFolders.Contains(s.FolderPath!))
-            {
-                continue;
-            }
 
-            var parent = isExternal ? GetOrCreateExternalGroup(s.FolderPath!) : GetOrCreateFolder(s.FolderPath);
-            var fullPath = isExternal
-                ? $"{s.FolderPath!.TrimEnd('/', '\\')}/{name}"
-                : (string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}");
+            var parent = GetOrCreateFolder(s.FolderPath);
+            var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
             var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
             if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))

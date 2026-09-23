@@ -66,46 +66,13 @@ public partial class CSharpCodeStudioViewModel
             GetOrCreateFolder(path);
         }
 
-        var externalGroupNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
-
-        ExplorerItemViewModel GetOrCreateExternalGroup(string absolutePath)
-        {
-            if (externalGroupNodes.TryGetValue(absolutePath, out var existing)) return existing;
-
-            var trimmed = absolutePath.TrimEnd('/', '\\');
-            var name = Path.GetFileName(trimmed);
-            if (string.IsNullOrEmpty(name)) name = trimmed;
-
-            var node = CreateFolderItem(name, absolutePath, isExpanded: false, parent: null, isExternalGroup: true);
-            AddToTree(null, node);
-            externalGroupNodes[absolutePath] = node;
-            return node;
-        }
-
-        string? relevantExternalFolder = null;
-        if (Script != null)
-        {
-            var activeSummary = summaries.FirstOrDefault(s => string.Equals(s.Id, Script.Id, StringComparison.OrdinalIgnoreCase));
-            if (activeSummary != null && !string.IsNullOrEmpty(activeSummary.FolderPath) && Path.IsPathRooted(activeSummary.FolderPath))
-            {
-                relevantExternalFolder = activeSummary.FolderPath;
-            }
-        }
-
         foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
             var ext = s.IsScript ? ".frycs" : ".frynb";
             var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
-            var isExternal = !string.IsNullOrEmpty(s.FolderPath) && Path.IsPathRooted(s.FolderPath);
-            if (isExternal && !string.Equals(s.FolderPath, relevantExternalFolder, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
 
-            var parent = isExternal ? GetOrCreateExternalGroup(s.FolderPath!) : GetOrCreateFolder(s.FolderPath);
-            var fullPath = isExternal
-                ? $"{s.FolderPath!.TrimEnd('/', '\\')}/{name}"
-                : (string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}");
+            var parent = GetOrCreateFolder(s.FolderPath);
+            var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
             var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
             if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
@@ -488,8 +455,7 @@ public partial class CSharpCodeStudioViewModel
             LastModified = DateTime.UtcNow
         };
 
-        var externalFolderPath = parent?.IsExternalGroup == true ? parent.FullPath : null;
-        await _storageService.SaveScriptAsync(copyDoc, externalFolderPath);
+        await _storageService.SaveScriptAsync(copyDoc, parent?.FullPath);
 
         var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
         var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);

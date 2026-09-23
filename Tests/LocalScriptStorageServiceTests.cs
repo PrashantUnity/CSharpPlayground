@@ -209,17 +209,23 @@ public class LocalScriptStorageServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_AppearsInWorkspaceSummariesWithThatFolder()
+    public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_DoesNotAppearInSummariesButStaysLoadable()
     {
+        // A document written outside the active workspace root (e.g. via the "save elsewhere" escape
+        // hatch) behaves like a loose file per the single-root model: it's not part of the Explorer/
+        // gallery walk, but it's still reachable by id within this session.
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"));
         try
         {
             var storage = new LocalScriptStorageService(_baseDir);
             var script = await storage.CreateNewScriptAsync("Desktop Script", folderPath: externalDir);
 
-            var summary = (await storage.LoadWorkspaceSummariesAsync()).Single(s => s.Id == script.Id);
+            var summaries = await storage.LoadWorkspaceSummariesAsync();
+            Assert.DoesNotContain(summaries, s => s.Id == script.Id);
 
-            Assert.Equal(externalDir, summary.FolderPath);
+            var loaded = await storage.LoadScriptAsync(script.Id);
+            Assert.NotNull(loaded);
+            Assert.Equal("Desktop Script", loaded!.Title);
         }
         finally
         {
@@ -228,26 +234,90 @@ public class LocalScriptStorageServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ExternalDocument_PersistsAcrossServiceInstances()
+    public async Task ActiveWorkspaceRootPath_PersistsAcrossServiceInstances()
     {
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
             var firstInstance = new LocalScriptStorageService(_baseDir);
-            var notebook = await firstInstance.CreateNewNotebookAsync("Restart Test", folderPath: externalDir);
+            var openResult = await firstInstance.OpenExternalProjectAsync(externalDir);
+            Assert.True(openResult.Success);
+            Assert.True(firstInstance.IsExternalWorkspaceActive);
+            Assert.Equal(Path.GetFullPath(externalDir), firstInstance.ActiveWorkspaceRootPath);
 
             var secondInstance = new LocalScriptStorageService(_baseDir);
+            await secondInstance.LoadWorkspaceSummariesAsync();
 
-            var loaded = await secondInstance.LoadNotebookAsync(notebook.Id);
-            Assert.NotNull(loaded);
-            Assert.Equal("Restart Test", loaded!.Title);
-
-            var summary = (await secondInstance.LoadWorkspaceSummariesAsync()).SingleOrDefault(s => s.Id == notebook.Id);
-            Assert.NotNull(summary);
+            Assert.True(secondInstance.IsExternalWorkspaceActive);
+            Assert.Equal(Path.GetFullPath(externalDir), secondInstance.ActiveWorkspaceRootPath);
         }
         finally
         {
             if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ActiveWorkspaceRootPath_FallsBackToLibrary_WhenPersistedFolderNoLongerExists()
+    {
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var firstInstance = new LocalScriptStorageService(_baseDir);
+            await firstInstance.OpenExternalProjectAsync(externalDir);
+
+            Directory.Delete(externalDir, recursive: true);
+
+            var secondInstance = new LocalScriptStorageService(_baseDir);
+            await secondInstance.LoadWorkspaceSummariesAsync();
+
+            Assert.False(secondInstance.IsExternalWorkspaceActive);
+            Assert.Equal(secondInstance.LibraryRootPath, secondInstance.ActiveWorkspaceRootPath);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_SwitchingFolders_ScopesSummariesToOnlyTheActiveOne()
+    {
+        var folderA = Path.Combine(Path.GetTempPath(), "FryPDF_WorkspaceA_" + Guid.NewGuid().ToString("N"));
+        var folderB = Path.Combine(Path.GetTempPath(), "FryPDF_WorkspaceB_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+        try
+        {
+            var storage = new LocalScriptStorageService(_baseDir);
+
+            var docInA = await storage.CreateNewNotebookAsync("From Folder A", folderPath: folderA);
+            var openA = await storage.OpenExternalProjectAsync(folderA);
+            Assert.True(openA.Success);
+
+            var summariesWithAActive = await storage.LoadWorkspaceSummariesAsync();
+            Assert.Contains(summariesWithAActive, s => s.Id == docInA.Id);
+
+            var docInB = await storage.CreateNewNotebookAsync("From Folder B", folderPath: folderB);
+            var openB = await storage.OpenExternalProjectAsync(folderB);
+            Assert.True(openB.Success);
+
+            var summariesWithBActive = await storage.LoadWorkspaceSummariesAsync();
+            Assert.DoesNotContain(summariesWithBActive, s => s.Id == docInA.Id);
+            Assert.Contains(summariesWithBActive, s => s.Id == docInB.Id);
+
+            var reopenA = await storage.OpenExternalProjectAsync(folderA);
+            Assert.True(reopenA.Success);
+            var summariesAfterReopeningA = await storage.LoadWorkspaceSummariesAsync();
+            Assert.Contains(summariesAfterReopeningA, s => s.Id == docInA.Id);
+            Assert.DoesNotContain(summariesAfterReopeningA, s => s.Id == docInB.Id);
+        }
+        finally
+        {
+            if (Directory.Exists(folderA)) Directory.Delete(folderA, recursive: true);
+            if (Directory.Exists(folderB)) Directory.Delete(folderB, recursive: true);
         }
     }
 
@@ -303,8 +373,10 @@ public class LocalScriptStorageServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_CreatesNamedProjectFileInThatFolder()
+    public async Task CreateNewScriptAsync_WithAbsoluteFolderPath_DoesNotCreateProjectIndexFile()
     {
+        // The old .frycsproj/.frynbproj bookkeeping is gone with the single-root model: the real
+        // directory tree is walked directly, so no index file needs to shadow it.
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"), "MyProject");
         try
         {
@@ -312,11 +384,7 @@ public class LocalScriptStorageServiceTests : IDisposable
 
             await storage.CreateNewScriptAsync("Desktop Script", folderPath: externalDir);
 
-            var expectedProjectFile = Path.Combine(externalDir, "MyProject.frycsproj");
-            Assert.True(File.Exists(expectedProjectFile));
-
-            var json = await File.ReadAllTextAsync(expectedProjectFile);
-            Assert.Contains("Script", json);
+            Assert.Empty(Directory.EnumerateFiles(externalDir, "*.fry*proj"));
         }
         finally
         {
@@ -326,7 +394,7 @@ public class LocalScriptStorageServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateNewNotebookAsync_TwiceInSameExternalFolder_SharesOneProjectFileWithBothDocuments()
+    public async Task CreateNewNotebookAsync_TwiceInSameFolder_BothAppearOnceThatFolderIsOpened()
     {
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalDocTests_" + Guid.NewGuid().ToString("N"), "SharedProject");
         try
@@ -336,12 +404,10 @@ public class LocalScriptStorageServiceTests : IDisposable
             var first = await storage.CreateNewNotebookAsync("First Note", folderPath: externalDir);
             var second = await storage.CreateNewNotebookAsync("Second Note", folderPath: externalDir);
 
-            var projectFiles = Directory.GetFiles(externalDir, "*.frynbproj");
-            var projectFile = Assert.Single(projectFiles);
+            Assert.Empty(Directory.EnumerateFiles(externalDir, "*.fry*proj"));
 
-            var json = await File.ReadAllTextAsync(projectFile);
-            Assert.Contains(first.Id, json);
-            Assert.Contains(second.Id, json);
+            var opened = await storage.OpenExternalProjectAsync(externalDir);
+            Assert.True(opened.Success);
 
             var summaries = await storage.LoadWorkspaceSummariesAsync();
             Assert.Contains(summaries, s => s.Id == first.Id);

@@ -18,22 +18,25 @@ public class LocalScriptStorageService : IScriptStorageService
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private volatile bool _initialized;
 
-    private readonly string _externalProjectsIndexPath;
-    private List<string> _externalProjectPaths = new();
+    private readonly string _workspaceStatePath;
+    private string? _activeWorkspaceRootPath;
 
-    private class ExternalProjectFile
-    {
-        public string Kind { get; set; } = nameof(WorkspaceItemKind.Notebook);
-        public List<ExternalProjectDocument> Documents { get; set; } = new();
-    }
+    // In-memory only: lets a document opened from outside the active workspace root (a loose file,
+    // or a tab left open across a root switch) still be found and saved in place via Ctrl+S, without
+    // resurrecting a persistent cross-root registry.
+    private readonly Dictionary<string, string> _knownFileLocations = new(StringComparer.OrdinalIgnoreCase);
 
-    private class ExternalProjectDocument
+    private class WorkspaceState
     {
-        public string Id { get; set; } = string.Empty;
-        public string File { get; set; } = string.Empty;
+        public string? ActiveRootPath { get; set; }
     }
 
     public string LibraryRootPath => _libraryRoot;
+
+    private string EffectiveWorkspaceRoot => _activeWorkspaceRootPath ?? _libraryRoot;
+    public string ActiveWorkspaceRootPath => EffectiveWorkspaceRoot;
+    public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
+    public event Action? ActiveWorkspaceChanged;
 
     public LocalScriptStorageService(string? customBaseDir = null)
     {
@@ -46,7 +49,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 "com.frypdf.plugin.csharpeditor");
 
         _libraryRoot = Path.Combine(_baseDir, "library");
-        _externalProjectsIndexPath = Path.Combine(_baseDir, "external_projects.json");
+        _workspaceStatePath = Path.Combine(_baseDir, "workspace_state.json");
 
         Directory.CreateDirectory(_libraryRoot);
     }
@@ -60,16 +63,12 @@ public class LocalScriptStorageService : IScriptStorageService
         {
             if (_initialized) return;
 
-            await LoadExternalProjectsIndexAsync();
+            await LoadWorkspaceStateAsync();
 
-            var hasAnyDocument = Directory.EnumerateFiles(_libraryRoot, "*", SearchOption.AllDirectories)
-                .Any(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase));
-
-            if (!hasAnyDocument)
-            {
-                await SeedDefaultsAsync();
-            }
-
+            // Starter templates are offered one at a time from the "New from Template" gallery
+            // (CodeTemplateLibrary via CSharpManagerViewModel.StarterTemplates); the library is never
+            // auto-populated with all of them, so a first-run Explorer starts empty until the user
+            // creates something.
             _initialized = true;
         }
         finally
@@ -78,168 +77,62 @@ public class LocalScriptStorageService : IScriptStorageService
         }
     }
 
-    private async Task LoadExternalProjectsIndexAsync()
+    private async Task LoadWorkspaceStateAsync()
     {
-        if (!File.Exists(_externalProjectsIndexPath)) return;
+        if (!File.Exists(_workspaceStatePath)) return;
 
         try
         {
-            var json = await File.ReadAllTextAsync(_externalProjectsIndexPath);
-            var loaded = JsonSerializer.Deserialize<List<string>>(json);
-            if (loaded != null)
+            var json = await File.ReadAllTextAsync(_workspaceStatePath);
+            var state = JsonSerializer.Deserialize<WorkspaceState>(json);
+            if (state?.ActiveRootPath != null && Directory.Exists(state.ActiveRootPath))
             {
-                _externalProjectPaths = loaded;
+                _activeWorkspaceRootPath = state.ActiveRootPath;
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load external projects index: {ex.Message}");
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load workspace state: {ex.Message}");
         }
     }
 
-    private async Task SaveExternalProjectsIndexAsync()
+    private async Task SaveWorkspaceStateAsync()
     {
         try
         {
-            var json = JsonSerializer.Serialize(_externalProjectPaths, _jsonOptions);
-            await File.WriteAllTextAsync(_externalProjectsIndexPath, json);
+            var json = JsonSerializer.Serialize(new WorkspaceState { ActiveRootPath = _activeWorkspaceRootPath }, _jsonOptions);
+            await File.WriteAllTextAsync(_workspaceStatePath, json);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save external projects index: {ex.Message}");
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save workspace state: {ex.Message}");
         }
     }
-
-    private async Task<ExternalProjectFile?> ReadProjectFileAsync(string projectFilePath)
-    {
-        if (!File.Exists(projectFilePath)) return null;
-
-        try
-        {
-            var json = await File.ReadAllTextAsync(projectFilePath);
-            return JsonSerializer.Deserialize<ExternalProjectFile>(json);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to read external project file '{projectFilePath}': {ex.Message}");
-            return null;
-        }
-    }
-
-    private async Task WriteProjectFileAsync(string projectFilePath, ExternalProjectFile project)
-    {
-        try
-        {
-            var json = JsonSerializer.Serialize(project, _jsonOptions);
-            await File.WriteAllTextAsync(projectFilePath, json);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to write external project file '{projectFilePath}': {ex.Message}");
-        }
-    }
-
-    private static string GetProjectFilePath(string targetDir, WorkspaceItemKind kind)
-    {
-        var folderName = Path.GetFileName(targetDir.TrimEnd('/', '\\'));
-        if (string.IsNullOrEmpty(folderName)) folderName = "Project";
-        var ext = kind == WorkspaceItemKind.Notebook ? ".frynbproj" : ".frycsproj";
-        return Path.Combine(targetDir, folderName + ext);
-    }
-
-    private async Task RegisterExternalDocumentAsync(string id, string extension, string targetDir, string fileName)
-    {
-        var kind = extension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ? WorkspaceItemKind.Notebook : WorkspaceItemKind.Script;
-        var projectFilePath = GetProjectFilePath(targetDir, kind);
-
-        var project = await ReadProjectFileAsync(projectFilePath) ?? new ExternalProjectFile { Kind = kind.ToString() };
-        if (!project.Documents.Any(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)))
-        {
-            project.Documents.Add(new ExternalProjectDocument { Id = id, File = fileName });
-        }
-        await WriteProjectFileAsync(projectFilePath, project);
-
-        if (!_externalProjectPaths.Contains(projectFilePath, StringComparer.OrdinalIgnoreCase))
-        {
-            _externalProjectPaths.Add(projectFilePath);
-            await SaveExternalProjectsIndexAsync();
-        }
-    }
-
-    private async Task RemoveFromExternalProjectIfPresentAsync(string id)
-    {
-        foreach (var projectFilePath in _externalProjectPaths.ToList())
-        {
-            var project = await ReadProjectFileAsync(projectFilePath);
-            if (project == null) continue;
-
-            var removed = project.Documents.RemoveAll(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
-            if (removed == 0) continue;
-
-            if (project.Documents.Count == 0)
-            {
-                try
-                {
-                    File.Delete(projectFilePath);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete empty external project file '{projectFilePath}': {ex.Message}");
-                }
-                _externalProjectPaths.Remove(projectFilePath);
-            }
-            else
-            {
-                await WriteProjectFileAsync(projectFilePath, project);
-            }
-
-            await SaveExternalProjectsIndexAsync();
-            return;
-        }
-    }
-
-    private async Task SeedDefaultsAsync()
-    {
-        await DefaultScriptTemplateSeeder.SeedDefaultsAsync(this);
-    }
-
 
     private string GetFolderPath(string filePath)
     {
-        var dir = Path.GetDirectoryName(filePath) ?? _libraryRoot;
-        var rel = Path.GetRelativePath(_libraryRoot, dir);
+        var dir = Path.GetDirectoryName(filePath) ?? EffectiveWorkspaceRoot;
+        var rel = Path.GetRelativePath(EffectiveWorkspaceRoot, dir);
         return rel == "." ? string.Empty : rel.Replace(Path.DirectorySeparatorChar, '/');
     }
 
     private async Task<string?> FindExistingFilePathAsync(string id, string extension)
     {
-        foreach (var projectFilePath in _externalProjectPaths)
+        if (_knownFileLocations.TryGetValue(id, out var cached) &&
+            cached.EndsWith(extension, StringComparison.OrdinalIgnoreCase) && File.Exists(cached))
         {
-            var project = await ReadProjectFileAsync(projectFilePath);
-            var doc = project?.Documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
-            if (doc == null) continue;
-
-            var projectDir = Path.GetDirectoryName(projectFilePath);
-            if (projectDir == null) continue;
-
-            var normalizedFile = doc.File.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-            var candidatePath = Path.Combine(projectDir, normalizedFile);
-            if (candidatePath.EndsWith(extension, StringComparison.OrdinalIgnoreCase) && File.Exists(candidatePath))
-            {
-                return candidatePath;
-            }
-
-            var fallbackPath = Path.Combine(projectDir, Path.GetFileName(normalizedFile));
-            if (fallbackPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase) && File.Exists(fallbackPath))
-            {
-                return fallbackPath;
-            }
+            return cached;
         }
 
-        var direct = Directory.EnumerateFiles(_libraryRoot, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
-        if (direct != null) return direct;
+        var root = EffectiveWorkspaceRoot;
+        var direct = Directory.EnumerateFiles(root, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
+        if (direct != null)
+        {
+            _knownFileLocations[id] = direct;
+            return direct;
+        }
 
-        foreach (var file in Directory.EnumerateFiles(_libraryRoot, $"*{extension}", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(root, $"*{extension}", SearchOption.AllDirectories))
         {
             try
             {
@@ -247,6 +140,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 if (doc.RootElement.TryGetProperty("Id", out var idProp) &&
                     string.Equals(idProp.GetString(), id, StringComparison.OrdinalIgnoreCase))
                 {
+                    _knownFileLocations[id] = file;
                     return file;
                 }
             }
@@ -261,9 +155,10 @@ public class LocalScriptStorageService : IScriptStorageService
     public async Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync()
     {
         await EnsureInitializedAsync();
+        var root = EffectiveWorkspaceRoot;
         var list = new List<WorkspaceItemSummary>();
 
-        foreach (var file in Directory.EnumerateFiles(_libraryRoot, "*.frycs", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(root, "*.frycs", SearchOption.AllDirectories))
         {
             try
             {
@@ -271,6 +166,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 var script = JsonSerializer.Deserialize<ScriptDocumentItem>(json);
                 if (script != null)
                 {
+                    _knownFileLocations[script.Id] = file;
                     list.Add(new WorkspaceItemSummary
                     {
                         Id = script.Id,
@@ -281,7 +177,9 @@ public class LocalScriptStorageService : IScriptStorageService
                         LastModified = script.LastModified,
                         ExecutionCount = script.ExecutionCount,
                         ExecutionMode = script.ExecutionMode,
-                        FolderPath = GetFolderPath(file)
+                        FolderPath = GetFolderPath(file),
+                        IsExternalRoot = IsExternalWorkspaceActive,
+                        WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
                     });
                 }
             }
@@ -291,7 +189,7 @@ public class LocalScriptStorageService : IScriptStorageService
             }
         }
 
-        foreach (var file in Directory.EnumerateFiles(_libraryRoot, "*.frynb", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(root, "*.frynb", SearchOption.AllDirectories))
         {
             try
             {
@@ -299,6 +197,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
                 if (nb != null)
                 {
+                    _knownFileLocations[nb.Id] = file;
                     list.Add(new WorkspaceItemSummary
                     {
                         Id = nb.Id,
@@ -309,81 +208,15 @@ public class LocalScriptStorageService : IScriptStorageService
                         LastModified = nb.LastModified,
                         ExecutionCount = nb.ExecutionCount,
                         CellCount = nb.Cells.Count,
-                        FolderPath = GetFolderPath(file)
+                        FolderPath = GetFolderPath(file),
+                        IsExternalRoot = IsExternalWorkspaceActive,
+                        WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
                     });
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted notebook file '{file}': {ex.Message}");
-            }
-        }
-
-        foreach (var projectFilePath in _externalProjectPaths)
-        {
-            var project = await ReadProjectFileAsync(projectFilePath);
-            if (project == null) continue;
-
-            var folderPath = Path.GetDirectoryName(projectFilePath);
-            if (folderPath == null) continue;
-
-            foreach (var doc in project.Documents)
-            {
-                var normalizedFile = doc.File.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-                var path = Path.Combine(folderPath, normalizedFile);
-                if (!File.Exists(path))
-                {
-                    path = Path.Combine(folderPath, Path.GetFileName(normalizedFile));
-                }
-                if (!File.Exists(path)) continue;
-
-                try
-                {
-                    var json = await File.ReadAllTextAsync(path);
-
-                    if (path.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var script = JsonSerializer.Deserialize<ScriptDocumentItem>(json);
-                        if (script != null)
-                        {
-                            list.Add(new WorkspaceItemSummary
-                            {
-                                Id = script.Id,
-                                Title = script.Title,
-                                Description = script.Description,
-                                Category = script.Category,
-                                Kind = WorkspaceItemKind.Script,
-                                LastModified = script.LastModified,
-                                ExecutionCount = script.ExecutionCount,
-                                ExecutionMode = script.ExecutionMode,
-                                FolderPath = folderPath
-                            });
-                        }
-                    }
-                    else if (path.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
-                        if (nb != null)
-                        {
-                            list.Add(new WorkspaceItemSummary
-                            {
-                                Id = nb.Id,
-                                Title = nb.Title,
-                                Description = nb.Description,
-                                Category = nb.Category,
-                                Kind = WorkspaceItemKind.Notebook,
-                                LastModified = nb.LastModified,
-                                ExecutionCount = nb.ExecutionCount,
-                                CellCount = nb.Cells.Count,
-                                FolderPath = folderPath
-                            });
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted external document '{path}': {ex.Message}");
-                }
             }
         }
 
@@ -493,8 +326,8 @@ public class LocalScriptStorageService : IScriptStorageService
 
     private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json, string title)
     {
-        var isExternal = !string.IsNullOrEmpty(folderPath) && Path.IsPathRooted(folderPath);
-        var targetDir = isExternal ? folderPath! : (string.IsNullOrEmpty(folderPath) ? _libraryRoot : Path.Combine(_libraryRoot, folderPath));
+        var root = EffectiveWorkspaceRoot;
+        var targetDir = string.IsNullOrEmpty(folderPath) ? root : Path.Combine(root, folderPath);
         Directory.CreateDirectory(targetDir);
 
         var safeName = SanitizeName(title, "Untitled");
@@ -508,11 +341,7 @@ public class LocalScriptStorageService : IScriptStorageService
 
         var file = Path.Combine(targetDir, $"{finalName}{extension}");
         await File.WriteAllTextAsync(file, json);
-
-        if (isExternal)
-        {
-            await RegisterExternalDocumentAsync(id, extension, targetDir, Path.GetFileName(file));
-        }
+        _knownFileLocations[id] = file;
     }
 
     public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null)
@@ -609,22 +438,24 @@ public class LocalScriptStorageService : IScriptStorageService
             File.Delete(nbFile);
         }
 
-        await RemoveFromExternalProjectIfPresentAsync(id);
+        _knownFileLocations.Remove(id);
     }
 
     public Task<List<string>> LoadFolderPathsAsync()
     {
+        var root = EffectiveWorkspaceRoot;
         var result = new List<string>();
-        foreach (var dir in Directory.EnumerateDirectories(_libraryRoot, "*", SearchOption.AllDirectories))
+        foreach (var dir in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories))
         {
-            result.Add(Path.GetRelativePath(_libraryRoot, dir).Replace(Path.DirectorySeparatorChar, '/'));
+            result.Add(Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'));
         }
         return Task.FromResult(result);
     }
 
     public Task<string> CreateFolderAsync(string? parentFolderPath, string desiredName)
     {
-        var parentDir = string.IsNullOrEmpty(parentFolderPath) ? _libraryRoot : Path.Combine(_libraryRoot, parentFolderPath);
+        var root = EffectiveWorkspaceRoot;
+        var parentDir = string.IsNullOrEmpty(parentFolderPath) ? root : Path.Combine(root, parentFolderPath);
         Directory.CreateDirectory(parentDir);
 
         var safeName = SanitizeName(desiredName, "New Folder");
@@ -644,9 +475,10 @@ public class LocalScriptStorageService : IScriptStorageService
 
     public Task<string> RenameFolderAsync(string folderPath, string newName)
     {
-        var sourceDir = Path.Combine(_libraryRoot, folderPath);
+        var root = EffectiveWorkspaceRoot;
+        var sourceDir = Path.Combine(root, folderPath);
         var parentRelative = Path.GetDirectoryName(folderPath)?.Replace(Path.DirectorySeparatorChar, '/') ?? string.Empty;
-        var parentDir = string.IsNullOrEmpty(parentRelative) ? _libraryRoot : Path.Combine(_libraryRoot, parentRelative);
+        var parentDir = string.IsNullOrEmpty(parentRelative) ? root : Path.Combine(root, parentRelative);
         var safeName = SanitizeName(newName, "New Folder");
         var destDir = Path.Combine(parentDir, safeName);
         var newRelativePath = string.IsNullOrEmpty(parentRelative) ? safeName : $"{parentRelative}/{safeName}";
@@ -677,7 +509,7 @@ public class LocalScriptStorageService : IScriptStorageService
 
     public Task DeleteFolderAsync(string folderPath)
     {
-        var dir = Path.Combine(_libraryRoot, folderPath);
+        var dir = Path.Combine(EffectiveWorkspaceRoot, folderPath);
         if (Directory.Exists(dir))
         {
             Directory.Delete(dir, recursive: true);
@@ -810,7 +642,7 @@ public class LocalScriptStorageService : IScriptStorageService
 
         if (Directory.Exists(path))
         {
-            return await OpenExternalDirectoryAsync(path);
+            return await OpenFolderAsync(path);
         }
 
         if (!File.Exists(path))
@@ -820,9 +652,14 @@ public class LocalScriptStorageService : IScriptStorageService
 
         var ext = Path.GetExtension(path).ToLowerInvariant();
 
+        // Legacy .frycsproj/.frynbproj files from older versions: just open their containing folder —
+        // the real-filesystem walk in LoadWorkspaceSummariesAsync picks up everything in it directly.
         if (ext is ".frycsproj" or ".frynbproj")
         {
-            return await OpenExternalProjectFileAsync(path);
+            var folder = Path.GetDirectoryName(path);
+            return !string.IsNullOrEmpty(folder) && Directory.Exists(folder)
+                ? await OpenFolderAsync(folder)
+                : new OpenProjectResult(false, $"Could not resolve folder for '{path}'.");
         }
 
         if (ext == ".frynb")
@@ -845,192 +682,35 @@ public class LocalScriptStorageService : IScriptStorageService
             var folder = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
             {
-                return await OpenExternalDirectoryAsync(folder);
+                return await OpenFolderAsync(folder);
             }
         }
 
         return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .cs, .csx, .csproj, .zip");
     }
 
-    private async Task<OpenProjectResult> OpenExternalProjectFileAsync(string projectFilePath)
+    private async Task<OpenProjectResult> OpenFolderAsync(string dirPath)
     {
-        var project = await ReadProjectFileAsync(projectFilePath) ?? new ExternalProjectFile();
-        var folder = Path.GetDirectoryName(projectFilePath) ?? string.Empty;
-        var folderName = Path.GetFileName(folder.TrimEnd('/', '\\'));
-        if (string.IsNullOrEmpty(folderName)) folderName = "Workspace";
-
-        var isNotebook = projectFilePath.EndsWith(".frynbproj", StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(project.Kind, nameof(WorkspaceItemKind.Notebook), StringComparison.OrdinalIgnoreCase);
-        var expectedKind = isNotebook ? WorkspaceItemKind.Notebook : WorkspaceItemKind.Script;
-        var docExt = isNotebook ? ".frynb" : ".frycs";
-
-        var verifiedDocs = new List<ExternalProjectDocument>();
-        foreach (var doc in project.Documents)
+        var full = Path.GetFullPath(dirPath.TrimEnd('/', '\\'));
+        if (!Directory.Exists(full))
         {
-            var normalizedRel = doc.File.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-            var fullPath = Path.Combine(folder, normalizedRel);
-            if (!File.Exists(fullPath))
-            {
-                fullPath = Path.Combine(folder, Path.GetFileName(normalizedRel));
-            }
-
-            if (File.Exists(fullPath))
-            {
-                verifiedDocs.Add(new ExternalProjectDocument
-                {
-                    Id = doc.Id,
-                    File = Path.GetFileName(fullPath)
-                });
-            }
+            return new OpenProjectResult(false, $"Folder not found: '{full}'");
         }
 
-        try
-        {
-            foreach (var diskFile in Directory.EnumerateFiles(folder, $"*{docExt}", SearchOption.TopDirectoryOnly))
-            {
-                var fileName = Path.GetFileName(diskFile);
-                if (!verifiedDocs.Any(d => string.Equals(d.File, fileName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var id = await TryExtractIdFromFileAsync(diskFile) ?? Guid.NewGuid().ToString("N");
-                    verifiedDocs.Add(new ExternalProjectDocument { Id = id, File = fileName });
-                }
-            }
-        }
-        catch { }
+        _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
+        await SaveWorkspaceStateAsync();
+        ActiveWorkspaceChanged?.Invoke();
 
-        project.Kind = expectedKind.ToString();
-        project.Documents = verifiedDocs;
-        await WriteProjectFileAsync(projectFilePath, project);
-
-        if (!_externalProjectPaths.Contains(projectFilePath, StringComparer.OrdinalIgnoreCase))
-        {
-            _externalProjectPaths.Add(projectFilePath);
-            await SaveExternalProjectsIndexAsync();
-        }
-
-        var primaryDoc = verifiedDocs.FirstOrDefault();
-        return new OpenProjectResult(
-            Success: true,
-            Message: $"Loaded workspace '{folderName}' ({verifiedDocs.Count} document{(verifiedDocs.Count == 1 ? "" : "s")})",
-            PrimaryDocumentId: primaryDoc?.Id,
-            PrimaryDocumentKind: expectedKind,
-            DocumentsLoadedCount: verifiedDocs.Count);
-    }
-
-    private async Task<OpenProjectResult> OpenExternalDirectoryAsync(string dirPath)
-    {
-        var folderName = Path.GetFileName(dirPath.TrimEnd('/', '\\'));
-        if (string.IsNullOrEmpty(folderName)) folderName = "Workspace";
-
-        var existingProjFiles = Directory.EnumerateFiles(dirPath, "*.fry*proj", SearchOption.TopDirectoryOnly).ToList();
-        if (existingProjFiles.Count > 0)
-        {
-            OpenProjectResult? firstResult = null;
-            var totalDocs = 0;
-            foreach (var projFile in existingProjFiles)
-            {
-                var res = await OpenExternalProjectFileAsync(projFile);
-                if (firstResult == null && res.Success)
-                {
-                    firstResult = res;
-                }
-                totalDocs += res.DocumentsLoadedCount;
-            }
-
-            return firstResult != null
-                ? firstResult with { Message = $"Loaded workspace '{folderName}' ({totalDocs} document{(totalDocs == 1 ? "" : "s")})", DocumentsLoadedCount = totalDocs }
-                : new OpenProjectResult(false, $"Failed to load project files in '{dirPath}'");
-        }
-
-        var nbFiles = Directory.EnumerateFiles(dirPath, "*.frynb", SearchOption.TopDirectoryOnly).ToList();
-        var scFiles = Directory.EnumerateFiles(dirPath, "*.frycs", SearchOption.TopDirectoryOnly).ToList();
-        var csFiles = Directory.EnumerateFiles(dirPath, "*.cs", SearchOption.TopDirectoryOnly)
-            .Where(f => !f.EndsWith(".designer.cs", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        if (nbFiles.Count > 0)
-        {
-            var nbProjPath = GetProjectFilePath(dirPath, WorkspaceItemKind.Notebook);
-            var nbProj = new ExternalProjectFile { Kind = nameof(WorkspaceItemKind.Notebook) };
-            foreach (var f in nbFiles)
-            {
-                var id = await TryExtractIdFromFileAsync(f) ?? Guid.NewGuid().ToString("N");
-                nbProj.Documents.Add(new ExternalProjectDocument { Id = id, File = Path.GetFileName(f) });
-            }
-            await WriteProjectFileAsync(nbProjPath, nbProj);
-            if (!_externalProjectPaths.Contains(nbProjPath, StringComparer.OrdinalIgnoreCase))
-            {
-                _externalProjectPaths.Add(nbProjPath);
-            }
-        }
-
-        if (scFiles.Count > 0 || csFiles.Count > 0)
-        {
-            var scProjPath = GetProjectFilePath(dirPath, WorkspaceItemKind.Script);
-            var scProj = new ExternalProjectFile { Kind = nameof(WorkspaceItemKind.Script) };
-
-            foreach (var f in scFiles)
-            {
-                var id = await TryExtractIdFromFileAsync(f) ?? Guid.NewGuid().ToString("N");
-                scProj.Documents.Add(new ExternalProjectDocument { Id = id, File = Path.GetFileName(f) });
-            }
-
-            foreach (var csFile in csFiles)
-            {
-                var baseName = Path.GetFileNameWithoutExtension(csFile);
-                var frycsFile = Path.Combine(dirPath, $"{baseName}.frycs");
-                if (!File.Exists(frycsFile))
-                {
-                    try
-                    {
-                        var code = await File.ReadAllTextAsync(csFile);
-                        var script = new ScriptDocumentItem
-                        {
-                            Id = Guid.NewGuid().ToString("N"),
-                            Title = baseName,
-                            Category = "Imported",
-                            Description = $"Imported from {Path.GetFileName(csFile)}",
-                            Code = code,
-                            ExecutionMode = code.Contains("static void Main") || code.Contains("class ") ? "Program" : "Statements",
-                            Created = File.GetCreationTimeUtc(csFile),
-                            LastModified = File.GetLastWriteTimeUtc(csFile)
-                        };
-                        await File.WriteAllTextAsync(frycsFile, JsonSerializer.Serialize(script, _jsonOptions));
-                        scProj.Documents.Add(new ExternalProjectDocument { Id = script.Id, File = Path.GetFileName(frycsFile) });
-                    }
-                    catch { }
-                }
-            }
-
-            await WriteProjectFileAsync(scProjPath, scProj);
-            if (!_externalProjectPaths.Contains(scProjPath, StringComparer.OrdinalIgnoreCase))
-            {
-                _externalProjectPaths.Add(scProjPath);
-            }
-        }
-
-        if (nbFiles.Count == 0 && scFiles.Count == 0 && csFiles.Count == 0)
-        {
-            var emptyProj = GetProjectFilePath(dirPath, WorkspaceItemKind.Script);
-            await WriteProjectFileAsync(emptyProj, new ExternalProjectFile { Kind = nameof(WorkspaceItemKind.Script) });
-            if (!_externalProjectPaths.Contains(emptyProj, StringComparer.OrdinalIgnoreCase))
-            {
-                _externalProjectPaths.Add(emptyProj);
-            }
-        }
-
-        await SaveExternalProjectsIndexAsync();
-
-        var allSummaries = await LoadWorkspaceSummariesAsync();
-        var workspaceDocs = allSummaries.Where(s => string.Equals(s.FolderPath, dirPath, StringComparison.OrdinalIgnoreCase)).ToList();
-        var primary = workspaceDocs.FirstOrDefault();
+        var summaries = await LoadWorkspaceSummariesAsync();
+        var primary = summaries.OrderBy(s => s.Title, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+        var folderName = Path.GetFileName(full) is { Length: > 0 } n ? n : full;
 
         return new OpenProjectResult(
             Success: true,
-            Message: $"Loaded workspace '{folderName}' ({workspaceDocs.Count} document{(workspaceDocs.Count == 1 ? "" : "s")})",
+            Message: $"Opened folder '{folderName}' ({summaries.Count} document{(summaries.Count == 1 ? "" : "s")})",
             PrimaryDocumentId: primary?.Id,
             PrimaryDocumentKind: primary?.Kind,
-            DocumentsLoadedCount: workspaceDocs.Count);
+            DocumentsLoadedCount: summaries.Count);
     }
 
     private async Task<OpenProjectResult> OpenLooseNotebookAsync(string filePath)
@@ -1044,8 +724,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 return new OpenProjectResult(false, $"Failed to parse notebook JSON in '{Path.GetFileName(filePath)}'.");
             }
 
-            var dir = Path.GetDirectoryName(filePath) ?? _libraryRoot;
-            await RegisterExternalDocumentAsync(nb.Id, ".frynb", dir, Path.GetFileName(filePath));
+            _knownFileLocations[nb.Id] = filePath;
 
             return new OpenProjectResult(
                 Success: true,
@@ -1071,8 +750,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 return new OpenProjectResult(false, $"Failed to parse script JSON in '{Path.GetFileName(filePath)}'.");
             }
 
-            var dir = Path.GetDirectoryName(filePath) ?? _libraryRoot;
-            await RegisterExternalDocumentAsync(script.Id, ".frycs", dir, Path.GetFileName(filePath));
+            _knownFileLocations[script.Id] = filePath;
 
             return new OpenProjectResult(
                 Success: true,
@@ -1121,7 +799,7 @@ public class LocalScriptStorageService : IScriptStorageService
                 await File.WriteAllTextAsync(frycsPath, JsonSerializer.Serialize(script, _jsonOptions));
             }
 
-            await RegisterExternalDocumentAsync(script.Id, ".frycs", dir, Path.GetFileName(frycsPath));
+            _knownFileLocations[script.Id] = frycsPath;
 
             return new OpenProjectResult(
                 Success: true,
@@ -1134,19 +812,5 @@ public class LocalScriptStorageService : IScriptStorageService
         {
             return new OpenProjectResult(false, $"Failed to import C# file: {ex.Message}");
         }
-    }
-
-    private static async Task<string?> TryExtractIdFromFileAsync(string filePath)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(filePath));
-            if (doc.RootElement.TryGetProperty("Id", out var idProp))
-            {
-                return idProp.GetString();
-            }
-        }
-        catch { }
-        return null;
     }
 }

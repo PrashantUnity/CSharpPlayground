@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -7,6 +8,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 public interface IScriptStorageService
 {
     string LibraryRootPath { get; }
+
+    /// <summary>The single active workspace root currently shown in the Explorer: an opened folder, or <see cref="LibraryRootPath"/> when none is open.</summary>
+    string ActiveWorkspaceRootPath { get; }
+    bool IsExternalWorkspaceActive { get; }
+    event Action? ActiveWorkspaceChanged;
 
     Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync();
     Task<ScriptDocumentItem?> LoadScriptAsync(string id);

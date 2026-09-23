@@ -879,8 +879,10 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public async Task PopulateExplorerTree_ForExternallySavedDocument_GroupsUnderSingleParentFolderNode()
+    public async Task PopulateExplorerTree_ForDocumentOutsideActiveRoot_ShowsItAsOrphanTopLevelFile()
     {
+        // A document saved outside the active workspace root isn't part of the tree walk, but the
+        // currently open tab always surfaces via the orphan-node fallback.
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
         try
         {
@@ -888,16 +890,9 @@ Console.WriteLine(""should not be reached"");";
 
             var studio = CreateStudio(doc);
 
-            var directoryRoots = studio.ExplorerRootItems.Where(x => x.IsDirectory).ToList();
-            var groupNode = Assert.Single(directoryRoots);
-            Assert.Equal("MyExternalFolder", groupNode.Name);
-            Assert.True(groupNode.IsExternalGroup);
-            Assert.False(groupNode.IsManageableDirectory);
-            Assert.Equal(externalDir, groupNode.FullPath);
-
-            var docItem = Assert.Single(groupNode.Children);
-            Assert.Equal("External Doc.frynb", docItem.Name);
-            Assert.False(docItem.IsDirectory);
+            var item = Assert.Single(studio.ExplorerRootItems);
+            Assert.False(item.IsDirectory);
+            Assert.Equal("External Doc.frynb", item.Name);
         }
         finally
         {
@@ -907,49 +902,52 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public async Task DeleteExplorerItemAsync_OnExternalGroupNode_LeavesRealFolderAndTreeNodeIntact()
+    public async Task DeleteExplorerItemAsync_OnFolderInsideOpenedExternalRoot_DeletesItLikeAnyOtherFolder()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var doc = await _testStorage.CreateNewNotebookAsync("External Doc", folderPath: externalDir);
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+            var subFolder = await _testStorage.CreateFolderAsync(null, "SubFolder");
+            var doc = await _testStorage.CreateNewNotebookAsync("Inside", folderPath: subFolder);
             var studio = CreateStudio(doc);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
 
-            await studio.DeleteExplorerItemAsync(groupNode);
+            var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory);
 
-            Assert.True(Directory.Exists(externalDir));
-            Assert.Contains(studio.ExplorerRootItems, x => ReferenceEquals(x, groupNode));
+            await studio.DeleteExplorerItemAsync(folderNode);
+
+            Assert.False(Directory.Exists(Path.Combine(externalDir, "SubFolder")));
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => ReferenceEquals(x, folderNode));
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
     [Fact]
-    public async Task DuplicateExplorerItemAsync_ForExternallySavedNotebook_KeepsCopyInSameExternalFolder()
+    public async Task DuplicateExplorerItemAsync_ForDocumentInOpenedExternalRoot_KeepsCopyInSameFolder()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "DupFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var doc = await _testStorage.CreateNewNotebookAsync("Original", folderPath: externalDir);
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+            var doc = await _testStorage.CreateNewNotebookAsync("Original");
             var studio = CreateStudio(doc);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
-            var originalItem = groupNode.Children.Single();
+            var originalItem = studio.ExplorerRootItems.Single(x => !x.IsDirectory);
 
             await studio.DuplicateExplorerItemAsync(originalItem);
 
             var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
             var copy = Assert.Single(summaries, s => s.Title == "Original Copy");
-            Assert.Equal(externalDir, copy.FolderPath);
-            Assert.Contains(groupNode.Children, c => c.DocumentId == copy.Id);
+            Assert.Equal(string.Empty, copy.FolderPath);
+            Assert.Contains(studio.ExplorerRootItems, c => c.DocumentId == copy.Id);
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
@@ -965,10 +963,9 @@ Console.WriteLine(""should not be reached"");";
 
             var studio = CreateStudio(helloDoc);
 
-            var externalGroups = studio.ExplorerRootItems.Where(x => x.IsExternalGroup).ToList();
-            var visible = Assert.Single(externalGroups);
-            Assert.Equal("hello", visible.Name);
-            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsExternalGroup && x.Name == "I guess");
+            // Neither folder is the active workspace root, so only the currently open tab shows.
+            var item = Assert.Single(studio.ExplorerRootItems);
+            Assert.Equal("h.frynb", item.Name);
         }
         finally
         {
@@ -981,51 +978,42 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public async Task DeleteExplorerItemAsync_LastDocumentInExternalGroup_RemovesTheNowEmptyGroupNode()
+    public async Task DeleteExplorerItemAsync_LastDocumentInFolder_FolderStaysVisibleAndEmpty()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
-        try
-        {
-            var doc = await _testStorage.CreateNewNotebookAsync("Only Doc", folderPath: externalDir);
-            var studio = CreateStudio(doc);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
-            var docItem = groupNode.Children.Single();
+        var folder = await _testStorage.CreateFolderAsync(null, "SoloFolder");
+        var doc = await _testStorage.CreateNewNotebookAsync("Only Doc", folderPath: folder);
+        var studio = CreateStudio(doc);
+        var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.Name == "SoloFolder");
+        var docItem = folderNode.Children.Single();
 
-            await studio.DeleteExplorerItemAsync(docItem);
+        await studio.DeleteExplorerItemAsync(docItem);
 
-            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsExternalGroup);
-        }
-        finally
-        {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
+        Assert.Contains(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == "SoloFolder");
     }
 
     [Fact]
-    public async Task DeleteExplorerItemAsync_OneOfMultipleDocumentsInExternalGroup_KeepsGroupNodeWithRemainingDocument()
+    public async Task DeleteExplorerItemAsync_OneOfMultipleDocumentsInOpenedFolder_KeepsTheOtherDocumentVisible()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MultiFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var first = await _testStorage.CreateNewNotebookAsync("First", folderPath: externalDir);
-            await _testStorage.CreateNewNotebookAsync("Second", folderPath: externalDir);
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+            var first = await _testStorage.CreateNewNotebookAsync("First");
+            await _testStorage.CreateNewNotebookAsync("Second");
 
             var studio = CreateStudio(first);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
-            Assert.Equal(2, groupNode.Children.Count);
-            var firstItem = groupNode.Children.Single(c => c.Name == "First.frynb");
+            Assert.Equal(2, studio.ExplorerRootItems.Count(x => !x.IsDirectory));
+            var firstItem = studio.ExplorerRootItems.Single(c => c.Name == "First.frynb");
 
             await studio.DeleteExplorerItemAsync(firstItem);
 
-            var survivingGroup = Assert.Single(studio.ExplorerRootItems, x => x.IsExternalGroup);
-            var remaining = Assert.Single(survivingGroup.Children);
+            var remaining = Assert.Single(studio.ExplorerRootItems, x => !x.IsDirectory);
             Assert.Equal("Second.frynb", remaining.Name);
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 

@@ -58,21 +58,20 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     }
 
     [Fact]
-    public async Task PopulateExplorerTree_ForExternallySavedScript_GroupsUnderSingleParentFolderNode()
+    public async Task PopulateExplorerTree_ForScriptOutsideActiveRoot_ShowsItAsOrphanTopLevelFile()
     {
+        // A document saved outside the active workspace root (here: the still-empty internal library)
+        // isn't part of the tree walk, but the currently open document always surfaces via the
+        // orphan-node fallback so the active tab is never invisible in its own Explorer.
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
         try
         {
             var script = await _testStorage.CreateNewScriptAsync("External Script", folderPath: externalDir);
             var studio = CreateStudio(script);
 
-            var groupNode = Assert.Single(studio.ExplorerRootItems, x => x.IsDirectory);
-            Assert.Equal("MyExternalFolder", groupNode.Name);
-            Assert.True(groupNode.IsExternalGroup);
-            Assert.False(groupNode.IsManageableDirectory);
-
-            var docItem = Assert.Single(groupNode.Children);
-            Assert.Equal("External Script.frycs", docItem.Name);
+            var item = Assert.Single(studio.ExplorerRootItems);
+            Assert.False(item.IsDirectory);
+            Assert.Equal("External Script.frycs", item.Name);
         }
         finally
         {
@@ -93,9 +92,11 @@ public class CSharpCodeStudioExplorerTests : IDisposable
 
             var studio = CreateStudio(openScript);
 
-            var externalGroups = studio.ExplorerRootItems.Where(x => x.IsExternalGroup).ToList();
-            var visible = Assert.Single(externalGroups);
-            Assert.Equal("hello", visible.Name);
+            // Neither external folder is the active workspace root, so only the currently open
+            // document shows (via the orphan-node fallback) — the unrelated one must not leak in.
+            var item = Assert.Single(studio.ExplorerRootItems);
+            Assert.False(item.IsDirectory);
+            Assert.Equal("Open One.frycs", item.Name);
         }
         finally
         {
@@ -167,77 +168,78 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteExplorerItemAsync_OnExternalGroupNode_LeavesRealFolderAndTreeNodeIntact()
+    public async Task DeleteExplorerItemAsync_OnFolderInsideOpenedExternalRoot_DeletesItLikeAnyOtherFolder()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
+        // Once a folder is opened as the active workspace root, every real folder inside it is fully
+        // manageable — there's no synthetic "external wrapper" node left to protect from deletion.
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var script = await _testStorage.CreateNewScriptAsync("External Script", folderPath: externalDir);
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+            var subFolder = await _testStorage.CreateFolderAsync(null, "SubFolder");
+            var script = await _testStorage.CreateNewScriptAsync("Inside", folderPath: subFolder);
             var studio = CreateStudio(script);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
 
-            await studio.DeleteExplorerItemAsync(groupNode);
+            var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory);
+            Assert.True(folderNode.IsManageableDirectory);
 
-            Assert.True(Directory.Exists(externalDir));
-            Assert.Contains(studio.ExplorerRootItems, x => ReferenceEquals(x, groupNode));
+            await studio.DeleteExplorerItemAsync(folderNode);
+
+            Assert.False(Directory.Exists(Path.Combine(externalDir, "SubFolder")));
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => ReferenceEquals(x, folderNode));
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
     [Fact]
-    public async Task DeleteExplorerItemAsync_LastScriptInExternalGroup_RemovesTheNowEmptyGroupNode()
+    public async Task DeleteExplorerItemAsync_LastScriptInFolder_FolderStaysVisibleAndEmpty()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "SoloFolder");
-        try
-        {
-            var openScript = await _testStorage.CreateNewScriptAsync("Kept Open");
-            await _testStorage.CreateNewScriptAsync("Only External", folderPath: externalDir);
-            var studio = CreateStudio(openScript);
+        // Folders now always reflect a real directory on disk, so — unlike the old synthetic external
+        // group node — an emptied folder doesn't disappear from the tree.
+        var openScript = await _testStorage.CreateNewScriptAsync("Kept Open");
+        var folder = await _testStorage.CreateFolderAsync(null, "SoloFolder");
+        await _testStorage.CreateNewScriptAsync("Only One", folderPath: folder);
+        var studio = CreateStudio(openScript);
 
-            var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
-            var externalDocId = summaries.Single(s => s.Title == "Only External").Id;
-            var tempItem = new ExplorerItemViewModel { DocumentId = externalDocId, IsDirectory = false };
-            await studio.SwitchToScriptAsync(tempItem);
+        var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
+        var docId = summaries.Single(s => s.Title == "Only One").Id;
+        var tempItem = new ExplorerItemViewModel { DocumentId = docId, IsDirectory = false };
+        await studio.SwitchToScriptAsync(tempItem);
 
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
-            var docItem = groupNode.Children.Single();
+        var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.Name == "SoloFolder");
+        var docItem = folderNode.Children.Single();
 
-            await studio.DeleteExplorerItemAsync(docItem);
+        await studio.DeleteExplorerItemAsync(docItem);
 
-            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.IsExternalGroup);
-        }
-        finally
-        {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
+        Assert.Contains(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == "SoloFolder");
     }
 
     [Fact]
-    public async Task DuplicateExplorerItemAsync_ForExternallySavedScript_KeepsCopyInSameExternalFolder()
+    public async Task DuplicateExplorerItemAsync_ForDocumentInOpenedExternalRoot_KeepsCopyInSameFolder()
     {
-        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "DupFolder");
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
         try
         {
-            var script = await _testStorage.CreateNewScriptAsync("Original", folderPath: externalDir);
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+            var script = await _testStorage.CreateNewScriptAsync("Original");
             var studio = CreateStudio(script);
-            var groupNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.IsExternalGroup);
-            var originalItem = groupNode.Children.Single();
+            var originalItem = studio.ExplorerRootItems.Single(x => !x.IsDirectory);
 
             await studio.DuplicateExplorerItemAsync(originalItem);
 
             var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
             var copy = Assert.Single(summaries, s => s.Title == "Original Copy");
-            Assert.Equal(externalDir, copy.FolderPath);
+            Assert.Equal(string.Empty, copy.FolderPath);
+            Assert.True(File.Exists(Path.Combine(externalDir, "Original Copy.frycs")));
         }
         finally
         {
-            var root = Path.GetDirectoryName(externalDir)!;
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
