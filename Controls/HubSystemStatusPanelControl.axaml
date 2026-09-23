@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubSystemStatusPanelControl"
+             x:DataType="vm:CSharpManagerViewModel">
+
+                                <StackPanel Grid.Column="2" Spacing="16">
+
+                                    <!-- Card 1: Studio Environment & System Health -->
+                                    <Border Classes="nexus-glass-card" Padding="16">
+                                        <StackPanel Spacing="12">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="STUDIO ENVIRONMENT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <!-- Roslyn & .NET 10 Status -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6"
+                                                        Background="{DynamicResource DsPrimarySubtleBrush}">
+                                                    <materialIcons:MaterialIcon Kind="CodeTags" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}"
+                                                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding RoslynEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <TextBlock Text="{Binding RoslynEngineStatus}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                </StackPanel>
+                                                <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <!-- Storage Engine Status -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ToolTip.Tip="{Binding LibraryRootPath}">
+                                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6"
+                                                        Background="{DynamicResource DsLinqSubtleBrush}">
+                                                    <materialIcons:MaterialIcon Kind="DatabaseOutline" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}"
+                                                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StorageEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <TextBlock Text="{Binding StorageEngineStatus}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                </StackPanel>
+                                                <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <Border Height="1" Background="{DynamicResource DsBorderBrush}" Margin="0,2" />
+
+                                            <!-- Mini Resource Usage Meters -->
+                                            <StackPanel Spacing="8">
+                                                <!-- Memory Meter -->
+                                                <StackPanel Spacing="4">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Grid.Column="0" Text="Process Memory" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding MemoryUsageText}" FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsTextBrush}" />
+                                                    </Grid>
+                                                    <Border Height="4" CornerRadius="2" Background="{DynamicResource DsBgBrush}">
+                                                        <ProgressBar Value="{Binding MemoryUsagePercent}" Minimum="0" Maximum="100"
+                                                                     Height="4" Foreground="{DynamicResource DsPrimaryBrush}" Background="Transparent" BorderThickness="0" CornerRadius="2" />
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Storage Meter -->
+                                                <StackPanel Spacing="4">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Grid.Column="0" Text="Library Storage" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding StorageUsageText}" FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsTextBrush}" />
+                                                    </Grid>
+                                                    <Border Height="4" CornerRadius="2" Background="{DynamicResource DsBgBrush}">
+                                                        <ProgressBar Value="{Binding StorageUsagePercent}" Minimum="0" Maximum="100"
+                                                                     Height="4" Foreground="{DynamicResource DsJupyterBrush}" Background="Transparent" BorderThickness="0" CornerRadius="2" />
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Card 2: Quick Keyboard Shortcuts -->
+                                    <Border Classes="nexus-glass-card" Padding="16">
+                                        <StackPanel Spacing="12">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="KEYBOARD SHORTCUTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8">
+                                                <!-- Shortcut 1: New Notebook -->
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="New Notebook" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Ctrl+N" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Shortcut 2: Open Project -->
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="Open Project / File" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Ctrl+O" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Shortcut 3: Run / Execute -->
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="Execute / Run Cell" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Shift+Enter" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Shortcut 4: Toggle Side Bar -->
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="Toggle Side Bar" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Ctrl+B" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Shortcut 5: Toggle Bottom Deck -->
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="Toggle Terminal / Deck" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Ctrl+J" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Card 3: Quick Template Launch (when a template is selected) -->
+                                    <Border Classes="nexus-glass-card" Padding="16" IsVisible="{Binding IsShowingTemplate}">
+                                        <StackPanel Spacing="10">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="SELECTED TEMPLATE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding SelectedTemplate.Title}" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding SelectedTemplate.Description}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" MaxLines="3" />
+
+                                            <Button Command="{Binding LaunchTemplateCommand}"
+                                                    CommandParameter="{Binding SelectedTemplate}"
+                                                    Classes="nexus-btn-primary"
+                                                    HorizontalAlignment="Stretch"
+                                                    Margin="0,4,0,0">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                                    <TextBlock Text="Launch Template" />
+                                                    <materialIcons:MaterialIcon Kind="ArrowRight" Width="15" Height="15" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel>
+</UserControl>

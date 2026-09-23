@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubTopHeaderControl"
+             x:DataType="vm:CSharpManagerViewModel">
+
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="32,0">
+                    <Grid ColumnDefinitions="*,Auto">
+
+                        <!-- Global Search Box -->
+                        <Border Grid.Column="0"
+                                MaxWidth="580"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource DsSurfaceBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Height="38"
+                                Padding="12,0"
+                                VerticalAlignment="Center">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="18" Height="18"
+                                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding SearchQuery, Mode=TwoWay}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         MinHeight="0" Height="28" Padding="0"
+                                         FontSize="13"
+                                         Foreground="{DynamicResource DsTextWhiteBrush}"
+                                         VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                         PlaceholderText="Search notebooks, scripts, or connections (Ctrl+K)" />
+                                <Button Grid.Column="2"
+                                        Command="{Binding ClearSearchCommand}"
+                                        IsVisible="{Binding HasSearchQuery}"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="4"
+                                        Cursor="Hand"
+                                        ToolTip.Tip="Clear search">
+                                    <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <!-- Ctrl+K Badge -->
+                                <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" CornerRadius="4" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="Ctrl" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <TextBlock Text="K" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Right Actions: Bell & Sync Button -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                            <!-- Bell Button -->
+                            <Button Background="Transparent" BorderThickness="0" Padding="6" Cursor="Hand" ToolTip.Tip="Notifications">
+                                <Panel>
+                                    <materialIcons:MaterialIcon Kind="BellOutline" Width="20" Height="20" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsPrimaryBrush}"
+                                            BorderBrush="{DynamicResource DsBgBrush}" BorderThickness="1"
+                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
+                                </Panel>
+                            </Button>
+
+                            <!-- Sync Button -->
+                            <Button Command="{Binding RefreshWorkspaceCommand}"
+                                    Classes="nexus-btn-surface"
+                                    Height="36" Padding="14,0"
+                                    ToolTip.Tip="Reload workspace items from disk">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="CloudUploadOutline" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Text="Sync" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                    </Grid>
+                </Border>
+</UserControl>

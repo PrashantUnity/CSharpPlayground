@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubCreateItemDialogControl"
+             x:DataType="vm:CSharpManagerViewModel">
+
+        <Border IsVisible="{Binding IsCreatePromptOpen}"
+                Background="#B3000000"
+                ZIndex="100">
+            <Border Width="460"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="14"
+                    BoxShadow="0 24 64 #90000000"
+                    Padding="24,22"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="18">
+
+                    <!-- Modal Header -->
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Type Icon Badge -->
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <Panel>
+                                <!-- Notebook Badge -->
+                                <Border Background="{DynamicResource DsJupyterSubtleBrush}" CornerRadius="8"
+                                        IsVisible="{Binding IsCreatingNotebook}">
+                                    <materialIcons:MaterialIcon Kind="NotebookOutline" Width="19" Height="19"
+                                                                Foreground="{DynamicResource DsJupyterBrush}"
+                                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <!-- Script Badge -->
+                                <Border Background="{DynamicResource DsLinqSubtleBrush}" CornerRadius="8"
+                                        IsVisible="{Binding IsCreatingScript}">
+                                    <TextBlock Text="C#" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Panel>
+                        </Border>
+
+                        <!-- Title & Subtitle -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding CreatePromptTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Set a document title and select workspace folder." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                        </StackPanel>
+
+                        <!-- Close (X) Button -->
+                        <Button Grid.Column="2" Command="{Binding CancelCreatePromptCommand}"
+                                Classes="nexus-btn-ghost" Width="30" Height="30" Padding="0"
+                                VerticalAlignment="Center" ToolTip.Tip="Cancel and close">
+                            <materialIcons:MaterialIcon Kind="Close" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Subtle Header Divider -->
+                    <Border Height="1" Background="{DynamicResource DsBorderBrush}" Margin="0,2,0,2" />
+
+                    <!-- Field 1: Document Name -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="DOCUMENT NAME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBox Text="{Binding NewItemName, Mode=TwoWay}"
+                                 Classes="nexus-input">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding ConfirmCreateCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                    </StackPanel>
+
+                    <!-- Field 2: Workspace Location -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="WORKSPACE LOCATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <!-- Location Path Display -->
+                            <Border Grid.Column="0"
+                                    Background="{DynamicResource DsBgBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Height="38" Padding="12,0" Margin="0,0,8,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="16" Height="16"
+                                                                Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedFolderDisplay}"
+                                               FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding SelectedFolderDisplay}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Browse Button -->
+                            <Button Grid.Column="1" Name="BrowseFolderButton" Click="OnBrowseFolderClick"
+                                    Classes="nexus-btn-surface" Height="38" Padding="14,0"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Browse..." VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Location Warning Callout (if picked outside library root) -->
+                        <Border Background="#1C1811" BorderBrush="#D29922" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,4,0,0"
+                                IsVisible="{Binding LocationWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Foreground="#D29922" VerticalAlignment="Top" Margin="0,1,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding LocationWarning}" FontSize="11" Foreground="#E3B341" TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Actions Footer -->
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+                        <Button Grid.Column="1" Command="{Binding CancelCreatePromptCommand}"
+                                Classes="nexus-btn-surface" Height="38" Padding="18,0" Margin="0,0,10,0">
+                            <TextBlock Text="Cancel" VerticalAlignment="Center" />
+                        </Button>
+                        <Button Grid.Column="2" Command="{Binding ConfirmCreateCommand}"
+                                Classes="nexus-btn-primary" Height="38" Padding="20,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="Plus" Width="15" Height="15" VerticalAlignment="Center" />
+                                <TextBlock Text="Create" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+</UserControl>
