@@ -1,0 +1,311 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===================================================================== -->
+    <!-- Nexus Dashboard Styles — consumed by CSharpManagerView (the Hub).      -->
+    <!-- Colors come from CSharpManagerPaletteTokens.axaml's Ds*Brush tokens,   -->
+    <!-- which are theme-variant aware (Light/Dark).                           -->
+    <!-- ===================================================================== -->
+
+    <!-- Card Button Reset -->
+    <Style Selector="Button.nexus-card-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  HorizontalContentAlignment="Stretch"
+                                  VerticalContentAlignment="Stretch" />
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-card-btn:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- Glass Card Base -->
+    <Style Selector="Border.nexus-glass-card">
+        <Setter Property="Background" Value="{DynamicResource DsGlassBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                <BrushTransition Property="Background" Duration="0:0:0.18" />
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-glass-card">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    </Style>
+
+    <!-- Sidebar Nav Button -->
+    <Style Selector="Button.nexus-nav-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-nav-item:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.nexus-nav-item.active">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Primary Action Button (New Notebook) -->
+    <Style Selector="Button.nexus-btn-primary">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="18,10" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-btn-primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+
+    <!-- Surface Action Button (New Script) -->
+    <Style Selector="Button.nexus-btn-surface">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="18,10" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-btn-surface:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+
+    <!-- Ghost Icon Button -->
+    <Style Selector="Button.nexus-btn-ghost">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-btn-ghost:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+    </Style>
+
+    <!-- Nexus Input TextBox -->
+    <Style Selector="TextBox.nexus-input">
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Height" Value="38" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimarySubtleBrush}" />
+    </Style>
+    <Style Selector="TextBox.nexus-input:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+    </Style>
+    <Style Selector="TextBox.nexus-input:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+
+    <!-- Flyout & ContextMenu Styles for GitHub Dark/Light Nexus Theme -->
+    <Style Selector="FlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="MenuFlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="4" />
+    </Style>
+    <Style Selector="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="4" />
+    </Style>
+    <Style Selector="MenuItem">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="MenuItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <!-- Tag Pill -->
+    <Style Selector="Border.nexus-tag-pill">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,2" />
+    </Style>
+    <Style Selector="Border.nexus-tag-pill TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+    <Style Selector="Border.nexus-tag-pill.overflow">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Table Row Button -->
+    <Style Selector="Border.nexus-table-row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderSubtleBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-table-row">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+    </Style>
+
+    <!-- Segmented Tab Pill (Dashboard View Switcher) -->
+    <Style Selector="Button.nexus-tab-pill">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="9999" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-tab-pill:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.nexus-tab-pill.active">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Category Filter Chip -->
+    <Style Selector="Button.nexus-filter-chip">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="9999" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-filter-chip:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.nexus-filter-chip.active">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Pulsing Status Dot Animation -->
+    <Style Selector="Border.status-pulse-dot">
+        <Style.Animations>
+            <Animation Duration="0:0:2.0" IterationCount="Infinite">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="1.0" />
+                </KeyFrame>
+                <KeyFrame Cue="50%">
+                    <Setter Property="Opacity" Value="0.35" />
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1.0" />
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+</Styles>

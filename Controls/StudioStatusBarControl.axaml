@@ -86,6 +86,11 @@
                 <Button Command="{Binding ToggleBottomDeckCommand}" Classes="cs-toolbar-icon" Width="20" Height="18" ToolTip.Tip="Toggle Terminal Panel (Ctrl+J)">
                     <materialIcons:MaterialIcon Kind="DockBottom" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                 </Button>
+
+                <!-- Light/Dark Theme Toggle Button -->
+                <Button Command="{Binding ToggleThemeCommand}" Classes="cs-toolbar-icon" Width="20" Height="18" ToolTip.Tip="Toggle Light/Dark Theme">
+                    <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                </Button>
             </StackPanel>
         </Grid>
     </Border>

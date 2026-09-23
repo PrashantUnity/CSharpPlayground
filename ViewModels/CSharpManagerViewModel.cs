@@ -42,6 +42,20 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private int _filteredItemCount;
 
+    // Safe to read the actual Avalonia theme here: this view model is constructed directly on the UI
+    // thread (see CSharpStudioHostViewModel's constructor comment "Show Manager immediately").
+    [ObservableProperty]
+    private bool _isDarkTheme = ThemeService.IsDark;
+
+    public string ThemeToggleLabel => IsDarkTheme ? "Light Theme" : "Dark Theme";
+
+    [RelayCommand]
+    private void ToggleTheme()
+    {
+        IsDarkTheme = ThemeService.ToggleTheme();
+        OnPropertyChanged(nameof(ThemeToggleLabel));
+    }
+
     [ObservableProperty]
     private string _selectedNavSection = "Templates";
 

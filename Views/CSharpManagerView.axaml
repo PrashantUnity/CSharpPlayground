@@ -11,25 +11,10 @@
              Background="{DynamicResource DsBgBrush}">
 
     <UserControl.Resources>
-        <!-- Modern Developer Dashboard Palette (Nexus / GitHub Dark) -->
-        <SolidColorBrush x:Key="DsBgBrush" Color="#0D1117" />
-        <SolidColorBrush x:Key="DsSurfaceBrush" Color="#161B22" />
-        <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#21262D" />
-        <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#1C2128" />
-        <SolidColorBrush x:Key="DsBorderBrush" Color="#30363D" />
-        <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#21262D" />
-        <SolidColorBrush x:Key="DsTextBrush" Color="#C9D1D9" />
-        <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="DsMutedBrush" Color="#8B949E" />
-        <SolidColorBrush x:Key="DsPrimaryBrush" Color="#2F81F7" />
-        <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#1F6FEB" />
-        <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A2F81F7" />
-        <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
-        <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
-        <SolidColorBrush x:Key="DsLinqBrush" Color="#238636" />
-        <SolidColorBrush x:Key="DsLinqSubtleBrush" Color="#26238636" />
-        <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
-        <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6161B22" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
 
         <!-- Template Card in Nexus Style -->
         <DataTemplate x:Key="TemplateCardTemplate" x:DataType="models:CodeTemplate">
@@ -52,10 +37,10 @@
                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
 
-                            <Border Grid.Column="2" Background="#0D1117" BorderBrush="#30363D" BorderThickness="1"
+                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                     CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding KindBadgeText}" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="#8B949E" />
+                                           Foreground="{DynamicResource DsMutedBrush}" />
                             </Border>
                         </Grid>
 
@@ -63,12 +48,12 @@
                         <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
                             <TextBlock Text="{Binding Title}"
                                        FontWeight="SemiBold" FontSize="13"
-                                       Foreground="#FFFFFF"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}"
                                        TextTrimming="CharacterEllipsis"
                                        ToolTip.Tip="{Binding Title}" />
                             <TextBlock Text="{Binding Description}"
                                        FontSize="11.5"
-                                       Foreground="#8B949E"
+                                       Foreground="{DynamicResource DsMutedBrush}"
                                        TextWrapping="Wrap"
                                        MaxLines="2" />
                         </StackPanel>
@@ -97,310 +82,11 @@
                 </Border>
             </Button>
         </DataTemplate>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <!-- Card Button Reset -->
-        <Style Selector="Button.nexus-card-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <ContentPresenter Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                      HorizontalContentAlignment="Stretch"
-                                      VerticalContentAlignment="Stretch" />
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-card-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-
-        <!-- Glass Card Base -->
-        <Style Selector="Border.nexus-glass-card">
-            <Setter Property="Background" Value="{DynamicResource DsGlassBgBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="18" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
-                    <BrushTransition Property="Background" Duration="0:0:0.18" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-glass-card">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Background" Value="#21262D" />
-            <Setter Property="RenderTransform" Value="translateY(-2px)" />
-        </Style>
-
-        <!-- Sidebar Nav Button -->
-        <Style Selector="Button.nexus-nav-item">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="12,8" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-nav-item:pointerover">
-            <Setter Property="Background" Value="#1AFFFFFF" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-        <Style Selector="Button.nexus-nav-item.active">
-            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-
-        <!-- Primary Action Button (New Notebook) -->
-        <Style Selector="Button.nexus-btn-primary">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="18,10" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-btn-primary:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
-        </Style>
-
-        <!-- Surface Action Button (New Script) -->
-        <Style Selector="Button.nexus-btn-surface">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="18,10" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-btn-surface:pointerover">
-            <Setter Property="Background" Value="#21262D" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-
-        <!-- Ghost Icon Button -->
-        <Style Selector="Button.nexus-btn-ghost">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-btn-ghost:pointerover">
-            <Setter Property="Background" Value="#252C36" />
-        </Style>
-
-        <!-- Nexus Input TextBox -->
-        <Style Selector="TextBox.nexus-input">
-            <Setter Property="Background" Value="#0D1117" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="12,0" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="CaretBrush" Value="#2F81F7" />
-            <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimarySubtleBrush}" />
-        </Style>
-        <Style Selector="TextBox.nexus-input:focus">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Background" Value="#0D1117" />
-        </Style>
-        <Style Selector="TextBox.nexus-input:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-
-        <!-- Flyout & ContextMenu Styles for GitHub Dark / Nexus Theme -->
-        <Style Selector="FlyoutPresenter">
-            <Setter Property="Background" Value="#161B22" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="0" />
-        </Style>
-        <Style Selector="MenuFlyoutPresenter">
-            <Setter Property="Background" Value="#161B22" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="4" />
-        </Style>
-        <Style Selector="ContextMenu">
-            <Setter Property="Background" Value="#161B22" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="4" />
-        </Style>
-        <Style Selector="MenuItem">
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-            <Setter Property="Padding" Value="10,6" />
-        </Style>
-        <Style Selector="MenuItem:pointerover">
-            <Setter Property="Background" Value="#21262D" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-
-        <!-- Tag Pill -->
-        <Style Selector="Border.nexus-tag-pill">
-            <Setter Property="Background" Value="#21262D" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,2" />
-        </Style>
-        <Style Selector="Border.nexus-tag-pill TextBlock">
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Border.nexus-tag-pill.overflow">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-        </Style>
-
-        <!-- Table Row Button -->
-        <Style Selector="Border.nexus-table-row">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderSubtleBrush}" />
-            <Setter Property="BorderThickness" Value="0,0,0,1" />
-            <Setter Property="Padding" Value="16,12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-table-row">
-            <Setter Property="Background" Value="#1AFFFFFF" />
-        </Style>
-
-        <!-- Segmented Tab Pill (Dashboard View Switcher) -->
-        <Style Selector="Button.nexus-tab-pill">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="9999" />
-            <Setter Property="Padding" Value="14,6" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-tab-pill:pointerover">
-            <Setter Property="Background" Value="#1AFFFFFF" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-        <Style Selector="Button.nexus-tab-pill.active">
-            <Setter Property="Background" Value="#21262D" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-
-        <!-- Category Filter Chip -->
-        <Style Selector="Button.nexus-filter-chip">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="9999" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nexus-filter-chip:pointerover">
-            <Setter Property="Background" Value="#161B22" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-        <Style Selector="Button.nexus-filter-chip.active">
-            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-
-        <!-- Pulsing Status Dot Animation -->
-        <Style Selector="Border.status-pulse-dot">
-            <Style.Animations>
-                <Animation Duration="0:0:2.0" IterationCount="Infinite">
-                    <KeyFrame Cue="0%">
-                        <Setter Property="Opacity" Value="1.0" />
-                    </KeyFrame>
-                    <KeyFrame Cue="50%">
-                        <Setter Property="Opacity" Value="0.35" />
-                    </KeyFrame>
-                    <KeyFrame Cue="100%">
-                        <Setter Property="Opacity" Value="1.0" />
-                    </KeyFrame>
-                </Animation>
-            </Style.Animations>
-        </Style>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
     </UserControl.Styles>
 
     <Panel>
@@ -441,8 +127,8 @@
 
                             <!-- Brand Name -->
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="FryPDF" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
-                                <TextBlock Text="Studio" FontSize="13" Foreground="{DynamicResource DsMutedBrush}" Margin="5,2,0,0" />
+                                <TextBlock Text="Fry" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Sharp" FontSize="13" Foreground="{DynamicResource DsMutedBrush}" Margin="5,2,0,0" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -552,6 +238,16 @@
                                 </Grid>
                             </Button>
 
+                            <!-- Light/Dark Theme Toggle -->
+                            <Button Command="{Binding ToggleThemeCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Toggle Light/Dark Theme">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="ThemeLightDark" Width="18" Height="18" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding ThemeToggleLabel}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
                             <!-- ENVIRONMENTS Section Label -->
                             <TextBlock Text="ENVIRONMENTS"
                                        FontSize="10.5"
@@ -591,12 +287,12 @@
                                     ToolTip.Tip="Return to FryPDF Studio Home (Esc / ⌘W)">
                                 <Grid ColumnDefinitions="Auto,*">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="HomeOutline" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="FryPDF Studio" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="FryC#" Margin="12,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
                             <!-- User Profile Row -->
-                            <Border Background="#1C2128"
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="8"
@@ -604,14 +300,14 @@
                                 <Grid ColumnDefinitions="Auto,*">
                                     <!-- User Avatar Circle -->
                                     <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
-                                            Background="#2F81F7" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                                            Background="{DynamicResource DsPrimaryBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
                                         <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
 
                                     <!-- User Text -->
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="Developer" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                        <TextBlock Text="Developer" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                         <TextBlock Text="Local .NET 10" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                     </StackPanel>
                                 </Grid>
@@ -637,7 +333,7 @@
                         <Border Grid.Column="0"
                                 MaxWidth="580"
                                 HorizontalAlignment="Left"
-                                Background="#161B22"
+                                Background="{DynamicResource DsSurfaceBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
@@ -653,7 +349,7 @@
                                          BorderThickness="0"
                                          MinHeight="0" Height="28" Padding="0"
                                          FontSize="13"
-                                         Foreground="#FFFFFF"
+                                         Foreground="{DynamicResource DsTextWhiteBrush}"
                                          VerticalAlignment="Center" VerticalContentAlignment="Center"
                                          PlaceholderText="Search notebooks, scripts, or connections (Ctrl+K)" />
                                 <Button Grid.Column="2"
@@ -723,7 +419,7 @@
 
                             <!-- Status Notification Toast Banner -->
                             <Border CornerRadius="8" BorderThickness="1" Padding="14,10" Margin="0,0,0,4"
-                                    Background="#161B22"
+                                    Background="{DynamicResource DsSurfaceBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                     IsVisible="{Binding HasStatusBannerMessage}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
@@ -733,7 +429,7 @@
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18"
                                                                 Foreground="#F85149" VerticalAlignment="Center" Margin="0,0,10,0"
                                                                 IsVisible="{Binding IsStatusBannerError}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                     <Button Grid.Column="2" Command="{Binding DismissStatusBannerCommand}" Classes="nexus-btn-ghost" Width="26" Height="26" Padding="0" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Button>
@@ -745,7 +441,7 @@
                             <!-- ============================================================ -->
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="Welcome back, Developer" FontSize="26" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                    <TextBlock Text="Welcome back, Developer" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     <TextBlock Text="Pick up where you left off, open an existing project, or start a new workspace." FontSize="13" Foreground="{DynamicResource DsMutedBrush}" />
                                 </StackPanel>
 
@@ -804,7 +500,7 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="Pin" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Text="PINNED WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                        <TextBlock Text="PINNED WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                         <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                 CornerRadius="10" Padding="7,1.5" VerticalAlignment="Center" Margin="4,0,0,0">
                                             <TextBlock Text="{Binding PinnedCount}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
@@ -831,7 +527,7 @@
                                                         <!-- Header: Icon & Runtime Badge -->
                                                         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" Margin="0,0,60,0">
                                                             <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
-                                                                    Background="#1E1E1E" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                     VerticalAlignment="Center">
                                                                 <Panel>
                                                                     <materialIcons:MaterialIcon Kind="NotebookOutline" Width="20" Height="20"
@@ -860,7 +556,7 @@
                                                         <!-- Body: Title & Monospace Path -->
                                                         <StackPanel Grid.Row="1" Spacing="4" Margin="0,12,0,0">
                                                             <TextBlock Text="{Binding PinnedItem1.Title}"
-                                                                       FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem1.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem1.DisplayLocation}"
@@ -923,11 +619,11 @@
                                         <Button Classes="nexus-card-btn" Height="175" IsVisible="{Binding !HasPinnedItem1}">
                                             <Button.Flyout>
                                                 <Flyout Placement="BottomEdgeAlignedLeft">
-                                                    <Border Width="340" Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="10" Padding="14">
+                                                    <Border Width="340" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14">
                                                         <StackPanel Spacing="12">
                                                             <Grid ColumnDefinitions="*,Auto">
                                                                 <StackPanel Grid.Column="0" Spacing="2">
-                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" />
+                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                                     <TextBlock Text="Select a document to pin to Slot 1" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                                                 </StackPanel>
                                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="Pin" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
@@ -942,14 +638,14 @@
                                                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).PinItemCommand}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn" Margin="0,2">
-                                                                                    <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                                             CornerRadius="6" Padding="10,8">
                                                                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                                                                             <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16"
                                                                                                                         Foreground="{Binding IconForeground}"
                                                                                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                                 <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
@@ -963,11 +659,11 @@
                                                                     </ItemsControl>
                                                                 </ScrollViewer>
                                                             </StackPanel>
-                                                            <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
+                                                            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
                                                                     IsVisible="{Binding !HasUnpinnedItems}">
                                                                 <StackPanel Spacing="4" HorizontalAlignment="Center">
                                                                     <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" />
-                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Border>
                                                         </StackPanel>
@@ -1007,7 +703,7 @@
                                                         <!-- Header: Icon & Runtime Badge -->
                                                         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" Margin="0,0,60,0">
                                                             <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
-                                                                    Background="#1E1E1E" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                     VerticalAlignment="Center">
                                                                 <Panel>
                                                                     <materialIcons:MaterialIcon Kind="NotebookOutline" Width="20" Height="20"
@@ -1036,7 +732,7 @@
                                                         <!-- Body: Title & Monospace Path -->
                                                         <StackPanel Grid.Row="1" Spacing="4" Margin="0,12,0,0">
                                                             <TextBlock Text="{Binding PinnedItem2.Title}"
-                                                                       FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem2.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem2.DisplayLocation}"
@@ -1099,11 +795,11 @@
                                         <Button Classes="nexus-card-btn" Height="175" IsVisible="{Binding !HasPinnedItem2}">
                                             <Button.Flyout>
                                                 <Flyout Placement="BottomEdgeAlignedLeft">
-                                                    <Border Width="340" Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="10" Padding="14">
+                                                    <Border Width="340" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14">
                                                         <StackPanel Spacing="12">
                                                             <Grid ColumnDefinitions="*,Auto">
                                                                 <StackPanel Grid.Column="0" Spacing="2">
-                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" />
+                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                                     <TextBlock Text="Select a document to pin to Slot 2" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                                                 </StackPanel>
                                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="Pin" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
@@ -1118,14 +814,14 @@
                                                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).PinItemCommand}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn" Margin="0,2">
-                                                                                    <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                                             CornerRadius="6" Padding="10,8">
                                                                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                                                                             <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16"
                                                                                                                         Foreground="{Binding IconForeground}"
                                                                                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                                 <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
@@ -1139,11 +835,11 @@
                                                                     </ItemsControl>
                                                                 </ScrollViewer>
                                                             </StackPanel>
-                                                            <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
+                                                            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
                                                                     IsVisible="{Binding !HasUnpinnedItems}">
                                                                 <StackPanel Spacing="4" HorizontalAlignment="Center">
                                                                     <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" />
-                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Border>
                                                         </StackPanel>
@@ -1183,7 +879,7 @@
                                                         <!-- Header: Icon & Runtime Badge -->
                                                         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" Margin="0,0,60,0">
                                                             <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
-                                                                    Background="#1E1E1E" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                     VerticalAlignment="Center">
                                                                 <Panel>
                                                                     <materialIcons:MaterialIcon Kind="NotebookOutline" Width="20" Height="20"
@@ -1212,7 +908,7 @@
                                                         <!-- Body: Title & Monospace Path -->
                                                         <StackPanel Grid.Row="1" Spacing="4" Margin="0,12,0,0">
                                                             <TextBlock Text="{Binding PinnedItem3.Title}"
-                                                                       FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem3.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem3.DisplayLocation}"
@@ -1275,11 +971,11 @@
                                         <Button Classes="nexus-card-btn" Height="175" IsVisible="{Binding !HasPinnedItem3}">
                                             <Button.Flyout>
                                                 <Flyout Placement="BottomEdgeAlignedRight">
-                                                    <Border Width="340" Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="10" Padding="14">
+                                                    <Border Width="340" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14">
                                                         <StackPanel Spacing="12">
                                                             <Grid ColumnDefinitions="*,Auto">
                                                                 <StackPanel Grid.Column="0" Spacing="2">
-                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" />
+                                                                    <TextBlock Text="Pin a Workspace" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                                     <TextBlock Text="Pin documents to your quick access header" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                                                 </StackPanel>
                                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="Pin" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
@@ -1298,14 +994,14 @@
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn"
                                                                                         Margin="0,2">
-                                                                                    <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                                             CornerRadius="6" Padding="10,8">
                                                                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                                                                             <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16"
                                                                                                                         Foreground="{Binding IconForeground}"
                                                                                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                                                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                                 <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
@@ -1321,11 +1017,11 @@
                                                             </StackPanel>
 
                                                             <!-- If all items are pinned -->
-                                                            <Border Background="#0D1117" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
+                                                            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
                                                                     IsVisible="{Binding !HasUnpinnedItems}">
                                                                 <StackPanel Spacing="4" HorizontalAlignment="Center">
                                                                     <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" />
-                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                                                    <TextBlock Text="All workspaces are pinned" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Border>
 
@@ -1376,7 +1072,7 @@
                                     <!-- Dashboard Navigation & View Switcher (Workspaces vs Starter Templates) -->
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <!-- Segmented Tab Pill: [ Workspaces (N) ] [ Starter Templates (N) ] -->
-                                        <Border Grid.Column="0" Background="#161B22" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                        <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                 CornerRadius="9999" Padding="3">
                                             <StackPanel Orientation="Horizontal" Spacing="2">
                                                 <Button Command="{Binding SetActiveDashboardViewCommand}" CommandParameter="Workspaces"
@@ -1415,7 +1111,7 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="History" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="RECENT WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                <TextBlock Text="RECENT WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
 
                                             <!-- Segmented Category Filter Chips -->
@@ -1464,14 +1160,14 @@
                                         </Grid>
 
                                         <!-- Inline Search & Filter Bar -->
-                                        <Border Background="#161B22" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                 CornerRadius="8" Height="36" Padding="10,0">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                                 <TextBox Grid.Column="1" Text="{Binding SearchQuery, Mode=TwoWay}"
                                                          Background="Transparent" BorderThickness="0"
                                                          MinHeight="0" Height="28" Padding="0"
-                                                         FontSize="12.5" Foreground="#FFFFFF"
+                                                         FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                          VerticalAlignment="Center" VerticalContentAlignment="Center"
                                                          PlaceholderText="Filter workspaces by title, location path, or tags..." />
                                                 <Button Grid.Column="2" Command="{Binding ClearSearchCommand}"
@@ -1490,7 +1186,7 @@
                                                 ClipToBounds="True">
                                             <StackPanel>
                                                 <!-- Table Header (12 Columns equivalent) -->
-                                                <Border Background="#1C2128"
+                                                <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                                         BorderBrush="{DynamicResource DsBorderBrush}"
                                                         BorderThickness="0,0,0,1"
                                                         Padding="18,10">
@@ -1505,11 +1201,11 @@
                                                 <!-- Empty State when 0 filtered items -->
                                                 <Border IsVisible="{Binding !HasFilteredItems}" Padding="32,48">
                                                     <StackPanel HorizontalAlignment="Center" Spacing="12">
-                                                        <Border Width="52" Height="52" CornerRadius="26" Background="#21262D" HorizontalAlignment="Center">
+                                                        <Border Width="52" Height="52" CornerRadius="26" Background="{DynamicResource DsSurfaceHoverBrush}" HorizontalAlignment="Center">
                                                             <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}"
                                                                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                         </Border>
-                                                        <TextBlock Text="No workspace items found" FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                                        <TextBlock Text="No workspace items found" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                                                         <TextBlock Text="Try clearing search keywords, switching filters, or open an existing project from disk." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                                         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,6,0,0">
                                                             <Button Command="{Binding ResetFiltersCommand}"
@@ -1538,7 +1234,7 @@
                                                     <ItemsControl.DataTemplates>
                                                         <!-- Solution & External Workspace Group Header (Visual Studio & Rider Style) -->
                                                         <DataTemplate x:DataType="vm:WorkspaceGroupHeaderViewModel">
-                                                            <Border Background="#161B22"
+                                                            <Border Background="{DynamicResource DsSurfaceBrush}"
                                                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                                                     BorderThickness="0,1,0,1"
                                                                     Padding="18,10"
@@ -1547,7 +1243,7 @@
                                                                     <!-- Col 0: Solution Icon + Title, Project Tag & Path -->
                                                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                                                         <Border Width="28" Height="28" CornerRadius="6"
-                                                                                Background="#1C2128" BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="1"
+                                                                                Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="1"
                                                                                 VerticalAlignment="Center">
                                                                             <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="16" Height="16"
                                                                                                         Foreground="{DynamicResource DsPrimaryBrush}"
@@ -1555,8 +1251,8 @@
                                                                         </Border>
                                                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                                                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
-                                                                                <Border Background="#1A2F81F7" BorderBrush="#332F81F7" BorderThickness="1" CornerRadius="4" Padding="5,1">
+                                                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                                                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1">
                                                                                     <TextBlock Text="WORKSPACE" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                                                 </Border>
                                                                             </StackPanel>
@@ -1567,7 +1263,7 @@
                                                                     </StackPanel>
 
                                                                     <!-- Col 2: Solution Document Count -->
-                                                                    <Border Grid.Column="2" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                                    <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                             CornerRadius="12" Padding="8,3" VerticalAlignment="Center">
                                                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                                                             <materialIcons:MaterialIcon Kind="FileDocumentMultipleOutline" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -1646,7 +1342,7 @@
 
                                                                         <!-- Col 1: Type Pill -->
                                                                         <Border Grid.Column="1"
-                                                                                Background="#0D1117"
+                                                                                Background="{DynamicResource DsBgBrush}"
                                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
                                                                                 BorderThickness="1"
                                                                                 CornerRadius="4"
@@ -1716,7 +1412,7 @@
                                         <!-- Script Templates Group -->
                                         <StackPanel Spacing="12">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="C# Automation Scripts" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                                <TextBlock Text="C# Automation Scripts" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                 <TextBlock Text="— runs top to bottom" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                             <ItemsControl ItemsSource="{Binding ScriptTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
@@ -1731,7 +1427,7 @@
                                         <!-- Notebook Templates Group -->
                                         <StackPanel Spacing="12">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="Interactive C# Notebooks" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                                <TextBlock Text="Interactive C# Notebooks" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                 <TextBlock Text="— multi-cell interactive exploration" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                             <ItemsControl ItemsSource="{Binding NotebookTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
@@ -1754,7 +1450,7 @@
                                         <StackPanel Spacing="12">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="STUDIO ENVIRONMENT" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                <TextBlock Text="STUDIO ENVIRONMENT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
 
                                             <!-- Roslyn & .NET 10 Status -->
@@ -1765,7 +1461,7 @@
                                                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding RoslynEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                                    <TextBlock Text="{Binding RoslynEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                     <TextBlock Text="{Binding RoslynEngineStatus}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
                                                 </StackPanel>
                                                 <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
@@ -1779,7 +1475,7 @@
                                                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding StorageEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                                    <TextBlock Text="{Binding StorageEngineTitle}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                     <TextBlock Text="{Binding StorageEngineStatus}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
                                                 </StackPanel>
                                                 <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
@@ -1821,14 +1517,14 @@
                                         <StackPanel Spacing="12">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="KEYBOARD SHORTCUTS" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                <TextBlock Text="KEYBOARD SHORTCUTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
 
                                             <StackPanel Spacing="8">
                                                 <!-- Shortcut 1: New Notebook -->
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="New Notebook" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                                         <TextBlock Text="Ctrl+N" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
                                                 </Grid>
@@ -1836,7 +1532,7 @@
                                                 <!-- Shortcut 2: Open Project -->
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="Open Project / File" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                                         <TextBlock Text="Ctrl+O" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
                                                 </Grid>
@@ -1844,7 +1540,7 @@
                                                 <!-- Shortcut 3: Run / Execute -->
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="Execute / Run Cell" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                                         <TextBlock Text="Shift+Enter" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
                                                 </Grid>
@@ -1852,7 +1548,7 @@
                                                 <!-- Shortcut 4: Toggle Side Bar -->
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="Toggle Side Bar" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                                         <TextBlock Text="Ctrl+B" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
                                                 </Grid>
@@ -1860,7 +1556,7 @@
                                                 <!-- Shortcut 5: Toggle Bottom Deck -->
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="Toggle Terminal / Deck" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1" Background="#21262D" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                                         <TextBlock Text="Ctrl+J" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
                                                 </Grid>
@@ -1873,10 +1569,10 @@
                                         <StackPanel Spacing="10">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                                <TextBlock Text="SELECTED TEMPLATE" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                <TextBlock Text="SELECTED TEMPLATE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
 
-                                            <TextBlock Text="{Binding SelectedTemplate.Title}" FontSize="13.5" FontWeight="Bold" Foreground="#FFFFFF" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding SelectedTemplate.Title}" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap" />
                                             <TextBlock Text="{Binding SelectedTemplate.Description}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" MaxLines="3" />
 
                                             <Button Command="{Binding LaunchTemplateCommand}"
@@ -1946,7 +1642,7 @@
 
                         <!-- Title & Subtitle -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock Text="{Binding CreatePromptTitle}" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                            <TextBlock Text="{Binding CreatePromptTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             <TextBlock Text="Set a document title and select workspace folder." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>
 
@@ -1978,7 +1674,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <!-- Location Path Display -->
                             <Border Grid.Column="0"
-                                    Background="#0D1117"
+                                    Background="{DynamicResource DsBgBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="8"
@@ -1987,7 +1683,7 @@
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="16" Height="16"
                                                                 Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                     <TextBlock Grid.Column="1" Text="{Binding SelectedFolderDisplay}"
-                                               FontSize="12.5" Foreground="#FFFFFF" VerticalAlignment="Center"
+                                               FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip.Tip="{Binding SelectedFolderDisplay}" />
                                 </Grid>

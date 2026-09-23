@@ -1,0 +1,56 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===================================================================== -->
+    <!-- Modern Developer Dashboard Palette (Nexus / GitHub Dark & Light)       -->
+    <!-- Used by CSharpManagerView (the Hub). See CSharpManagerStyles.axaml     -->
+    <!-- for the Style selectors that consume these tokens.                     -->
+    <!-- ===================================================================== -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DsBgBrush" Color="#0D1117" />
+            <SolidColorBrush x:Key="DsSurfaceBrush" Color="#161B22" />
+            <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#1C2128" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#30363D" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsTextBrush" Color="#C9D1D9" />
+            <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsMutedBrush" Color="#8B949E" />
+            <SolidColorBrush x:Key="DsPrimaryBrush" Color="#2F81F7" />
+            <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#1F6FEB" />
+            <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A2F81F7" />
+            <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#332F81F7" />
+            <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
+            <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
+            <SolidColorBrush x:Key="DsLinqBrush" Color="#238636" />
+            <SolidColorBrush x:Key="DsLinqSubtleBrush" Color="#26238636" />
+            <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
+            <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6161B22" />
+            <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#1AFFFFFF" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DsBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsSurfaceBrush" Color="#F6F8FA" />
+            <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#EAEEF2" />
+            <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#ECEFF2" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#D0D7DE" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#E1E4E8" />
+            <SolidColorBrush x:Key="DsTextBrush" Color="#24292F" />
+            <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#1F2328" />
+            <SolidColorBrush x:Key="DsMutedBrush" Color="#656D76" />
+            <SolidColorBrush x:Key="DsPrimaryBrush" Color="#0969DA" />
+            <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#0860CA" />
+            <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A0969DA" />
+            <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#330969DA" />
+            <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
+            <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
+            <SolidColorBrush x:Key="DsLinqBrush" Color="#238636" />
+            <SolidColorBrush x:Key="DsLinqSubtleBrush" Color="#26238636" />
+            <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
+            <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6F6F8FA" />
+            <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#14000000" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

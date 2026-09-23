@@ -28,6 +28,19 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     public string IndentationStatusText => $"Spaces: {IndentationSize}";
 
+    // Defaults to the app's startup theme (Dark, per App.axaml); ToggleTheme keeps this in sync from
+    // then on. Must not read Application.Current.ActualThemeVariant here — this view model is
+    // constructed off the UI thread (see CSharpStudioHostViewModel.InitializeCompilerAsync), and
+    // Avalonia's styled-property getters assert UI-thread access.
+    [ObservableProperty]
+    private bool _isDarkTheme = true;
+
+    [RelayCommand]
+    public void ToggleTheme()
+    {
+        IsDarkTheme = ThemeService.ToggleTheme();
+    }
+
     public string LanguageModeStatusText => SelectedLanguageModeIndex switch
     {
         1 => "C# Program",
