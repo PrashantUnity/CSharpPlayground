@@ -40,9 +40,9 @@
     },
     "ExecutionTimeoutSeconds": {
       "type": "integer",
-      "label": "Execution Timeout (seconds)",
-      "description": "Maximum allowed run time before background script execution is halted",
-      "default": 10
+      "label": "Execution Timeout (seconds, 0 = no limit)",
+      "description": "Maximum allowed run time before script execution is automatically stopped. 0 disables the automatic limit — Stop is always available regardless.",
+      "default": 0
     }
   },
   "isCollectible": false

@@ -209,7 +209,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
         _navigateToDocsAction = navigateToDocsAction;
-        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
         _kernel = new NotebookExecutionKernel();
 
         _code = script.Code;

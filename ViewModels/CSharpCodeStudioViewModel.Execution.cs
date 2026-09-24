@@ -235,8 +235,12 @@ public partial class CSharpCodeStudioViewModel
         _executionCts = new CancellationTokenSource();
         if (runningTab != null) runningTab.ExecutionCts = _executionCts;
 
-        var timeoutSeconds = Math.Max(1, _getTimeoutSeconds());
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        // 0 = no automatic timeout (the default) — execution runs until Stop is clicked, matching
+        // Jupyter. A positive value is an opt-in ceiling for whoever configures one.
+        var timeoutSeconds = _getTimeoutSeconds();
+        using var timeoutCts = timeoutSeconds > 0
+            ? new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds))
+            : new CancellationTokenSource();
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_executionCts.Token, timeoutCts.Token);
         var token = linkedCts.Token;
 

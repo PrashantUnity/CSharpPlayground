@@ -114,7 +114,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
         _onSelectTab = onSelectTab;
         _onCloseTab = onCloseTab;
-        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
 
         Kernel = new NotebookExecutionKernel();
 
@@ -272,8 +272,12 @@ public partial class NotebookTabViewModel : ObservableObject
         _executionCts = new CancellationTokenSource();
         var executionCts = _executionCts;
 
-        var timeoutSeconds = Math.Max(1, _getTimeoutSeconds());
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        // 0 = no automatic timeout (the default) — the cell runs until Stop is clicked, matching
+        // Jupyter. A positive value is an opt-in ceiling for whoever configures one.
+        var timeoutSeconds = _getTimeoutSeconds();
+        using var timeoutCts = timeoutSeconds > 0
+            ? new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds))
+            : new CancellationTokenSource();
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(executionCts.Token, timeoutCts.Token);
 
         // Identifies this specific run so callbacks/continuations from an execution we later give up

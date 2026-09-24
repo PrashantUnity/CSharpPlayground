@@ -10,7 +10,12 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 public partial class CSharpStudioHostViewModel : ObservableObject
 {
     private const string PluginId = "com.frypdf.plugin.csharpeditor";
-    private const int DefaultExecutionTimeoutSeconds = 10;
+
+    // 0 = no automatic timeout: execution runs until the user clicks Stop, matching Jupyter/
+    // dotnet-interactive. A fixed ceiling only made sense as a safety net for when Stop couldn't
+    // reliably interrupt a running script — now that it can (see ExecutionAbandonment), an
+    // unrelated slow-but-working call (e.g. a network request) shouldn't be cut off arbitrarily.
+    private const int DefaultExecutionTimeoutSeconds = 0;
 
     private readonly IScriptStorageService _storageService;
     private readonly IPluginSettingsStore? _settingsStore;

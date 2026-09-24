@@ -60,10 +60,10 @@ public class CSharpEditorPlugin : IFryPlugin
             },
             ["ExecutionTimeoutSeconds"] = new()
             {
-                Label = "Execution Timeout (seconds)",
-                Description = "Maximum allowed run time before background script execution is halted.",
+                Label = "Execution Timeout (seconds, 0 = no limit)",
+                Description = "Maximum allowed run time before script execution is automatically stopped. 0 disables the automatic limit — Stop is always available regardless.",
                 Type = "integer",
-                DefaultValue = 10
+                DefaultValue = 0
             }
         };
 

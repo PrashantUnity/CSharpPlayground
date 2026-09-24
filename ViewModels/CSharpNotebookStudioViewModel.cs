@@ -326,7 +326,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _openScriptAction = openScriptAction;
         _navigateToDocsAction = navigateToDocsAction;
-        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 10);
+        _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
 
         var initialTab = new NotebookTabViewModel(
             _notebook,

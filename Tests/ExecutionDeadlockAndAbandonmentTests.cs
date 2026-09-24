@@ -181,6 +181,26 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         Assert.Contains("done blocking", cell.OutputText);
     }
 
+    [Fact]
+    public async Task RunCodeCommand_DefaultTimeoutSetting_RunsPastTenSecondsWithoutBeingAutoCancelled()
+    {
+        // The execution timeout defaults to 0 (no automatic limit) — a script/notebook cell now runs
+        // until Stop is clicked, matching Jupyter, instead of being silently cut off after a fixed
+        // ceiling. Regression guard for that specific default: intentionally runs past the *old*
+        // hardcoded 10s default to prove nothing auto-cancels it anymore.
+        var script = await _testStorage.CreateNewScriptAsync("Slow But Fine Script");
+        script.Code = "System.Threading.Tasks.Task.Delay(10500).Wait();\nConsole.WriteLine(\"FROM_SLOW_BUT_FINE\");";
+        await _testStorage.SaveScriptAsync(script);
+
+        // No getTimeoutSeconds passed — exercises the constructor's default fallback.
+        var studio = CreateStudio(script);
+
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        Assert.Contains("FROM_SLOW_BUT_FINE", studio.ConsoleOutput);
+        Assert.DoesNotContain("Timed out", studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ── Abandon-and-recover: Stop/timeout must give up promptly, and the kernel must stay usable ──
 
     [Fact]
