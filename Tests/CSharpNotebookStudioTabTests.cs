@@ -879,6 +879,32 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
+    public async Task SaveAsync_AfterEditingCellTextPostSave_PersistsTheLatestEdit()
+    {
+        var studio = CreateStudio();
+        var tab = studio.ActiveTab!;
+
+        // Establish a first save via a structural change, mirroring the common real-world
+        // flow (e.g. running a cell auto-adds one below) that first arms IsModified.
+        tab.AddCodeCell();
+        await studio.SaveAsync();
+        Assert.False(tab.IsModified);
+
+        // A pure text edit to an existing cell, after that first save, must re-arm IsModified
+        // so the next Save doesn't silently no-op and drop the edit.
+        var cell = tab.Cells.First();
+        cell.Source = "// edited after the first save";
+        Assert.True(tab.IsModified);
+
+        await studio.SaveAsync();
+        Assert.False(tab.IsModified);
+
+        var reloaded = await _testStorage.LoadNotebookAsync(tab.Notebook.Id);
+        Assert.NotNull(reloaded);
+        Assert.Contains(reloaded!.Cells, c => c.Source == "// edited after the first save");
+    }
+
+    [Fact]
     public async Task PopulateExplorerTree_ForDocumentOutsideActiveRoot_ShowsItAsOrphanTopLevelFile()
     {
         // A document saved outside the active workspace root isn't part of the tree walk, but the

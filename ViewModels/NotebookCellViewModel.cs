@@ -100,6 +100,7 @@ public partial class NotebookCellViewModel : ObservableObject
     private readonly Func<NotebookCellViewModel, Task>? _runAndSelectNextAction;
     private readonly Func<NotebookCellViewModel, Task>? _runCellsAboveAction;
     private readonly Func<NotebookCellViewModel, string>? _precedingContextProvider;
+    private readonly Action? _onModified;
 
     public NotebookCellViewModel(
         NotebookCellItem model,
@@ -109,7 +110,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Action<NotebookCellViewModel, CellType>? addBelowAction = null,
         Func<NotebookCellViewModel, Task>? runAndSelectNextAction = null,
         Func<NotebookCellViewModel, Task>? runCellsAboveAction = null,
-        Func<NotebookCellViewModel, string>? precedingContextProvider = null)
+        Func<NotebookCellViewModel, string>? precedingContextProvider = null,
+        Action? onModified = null)
     {
         Model = model;
         _type = model.Type;
@@ -131,6 +133,7 @@ public partial class NotebookCellViewModel : ObservableObject
         _runAndSelectNextAction = runAndSelectNextAction;
         _runCellsAboveAction = runCellsAboveAction;
         _precedingContextProvider = precedingContextProvider;
+        _onModified = onModified;
 
         if (model.ImageBytes != null && model.ImageBytes.Length > 0)
         {
@@ -209,6 +212,7 @@ public partial class NotebookCellViewModel : ObservableObject
         OnPropertyChanged(nameof(MarkdownTitle));
         OnPropertyChanged(nameof(MarkdownBody));
         OnPropertyChanged(nameof(InputCollapsedSummaryText));
+        _onModified?.Invoke();
     }
 
     partial void OnTypeChanged(CellType value)
@@ -220,6 +224,7 @@ public partial class NotebookCellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEditingMarkdown));
         OnPropertyChanged(nameof(IsViewingMarkdown));
         OnPropertyChanged(nameof(InputCollapsedSummaryText));
+        _onModified?.Invoke();
     }
 
     partial void OnOutputTextChanged(string value)

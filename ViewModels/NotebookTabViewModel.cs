@@ -235,7 +235,8 @@ public partial class NotebookTabViewModel : ObservableObject
             addBelowAction: AddCellBelow,
             runAndSelectNextAction: RunCellAndSelectNextAsync,
             runCellsAboveAction: RunCellsAboveAsync,
-            precedingContextProvider: GetPrecedingCodeContext);
+            precedingContextProvider: GetPrecedingCodeContext,
+            onModified: () => IsModified = true);
     }
 
     // Best-effort static approximation of the kernel's real chained ScriptState: cells are assumed

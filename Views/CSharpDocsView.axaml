@@ -39,7 +39,7 @@
 
                 <!-- Title & Badge -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
-                    <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="22" Height="22" Foreground="#38BDF8" />
+                    <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="22" Height="22" Foreground="{DynamicResource M3PrimaryBrush}" />
                     <TextBlock Text="Documentation &amp; Learning Center"
                                FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}"
