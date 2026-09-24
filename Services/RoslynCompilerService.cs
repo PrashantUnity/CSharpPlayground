@@ -68,6 +68,8 @@ public class RoslynCompilerService
             typeof(System.Diagnostics.Stopwatch).Assembly.Location,            // System.Diagnostics.Stopwatch
             typeof(Task).Assembly.Location,                                    // System.Threading.Tasks
             typeof(HttpClient).Assembly.Location,              // System.Net.Http
+            typeof(Uri).Assembly.Location,                                     // System.Private.Uri (required transitively by System.Net.Http types)
+            typeof(System.Net.HttpStatusCode).Assembly.Location,               // System.Net.Primitives (required transitively by System.Net.Http types)
             typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media

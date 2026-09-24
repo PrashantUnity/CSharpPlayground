@@ -27,11 +27,13 @@ public partial class DocumentationService
     private void InitializeDocumentation()
     {
         var appCategory = BuildAppGuideCategory();
+        var learnCSharpCategory = BuildLearnCSharpCategory();
         var visualizerCategory = BuildVisualizersCategory();
         var displayCategory = BuildDisplayApisCategory();
         var shortcutsCategory = BuildShortcutsCategory();
 
         _categories.Add(appCategory);
+        _categories.Add(learnCSharpCategory);
         _categories.Add(visualizerCategory);
         _categories.Add(displayCategory);
         _categories.Add(shortcutsCategory);

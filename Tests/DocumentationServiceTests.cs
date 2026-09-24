@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
@@ -74,6 +75,52 @@ public class DocumentationServiceTests
     }
 
     [Fact]
+    public void DocumentationService_LearnCSharpCategory_ShouldHaveAllChapters()
+    {
+        var service = DocumentationService.Instance;
+        var learnCat = service.Categories.FirstOrDefault(c => c.Id == "learn_csharp");
+
+        Assert.NotNull(learnCat);
+        Assert.Equal(5, learnCat.Articles.Count);
+
+        var articleIds = learnCat.Articles.Select(a => a.Id).ToList();
+        Assert.Contains("learn_httpclient", articleIds);
+        Assert.Contains("learn_json_serialization", articleIds);
+        Assert.Contains("learn_sync_async", articleIds);
+        Assert.Contains("learn_file_io", articleIds);
+        Assert.Contains("learn_threading", articleIds);
+
+        foreach (var article in learnCat.Articles)
+        {
+            Assert.NotEmpty(article.CodeSnippets);
+            Assert.All(article.CodeSnippets, s => Assert.False(string.IsNullOrWhiteSpace(s.Code)));
+        }
+    }
+
+    [Fact]
+    public void DocumentationService_LearnCSharpSnippets_ShouldCompileWithoutErrors()
+    {
+        var service = DocumentationService.Instance;
+        var learnCat = service.Categories.FirstOrDefault(c => c.Id == "learn_csharp");
+        Assert.NotNull(learnCat);
+
+        var compiler = new RoslynCompilerService();
+
+        foreach (var article in learnCat.Articles)
+        {
+            foreach (var snippet in article.CodeSnippets)
+            {
+                var diagnostics = compiler.CheckDiagnostics(snippet.Code, ExecutionLanguageMode.Statements);
+                var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+
+                Assert.True(errors.Count == 0,
+                    $"Snippet '{snippet.Id}' in article '{article.Id}' has compile errors: " +
+                    string.Join("; ", errors.Select(e => $"{e.Id}: {e.Message}")));
+            }
+        }
+    }
+
+    [Fact]
     public void DocumentationService_Search_ShouldReturnRelevantResults()
     {
         var service = DocumentationService.Instance;
@@ -92,6 +139,15 @@ public class DocumentationServiceTests
         var shortcutResults = service.SearchArticles("shortcuts");
         Assert.NotEmpty(shortcutResults);
         Assert.Contains(shortcutResults, a => a.Id == "shortcuts_reference");
+
+        // Search within the new Learn C# chapters
+        var deadlockResults = service.SearchArticles("deadlock");
+        Assert.NotEmpty(deadlockResults);
+        Assert.Contains(deadlockResults, a => a.Id == "learn_sync_async");
+
+        var interlockedResults = service.SearchArticles("interlocked");
+        Assert.NotEmpty(interlockedResults);
+        Assert.Contains(interlockedResults, a => a.Id == "learn_threading");
 
         // Search for non-existent term
         var emptyResults = service.SearchArticles("xyznonexistentterm999");
