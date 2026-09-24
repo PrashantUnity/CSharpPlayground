@@ -5,6 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpDocsView"
              x:DataType="vm:CSharpDocsViewModel"
@@ -289,14 +290,8 @@
                                             </Grid>
 
                                             <!-- Code Block Canvas -->
-                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12">
-                                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                                                    <SelectableTextBlock Text="{Binding Code}"
-                                                             FontFamily="Consolas, Menlo, monospace"
-                                                             FontSize="12"
-                                                             Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                             LineHeight="19" />
-                                                </ScrollViewer>
+                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="4">
+                                                <controls:CodeViewer Code="{Binding Code}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
