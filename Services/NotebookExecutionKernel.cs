@@ -46,7 +46,9 @@ public class NotebookExecutionKernel
     // kernel, so this intentionally no longer serializes execution *across* tabs — that used to happen
     // by accident because this was `static`. Console redirection is handled separately by
     // ConsoleRoutingContext, which is AsyncLocal-scoped per execution and needs no lock at all.
-    private readonly SemaphoreSlim _executionLock = new(1, 1);
+    // Not readonly: HardReset() below replaces it outright to recover from an abandoned execution
+    // that never released it.
+    private SemaphoreSlim _executionLock = new(1, 1);
 
     public bool IsSessionActive => _currentState != null;
 
@@ -183,7 +185,11 @@ public class NotebookExecutionKernel
 
         var cleanCode = nugetResult.SanitizedCode;
 
-        await _executionLock.WaitAsync(ct);
+        // Captured locally (not read again from the field) so that if HardReset() swaps
+        // _executionLock out from under an abandoned execution, this call still releases the same
+        // instance it acquired, rather than over-releasing whatever fresh semaphore replaced it.
+        var executionLock = _executionLock;
+        await executionLock.WaitAsync(ct);
         try
         {
             // 2. Intercept Console.Out and live writers. ConsoleRoutingContext routes Console.Out/
@@ -289,7 +295,7 @@ public class NotebookExecutionKernel
         }
         finally
         {
-            _executionLock.Release();
+            executionLock.Release();
         }
     }
 
@@ -526,6 +532,20 @@ public class NotebookExecutionKernel
         _assemblyLoader = new InteractiveAssemblyLoader();
         RegisterCoreDependencies(_assemblyLoader);
         _scriptOptions = CachedDefaultScriptOptions.Value;
+    }
+
+    /// <summary>
+    /// ResetSession() plus recovery from a previous execution that was abandoned (its Task.Run
+    /// never returned — e.g. a script statement synchronously blocked on a network call that never
+    /// responds) and so never released _executionLock: without this, every future Run on this
+    /// kernel would itself hang waiting for that lock. Swaps in a fresh semaphore instead of trying
+    /// to acquire/reset the old one; the abandoned execution still holds a reference to the old
+    /// instance and will Release() it harmlessly into the void whenever/if it ever returns.
+    /// </summary>
+    public void HardReset()
+    {
+        ResetSession();
+        _executionLock = new SemaphoreSlim(1, 1);
     }
 
     private static string FormatValue(object? val)

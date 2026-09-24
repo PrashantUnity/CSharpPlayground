@@ -848,10 +848,18 @@
                             <Rectangle Width="1" Height="18" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="6,0" VerticalAlignment="Center" />
 
                             <!-- Run All -->
-                            <Button Command="{Binding RunAllCellsCommand}" IsEnabled="{Binding !IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Run All Cells (Linear Sequence)">
+                            <Button Command="{Binding RunAllCellsCommand}" IsVisible="{Binding !IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Run All Cells (Linear Sequence)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
                                     <TextBlock Text="Run All" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Stop / Interrupt (visible whenever any cell in this tab is executing) -->
+                            <Button Command="{Binding InterruptExecutionCommand}" IsVisible="{Binding IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Stop / Interrupt Execution (Shift+F5)">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource M3ErrorBrush}" />
+                                    <TextBlock Text="Stop" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 

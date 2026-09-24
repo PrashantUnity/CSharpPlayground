@@ -13,6 +13,7 @@ public partial class NotebookTabViewModel : ObservableObject
     private readonly Action<NotebookTabViewModel>? _onCloseTab;
     private readonly Func<int> _getTimeoutSeconds;
     private CancellationTokenSource? _executionCts;
+    private int _executionRunId;
 
     [ObservableProperty]
     private string _id = Guid.NewGuid().ToString("N");
@@ -251,6 +252,13 @@ public partial class NotebookTabViewModel : ObservableObject
             return;
         }
 
+        // RunAllCellsAsync/RunCellsAboveAsync already set IsExecuting=true before looping over
+        // cells and calling this per cell; only clear it here if THIS call is the one that set it,
+        // so a tab-level Stop button stays visible for the whole batch instead of flickering
+        // between cells.
+        var ownsTabExecutingFlag = !IsExecuting;
+        if (ownsTabExecutingFlag) IsExecuting = true;
+
         cell.IsExecuting = true;
         cell.HasError = false;
         cell.ClearOutput();
@@ -268,26 +276,43 @@ public partial class NotebookTabViewModel : ObservableObject
         using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(executionCts.Token, timeoutCts.Token);
 
+        // Identifies this specific run so callbacks/continuations from an execution we later give up
+        // on (see below) can never write stale output/status into a cell that's moved on.
+        var myRunId = ++_executionRunId;
+
         try
         {
-            var result = await Kernel.ExecuteCellAsync(
+            // Roslyn script execution must never run inline on the UI thread: if the user's code
+            // does something like `httpClient.GetStringAsync(url).Result`, its continuation needs
+            // to resume on the same UI thread that's blocked waiting for it — an unrecoverable
+            // deadlock that freezes the whole app (and makes Stop unclickable). Task.Run keeps it on
+            // a thread-pool thread with no captured SynchronizationContext, matching the same
+            // pattern ScriptExecutionEngine.ExecuteAsync already uses safely for compiled programs.
+            var executionTask = Task.Run(() => Kernel.ExecuteCellAsync(
                 cell.Source,
                 ct: linkedCts.Token,
                 onLiveConsole: text =>
                 {
+                    void Apply()
+                    {
+                        if (myRunId != _executionRunId) return;
+                        cell.OutputText += text;
+                    }
+
                     if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
                     {
-                        cell.OutputText += text;
+                        Apply();
                     }
                     else
                     {
-                        Dispatcher.UIThread.Post(() => cell.OutputText += text);
+                        Dispatcher.UIThread.Post(Apply);
                     }
                 },
                 onRichOutput: rich =>
                 {
                     void ApplyRich()
                     {
+                        if (myRunId != _executionRunId) return;
                         switch (rich.Kind)
                         {
                             case CellOutputKind.Image:
@@ -351,7 +376,38 @@ public partial class NotebookTabViewModel : ObservableObject
                     {
                         Dispatcher.UIThread.Post(ApplyRich);
                     }
-                });
+                }));
+
+            KernelExecutionResult result;
+            if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, linkedCts.Token))
+            {
+                result = await executionTask;
+            }
+            else
+            {
+                // Stop/timeout fired and the cell didn't respond within the grace period — almost
+                // always because it's synchronously blocked mid-statement (e.g. a hung HttpClient
+                // call), which Roslyn's cancellation can never preempt. Give up waiting rather than
+                // hang this command (and the cell's "running" UI) forever; the thread-pool thread
+                // keeps running in the background until it naturally returns or the process exits.
+                result = new KernelExecutionResult
+                {
+                    WasCancelled = true,
+                    ErrorMessage = "Execution did not respond to Stop and was abandoned."
+                };
+
+                _ = executionTask.ContinueWith(t =>
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (myRunId != _executionRunId) return; // a newer run already took over
+                        KernelStatusText = t.IsFaulted
+                            ? "Background cell task (previously abandoned) finished with an error"
+                            : "Background cell task (previously abandoned) finished";
+                        UpdateVariables();
+                    });
+                }, TaskScheduler.Default);
+            }
 
             if (!result.Success)
             {
@@ -390,6 +446,7 @@ public partial class NotebookTabViewModel : ObservableObject
         finally
         {
             cell.IsExecuting = false;
+            if (ownsTabExecutingFlag) IsExecuting = false;
         }
     }
 
@@ -437,7 +494,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
         try
         {
-            Kernel.ResetSession();
+            Kernel.HardReset();
             Variables.Clear();
 
             foreach (var cell in Cells.Where(c => c.Type == CellType.Code))
@@ -465,7 +522,7 @@ public partial class NotebookTabViewModel : ObservableObject
     public void RestartKernel()
     {
         _executionCts?.Cancel();
-        Kernel.ResetSession();
+        Kernel.HardReset();
         Variables.Clear();
         KernelStatusText = "Kernel Restarted • Session Fresh";
     }

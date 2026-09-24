@@ -240,6 +240,11 @@ public partial class CSharpCodeStudioViewModel
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_executionCts.Token, timeoutCts.Token);
         var token = linkedCts.Token;
 
+        // Identifies this specific run so callbacks/continuations from an execution we later give up
+        // on (see ExecutionAbandonment usage below) can never write stale output/status after a
+        // newer run has already started.
+        var myRunId = ++_executionRunId;
+
         using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -269,7 +274,7 @@ public partial class CSharpCodeStudioViewModel
         {
             if (CurrentLanguageMode == ExecutionLanguageMode.Statements || CurrentLanguageMode == ExecutionLanguageMode.Expression)
             {
-                _kernel.ResetSession();
+                _kernel.HardReset();
 
                 var codeToRun = Code;
                 if (CurrentLanguageMode == ExecutionLanguageMode.Expression)
@@ -278,13 +283,20 @@ public partial class CSharpCodeStudioViewModel
                     codeToRun = $"({expr}).Dump();";
                 }
 
-                var kernelResult = await _kernel.ExecuteCellAsync(
+                // Roslyn script execution must never run inline on the UI thread: if the user's code
+                // does something like `httpClient.GetStringAsync(url).Result`, its continuation
+                // needs to resume on the same UI thread that's blocked waiting for it — an
+                // unrecoverable deadlock that freezes the whole app (and makes Stop unclickable).
+                // Task.Run keeps it on a thread-pool thread with no captured SynchronizationContext,
+                // matching the same pattern ScriptExecutionEngine.ExecuteAsync already uses safely.
+                var kernelExecutionTask = Task.Run(() => _kernel.ExecuteCellAsync(
                     codeToRun,
                     ct: token,
                     onLiveConsole: liveText =>
                     {
                         Action append = () =>
                         {
+                            if (myRunId != _executionRunId) return;
                             if (runningTab != null)
                             {
                                 runningTab.ConsoleOutput += liveText;
@@ -312,6 +324,7 @@ public partial class CSharpCodeStudioViewModel
                     {
                         Action appendRich = () =>
                         {
+                            if (myRunId != _executionRunId) return;
                             if (runningTab != null)
                             {
                                 runningTab.RichOutputs.Add(rich);
@@ -339,7 +352,40 @@ public partial class CSharpCodeStudioViewModel
                         {
                             appendRich();
                         }
-                    });
+                    }));
+
+                KernelExecutionResult kernelResult;
+                if (await ExecutionAbandonment.WaitWithGraceAsync(kernelExecutionTask, token))
+                {
+                    kernelResult = await kernelExecutionTask;
+                }
+                else
+                {
+                    // Stop/timeout fired and execution didn't respond within the grace period —
+                    // almost always because it's synchronously blocked mid-statement (e.g. a hung
+                    // HttpClient call), which Roslyn's cancellation can never preempt. Give up
+                    // waiting rather than hang this command forever; the thread-pool thread keeps
+                    // running in the background until it naturally returns or the process exits.
+                    kernelResult = new KernelExecutionResult
+                    {
+                        WasCancelled = true,
+                        ErrorMessage = "Execution did not respond to Stop and was abandoned."
+                    };
+
+                    var abandonedRunId = myRunId;
+                    _ = kernelExecutionTask.ContinueWith(t =>
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            if (abandonedRunId != _executionRunId) return; // a newer run already took over
+                            var statusText = t.IsFaulted
+                                ? "Background task (previously abandoned) finished with an error"
+                                : "Background task (previously abandoned) finished";
+                            if (runningTab != null) runningTab.CompilerStatusText = statusText;
+                            if (runningTab == null || runningTab.IsActive) CompilerStatusText = statusText;
+                        });
+                    }, TaskScheduler.Default);
+                }
 
                 if (kernelResult.Success)
                 {
@@ -430,12 +476,13 @@ public partial class CSharpCodeStudioViewModel
                     CompilerStatusText = "Running...";
                 }
 
-                var result = await _executionEngine.ExecuteAsync(
+                var executionTask = _executionEngine.ExecuteAsync(
                     bytes,
                     liveText =>
                     {
                         Action appendOutput = () =>
                         {
+                            if (myRunId != _executionRunId) return;
                             if (runningTab != null)
                             {
                                 runningTab.ConsoleOutput += liveText;
@@ -460,6 +507,34 @@ public partial class CSharpCodeStudioViewModel
                         }
                     },
                     token);
+
+                ExecutionResult result;
+                if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, token))
+                {
+                    result = await executionTask;
+                }
+                else
+                {
+                    // See the Statements/Expression branch above: cancellation only stops a
+                    // compiled Main() *before* it starts (ScriptExecutionEngine.ExecuteAsync checks
+                    // the token once, then invokes the entry point) — a synchronously-blocked call
+                    // inside it can't be preempted either. Give up waiting rather than hang forever.
+                    result = new ExecutionResult { WasCancelled = true };
+
+                    var abandonedRunId = myRunId;
+                    _ = executionTask.ContinueWith(t =>
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            if (abandonedRunId != _executionRunId) return; // a newer run already took over
+                            var statusText = t.IsFaulted
+                                ? "Background task (previously abandoned) finished with an error"
+                                : "Background task (previously abandoned) finished";
+                            if (runningTab != null) runningTab.CompilerStatusText = statusText;
+                            if (runningTab == null || runningTab.IsActive) CompilerStatusText = statusText;
+                        });
+                    }, TaskScheduler.Default);
+                }
 
                 var endMsg = "\n--------------------------------------------------\n";
                 if (result.Success)

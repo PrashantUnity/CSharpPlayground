@@ -66,6 +66,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
     private CancellationTokenSource? _diagnosticsCts;
     private CancellationTokenSource? _executionCts;
+    private int _executionRunId;
     private readonly Func<int> _getTimeoutSeconds;
 
     [ObservableProperty]
