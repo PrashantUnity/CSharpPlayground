@@ -138,6 +138,10 @@ public partial class CSharpCodeStudioViewModel
 
             session.Paused += (line, locals) =>
             {
+                var frames = session.CallStack;
+                var fileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs";
+                foreach (var frame in frames) frame.FileName = fileName;
+
                 if (debuggingTab != null)
                 {
                     debuggingTab.IsPaused = true;
@@ -146,14 +150,7 @@ public partial class CSharpCodeStudioViewModel
                     debuggingTab.Locals.Clear();
                     foreach (var l in locals) debuggingTab.Locals.Add(l);
                     debuggingTab.CallStack.Clear();
-                    debuggingTab.CallStack.Add(new CallStackFrameItem
-                    {
-                        FrameIndex = 0,
-                        MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
-                        LineNumber = line,
-                        FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
-                        IsCurrentFrame = true
-                    });
+                    foreach (var frame in frames) debuggingTab.CallStack.Add(frame);
                 }
 
                 if (debuggingTab == null || debuggingTab.IsActive)
@@ -169,14 +166,7 @@ public partial class CSharpCodeStudioViewModel
                     }
 
                     CallStack.Clear();
-                    CallStack.Add(new CallStackFrameItem
-                    {
-                        FrameIndex = 0,
-                        MethodName = CurrentLanguageMode == ExecutionLanguageMode.Program ? "Main()" : "<Top-Level Statements>",
-                        LineNumber = line,
-                        FileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs",
-                        IsCurrentFrame = true
-                    });
+                    foreach (var frame in frames) CallStack.Add(frame);
 
                     _ = UpdateWatchExpressionsAsync();
 

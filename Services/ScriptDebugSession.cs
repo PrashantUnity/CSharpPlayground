@@ -28,12 +28,28 @@ public enum DebugSessionState
 
 public class ScriptDebugSession
 {
+    private const string TopLevelFrameName = "<Top-Level Statements>";
+    private const int MaxCallStackFrames = 200;
+    private const int MaxInspectDepth = 8;
+    private const int MaxInspectNodesPerVariable = 500;
+    private const int MaxInspectItems = 50;
+    private const int MaxInspectMembers = 30;
+
     private static ScriptDebugSession? _current;
     public static ScriptDebugSession? Current => _current;
+
+    private static readonly AsyncLocal<DebugFrame?> CurrentFrame = new();
+
+    // User getters and ToString overrides run while locals are captured; their probes must not pause again.
+    [ThreadStatic]
+    private static bool _isCapturingLocals;
 
     private readonly object _lock = new();
     private TaskCompletionSource<bool>? _stepGate;
     private CancellationTokenSource? _cts;
+    private int _topLevelLine = -1;
+    private int _pausedDepth;
+    private int _stepOverDepth;
 
     public string? ScriptId { get; }
     public DebugSessionState State { get; private set; } = DebugSessionState.Idle;
@@ -43,7 +59,7 @@ public class ScriptDebugSession
 
     public List<BreakpointItem> Breakpoints { get; } = new();
     public List<DebugVariableItem> CapturedLocals { get; } = new();
-    public List<CallStackFrameItem> CallStack { get; } = new();
+    public IReadOnlyList<CallStackFrameItem> CallStack { get; private set; } = Array.Empty<CallStackFrameItem>();
 
     public event Action<int, IReadOnlyList<DebugVariableItem>>? Paused;
     public event Action? Resumed;
@@ -84,11 +100,63 @@ public class ScriptDebugSession
         _current?.OnStatementHit(lineNumber, localsFactory);
     }
 
+    /// <summary>Called by instrumented code on entry to each body; disposing the scope pops the frame.</summary>
+    public static DebugFrameScope EnterFrame(string methodName, int line)
+    {
+        var parent = CurrentFrame.Value;
+        CurrentFrame.Value = new DebugFrame(methodName, line, parent);
+        return new DebugFrameScope(parent);
+    }
+
+    public readonly struct DebugFrameScope : IDisposable
+    {
+        private readonly DebugFrame? _parent;
+
+        internal DebugFrameScope(DebugFrame? parent)
+        {
+            _parent = parent;
+        }
+
+        public void Dispose() => CurrentFrame.Value = _parent;
+    }
+
+    internal sealed class DebugFrame
+    {
+        public DebugFrame(string methodName, int line, DebugFrame? parent)
+        {
+            MethodName = methodName;
+            Line = line;
+            Parent = parent;
+            Depth = (parent?.Depth ?? 0) + 1;
+        }
+
+        public string MethodName { get; }
+        public DebugFrame? Parent { get; }
+        public int Depth { get; }
+        public int Line { get; set; }
+    }
+
     public void OnStatementHit(int lineNumber, Func<Dictionary<string, object?>?>? localsFactory)
     {
+        if (_isCapturingLocals)
+        {
+            return;
+        }
+
         if (State == DebugSessionState.Terminated || _cts?.IsCancellationRequested == true)
         {
             throw new OperationCanceledException("Execution halted by debugger.");
+        }
+
+        var frame = CurrentFrame.Value;
+        int depth = frame?.Depth ?? 0;
+        if (frame != null)
+        {
+            frame.Line = lineNumber;
+        }
+        else
+        {
+            _topLevelLine = lineNumber;
         }
 
         bool shouldBreak = false;
@@ -99,7 +167,8 @@ public class ScriptDebugSession
             bp.HitCount++;
             shouldBreak = true;
         }
-        else if (StepMode == DebugStepMode.StepOver || StepMode == DebugStepMode.StepInto)
+        else if (StepMode == DebugStepMode.StepInto ||
+                 (StepMode == DebugStepMode.StepOver && depth <= _stepOverDepth))
         {
             shouldBreak = true;
         }
@@ -116,10 +185,12 @@ public class ScriptDebugSession
             State = DebugSessionState.Paused;
             PausedLine = lineNumber;
             StepMode = DebugStepMode.None;
+            _pausedDepth = depth;
 
             CapturedLocals.Clear();
             if (localsFactory != null)
             {
+                _isCapturingLocals = true;
                 try
                 {
                     var dict = localsFactory.Invoke();
@@ -135,17 +206,13 @@ public class ScriptDebugSession
                 {
                     // Ignore transient local variable capture errors
                 }
+                finally
+                {
+                    _isCapturingLocals = false;
+                }
             }
 
-            CallStack.Clear();
-            CallStack.Add(new CallStackFrameItem
-            {
-                FrameIndex = 0,
-                MethodName = "<Script Main>",
-                LineNumber = lineNumber,
-                FileName = "script.cs",
-                IsCurrentFrame = true
-            });
+            CallStack = BuildCallStack(frame);
 
             _stepGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             gate = _stepGate;
@@ -205,6 +272,7 @@ public class ScriptDebugSession
             if (State != DebugSessionState.Paused) return;
             State = DebugSessionState.Running;
             StepMode = DebugStepMode.StepOver;
+            _stepOverDepth = _pausedDepth;
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
@@ -257,8 +325,51 @@ public class ScriptDebugSession
         }
     }
 
+    private IReadOnlyList<CallStackFrameItem> BuildCallStack(DebugFrame? current)
+    {
+        var frames = new List<CallStackFrameItem>();
+        for (var frame = current; frame != null; frame = frame.Parent)
+        {
+            if (frames.Count == MaxCallStackFrames)
+            {
+                int hidden = frame.Depth + (_topLevelLine > 0 ? 1 : 0);
+                frames.Add(CreateFrameItem(frames.Count, $"… {hidden} more frames", 0));
+                return frames;
+            }
+
+            frames.Add(CreateFrameItem(frames.Count, frame.MethodName, frame.Line));
+        }
+
+        if (_topLevelLine > 0)
+        {
+            frames.Add(CreateFrameItem(frames.Count, TopLevelFrameName, _topLevelLine));
+        }
+
+        return frames;
+    }
+
+    private static CallStackFrameItem CreateFrameItem(int index, string methodName, int line) => new()
+    {
+        FrameIndex = index,
+        MethodName = methodName,
+        LineNumber = line,
+        IsCurrentFrame = index == 0
+    };
+
     private static DebugVariableItem CreateVariableItem(string name, object? value)
     {
+        int budget = MaxInspectNodesPerVariable;
+        return CreateVariableItem(name, value, 0, new HashSet<object>(ReferenceEqualityComparer.Instance), ref budget);
+    }
+
+    private static DebugVariableItem CreateVariableItem(
+        string name,
+        object? value,
+        int depth,
+        HashSet<object> ancestors,
+        ref int budget)
+    {
+        budget--;
         var item = new DebugVariableItem
         {
             Name = name,
@@ -276,53 +387,97 @@ public class ScriptDebugSession
         item.TypeName = GetFriendlyTypeName(type);
         item.ValueDisplay = FormatValueDisplay(value);
 
-        // Add children for collections or structured objects
+        if (ObjectInspectorBuilder.IsScalarType(type) || depth >= MaxInspectDepth || budget <= 0)
+        {
+            return item;
+        }
+
+        // Linked nodes point back at their ancestors (Prev, Parent, graph neighbours); stop at the first repeat.
+        if (!ancestors.Add(value))
+        {
+            item.ValueDisplay += " ↻ (circular reference)";
+            return item;
+        }
+
+        try
+        {
+            foreach (var (childName, childValue) in GetChildren(value, type))
+            {
+                if (budget <= 0) break;
+                item.Children.Add(CreateVariableItem(childName, childValue, depth + 1, ancestors, ref budget));
+            }
+        }
+        finally
+        {
+            ancestors.Remove(value);
+        }
+
+        return item;
+    }
+
+    private static List<(string Name, object? Value)> GetChildren(object value, Type type)
+    {
+        var children = new List<(string Name, object? Value)>();
         try
         {
             if (value is IDictionary dict)
             {
-                int count = 0;
                 foreach (DictionaryEntry entry in dict)
                 {
-                    if (count++ >= 50) break;
-                    item.Children.Add(CreateVariableItem($"[{entry.Key}]", entry.Value));
+                    if (children.Count >= MaxInspectItems) break;
+                    children.Add(($"[{entry.Key}]", entry.Value));
                 }
+                return children;
             }
-            else if (value is IEnumerable enumerable and not string)
+
+            if (value is IEnumerable enumerable)
             {
-                int idx = 0;
                 foreach (var element in enumerable)
                 {
-                    if (idx >= 50) break;
-                    item.Children.Add(CreateVariableItem($"[{idx++}]", element));
+                    if (children.Count >= MaxInspectItems) break;
+                    children.Add(($"[{children.Count}]", element));
                 }
-            }
-            else if (!type.IsPrimitive && type != typeof(string) && type != typeof(decimal) && type != typeof(DateTime))
-            {
-                var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
-                                .Take(30);
-
-                foreach (var prop in props)
-                {
-                    try
-                    {
-                        var propVal = prop.GetValue(value);
-                        item.Children.Add(CreateVariableItem(prop.Name, propVal));
-                    }
-                    catch
-                    {
-                        // Ignore property evaluation errors
-                    }
-                }
+                return children;
             }
         }
         catch
         {
-            // Ignore child inspection errors
+            // A user-defined enumerator threw; show what was collected so far
+            return children;
         }
 
-        return item;
+        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (children.Count >= MaxInspectMembers) return children;
+            if (!prop.CanRead || prop.GetIndexParameters().Length > 0) continue;
+
+            // Reading Result of an unfinished task would block the paused script thread.
+            if (value is Task { IsCompleted: false } && prop.Name == nameof(Task<object>.Result)) continue;
+
+            try
+            {
+                children.Add((prop.Name, prop.GetValue(value)));
+            }
+            catch
+            {
+                // Ignore property evaluation errors
+            }
+        }
+
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (children.Count >= MaxInspectMembers) break;
+            try
+            {
+                children.Add((field.Name, field.GetValue(value)));
+            }
+            catch
+            {
+                // Ignore field read errors
+            }
+        }
+
+        return children;
     }
 
     private static string GetFriendlyTypeName(Type type)
@@ -338,10 +493,18 @@ public class ScriptDebugSession
 
     private static string FormatValueDisplay(object val)
     {
-        if (val is string s) return $"\"{s}\"";
-        if (val is bool b) return b ? "true" : "false";
-        if (val is char c) return $"'{c}'";
-        if (val is ICollection col) return $"Count = {col.Count}";
-        return val.ToString() ?? val.GetType().Name;
+        try
+        {
+            if (val is string s) return $"\"{s}\"";
+            if (val is bool b) return b ? "true" : "false";
+            if (val is char c) return $"'{c}'";
+            if (val is ICollection col) return $"Count = {col.Count}";
+            return val.ToString() ?? val.GetType().Name;
+        }
+        catch (Exception ex)
+        {
+            // e.g. a record's generated ToString recursing through a cycle
+            return $"{{{GetFriendlyTypeName(val.GetType())}}} (ToString threw {ex.GetType().Name})";
+        }
     }
 }

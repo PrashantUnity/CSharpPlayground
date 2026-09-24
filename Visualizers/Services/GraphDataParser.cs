@@ -22,6 +22,7 @@ public static class GraphDataParser
         }
 
         var nodeMap = new Dictionary<string, GraphNodeData>();
+        var seen = new HashSet<(string, string, double?)>();
 
         GraphNodeData GetOrAddNode(string id, string? label = null)
         {
@@ -48,7 +49,7 @@ public static class GraphDataParser
                     {
                         string v = vObj?.ToString() ?? string.Empty;
                         GetOrAddNode(v);
-                        graph.Edges.Add(new GraphEdgeData(u, v, isDirected: isDirected));
+                        AddEdge(graph, seen, u, v, null);
                     }
                 }
             }
@@ -70,12 +71,12 @@ public static class GraphDataParser
                     if (val is int weightInt && weightInt != 0)
                     {
                         GetOrAddNode(j.ToString());
-                        graph.Edges.Add(new GraphEdgeData(i.ToString(), j.ToString(), weightInt, isDirected));
+                        AddEdge(graph, seen, i.ToString(), j.ToString(), weightInt);
                     }
                     else if (val is double weightDbl && Math.Abs(weightDbl) > 1e-9)
                     {
                         GetOrAddNode(j.ToString());
-                        graph.Edges.Add(new GraphEdgeData(i.ToString(), j.ToString(), weightDbl, isDirected));
+                        AddEdge(graph, seen, i.ToString(), j.ToString(), weightDbl);
                     }
                 }
             }
@@ -110,7 +111,7 @@ public static class GraphDataParser
                     }
                     GetOrAddNode(u);
                     GetOrAddNode(v);
-                    graph.Edges.Add(new GraphEdgeData(u, v, w, isDirected));
+                    AddEdge(graph, seen, u, v, w);
                     continue;
                 }
 
@@ -126,7 +127,7 @@ public static class GraphDataParser
                     }
                     GetOrAddNode(u);
                     GetOrAddNode(v);
-                    graph.Edges.Add(new GraphEdgeData(u, v, w, isDirected));
+                    AddEdge(graph, seen, u, v, w);
                 }
             }
         }
@@ -140,6 +141,7 @@ public static class GraphDataParser
         if (string.IsNullOrWhiteSpace(str)) return graph;
 
         var nodeMap = new Dictionary<string, GraphNodeData>();
+        var seen = new HashSet<(string, string, double?)>();
         GraphNodeData GetOrAddNode(string id)
         {
             if (!nodeMap.TryGetValue(id, out var node))
@@ -171,7 +173,7 @@ public static class GraphDataParser
 
                     GetOrAddNode(u);
                     GetOrAddNode(v);
-                    graph.Edges.Add(new GraphEdgeData(u, v, w, isDirected));
+                    AddEdge(graph, seen, u, v, w);
                 }
             }
             return graph;
@@ -195,11 +197,23 @@ public static class GraphDataParser
 
                 GetOrAddNode(u);
                 GetOrAddNode(v);
-                graph.Edges.Add(new GraphEdgeData(u, v, w, isDirected));
+                AddEdge(graph, seen, u, v, w);
             }
         }
 
         return graph;
+    }
+
+    // An undirected edge is unordered: {0: [1], 1: [0]} or a symmetric matrix describes a single edge.
+    private static void AddEdge(GraphData graph, HashSet<(string, string, double?)> seen, string u, string v, double? weight)
+    {
+        if (!graph.IsDirected)
+        {
+            var key = string.CompareOrdinal(u, v) <= 0 ? (u, v, weight) : (v, u, weight);
+            if (!seen.Add(key)) return;
+        }
+
+        graph.Edges.Add(new GraphEdgeData(u, v, weight, graph.IsDirected));
     }
 
     public static string ToLeetCodeString(GraphData graph)

@@ -121,6 +121,26 @@ public class DocumentationServiceTests
     }
 
     [Fact]
+    public void DocumentationService_VisualizerSnippets_ShouldCompileAsScripts()
+    {
+        var service = DocumentationService.Instance;
+        var visCat = service.Categories.FirstOrDefault(c => c.Id == "visualizer_recorder");
+        Assert.NotNull(visCat);
+
+        var compiler = new RoslynCompilerService();
+
+        foreach (var snippet in visCat.Articles.SelectMany(a => a.CodeSnippets))
+        {
+            var diagnostics = compiler.CheckDiagnostics(snippet.Code, ExecutionLanguageMode.Statements);
+            var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+
+            Assert.True(errors.Count == 0,
+                $"Snippet '{snippet.Id}' has compile errors: " +
+                string.Join("; ", errors.Select(e => $"{e.Id}: {e.Message}")));
+        }
+    }
+
+    [Fact]
     public void DocumentationService_Search_ShouldReturnRelevantResults()
     {
         var service = DocumentationService.Instance;

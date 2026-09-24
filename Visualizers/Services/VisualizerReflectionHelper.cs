@@ -34,6 +34,19 @@ public static class VisualizerReflectionHelper
         return null;
     }
 
+    public static bool HasMember(object obj, params string[] candidateNames)
+    {
+        var type = obj.GetType();
+        foreach (var name in candidateNames)
+        {
+            if (type.GetProperty(name, Flags) != null || type.GetField(name, Flags) != null)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static string ExtractDisplayValue(object? obj, params string[] candidateNames)
     {
         if (obj == null) return string.Empty;

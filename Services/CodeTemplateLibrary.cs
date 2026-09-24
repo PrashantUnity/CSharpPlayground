@@ -12,6 +12,8 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetVisualizerTemplates());
         list.AddRange(GetTreeTemplates());
         list.AddRange(GetGraphTemplates());
+        list.AddRange(GetLinkedListTemplates());
+        list.AddRange(GetRecursionTemplates());
         return list;
     }
 

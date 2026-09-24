@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 
@@ -14,7 +15,7 @@ public class ArrayPointerRenderer : VisualizerRendererBase
 
     public override void Render(DrawingContext context, Rect bounds, VisualizerOptions options)
     {
-        var data = options.ArrayData;
+        var data = GetEffectiveArray(options);
         if (data == null || data.Items.Count == 0) return;
 
         double scale = Math.Max(0.2, options.Zoom);
@@ -39,6 +40,7 @@ public class ArrayPointerRenderer : VisualizerRendererBase
         }
 
         var activeCells = GetActiveIndices(options, pointers);
+        var changed = StepChanges.ArrayItems(PreviousSnapshot<ArrayPointerData>(options), data);
 
         for (int i = 0; i < data.Items.Count; i++)
         {
@@ -65,6 +67,10 @@ public class ArrayPointerRenderer : VisualizerRendererBase
 
             var borderPen = isActive ? GetPen("#60a5fa", 1.8) : GetPen("#475569", 1.0);
             context.DrawRectangle(fillBrush, borderPen, new RoundedRect(cellRect, 5));
+            if (changed.Contains(i))
+            {
+                DrawChangedOutline(context, cellRect, 5);
+            }
 
             // 3. Draw value
             if (!string.IsNullOrEmpty(item.DisplayValue))
@@ -95,7 +101,7 @@ public class ArrayPointerRenderer : VisualizerRendererBase
 
     public override VisualizerHitTestResult? HitTest(Point pointerPosition, Rect bounds, VisualizerOptions options)
     {
-        var data = options.ArrayData;
+        var data = GetEffectiveArray(options);
         if (data == null) return null;
 
         double scale = Math.Max(0.2, options.Zoom);
@@ -128,13 +134,16 @@ public class ArrayPointerRenderer : VisualizerRendererBase
         return null;
     }
 
+    private static ArrayPointerData? GetEffectiveArray(VisualizerOptions options) =>
+        options.Sequence?.CurrentStep?.Snapshot as ArrayPointerData ?? options.ArrayData;
+
     private static List<PointerMarkerData> GetEffectivePointers(VisualizerOptions options)
     {
         if (options.Sequence?.CurrentStep?.CustomData is List<PointerMarkerData> stepPointers)
         {
             return stepPointers;
         }
-        return options.ArrayData?.Pointers ?? new List<PointerMarkerData>();
+        return GetEffectiveArray(options)?.Pointers ?? new List<PointerMarkerData>();
     }
 
     private static HashSet<int> GetActiveIndices(VisualizerOptions options, List<PointerMarkerData> pointers)

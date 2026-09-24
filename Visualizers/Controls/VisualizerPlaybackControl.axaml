@@ -3,12 +3,76 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="75"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.VisualizerPlaybackControl">
 
-    <Grid RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+    <UserControl.Styles>
+        <Style Selector="Border.watch-cell">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Margin" Value="0,1,4,1" />
+        </Style>
+        <!-- New since the previous step: same lime as the canvas "changed" outline -->
+        <Style Selector="Border.watch-cell.added">
+            <Setter Property="BorderBrush" Value="#a3e635" />
+            <Setter Property="Background" Value="#26a3e635" />
+        </Style>
+        <Style Selector="Border.watch-cell.marker">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,1" />
+        </Style>
+        <Style Selector="Border.watch-cell TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        </Style>
+        <Style Selector="Border.watch-cell.marker TextBlock">
+            <Setter Property="FontStyle" Value="Italic" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
+        <!-- 0. Watched collections (queue, stack, visited set...) as they were at this step -->
+        <ItemsControl Grid.Row="0" Name="WatchList" IsVisible="False" Margin="0,0,0,6">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="visControls:WatchStripRow">
+                    <Grid ColumnDefinitions="80,*" Margin="0,1">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding Name}"
+                                   ToolTip.Tip="{Binding Summary}"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0" />
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Cells}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="visControls:WatchStripCell">
+                                    <Border Classes="watch-cell" Classes.added="{Binding IsAdded}" Classes.marker="{Binding IsMarker}">
+                                        <TextBlock Text="{Binding Text}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- 1. Step Explanation Banner -->
-        <Border Grid.Row="0"
+        <Border Grid.Row="1"
                 Name="StepBannerBorder"
                 Background="{DynamicResource M3SurfaceContainerHighBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
@@ -25,6 +89,21 @@
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                VerticalAlignment="Center" />
+
+                    <!-- Source line that recorded this step; click to jump the editor there -->
+                    <Button Name="StepLineBtn"
+                            Classes="cell-tool-btn"
+                            Width="NaN"
+                            Height="18"
+                            Padding="5,0"
+                            IsVisible="False"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="Show the code line that recorded this step">
+                        <StackPanel Orientation="Horizontal" Spacing="3">
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="10" Height="10" Foreground="#38bdf8" VerticalAlignment="Center" />
+                            <TextBlock Name="StepLineText" Text="Ln 1" FontSize="9.5" FontWeight="SemiBold" Foreground="#38bdf8" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- Auxiliary Information Badges -->
@@ -33,7 +112,7 @@
         </Border>
 
         <!-- 2. Playback Controls & Scrubber Slider -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
             <!-- Navigation Buttons -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <Button Name="FirstBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="First Step (Home)">

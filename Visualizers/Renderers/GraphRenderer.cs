@@ -24,6 +24,7 @@ public class GraphRenderer : VisualizerRendererBase
         foreach (var node in graph.Nodes) nodeMap[node.Id] = node;
 
         var activeNodeIds = GetActiveNodeIds(options);
+        var changedNodeIds = StepChanges.GraphNodes(PreviousSnapshot<GraphData>(options), graph);
 
         // 1. Draw edges
         foreach (var edge in graph.Edges)
@@ -31,10 +32,8 @@ public class GraphRenderer : VisualizerRendererBase
             if (!nodeMap.TryGetValue(edge.FromId, out var u) || !nodeMap.TryGetValue(edge.ToId, out var v))
                 continue;
 
-            double ux = u.X + options.PanOffsetX;
-            double uy = u.Y + options.PanOffsetY;
-            double vx = v.X + options.PanOffsetX;
-            double vy = v.Y + options.PanOffsetY;
+            var (ux, uy) = Project(u, bounds, options);
+            var (vx, vy) = Project(v, bounds, options);
 
             double dx = vx - ux;
             double dy = vy - uy;
@@ -71,7 +70,8 @@ public class GraphRenderer : VisualizerRendererBase
         // 2. Draw nodes
         foreach (var node in graph.Nodes)
         {
-            var center = new Point(node.X + options.PanOffsetX, node.Y + options.PanOffsetY);
+            var (centerX, centerY) = Project(node, bounds, options);
+            var center = new Point(centerX, centerY);
             bool isActive = activeNodeIds.Contains(node.Id) || node.IsActive || node.State == GraphNodeState.Current;
 
             if (isActive)
@@ -104,6 +104,10 @@ public class GraphRenderer : VisualizerRendererBase
             var fillBrush = GetBrush(styling.fillHex);
             var borderPen = GetPen(styling.borderHex, isActive ? 2.2 : 1.4);
             context.DrawEllipse(fillBrush, borderPen, center, radius, radius);
+            if (changedNodeIds.Contains(node.Id))
+            {
+                DrawChangedRing(context, center, radius);
+            }
 
             if (!string.IsNullOrEmpty(node.Label))
             {
@@ -144,6 +148,15 @@ public class GraphRenderer : VisualizerRendererBase
         }
     }
 
+    // The layout fills the canvas at 100%; zoom spreads nodes out around the canvas centre, then pan applies.
+    private static (double X, double Y) Project(GraphNodeData node, Rect bounds, VisualizerOptions options)
+    {
+        double cx = bounds.Width / 2.0;
+        double cy = bounds.Height / 2.0;
+        return (cx + (node.X - cx) * options.Zoom + options.PanOffsetX,
+                cy + (node.Y - cy) * options.Zoom + options.PanOffsetY);
+    }
+
     private static GraphData? GetEffectiveGraph(VisualizerOptions options)
     {
         if (options.Sequence?.CurrentStep?.Snapshot is GraphData snapshot)
@@ -179,11 +192,11 @@ public class GraphRenderer : VisualizerRendererBase
         if (graph == null) return null;
 
         double radius = BaseNodeRadius * Math.Max(0.2, options.Zoom);
+        GraphLayoutEngine.ComputeLayout(graph, bounds.Width, bounds.Height);
 
         foreach (var node in graph.Nodes)
         {
-            double cx = node.X + options.PanOffsetX;
-            double cy = node.Y + options.PanOffsetY;
+            var (cx, cy) = Project(node, bounds, options);
             double dx = pointerPosition.X - cx;
             double dy = pointerPosition.Y - cy;
 

@@ -115,11 +115,13 @@ public class NotebookExecutionKernel
             .WithImports(defaultImports);
     }
 
+    /// <param name="sourceId">Optional id (a notebook cell id) that [CallerFilePath] reports for code in this submission.</param>
     public async Task<KernelExecutionResult> ExecuteCellAsync(
         string code,
         Action<string>? onLiveConsole = null,
         Action<RichCellOutput>? onRichOutput = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? sourceId = null)
     {
         var result = new KernelExecutionResult();
         var sw = Stopwatch.StartNew();
@@ -135,7 +137,7 @@ public class NotebookExecutionKernel
         // back as a normal WasCancelled result, not an unhandled exception out of this method.
         try
         {
-            await ExecuteCellCoreAsync(code, result, sw, onLiveConsole, onRichOutput, ct);
+            await ExecuteCellCoreAsync(code, sourceId, result, sw, onLiveConsole, onRichOutput, ct);
         }
         catch (OperationCanceledException)
         {
@@ -150,6 +152,7 @@ public class NotebookExecutionKernel
 
     private async Task ExecuteCellCoreAsync(
         string code,
+        string? sourceId,
         KernelExecutionResult result,
         Stopwatch sw,
         Action<string>? onLiveConsole,
@@ -184,6 +187,11 @@ public class NotebookExecutionKernel
         }
 
         var cleanCode = nugetResult.SanitizedCode;
+        if (!string.IsNullOrEmpty(sourceId))
+        {
+            // Keeps line numbers 1:1 with the editor while naming the submission for caller-info attributes
+            cleanCode = $"#line 1 \"{sourceId}\"{Environment.NewLine}{cleanCode}";
+        }
 
         // Captured locally (not read again from the field) so that if HardReset() swaps
         // _executionLock out from under an abandoned execution, this call still releases the same
@@ -247,7 +255,7 @@ public class NotebookExecutionKernel
 
                     foreach (var diag in cee.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
                     {
-                        var lineSpan = diag.Location.GetLineSpan();
+                        var lineSpan = diag.Location.GetMappedLineSpan();
                         diags.Add(new DiagnosticItem
                         {
                             Id = diag.Id,
@@ -316,44 +324,8 @@ public class NotebookExecutionKernel
             return;
         }
 
-        if (returnValue is VisualizerOptions visOpts)
+        if (TryEmitVisualizer(returnValue))
         {
-            var visControl = new InteractiveVisualizerControl(visOpts);
-            onRichOutput?.Invoke(new RichCellOutput
-            {
-                Kind = CellOutputKind.Visualizer,
-                InteractiveControl = visControl,
-                VisualizerOptions = visOpts
-            });
-            return;
-        }
-
-        if (returnValue is VisualizerRecorder recorder)
-        {
-            var visControl = new InteractiveVisualizerControl(recorder.Options);
-            onRichOutput?.Invoke(new RichCellOutput
-            {
-                Kind = CellOutputKind.Visualizer,
-                InteractiveControl = visControl,
-                VisualizerOptions = recorder.Options
-            });
-            return;
-        }
-
-        if (returnValue is VisualizerSequence seq)
-        {
-            var options = new VisualizerOptions
-            {
-                Sequence = seq,
-                Kind = seq.CurrentStep?.Kind ?? VisualizerKind.Matrix
-            };
-            var visControl = new InteractiveVisualizerControl(options);
-            onRichOutput?.Invoke(new RichCellOutput
-            {
-                Kind = CellOutputKind.Visualizer,
-                InteractiveControl = visControl,
-                VisualizerOptions = options
-            });
             return;
         }
 
@@ -491,6 +463,53 @@ public class NotebookExecutionKernel
             // Fallback to plain string representation
             var formatted = FormatValue(returnValue);
             onLiveConsole?.Invoke(formatted + Environment.NewLine);
+        }
+    }
+
+    // Display.* builds controls on the UI thread (this runs on a worker) and emits into the cell's output scope.
+    private static bool TryEmitVisualizer(object value)
+    {
+        switch (value)
+        {
+            case VisualizerOptions options:
+                Display.Visualizer(options);
+                return true;
+            case VisualizerRecorder recorder:
+                Display.Visualizer(recorder);
+                return true;
+            case VisualizerSequence sequence:
+                Display.Visualizer(new VisualizerOptions { Sequence = sequence, Kind = sequence.CurrentStep?.Kind ?? VisualizerKind.Matrix });
+                return true;
+            case TreeTracker treeTracker:
+                Display.Visualizer(treeTracker);
+                return true;
+            case GraphTracker graphTracker:
+                Display.Visualizer(graphTracker);
+                return true;
+            case MatrixTracker matrixTracker:
+                Display.Visualizer(matrixTracker);
+                return true;
+            case LinkedListTracker listTracker:
+                Display.Visualizer(listTracker);
+                return true;
+            case RecursionTracker recursionTracker:
+                Display.Visualizer(recursionTracker);
+                return true;
+        }
+
+        switch (DataStructureDetector.Detect(value))
+        {
+            case DataStructureShape.Tree:
+                Display.Tree(value, title: value.GetType().Name);
+                return true;
+            case DataStructureShape.LinkedList:
+                Display.LinkedList(value, title: value.GetType().Name);
+                return true;
+            case DataStructureShape.Grid:
+                Display.Matrix(value);
+                return true;
+            default:
+                return false;
         }
     }
 

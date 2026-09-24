@@ -1,0 +1,35 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        The visualizer's own toolbar look, so it is the same in notebook cells, the Code Studio results deck
+        and the full-screen overlay (which sits outside both views and so never sees their styles).
+    -->
+    <Style Selector="Button.cell-tool-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+    </Style>
+    <Style Selector="Button.cell-tool-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+
+    <!-- Drag handle under the inline canvas -->
+    <Style Selector="Border.canvas-resize-grip">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="SizeNorthSouth" />
+    </Style>
+    <Style Selector="Border.canvas-resize-grip > Border">
+        <Setter Property="Background" Value="{DynamicResource M3OutlineVariantBrush}" />
+    </Style>
+    <Style Selector="Border.canvas-resize-grip:pointerover > Border">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+</Styles>

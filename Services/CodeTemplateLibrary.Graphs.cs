@@ -56,12 +56,13 @@ tracker.Annotate(""0"", ""d=0"");
 tracker.Snapshot(""Initialized source vertex 0 with distance 0"");
 
 var pq = new PriorityQueue<string, double>();
+tracker.Watch(pq); // shows the queue in dequeue order: vertex (distance)
 pq.Enqueue(""0"", 0);
 
-while (pq.Count > 0)
+while (pq.TryDequeue(out var u, out var d))
 {
-    var u = pq.Dequeue();
-    double d = dist[u];
+    // A vertex can be queued several times; only its smallest entry is current.
+    if (d > dist[u]) continue;
 
     tracker.Visit(u, $""Extracted vertex [{u}] with current shortest distance {d}"", subLabel: $""d={d}"", pointer: ""curr"");
 
@@ -117,9 +118,10 @@ Console.WriteLine($""Dijkstra complete! Shortest distance to vertex 5 = {dist[""
 There are `numCourses` courses you have to take, labeled from `0` to `numCourses - 1`.
 Some courses have prerequisites. Return whether all courses can be finished.
 - Uses `GraphTracker` to visualize in-degree calculation and queue-based topological sort.",
-            InitialCode = @"// Prerequisites: [course, prerequisite]
-// [1, 0] means must take course 0 before course 1 (0 -> 1)
-var edges = ""[[0,1],[0,2],[1,3],[2,3],[3,4]]"";
+            InitialCode = @"// LeetCode input: prerequisites[i] = [course, prerequisite]
+// [1, 0] means ""take course 0 before course 1"", i.e. the directed edge 0 -> 1
+int[][] prerequisites = { new[] { 1, 0 }, new[] { 2, 0 }, new[] { 3, 1 }, new[] { 3, 2 }, new[] { 4, 3 } };
+var edges = prerequisites.Select(p => (p[1], p[0]));
 var tracker = GraphTracker.Create(edges, ""207. Course Schedule (Topological Sort)"", isDirected: true);
 
 // 1. Calculate in-degrees
@@ -135,6 +137,9 @@ tracker.Snapshot(""Calculated in-degrees for all course vertices"");
 
 // 2. Queue courses with 0 prerequisites
 var queue = new Queue<string>();
+var order = new List<string>();
+tracker.Watch(queue); // both show up under the graph at every step
+tracker.Watch(order);
 foreach (var kvp in inDegree)
 {
     if (kvp.Value == 0)
@@ -144,7 +149,6 @@ foreach (var kvp in inDegree)
     }
 }
 
-var order = new List<string>();
 while (queue.Count > 0)
 {
     var course = queue.Dequeue();

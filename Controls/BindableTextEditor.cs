@@ -64,6 +64,7 @@ public class BindableTextEditor : TextEditor
     private readonly CSharpEditorCompletionController _completionController;
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
+    private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
 
     public BreakpointMargin BreakpointMargin => _breakpointMargin;
     public DebugLineRenderer DebugLineRenderer => _debugLineRenderer;
@@ -100,6 +101,7 @@ public class BindableTextEditor : TextEditor
         ActualThemeVariantChanged += (s, e) => ApplyThemeVariant();
 
         TextArea.LeftMargins.Insert(0, _breakpointMargin);
+        TextArea.TextView.BackgroundRenderers.Add(_stepLineRenderer);
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
@@ -116,8 +118,21 @@ public class BindableTextEditor : TextEditor
     public void SetPausedLine(int line)
     {
         _breakpointMargin.CurrentPausedLine = line;
-        _debugLineRenderer.CurrentPausedLine = line;
+        _debugLineRenderer.HighlightedLine = line;
         TextArea.TextView.InvalidateVisual();
+    }
+
+    public void SetStepLine(int line)
+    {
+        if (_stepLineRenderer.HighlightedLine == line) return;
+        _stepLineRenderer.HighlightedLine = line;
+        TextArea.TextView.InvalidateVisual();
+    }
+
+    public void RevealLine(int line)
+    {
+        if (Document == null || line < 1 || line > Document.LineCount) return;
+        ScrollPositionIntoViewIfNeeded(new TextViewPosition(line, 1));
     }
 
     public void ApplyThemeVariant()
@@ -190,6 +205,7 @@ public class BindableTextEditor : TextEditor
             _cellVm.RequestFoldAllCode += FoldAll;
             _cellVm.RequestUnfoldAllCode += UnfoldAll;
             _cellVm.RequestFormatCode += FormatCode;
+            _cellVm.PropertyChanged += OnCellPropertyChanged;
         }
     }
 
@@ -200,7 +216,17 @@ public class BindableTextEditor : TextEditor
             _cellVm.RequestFoldAllCode -= FoldAll;
             _cellVm.RequestUnfoldAllCode -= UnfoldAll;
             _cellVm.RequestFormatCode -= FormatCode;
+            _cellVm.PropertyChanged -= OnCellPropertyChanged;
             _cellVm = null;
+        }
+    }
+
+    private void OnCellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // A re-run replaces the cell's visualizers, so the old step line no longer applies.
+        if (e.PropertyName == nameof(NotebookCellViewModel.IsExecuting) && _cellVm?.IsExecuting == true)
+        {
+            SetStepLine(-1);
         }
     }
 
@@ -323,6 +349,7 @@ public class BindableTextEditor : TextEditor
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
+        SetStepLine(-1);
         if (_isSyncing) return;
 
         _isSyncing = true;
@@ -452,18 +479,26 @@ public class BindableTextEditor : TextEditor
 
     public void ScrollCaretIntoViewIfNeeded()
     {
+        var caret = TextArea?.Caret;
+        if (caret != null)
+        {
+            ScrollPositionIntoViewIfNeeded(caret.Position);
+        }
+    }
+
+    private void ScrollPositionIntoViewIfNeeded(TextViewPosition position)
+    {
         try
         {
             var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
             if (scrollViewer == null) return;
 
-            var caret = TextArea?.Caret;
             var textView = TextArea?.TextView;
-            if (caret == null || textView == null || !textView.IsVisible) return;
+            if (textView == null || !textView.IsVisible) return;
 
-            // Compute visual position of the caret
-            var caretBottom = textView.GetVisualPosition(caret.Position, AvaloniaEdit.Rendering.VisualYPosition.LineBottom);
-            var caretTop = textView.GetVisualPosition(caret.Position, AvaloniaEdit.Rendering.VisualYPosition.LineTop);
+            // Compute visual position of the target line
+            var caretBottom = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineBottom);
+            var caretTop = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineTop);
             var caretHeight = Math.Max(18, caretBottom.Y - caretTop.Y);
 
             // Translate points to scrollViewer coordinates

@@ -71,20 +71,10 @@ public static class TreeLayoutEngine
 
         if (node.Children.Count > 0 && node.Left == null && node.Right == null)
         {
-            // N-ary tree
-            for (int i = 0; i < node.Children.Count; i++)
+            // N-ary tree: only leaves take horizontal slots; CenterParents places each parent over its children.
+            foreach (var child in node.Children)
             {
-                if (i == node.Children.Count / 2)
-                {
-                    node.X = currentX;
-                    currentX += step;
-                }
-                AssignInitialX(node.Children[i], ref currentX, step);
-            }
-            if (node.X == 0)
-            {
-                node.X = currentX;
-                currentX += step;
+                AssignInitialX(child, ref currentX, step);
             }
             return;
         }

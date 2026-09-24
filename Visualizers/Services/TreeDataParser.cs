@@ -25,7 +25,7 @@ public static class TreeDataParser
         }
 
         int idCounter = 0;
-        return ParseRecursive(root, ref idCounter, 0);
+        return ParseRecursive(root, ref idCounter, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
     }
 
     public static TreeNodeData? ParseLeetCodeString(string leetCodeStr)
@@ -173,71 +173,81 @@ public static class TreeDataParser
         return "[" + string.Join(", ", list) + "]";
     }
 
-    private static TreeNodeData? ParseRecursive(object? nodeObj, ref int idCounter, int depth)
+    private static TreeNodeData? ParseRecursive(object? nodeObj, ref int idCounter, int depth, HashSet<object> ancestors)
     {
-        if (nodeObj == null) return null;
+        // A child that points back at an ancestor (a common insertion bug) would otherwise recurse forever
+        if (nodeObj == null || !ancestors.Add(nodeObj)) return null;
 
-        string displayVal = VisualizerReflectionHelper.ExtractDisplayValue(nodeObj, "val", "Val", "Value", "value", "Data", "data", "Key", "key");
-        string id = $"node_{++idCounter}";
-
-        var node = new TreeNodeData(displayVal, id)
+        try
         {
-            RawValue = nodeObj,
-            Depth = depth
-        };
+            string displayVal = VisualizerReflectionHelper.ExtractDisplayValue(nodeObj, "val", "Val", "Value", "value", "Data", "data", "Key", "key");
+            string id = $"node_{++idCounter}";
 
-        // Check for Left / Right (both properties and fields)
-        var leftObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Left", "left");
-        var rightObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Right", "right");
+            var node = new TreeNodeData(displayVal, id)
+            {
+                RawValue = nodeObj,
+                Depth = depth
+            };
 
-        if (leftObj != null || rightObj != null)
-        {
-            if (leftObj != null)
+            // Check for Left / Right (both properties and fields)
+            var leftObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Left", "left");
+            var rightObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Right", "right");
+
+            if (leftObj != null || rightObj != null)
             {
-                node.Left = ParseRecursive(leftObj, ref idCounter, depth + 1);
-                if (node.Left != null)
+                if (leftObj != null)
                 {
-                    node.Left.Parent = node;
-                    node.Children.Add(node.Left);
-                }
-            }
-            if (rightObj != null)
-            {
-                node.Right = ParseRecursive(rightObj, ref idCounter, depth + 1);
-                if (node.Right != null)
-                {
-                    node.Right.Parent = node;
-                    node.Children.Add(node.Right);
-                }
-            }
-        }
-        else
-        {
-            // Check for Children / children / nodes
-            var childrenObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Children", "children", "Nodes", "nodes");
-            if (childrenObj is IEnumerable childrenEnum)
-            {
-                foreach (var childObj in childrenEnum)
-                {
-                    var childNode = ParseRecursive(childObj, ref idCounter, depth + 1);
-                    if (childNode != null)
+                    node.Left = ParseRecursive(leftObj, ref idCounter, depth + 1, ancestors);
+                    if (node.Left != null)
                     {
-                        childNode.Parent = node;
-                        node.Children.Add(childNode);
+                        node.Left.Parent = node;
+                        node.Children.Add(node.Left);
+                    }
+                }
+                if (rightObj != null)
+                {
+                    node.Right = ParseRecursive(rightObj, ref idCounter, depth + 1, ancestors);
+                    if (node.Right != null)
+                    {
+                        node.Right.Parent = node;
+                        node.Children.Add(node.Right);
                     }
                 }
             }
-        }
+            else
+            {
+                // Check for Children / children / nodes
+                var childrenObj = VisualizerReflectionHelper.GetMemberValue(nodeObj, "Children", "children", "Nodes", "nodes");
+                if (childrenObj is IEnumerable childrenEnum)
+                {
+                    foreach (var childObj in childrenEnum)
+                    {
+                        var childNode = ParseRecursive(childObj, ref idCounter, depth + 1, ancestors);
+                        if (childNode != null)
+                        {
+                            childNode.Parent = node;
+                            node.Children.Add(childNode);
+                        }
+                    }
+                }
+            }
 
-        return node;
+            return node;
+        }
+        finally
+        {
+            ancestors.Remove(nodeObj);
+        }
     }
 
     public static VisualizerSequence GenerateTraversalSteps(TreeNodeData root, string traversalType)
     {
+        // Traverse a private copy so the caller's tree keeps its original node states.
+        var tree = root.Clone();
         var sequence = new VisualizerSequence();
         var initialStep = new VisualizerStep(0, $"Tree initialized • Ready for {traversalType} Traversal", VisualizerKind.Tree)
         {
-            Snapshot = root.Clone()
+            Snapshot = tree.Clone()
         };
         sequence.AddStep(initialStep);
 
@@ -246,24 +256,30 @@ public static class TreeDataParser
 
         if (normalized.Contains("inorder"))
         {
-            InOrder(root, visited, sequence);
+            InOrder(tree, tree, visited, sequence);
         }
         else if (normalized.Contains("postorder"))
         {
-            PostOrder(root, visited, sequence);
+            PostOrder(tree, tree, visited, sequence);
         }
         else if (normalized.Contains("levelorder") || normalized.Contains("bfs"))
         {
-            LevelOrder(root, visited, sequence);
+            LevelOrder(tree, visited, sequence);
         }
         else // default PreOrder
         {
-            PreOrder(root, visited, sequence);
+            PreOrder(tree, tree, visited, sequence);
+        }
+
+        foreach (var v in visited)
+        {
+            v.State = TreeNodeState.Visited;
+            v.IsActive = false;
         }
 
         var finalStep = new VisualizerStep(sequence.TotalSteps, $"Traversal complete: {visited.Count} nodes visited", VisualizerKind.Tree)
         {
-            Snapshot = root.Clone()
+            Snapshot = tree.Clone()
         };
         foreach (var v in visited) finalStep.ActiveNodeIds.Add(v.Id);
         sequence.AddStep(finalStep);
@@ -271,44 +287,43 @@ public static class TreeDataParser
         return sequence;
     }
 
-    private static void PreOrder(TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
+    private static void PreOrder(TreeNodeData tree, TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
     {
         if (node == null) return;
         visited.Add(node);
-        AddStep(seq, node, visited, "PreOrder Visit");
-        if (node.Left != null) PreOrder(node.Left, visited, seq);
-        if (node.Right != null) PreOrder(node.Right, visited, seq);
+        AddStep(seq, tree, node, visited, "PreOrder Visit");
+        if (node.Left != null) PreOrder(tree, node.Left, visited, seq);
+        if (node.Right != null) PreOrder(tree, node.Right, visited, seq);
     }
 
-    private static void InOrder(TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
+    private static void InOrder(TreeNodeData tree, TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
     {
         if (node == null) return;
-        if (node.Left != null) InOrder(node.Left, visited, seq);
+        if (node.Left != null) InOrder(tree, node.Left, visited, seq);
         visited.Add(node);
-        AddStep(seq, node, visited, "InOrder Visit");
-        if (node.Right != null) InOrder(node.Right, visited, seq);
+        AddStep(seq, tree, node, visited, "InOrder Visit");
+        if (node.Right != null) InOrder(tree, node.Right, visited, seq);
     }
 
-    private static void PostOrder(TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
+    private static void PostOrder(TreeNodeData tree, TreeNodeData? node, List<TreeNodeData> visited, VisualizerSequence seq)
     {
         if (node == null) return;
-        if (node.Left != null) PostOrder(node.Left, visited, seq);
-        if (node.Right != null) PostOrder(node.Right, visited, seq);
+        if (node.Left != null) PostOrder(tree, node.Left, visited, seq);
+        if (node.Right != null) PostOrder(tree, node.Right, visited, seq);
         visited.Add(node);
-        AddStep(seq, node, visited, "PostOrder Visit");
+        AddStep(seq, tree, node, visited, "PostOrder Visit");
     }
 
-    private static void LevelOrder(TreeNodeData? root, List<TreeNodeData> visited, VisualizerSequence seq)
+    private static void LevelOrder(TreeNodeData tree, List<TreeNodeData> visited, VisualizerSequence seq)
     {
-        if (root == null) return;
         var queue = new Queue<TreeNodeData>();
-        queue.Enqueue(root);
+        queue.Enqueue(tree);
 
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
             visited.Add(node);
-            AddStep(seq, node, visited, "BFS / LevelOrder Visit");
+            AddStep(seq, tree, node, visited, "BFS / LevelOrder Visit");
 
             if (node.Left != null) queue.Enqueue(node.Left);
             if (node.Right != null) queue.Enqueue(node.Right);
@@ -319,14 +334,25 @@ public static class TreeDataParser
         }
     }
 
-    private static void AddStep(VisualizerSequence seq, TreeNodeData node, List<TreeNodeData> visited, string action)
+    private static void AddStep(VisualizerSequence seq, TreeNodeData tree, TreeNodeData node, List<TreeNodeData> visited, string action)
     {
+        if (visited.Count > 1)
+        {
+            var previous = visited[^2];
+            previous.State = TreeNodeState.Visited;
+            previous.IsActive = false;
+        }
+
+        node.State = TreeNodeState.Current;
+        node.IsActive = true;
+        node.IsVisited = true;
+
         var step = new VisualizerStep(
             seq.TotalSteps,
             $"{action}: Node [{node.DisplayValue}] (Depth {node.Depth}) • Visited: {visited.Count}",
             VisualizerKind.Tree)
         {
-            Snapshot = node.Clone()
+            Snapshot = tree.Clone()
         };
 
         step.ActiveNodeIds.Add(node.Id);

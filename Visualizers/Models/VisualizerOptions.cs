@@ -24,6 +24,9 @@ public class VisualizerOptions
 
     public VisualizerSequence? Sequence { get; set; }
 
+    /// <summary>A second view of the same visualization: it shares the data and the playback, but zooms and pans on its own.</summary>
+    public VisualizerOptions CloneView() => (VisualizerOptions)MemberwiseClone();
+
     public string GetSummaryText()
     {
         if (MatrixData != null)

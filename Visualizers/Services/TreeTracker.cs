@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 public class TreeTracker
 {
+    private readonly WatchList _watches = new();
     private TreeNodeData? _currentActiveNode;
 
     public TreeNodeData Root { get; }
@@ -19,7 +21,11 @@ public class TreeTracker
         Sequence = options.Sequence ??= new VisualizerSequence();
     }
 
-    public static TreeTracker Create(object treeSource, string? title = null)
+    public static TreeTracker Create(
+        object treeSource,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var root = TreeDataParser.Parse(treeSource) ?? new TreeNodeData("root", "node_1");
         var options = new VisualizerOptions
@@ -30,9 +36,13 @@ public class TreeTracker
         };
 
         var tracker = new TreeTracker(root, options);
-        tracker.Snapshot("Initial Tree State");
+        tracker.Snapshot("Initial Tree State", sourceLine, sourceFile);
         return tracker;
     }
+
+    /// <summary>Shows a live queue, stack, set, map or list beneath the tree at every step recorded after this call.</summary>
+    public void Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "") =>
+        _watches.Add(collection, name);
 
     public TreeNodeData? ResolveNode(object? target)
     {
@@ -82,7 +92,13 @@ public class TreeTracker
         return null;
     }
 
-    public void Visit(object? nodeOrTarget, string? note = null, string? subLabel = null, string? pointer = null)
+    public void Visit(
+        object? nodeOrTarget,
+        string? note = null,
+        string? subLabel = null,
+        string? pointer = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -109,10 +125,16 @@ public class TreeTracker
         }
 
         string desc = note ?? $"Visit Node [{node.DisplayValue}] (Depth {node.Depth})";
-        Snapshot(desc);
+        Snapshot(desc, sourceLine, sourceFile);
     }
 
-    public void Highlight(object? nodeOrTarget, TreeNodeState state, string? note = null, string? subLabel = null)
+    public void Highlight(
+        object? nodeOrTarget,
+        TreeNodeState state,
+        string? note = null,
+        string? subLabel = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -124,10 +146,15 @@ public class TreeTracker
         }
 
         string desc = note ?? $"{state} Node [{node.DisplayValue}]";
-        Snapshot(desc);
+        Snapshot(desc, sourceLine, sourceFile);
     }
 
-    public void SetPointer(object? nodeOrTarget, string pointerLabel, string? note = null)
+    public void SetPointer(
+        object? nodeOrTarget,
+        string pointerLabel,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -135,7 +162,7 @@ public class TreeTracker
         node.PointerLabel = pointerLabel;
         if (!string.IsNullOrEmpty(note))
         {
-            Snapshot(note);
+            Snapshot(note, sourceLine, sourceFile);
         }
     }
 
@@ -153,7 +180,12 @@ public class TreeTracker
         }
     }
 
-    public void Annotate(object? nodeOrTarget, string subLabel, string? note = null)
+    public void Annotate(
+        object? nodeOrTarget,
+        string subLabel,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -161,11 +193,15 @@ public class TreeTracker
         node.SubLabel = subLabel;
         if (!string.IsNullOrEmpty(note))
         {
-            Snapshot(note);
+            Snapshot(note, sourceLine, sourceFile);
         }
     }
 
-    public void MarkPath(IEnumerable<object?> pathNodes, string? note = null)
+    public void MarkPath(
+        IEnumerable<object?> pathNodes,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var resolved = new List<TreeNodeData>();
         foreach (var item in pathNodes)
@@ -179,10 +215,14 @@ public class TreeTracker
         }
 
         string desc = note ?? $"Mark Path ({resolved.Count} nodes)";
-        Snapshot(desc);
+        Snapshot(desc, sourceLine, sourceFile);
     }
 
-    public void SwapChildren(object? nodeOrTarget, string? note = null)
+    public void SwapChildren(
+        object? nodeOrTarget,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -193,10 +233,14 @@ public class TreeTracker
         _currentActiveNode = node;
 
         string desc = note ?? $"Swapped left & right subtrees of Node [{node.DisplayValue}]";
-        Snapshot(desc);
+        Snapshot(desc, sourceLine, sourceFile);
     }
 
-    public void Backtrack(object? nodeOrTarget, string? note = null)
+    public void Backtrack(
+        object? nodeOrTarget,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
@@ -205,14 +249,20 @@ public class TreeTracker
         node.IsActive = false;
 
         string desc = note ?? $"Backtrack from Node [{node.DisplayValue}]";
-        Snapshot(desc);
+        Snapshot(desc, sourceLine, sourceFile);
     }
 
-    public void Snapshot(string description)
+    public void Snapshot(
+        string description,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var step = new VisualizerStep(Sequence.TotalSteps, description, VisualizerKind.Tree)
         {
-            Snapshot = Root.Clone()
+            Snapshot = Root.Clone(),
+            SourceLine = sourceLine,
+            SourceFile = sourceFile,
+            Watches = _watches.Capture()
         };
 
         CollectActiveIds(Root, step.ActiveNodeIds);

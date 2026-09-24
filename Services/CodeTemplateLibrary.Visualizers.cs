@@ -347,7 +347,8 @@ Console.WriteLine(""Freeform 2D Scene Graph rendered! Use playback controls to s
 Write your own matrix algorithm in plain C# and track it with 1-line calls:
 - `tracker.Visit(r, c)` marks the active scanner.
 - `tracker.Enqueue(nr, nc, from: (r, c))` creates the frontier and directional parent arrow.
-- `tracker.MarkPath(path)` draws the final route.",
+- `tracker.MarkPath(path)` draws the final route.
+- `tracker.Watch(queue)` shows the queue's real contents under the grid at every step.",
             InitialCode = @"// Define raw maze grid: 'S'=Start, 'T'=Target, '#' = Wall, '.' = Empty
 var maze = new string[] {
     ""S...#..."",
@@ -364,6 +365,7 @@ var tracker = MatrixTracker.Create(maze, title: ""User BFS Pathfinder with Prede
 var queue = new Queue<(int r, int c)>();
 var visited = new bool[5, 8];
 var parent = new Dictionary<(int, int), (int, int)>();
+tracker.Watch(queue); // draw the live queue (front -> back) under the grid at every step
 
 queue.Enqueue((0, 0));
 visited[0, 0] = true;

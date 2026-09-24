@@ -1,0 +1,7 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.VisualizerFullScreenOverlay"
+             Background="{DynamicResource M3SurfaceBrush}">
+    <!-- Holds the full-screen copy of the visualizer; the padding keeps clear of any title bar drawn into the window -->
+    <Border Name="ViewHost" Padding="12" />
+</UserControl>

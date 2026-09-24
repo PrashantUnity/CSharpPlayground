@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
@@ -12,6 +13,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 public class MatrixTracker
 {
     private readonly MatrixVisualizerRecorder _recorder;
+    private readonly bool _linkSourceLines;
     private (int Row, int Col)? _currentCell;
 
     public VisualizerOptions Options => _recorder.Options;
@@ -21,22 +23,59 @@ public class MatrixTracker
     public int Rows => Grid.Rows;
     public int Columns => Grid.Columns;
 
-    public MatrixTracker(GridMatrixData grid, string? title = null)
+    public MatrixTracker(
+        GridMatrixData grid,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
+        : this(grid, title, sourceLine, sourceFile, linkSourceLines: true)
     {
-        _recorder = VisualizerRecorder.CreateMatrix(grid, title ?? "Matrix Traversal");
     }
 
-    public static MatrixTracker Create(GridMatrixData grid, string? title = null) =>
-        new(grid, title);
+    private MatrixTracker(GridMatrixData grid, string? title, int sourceLine, string sourceFile, bool linkSourceLines)
+    {
+        _linkSourceLines = linkSourceLines;
+        _recorder = VisualizerRecorder.CreateMatrix(grid, title ?? "Matrix Traversal", LineOf(sourceLine), sourceFile);
+    }
 
-    public static MatrixTracker Create(object rawInput, string? title = null, MatrixParseOptions? options = null)
+    public static MatrixTracker Create(
+        GridMatrixData grid,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "") =>
+        new(grid, title, sourceLine, sourceFile);
+
+    public static MatrixTracker Create(
+        object rawInput,
+        string? title = null,
+        MatrixParseOptions? options = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var grid = MatrixDataParser.Parse(rawInput, options);
-        return new MatrixTracker(grid, title);
+        return new MatrixTracker(grid, title, sourceLine, sourceFile);
     }
 
-    public static MatrixTracker CreateEmpty(int rows, int cols, string? title = null) =>
-        new(new GridMatrixData(rows, cols), title);
+    public static MatrixTracker CreateEmpty(
+        int rows,
+        int cols,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "") =>
+        new(new GridMatrixData(rows, cols), title, sourceLine, sourceFile);
+
+    // Built-in algorithms record their own steps; those must not point at lines in the learner's code.
+    internal static MatrixTracker CreateUnlinked(GridMatrixData grid, string? title) =>
+        new(grid, title, 0, string.Empty, linkSourceLines: false);
+
+    private int LineOf(int sourceLine) => _linkSourceLines ? sourceLine : 0;
+
+    /// <summary>Shows a live queue, stack, set, map or list beneath the grid at every step recorded after this call.</summary>
+    public MatrixTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
+    {
+        _recorder.Watch(collection, name);
+        return this;
+    }
 
     public bool IsInBounds(int r, int c) => Grid.IsInBounds(r, c);
 
@@ -68,7 +107,9 @@ public class MatrixTracker
         string? note = null,
         string? subLabel = null,
         string? color = null,
-        object? aux = null)
+        object? aux = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         if (!IsInBounds(r, c)) return this;
 
@@ -99,7 +140,7 @@ public class MatrixTracker
         var dict = ExtractAux(aux);
         if (!string.IsNullOrEmpty(subLabel)) dict["Cost"] = subLabel;
 
-        _recorder.Step(desc, activeCell: (r, c), auxiliaryInfo: dict);
+        _recorder.Step(desc, activeCell: (r, c), auxiliaryInfo: dict, sourceLine: LineOf(sourceLine), sourceFile: sourceFile);
         return this;
     }
 
@@ -109,7 +150,9 @@ public class MatrixTracker
         (int Row, int Col)? from = null,
         string? note = null,
         string? subLabel = null,
-        object? aux = null)
+        object? aux = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         if (!IsInBounds(r, c)) return this;
 
@@ -137,14 +180,26 @@ public class MatrixTracker
         if (from.HasValue) dict["Discovered From"] = $"({from.Value.Row}, {from.Value.Col})";
         if (subLabel != null) dict["Weight/Cost"] = subLabel;
 
-        _recorder.Step(desc, activeCell: (r, c), auxiliaryInfo: dict);
+        _recorder.Step(desc, activeCell: (r, c), auxiliaryInfo: dict, sourceLine: LineOf(sourceLine), sourceFile: sourceFile);
         return this;
     }
 
-    public MatrixTracker MarkFrontier(int r, int c, (int Row, int Col)? from = null, string? note = null) =>
-        Enqueue(r, c, from, note);
+    public MatrixTracker MarkFrontier(
+        int r,
+        int c,
+        (int Row, int Col)? from = null,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "") =>
+        Enqueue(r, c, from, note, sourceLine: sourceLine, sourceFile: sourceFile);
 
-    public MatrixTracker Backtrack(int r, int c, string? note = null, GridCellState restoreState = GridCellState.Backtracked)
+    public MatrixTracker Backtrack(
+        int r,
+        int c,
+        string? note = null,
+        GridCellState restoreState = GridCellState.Backtracked,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         if (!IsInBounds(r, c)) return this;
 
@@ -152,11 +207,16 @@ public class MatrixTracker
         cell.State = restoreState;
 
         string desc = note ?? $"Backtracking from ({r}, {c})";
-        _recorder.Step(desc, activeCell: (r, c));
+        _recorder.Step(desc, activeCell: (r, c), sourceLine: LineOf(sourceLine), sourceFile: sourceFile);
         return this;
     }
 
-    public MatrixTracker MarkPath(IEnumerable<(int Row, int Col)> path, string? note = null, string? color = null)
+    public MatrixTracker MarkPath(
+        IEnumerable<(int Row, int Col)> path,
+        string? note = null,
+        string? color = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var pathList = new List<(int Row, int Col)>(path);
         foreach (var (r, c) in pathList)
@@ -172,7 +232,7 @@ public class MatrixTracker
 
         string desc = note ?? $"Shortest path discovered ({pathList.Count} steps)";
         var dict = new Dictionary<string, string> { ["Path Length"] = pathList.Count.ToString() };
-        _recorder.Step(desc, activeCells: pathList, auxiliaryInfo: dict);
+        _recorder.Step(desc, activeCells: pathList, auxiliaryInfo: dict, sourceLine: LineOf(sourceLine), sourceFile: sourceFile);
         return this;
     }
 
@@ -212,16 +272,24 @@ public class MatrixTracker
         return this;
     }
 
-    public MatrixTracker Snapshot(string description, object? aux = null)
+    public MatrixTracker Snapshot(
+        string description,
+        object? aux = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
         var dict = ExtractAux(aux);
-        _recorder.Step(description, auxiliaryInfo: dict);
+        _recorder.Step(description, auxiliaryInfo: dict, sourceLine: LineOf(sourceLine), sourceFile: sourceFile);
         return this;
     }
 
-    public MatrixTracker Step(string description, Action<GridMatrixData> mutate)
+    public MatrixTracker Step(
+        string description,
+        Action<GridMatrixData> mutate,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
     {
-        _recorder.Step(description, mutate);
+        _recorder.Step(description, mutate, LineOf(sourceLine), sourceFile);
         return this;
     }
 

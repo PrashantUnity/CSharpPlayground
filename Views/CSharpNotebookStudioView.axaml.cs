@@ -6,7 +6,10 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -19,7 +22,28 @@ public partial class CSharpNotebookStudioView : UserControl
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         Unloaded += OnViewUnloaded;
+    }
+
+    // Each cell compiles under its id, so a step's source file names the cell whose code recorded it.
+    private void OnVisualizerStepLine(object? sender, VisualizerStepLineEventArgs e)
+    {
+        e.Handled = true;
+        var editors = this.GetVisualDescendants().OfType<BindableTextEditor>().ToList();
+        var target = e.Line > 0 && !string.IsNullOrEmpty(e.SourceFile)
+            ? editors.FirstOrDefault(editor => editor.DataContext is NotebookCellViewModel cell && cell.Id == e.SourceFile)
+            : null;
+
+        foreach (var editor in editors)
+        {
+            editor.SetStepLine(editor == target ? e.Line : -1);
+        }
+
+        if (e.Reveal)
+        {
+            target?.RevealLine(e.Line);
+        }
     }
 
     private CSharpNotebookStudioViewModel? _subscribedVm;

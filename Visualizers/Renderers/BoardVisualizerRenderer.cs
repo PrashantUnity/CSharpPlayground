@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 
@@ -41,6 +42,7 @@ public class BoardVisualizerRenderer : VisualizerRendererBase
 
         // Draw Rows & Cells
         var pendingArrows = new List<(Point Start, Point End, string? Label, string? Color)>();
+        var changed = StepChanges.BoardCells(PreviousSnapshot<BoardVisualizerData>(options), board);
 
         for (int r = 0; r < board.Rows; r++)
         {
@@ -63,6 +65,10 @@ public class BoardVisualizerRenderer : VisualizerRendererBase
                 // Fill & border
                 var (fill, border) = ResolveBoardCellStyling(cell, board.IsCheckerboard);
                 context.DrawRectangle(fill, border, new RoundedRect(cellRect, 3));
+                if (changed.Contains((r, c)))
+                {
+                    DrawChangedOutline(context, cellRect, 3);
+                }
 
                 if (cell.IsActive)
                 {

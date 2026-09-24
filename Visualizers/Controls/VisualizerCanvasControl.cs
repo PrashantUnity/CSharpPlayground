@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 
@@ -26,6 +27,13 @@ public class VisualizerCanvasControl : Control
     private double _initialPanX;
     private double _initialPanY;
 
+    // Set by Fit to View; the drawing is refitted as the canvas resizes until the learner zooms or pans.
+    private bool _stayFitted;
+    private bool _refitQueued;
+
+    /// <summary>Raised whenever zoom or pan changes, whether from the wheel, a drag, the toolbar or a fit.</summary>
+    public event EventHandler? ViewportChanged;
+
     public VisualizerOptions? Options
     {
         get => GetValue(OptionsProperty);
@@ -44,10 +52,76 @@ public class VisualizerCanvasControl : Control
     public VisualizerCanvasControl()
     {
         ClipToBounds = true;
+
+        // Click the drawing, then step through it with the keyboard.
+        Focusable = true;
+    }
+
+    public void ZoomBy(double factor)
+    {
+        if (Options == null) return;
+        _stayFitted = false;
+        Options.Zoom = VisualizerViewport.ClampZoom(Options.Zoom * factor);
+        OnViewportChanged();
+    }
+
+    public void ResetView()
+    {
+        if (Options == null) return;
+        _stayFitted = false;
+        Options.Zoom = 1.0;
+        Options.PanOffsetX = 0;
+        Options.PanOffsetY = 0;
+        OnViewportChanged();
+    }
+
+    /// <summary>Zooms and centres so the whole drawing shows, and keeps it fitted as the canvas resizes.</summary>
+    public void FitToView()
+    {
+        _stayFitted = true;
+        ApplyFit();
+    }
+
+    private void ApplyFit()
+    {
+        if (Options == null || VisualizerViewport.ComputeFit(Options, Bounds.Size) is not { } fit) return;
+        Options.Zoom = fit.Zoom;
+        Options.PanOffsetX = fit.PanX;
+        Options.PanOffsetY = fit.PanY;
+        OnViewportChanged();
+    }
+
+    private void OnViewportChanged()
+    {
+        InvalidateVisual();
+        ViewportChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (!_stayFitted) return;
+
+        // The first real size is fitted before it is ever drawn; later resizes (a grip drag, a window resize) arrive in
+        // bursts, so they refit once the burst settles instead of measuring a big tree on every pointer move.
+        if (e.PreviousSize.Width <= 0 || e.PreviousSize.Height <= 0)
+        {
+            ApplyFit();
+        }
+        else if (!_refitQueued)
+        {
+            _refitQueued = true;
+            Dispatcher.UIThread.Post(() =>
+            {
+                _refitQueued = false;
+                if (_stayFitted) ApplyFit();
+            }, DispatcherPriority.Background);
+        }
     }
 
     private void OnOptionsChanged(VisualizerOptions? oldOpt, VisualizerOptions? newOpt)
     {
+        _stayFitted = false;
         if (oldOpt?.Sequence != null)
         {
             oldOpt.Sequence.StepChanged -= OnSequenceStepChanged;
@@ -71,6 +145,7 @@ public class VisualizerCanvasControl : Control
         base.OnPointerPressed(e);
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
+            Focus(NavigationMethod.Pointer);
             _isPanning = true;
             _panStartPoint = e.GetPosition(this);
             if (Options != null)
@@ -103,14 +178,16 @@ public class VisualizerCanvasControl : Control
         {
             double dx = pos.X - _panStartPoint.X;
             double dy = pos.Y - _panStartPoint.Y;
+            if (dx == 0 && dy == 0) return;
+            _stayFitted = false;
             Options.PanOffsetX = _initialPanX + dx;
             Options.PanOffsetY = _initialPanY + dy;
-            InvalidateVisual();
+            OnViewportChanged();
             return;
         }
 
         var renderer = VisualizerRendererFactory.GetRenderer(Options.Kind);
-        var hit = renderer.HitTest(pos, Bounds, Options);
+        var hit = renderer.HitTest(pos, new Rect(Bounds.Size), Options);
 
         if (hit?.Details != _hoveredHit?.Details || hit?.Row != _hoveredHit?.Row || hit?.Col != _hoveredHit?.Col)
         {
@@ -124,10 +201,7 @@ public class VisualizerCanvasControl : Control
         base.OnPointerWheelChanged(e);
         if (Options == null) return;
 
-        double delta = e.Delta.Y;
-        double factor = delta > 0 ? 1.15 : 0.87;
-        Options.Zoom = Math.Clamp(Options.Zoom * factor, 0.25, 4.0);
-        InvalidateVisual();
+        ZoomBy(e.Delta.Y > 0 ? 1.15 : 0.87);
         e.Handled = true;
     }
 
@@ -145,14 +219,18 @@ public class VisualizerCanvasControl : Control
     {
         base.Render(context);
 
+        // Hit testing only sees what is drawn, so without this, dragging from empty space and double-clicks fell through.
+        context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+
         if (Options == null)
         {
             DrawPlaceholder(context, "No visualizer data available");
             return;
         }
 
+        // Renderers draw in the canvas's own coordinates, the same space pointer positions and fit measurements use.
         var renderer = VisualizerRendererFactory.GetRenderer(Options.Kind);
-        renderer.Render(context, Bounds, Options);
+        renderer.Render(context, new Rect(Bounds.Size), Options);
 
         if (_hoveredHit != null)
         {

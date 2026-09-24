@@ -19,7 +19,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
         double cellSize = ComputeCellSize(bounds, grid, options);
         double gap = CellGap * Math.Max(0.2, options.Zoom);
-        double coordSize = grid.ShowCoordinates ? CoordHeaderSize : 0;
+        double coordSize = ShowCoordinates(grid, options) ? CoordHeaderSize : 0;
 
         double totalGridWidth = coordSize + grid.Columns * (cellSize + gap);
         double totalGridHeight = coordSize + grid.Rows * (cellSize + gap);
@@ -29,9 +29,11 @@ public class GridMatrixRenderer : VisualizerRendererBase
         double startY = Math.Max(12, (bounds.Height - totalGridHeight) / 2.0) + options.PanOffsetY;
 
         var activeCells = GetActiveCells(options);
+        var changed = StepChanges.MatrixCells(PreviousSnapshot<GridMatrixData>(options), grid);
+        bool showValues = grid.ShowValues && options.ShowValues;
 
         // 1. Column coordinate headers
-        if (grid.ShowCoordinates)
+        if (coordSize > 0)
         {
             for (int c = 0; c < grid.Columns; c++)
             {
@@ -48,7 +50,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
         for (int r = 0; r < grid.Rows; r++)
         {
-            if (grid.ShowCoordinates)
+            if (coordSize > 0)
             {
                 string header = r < grid.RowHeaders.Count ? grid.RowHeaders[r] : r.ToString();
                 double rx = startX + coordSize / 2.0;
@@ -69,6 +71,10 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
                 // Draw cell background
                 context.DrawRectangle(fillBrush, borderPen, new RoundedRect(cellRect, 4));
+                if (changed.Contains((r, c)))
+                {
+                    DrawChangedOutline(context, cellRect, 4);
+                }
 
                 // Check active halo
                 bool isActive = activeCells.Contains((r, c));
@@ -78,7 +84,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
                 }
 
                 // Draw cell main text
-                if (grid.ShowValues && !string.IsNullOrEmpty(cell.DisplayValue))
+                if (showValues && !string.IsNullOrEmpty(cell.DisplayValue))
                 {
                     var textBrush = DetermineTextBrush(cell);
                     double fontSize = Math.Max(9, (cellSize * 0.42));
@@ -133,7 +139,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
         double cellSize = ComputeCellSize(bounds, grid, options);
         double gap = CellGap * Math.Max(0.2, options.Zoom);
-        double coordSize = grid.ShowCoordinates ? CoordHeaderSize : 0;
+        double coordSize = ShowCoordinates(grid, options) ? CoordHeaderSize : 0;
 
         double totalGridWidth = coordSize + grid.Columns * (cellSize + gap);
         double totalGridHeight = coordSize + grid.Rows * (cellSize + gap);
@@ -203,7 +209,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
             return grid.CellSize * Math.Max(0.2, options.Zoom);
         }
 
-        double coordSize = grid.ShowCoordinates ? CoordHeaderSize : 0;
+        double coordSize = ShowCoordinates(grid, options) ? CoordHeaderSize : 0;
         double availWidth = Math.Max(40, bounds.Width - coordSize - 32);
         double availHeight = Math.Max(40, bounds.Height - coordSize - 24);
 
@@ -215,6 +221,9 @@ public class GridMatrixRenderer : VisualizerRendererBase
 
         return Math.Max(12.0, baseSize * Math.Max(0.2, options.Zoom));
     }
+
+    // The header toggles flip the options, so they also reach the per-step snapshots a playback draws.
+    private static bool ShowCoordinates(GridMatrixData grid, VisualizerOptions options) => grid.ShowCoordinates && options.ShowCoordinates;
 
     private static GridMatrixData? GetEffectiveGrid(VisualizerOptions options)
     {

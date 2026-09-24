@@ -28,6 +28,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 ";
 
     // Common C# keywords with high base priority

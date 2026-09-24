@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -10,8 +11,23 @@ public static class LinkedListDataParser
     public static LinkedListData Parse(object? head, int maxNodes = 100)
     {
         var data = new LinkedListData();
-        if (head == null) return data;
         if (head is LinkedListData alreadyList) return alreadyList;
+
+        head = NormalizeHead(head);
+        if (head == null) return data;
+
+        if (head is IEnumerable values and not string && !VisualizerReflectionHelper.HasMember(head, "next", "Next"))
+        {
+            foreach (var value in values)
+            {
+                if (data.Nodes.Count == maxNodes) break;
+                int position = data.Nodes.Count;
+                data.Nodes.Add(new LinkedListNodeData(position, value?.ToString() ?? "null", position + 1) { RawValue = value });
+            }
+
+            if (data.Nodes.Count > 0) data.Nodes[^1].NextIndex = null;
+            return data;
+        }
 
         var visitedPointers = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
         var curr = head;
@@ -47,6 +63,7 @@ public static class LinkedListDataParser
         if (!data.HasCycle && data.Nodes.Count > 0)
         {
             data.Nodes[^1].NextIndex = null; // null terminator
+            data.Nodes[^1].ContinuesBeyondView = curr != null;
         }
 
         return data;
@@ -54,11 +71,12 @@ public static class LinkedListDataParser
 
     public static VisualizerSequence GenerateCycleDetectionSteps(object? head)
     {
+        head = NormalizeHead(head);
         var sequence = new VisualizerSequence();
         var listData = Parse(head);
         var initialStep = new VisualizerStep(0, $"Linked List Loaded • {listData.Nodes.Count} nodes", VisualizerKind.LinkedList)
         {
-            CustomData = listData
+            Snapshot = WithPointers(listData, 0, 0)
         };
         sequence.AddStep(initialStep);
 
@@ -86,7 +104,7 @@ public static class LinkedListDataParser
                 $"Step {stepCount}: Slow -> [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}], Fast -> [{listData.Nodes.Find(n => n.Index == fastIdx)?.DisplayValue}]",
                 VisualizerKind.LinkedList)
             {
-                CustomData = listData
+                Snapshot = WithPointers(listData, slowIdx, fastIdx)
             };
 
             if (slowIdx >= 0) step.ActiveNodeIds.Add($"node_{slowIdx}");
@@ -103,7 +121,7 @@ public static class LinkedListDataParser
                     $"🎯 Cycle Confirmed! Slow and Fast pointers met at node [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}]",
                     VisualizerKind.LinkedList)
                 {
-                    CustomData = listData
+                    Snapshot = WithPointers(listData, slowIdx, fastIdx)
                 };
                 if (slowIdx >= 0) cycleStep.ActiveNodeIds.Add($"node_{slowIdx}");
                 sequence.AddStep(cycleStep);
@@ -114,6 +132,15 @@ public static class LinkedListDataParser
         return sequence;
     }
 
+    // Each step carries its own copy so the slow and fast badges sit on the right nodes while scrubbing.
+    private static LinkedListData WithPointers(LinkedListData data, int slowIndex, int fastIndex)
+    {
+        var copy = data.Clone();
+        copy.Pointers.Add(new PointerMarkerData("slow", slowIndex, VisualizerPaletteService.GetPointerColor("slow")));
+        copy.Pointers.Add(new PointerMarkerData("fast", fastIndex, VisualizerPaletteService.GetPointerColor("fast")));
+        return copy;
+    }
+
     private static int FindNodeIndex(LinkedListData data, object? nodeObj)
     {
         if (nodeObj == null) return -1;
@@ -122,6 +149,17 @@ public static class LinkedListDataParser
             if (ReferenceEquals(data.Nodes[i].RawValue, nodeObj)) return i;
         }
         return -1;
+    }
+
+    // A BCL LinkedList<T> is the container; its nodes (with Next/Value) start at First.
+    private static object? NormalizeHead(object? head)
+    {
+        var type = head?.GetType();
+        if (type is { IsGenericType: true } && type.GetGenericTypeDefinition() == typeof(LinkedList<>))
+        {
+            return type.GetProperty(nameof(LinkedList<object>.First))!.GetValue(head);
+        }
+        return head;
     }
 
     private static object? GetNextNode(object nodeObj) =>

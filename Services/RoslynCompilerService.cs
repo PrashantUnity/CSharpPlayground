@@ -127,7 +127,7 @@ public class RoslynCompilerService
 
         if (isExplicitProgram)
         {
-            return $"using PdfEditorApp.Plugins.CSharpEditor.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Models;\n#line 1 \"script.cs\"\n{rawCode}";
+            return $"using PdfEditorApp.Plugins.CSharpEditor.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;\n#line 1 \"script.cs\"\n{rawCode}";
         }
 
         // 2. Parse using directives to hoist them out of statements/expressions
@@ -143,7 +143,9 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Models;";
+using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;";
 
         var allUsings = defaultUsings;
         if (!string.IsNullOrWhiteSpace(hoistedUsings))

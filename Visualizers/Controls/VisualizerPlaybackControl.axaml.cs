@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,8 +9,16 @@ using Avalonia.Media;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+
+public sealed record WatchStripRow(string Name, string Summary, IReadOnlyList<WatchStripCell> Cells);
+
+public sealed record WatchStripCell(string Text, bool IsAdded, bool IsMarker)
+{
+    public static WatchStripCell Marker(string text) => new(text, IsAdded: false, IsMarker: true);
+}
 
 public partial class VisualizerPlaybackControl : UserControl
 {
@@ -53,6 +63,7 @@ public partial class VisualizerPlaybackControl : UserControl
         BindBtn("NextBtn", () => Sequence?.NextStep());
         BindBtn("LastBtn", () => Sequence?.LastStep());
         BindBtn("SpeedBtn", CycleSpeed);
+        BindBtn("StepLineBtn", RevealStepLine);
 
         var slider = this.FindControl<Slider>("StepSlider");
         if (slider != null)
@@ -81,6 +92,20 @@ public partial class VisualizerPlaybackControl : UserControl
         else if (e.Key == Key.Space) { Sequence.TogglePlay(); e.Handled = true; }
     }
 
+    internal void SetStepLineTip(string tip)
+    {
+        if (this.FindControl<Button>("StepLineBtn") is { } button) ToolTip.SetTip(button, tip);
+    }
+
+    private void RevealStepLine()
+    {
+        var step = Sequence?.CurrentStep;
+        if (step is { SourceLine: > 0 })
+        {
+            RaiseEvent(new VisualizerStepLineEventArgs(step.SourceLine, step.SourceFile, reveal: true));
+        }
+    }
+
     private void CycleSpeed()
     {
         if (Sequence == null) return;
@@ -97,9 +122,15 @@ public partial class VisualizerPlaybackControl : UserControl
         var slider = this.FindControl<Slider>("StepSlider");
         var speedText = this.FindControl<TextBlock>("SpeedText");
         var auxPanel = this.FindControl<StackPanel>("AuxInfoPanel");
+        var lineBtn = this.FindControl<Button>("StepLineBtn");
+        var lineText = this.FindControl<TextBlock>("StepLineText");
 
         if (playIcon != null) playIcon.Kind = Sequence.IsPlaying ? MaterialIconKind.Pause : MaterialIconKind.Play;
         if (descText != null) descText.Text = Sequence.CurrentDescription;
+
+        int sourceLine = Sequence.CurrentStep?.SourceLine ?? 0;
+        if (lineBtn != null) lineBtn.IsVisible = sourceLine > 0;
+        if (lineText != null) lineText.Text = $"Ln {sourceLine}";
         if (counterText != null) counterText.Text = Sequence.StepProgressText;
         if (speedText != null) speedText.Text = $"{Sequence.PlaybackSpeed:0.#}x";
 
@@ -122,6 +153,59 @@ public partial class VisualizerPlaybackControl : UserControl
                     auxPanel.Children.Add(CreateBadge(kvp.Key, kvp.Value));
             }
         }
+
+        var watchList = this.FindControl<ItemsControl>("WatchList");
+        if (watchList != null)
+        {
+            var rows = BuildWatchRows(Sequence);
+            watchList.ItemsSource = rows;
+            watchList.IsVisible = rows.Count > 0;
+        }
+    }
+
+    internal static List<WatchStripRow> BuildWatchRows(VisualizerSequence sequence)
+    {
+        var step = sequence.CurrentStep;
+        if (step == null || step.Watches.Count == 0) return new List<WatchStripRow>();
+
+        var previous = sequence.CurrentIndex > 0 ? sequence.Steps[sequence.CurrentIndex - 1].Watches : null;
+        var rows = new List<WatchStripRow>();
+
+        foreach (var watch in step.Watches)
+        {
+            var added = StepChanges.AddedWatchItems(previous?.FirstOrDefault(p => p.Name == watch.Name), watch);
+            var (leading, trailing) = watch.Kind switch
+            {
+                WatchKind.Queue => ("front", "back"),
+                WatchKind.Stack => ("top", null),
+                WatchKind.PriorityQueue => ("next", null),
+                _ => ((string?)null, (string?)null)
+            };
+
+            var cells = new List<WatchStripCell>();
+            if (watch.Count == 0)
+            {
+                cells.Add(WatchStripCell.Marker("empty"));
+            }
+            else
+            {
+                if (leading != null) cells.Add(WatchStripCell.Marker(leading));
+                for (int i = 0; i < watch.Items.Count; i++)
+                {
+                    cells.Add(new WatchStripCell(watch.Items[i], added[i], IsMarker: false));
+                }
+                int hidden = watch.Count - watch.Items.Count;
+                if (hidden > 0) cells.Add(WatchStripCell.Marker($"+{hidden} more"));
+                if (trailing != null) cells.Add(WatchStripCell.Marker(trailing));
+            }
+
+            string summary = watch.Kind == WatchKind.Value
+                ? watch.Name
+                : $"{watch.Kind} • {watch.Count} item{(watch.Count == 1 ? "" : "s")}";
+            rows.Add(new WatchStripRow(watch.Name, summary, cells));
+        }
+
+        return rows;
     }
 
     private static Border CreateBadge(string label, string val) => new()

@@ -913,6 +913,293 @@ Display.Visualizer(canvasRec);
         // Final step should have path marked
         var finalGraph = Assert.IsType<GraphData>(richOut.VisualizerSequence.Steps[^1].Snapshot);
         Assert.Contains(finalGraph.Nodes, n => n.State == GraphNodeState.Path);
+
+        // Stale priority-queue entries are skipped, so every vertex is extracted exactly once
+        var extractions = richOut.VisualizerSequence.Steps
+            .Select(s => s.Description)
+            .Where(d => d.StartsWith("Extracted vertex"))
+            .ToList();
+        Assert.Equal(6, extractions.Count);
+        Assert.Equal(6, extractions.Distinct().Count());
+    }
+
+    [Fact]
+    public async Task NotebookExecutionKernel_WithCourseScheduleTemplate_ShouldDrawPrerequisiteToCourseEdges()
+    {
+        var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t => t.Id == "leetcode_207_course_schedule");
+        Assert.NotNull(template);
+
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? richOut = null;
+        var result = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => richOut = r);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(richOut?.VisualizerSequence);
+
+        // [1, 0] in LeetCode's input means "take 0 before 1", so the arrow must run 0 -> 1
+        var graph = Assert.IsType<GraphData>(richOut.VisualizerSequence.Steps[^1].Snapshot);
+        Assert.NotNull(graph.FindEdge("0", "1"));
+        Assert.Null(graph.FindEdge("1", "0"));
+        Assert.Contains("Valid order: [0, 1, 2, 3, 4]", richOut.VisualizerSequence.Steps[^1].Description);
+    }
+
+    [Fact]
+    public void TreeDataParser_GenerateTraversalSteps_ShouldSnapshotWholeTreeWithAccumulatedVisits()
+    {
+        static IEnumerable<TreeNodeData> All(TreeNodeData n) => new[] { n }.Concat(n.Children.SelectMany(All));
+
+        var tree = TreeDataParser.ParseLeetCodeString("[4, 2, 6, 1, 3, 5, 7]")!;
+        var seq = TreeDataParser.GenerateTraversalSteps(tree, "InOrder");
+
+        Assert.All(seq.Steps, s => Assert.Equal(7, All(Assert.IsType<TreeNodeData>(s.Snapshot)).Count()));
+
+        // In-order visits 1, 2, 3 first: at step 3, nodes 1 and 2 are done and 3 is current
+        var step3 = All((TreeNodeData)seq.Steps[3].Snapshot!).ToDictionary(n => n.DisplayValue);
+        Assert.Equal(TreeNodeState.Visited, step3["1"].State);
+        Assert.Equal(TreeNodeState.Visited, step3["2"].State);
+        Assert.Equal(TreeNodeState.Current, step3["3"].State);
+        Assert.Equal(TreeNodeState.Default, step3["4"].State);
+        Assert.Equal(new[] { step3["3"].Id }, seq.Steps[3].ActiveNodeIds);
+
+        Assert.All(All((TreeNodeData)seq.Steps[^1].Snapshot!), n => Assert.Equal(TreeNodeState.Visited, n.State));
+        Assert.All(All(tree), n => Assert.Equal(TreeNodeState.Default, n.State));
+    }
+
+    [Fact]
+    public void VisualizerRecorder_TreeStepWithValueId_ShouldHighlightMatchingNode()
+    {
+        var root = new TestTreeNode(10, new TestTreeNode(5), new TestTreeNode(15));
+        var recorder = VisualizerRecorder.CreateTree(root, "BST");
+
+        recorder.Step("Visit Node 5", activeNodeId: "5");
+
+        var step = recorder.Sequence.Steps[^1];
+        var snapshot = Assert.IsType<TreeNodeData>(step.Snapshot);
+        Assert.Equal(new[] { snapshot.FindByValue("5")!.Id }, step.ActiveNodeIds);
+    }
+
+    [Fact]
+    public void VisualizerRecorder_ArrayStep_ShouldCaptureInPlaceMutationsOfSourceArray()
+    {
+        var nums = new[] { 1, 2, 3, 4, 5 };
+        var recorder = VisualizerRecorder.CreateArray(ArrayPointerDataParser.Parse(nums), "Reverse");
+
+        for (int l = 0, r = nums.Length - 1; l < r; l++, r--)
+        {
+            (nums[l], nums[r]) = (nums[r], nums[l]);
+            recorder.Step($"Swap {l} and {r}", pointers: new { L = l, R = r });
+        }
+
+        string ValuesAt(int step) => string.Join(",",
+            Assert.IsType<ArrayPointerData>(recorder.Sequence.Steps[step].Snapshot).Items.Select(i => i.DisplayValue));
+
+        Assert.Equal("1,2,3,4,5", ValuesAt(0));
+        Assert.Equal("5,2,3,4,1", ValuesAt(1));
+        Assert.Equal("5,4,3,2,1", ValuesAt(2));
+    }
+
+    [Fact]
+    public void LinkedListDataParser_ShouldWalkBclLinkedListAndPlainCollections()
+    {
+        var bcl = LinkedListDataParser.Parse(new LinkedList<int>(new[] { 1, 2, 3 }));
+        Assert.Equal(new[] { "1", "2", "3" }, bcl.Nodes.Select(n => n.DisplayValue));
+        Assert.Null(bcl.Nodes[^1].NextIndex);
+        Assert.False(bcl.HasCycle);
+
+        var fromList = LinkedListDataParser.Parse(new List<string> { "a", "b" });
+        Assert.Equal(new[] { "a", "b" }, fromList.Nodes.Select(n => n.DisplayValue));
+    }
+
+    [Fact]
+    public void GraphDataParser_UndirectedInputs_ShouldNotDuplicateEdges()
+    {
+        var adjacency = new Dictionary<int, List<int>> { [0] = new() { 1, 2 }, [1] = new() { 0 }, [2] = new() { 0 } };
+        Assert.Equal(2, GraphDataParser.Parse(adjacency, isDirected: false).Edges.Count);
+        Assert.Equal(4, GraphDataParser.Parse(adjacency, isDirected: true).Edges.Count);
+
+        int[,] symmetric = { { 0, 3, 0 }, { 3, 0, 1 }, { 0, 1, 0 } };
+        var fromMatrix = GraphDataParser.Parse(symmetric, isDirected: false);
+        Assert.Equal(2, fromMatrix.Edges.Count);
+        Assert.Equal(3.0, fromMatrix.FindEdge("1", "0")?.Weight);
+    }
+
+    private static async Task<VisualizerSequence> RunCellForSequenceAsync(NotebookExecutionKernel kernel, string code, string? sourceId = null)
+    {
+        RichCellOutput? richOut = null;
+        var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => richOut = r, sourceId: sourceId);
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(richOut?.VisualizerOptions?.Sequence);
+        return richOut.VisualizerOptions.Sequence;
+    }
+
+    [Fact]
+    public async Task VisualizerSteps_RecordTheLineOfTheCallThatCreatedThem()
+    {
+        var seq = await RunCellForSequenceAsync(new NotebookExecutionKernel(), @"var nums = new[] { 3, 1, 2 };
+var rec = VisualizerRecorder.CreateArray(ArrayPointerDataParser.Parse(nums));
+
+rec.Step(""compare"", pointers: new { I = 0 });
+Display.Visualizer(rec);");
+
+        Assert.Equal(new[] { 2, 4 }, seq.Steps.Select(s => s.SourceLine));
+        Assert.All(seq.Steps, s => Assert.True(string.IsNullOrEmpty(s.SourceFile)));
+    }
+
+    [Fact]
+    public async Task VisualizerSteps_InNotebookCells_RecordTheCellThatDefinedTheCall()
+    {
+        var kernel = new NotebookExecutionKernel();
+        await kernel.ExecuteCellAsync(@"void Mark(VisualizerRecorder r)
+{
+    r.Step(""marked"");
+}", sourceId: "cellA");
+
+        var seq = await RunCellForSequenceAsync(kernel, @"var rec = VisualizerRecorder.CreateArray(ArrayPointerDataParser.Parse(new[] { 1 }));
+Mark(rec);
+Display.Visualizer(rec);", sourceId: "cellB");
+
+        Assert.Equal(("cellB", 1), (seq.Steps[0].SourceFile, seq.Steps[0].SourceLine));
+        Assert.Equal(("cellA", 3), (seq.Steps[1].SourceFile, seq.Steps[1].SourceLine));
+    }
+
+    [Fact]
+    public async Task VisualizerSteps_FromTrackers_RecordCallerLines()
+    {
+        var kernel = new NotebookExecutionKernel();
+        RichCellOutput? richOut = null;
+        var result = await kernel.ExecuteCellAsync(@"var tracker = TreeTracker.Create(""[2, 1, 3]"");
+tracker.Visit(""1"");
+tracker.Highlight(""3"", TreeNodeState.Matched);
+Display.Visualizer(tracker);", onRichOutput: r => richOut = r, sourceId: "cellC");
+
+        Assert.True(result.Success, result.ErrorMessage);
+        var steps = richOut!.VisualizerOptions!.Sequence!.Steps;
+        Assert.Equal(new[] { 1, 2, 3 }, steps.Select(s => s.SourceLine));
+        Assert.All(steps, s => Assert.Equal("cellC", s.SourceFile));
+    }
+
+    [Fact]
+    public void VisualizerSteps_FromBuiltInTraversals_AreNotLinkedToSource()
+    {
+        var grid = MatrixDataParser.Parse(new[] { "S..", ".#.", "..T" });
+        var tracker = MatrixTraversalEngine.RunBfs(grid, (0, 0));
+
+        Assert.True(tracker.Sequence.TotalSteps > 3);
+        Assert.All(tracker.Sequence.Steps, s => Assert.Equal(0, s.SourceLine));
+    }
+
+    [Fact]
+    public async Task NotebookKernel_CompileErrorsInNamedCells_KeepEditorLineNumbers()
+    {
+        var result = await new NotebookExecutionKernel().ExecuteCellAsync("int a = 1;\nint b = ;", sourceId: "cellD");
+
+        Assert.False(result.Success);
+        Assert.Equal(2, result.Diagnostics[0].Line);
+    }
+
+    private class NaryNode
+    {
+        public string Name { get; set; } = "";
+        public List<NaryNode> Children { get; } = new();
+    }
+
+    private class Pair
+    {
+        public object? Left { get; set; }
+        public object? Right { get; set; }
+    }
+
+    [Fact]
+    public void DataStructureDetector_RecognizesTreesListsAndRectangularGrids()
+    {
+        var nary = new NaryNode { Name = "root" };
+        nary.Children.Add(new NaryNode { Name = "a" });
+
+        Assert.Equal(DataStructureShape.Tree, DataStructureDetector.Detect(new TestTreeNode(2, new TestTreeNode(1), new TestTreeNode(3))));
+        Assert.Equal(DataStructureShape.Tree, DataStructureDetector.Detect(new PublicFieldTreeNode(1)));
+        Assert.Equal(DataStructureShape.Tree, DataStructureDetector.Detect(nary));
+        Assert.Equal(DataStructureShape.LinkedList, DataStructureDetector.Detect(new TestListNode(1, new TestListNode(2))));
+        Assert.Equal(DataStructureShape.LinkedList, DataStructureDetector.Detect(new PublicFieldListNode(1)));
+        Assert.Equal(DataStructureShape.LinkedList, DataStructureDetector.Detect(new LinkedList<int>(new[] { 1, 2 }).First));
+        Assert.Equal(DataStructureShape.Grid, DataStructureDetector.Detect(new[,] { { 1, 0 }, { 0, 1 } }));
+        Assert.Equal(DataStructureShape.Grid, DataStructureDetector.Detect(new[] { new[] { '1', '0' }, new[] { '0', '1' } }));
+    }
+
+    [Fact]
+    public void DataStructureDetector_LeavesOrdinaryValuesToTheInspector()
+    {
+        var cyclic = new TestTreeNode(1);
+        cyclic.left = cyclic;
+
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect(new[] { new[] { 3 }, new[] { 9, 20 } }));
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect(new[] { 1, 2, 3 }));
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect(new List<int> { 1 }));
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect("text"));
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect(new Pair { Left = 1, Right = 2 }));
+        Assert.Equal(DataStructureShape.None, DataStructureDetector.Detect(cyclic));
+    }
+
+    [Fact]
+    public void TreeDataParser_ChildPointingBackAtAncestor_ParsesWithoutRecursingForever()
+    {
+        var root = new TestTreeNode(1, new TestTreeNode(2));
+        root.left!.right = root;
+
+        var tree = TreeDataParser.Parse(root);
+
+        Assert.NotNull(tree);
+        Assert.Equal("2", tree.Left?.DisplayValue);
+        Assert.Null(tree.Left?.Right);
+    }
+
+    private static async Task<RichCellOutput?> LastOutputOfCellAsync(string code)
+    {
+        RichCellOutput? last = null;
+        var result = await new NotebookExecutionKernel().ExecuteCellAsync(code, onRichOutput: r => last = r);
+        Assert.True(result.Success, result.ErrorMessage);
+        return last;
+    }
+
+    [Theory]
+    [InlineData("public class TreeNode { public int val; public TreeNode? left, right; public TreeNode(int v, TreeNode? l = null, TreeNode? r = null) { val = v; left = l; right = r; } }\nvar root = new TreeNode(2, new TreeNode(1), new TreeNode(3));\nroot", VisualizerKind.Tree, "TreeNode")]
+    [InlineData("public class ListNode { public int val; public ListNode? next; public ListNode(int v, ListNode? n = null) { val = v; next = n; } }\nvar head = new ListNode(1, new ListNode(2, new ListNode(3)));\nhead", VisualizerKind.LinkedList, "ListNode")]
+    [InlineData("new[,] { { 1, 1, 0 }, { 0, 1, 0 } }", VisualizerKind.Matrix, null)]
+    [InlineData("TreeTracker.Create(\"[1, 2, 3]\", \"Tracked\")", VisualizerKind.Tree, "Tracked")]
+    [InlineData("VisualizerRecorder.CreateArray(ArrayPointerDataParser.Parse(new[] { 4, 5 }), \"Recorded\")", VisualizerKind.ArrayPointers, "Recorded")]
+    [InlineData("LinkedListTracker.Create(null, \"Tracked list\")", VisualizerKind.LinkedList, "Tracked list")]
+    [InlineData("RecursionTracker.Create(\"Tracked calls\")", VisualizerKind.Tree, "Tracked calls")]
+    public async Task NotebookKernel_ReturnedDataStructure_IsDrawnAsVisualizer(string code, VisualizerKind expectedKind, string? expectedTitle)
+    {
+        var output = await LastOutputOfCellAsync(code);
+
+        Assert.Equal(CellOutputKind.Visualizer, output?.Kind);
+        Assert.Equal(expectedKind, output!.VisualizerOptions!.Kind);
+        if (expectedTitle != null) Assert.Equal(expectedTitle, output.VisualizerOptions.Title);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ReturnedRaggedLists_StayInTheObjectInspector()
+    {
+        var output = await LastOutputOfCellAsync("new[] { new[] { 3 }, new[] { 9, 20 }, new[] { 15, 7 } }");
+
+        Assert.Equal(CellOutputKind.ObjectInspector, output?.Kind);
+    }
+
+    [Fact]
+    public void GraphRenderer_HitTest_ShouldFollowZoomedNodePositions()
+    {
+        var options = new VisualizerOptions
+        {
+            Kind = VisualizerKind.Graph,
+            GraphData = GraphDataParser.Parse("[[0,1]]"),
+            Zoom = 0.5
+        };
+        var bounds = new Rect(0, 0, 400, 300);
+        var renderer = new GraphRenderer();
+
+        // Node "0" lays out at (200, 40); at 50% zoom it sits halfway to the canvas centre (200, 150)
+        Assert.Equal("0", renderer.HitTest(new Point(200, 95), bounds, options)?.NodeId);
+        Assert.Null(renderer.HitTest(new Point(200, 40), bounds, options));
     }
 }
 

@@ -19,7 +19,12 @@ public static class ArrayPointerDataParser
             return alreadyData;
         }
 
-        if (array is IEnumerable enumerable)
+        if (array is IList list)
+        {
+            data.Source = list;
+            data.RefreshFromSource();
+        }
+        else if (array is IEnumerable enumerable)
         {
             int idx = 0;
             foreach (var item in enumerable)

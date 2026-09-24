@@ -193,6 +193,30 @@
                                     </StackPanel>
                                 </Border>
 
+                                <!-- Call Stack Section (innermost frame first) -->
+                                <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="8" IsVisible="{Binding IsPaused}">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="CALL STACK" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="5,1" ToolTip.Tip="Frames on the stack">
+                                                <TextBlock Text="{Binding CallStack.Count}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <ItemsControl ItemsSource="{Binding CallStack}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:CallStackFrameItem">
+                                                    <Grid ColumnDefinitions="14,*,Auto" Margin="0,1">
+                                                        <materialIcons:MaterialIcon Grid.Column="0" Kind="ArrowRightBold" Width="11" Height="11" Foreground="{DynamicResource M3PrimaryBrush}" IsVisible="{Binding IsCurrentFrame}" VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding MethodName}" ToolTip.Tip="{Binding MethodName}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding LineNumber, StringFormat='Ln {0}'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Breakpoints Section -->
                                 <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="8">
                                     <StackPanel Spacing="6">

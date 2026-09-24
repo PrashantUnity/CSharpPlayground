@@ -314,6 +314,7 @@ public partial class NotebookTabViewModel : ObservableObject
             var executionTask = Task.Run(() => Kernel.ExecuteCellAsync(
                 cell.Source,
                 ct: linkedCts.Token,
+                sourceId: cell.Id,
                 onLiveConsole: text =>
                 {
                     void Apply()

@@ -18,7 +18,7 @@ public static class MatrixTraversalEngine
         string? title = null,
         bool fourWay = true)
     {
-        var tracker = MatrixTracker.Create(grid, title ?? "BFS Matrix Traversal");
+        var tracker = MatrixTracker.CreateUnlinked(grid, title ?? "BFS Matrix Traversal");
         tracker.SetStart(start.Row, start.Col);
 
         var queue = new Queue<(int R, int C)>();
@@ -81,7 +81,7 @@ public static class MatrixTraversalEngine
         string? title = null,
         bool fourWay = true)
     {
-        var tracker = MatrixTracker.Create(grid, title ?? "DFS Matrix Traversal");
+        var tracker = MatrixTracker.CreateUnlinked(grid, title ?? "DFS Matrix Traversal");
         tracker.SetStart(start.Row, start.Col);
 
         var visited = new bool[grid.Rows, grid.Columns];
@@ -144,7 +144,7 @@ public static class MatrixTraversalEngine
         heuristic ??= ((a, b) => Math.Abs(a.R - b.R) + Math.Abs(a.C - b.C));
         getCost ??= ((_, _) => 1.0);
 
-        var tracker = MatrixTracker.Create(grid, title ?? "A* Pathfinding Search");
+        var tracker = MatrixTracker.CreateUnlinked(grid, title ?? "A* Pathfinding Search");
         tracker.SetStart(start.Row, start.Col);
         tracker.SetTarget(target.Row, target.Col);
 
@@ -216,7 +216,7 @@ public static class MatrixTraversalEngine
         string? title = null,
         bool fourWay = true)
     {
-        var tracker = MatrixTracker.Create(grid, title ?? "Flood Fill Region Coloring");
+        var tracker = MatrixTracker.CreateUnlinked(grid, title ?? "Flood Fill Region Coloring");
         if (!grid.IsInBounds(start.Row, start.Col)) return tracker;
 
         var startCell = grid[start.Row, start.Col];

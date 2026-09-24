@@ -5,14 +5,19 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="380"
+             VerticalAlignment="Top"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.InteractiveVisualizerControl">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Visualizers/Controls/VisualizerStyles.axaml" />
+    </UserControl.Styles>
 
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1"
             CornerRadius="6"
             Padding="12,10">
-        <Grid RowDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
             <!-- Header Toolbar -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
                 <!-- Left: Title & Summary Pill -->
@@ -32,43 +37,68 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Right: Canvas Controls & Export -->
+                <!-- Right: View Controls, Matrix Tools & Full Screen -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                    <Button Name="ZoomInBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom In">
-                        <materialIcons:MaterialIcon Kind="MagnifyPlusOutline" Width="13" Height="13" />
-                    </Button>
-                    <Button Name="ZoomOutBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom Out">
+                    <Button Name="ZoomOutBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom Out (−)">
                         <materialIcons:MaterialIcon Kind="MagnifyMinusOutline" Width="13" Height="13" />
                     </Button>
-                    <Button Name="ResetViewBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Reset View (100%)">
-                        <materialIcons:MaterialIcon Kind="FitToPageOutline" Width="13" Height="13" />
+                    <Button Name="ResetViewBtn" Classes="cell-tool-btn" MinWidth="40" Height="24" Padding="4,0" ToolTip.Tip="Actual Size: back to 100% (0)">
+                        <TextBlock Name="ZoomLevelText" Text="100%" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </Button>
-                    <Button Name="ToggleValuesBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Cell Values">
-                        <materialIcons:MaterialIcon Kind="EyeOutline" Width="13" Height="13" />
+                    <Button Name="ZoomInBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Zoom In (+)">
+                        <materialIcons:MaterialIcon Kind="MagnifyPlusOutline" Width="13" Height="13" />
                     </Button>
-                    <Button Name="ToggleCoordsBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Coordinates">
-                        <materialIcons:MaterialIcon Kind="Numeric" Width="13" Height="13" />
+                    <Button Name="FitViewBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Fit to View: show the whole drawing, at every step (F)">
+                        <materialIcons:MaterialIcon Kind="FitToScreenOutline" Width="13" Height="13" />
                     </Button>
-                    <Button Name="CopyDataBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Data (CSV / TSV)">
-                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+
+                    <!-- Grids only -->
+                    <StackPanel Name="MatrixToolsPanel" Orientation="Horizontal" Spacing="4" Margin="4,0,0,0">
+                        <Button Name="ToggleValuesBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Cell Values">
+                            <materialIcons:MaterialIcon Kind="EyeOutline" Width="13" Height="13" />
+                        </Button>
+                        <Button Name="ToggleCoordsBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Toggle Coordinates">
+                            <materialIcons:MaterialIcon Kind="Numeric" Width="13" Height="13" />
+                        </Button>
+                        <Button Name="CopyDataBtn" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Data (CSV / TSV)">
+                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                        </Button>
+                    </StackPanel>
+
+                    <Button Name="FullScreenBtn" Classes="cell-tool-btn" MinWidth="24" Height="24" Margin="4,0,0,0" ToolTip.Tip="Full Screen (or double-click the drawing)">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <materialIcons:MaterialIcon Name="FullScreenIcon" Kind="Fullscreen" Width="15" Height="15" VerticalAlignment="Center" />
+                            <!-- Shown in full screen, so the way out is never a guess -->
+                            <TextBlock Name="ExitHintText" Text="Esc" IsVisible="False" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
                 </StackPanel>
             </Grid>
 
             <!-- Vector Canvas -->
             <Border Grid.Row="1"
+                    Name="CanvasHost"
                     Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="1"
                     CornerRadius="4"
                     Height="300"
-                    MinHeight="240"
+                    MinHeight="140"
                     ClipToBounds="True">
                 <visControls:VisualizerCanvasControl Name="CanvasControl" />
             </Border>
 
+            <!-- Drag to make the inline canvas taller or shorter -->
+            <Border Grid.Row="2"
+                    Name="ResizeGrip"
+                    Classes="canvas-resize-grip"
+                    Height="10"
+                    ToolTip.Tip="Drag to resize • double-click to reset">
+                <Border Width="36" Height="3" CornerRadius="1.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+
             <!-- Step-by-Step Time-Travel Playback Bar -->
-            <visControls:VisualizerPlaybackControl Grid.Row="2" Name="PlaybackControl" Margin="0,4,0,0" />
+            <visControls:VisualizerPlaybackControl Grid.Row="3" Name="PlaybackControl" />
         </Grid>
     </Border>
 </UserControl>

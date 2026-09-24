@@ -17,6 +17,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -33,6 +34,7 @@ public partial class CSharpCodeStudioView : UserControl
 
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
+    private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
     private DebugHoverDataTipControl? _debugHoverTip;
     private DebugHoverDataTipController? _debugHoverController;
 
@@ -62,6 +64,7 @@ public partial class CSharpCodeStudioView : UserControl
 
             _editor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(_editor.Options);
             _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
+            _editor.TextArea.TextView.BackgroundRenderers.Add(_stepLineRenderer);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
@@ -85,6 +88,7 @@ public partial class CSharpCodeStudioView : UserControl
 
         DataContextChanged += OnDataContextChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
@@ -491,6 +495,7 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSwitchTabDocument(StudioTabItemViewModel tab)
     {
         if (_editor == null) return;
+        SetStepLine(-1);
 
         _isUpdatingText = true;
         try
@@ -566,10 +571,15 @@ public partial class CSharpCodeStudioView : UserControl
                 _editor.Options.IndentationSize = _currentVm.IndentationSize;
             }
         }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsExecuting) && _currentVm.IsExecuting)
+        {
+            SetStepLine(-1);
+        }
     }
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
     {
+        SetStepLine(-1);
         if (_isUpdatingText || _editor == null || _currentVm == null) return;
 
         _currentVm.Code = _editor.Text;
@@ -660,6 +670,29 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    private void OnVisualizerStepLine(object? sender, VisualizerStepLineEventArgs e)
+    {
+        e.Handled = true;
+        if (_editor?.Document == null) return;
+
+        // Script runs compile without a path and debug runs as script.cs; anything else is not this editor's code.
+        bool fromThisScript = string.IsNullOrEmpty(e.SourceFile) || e.SourceFile == "script.cs";
+        int line = fromThisScript && e.Line >= 1 && e.Line <= _editor.Document.LineCount ? e.Line : -1;
+        SetStepLine(line);
+
+        if (line > 0)
+        {
+            _editor.ScrollTo(line, 1);
+        }
+    }
+
+    private void SetStepLine(int line)
+    {
+        if (_editor == null || _stepLineRenderer.HighlightedLine == line) return;
+        _stepLineRenderer.HighlightedLine = line;
+        _editor.TextArea.TextView.InvalidateVisual();
+    }
+
     private void OnSetPausedLine(int line)
     {
         if (_editor == null) return;
@@ -668,7 +701,7 @@ public partial class CSharpCodeStudioView : UserControl
             _debugHoverController?.HideTip();
         }
         _breakpointMargin.CurrentPausedLine = line;
-        _debugLineRenderer.CurrentPausedLine = line;
+        _debugLineRenderer.HighlightedLine = line;
         _editor.TextArea.TextView.InvalidateVisual();
     }
 

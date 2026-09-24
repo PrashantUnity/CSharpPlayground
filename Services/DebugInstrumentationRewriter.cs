@@ -11,6 +11,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 {
     private readonly SemanticModel? _semanticModel;
     private HashSet<string> _declaredVariables = new();
+    private int _frameCounter;
 
     public DebugInstrumentationRewriter(SemanticModel? semanticModel = null)
     {
@@ -80,7 +81,10 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         _declaredVariables = methodScope;
         try
         {
-            return base.VisitMethodDeclaration(node);
+            var visited = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
+            return visited.Body is { } body && !ContainsYield(node.Body)
+                ? visited.WithBody(WithFrameScope(body, node))
+                : visited;
         }
         finally
         {
@@ -107,7 +111,8 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         _declaredVariables = ctorScope;
         try
         {
-            return base.VisitConstructorDeclaration(node);
+            var visited = (ConstructorDeclarationSyntax)base.VisitConstructorDeclaration(node)!;
+            return visited.Body is { } body ? visited.WithBody(WithFrameScope(body, node)) : visited;
         }
         finally
         {
@@ -134,7 +139,8 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         _declaredVariables = opScope;
         try
         {
-            return base.VisitOperatorDeclaration(node);
+            var visited = (OperatorDeclarationSyntax)base.VisitOperatorDeclaration(node)!;
+            return visited.Body is { } body ? visited.WithBody(WithFrameScope(body, node)) : visited;
         }
         finally
         {
@@ -161,7 +167,8 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         _declaredVariables = opScope;
         try
         {
-            return base.VisitConversionOperatorDeclaration(node);
+            var visited = (ConversionOperatorDeclarationSyntax)base.VisitConversionOperatorDeclaration(node)!;
+            return visited.Body is { } body ? visited.WithBody(WithFrameScope(body, node)) : visited;
         }
         finally
         {
@@ -172,10 +179,9 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
     public override SyntaxNode? VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
     {
         var outerScope = _declaredVariables;
-        var isStatic = node.Modifiers.Any(SyntaxKind.StaticKeyword);
 
-        // A static local function cannot capture enclosing variables
-        var localFuncScope = isStatic ? new HashSet<string>() : new HashSet<string>(outerScope);
+        // Capture only enclosing locals the function reads; others would break `int total = Depth(3);` above `Depth`.
+        var localFuncScope = EnclosingLocalsReadBy(node, outerScope);
 
         if (node.ParameterList != null)
         {
@@ -191,13 +197,130 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         _declaredVariables = localFuncScope;
         try
         {
-            return base.VisitLocalFunctionStatement(node);
+            var visited = (LocalFunctionStatementSyntax)base.VisitLocalFunctionStatement(node)!;
+            return visited.Body is { } body && !ContainsYield(node.Body)
+                ? visited.WithBody(WithFrameScope(body, node))
+                : visited;
         }
         finally
         {
             _declaredVariables = outerScope;
         }
     }
+
+    public override SyntaxNode? VisitAccessorDeclaration(AccessorDeclarationSyntax node)
+    {
+        var visited = (AccessorDeclarationSyntax)base.VisitAccessorDeclaration(node)!;
+        return visited.Body is { } body && !ContainsYield(node.Body)
+            ? visited.WithBody(WithFrameScope(body, node))
+            : visited;
+    }
+
+    public override SyntaxNode? VisitParenthesizedLambdaExpression(ParenthesizedLambdaExpressionSyntax node)
+    {
+        var visited = (ParenthesizedLambdaExpressionSyntax)base.VisitParenthesizedLambdaExpression(node)!;
+        return visited.Block is { } block ? visited.WithBlock(WithFrameScope(block, node)) : visited;
+    }
+
+    public override SyntaxNode? VisitSimpleLambdaExpression(SimpleLambdaExpressionSyntax node)
+    {
+        var visited = (SimpleLambdaExpressionSyntax)base.VisitSimpleLambdaExpression(node)!;
+        return visited.Block is { } block ? visited.WithBlock(WithFrameScope(block, node)) : visited;
+    }
+
+    public override SyntaxNode? VisitAnonymousMethodExpression(AnonymousMethodExpressionSyntax node)
+    {
+        var visited = (AnonymousMethodExpressionSyntax)base.VisitAnonymousMethodExpression(node)!;
+        return visited.WithBlock(WithFrameScope(visited.Block, node));
+    }
+
+    #endregion
+
+    private HashSet<string> EnclosingLocalsReadBy(LocalFunctionStatementSyntax node, HashSet<string> outerScope)
+    {
+        var names = new HashSet<string>();
+        if (_semanticModel == null || node.Modifiers.Any(SyntaxKind.StaticKeyword) || outerScope.Count == 0)
+        {
+            return names;
+        }
+
+        try
+        {
+            var flow = node.Body != null
+                ? _semanticModel.AnalyzeDataFlow(node.Body)
+                : node.ExpressionBody != null ? _semanticModel.AnalyzeDataFlow(node.ExpressionBody.Expression) : null;
+            if (flow is not { Succeeded: true })
+            {
+                return names;
+            }
+
+            foreach (var symbol in flow.ReadInside.OfType<ILocalSymbol>())
+            {
+                bool declaredOutside = symbol.DeclaringSyntaxReferences.All(r => !node.Span.Contains(r.Span));
+                if (declaredOutside && outerScope.Contains(symbol.Name))
+                {
+                    names.Add(symbol.Name);
+                }
+            }
+        }
+        catch
+        {
+            // Without flow analysis, capture nothing rather than risk unassigned-variable errors
+        }
+
+        return names;
+    }
+
+    #region Call Stack Frames
+
+    private BlockSyntax WithFrameScope(BlockSyntax body, SyntaxNode declaration)
+    {
+        var name = Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(DescribeFrame(declaration), quote: true);
+        var next = body.Statements.Count > 0 ? body.Statements[0].GetLeadingTrivia() : body.CloseBraceToken.LeadingTrivia;
+        var frameStatement = SyntaxFactory.ParseStatement(
+                $"using var __dbgFrame{_frameCounter++} = PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.EnterFrame({name}, {GetLineNumber(declaration)});")
+            .WithTrailingTrivia(SeparatorBefore(next));
+
+        return body.WithStatements(body.Statements.Insert(0, frameStatement));
+    }
+
+    // Iterator bodies run lazily across MoveNext calls, so a frame pushed at entry would outlive each yield.
+    private static bool ContainsYield(SyntaxNode? body) =>
+        body != null &&
+        body.DescendantNodes(n => n == body || n is not (LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax))
+            .OfType<YieldStatementSyntax>()
+            .Any();
+
+    private static string DescribeFrame(SyntaxNode declaration) => declaration switch
+    {
+        MethodDeclarationSyntax m => WithTypePrefix(m, $"{m.Identifier.Text}{m.TypeParameterList}{FormatParameters(m.ParameterList)}"),
+        ConstructorDeclarationSyntax c => WithTypePrefix(c, $"{c.Identifier.Text}{FormatParameters(c.ParameterList)}"),
+        OperatorDeclarationSyntax o => WithTypePrefix(o, $"operator {o.OperatorToken.Text}{FormatParameters(o.ParameterList)}"),
+        ConversionOperatorDeclarationSyntax co => WithTypePrefix(co, $"{co.ImplicitOrExplicitKeyword.Text} operator {co.Type}{FormatParameters(co.ParameterList)}"),
+        LocalFunctionStatementSyntax lf => $"{lf.Identifier.Text}{lf.TypeParameterList}{FormatParameters(lf.ParameterList)}",
+        AccessorDeclarationSyntax a => WithTypePrefix(a, $"{DescribeAccessorOwner(a)}.{a.Keyword.Text}"),
+        ParenthesizedLambdaExpressionSyntax pl => $"<lambda>{FormatParameters(pl.ParameterList)}",
+        SimpleLambdaExpressionSyntax sl => $"<lambda>({sl.Parameter.Identifier.Text})",
+        _ => "<anonymous method>"
+    };
+
+    private static string DescribeAccessorOwner(AccessorDeclarationSyntax accessor) => accessor.Parent?.Parent switch
+    {
+        PropertyDeclarationSyntax property => property.Identifier.Text,
+        IndexerDeclarationSyntax indexer => $"this{FormatParameters(indexer.ParameterList)}",
+        EventDeclarationSyntax evt => evt.Identifier.Text,
+        _ => "accessor"
+    };
+
+    private static string WithTypePrefix(SyntaxNode node, string name)
+    {
+        var containingType = node.Ancestors().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+        return containingType == null ? name : $"{containingType.Identifier.Text}.{name}";
+    }
+
+    // Called statically, as elsewhere in the plugin: Rider can't resolve the extension-method form.
+    private static string FormatParameters(BaseParameterListSyntax parameters) =>
+        Microsoft.CodeAnalysis.SyntaxNodeExtensions.NormalizeWhitespace(parameters).ToString();
 
     #endregion
 
@@ -229,29 +352,12 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
                     newStatements.Add(probe);
                 }
 
-                // If this statement introduces local variables, record them for subsequent statements
-                if (statement is LocalDeclarationStatementSyntax localDecl)
-                {
-                    if (!localDecl.Modifiers.Any(SyntaxKind.RefKeyword))
-                    {
-                        var typeText = localDecl.Declaration.Type.ToString();
-                        if (!typeText.StartsWith("Span<") && !typeText.StartsWith("ReadOnlySpan<") &&
-                            typeText != "Span" && typeText != "ReadOnlySpan")
-                        {
-                            foreach (var v in localDecl.Declaration.Variables)
-                            {
-                                if (v.Initializer != null && v.Initializer.Value is not StackAllocArrayCreationExpressionSyntax)
-                                {
-                                    localScopeVars.Add(v.Identifier.Text);
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Recurse into nested structures (nested blocks, loops, conditionals)
                 var visited = (StatementSyntax)Visit(statement);
                 newStatements.Add(visited);
+
+                // Record declared locals only after visiting, so a lambda in their own initializer cannot capture them
+                RegisterDeclaredVariables(statement, localScopeVars);
             }
 
             return node.WithStatements(SyntaxFactory.List(newStatements));
@@ -279,27 +385,9 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
                     newMembers.Add(SyntaxFactory.GlobalStatement(probe));
                 }
 
-                if (statement is LocalDeclarationStatementSyntax localDecl)
-                {
-                    if (!localDecl.Modifiers.Any(SyntaxKind.RefKeyword))
-                    {
-                        var typeText = localDecl.Declaration.Type.ToString();
-                        if (!typeText.StartsWith("Span<") && !typeText.StartsWith("ReadOnlySpan<") &&
-                            typeText != "Span" && typeText != "ReadOnlySpan")
-                        {
-                            foreach (var v in localDecl.Declaration.Variables)
-                            {
-                                if (v.Initializer != null && v.Initializer.Value is not StackAllocArrayCreationExpressionSyntax)
-                                {
-                                    _declaredVariables.Add(v.Identifier.Text);
-                                }
-                            }
-                        }
-                    }
-                }
-
                 var visitedStatement = (StatementSyntax)Visit(statement);
                 newMembers.Add(SyntaxFactory.GlobalStatement(visitedStatement));
+                RegisterDeclaredVariables(statement, _declaredVariables);
             }
             else
             {
@@ -425,6 +513,28 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         return span.StartLinePosition.Line + 1;
     }
 
+    private static void RegisterDeclaredVariables(StatementSyntax statement, HashSet<string> scope)
+    {
+        if (statement is not LocalDeclarationStatementSyntax localDecl || localDecl.Modifiers.Any(SyntaxKind.RefKeyword))
+        {
+            return;
+        }
+
+        var typeText = localDecl.Declaration.Type.ToString();
+        if (typeText.StartsWith("Span<") || typeText.StartsWith("ReadOnlySpan<") || typeText is "Span" or "ReadOnlySpan")
+        {
+            return;
+        }
+
+        foreach (var v in localDecl.Declaration.Variables)
+        {
+            if (v.Initializer != null && v.Initializer.Value is not StackAllocArrayCreationExpressionSyntax)
+            {
+                scope.Add(v.Identifier.Text);
+            }
+        }
+    }
+
     private static bool IsSyntheticProbe(StatementSyntax statement)
     {
         return statement.ToFullString().Contains("ScriptDebugSession.Hit");
@@ -483,8 +593,12 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         }
 
         return SyntaxFactory.ParseStatement(probeCode)
-            .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed);
+            .WithTrailingTrivia(contextNode == null ? SyntaxFactory.CarriageReturnLineFeed : SeparatorBefore(contextNode.GetLeadingTrivia()));
     }
+
+    // Inserted code shares the next statement's line so original line numbers survive; directives need a line start.
+    private static SyntaxTrivia SeparatorBefore(SyntaxTriviaList nextLeadingTrivia) =>
+        nextLeadingTrivia.Any(t => t.IsDirective) ? SyntaxFactory.CarriageReturnLineFeed : SyntaxFactory.Space;
 
     private static bool IsValidIdentifier(string name)
     {
