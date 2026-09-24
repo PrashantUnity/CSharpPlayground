@@ -102,7 +102,10 @@ public class BindableTextEditor : TextEditor
         TextArea.LeftMargins.Insert(0, _breakpointMargin);
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
-        _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value);
+        _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
+        {
+            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty
+        };
 
         TextChanged += OnEditorTextChanged;
 

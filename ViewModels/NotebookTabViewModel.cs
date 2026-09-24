@@ -234,7 +234,25 @@ public partial class NotebookTabViewModel : ObservableObject
             moveAction: MoveCell,
             addBelowAction: AddCellBelow,
             runAndSelectNextAction: RunCellAndSelectNextAsync,
-            runCellsAboveAction: RunCellsAboveAsync);
+            runCellsAboveAction: RunCellsAboveAsync,
+            precedingContextProvider: GetPrecedingCodeContext);
+    }
+
+    // Best-effort static approximation of the kernel's real chained ScriptState: cells are assumed
+    // to run top-to-bottom, so completion sees every code cell above the active one regardless of
+    // whether it has actually been run yet. That matches the common "write several cells, then run"
+    // workflow; if cells are run out of order, completion may suggest a variable that isn't in scope
+    // yet at runtime — the same static-analysis tradeoff every notebook IDE completion makes.
+    private string GetPrecedingCodeContext(NotebookCellViewModel cell)
+    {
+        var idx = Cells.IndexOf(cell);
+        if (idx <= 0) return string.Empty;
+
+        return string.Join(
+            "\n",
+            Cells.Take(idx)
+                .Where(c => c.Type == CellType.Code && !string.IsNullOrWhiteSpace(c.Source))
+                .Select(c => c.Source));
     }
 
     [RelayCommand]

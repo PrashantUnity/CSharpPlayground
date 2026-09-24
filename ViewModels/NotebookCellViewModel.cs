@@ -99,6 +99,7 @@ public partial class NotebookCellViewModel : ObservableObject
     private readonly Action<NotebookCellViewModel, CellType>? _addBelowAction;
     private readonly Func<NotebookCellViewModel, Task>? _runAndSelectNextAction;
     private readonly Func<NotebookCellViewModel, Task>? _runCellsAboveAction;
+    private readonly Func<NotebookCellViewModel, string>? _precedingContextProvider;
 
     public NotebookCellViewModel(
         NotebookCellItem model,
@@ -107,7 +108,8 @@ public partial class NotebookCellViewModel : ObservableObject
         Action<NotebookCellViewModel, int>? moveAction = null,
         Action<NotebookCellViewModel, CellType>? addBelowAction = null,
         Func<NotebookCellViewModel, Task>? runAndSelectNextAction = null,
-        Func<NotebookCellViewModel, Task>? runCellsAboveAction = null)
+        Func<NotebookCellViewModel, Task>? runCellsAboveAction = null,
+        Func<NotebookCellViewModel, string>? precedingContextProvider = null)
     {
         Model = model;
         _type = model.Type;
@@ -128,6 +130,7 @@ public partial class NotebookCellViewModel : ObservableObject
         _addBelowAction = addBelowAction;
         _runAndSelectNextAction = runAndSelectNextAction;
         _runCellsAboveAction = runCellsAboveAction;
+        _precedingContextProvider = precedingContextProvider;
 
         if (model.ImageBytes != null && model.ImageBytes.Length > 0)
         {
@@ -192,6 +195,13 @@ public partial class NotebookCellViewModel : ObservableObject
             _selectedOutputTab = CellOutputTab.Console;
         }
     }
+
+    /// <summary>
+    /// Source of every code cell above this one in the notebook tab, in document order — mirrors
+    /// what NotebookExecutionKernel's chained ScriptState actually accumulates at runtime, so
+    /// completion can resolve variables/usings declared in earlier cells instead of only this one.
+    /// </summary>
+    public string GetPrecedingContext() => _precedingContextProvider?.Invoke(this) ?? string.Empty;
 
     partial void OnSourceChanged(string value)
     {

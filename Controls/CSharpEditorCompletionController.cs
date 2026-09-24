@@ -24,6 +24,14 @@ public class CSharpEditorCompletionController : IDisposable
 
     public ExecutionLanguageMode LanguageMode { get; set; } = ExecutionLanguageMode.Statements;
 
+    /// <summary>
+    /// Optional source of code that precedes this editor's own text but isn't in its document —
+    /// e.g. earlier notebook cells, whose declared variables/usings a real execution kernel would
+    /// already have in scope by the time this cell runs. Only feeds the semantic analysis below;
+    /// window positioning stays in this editor's own local coordinates.
+    /// </summary>
+    public Func<string>? PrecedingContextProvider { get; set; }
+
     public CSharpEditorCompletionController(TextEditor editor, RoslynCompilerService compilerService)
         : this(editor, () => compilerService)
     {
@@ -149,6 +157,18 @@ public class CSharpEditorCompletionController : IDisposable
 
         var mode = LanguageMode;
 
+        // Merge in preceding notebook cells (if any) purely for the semantic analyzer below — the
+        // completion window itself is positioned using startOffset/text above, which stay in this
+        // editor's own local document coordinates untouched.
+        var precedingContext = PrecedingContextProvider?.Invoke();
+        var analysisText = text;
+        var analysisCaretOffset = caretOffset;
+        if (!string.IsNullOrEmpty(precedingContext))
+        {
+            analysisText = precedingContext + "\n" + text;
+            analysisCaretOffset = precedingContext.Length + 1 + caretOffset;
+        }
+
         _ = Task.Run(async () =>
         {
             try
@@ -161,7 +181,7 @@ public class CSharpEditorCompletionController : IDisposable
 
                 if (_completionService == null) return;
 
-                var items = await _completionService.GetCompletionsAsync(text, caretOffset, mode, token);
+                var items = await _completionService.GetCompletionsAsync(analysisText, analysisCaretOffset, mode, token);
 
                 if (token.IsCancellationRequested || items.Count == 0) return;
 

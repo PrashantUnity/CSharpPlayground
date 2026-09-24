@@ -22,6 +22,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -619,14 +620,14 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 
     private static CompletionItemKind MapSymbolKind(ISymbol symbol) => symbol switch
     {
-        IMethodSymbol m when m.IsExtensionMethod => CompletionItemKind.ExtensionMethod,
+        IMethodSymbol { IsExtensionMethod: true } => CompletionItemKind.ExtensionMethod,
         IMethodSymbol => CompletionItemKind.Method,
         IPropertySymbol => CompletionItemKind.Property,
         IFieldSymbol => CompletionItemKind.Field,
-        INamedTypeSymbol t when t.TypeKind == TypeKind.Interface => CompletionItemKind.Interface,
-        INamedTypeSymbol t when t.TypeKind == TypeKind.Enum => CompletionItemKind.Enum,
-        INamedTypeSymbol t when t.TypeKind == TypeKind.Struct => CompletionItemKind.Struct,
-        INamedTypeSymbol t when t.IsRecord => CompletionItemKind.Record,
+        INamedTypeSymbol { TypeKind: TypeKind.Interface } => CompletionItemKind.Interface,
+        INamedTypeSymbol { TypeKind: TypeKind.Enum } => CompletionItemKind.Enum,
+        INamedTypeSymbol { TypeKind: TypeKind.Struct } => CompletionItemKind.Struct,
+        INamedTypeSymbol { IsRecord: true } => CompletionItemKind.Record,
         INamedTypeSymbol => CompletionItemKind.Class,
         ILocalSymbol => CompletionItemKind.Variable,
         IParameterSymbol => CompletionItemKind.Variable,

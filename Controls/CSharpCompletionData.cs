@@ -182,15 +182,23 @@ public class CSharpCompletionData : ICompletionData
             int markerIdx = textToInsert.IndexOf("$0", StringComparison.Ordinal);
             textToInsert = textToInsert.Replace("$0", string.Empty);
             textArea.Document.Replace(completionSegment, textToInsert);
-            textArea.Caret.Offset = completionSegment.Offset + markerIdx;
+            textArea.Caret.Offset = ClampToDocument(textArea, completionSegment.Offset + markerIdx);
         }
         else
         {
             textArea.Document.Replace(completionSegment, textToInsert);
             if (caretDelta != 0)
             {
-                textArea.Caret.Offset = Math.Max(0, completionSegment.Offset + textToInsert.Length + caretDelta);
+                textArea.Caret.Offset = ClampToDocument(textArea, completionSegment.Offset + textToInsert.Length + caretDelta);
             }
         }
     }
+
+    // completionSegment reflects where the replacement STARTED, not necessarily where the document
+    // ends up — AvaloniaEdit can hand back a segment that no longer matches this cell's live text by
+    // the time the user clicks an entry (e.g. after further edits or a fast debounce re-trigger).
+    // Math.Max alone only guarded the lower bound; an unclamped upper bound let the caret land past
+    // the end of the document and crash TextDocument.GetLineByOffset (ArgumentOutOfRangeException).
+    private static int ClampToDocument(TextArea textArea, int offset) =>
+        Math.Clamp(offset, 0, textArea.Document.TextLength);
 }

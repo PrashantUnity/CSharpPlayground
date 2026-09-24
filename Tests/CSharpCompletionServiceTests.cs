@@ -109,4 +109,27 @@ public class CSharpCompletionServiceTests
         Assert.NotNull(wl);
         Assert.False(string.IsNullOrWhiteSpace(wl.Signature));
     }
+
+    // Regression test for a "default usings" drift bug: CSharpCompletionService.DefaultUsings
+    // is a separate hardcoded copy from RoslynCompilerService.WrapSourceCode's usings, and had
+    // fallen out of sync (missing "using System.Net.Http;"). That silently broke completion for
+    // any type resolved through HttpClient (e.g. `var response = await client.GetAsync(...)`)
+    // while leaving unrelated completions (Console., keywords) looking unaffected.
+    private const string HttpClientCode = """
+        var client = new HttpClient();
+        var url = "https://example.com/";
+        var response = await client.GetAsync(url);
+
+        response.
+        """;
+
+    [Fact]
+    public async Task DotMemberAccess_OnAwaitedHttpResponseMessage_ReturnsStatusCode()
+    {
+        var completions = await Service.GetCompletionsAsync(HttpClientCode, HttpClientCode.Length, ExecutionLanguageMode.Statements);
+
+        var names = completions.Select(c => c.DisplayText).ToHashSet();
+        Assert.Contains("StatusCode", names);
+        Assert.Contains("IsSuccessStatusCode", names);
+    }
 }
