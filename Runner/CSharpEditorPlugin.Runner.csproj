@@ -10,7 +10,7 @@
     <PackageId>CodeFryDev.FrySharp</PackageId>
     <Product>FrySharp</Product>
     <Title>FrySharp - C# Code Studio</Title>
-    <Version>1.0.1</Version>
+    <Version>1.0.3</Version>
     <Company>Code Fry Dev</Company>
     <Copyright>Copyright © 2026 Code Fry Dev</Copyright>
     <Description>Interactive C# Development Studio and Script Automation Workspace</Description>
