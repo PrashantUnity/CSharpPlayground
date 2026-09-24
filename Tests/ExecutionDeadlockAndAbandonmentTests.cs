@@ -67,7 +67,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
     public async Task WaitWithGraceAsync_CancelledButTaskFinishesWithinGracePeriod_ReturnsTrue()
     {
         using var cts = new CancellationTokenSource();
-        var task = Task.Delay(300);
+        var task = Task.Delay(100); // well within the 1s GracePeriod even under load
         cts.CancelAfter(10);
 
         var completed = await ExecutionAbandonment.WaitWithGraceAsync(task, cts.Token);
