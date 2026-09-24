@@ -55,11 +55,13 @@ public class CodeViewer : TextEditor
         {
             SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
             Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
+            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
         }
         else
         {
             SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
+            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
         }
     }
 

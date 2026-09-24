@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -11,7 +12,7 @@ public enum DocCalloutType
     Warning
 }
 
-public class DocCategory
+public partial class DocCategory : ObservableObject
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
@@ -20,6 +21,9 @@ public class DocCategory
     public string Badge { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<DocArticle> Articles { get; set; } = new();
+
+    [ObservableProperty]
+    private bool _isExpanded;
 }
 
 public class DocArticle

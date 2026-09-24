@@ -68,6 +68,7 @@ public partial class CSharpDocsViewModel : ObservableObject
         if (Categories.Count > 0)
         {
             SelectedCategory = Categories[0];
+            SelectedCategory.IsExpanded = true;
             if (SelectedCategory.Articles.Count > 0)
             {
                 SelectedArticle = SelectedCategory.Articles[0];
@@ -120,10 +121,18 @@ public partial class CSharpDocsViewModel : ObservableObject
     {
         if (category == null) return;
         SelectedCategory = category;
+        category.IsExpanded = true;
         if (category.Articles.Count > 0)
         {
             SelectedArticle = category.Articles[0];
         }
+    }
+
+    [RelayCommand]
+    public void ToggleCategory(DocCategory? category)
+    {
+        if (category == null) return;
+        category.IsExpanded = !category.IsExpanded;
     }
 
     [RelayCommand]
@@ -136,6 +145,7 @@ public partial class CSharpDocsViewModel : ObservableObject
         if (parentCategory != null)
         {
             SelectedCategory = parentCategory;
+            parentCategory.IsExpanded = true;
         }
 
         if (HasSearchQuery)
