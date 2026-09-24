@@ -334,8 +334,8 @@
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
     </Style>
     <Style Selector="Button.doc-nav-item.active">
-        <Setter Property="Background" Value="#172A45" />
-        <Setter Property="Foreground" Value="#38BDF8" />
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
     </Style>
 
     <Style Selector="Button.snippet-action-btn">
@@ -355,10 +355,10 @@
     </Style>
 
     <Style Selector="Button.snippet-run-btn">
-        <Setter Property="Background" Value="#0E4429" />
-        <Setter Property="Foreground" Value="#3FB950" />
+        <Setter Property="Background" Value="{DynamicResource M3SuccessContainerBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessContainerBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="#238636" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3SuccessBrush}" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="10,4" />
         <Setter Property="FontSize" Value="11" />
@@ -366,8 +366,8 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.snippet-run-btn:pointerover">
-        <Setter Property="Background" Value="#238636" />
-        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="Background" Value="{DynamicResource M3SuccessBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessBrush}" />
     </Style>
 
 </Styles>

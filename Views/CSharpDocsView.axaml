@@ -44,8 +44,8 @@
                                FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                VerticalAlignment="Center" />
-                    <Border Background="#1C2D3D" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="#38BDF8" />
+                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
                     </Border>
                 </StackPanel>
 
@@ -87,7 +87,7 @@
                             Classes="snippet-action-btn"
                             ToolTip.Tip="Open C# Code Studio">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="#38BDF8" />
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" />
                             <TextBlock Text="Script Studio" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -95,7 +95,7 @@
                             Classes="snippet-action-btn"
                             ToolTip.Tip="Open C# Notebook Studio">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="#4EC9B0" />
+                            <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="{DynamicResource M3SuccessBrush}" />
                             <TextBlock Text="Notebook Studio" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -190,16 +190,16 @@
                         <TextBlock Text="{Binding SelectedArticle.Subtitle}"
                                    FontSize="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
-                            <Border Background="#1F2A38" BorderBrush="#2F81F7" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                <TextBlock Text="{Binding SelectedCategory.Badge}" FontSize="10.5" FontWeight="SemiBold" Foreground="#58A6FF" />
+                            <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                <TextBlock Text="{Binding SelectedCategory.Badge}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
                             </Border>
                             <TextBlock Text="{Binding SelectedArticle.ReadingTime}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>
 
                     <!-- Summary Callout Box -->
-                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="16,12">
-                        <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13" Foreground="#C9D1D9" TextWrapping="Wrap" LineHeight="20" />
+                    <Border Background="{DynamicResource M3InverseSurfaceBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12">
+                        <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13" Foreground="{DynamicResource M3InverseOnSurfaceBrush}" TextWrapping="Wrap" LineHeight="20" />
                     </Border>
 
                     <!-- Article Sections -->
@@ -212,9 +212,9 @@
 
                                     <!-- Callout box -->
                                     <Border IsVisible="{Binding HasCallout}"
-                                            Background="#172A45" BorderBrush="#38BDF8" BorderThickness="1,0,0,0"
+                                            Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1,0,0,0"
                                             CornerRadius="0,6,6,0" Padding="12,10" Margin="0,4">
-                                        <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="#E2E8F0" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" TextWrapping="Wrap" />
                                     </Border>
 
                                     <!-- Bullet points -->
@@ -222,7 +222,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid ColumnDefinitions="Auto,*" Margin="4,2,0,2">
-                                                    <TextBlock Grid.Column="0" Text="• " FontSize="13" Foreground="#38BDF8" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="0" Text="• " FontSize="13" Foreground="{DynamicResource M3PrimaryBrush}" FontWeight="Bold" />
                                                     <TextBlock Grid.Column="1" Text="{Binding}" FontSize="12.5" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" LineHeight="18" />
                                                 </Grid>
                                             </DataTemplate>
@@ -239,9 +239,9 @@
                         <ItemsControl ItemsSource="{Binding SelectedArticle.ApiSignatures}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:DocApiSignature">
-                                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,8">
+                                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="{Binding FullSignature}" FontFamily="Consolas, Menlo, monospace" FontSize="12.5" FontWeight="Bold" Foreground="#4EC9B0" />
+                                            <TextBlock Text="{Binding FullSignature}" FontFamily="Consolas, Menlo, monospace" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource M3SuccessBrush}" />
                                             <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
                                         </StackPanel>
                                     </Border>
@@ -256,7 +256,7 @@
                         <ItemsControl ItemsSource="{Binding SelectedArticle.CodeSnippets}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:DocCodeSnippet">
-                                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+                                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,12">
                                         <StackPanel Spacing="10">
                                             <!-- Snippet Top Bar -->
                                             <Grid ColumnDefinitions="*,Auto,Auto">
@@ -289,15 +289,12 @@
                                             </Grid>
 
                                             <!-- Code Block Canvas -->
-                                            <Border Background="#0D1117" BorderBrush="#21262D" BorderThickness="1" CornerRadius="6" Padding="12">
+                                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12">
                                                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                                                    <TextBox Text="{Binding Code}"
-                                                             IsReadOnly="True"
-                                                             Background="Transparent"
-                                                             BorderThickness="0"
+                                                    <SelectableTextBlock Text="{Binding Code}"
                                                              FontFamily="Consolas, Menlo, monospace"
                                                              FontSize="12"
-                                                             Foreground="#E6EDF3"
+                                                             Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                              LineHeight="19" />
                                                 </ScrollViewer>
                                             </Border>
@@ -311,18 +308,18 @@
                     <!-- Keyboard Shortcuts Table -->
                     <StackPanel IsVisible="{Binding SelectedArticle.HasShortcuts}" Spacing="10">
                         <TextBlock Text="Shortcut Reference" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                        <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="8" Padding="12">
+                        <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                             <ItemsControl ItemsSource="{Binding SelectedArticle.Shortcuts}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:DocShortcutItem">
-                                        <Border BorderBrush="#21262D" BorderThickness="0,0,0,1" Padding="6,8">
+                                        <Border BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="6,8">
                                             <Grid ColumnDefinitions="180,90,110,*">
                                                 <TextBlock Grid.Column="0" Text="{Binding Action}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                                <Border Grid.Column="1" Background="#21262D" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" Foreground="#58A6FF" />
+                                                <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighestBrush}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                                 </Border>
-                                                <Border Grid.Column="2" Background="#21262D" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" />
+                                                <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3SecondaryBrush}" />
                                                 </Border>
                                                 <TextBlock Grid.Column="3" Text="{Binding Description}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                             </Grid>

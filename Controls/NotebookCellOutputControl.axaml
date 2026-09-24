@@ -230,16 +230,16 @@
                 <StackPanel Spacing="6">
                     <!-- Missing Variable Smart Hint (CS0103) -->
                     <Border IsVisible="{Binding HasMissingVariableError}"
-                            Background="#251619"
-                            BorderBrush="#E06C75"
+                            Background="{DynamicResource M3WarningContainerBrush}"
+                            BorderBrush="{DynamicResource M3WarningBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             Margin="0,0,0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="#E5C07B" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="{DynamicResource M3OnWarningContainerBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E5C07B" />
+                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnWarningContainerBrush}" />
                                 <TextBlock Text="This variable may be defined in an earlier cell. Run previous cells to initialize it in this session."
                                            FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
                             </StackPanel>
@@ -263,20 +263,16 @@
                     </Border>
 
                     <!-- 2. Dark Terminal Card for Console Stdout Output -->
-                    <Border Background="#080C10"
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             IsVisible="{Binding IsConsoleTabActive}">
-                        <TextBox Text="{Binding OutputText, Mode=OneWay}"
+                        <SelectableTextBlock Text="{Binding OutputText, Mode=OneWay}"
                                  FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
                                  FontSize="12"
                                  Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Padding="0"
-                                 IsReadOnly="True"
                                  TextWrapping="Wrap" />
                     </Border>
 
@@ -323,7 +319,7 @@
                                 </StackPanel>
                             </Grid>
                             <Border Grid.Row="1"
-                                    Background="#080C11"
+                                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                     BorderThickness="1"
                                     CornerRadius="4"
