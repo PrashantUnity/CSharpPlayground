@@ -1,4 +1,5 @@
 using System;
+using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
@@ -12,7 +13,12 @@ public static partial class Display
         InteractiveVisualizerControl? control = null;
         try
         {
-            control = new InteractiveVisualizerControl(options);
+            // Script execution runs on a background thread; the control must still be built on
+            // the UI thread, or later UI-thread access (e.g. clicking Play/Pause) throws because
+            // Avalonia bound its properties to the wrong thread on first touch.
+            control = Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess()
+                ? Dispatcher.UIThread.Invoke(() => new InteractiveVisualizerControl(options))
+                : new InteractiveVisualizerControl(options);
         }
         catch
         {
