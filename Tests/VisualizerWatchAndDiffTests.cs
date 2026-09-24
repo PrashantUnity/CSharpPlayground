@@ -61,6 +61,17 @@ public class VisualizerWatchAndDiffTests
     }
 
     [Fact]
+    public void FormatScalarValue_FormatsInfinitiesAndScalarsConsistentlyAcrossPlatforms()
+    {
+        Assert.Equal("∞", ObjectInspectorBuilder.FormatScalarValue(double.PositiveInfinity));
+        Assert.Equal("-∞", ObjectInspectorBuilder.FormatScalarValue(double.NegativeInfinity));
+        Assert.Equal("NaN", ObjectInspectorBuilder.FormatScalarValue(double.NaN));
+        Assert.Equal("∞", ObjectInspectorBuilder.FormatScalarValue(float.PositiveInfinity));
+        Assert.Equal("-∞", ObjectInspectorBuilder.FormatScalarValue(float.NegativeInfinity));
+        Assert.Equal("NaN", ObjectInspectorBuilder.FormatScalarValue(float.NaN));
+    }
+
+    [Fact]
     public void WatchCapture_CapsLongCollectionsAndSurvivesThrowingEnumerators()
     {
         var big = WatchCapture.Capture("big", Enumerable.Range(0, 100).ToList());

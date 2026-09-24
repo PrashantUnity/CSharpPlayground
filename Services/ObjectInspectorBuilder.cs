@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -210,10 +211,24 @@ public static class ObjectInspectorBuilder
             return b ? "true" : "false";
         }
 
-        if (val is double d) return d.ToString("G");
-        if (val is float f) return f.ToString("G");
-        if (val is decimal m) return m.ToString("G");
-        if (val is DateTime dt) return dt.ToString("yyyy-MM-dd HH:mm:ss");
+        if (val is double d)
+        {
+            if (double.IsPositiveInfinity(d)) return "∞";
+            if (double.IsNegativeInfinity(d)) return "-∞";
+            if (double.IsNaN(d)) return "NaN";
+            return d.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        if (val is float f)
+        {
+            if (float.IsPositiveInfinity(f)) return "∞";
+            if (float.IsNegativeInfinity(f)) return "-∞";
+            if (float.IsNaN(f)) return "NaN";
+            return f.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        if (val is decimal m) return m.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+        if (val is DateTime dt) return dt.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
         if (val is TimeSpan ts) return ts.ToString();
 
         return val.ToString() ?? string.Empty;
