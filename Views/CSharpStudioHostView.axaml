@@ -30,6 +30,9 @@
         <DataTemplate DataType="vm:CSharpDocsViewModel">
             <views:CSharpDocsView />
         </DataTemplate>
+        <DataTemplate DataType="vm:CSharpBlindProblemsViewModel">
+            <views:CSharpBlindProblemsView />
+        </DataTemplate>
     </UserControl.DataTemplates>
 
     <!-- Studio Host Active Page -->

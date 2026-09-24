@@ -19,6 +19,16 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                    <!-- Blind 75 Challenge -->
+                                    <Button Command="{Binding NavigateToBlindProblemsCommand}"
+                                            Classes="nexus-btn-surface"
+                                            ToolTip.Tip="Practice top 75 coding interview questions with interactive C# 10 execution">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="#E3B341" VerticalAlignment="Center" />
+                                            <TextBlock Text="Blind 75" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+
                                     <!-- New Notebook (Primary Blue) -->
                                     <Button Command="{Binding CreateNewNotebookCommand}"
                                             Classes="nexus-btn-primary"

@@ -136,6 +136,19 @@
                                 </Grid>
                             </Button>
 
+                            <!-- Blind 75 Algorithm Hub -->
+                            <Button Command="{Binding NavigateToBlindProblemsCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Blind 75 Coding Interview Track">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TrophyOutline" Width="18" Height="18" Foreground="#E3B341" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Blind 75" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Background="#262115" BorderBrush="#E3B341" BorderThickness="1" CornerRadius="10" Padding="6,1.5">
+                                        <TextBlock Text="76" FontSize="9.5" FontWeight="SemiBold" Foreground="#E3B341" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
                             <!-- Documentation & Learning Center -->
                             <Button Command="{Binding NavigateToDocsCommand}"
                                     Classes="nexus-nav-item"

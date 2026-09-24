@@ -630,6 +630,7 @@ public partial class CSharpCodeStudioViewModel
             if (!string.IsNullOrEmpty(testCase.ExpectedOutput) && ConsoleOutput.Contains(testCase.ExpectedOutput))
             {
                 testCase.Passed = true;
+                CheckAndMarkBlindProblemSolved();
             }
             else
             {
@@ -639,6 +640,24 @@ public partial class CSharpCodeStudioViewModel
         finally
         {
             testCase.IsRunning = false;
+        }
+    }
+
+    private void CheckAndMarkBlindProblemSolved()
+    {
+        try
+        {
+            if (TestCases.Count > 0 && TestCases.All(tc => tc.Passed == true))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(Script.Title, @"^(\d+)\.\s");
+                if (match.Success && int.TryParse(match.Groups[1].Value, out int problemNum))
+                {
+                    _ = new LocalBlindProgressService().SetProblemSolvedAsync(problemNum, true);
+                }
+            }
+        }
+        catch
+        {
         }
     }
 

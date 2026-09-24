@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="54"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsStatsControl"
+             x:DataType="vm:CSharpBlindProblemsViewModel">
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="16,8">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+            <!-- 1. Progress Summary Text -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="#22C55E" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding ProgressSummaryText}"
+                           FontSize="12.5" FontWeight="SemiBold"
+                           Foreground="{DynamicResource M3OnSurfaceBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- 2. Breakdown Badges -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="24,0,0,0">
+                <!-- Easy -->
+                <Border Background="#1A00B8A3" BorderBrush="#00B8A3" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="#00B8A3" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="#00B8A3" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Medium -->
+                <Border Background="#1AFFC01E" BorderBrush="#FFC01E" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="Med:" FontSize="10.5" Foreground="#FFC01E" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="#FFC01E" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Hard -->
+                <Border Background="#1AEF4444" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="#EF4444" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="#EF4444" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- 3. Mini Progress Bar -->
+            <ProgressBar Grid.Column="2"
+                         Minimum="0" Maximum="100"
+                         Value="{Binding ProgressPercentage}"
+                         Height="4"
+                         CornerRadius="2"
+                         Foreground="#22C55E"
+                         Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                         VerticalAlignment="Center"
+                         Margin="24,0" />
+
+            <!-- 4. Status Filter Buttons (All, Solved, Unsolved, Bookmarked) -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="All"
+                        Classes="snippet-action-btn" Padding="8,3">
+                    <TextBlock Text="All" FontSize="11" />
+                </Button>
+                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Solved"
+                        Classes="snippet-action-btn" Padding="8,3">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="#22C55E" />
+                        <TextBlock Text="Solved" FontSize="11" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Unsolved"
+                        Classes="snippet-action-btn" Padding="8,3">
+                    <TextBlock Text="Unsolved" FontSize="11" />
+                </Button>
+                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Bookmarked"
+                        Classes="snippet-action-btn" Padding="8,3">
+                    <materialIcons:MaterialIcon Kind="BookmarkOutline" Width="12" Height="12" Foreground="#E3B341" />
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

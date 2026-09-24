@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsTableControl"
+             x:DataType="vm:CSharpBlindProblemsViewModel">
+
+    <UserControl.Styles>
+        <!-- Table Row Hover Style -->
+        <Style Selector="Border.problem-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.08" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.problem-row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        </Style>
+        <Style Selector="Border.problem-row.selected">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="36,*">
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 1. STICKY TABLE HEADER                                          -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,0">
+            <Grid ColumnDefinitions="48,*,110,90,160">
+                <TextBlock Grid.Column="0" Text="Status" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="Title" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                <TextBlock Grid.Column="2" Text="Acceptance" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="Difficulty" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="Actions" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 2. SCROLLABLE PROBLEM LIST                                      -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding FilteredProblems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:BlindProblemItem">
+                        <Border Classes="problem-row" Padding="16,10">
+                            <Grid ColumnDefinitions="48,*,110,90,160">
+
+                                <!-- Col 0: Status Checkmark / Lock Icon -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- Solved Checkmark Toggle -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
+                                            ToolTip.Tip="Toggle Solved Status">
+                                        <Panel Width="20" Height="20">
+                                            <!-- Solved: Green circle checkmark -->
+                                            <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18"
+                                                                        Foreground="#22C55E"
+                                                                        IsVisible="{Binding IsSolved}"
+                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <!-- Unsolved & Not Premium: Subtle Empty Circle -->
+                                            <materialIcons:MaterialIcon Kind="CircleOutline" Width="18" Height="18"
+                                                                        Foreground="#6E7681"
+                                                                        IsVisible="{Binding !IsSolved}"
+                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Panel>
+                                    </Button>
+
+                                    <!-- Premium Lock Badge (if problem is historically premium) -->
+                                    <materialIcons:MaterialIcon Kind="LockOutline" Width="14" Height="14"
+                                                                Foreground="#E3B341"
+                                                                Margin="6,0,0,0"
+                                                                IsVisible="{Binding IsPremium}"
+                                                                ToolTip.Tip="LeetCode Premium Question (Fully unlocked in FrySharp!)" />
+                                </StackPanel>
+
+                                <!-- Col 1: Problem Title & Category Tags -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,0,0,0">
+                                    <!-- Main Title Button -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FullTitle}"
+                                                   FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Button>
+
+                                    <!-- Category Pill -->
+                                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,1.5" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Category}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Col 2: Acceptance Rate (e.g. 52.3%) -->
+                                <TextBlock Grid.Column="2" Text="{Binding AcceptanceRateText}"
+                                           FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                                <!-- Col 3: Difficulty Pill Badge -->
+                                <Border Grid.Column="3"
+                                        Background="{Binding DifficultyBackground}"
+                                        CornerRadius="10"
+                                        Padding="8,2.5"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DifficultyBadgeText}"
+                                               FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{Binding DifficultyColor}" />
+                                </Border>
+
+                                <!-- Col 4: Action Shortcuts -->
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <!-- Run in Script Studio -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            ToolTip.Tip="Open &amp; Run in C# Script Studio (F5)">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+
+                                    <!-- Open as Notebook -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            ToolTip.Tip="Open as Interactive C# Notebook">
+                                        <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="15" Height="15" Foreground="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+
+                                    <!-- Visualizer Shortcut (if available) -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            IsVisible="{Binding HasVisualizer}"
+                                            ToolTip.Tip="Open with Time-Travel Data Structure Visualizer">
+                                        <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="#E3B341" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+
+                                    <!-- Generate Test Data Shortcut -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).GenerateTestDataCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            ToolTip.Tip="Generate Fresh Test Data for this Problem">
+                                        <materialIcons:MaterialIcon Kind="AutoAwesome" Width="14" Height="14" Foreground="#EAB308" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+
+                                    <!-- Details Flyout Button -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            ToolTip.Tip="View Problem Description &amp; Complexity">
+                                        <materialIcons:MaterialIcon Kind="InformationOutline" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+
+                                    <!-- Bookmark Toggle -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                                            ToolTip.Tip="Bookmark Question">
+                                        <materialIcons:MaterialIcon Kind="Bookmark" Width="15" Height="15"
+                                                                    Foreground="{Binding IsBookmarked, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

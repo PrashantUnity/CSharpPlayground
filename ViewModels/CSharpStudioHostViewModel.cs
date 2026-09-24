@@ -46,6 +46,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     public CSharpManagerViewModel ManagerViewModel { get; }
     public CSharpDocsViewModel DocsViewModel { get; }
+    public CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
@@ -65,13 +66,21 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
 
+        // ── Initialize Blind 75 Algorithm Hub page ──
+        BlindProblemsViewModel = new CSharpBlindProblemsViewModel(
+            progressService: new LocalBlindProgressService(),
+            backToHubAction: NavigateToManager,
+            openScriptAction: NavigateToCodeStudio,
+            openNotebookAction: NavigateToNotebookStudio);
+
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(
             _storageService,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio,
             navigateToHomeAction: NavigateToHome,
-            navigateToDocsAction: () => NavigateToDocs());
+            navigateToDocsAction: () => NavigateToDocs(),
+            navigateToBlindProblemsAction: () => NavigateToBlindProblems());
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -232,6 +241,22 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         CurrentPage = DocsViewModel;
         IsOnManagerPage = false;
         ActiveDocumentTitle = "Documentation";
+    }
+
+    [RelayCommand]
+    public void NavigateToBlindProblems(int? problemNumber = null)
+    {
+        if (problemNumber.HasValue)
+        {
+            var problem = Blind75CatalogService.GetProblemByNumber(problemNumber.Value);
+            if (problem != null)
+            {
+                BlindProblemsViewModel.SelectedProblem = problem;
+            }
+        }
+        CurrentPage = BlindProblemsViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = "Blind 75";
     }
 
     [RelayCommand]
