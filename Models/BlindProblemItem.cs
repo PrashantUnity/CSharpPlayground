@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -24,11 +25,30 @@ public partial class BlindProblemItem : ObservableObject
     public string AcceptanceRateText => $"{AcceptanceRate:F1}%";
     public bool IsPremium { get; init; }
 
+    /// <summary>LeetCode's name for the problem in its URL: "Implement Trie (Prefix Tree)" → implement-trie-prefix-tree.</summary>
+    public string LeetCodeSlug => ToSlug(Title);
+
+    /// <summary>The problem's page on LeetCode, e.g. https://leetcode.com/problems/two-sum/.</summary>
+    public string LeetCodeUrl => $"https://leetcode.com/problems/{LeetCodeSlug}/";
+
+    public string LeetCodeTooltip => IsPremium
+        ? $"Open on LeetCode (needs LeetCode Premium): leetcode.com/problems/{LeetCodeSlug}"
+        : $"Open on LeetCode: leetcode.com/problems/{LeetCodeSlug}";
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SolvedTooltip))]
     private bool _isSolved;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BookmarkTooltip))]
     private bool _isBookmarked;
+
+    /// <summary>True while this problem is the one open in the details panel, so its row stands out.</summary>
+    [ObservableProperty]
+    private bool _isHighlighted;
+
+    public string SolvedTooltip => IsSolved ? "Solved (click to mark unsolved)" : "Mark as solved";
+    public string BookmarkTooltip => IsBookmarked ? "Saved (click to remove)" : "Save for later";
 
     public List<string> Tags { get; init; } = new();
     public string DescriptionMarkdown { get; init; } = string.Empty;
@@ -113,4 +133,16 @@ public partial class BlindProblemItem : ObservableObject
         ProblemDifficulty.Hard => "#1AEF4444",
         _ => "#1AFFC01E"
     };
+
+    // Lowercase letters and digits, one hyphen for each run of spaces or hyphens, everything else dropped.
+    private static string ToSlug(string title)
+    {
+        var slug = new StringBuilder(title.Length);
+        foreach (char c in title.ToLowerInvariant())
+        {
+            if (char.IsAsciiLetterOrDigit(c)) slug.Append(c);
+            else if ((c == ' ' || c == '-') && slug.Length > 0 && slug[^1] != '-') slug.Append('-');
+        }
+        return slug.ToString().TrimEnd('-');
+    }
 }

@@ -9,46 +9,94 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsTableControl"
              x:DataType="vm:CSharpBlindProblemsViewModel">
 
-    <UserControl.Styles>
-        <!-- Table Row Hover Style -->
-        <Style Selector="Border.problem-row">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
-            <Setter Property="BorderThickness" Value="0,0,0,1" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.08" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.problem-row:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
-        </Style>
-        <Style Selector="Border.problem-row.selected">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        </Style>
-    </UserControl.Styles>
-
-    <Grid RowDefinitions="36,*">
+    <!-- Header and rows share their column widths through Columns (BlindProblemTableColumns): Status and the actions are
+         fixed, Title takes the rest, and the dividers in the header resize Category, Acceptance and Difficulty (Category
+         steps aside when the table is too narrow). The right padding keeps the action buttons clear of the scrollbar. -->
+    <Grid RowDefinitions="34,*">
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <!-- 1. STICKY TABLE HEADER                                          -->
+        <!-- 1. STICKY HEADER: click a title to sort, drag a divider to resize -->
         <!-- ══════════════════════════════════════════════════════════════ -->
         <Border Grid.Row="0"
                 Background="{DynamicResource M3SurfaceContainerLowBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,0">
-            <Grid ColumnDefinitions="48,*,110,90,160">
-                <TextBlock Grid.Column="0" Text="Status" FontSize="11" FontWeight="Bold"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="Title" FontSize="11" FontWeight="Bold"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
-                <TextBlock Grid.Column="2" Text="Acceptance" FontSize="11" FontWeight="Bold"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
-                <TextBlock Grid.Column="3" Text="Difficulty" FontSize="11" FontWeight="Bold"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
-                <TextBlock Grid.Column="4" Text="Actions" FontSize="11" FontWeight="Bold"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                Padding="16,0,20,0">
+            <Grid x:Name="HeaderGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding Columns.StatusColumn}" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="{Binding Columns.CategoryColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.AcceptanceColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.DifficultyColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.ActionsColumn}" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Classes="column-label" Text="Status" />
+
+                <!-- Sort buttons: a label trims, keeping its arrow, when its column is dragged narrower than the text. -->
+                <Button Grid.Column="1" Classes="column-header" Classes.sorted="{Binding IsSortedByTitle}"
+                        Command="{Binding SortByCommand}" CommandParameter="Title"
+                        Padding="0,0,12,0" ToolTip.Tip="Sort by problem number">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Title" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByTitle}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="2" Classes="column-header" Classes.sorted="{Binding IsSortedByCategory}"
+                        IsVisible="{Binding Columns.IsCategoryVisible}"
+                        Command="{Binding SortByCommand}" CommandParameter="Category"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by category">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Category" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByCategory}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="3" Classes="column-header" Classes.sorted="{Binding IsSortedByAcceptance}"
+                        Command="{Binding SortByCommand}" CommandParameter="Acceptance"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by acceptance rate">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Acceptance" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByAcceptance}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="4" Classes="column-header" Classes.sorted="{Binding IsSortedByDifficulty}"
+                        Command="{Binding SortByCommand}" CommandParameter="Difficulty"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by difficulty">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Difficulty" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByDifficulty}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <!-- Dividers sit on the left edge of Category, Acceptance and Difficulty; Tag is the divider's number.
+                     Drag one to resize the columns beside it, double-click to put every width back. -->
+                <Border Grid.Column="2" Classes="column-divider" Tag="1"
+                        IsVisible="{Binding Columns.IsCategoryVisible}"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
+                <Border Grid.Column="3" Classes="column-divider" Tag="2"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
+                <Border Grid.Column="4" Classes="column-divider" Tag="3"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
             </Grid>
         </Border>
 
@@ -59,124 +107,94 @@
             <ItemsControl ItemsSource="{Binding FilteredProblems}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:BlindProblemItem">
-                        <Border Classes="problem-row" Padding="16,10">
-                            <Grid ColumnDefinitions="48,*,110,90,160">
+                        <Border Classes="problem-row" Classes.selected="{Binding IsHighlighted}" Height="44" Padding="16,0,20,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.StatusColumn}" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.CategoryColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.AcceptanceColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.DifficultyColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.ActionsColumn}" />
+                                </Grid.ColumnDefinitions>
 
-                                <!-- Col 0: Status Checkmark / Lock Icon -->
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <!-- Solved Checkmark Toggle -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
+                                <!-- Status: solved toggle, plus a lock for LeetCode Premium problems -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="-5,0,0,0">
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
                                             CommandParameter="{Binding}"
-                                            Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
-                                            ToolTip.Tip="Toggle Solved Status">
-                                        <Panel Width="20" Height="20">
-                                            <!-- Solved: Green circle checkmark -->
-                                            <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18"
-                                                                        Foreground="#22C55E"
-                                                                        IsVisible="{Binding IsSolved}"
-                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                            <!-- Unsolved & Not Premium: Subtle Empty Circle -->
-                                            <materialIcons:MaterialIcon Kind="CircleOutline" Width="18" Height="18"
-                                                                        Foreground="#6E7681"
-                                                                        IsVisible="{Binding !IsSolved}"
-                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="{Binding SolvedTooltip}">
+                                        <Panel>
+                                            <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsSolved}" />
+                                            <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource M3OutlineBrush}" IsVisible="{Binding !IsSolved}" />
                                         </Panel>
                                     </Button>
-
-                                    <!-- Premium Lock Badge (if problem is historically premium) -->
-                                    <materialIcons:MaterialIcon Kind="LockOutline" Width="14" Height="14"
-                                                                Foreground="#E3B341"
-                                                                Margin="6,0,0,0"
+                                    <materialIcons:MaterialIcon Kind="LockOutline" Width="13" Height="13"
+                                                                Foreground="#E3B341" VerticalAlignment="Center"
                                                                 IsVisible="{Binding IsPremium}"
-                                                                ToolTip.Tip="LeetCode Premium Question (Fully unlocked in FrySharp!)" />
+                                                                ToolTip.Tip="LeetCode Premium on leetcode.com; free to solve here" />
                                 </StackPanel>
 
-                                <!-- Col 1: Problem Title & Category Tags -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,0,0,0">
-                                    <!-- Main Title Button -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
-                                            CommandParameter="{Binding}"
-                                            Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
-                                            HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FullTitle}"
-                                                   FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </Button>
+                                <!-- Title: opens the problem in Script Studio -->
+                                <Button Grid.Column="1" Classes="title-link" Margin="0,0,12,0"
+                                        Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip.Tip="Open in Script Studio">
+                                    <TextBlock Text="{Binding FullTitle}" />
+                                </Button>
 
-                                    <!-- Category Pill -->
-                                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,1.5" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Category}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    </Border>
-                                </StackPanel>
+                                <Border Grid.Column="2" Classes="category-pill" Margin="12,0,8,0"
+                                        IsVisible="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.IsCategoryVisible}">
+                                    <TextBlock Text="{Binding Category}" />
+                                </Border>
 
-                                <!-- Col 2: Acceptance Rate (e.g. 52.3%) -->
-                                <TextBlock Grid.Column="2" Text="{Binding AcceptanceRateText}"
+                                <TextBlock Grid.Column="3" Text="{Binding AcceptanceRateText}" Margin="12,0,8,0"
                                            FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
-                                <!-- Col 3: Difficulty Pill Badge -->
-                                <Border Grid.Column="3"
+                                <Border Grid.Column="4" Margin="12,0,8,0"
                                         Background="{Binding DifficultyBackground}"
-                                        CornerRadius="10"
-                                        Padding="8,2.5"
-                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        CornerRadius="10" Padding="8,2"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DifficultyBadgeText}"
                                                FontSize="11" FontWeight="SemiBold"
                                                Foreground="{Binding DifficultyColor}" />
                                 </Border>
 
-                                <!-- Col 4: Action Shortcuts -->
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <!-- Run in Script Studio -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                <!-- Actions: Script, Notebook, LeetCode, details, save -->
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
                                             CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            ToolTip.Tip="Open &amp; Run in C# Script Studio (F5)">
-                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="Open in Script Studio (run with F5)">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </Button>
-
-                                    <!-- Open as Notebook -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
                                             CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            ToolTip.Tip="Open as Interactive C# Notebook">
-                                        <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="15" Height="15" Foreground="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="Open as a step-by-step notebook">
+                                        <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Foreground="#22C55E" />
                                     </Button>
-
-                                    <!-- Visualizer Shortcut (if available) -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
                                             CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            IsVisible="{Binding HasVisualizer}"
-                                            ToolTip.Tip="Open with Time-Travel Data Structure Visualizer">
-                                        <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="#E3B341" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="{Binding LeetCodeTooltip}">
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Foreground="#FFA116" />
                                     </Button>
-
-                                    <!-- Generate Test Data Shortcut -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).GenerateTestDataCommand}"
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
                                             CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            ToolTip.Tip="Generate Fresh Test Data for this Problem">
-                                        <materialIcons:MaterialIcon Kind="AutoAwesome" Width="14" Height="14" Foreground="#EAB308" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="Problem, approaches and test cases">
+                                        <materialIcons:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                     </Button>
-
-                                    <!-- Details Flyout Button -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
                                             CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            ToolTip.Tip="View Problem Description &amp; Complexity">
-                                        <materialIcons:MaterialIcon Kind="InformationOutline" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Button>
-
-                                    <!-- Bookmark Toggle -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
-                                            CommandParameter="{Binding}"
-                                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
-                                            ToolTip.Tip="Bookmark Question">
-                                        <materialIcons:MaterialIcon Kind="Bookmark" Width="15" Height="15"
-                                                                    Foreground="{Binding IsBookmarked, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            ToolTip.Tip="{Binding BookmarkTooltip}">
+                                        <Panel>
+                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="#E3B341" IsVisible="{Binding IsBookmarked}" />
+                                            <materialIcons:MaterialIcon Kind="BookmarkOutline" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsBookmarked}" />
+                                        </Panel>
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -185,5 +203,20 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- Nothing matches: say so, and offer the way back -->
+        <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding HasNoResults}">
+            <materialIcons:MaterialIcon Kind="FilterRemoveOutline" Width="32" Height="32"
+                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="No problems match these filters" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
+            <Button Classes="snippet-action-btn" Command="{Binding ClearFiltersCommand}" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <materialIcons:MaterialIcon Kind="FilterOffOutline" Width="14" Height="14" />
+                    <TextBlock Text="Clear filters" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
     </Grid>
 </UserControl>

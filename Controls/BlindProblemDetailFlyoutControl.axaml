@@ -20,16 +20,24 @@
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,0,0,1"
                     Padding="16,0">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding SelectedProblem.FullTitle}"
-                                   FontSize="13" FontWeight="Bold"
-                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding SelectedProblem.FullTitle}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding SelectedProblem.FullTitle}" />
 
-                    <Button Grid.Column="1" Command="{Binding CloseDetailFlyoutCommand}"
-                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0">
+                    <Button Grid.Column="1" Command="{Binding OpenOnLeetCodeCommand}"
+                            CommandParameter="{Binding SelectedProblem}"
+                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0" Margin="8,0,6,0"
+                            ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
+                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="#FFA116" />
+                    </Button>
+
+                    <Button Grid.Column="2" Command="{Binding CloseDetailFlyoutCommand}"
+                            Classes="snippet-action-btn" Width="28" Height="28" Padding="0"
+                            ToolTip.Tip="Close">
                         <materialIcons:MaterialIcon Kind="Close" Width="16" Height="16" />
                     </Button>
                 </Grid>
@@ -216,7 +224,7 @@
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="16,10">
-                <Grid ColumnDefinitions="*,*">
+                <Grid ColumnDefinitions="*,*,*">
                     <Button Grid.Column="0"
                             Command="{Binding OpenScriptStudioCommand}"
                             CommandParameter="{Binding SelectedProblem}"
@@ -232,10 +240,22 @@
                             Command="{Binding OpenNotebookStudioCommand}"
                             CommandParameter="{Binding SelectedProblem}"
                             Classes="snippet-action-btn"
-                            HorizontalAlignment="Stretch" Margin="4,0,0,0">
+                            HorizontalAlignment="Stretch" Margin="4,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="#22C55E" />
                             <TextBlock Text="Notebook" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="2"
+                            Command="{Binding OpenOnLeetCodeCommand}"
+                            CommandParameter="{Binding SelectedProblem}"
+                            Classes="snippet-action-btn"
+                            HorizontalAlignment="Stretch" Margin="4,0,0,0"
+                            ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="#FFA116" />
+                            <TextBlock Text="LeetCode" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </Grid>

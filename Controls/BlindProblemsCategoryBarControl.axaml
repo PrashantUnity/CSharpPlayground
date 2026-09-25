@@ -5,42 +5,37 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
-             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="42"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="80"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsCategoryBarControl"
              x:DataType="vm:CSharpBlindProblemsViewModel">
 
+    <!-- Every category is visible at once: the chips wrap onto another line instead of hiding behind a scrollbar. -->
     <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="0,0,0,1"
-            Padding="14,6">
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Categories}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" Spacing="6" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="models:BlindCategorySummary">
-                        <Button Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).SetCategoryCommand}"
-                                CommandParameter="{Binding Name}"
-                                Classes="snippet-action-btn"
-                                Padding="10,4"
-                                CornerRadius="14"
-                                Background="{Binding IsSelected, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14"
-                                                            Foreground="{DynamicResource M3PrimaryBrush}" />
-                                <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="8" Padding="5,1">
-                                    <TextBlock Text="{Binding BadgeText}" FontSize="9.5"
-                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                </Border>
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+            Padding="14,8">
+        <ItemsControl ItemsSource="{Binding Categories}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:BlindCategorySummary">
+                    <Button Classes="filter-chip" Classes.selected="{Binding IsSelected}"
+                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).SetCategoryCommand}"
+                            CommandParameter="{Binding Name}"
+                            ToolTip.Tip="{Binding ToolTipText}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            <Border Classes="chip-count">
+                                <TextBlock Text="{Binding BadgeText}" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </Border>
 </UserControl>

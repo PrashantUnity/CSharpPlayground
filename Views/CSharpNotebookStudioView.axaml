@@ -636,8 +636,9 @@
                         BorderThickness="0,0,0,1"
                         Height="36"
                         Padding="6,0,10,0">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <!-- Left: Scrollable Tabs Strip -->
+                    <!-- Only tabs here: "back to the Hub" lives at the bottom of the activity bar, as in Code Studio. -->
+                    <Grid>
+                        <!-- Scrollable Tabs Strip -->
                         <ScrollViewer Grid.Column="0"
                                       HorizontalScrollBarVisibility="Auto"
                                       VerticalScrollBarVisibility="Disabled">
@@ -744,17 +745,6 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Right: Actions (Hub) -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Button Command="{Binding BackToHubCommand}"
-                                    Classes="nb-action-btn"
-                                    ToolTip.Tip="Return to Scripts &amp; Notebooks Hub">
-                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="ArrowLeft" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Hub" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
                     </Grid>
                 </Border>
 

@@ -11,6 +11,7 @@
 
     <UserControl.Styles>
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/BlindProblemsStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">

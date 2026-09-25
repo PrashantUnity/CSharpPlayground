@@ -12,7 +12,16 @@
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="0,0,0,1"
             Padding="14,8">
-        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- The search box grows up to 420px and stays left; the spare column keeps the filters on the right. -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MaxWidth="444" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
             <!-- 1. Back to Hub -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Command="{Binding BackToHubCommand}"
@@ -32,74 +41,76 @@
                     <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="#58A6FF" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="Blind 75" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                    <TextBlock Text="C# .NET 10" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
+                <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                    <TextBlock Text="C# .NET 10" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
                 </Border>
             </StackPanel>
 
-            <!-- 3. Search Box ("Search questions") matching Screenshot -->
+            <!-- 3. Search: number, title, category or tag -->
             <Border Grid.Column="2"
-                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    Height="34"
-                    MaxWidth="400"
-                    HorizontalAlignment="Left"
+                    Classes="search-box"
+                    Height="32"
+                    HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
-                    Margin="8,0">
+                    Margin="8,0,16,0">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16"
                                                 Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                                Margin="10,0,6,0" VerticalAlignment="Center" />
+                                                Margin="10,0,4,0" VerticalAlignment="Center" />
                     <TextBox Grid.Column="1"
                              Text="{Binding SearchQuery, Mode=TwoWay}"
-                             PlaceholderText="Search questions..."
-                             Background="Transparent"
-                             BorderThickness="0"
+                             PlaceholderText="Search by number, title or topic"
                              FontSize="12"
-                             VerticalAlignment="Center" />
+                             MinHeight="0"
+                             Padding="4,0"
+                             VerticalAlignment="Stretch"
+                             VerticalContentAlignment="Center" />
                     <Button Grid.Column="2"
+                            Classes="row-action"
+                            Width="24" Height="24" Margin="0,0,4,0"
                             Command="{Binding ClearSearchCommand}"
                             IsVisible="{Binding HasSearchQuery}"
-                            Background="Transparent" BorderThickness="0"
-                            Padding="8,0" Cursor="Hand">
+                            ToolTip.Tip="Clear search">
                         <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                     </Button>
                 </Grid>
             </Border>
 
-            <!-- 4. Difficulty Quick Filter Pills -->
-            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0">
-                <Button Command="{Binding SetDifficultyCommand}" CommandParameter="All"
-                        Classes="snippet-action-btn" Padding="8,4">
-                    <TextBlock Text="All Diff" FontSize="11" />
-                </Button>
-                <Button Command="{Binding SetDifficultyCommand}" CommandParameter="Easy"
-                        Classes="snippet-action-btn" Padding="8,4">
-                    <TextBlock Text="Easy" Foreground="#00B8A3" FontSize="11" FontWeight="SemiBold" />
-                </Button>
-                <Button Command="{Binding SetDifficultyCommand}" CommandParameter="Med"
-                        Classes="snippet-action-btn" Padding="8,4">
-                    <TextBlock Text="Med" Foreground="#FFC01E" FontSize="11" FontWeight="SemiBold" />
-                </Button>
-                <Button Command="{Binding SetDifficultyCommand}" CommandParameter="Hard"
-                        Classes="snippet-action-btn" Padding="8,4">
-                    <TextBlock Text="Hard" Foreground="#EF4444" FontSize="11" FontWeight="SemiBold" />
-                </Button>
-            </StackPanel>
+            <!-- 4. Difficulty filter -->
+            <Border Grid.Column="4" Classes="segmented" Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyAll}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="All"
+                            ToolTip.Tip="Every difficulty">
+                        <TextBlock Text="All" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyEasy}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Easy">
+                        <TextBlock Text="Easy" Foreground="#00B8A3" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyMedium}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Med"
+                            ToolTip.Tip="Medium">
+                        <TextBlock Text="Med" Foreground="#FFC01E" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyHard}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Hard">
+                        <TextBlock Text="Hard" Foreground="#EF4444" />
+                    </Button>
+                </StackPanel>
+            </Border>
 
             <!-- 5. Random "Pick One" (Shuffle) Button matching LeetCode -->
-            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <Button Command="{Binding PickRandomUnsolvedProblemCommand}"
-                        Classes="snippet-action-btn"
-                        ToolTip.Tip="Pick a random unsolved problem (Shuffle)">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="16" Height="16" Foreground="#E3B341" />
-                        <TextBlock Text="Pick One" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+            <Button Grid.Column="5" Command="{Binding PickRandomUnsolvedProblemCommand}"
+                    Classes="snippet-action-btn" VerticalAlignment="Center"
+                    ToolTip.Tip="Open a random unsolved problem">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="16" Height="16" Foreground="#E3B341" />
+                    <TextBlock Text="Pick One" VerticalAlignment="Center" FontWeight="SemiBold" />
+                </StackPanel>
+            </Button>
         </Grid>
     </Border>
 </UserControl>

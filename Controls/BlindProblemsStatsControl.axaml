@@ -11,7 +11,7 @@
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="0,0,0,1"
-            Padding="16,8">
+            Padding="16,6">
         <Grid ColumnDefinitions="Auto,Auto,*,Auto">
             <!-- 1. Progress Summary Text -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
@@ -60,28 +60,34 @@
                          VerticalAlignment="Center"
                          Margin="24,0" />
 
-            <!-- 4. Status Filter Buttons (All, Solved, Unsolved, Bookmarked) -->
-            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="All"
-                        Classes="snippet-action-btn" Padding="8,3">
-                    <TextBlock Text="All" FontSize="11" />
-                </Button>
-                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Solved"
-                        Classes="snippet-action-btn" Padding="8,3">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="#22C55E" />
-                        <TextBlock Text="Solved" FontSize="11" />
-                    </StackPanel>
-                </Button>
-                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Unsolved"
-                        Classes="snippet-action-btn" Padding="8,3">
-                    <TextBlock Text="Unsolved" FontSize="11" />
-                </Button>
-                <Button Command="{Binding SetStatusFilterCommand}" CommandParameter="Bookmarked"
-                        Classes="snippet-action-btn" Padding="8,3">
-                    <materialIcons:MaterialIcon Kind="BookmarkOutline" Width="12" Height="12" Foreground="#E3B341" />
-                </Button>
-            </StackPanel>
+            <!-- 4. Status filter: All, Solved, Unsolved, Saved (bookmarked) -->
+            <Border Grid.Column="3" Classes="segmented">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusAll}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="All">
+                        <TextBlock Text="All" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusSolved}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Solved">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="#22C55E" VerticalAlignment="Center" />
+                            <TextBlock Text="Solved" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusUnsolved}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Unsolved">
+                        <TextBlock Text="Unsolved" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusBookmarked}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Bookmarked"
+                            ToolTip.Tip="Problems you saved for later">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <materialIcons:MaterialIcon Kind="Bookmark" Width="13" Height="13" Foreground="#E3B341" VerticalAlignment="Center" />
+                            <TextBlock Text="Saved" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
         </Grid>
     </Border>
 </UserControl>

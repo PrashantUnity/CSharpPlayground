@@ -16,6 +16,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     private readonly Action? _backToHubAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+    private readonly Action<string> _openUrlAction;
 
     [ObservableProperty]
     private BlindProblemItem? _selectedProblem;
@@ -30,16 +31,21 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     public ObservableCollection<BlindProblemItem> FilteredProblems { get; } = new();
     public ObservableCollection<BlindCategorySummary> Categories { get; } = new();
 
+    /// <summary>The table's column widths; they live here so they survive leaving the page and coming back.</summary>
+    public BlindProblemTableColumns Columns { get; } = new();
+
     public CSharpBlindProblemsViewModel(
         IBlindProgressService? progressService = null,
         Action? backToHubAction = null,
         Action<ScriptDocumentItem>? openScriptAction = null,
-        Action<NotebookDocumentItem>? openNotebookAction = null)
+        Action<NotebookDocumentItem>? openNotebookAction = null,
+        Action<string>? openUrlAction = null)
     {
         _progressService = progressService ?? new LocalBlindProgressService();
         _backToHubAction = backToHubAction;
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
+        _openUrlAction = openUrlAction ?? BrowserLauncher.Open;
 
         _progressService.SolvedStatusChanged += OnExternalSolvedStatusChanged;
         _progressService.BookmarkStatusChanged += OnExternalBookmarkStatusChanged;
@@ -153,6 +159,14 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void OpenOnLeetCode(BlindProblemItem? problem)
+    {
+        var target = problem ?? SelectedProblem;
+        if (target == null) return;
+        _openUrlAction(target.LeetCodeUrl);
+    }
+
+    [RelayCommand]
     public void SelectProblem(BlindProblemItem? problem)
     {
         if (problem == null) return;
@@ -168,6 +182,18 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
 
     [RelayCommand]
     public void CloseDetailFlyout() => IsDetailFlyoutOpen = false;
+
+    // The row whose details are open stands out; with the panel closed no row does.
+    partial void OnSelectedProblemChanged(BlindProblemItem? oldValue, BlindProblemItem? newValue)
+    {
+        if (oldValue != null) oldValue.IsHighlighted = false;
+        if (newValue != null) newValue.IsHighlighted = IsDetailFlyoutOpen;
+    }
+
+    partial void OnIsDetailFlyoutOpenChanged(bool value)
+    {
+        if (SelectedProblem != null) SelectedProblem.IsHighlighted = value;
+    }
 
     [RelayCommand]
     public void PickRandomUnsolvedProblem()

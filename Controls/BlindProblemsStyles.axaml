@@ -1,0 +1,253 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- Blind 75 page: category chips, segmented filters, the problem table and its row actions.
+         Fluent paints a Button's hover and pressed backgrounds on its template's ContentPresenter, so every state these
+         buttons can be in is set on the presenter too; otherwise a selected chip would lose its colour under the mouse. -->
+
+    <!-- ── Category filter chips ─────────────────────────────────────────────── -->
+    <Style Selector="Button.filter-chip">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="10,0,6,0" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.filter-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.filter-chip:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.filter-chip.selected">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.filter-chip.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.filter-chip.selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+    </Style>
+    <Style Selector="Button.filter-chip Border.chip-count">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.filter-chip Border.chip-count > TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+    </Style>
+    <Style Selector="Button.filter-chip.selected Border.chip-count">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.filter-chip.selected Border.chip-count > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+    </Style>
+
+    <!-- ── Search box: the border lights up while typing; the TextBox inside draws no box of its own ── -->
+    <Style Selector="Border.search-box">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border.search-box:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
+    </Style>
+    <Style Selector="Border.search-box:focus-within">
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+    <Style Selector="Border.search-box TextBox /template/ Border#PART_BorderElement,
+                     Border.search-box TextBox:pointerover /template/ Border#PART_BorderElement,
+                     Border.search-box TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- ── Segmented filters (difficulty, solved status) ─────────────────────── -->
+    <Style Selector="Border.segmented">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.segment">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.segment:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.segment.selected">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.segment.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.segment.selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+    </Style>
+
+    <!-- ── Problem table ─────────────────────────────────────────────────────── -->
+    <Style Selector="TextBlock.column-label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- A header that sorts the table when clicked. -->
+    <Style Selector="Button.column-header">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.column-header:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.column-header:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.column-header:pointerover TextBlock.column-label">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.column-header.sorted TextBlock.column-label">
+        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+
+    <!-- The draggable line between two resizable columns: 9px to grab, 1px to see, brighter while hovered. -->
+    <Style Selector="Border.column-divider">
+        <Setter Property="Width" Value="9" />
+        <Setter Property="Margin" Value="-5,0,0,0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="SizeWestEast" />
+        <Setter Property="ZIndex" Value="1" />
+    </Style>
+    <Style Selector="Border.column-divider > Border">
+        <Setter Property="Width" Value="1" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource M3OutlineVariantBrush}" />
+    </Style>
+    <Style Selector="Border.column-divider:pointerover > Border, Border.column-divider.dragging > Border">
+        <Setter Property="Width" Value="2" />
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Border.problem-row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.problem-row:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+    </Style>
+    <Style Selector="Border.problem-row.selected">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+    </Style>
+
+    <!-- The problem title: reads as a link, opens the problem in Script Studio. -->
+    <Style Selector="Button.title-link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.title-link:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.title-link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.title-link > TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="Button.title-link:pointerover > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+
+    <!-- Icon buttons in a row (and the solved toggle): no box until hovered, like VS Code's inline actions. -->
+    <Style Selector="Button.row-action">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.row-action:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+    </Style>
+    <Style Selector="Button.row-action:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+    </Style>
+    <Style Selector="Button.row-action materialIcons|MaterialIcon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+
+    <Style Selector="Border.category-pill">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- The highlighted row is the pill's own colour, so the pill steps up one shade there. -->
+    <Style Selector="Border.problem-row.selected Border.category-pill">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+    </Style>
+    <Style Selector="Border.category-pill > TextBlock">
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+</Styles>

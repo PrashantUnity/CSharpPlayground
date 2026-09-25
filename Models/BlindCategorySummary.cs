@@ -10,6 +10,7 @@ public partial class BlindCategorySummary : ObservableObject
     public int TotalCount { get; init; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BadgeText), nameof(ProgressPercentage), nameof(ToolTipText))]
     private int _solvedCount;
 
     [ObservableProperty]
@@ -17,4 +18,5 @@ public partial class BlindCategorySummary : ObservableObject
 
     public string BadgeText => SolvedCount > 0 ? $"{SolvedCount}/{TotalCount}" : $"{TotalCount}";
     public double ProgressPercentage => TotalCount > 0 ? (double)SolvedCount / TotalCount * 100.0 : 0.0;
+    public string ToolTipText => $"{Name}: {SolvedCount} of {TotalCount} solved";
 }
