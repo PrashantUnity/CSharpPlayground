@@ -5,20 +5,35 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubWelcomeSectionControl"
              x:DataType="vm:CSharpManagerViewModel">
+    <UserControl.Styles>
+        <Style Selector="StackPanel.hub-welcome-actions">
+            <Setter Property="Grid.Column" Value="2" />
+        </Style>
+        <Style Selector="Border.compact StackPanel.hub-welcome-actions">
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Grid.ColumnSpan" Value="3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="0,16,0,0" />
+        </Style>
+    </UserControl.Styles>
 
                             <!-- ============================================================ -->
                             <!-- SECTION 1: WELCOME & QUICK ACTIONS                           -->
                             <!-- ============================================================ -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Grid.Column="0" Spacing="4">
+                            <!-- Title and buttons side by side, or (compact, when they'd overlap) the buttons on a second row. -->
+                            <Border controls:CompactWhenCrowded.IsEnabled="True">
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,24,0">
                                     <TextBlock Text="Welcome back, Developer" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     <TextBlock Text="Pick up where you left off, open an existing project, or start a new workspace." FontSize="13" Foreground="{DynamicResource DsMutedBrush}" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <StackPanel Classes="hub-welcome-actions" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                     <!-- Blind 75 Challenge -->
                                     <Button Command="{Binding NavigateToBlindProblemsCommand}"
                                             Classes="nexus-btn-surface"
@@ -75,4 +90,5 @@
                                     </Button>
                                 </StackPanel>
                             </Grid>
+                            </Border>
 </UserControl>

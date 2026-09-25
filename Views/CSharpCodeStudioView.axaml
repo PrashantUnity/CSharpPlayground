@@ -387,8 +387,8 @@
             <!-- 1C. VERTICAL SPLITTER (Column 2)                         -->
             <!-- ======================================================== -->
             <GridSplitter Grid.Column="2"
+                          Classes="studio-sash"
                           Width="4"
-                          Background="{DynamicResource M3OutlineVariantBrush}"
                           ResizeDirection="Columns"
                           Cursor="SizeWestEast"
                           IsVisible="{Binding IsSideBarVisible}" />
@@ -525,8 +525,8 @@
 
                 <!-- Row 3: Horizontal Splitter (Editor vs Bottom Dock) -->
                 <GridSplitter Grid.Row="3"
+                              Classes="studio-sash"
                               Height="4"
-                              Background="{DynamicResource M3OutlineVariantBrush}"
                               ResizeDirection="Rows"
                               Cursor="SizeNorthSouth"
                               IsVisible="{Binding IsBottomDeckExpanded}" />

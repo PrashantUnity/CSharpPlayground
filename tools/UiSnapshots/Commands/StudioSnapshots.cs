@@ -15,6 +15,9 @@ internal static class StudioSnapshots
     // Bottom panel tab order: CSharpCodeStudioViewModel.SelectedBottomTabIndex.
     private static readonly string[] PanelTabs = { "results", "terminal", "problems", "tests", "debug" };
 
+    // Notebook Activity Bar order: CSharpNotebookStudioViewModel.SelectedActivityBarIndex.
+    private static readonly string[] NotebookSideBarViews = { "explorer", "outline", "variables", "search" };
+
     /// <summary><c>studio n</c> or <c>studio --file path</c>: Code Studio with that script open.</summary>
     public static void CodeStudio(Options options)
     {
@@ -35,6 +38,7 @@ internal static class StudioSnapshots
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
 
         var window = Snapshot.Show(new CSharpCodeStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        ShowQuickOpen(vm.QuickOpen, options);
         if (options.Flag("run"))
         {
             Snapshot.Wait(vm.RunCodeCommand.ExecuteAsync(null));
@@ -68,7 +72,14 @@ internal static class StudioSnapshots
             backToHubAction: () => { },
             backToHomeAction: () => { });
 
+        if (options.Value("sidebar") is { } sidebar)
+        {
+            vm.SelectedActivityBarIndex = IndexOf(NotebookSideBarViews, sidebar, "--sidebar");
+            vm.IsSideBarVisible = true;
+        }
+
         var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        ShowQuickOpen(vm.QuickOpen, options);
         if (options.Flag("run"))
         {
             Snapshot.Wait(vm.RunAllCellsAsync());
@@ -76,6 +87,14 @@ internal static class StudioSnapshots
         }
 
         Snapshot.Save(window, options, $"notebook_{number}");
+    }
+
+    // --quick-open files|commands: the Ctrl+P / Ctrl+Shift+P palette over the studio.
+    private static void ShowQuickOpen(QuickOpenViewModel quickOpen, Options options)
+    {
+        if (options.Value("quick-open") is not { } mode) return;
+        quickOpen.Show(mode.Equals("commands", StringComparison.OrdinalIgnoreCase) ? QuickOpenMode.Commands : QuickOpenMode.Files);
+        Snapshot.Settle();
     }
 
     private static int IndexOf(string[] names, string name, string option)

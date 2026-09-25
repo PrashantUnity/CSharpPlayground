@@ -180,6 +180,40 @@
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
     </Style>
 
+    <!-- Pane splitters (VS Code "sashes"): a 4px grab strip in the editor's colour, so the neighbouring panes' 1px borders
+         are the only line you see; it lights up while hovered or dragged. Fluent's 6px minimum is cleared. -->
+    <Style Selector="GridSplitter.studio-sash">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="GridSplitter.studio-sash:pointerover, GridSplitter.studio-sash:pressed">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+
+    <!-- A clickable status bar item (Ln/Col, Spaces, language mode...): as wide as its text, 18px tall.
+         cs-toolbar-icon is a 28px square and would cut the text off. -->
+    <Style Selector="Button.status-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="5,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.status-item:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.status-item:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+    </Style>
+
     <!-- ============================================================ -->
     <!-- 5. SIDEBAR & EXPLORER STYLES (Zone 2)                        -->
     <!-- ============================================================ -->

@@ -537,7 +537,7 @@ public class NotebookExecutionKernel
                 variables.Add(new NotebookVariableInfo
                 {
                     Name = v.Name,
-                    TypeName = v.Type?.Name ?? "var",
+                    TypeName = v.Type == null ? "var" : DumpTableBuilder.GetFriendlyTypeName(v.Type),
                     ValueDisplay = FormatValue(v.Value),
                     Kind = DetermineKind(v.Type, v.Value)
                 });
@@ -597,7 +597,11 @@ public class NotebookExecutionKernel
             return $"Count = {col.Count}";
         }
 
-        return val.ToString() ?? type.Name;
+        // Object.ToString() gives the full runtime name ("Submission#2+Solution"); show the type the way C# wrote it.
+        var text = val.ToString();
+        return string.IsNullOrEmpty(text) || text == type.FullName || text == type.ToString()
+            ? $"{{{DumpTableBuilder.GetFriendlyTypeName(type)}}}"
+            : text;
     }
 
     private static string DetermineKind(Type? type, object? val)

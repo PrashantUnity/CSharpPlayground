@@ -71,7 +71,7 @@
                                                     </Grid>
                                                     <Border Height="4" CornerRadius="2" Background="{DynamicResource DsBgBrush}">
                                                         <ProgressBar Value="{Binding StorageUsagePercent}" Minimum="0" Maximum="100"
-                                                                     Height="4" Foreground="{DynamicResource DsJupyterBrush}" Background="Transparent" BorderThickness="0" CornerRadius="2" />
+                                                                     Height="4" Foreground="{DynamicResource DsGreenBrush}" Background="Transparent" BorderThickness="0" CornerRadius="2" />
                                                     </Border>
                                                 </StackPanel>
                                             </StackPanel>

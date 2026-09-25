@@ -56,7 +56,9 @@
                                        FontSize="11.5"
                                        Foreground="{DynamicResource DsMutedBrush}"
                                        TextWrapping="Wrap"
-                                       MaxLines="2" />
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="2"
+                                       ToolTip.Tip="{Binding Description}" />
                         </StackPanel>
 
                         <!-- Footer: Tags -->

@@ -226,9 +226,16 @@
                 <!-- Tab 4: Debug Console & Immediate REPL -->
                 <Grid ColumnDefinitions="*,4,*">
                     <!-- Left: Locals Inspection -->
-                    <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                    <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,1,0">
                         <Grid RowDefinitions="Auto,*">
-                            <TextBlock Grid.Row="0" Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,4" />
+                            <!-- Same 20px header row as the REPL pane, so both titles sit on one line. -->
+                            <Grid Grid.Row="0" MinHeight="20" Margin="0,0,0,4">
+                                <TextBlock Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock Grid.Row="1" IsVisible="{Binding !Locals.Count}"
+                                       Text="Start debugging (F5) and stop at a breakpoint to see the local variables here."
+                                       FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
                             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Locals}">
                                     <ItemsControl.ItemTemplate>
@@ -247,7 +254,7 @@
                         </Grid>
                     </Border>
 
-                    <GridSplitter Grid.Column="1" Width="4" Background="{DynamicResource M3OutlineVariantBrush}" ResizeDirection="Columns" />
+                    <GridSplitter Grid.Column="1" Classes="studio-sash" Width="4" ResizeDirection="Columns" />
 
                     <!-- Right: Immediate REPL Console -->
                     <Border Grid.Column="2" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}">

@@ -62,6 +62,11 @@
         </Style>
 
         <!-- Notebook Toolbar Action Buttons -->
+        <!-- Too narrow for every label (CompactWhenCrowded): icons and tooltips only. -->
+        <Style Selector="Border.compact TextBlock.toolbar-label">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
         <Style Selector="Button.nb-action-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -533,12 +538,17 @@
 
                         <!-- 3. LIVE VARIABLES VIEW (Index 2) -->
                         <Grid IsVisible="{Binding IsVariablesActive}" RowDefinitions="Auto,*">
+                            <!-- The side bar title already says LIVE VARIABLES; this line is the count. -->
                             <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerLowBrush}" Height="28" Padding="12,0">
-                                <TextBlock Text="{Binding Variables.Count, StringFormat='{}LIVE VARIABLES ({0})'}"
+                                <TextBlock Text="{Binding Variables.Count, StringFormat='{}{0} in scope'}"
                                            FontSize="10.5" FontWeight="SemiBold"
                                            Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                            VerticalAlignment="Center" />
                             </Border>
+                            <TextBlock Grid.Row="1" IsVisible="{Binding !Variables.Count}"
+                                       Text="Run a code cell and the variables it defines show up here."
+                                       FontSize="11.5" TextWrapping="Wrap" Margin="12,10"
+                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Variables}" Margin="8">
                                     <ItemsControl.ItemTemplate>
@@ -616,8 +626,8 @@
             <!-- VERTICAL GRID SPLITTER (Column 2)                        -->
             <!-- ======================================================== -->
             <GridSplitter Grid.Column="2"
-                          Width="1"
-                          Background="{DynamicResource M3OutlineVariantBrush}"
+                          Classes="studio-sash"
+                          Width="4"
                           ResizeDirection="Columns"
                           Cursor="SizeWestEast"
                           IsVisible="{Binding IsSideBarVisible}" />
@@ -801,6 +811,7 @@
                 <!-- ROW 2: PROFESSIONAL ACTION TOOLBAR (38px)            -->
                 <!-- ==================================================== -->
                 <Border Grid.Row="2"
+                        controls:CompactWhenCrowded.IsEnabled="True"
                         Background="{DynamicResource M3SurfaceContainerLowBrush}"
                         BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                         BorderThickness="0,0,0,1"
@@ -841,7 +852,7 @@
                             <Button Command="{Binding RunAllCellsCommand}" IsVisible="{Binding !IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Run All Cells (Linear Sequence)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
-                                    <TextBlock Text="Run All" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Run All" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -849,7 +860,7 @@
                             <Button Command="{Binding InterruptExecutionCommand}" IsVisible="{Binding IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Stop / Interrupt Execution (Shift+F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource M3ErrorBrush}" />
-                                    <TextBlock Text="Stop" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Stop" Classes="toolbar-label" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource M3ErrorBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -857,7 +868,7 @@
                             <Button Command="{Binding RestartKernelCommand}" Classes="nb-action-btn" ToolTip.Tip="Restart Kernel &amp; Reset Variables">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Restart" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Restart" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Restart" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -865,7 +876,7 @@
                             <Button Command="{Binding ClearAllOutputsCommand}" Classes="nb-action-btn" ToolTip.Tip="Clear All Cell Outputs">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="CloseBoxOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Clear Outputs" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Clear Outputs" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -925,7 +936,7 @@
                                 </Button.Flyout>
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Collapse" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Collapse" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                     <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -936,7 +947,7 @@
                             <Button Command="{Binding ToggleOutlineCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Notebook Outline">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Outline" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Outline" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -944,7 +955,7 @@
                             <Button Command="{Binding ToggleVariableInspectorCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Live Variable Inspector">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                    <TextBlock Text="Variables" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Variables" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                     <Border Background="{DynamicResource M3PrimaryBrush}" CornerRadius="8" Height="16" MinWidth="16" Padding="4,0" VerticalAlignment="Center" Margin="2,0,0,0">
                                         <TextBlock Text="{Binding Variables.Count}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource M3OnPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
@@ -955,7 +966,7 @@
                             <Button Command="{Binding SaveCommand}" Classes="nb-action-btn" ToolTip.Tip="Save Notebook (Ctrl+S)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    <TextBlock Text="Save" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Save" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>

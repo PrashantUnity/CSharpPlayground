@@ -265,6 +265,7 @@ public static class DumpTableBuilder
         else if (val is decimal m) text = m.ToString("G");
         else if (val is DateTime dt) text = dt.ToString("yyyy-MM-dd HH:mm:ss");
         else if (val is TimeSpan ts) text = ts.ToString();
+        else if (val is IEnumerable items and not string) text = FormatSequence(items, depth: 0);
         else text = val.ToString() ?? string.Empty;
 
         return new DumpTableCell
@@ -275,6 +276,35 @@ public static class DumpTableBuilder
             IsBoolean = b,
             IsNull = false
         };
+    }
+
+    // A collection inside a cell shows its first items, [COBOL, FLOW-MATIC], rather than System.String[]. Stops after a
+    // handful so a long (or endless) sequence can't stall the table; one level of nesting is written out, deeper is "…".
+    private static string FormatSequence(IEnumerable items, int depth)
+    {
+        const int shown = 6;
+        if (depth > 1) return "[…]";
+
+        var parts = new List<string>();
+        bool more = false;
+        foreach (var item in items)
+        {
+            if (parts.Count == shown)
+            {
+                more = true;
+                break;
+            }
+            parts.Add(item switch
+            {
+                null => "null",
+                string text => text,
+                IEnumerable nested => FormatSequence(nested, depth + 1),
+                _ => CreateCell(item).DisplayText
+            });
+        }
+
+        string rest = !more ? string.Empty : items is ICollection all ? $", … (+{all.Count - shown})" : ", …";
+        return "[" + string.Join(", ", parts) + rest + "]";
     }
 
     /// <summary>

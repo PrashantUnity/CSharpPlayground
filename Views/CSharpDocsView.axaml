@@ -45,8 +45,8 @@
                                FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
+                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
                     </Border>
                 </StackPanel>
 
@@ -150,7 +150,8 @@
                                                 Padding="8,4"
                                                 HorizontalContentAlignment="Stretch"
                                                 Cursor="Hand">
-                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                            <!-- The name gets the whole row; its tag sits underneath rather than squeezing it. -->
+                                            <Grid ColumnDefinitions="Auto,Auto,*" RowDefinitions="Auto,Auto">
                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="ChevronDown" Width="14" Height="14"
                                                                             IsVisible="{Binding IsExpanded}"
                                                                             Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
@@ -158,8 +159,10 @@
                                                                             IsVisible="{Binding !IsExpanded}"
                                                                             Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="6,0,0,0" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="8,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                                <Border Grid.Column="3" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="8" Padding="6,1">
+                                                <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                           TextWrapping="Wrap" LineHeight="15" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                                                <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,0"
+                                                        Margin="8,3,0,0" HorizontalAlignment="Left">
                                                     <TextBlock Text="{Binding Badge}" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                 </Border>
                                             </Grid>
@@ -213,8 +216,8 @@
                     </StackPanel>
 
                     <!-- Summary Callout Box -->
-                    <Border Background="{DynamicResource M3InverseSurfaceBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12">
-                        <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13" Foreground="{DynamicResource M3InverseOnSurfaceBrush}" TextWrapping="Wrap" LineHeight="20" />
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12">
+                        <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13.5" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" LineHeight="21" />
                     </Border>
 
                     <!-- Article Sections -->
@@ -229,7 +232,7 @@
                                     <Border IsVisible="{Binding HasCallout}"
                                             Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1,0,0,0"
                                             CornerRadius="0,6,6,0" Padding="12,10" Margin="0,4">
-                                        <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" TextWrapping="Wrap" LineHeight="19" />
                                     </Border>
 
                                     <!-- Bullet points -->

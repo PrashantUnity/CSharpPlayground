@@ -94,7 +94,7 @@
 
                                                 <!-- Top-Right Actions: Quick Unpin Button & Options Menu -->
                                                 <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                            Orientation="Horizontal" Spacing="2" Margin="0,12,12,0">
+                                                            Orientation="Horizontal" Spacing="2" Margin="0,4,0,0">
                                                     <Button Command="{Binding UnpinItemCommand}" CommandParameter="{Binding PinnedItem1}"
                                                             Classes="nexus-btn-ghost" Width="28" Height="28"
                                                             ToolTip.Tip="Unpin workspace">
@@ -270,7 +270,7 @@
 
                                                 <!-- Top-Right Actions: Quick Unpin Button & Options Menu -->
                                                 <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                            Orientation="Horizontal" Spacing="2" Margin="0,12,12,0">
+                                                            Orientation="Horizontal" Spacing="2" Margin="0,4,0,0">
                                                     <Button Command="{Binding UnpinItemCommand}" CommandParameter="{Binding PinnedItem2}"
                                                             Classes="nexus-btn-ghost" Width="28" Height="28"
                                                             ToolTip.Tip="Unpin workspace">
@@ -446,7 +446,7 @@
 
                                                 <!-- Top-Right Actions: Quick Unpin Button & Options Menu -->
                                                 <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                            Orientation="Horizontal" Spacing="2" Margin="0,12,12,0">
+                                                            Orientation="Horizontal" Spacing="2" Margin="0,4,0,0">
                                                     <Button Command="{Binding UnpinItemCommand}" CommandParameter="{Binding PinnedItem3}"
                                                             Classes="nexus-btn-ghost" Width="28" Height="28"
                                                             ToolTip.Tip="Unpin workspace">
@@ -564,7 +564,7 @@
                                                         <materialIcons:MaterialIcon Kind="Plus" Width="20" Height="20" Foreground="{DynamicResource DsMutedBrush}"
                                                                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                     </Border>
-                                                    <TextBlock Text="Pin a workspace" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="Pin a third workspace" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
                                                     <TextBlock Text="Add third quick access slot" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                                 </StackPanel>
                                             </Border>

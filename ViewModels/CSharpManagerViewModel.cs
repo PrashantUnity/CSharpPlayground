@@ -56,16 +56,18 @@ public partial class CSharpManagerViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeToggleLabel));
     }
 
+    // Starts on the workspace list, like the dashboard view below it, so the sidebar highlights what's shown.
     [ObservableProperty]
-    private string _selectedNavSection = "Templates";
+    private string _selectedNavSection = "Workspace";
 
     [ObservableProperty]
     private string _activeDashboardView = "Workspaces";
 
     public bool IsWorkspacesTabActive => ActiveDashboardView == "Workspaces";
-    public bool IsTemplatesTabActive => ActiveDashboardView == "Templates";
 
-    private bool _hasAppliedInitialNavDefault;
+    /// <summary>No scripts or notebooks at all (a first run), as opposed to none matching the search or filter.</summary>
+    public bool IsWorkspaceEmpty => AllItems.Count == 0;
+    public bool IsTemplatesTabActive => ActiveDashboardView == "Templates";
 
     [ObservableProperty]
     private CodeTemplate? _selectedTemplate;
@@ -273,7 +275,8 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         get
         {
-            if (_diskStorageBytes <= 0) return 4.0;
+            // An empty library shows an empty bar; any content at all shows at least a sliver.
+            if (_diskStorageBytes <= 0) return 0.0;
             return Math.Clamp((_diskStorageBytes / (1024.0 * 1024.0 * 50.0)) * 100.0, 4.0, 100.0);
         }
     }
@@ -560,14 +563,6 @@ public partial class CSharpManagerViewModel : ObservableObject
             await LoadPinnedStateAsync();
             ApplyFilter();
 
-            if (!_hasAppliedInitialNavDefault)
-            {
-                _hasAppliedInitialNavDefault = true;
-                if (AllItems.Count > 0)
-                {
-                    SelectedNavSection = "Workspace";
-                }
-            }
         }
         finally
         {
@@ -580,6 +575,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         TotalScripts = AllItems.Count(i => i.IsScript);
         TotalNotebooks = AllItems.Count(i => i.IsNotebook);
+        OnPropertyChanged(nameof(IsWorkspaceEmpty));
 
         OnPropertyChanged(nameof(RecentNotebook));
         OnPropertyChanged(nameof(RecentScript));

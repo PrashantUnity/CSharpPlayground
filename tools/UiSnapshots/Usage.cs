@@ -29,8 +29,18 @@ internal static class Usage
               --run                  run the script first (F5)
               --panel <tab>          bottom panel tab: results, terminal, problems, tests or debug
               --panel-height <px>    bottom panel height (default 280), e.g. 700 to see a whole visualizer
+              --quick-open <mode>    show the Quick Open palette: files or commands
           notebook <n>           Notebook Studio with problem n's notebook.
               --run                  run all cells first
+              --sidebar <view>       explorer, outline, variables or search
+              --quick-open <mode>    files or commands
+          hub                    The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned).
+              --empty                no scripts or notebooks (first run)
+              --templates            the template gallery instead of recent workspaces
+              --create <kind>        the "New Script" / "New Notebook" dialog: script or notebook
+          docs                   The Docs learning center.
+              --article <words>      open the first article whose title contains the words
+              --list                 print every category and article (no image)
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)

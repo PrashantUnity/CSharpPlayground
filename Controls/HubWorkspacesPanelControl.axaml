@@ -5,9 +5,22 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubWorkspacesPanelControl"
              x:DataType="vm:CSharpManagerViewModel">
+    <UserControl.Styles>
+        <Style Selector="StackPanel.hub-filter-chips">
+            <Setter Property="Grid.Column" Value="2" />
+        </Style>
+        <Style Selector="Border.compact StackPanel.hub-filter-chips">
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Grid.ColumnSpan" Value="3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="0,10,0,0" />
+        </Style>
+    </UserControl.Styles>
 
                                 <StackPanel Grid.Column="0" Spacing="16">
 
@@ -49,15 +62,16 @@
                                     <!-- ======================================================== -->
                                     <StackPanel Spacing="12" IsVisible="{Binding IsWorkspacesTabActive}">
 
-                                        <!-- Header: Title & Category Filter Chips -->
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <!-- Header: Title & Category Filter Chips (the chips move under the title when crowded) -->
+                                        <Border controls:CompactWhenCrowded.IsEnabled="True">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
                                                 <materialIcons:MaterialIcon Kind="History" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 <TextBlock Text="RECENT WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
 
                                             <!-- Segmented Category Filter Chips -->
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <StackPanel Classes="hub-filter-chips" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <!-- All Chip -->
                                                 <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="All"
                                                         Classes="nexus-filter-chip"
@@ -100,6 +114,7 @@
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
+                                        </Border>
 
                                         <!-- Inline Search & Filter Bar -->
                                         <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
@@ -126,17 +141,24 @@
                                                 BorderThickness="1"
                                                 CornerRadius="12"
                                                 ClipToBounds="True">
-                                            <StackPanel>
+                                            <!-- Header and rows share their column widths: the same padding, and one shared size for the
+                                                 actions column, so every header sits over its own column. -->
+                                            <StackPanel Grid.IsSharedSizeScope="True">
                                                 <!-- Table Header (12 Columns equivalent) -->
                                                 <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                                         BorderBrush="{DynamicResource DsBorderBrush}"
                                                         BorderThickness="0,0,0,1"
-                                                        Padding="18,10">
-                                                    <Grid ColumnDefinitions="6*,3*,3*,Auto">
-                                                        <TextBlock Grid.Column="0" Text="NAME &amp; WORKSPACE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" Margin="34,0,0,0" />
+                                                        Padding="16,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="6*" />
+                                                            <ColumnDefinition Width="3*" />
+                                                            <ColumnDefinition Width="3*" />
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="WorkspaceRowActions" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="NAME" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" Margin="32,0,10,0" TextTrimming="CharacterEllipsis" />
                                                         <TextBlock Grid.Column="1" Text="TYPE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
                                                         <TextBlock Grid.Column="2" Text="MODIFIED" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Right" />
-                                                        <Border Grid.Column="3" Width="38" />
                                                     </Grid>
                                                 </Border>
 
@@ -147,9 +169,27 @@
                                                             <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}"
                                                                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                         </Border>
-                                                        <TextBlock Text="No workspace items found" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                                        <TextBlock Text="Try clearing search keywords, switching filters, or open an existing project from disk." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                                        <!-- First run: nothing to filter yet. -->
+                                                        <TextBlock Text="No scripts or notebooks yet" IsVisible="{Binding IsWorkspaceEmpty}"
+                                                                   FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                                        <TextBlock Text="Create one from the buttons above, start from a template, or open an existing project from disk."
+                                                                   IsVisible="{Binding IsWorkspaceEmpty}"
+                                                                   FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                                                        <!-- Items exist, but the search or filter hides them all. -->
+                                                        <TextBlock Text="No workspace items found" IsVisible="{Binding !IsWorkspaceEmpty}"
+                                                                   FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                                        <TextBlock Text="Try clearing search keywords, switching filters, or open an existing project from disk."
+                                                                   IsVisible="{Binding !IsWorkspaceEmpty}"
+                                                                   FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
                                                         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                                            <Button Command="{Binding SetActiveDashboardViewCommand}" CommandParameter="Templates"
+                                                                    Classes="nexus-btn-surface"
+                                                                    IsVisible="{Binding IsWorkspaceEmpty}">
+                                                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                    <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="Browse Templates" VerticalAlignment="Center" />
+                                                                </StackPanel>
+                                                            </Button>
                                                             <Button Command="{Binding ResetFiltersCommand}"
                                                                     Classes="nexus-btn-surface"
                                                                     IsVisible="{Binding HasSearchQuery}">
@@ -248,7 +288,13 @@
                                                                     </ContextMenu>
                                                                 </Button.ContextMenu>
                                                                 <Border Classes="nexus-table-row">
-                                                                    <Grid ColumnDefinitions="6*,3*,3*,Auto">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="6*" />
+                                                                            <ColumnDefinition Width="3*" />
+                                                                            <ColumnDefinition Width="3*" />
+                                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="WorkspaceRowActions" />
+                                                                        </Grid.ColumnDefinitions>
 
                                                                         <!-- Col 0: Icon + Title, Pin Badge & Folder -->
                                                                         <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
@@ -259,22 +305,25 @@
                                                                                                         VerticalAlignment="Center"
                                                                                                         Margin="0,0,14,0" />
                                                                             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="0,0,10,0">
-                                                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                                    <materialIcons:MaterialIcon Kind="SubdirectoryArrowRight" Width="13" Height="13"
+                                                                                <!-- A left-aligned grid, not a StackPanel, so a long title trims before the Type
+                                                                                     column while the pin still sits right after it. -->
+                                                                                <Grid ColumnDefinitions="Auto,*,Auto" HorizontalAlignment="Left">
+                                                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="SubdirectoryArrowRight" Width="13" Height="13"
                                                                                                                 Foreground="{DynamicResource DsMutedBrush}"
                                                                                                                 IsVisible="{Binding IsExternal}"
                                                                                                                 VerticalAlignment="Center"
-                                                                                                                Margin="0,0,2,0" />
-                                                                                    <TextBlock Text="{Binding Title}"
+                                                                                                                Margin="0,0,8,0" />
+                                                                                    <TextBlock Grid.Column="1" Text="{Binding Title}"
                                                                                                FontSize="13.5" FontWeight="Medium" Foreground="{DynamicResource DsTextBrush}"
                                                                                                TextTrimming="CharacterEllipsis"
                                                                                                ToolTip.Tip="{Binding Title}" />
-                                                                                    <materialIcons:MaterialIcon Kind="Pin" Width="13" Height="13"
+                                                                                    <materialIcons:MaterialIcon Grid.Column="2" Kind="Pin" Width="13" Height="13"
                                                                                                                 Foreground="{DynamicResource DsPrimaryBrush}"
                                                                                                                 IsVisible="{Binding IsPinned}"
                                                                                                                 VerticalAlignment="Center"
+                                                                                                                Margin="6,0,0,0"
                                                                                                                 ToolTip.Tip="Pinned to Header" />
-                                                                                </StackPanel>
+                                                                                </Grid>
                                                                                 <TextBlock Text="{Binding DisplayLocation}"
                                                                                             FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
                                                                                             TextTrimming="CharacterEllipsis"

@@ -78,6 +78,8 @@ public partial class CSharpDocsViewModel : ObservableObject
         UpdateBreadcrumb();
     }
 
+    partial void OnSelectedCategoryChanged(DocCategory? value) => UpdateBreadcrumb();
+
     partial void OnSelectedArticleChanged(DocArticle? value)
     {
         UpdateBreadcrumb();
@@ -139,14 +141,15 @@ public partial class CSharpDocsViewModel : ObservableObject
     public void SelectArticle(DocArticle? article)
     {
         if (article == null) return;
-        SelectedArticle = article;
 
+        // The category first, so the breadcrumb and badge never show the previous one next to this article.
         var parentCategory = Categories.FirstOrDefault(c => c.Id == article.CategoryId);
         if (parentCategory != null)
         {
             SelectedCategory = parentCategory;
             parentCategory.IsExpanded = true;
         }
+        SelectedArticle = article;
 
         if (HasSearchQuery)
         {

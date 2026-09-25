@@ -21,6 +21,8 @@ try
         case "studio": StudioSnapshots.CodeStudio(options); break;
         case "notebook": StudioSnapshots.Notebook(options); break;
         case "visualizer": VisualizerSnapshots.Frames(options); break;
+        case "hub": HubAndDocsSnapshots.Hub(options); break;
+        case "docs": HubAndDocsSnapshots.Docs(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

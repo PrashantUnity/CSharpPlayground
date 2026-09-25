@@ -30,9 +30,14 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
         <!-- Search & Replace Inputs -->
-        <StackPanel Grid.Row="0" Margin="10,10,10,6" Spacing="6">
+        <!-- Both rows reserve the same width for their buttons, so the two inputs line up. -->
+        <StackPanel Grid.Row="0" Margin="10,10,10,6" Spacing="6" Grid.IsSharedSizeScope="True">
             <!-- Search Row -->
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="SearchRowActions" />
+                </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Text="{Binding SearchQuery, Mode=TwoWay}"
                          Classes="sidebar-search-box"
                          PlaceholderText="Search in script..." />
@@ -56,7 +61,11 @@
             </Grid>
 
             <!-- Replace Row -->
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="SearchRowActions" />
+                </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Text="{Binding ReplaceQuery, Mode=TwoWay}"
                          Classes="sidebar-search-box"
                          PlaceholderText="Replace..." />
