@@ -227,10 +227,11 @@ public class RunConsoleRelayTests : IDisposable
     {
         var (studio, _) = StudioHoldingLiveOutput("Console.WriteLine(\"✅ Case 1 → 42\");");
         var testCase = new TestCaseItem { Name = "Case 1", ExpectedOutput = "42" };
+        studio.TestCases.Add(testCase);
 
-        await studio.RunTestCaseCommand.ExecuteAsync(testCase);
+        await studio.RunAllTestCasesCommand.ExecuteAsync(null);
 
         Assert.True(testCase.Passed);
-        Assert.Equal("✅ Case 1 → 42", testCase.ActualOutput);
+        Assert.Equal("42", testCase.ActualOutput);
     }
 }

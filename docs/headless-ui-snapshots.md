@@ -55,6 +55,7 @@ Command options:
 | | `--run` | Run the script (F5) before capturing |
 | | `--panel <tab>` | Bottom panel tab: `results`, `terminal`, `problems`, `tests` or `debug` |
 | | `--panel-height <px>` | Bottom panel height (default 280, whatever the window height) |
+| | `--generate-tests` / `--run-tests` / `--add-test` | Click Generate, Run All or Add Test Case in the Test Cases panel |
 | `notebook` | `--run` | Run all cells first |
 | `visualizer` | `--steps <s,s,...>` | Steps to save; negative counts from the end (default: first, 1/3, 2/3, last) |
 | | `--quiet` | Don't print each step's description |

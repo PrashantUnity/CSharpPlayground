@@ -44,6 +44,14 @@ internal static class StudioSnapshots
             Snapshot.Wait(vm.RunCodeCommand.ExecuteAsync(null));
             Snapshot.Settle();
         }
+        // The Test Cases panel: Generate (Blind 75 problems), Run All, and the Add Test Case form.
+        if (options.Flag("generate-tests")) vm.GenerateTestCasesCommand.Execute(null);
+        if (options.Flag("run-tests"))
+        {
+            Snapshot.Wait(vm.RunAllTestCasesCommand.ExecuteAsync(null));
+            Snapshot.Settle();
+        }
+        if (options.Flag("add-test")) vm.AddTestCaseCommand.Execute(null);
         if (options.Value("panel") is { } panel)
         {
             vm.IsBottomDeckExpanded = true;

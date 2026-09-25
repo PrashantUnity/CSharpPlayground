@@ -190,39 +190,125 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Tab 3: Test Cases -->
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="14,10" Spacing="10">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="Automated Test Cases Runner" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Command="{Binding AddTestCaseCommand}" Classes="cs-toolbar-tonal">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
-                                    <TextBlock Text="Add Test Case" FontSize="11" />
-                                </StackPanel>
-                            </Button>
+                <!-- Tab 3: Test Cases. Each case is a Check("name", answer, "expected") line in the script; every run
+                     reads its ✅/❌ line back into the card. -->
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0" Padding="14,7" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding TestCasesSummary}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Button Command="{Binding GenerateTestCasesCommand}" IsVisible="{Binding CanGenerateTestCases}" Classes="cs-toolbar-tonal"
+                                        ToolTip.Tip="Add this problem's examples and edge cases (empty input, duplicates, negatives...), every answer verified">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" />
+                                        <TextBlock Text="Generate" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding RunAllTestCasesCommand}" IsVisible="{Binding HasTestCases}" Classes="cs-toolbar-tonal"
+                                        ToolTip.Tip="Run the script once and check every case">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
+                                        <TextBlock Text="Run All" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding AddTestCaseCommand}" Classes="cs-toolbar-tonal" ToolTip.Tip="Check a value of your own">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
+                                        <TextBlock Text="Add Test Case" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </Grid>
+                    </Border>
 
-                        <ItemsControl ItemsSource="{Binding TestCases}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:TestCaseItem">
-                                    <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,6">
-                                        <Grid ColumnDefinitions="*,Auto,Auto">
-                                            <StackPanel Grid.Column="0" Spacing="4">
-                                                <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                            </StackPanel>
-                                            <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.RunTestCaseCommand}" CommandParameter="{Binding}" Classes="cs-toolbar-tonal" Margin="6,0">
-                                                <TextBlock Text="Run" FontSize="10.5" />
-                                            </Button>
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="14,10" Spacing="8">
+                            <TextBlock Text="{Binding TestCasesStatus}" IsVisible="{Binding TestCasesStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+
+                            <!-- New case: what to check and the answer expected -->
+                            <Border IsVisible="{Binding IsAddingTestCase}" Background="{DynamicResource M3SurfaceContainerBrush}"
+                                    BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="New test case" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <Grid ColumnDefinitions="72,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                                        <TextBlock Grid.Row="0" Text="Name" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewTestCaseName, Mode=TwoWay}" Classes="sidebar-search-box" />
+                                        <TextBlock Grid.Row="1" Text="Check" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewTestCaseCall, Mode=TwoWay}" Classes="sidebar-search-box"
+                                                 FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                 PlaceholderText="The C# expression to check, e.g. sol.MaxArea(new[] { 1, 1 })" />
+                                        <TextBlock Grid.Row="2" Text="Expected" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto">
+                                            <TextBox Text="{Binding NewTestCaseExpected, Mode=TwoWay}" Classes="sidebar-search-box"
+                                                     FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                     PlaceholderText="As LeetCode prints it: 49, true, [0,1], &quot;bab&quot;" />
+                                            <CheckBox Grid.Column="1" IsChecked="{Binding NewTestCaseAnyOrder, Mode=TwoWay}" Margin="10,0,0,0"
+                                                      ToolTip.Tip="Accept the answer's elements in any order">
+                                                <TextBlock Text="Any order" FontSize="11" />
+                                            </CheckBox>
                                         </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </ScrollViewer>
+                                    </Grid>
+                                    <TextBlock Text="{Binding TestCaseFormError}" IsVisible="{Binding TestCaseFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                               FontSize="11" Foreground="{DynamicResource M3ErrorBrush}" TextWrapping="Wrap" />
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Adds a Check(...) line to the script; Run or F5 shows whether it passes."
+                                                   FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0">
+                                            <Button Command="{Binding CancelAddTestCaseCommand}" Classes="cs-toolbar-outlined">
+                                                <TextBlock Text="Cancel" FontSize="11" />
+                                            </Button>
+                                            <Button Command="{Binding ConfirmAddTestCaseCommand}" Classes="cs-toolbar-filled">
+                                                <TextBlock Text="Add" FontSize="11" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
 
+                            <TextBlock IsVisible="{Binding !HasTestCases}" TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                       Text="No test cases yet. Add one to check a value your code computes; for a Blind 75 problem, Generate brings in its examples and edge cases." />
+
+                            <ItemsControl ItemsSource="{Binding TestCases}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:TestCaseItem">
+                                        <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <!-- Passed, failed, running, or not run yet -->
+                                                <Panel Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,0,10,0">
+                                                    <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsPassed}" ToolTip.Tip="Passed" />
+                                                    <materialIcons:MaterialIcon Kind="CloseCircle" Foreground="#EF4444" IsVisible="{Binding IsFailed}" ToolTip.Tip="Failed" />
+                                                    <materialIcons:MaterialIcon Kind="TimerSand" Foreground="{DynamicResource M3PrimaryBrush}" IsVisible="{Binding IsRunning}" ToolTip.Tip="Running" />
+                                                    <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource M3OutlineBrush}" IsVisible="{Binding IsNotRun}" ToolTip.Tip="Not run yet" />
+                                                </Panel>
+                                                <StackPanel Grid.Column="1" Spacing="3">
+                                                    <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap"
+                                                               IsVisible="{Binding Input, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    <TextBlock Text="{Binding Call, StringFormat='{}Checks: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap"
+                                                               IsVisible="{Binding ShowsCall}" />
+                                                    <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap"
+                                                               IsVisible="{Binding ExpectedOutput, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="#22C55E" TextWrapping="Wrap"
+                                                               IsVisible="{Binding IsPassed}" />
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="#EF4444" TextWrapping="Wrap"
+                                                               IsVisible="{Binding IsFailed}" />
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Command="{Binding $parent[UserControl].DataContext.DeleteTestCaseCommand}" CommandParameter="{Binding}" Classes="cs-toolbar-icon"
+                                                        VerticalAlignment="Top" Margin="8,0,0,0" ToolTip.Tip="Remove this case (and the Check line the panel added for it)">
+                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="15" Height="15" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
                 <!-- Tab 4: Debug Console & Immediate REPL -->
                 <Grid ColumnDefinitions="*,4,*">
                     <!-- Left: Locals Inspection -->

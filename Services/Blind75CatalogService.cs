@@ -45,6 +45,20 @@ public static partial class Blind75CatalogService
     public static BlindProblemItem? GetProblemById(string id) =>
         _problems.Value.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// The problem a script was opened from: its title is the problem's full title ("11. Container With Most Water"),
+    /// as <see cref="ConvertToScript"/> names it. Null for any other script, including one merely starting with a number.
+    /// </summary>
+    public static BlindProblemItem? FindForScript(ScriptDocumentItem? script)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(script?.Title ?? string.Empty, @"^(\d+)\.\s+(.+)$");
+        if (!match.Success || !int.TryParse(match.Groups[1].Value, out int number)) return null;
+        var problem = GetProblemByNumber(number);
+        return problem != null && string.Equals(problem.Title, match.Groups[2].Value.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? problem
+            : null;
+    }
+
     public static IReadOnlyList<string> GetAllCategories() => new[]
     {
         "All",

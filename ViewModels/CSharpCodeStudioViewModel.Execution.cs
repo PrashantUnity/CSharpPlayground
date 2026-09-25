@@ -224,6 +224,11 @@ public partial class CSharpCodeStudioViewModel
         if (IsExecuting) return;
 
         var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        // Every run checks the script's test cases; their results land on them even if another tab is active by the end.
+        var runningCases = TestCases.ToList();
+        var runningCode = Code;
+        bool completed = false;
+        foreach (var testCase in runningCases) testCase.IsRunning = true;
         if (runningTab != null)
         {
             runningTab.IsExecuting = true;
@@ -395,6 +400,7 @@ public partial class CSharpCodeStudioViewModel
 
                 // The kernel's ConsoleOutput repeats what it wrote live; it only adds text that never arrived live.
                 terminal.Complete(kernelResult.Success ? kernelResult.ConsoleOutput : null);
+                completed = kernelResult.Success;
 
                 if (kernelResult.Success)
                 {
@@ -509,6 +515,7 @@ public partial class CSharpCodeStudioViewModel
 
                 // Before the closing lines, so they always come after the program's own output.
                 terminal.Complete();
+                completed = result.Success;
 
                 var endMsg = "\n--------------------------------------------------\n";
                 if (result.Success)
@@ -583,6 +590,7 @@ public partial class CSharpCodeStudioViewModel
             {
                 IsExecuting = false;
             }
+            UpdateTestCaseResults(runningCases, runningCode, runningTab?.ConsoleOutput ?? ConsoleOutput, completed);
         }
     }
 
@@ -598,69 +606,6 @@ public partial class CSharpCodeStudioViewModel
         {
             action();
         }
-    }
-
-    [RelayCommand]
-    private async Task RunTestCaseAsync(TestCaseItem testCase)
-    {
-        testCase.IsRunning = true;
-        testCase.Passed = null;
-        testCase.ActualOutput = "Running...";
-
-        try
-        {
-            await RunCodeAsync();
-
-            // Scripts that check themselves with Judge print a ✅/❌ line per case; that line is the verdict.
-            // Anything else falls back to "the output mentions the expected text".
-            var verdict = Judge.Verdict(ConsoleOutput, testCase.Name);
-            testCase.ActualOutput = Judge.LineFor(ConsoleOutput, testCase.Name) ?? ConsoleOutput;
-            bool passed = verdict ?? (!string.IsNullOrEmpty(testCase.ExpectedOutput) && ConsoleOutput.Contains(testCase.ExpectedOutput));
-            if (passed)
-            {
-                testCase.Passed = true;
-                CheckAndMarkBlindProblemSolved();
-            }
-            else
-            {
-                testCase.Passed = false;
-            }
-        }
-        finally
-        {
-            testCase.IsRunning = false;
-        }
-    }
-
-    private void CheckAndMarkBlindProblemSolved()
-    {
-        try
-        {
-            if (TestCases.Count > 0 && TestCases.All(tc => tc.Passed == true))
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(Script.Title, @"^(\d+)\.\s");
-                if (match.Success && int.TryParse(match.Groups[1].Value, out int problemNum))
-                {
-                    _ = new LocalBlindProgressService().SetProblemSolvedAsync(problemNum, true);
-                }
-            }
-        }
-        catch
-        {
-        }
-    }
-
-    [RelayCommand]
-    private void AddTestCase()
-    {
-        var nextNum = TestCases.Count + 1;
-        var newCase = new TestCaseItem
-        {
-            Name = $"Case {nextNum}",
-            Input = $"// Input for Case {nextNum}"
-        };
-        TestCases.Add(newCase);
-        Script.TestCases.Add(newCase);
     }
 
     [RelayCommand]

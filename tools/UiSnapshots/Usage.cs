@@ -29,6 +29,9 @@ internal static class Usage
               --run                  run the script first (F5)
               --panel <tab>          bottom panel tab: results, terminal, problems, tests or debug
               --panel-height <px>    bottom panel height (default 280), e.g. 700 to see a whole visualizer
+              --generate-tests       click Generate in the Test Cases panel (Blind 75 problems)
+              --run-tests            click Run All in the Test Cases panel
+              --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
           notebook <n>           Notebook Studio with problem n's notebook.
               --run                  run all cells first

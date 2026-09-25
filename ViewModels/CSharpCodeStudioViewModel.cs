@@ -69,6 +69,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private int _executionRunId;
     private readonly Func<int> _getTimeoutSeconds;
     private readonly Action<Action> _postToUiThread;
+    private readonly IBlindProgressService _blindProgress;
 
     [ObservableProperty]
     private ScriptDocumentItem _script;
@@ -220,7 +221,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Func<int>? getTimeoutSeconds = null,
         Action<NotebookDocumentItem>? openNotebookAction = null,
         Action? navigateToDocsAction = null,
-        Action<Action>? postToUiThread = null)
+        Action<Action>? postToUiThread = null,
+        IBlindProgressService? blindProgress = null)
     {
         _script = script;
         _storageService = storageService;
@@ -233,7 +235,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _navigateToDocsAction = navigateToDocsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
         _postToUiThread = postToUiThread ?? RunOnUiThread;
+        _blindProgress = blindProgress ?? new LocalBlindProgressService();
         _kernel = new NotebookExecutionKernel();
+        WatchTestCases();
 
         // The Results tab's empty hint depends on both lists it draws.
         DumpResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoResults));
@@ -257,11 +261,6 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         foreach (var tc in script.TestCases)
         {
             TestCases.Add(tc);
-        }
-
-        if (TestCases.Count == 0)
-        {
-            TestCases.Add(new TestCaseItem { Name = "Case 1", Input = "// Sample input parameters" });
         }
 
         Breakpoints.Clear();
