@@ -76,7 +76,20 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
         IsLoading = false;
     }
 
-    public async Task LoadCatalogAndProgressAsync()
+    private Task? _loadTask;
+
+    public Task LoadCatalogAndProgressAsync()
+    {
+        if (_loadTask != null && !_loadTask.IsCompleted)
+        {
+            return _loadTask;
+        }
+
+        _loadTask = LoadCatalogAndProgressCoreAsync();
+        return _loadTask;
+    }
+
+    private async Task LoadCatalogAndProgressCoreAsync()
     {
         try
         {
