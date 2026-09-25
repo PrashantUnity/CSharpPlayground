@@ -46,18 +46,14 @@ public class LocalBlindProgressService : IBlindProgressService
         try
         {
             if (_loaded) return;
-            if (File.Exists(_filePath))
+            var state = await ReadStateAsync();
+            if (state != null)
             {
-                var json = await File.ReadAllTextAsync(_filePath);
-                var state = JsonSerializer.Deserialize<ProgressState>(json);
-                if (state != null)
-                {
-                    _solved.Clear();
-                    foreach (var num in state.Solved) _solved.Add(num);
+                _solved.Clear();
+                foreach (var num in state.Solved) _solved.Add(num);
 
-                    _bookmarked.Clear();
-                    foreach (var num in state.Bookmarked) _bookmarked.Add(num);
-                }
+                _bookmarked.Clear();
+                foreach (var num in state.Bookmarked) _bookmarked.Add(num);
             }
             _loaded = true;
         }
@@ -117,7 +113,7 @@ public class LocalBlindProgressService : IBlindProgressService
         if (changed)
         {
             SolvedStatusChanged?.Invoke(problemNumber, isSolved);
-            await SaveAsync();
+            await SaveAsync(state => Apply(state.Solved, problemNumber, isSolved));
         }
     }
 
@@ -133,28 +129,21 @@ public class LocalBlindProgressService : IBlindProgressService
         if (changed)
         {
             BookmarkStatusChanged?.Invoke(problemNumber, isBookmarked);
-            await SaveAsync();
+            await SaveAsync(state => Apply(state.Bookmarked, problemNumber, isBookmarked));
         }
     }
 
-    private async Task SaveAsync()
+    // Writes one change on top of what the file holds now, not this instance's whole memory: another instance or
+    // process (the FryPDF host and the standalone Runner share this file) may have saved since this one loaded, and
+    // rewriting everything from memory would undo its changes.
+    private async Task SaveAsync(Action<ProgressState> applyChange)
     {
         await _lock.WaitAsync();
         try
         {
-            ProgressState state;
-            lock (_solved)
-            {
-                lock (_bookmarked)
-                {
-                    state = new ProgressState
-                    {
-                        Solved = new List<int>(_solved),
-                        Bookmarked = new List<int>(_bookmarked),
-                        LastUpdatedUtc = DateTime.UtcNow
-                    };
-                }
-            }
+            var state = await ReadStateAsync() ?? SnapshotInMemory();
+            applyChange(state);
+            state.LastUpdatedUtc = DateTime.UtcNow;
 
             var json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_filePath, json);
@@ -167,5 +156,37 @@ public class LocalBlindProgressService : IBlindProgressService
         {
             _lock.Release();
         }
+    }
+
+    // Null when there's no file yet or it can't be read; callers then fall back to what this instance holds, so a save
+    // is never dropped because the file was momentarily unreadable.
+    private async Task<ProgressState?> ReadStateAsync()
+    {
+        if (!File.Exists(_filePath)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<ProgressState>(await File.ReadAllTextAsync(_filePath));
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private ProgressState SnapshotInMemory()
+    {
+        lock (_solved)
+        {
+            lock (_bookmarked)
+            {
+                return new ProgressState { Solved = new List<int>(_solved), Bookmarked = new List<int>(_bookmarked) };
+            }
+        }
+    }
+
+    private static void Apply(List<int> numbers, int problemNumber, bool include)
+    {
+        numbers.RemoveAll(n => n == problemNumber);
+        if (include) numbers.Add(problemNumber);
     }
 }

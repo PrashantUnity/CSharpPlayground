@@ -27,18 +27,19 @@ public class TestCasesPanelTests : IDisposable
     }
 
     // Throwaway progress: a Blind 75 script whose cases all pass is marked solved, never in your real progress.
-    private CSharpCodeStudioViewModel Studio(ScriptDocumentItem script) =>
+    private CSharpCodeStudioViewModel Studio(ScriptDocumentItem script, IBlindProgressService? progress = null) =>
         new(script, new LocalScriptStorageService(Path.Combine(_baseDir, "scripts")), new RoslynCompilerService(), new ScriptExecutionEngine(),
-            backToHubAction: () => { }, blindProgress: new LocalBlindProgressService(Path.Combine(_baseDir, "progress")));
+            backToHubAction: () => { }, blindProgress: progress ?? Progress());
 
-    // Starts from the statement's examples: the catalog's problems are shared, and the Blind 75 page's "Generate test
-    // data" can have replaced a problem's list, so the script's own list isn't relied on.
-    private CSharpCodeStudioViewModel Blind75(int number)
+    private LocalBlindProgressService Progress() => new(Path.Combine(_baseDir, "progress"));
+
+    // Starts from the statement's examples, so each test knows exactly which cases the script checks.
+    private CSharpCodeStudioViewModel Blind75(int number, IBlindProgressService? progress = null)
     {
         var problem = Blind75CatalogService.GetProblemByNumber(number)!;
         var script = Blind75CatalogService.ConvertToScript(problem);
         script.TestCases = problem.Tests.Select(t => t.ToTestCase()).ToList();
-        return Studio(script);
+        return Studio(script, progress);
     }
 
     private static void Add(CSharpCodeStudioViewModel studio, string name, string call, string expected)
@@ -48,6 +49,22 @@ public class TestCasesPanelTests : IDisposable
         studio.NewTestCaseCall = call;
         studio.NewTestCaseExpected = expected;
         studio.ConfirmAddTestCaseCommand.Execute(null);
+    }
+
+    // The studio host gives both pages one progress store; with it, a problem solved here ticks on the Blind 75 page
+    // straight away, not after a reload.
+    [Fact]
+    public async Task PassingEveryCase_TicksTheProblemOnTheBlind75PageAtOnce()
+    {
+        var progress = Progress();
+        var page = new CSharpBlindProblemsViewModel(progress);
+        var studio = Blind75(1, progress);
+
+        await studio.RunAllTestCasesCommand.ExecuteAsync(null);
+
+        Assert.All(studio.TestCases, t => Assert.True(t.Passed));
+        Assert.True(page.AllProblems.First(p => p.Number == 1).IsSolved);
+        Assert.Equal(1, page.TotalSolved);
     }
 
     [Fact]

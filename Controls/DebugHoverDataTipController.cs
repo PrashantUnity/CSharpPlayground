@@ -119,7 +119,8 @@ public class DebugHoverDataTipController : IDisposable
         var textView = _editor.TextArea.TextView;
         if (textView == null || !textView.VisualLinesValid) return;
 
-        var pos = e.GetPosition(textView);
+        // GetPositionFloor works in document coordinates: the point in the text view plus how far it's scrolled.
+        var pos = e.GetPosition(textView) + textView.ScrollOffset;
         var textPos = textView.GetPositionFloor(pos);
 
         if (!textPos.HasValue)
@@ -279,7 +280,8 @@ public class DebugHoverDataTipController : IDisposable
 
         try
         {
-            var visualPos = textView.GetVisualPosition(new TextViewPosition(line, col), VisualYPosition.LineBottom);
+            // GetVisualPosition answers in document coordinates too; subtract the scroll offset to get the text view's.
+            var visualPos = textView.GetVisualPosition(new TextViewPosition(line, col), VisualYPosition.LineBottom) - textView.ScrollOffset;
             var parent = _tipControl.Parent as Visual;
             var pt = parent != null ? (textView.TranslatePoint(visualPos, parent) ?? visualPos) : visualPos;
 
@@ -293,7 +295,7 @@ public class DebugHoverDataTipController : IDisposable
             // If too close to bottom, position above the line
             if (y + 160 > parentHeight)
             {
-                var topPos = textView.GetVisualPosition(new TextViewPosition(line, col), VisualYPosition.LineTop);
+                var topPos = textView.GetVisualPosition(new TextViewPosition(line, col), VisualYPosition.LineTop) - textView.ScrollOffset;
                 var topPt = parent != null ? (textView.TranslatePoint(topPos, parent) ?? topPos) : topPos;
                 y = Math.Max(10, topPt.Y - 140);
             }

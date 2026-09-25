@@ -71,6 +71,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly Action<Action> _postToUiThread;
     private readonly IBlindProgressService _blindProgress;
 
+    /// <summary>Where a Blind 75 problem is marked solved when all its cases pass (the host shares it with the Blind 75 page).</summary>
+    internal IBlindProgressService BlindProgress => _blindProgress;
+
     [ObservableProperty]
     private ScriptDocumentItem _script;
 

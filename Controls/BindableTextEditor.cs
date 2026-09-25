@@ -61,7 +61,9 @@ public class BindableTextEditor : TextEditor
     private readonly SearchPanel? _searchPanel;
     private NotebookCellViewModel? _cellVm;
     private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
+    private static readonly Lazy<CSharpQuickInfoService> SharedQuickInfo = new(() => new CSharpQuickInfoService(SharedCompiler.Value));
     private readonly CSharpEditorCompletionController _completionController;
+    private readonly CSharpQuickInfoController _quickInfoController;
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
@@ -105,6 +107,10 @@ public class BindableTextEditor : TextEditor
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
+        {
+            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty
+        };
+        _quickInfoController = new CSharpQuickInfoController(this, () => SharedQuickInfo.Value)
         {
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty
         };

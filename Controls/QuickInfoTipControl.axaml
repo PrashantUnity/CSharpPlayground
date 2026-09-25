@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.QuickInfoTipControl"
+             Foreground="{DynamicResource M3OnSurfaceBrush}">
+
+    <!-- The hover card for a symbol: signature, where it's declared, then its documentation. Filled in code (SetQuickInfo). -->
+    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            BoxShadow="0 8 28 0 #70000000"
+            MaxWidth="640"
+            MaxHeight="440"
+            ClipToBounds="True">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="12,9,12,10">
+                <SelectableTextBlock Name="SignatureText"
+                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                                     FontSize="12.5"
+                                     LineHeight="18"
+                                     TextWrapping="Wrap" />
+
+                <!-- "in class System.Console", then one "T is int" line per type argument -->
+                <SelectableTextBlock Name="DetailsText"
+                                     Margin="0,2,0,0"
+                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                                     FontSize="12"
+                                     LineHeight="17"
+                                     TextWrapping="Wrap"
+                                     IsVisible="False" />
+
+                <Border Name="DocumentationSeparator"
+                        Height="1"
+                        Margin="-12,9,-12,0"
+                        Background="{DynamicResource M3OutlineVariantBrush}"
+                        IsVisible="False" />
+
+                <StackPanel Name="DocumentationPanel" Margin="0,9,0,0" Spacing="7" IsVisible="False" />
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

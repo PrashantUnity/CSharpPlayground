@@ -299,6 +299,7 @@ Display.Table(inventory, label: ""Warehouse Stock Inventory"");"
                 new() { Action = "Step Into", MacKey = "F11", WinKey = "F11", Description = "Step into method under cursor.", Category = "Debug" },
                 new() { Action = "Toggle Breakpoint", MacKey = "F9", WinKey = "F9", Description = "Toggle breakpoint on current cursor line.", Category = "Debug" },
                 new() { Action = "Format Document", MacKey = "⇧ ⌥ F", WinKey = "Ctrl+K Ctrl+D", Description = "Format C# code using Roslyn formatter.", Category = "Editor" },
+                new() { Action = "Show Hover (Quick Info)", MacKey = "⌘ K ⌘ I", WinKey = "Ctrl+K Ctrl+I", Description = "Show the signature and documentation of the symbol at the cursor; resting the mouse on a symbol shows the same card.", Category = "Editor" },
                 new() { Action = "Find & Replace", MacKey = "⌘ F", WinKey = "Ctrl+F", Description = "Open editor find and replace overlay.", Category = "Editor" },
                 new() { Action = "Run Notebook Cell", MacKey = "⇧ Enter", WinKey = "Shift+Enter", Description = "Execute active cell and advance to next cell.", Category = "Notebook" },
                 new() { Action = "Focus Explorer", MacKey = "⇧ ⌘ E", WinKey = "Ctrl+Shift+E", Description = "Open SideBar and focus workspace Explorer.", Category = "Navigation" },

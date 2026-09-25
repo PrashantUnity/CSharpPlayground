@@ -27,6 +27,7 @@ public partial class CSharpCodeStudioView : UserControl
     private FoldingManager? _foldingManager;
     private SearchPanel? _searchPanel;
     private CSharpEditorCompletionController? _completionController;
+    private CSharpQuickInfoController? _quickInfoController;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
     private CSharpCodeStudioViewModel? _currentVm;
@@ -442,6 +443,8 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
+            _quickInfoController?.Dispose();
+            _quickInfoController = null;
         }
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
@@ -465,6 +468,13 @@ public partial class CSharpCodeStudioView : UserControl
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
                 LanguageMode = _currentVm.CurrentLanguageMode
+            };
+
+            // While the debugger is paused, hovering shows the debug data tip instead.
+            var compiler = _currentVm.CompilerService;
+            _quickInfoController = new CSharpQuickInfoController(_editor, () => new CSharpQuickInfoService(compiler))
+            {
+                IsSuppressed = () => _currentVm?.IsPaused == true
             };
 
             _editor.WordWrap = _currentVm.IsWordWrap;

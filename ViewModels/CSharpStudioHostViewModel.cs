@@ -19,6 +19,10 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     private readonly IScriptStorageService _storageService;
     private readonly IPluginSettingsStore? _settingsStore;
+
+    // One progress store for the whole studio: the Blind 75 page and Code Studio (which marks a problem solved when
+    // every case passes) must see each other's changes, and two stores on one file would overwrite each other.
+    private readonly IBlindProgressService _blindProgress;
     private RoslynCompilerService? _compilerService;
     private ScriptExecutionEngine? _executionEngine;
 
@@ -50,9 +54,16 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
-    public CSharpStudioHostViewModel(IServiceProvider? serviceProvider = null, IPluginSettingsStore? settingsStore = null)
+    /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
+    /// <param name="settingsStore">The plugin's settings (execution timeout).</param>
+    /// <param name="blindProgress">Where Blind 75 progress lives; the user's progress file when not given.</param>
+    public CSharpStudioHostViewModel(
+        IServiceProvider? serviceProvider = null,
+        IPluginSettingsStore? settingsStore = null,
+        IBlindProgressService? blindProgress = null)
     {
         _storageService = new LocalScriptStorageService();
+        _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
         // fall back to resolving it off the plain IServiceProvider — the standalone Runner already
@@ -68,7 +79,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
         // ── Initialize Blind 75 Algorithm Hub page ──
         BlindProblemsViewModel = new CSharpBlindProblemsViewModel(
-            progressService: new LocalBlindProgressService(),
+            progressService: _blindProgress,
             backToHubAction: NavigateToManager,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
@@ -146,7 +157,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 backToHomeAction: NavigateToHome,
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openNotebookAction: NavigateToNotebookStudio,
-                navigateToDocsAction: () => NavigateToDocs());
+                navigateToDocsAction: () => NavigateToDocs(),
+                blindProgress: _blindProgress);
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -165,13 +177,23 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 navigateToDocsAction: () => NavigateToDocs());
         });
 
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        void Publish()
         {
             CodeStudioViewModel = codeVm;
             NotebookStudioViewModel = notebookVm;
             IsEngineLoading = false;
             EngineStatus = "Roslyn .NET 10 Engine Active";
-        });
+        }
+
+        // Without an Avalonia app (unit tests) there is no UI thread to hand over to.
+        if (Avalonia.Application.Current != null)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(Publish);
+        }
+        else
+        {
+            Publish();
+        }
     }
 
 
@@ -248,7 +270,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     {
         if (problemNumber.HasValue)
         {
-            var problem = Blind75CatalogService.GetProblemByNumber(problemNumber.Value);
+            // The page's own row for it (it keeps its own copy of the catalog), so the table highlights that row.
+            var problem = BlindProblemsViewModel.AllProblems.FirstOrDefault(p => p.Number == problemNumber.Value);
             if (problem != null)
             {
                 BlindProblemsViewModel.SelectedProblem = problem;

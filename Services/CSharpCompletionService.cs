@@ -17,20 +17,8 @@ public class CSharpCompletionService
 {
     private readonly RoslynCompilerService _compilerService;
 
-    private const string DefaultUsings = @"using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
-";
+    // The script is analysed behind the namespaces it runs with, so its offsets shift by this prefix's length only.
+    private const string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
 
     // Common C# keywords with high base priority
     private static readonly Lazy<List<CSharpCompletionItem>> Keywords = new(() =>
@@ -179,8 +167,8 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
         var (isMemberAccess, wordStart, prefix) = AnalyzeContext(code, caretOffset);
 
         // 2. Wrap source code with usings using exact offset preservation (zero drift!)
-        var wrappedCode = DefaultUsings + code;
-        var targetOffset = DefaultUsings.Length + (isMemberAccess ? wordStart : caretOffset);
+        var wrappedCode = AnalysisPrefix + code;
+        var targetOffset = AnalysisPrefix.Length + (isMemberAccess ? wordStart : caretOffset);
 
         // 3. Parse AST and SemanticModel
         var syntaxTree = CSharpSyntaxTree.ParseText(

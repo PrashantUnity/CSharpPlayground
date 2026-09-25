@@ -56,7 +56,9 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
 
     private void PopulateCatalogSynchronously()
     {
-        var problems = Blind75CatalogService.GetAllProblems();
+        // This page's own copy: the solved and saved flags, the highlighted row and generated test cases live on the
+        // items, and the process-wide catalog is shared by every other view model (and every test).
+        var problems = Blind75CatalogService.CreateAllProblems();
         AllProblems.Clear();
         foreach (var p in problems)
         {
@@ -112,17 +114,37 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
         }
     }
 
-    private void OnExternalSolvedStatusChanged(int number, bool isSolved)
+    // A load still in flight writes the stored progress over every item when it lands, so a click made meanwhile
+    // would be undone: toggles let it land first.
+    private Task WaitForProgressLoadAsync() => _loadTask is { IsCompleted: false } load ? load : Task.CompletedTask;
+
+    // The store is shared with Code Studio, which marks a problem solved when all its cases pass, so these also bring
+    // changes made on another page: applied on the UI thread the table is bound on, filters included.
+    private void OnExternalSolvedStatusChanged(int number, bool isSolved) => OnUiThread(() =>
     {
         var p = AllProblems.FirstOrDefault(x => x.Number == number);
         if (p != null) p.IsSolved = isSolved;
         RecalculateStats();
-    }
+        if (SelectedStatusFilter is "Solved" or "Unsolved") ApplyFilters();
+    });
 
-    private void OnExternalBookmarkStatusChanged(int number, bool isBookmarked)
+    private void OnExternalBookmarkStatusChanged(int number, bool isBookmarked) => OnUiThread(() =>
     {
         var p = AllProblems.FirstOrDefault(x => x.Number == number);
         if (p != null) p.IsBookmarked = isBookmarked;
+        if (SelectedStatusFilter == "Bookmarked") ApplyFilters();
+    });
+
+    private static void OnUiThread(Action action)
+    {
+        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(action);
+        }
+        else
+        {
+            action();
+        }
     }
 
     [RelayCommand]
@@ -132,6 +154,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     public async Task ToggleSolvedAsync(BlindProblemItem? problem)
     {
         if (problem == null) return;
+        await WaitForProgressLoadAsync();
         problem.IsSolved = !problem.IsSolved;
         await _progressService.SetProblemSolvedAsync(problem.Number, problem.IsSolved);
         RecalculateStats();
@@ -145,6 +168,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     public async Task ToggleBookmarkAsync(BlindProblemItem? problem)
     {
         if (problem == null) return;
+        await WaitForProgressLoadAsync();
         problem.IsBookmarked = !problem.IsBookmarked;
         await _progressService.SetProblemBookmarkedAsync(problem.Number, problem.IsBookmarked);
         if (SelectedStatusFilter == "Bookmarked")

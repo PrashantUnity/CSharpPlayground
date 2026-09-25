@@ -53,10 +53,13 @@ Command options:
 | `studio` | `--sidebar <view>` | `explorer`, `search`, `debug`, `nuget`, `notes` (default) or `problems` |
 | | `--edit-notes` | Click Edit in Scratchpad & Notes first |
 | | `--run` | Run the script (F5) before capturing |
+| | `--debug <line>` | Set a breakpoint on that line, start debugging and wait until it pauses there (Locals, paused line, data tips) |
 | | `--panel <tab>` | Bottom panel tab: `results`, `terminal`, `problems`, `tests` or `debug` |
 | | `--panel-height <px>` | Bottom panel height (default 280, whatever the window height) |
 | | `--generate-tests` / `--run-tests` / `--add-test` | Click Generate, Run All or Add Test Case in the Test Cases panel |
+| | `--quick-info <text>` | Rest the mouse on the first `<text>` in the script and wait for its hover (Quick Info) card; with `--debug`, the debugger's data tip |
 | `notebook` | `--run` | Run all cells first |
+| | `--quick-info <text>` | Rest the mouse on the first `<text>` in any cell and wait for its hover card |
 | `visualizer` | `--steps <s,s,...>` | Steps to save; negative counts from the end (default: first, 1/3, 2/3, last) |
 | | `--quiet` | Don't print each step's description |
 
@@ -175,6 +178,9 @@ Read this before extending the tool.
 - **Script execution runs on a worker thread.** `NotebookExecutionKernel` builds visualizer controls through
   `Dispatcher.UIThread.Invoke`. Run it with `Task.Run` and `Snapshot.Wait` (see `VisualizerSnapshots`); on the main
   thread it would block on itself.
+- **Timers need a job to fire.** With no message loop, a due `DispatcherTimer` (a hover delay, a debounce) only ticks
+  when some other job runs, so `Settle()` can wait forever for one. `Snapshot.WaitFor(condition, timeout)` posts an
+  empty job each frame and returns once the condition holds; `--quick-info` uses it for the 400 ms hover delay.
 - **Settle before saving.** After changing anything, call `Snapshot.Settle()`; `Save` settles two more frames but not
   more. Slow content (images, first Roslyn compile) may need `Settle(30)`.
 - **The window is the image.** Content scrolled out of view isn't drawn. Make the window taller (`--height 2600`) to

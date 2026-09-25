@@ -6,6 +6,10 @@
     <LangVersion>13</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
+    <!-- CSharpEditorPlugin.xml ships next to the DLL so hovering Display, Dump, Check... in a script shows their docs.
+         Only the documented members need comments (CS1591, CS1573). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
     <AssemblyName>CSharpEditorPlugin</AssemblyName>
     <PackageId>FryPdf.Plugin.CSharpEditor</PackageId>
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
@@ -58,6 +62,7 @@
 
     <ItemGroup>
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.dll" />
+      <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.xml" Condition="Exists('$(TargetDir)CSharpEditorPlugin.xml')" />
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
       <PluginFiles Include="$(TargetDir)AvaloniaEdit.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.dll')" />
       <PluginFiles Include="$(TargetDir)Avalonia.Controls.WebView.dll" Condition="Exists('$(TargetDir)Avalonia.Controls.WebView.dll')" />

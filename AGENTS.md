@@ -34,7 +34,7 @@ Every main studio interface (both script code studio and notebook studio) must s
 - **Editor Multi-Tab Bar**: Located at the top, showing all open scripts/notebooks side-by-side in a horizontal scrollable strip with close buttons (`×`), dirty status indicators (`●`), file-type icons, and a new tab (`+`) button.
 - **Editor Toolbar**: Located at top-right of the editor header with Run, Debug, Stepping controls (when paused), Format Document, Word Wrap, Find, and Bottom Panel toggle.
 - **Breadcrumbs Bar**: Subtle 24px breadcrumb trail below tabs (`workspace > scripts > File.csx > C# (.NET 10)`).
-- **Code Canvas**: AvaloniaEdit text editor with Dark+ theme, line numbers, folding markers, breakpoint gutter, debug line highlighter, and debug hover tooltips.
+- **Code Canvas**: AvaloniaEdit text editor with Dark+ theme, line numbers, folding markers, breakpoint gutter, debug line highlighter, hover Quick Info (signature, container and XML docs of the symbol under the pointer) and debug hover tooltips.
 
 ### Zone 4: Bottom Panel / Tool Deck (Resizable, Collapsible via `Ctrl+J`)
 - VS Code tabbed panel:
@@ -63,6 +63,7 @@ Every studio view must register and honor standard VS Code shortcuts:
 - `F10`: Step Over.
 - `F11`: Step Into.
 - `Ctrl+K Ctrl+D` or `Shift+Alt+F`: Format Document.
+- `Ctrl+K Ctrl+I`: Show Hover (Quick Info) for the symbol at the caret.
 - `Ctrl+F` (Mac: `Cmd+F`): Find & Replace.
 - `Ctrl+Shift+E`: Focus Explorer in SideBar.
 - `Ctrl+Shift+F`: Focus Search in SideBar.

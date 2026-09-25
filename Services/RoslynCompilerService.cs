@@ -24,6 +24,24 @@ public enum ExecutionLanguageMode
 
 public class RoslynCompilerService
 {
+    /// <summary>The namespaces every script and statement cell runs with (see <see cref="WrapSourceCode"/>).</summary>
+    public const string DefaultScriptUsings = @"using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
+using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
+
     private static readonly Lazy<(List<MetadataReference> References, List<AssemblyReferenceItem> Items)> CachedDefaultReferences =
         new(LoadDefaultReferencesInternal);
 
@@ -133,24 +151,7 @@ public class RoslynCompilerService
         // 2. Parse using directives to hoist them out of statements/expressions
         var (hoistedUsings, remainingCode) = ExtractAndHoistUsings(rawCode);
 
-        var defaultUsings = @"using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
-using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
-
-        var allUsings = defaultUsings;
+        var allUsings = DefaultScriptUsings;
         if (!string.IsNullOrWhiteSpace(hoistedUsings))
         {
             allUsings += "\n" + hoistedUsings;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -54,6 +55,24 @@ internal static class Snapshot
             Dispatcher.UIThread.RunJobs();
             Thread.Sleep(30);
         }
+    }
+
+    /// <summary>
+    /// Pumps the UI thread until <paramref name="condition"/> holds (true) or <paramref name="timeout"/> passes (false).
+    /// Unlike <see cref="Settle"/> it keeps <c>DispatcherTimer</c>s ticking (hover delays, debounces): with no message
+    /// loop, a due timer only fires when some other job runs, so it posts an empty one each frame.
+    /// </summary>
+    public static bool WaitFor(Func<bool> condition, TimeSpan timeout)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        while (!condition())
+        {
+            if (stopwatch.Elapsed > timeout) return false;
+            Dispatcher.UIThread.Post(() => { }, DispatcherPriority.Background);
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(15);
+        }
+        return true;
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using Xunit;
 
@@ -110,11 +111,12 @@ public class CSharpCompletionServiceTests
         Assert.False(string.IsNullOrWhiteSpace(wl.Signature));
     }
 
-    // Regression test for a "default usings" drift bug: CSharpCompletionService.DefaultUsings
-    // is a separate hardcoded copy from RoslynCompilerService.WrapSourceCode's usings, and had
-    // fallen out of sync (missing "using System.Net.Http;"). That silently broke completion for
-    // any type resolved through HttpClient (e.g. `var response = await client.GetAsync(...)`)
-    // while leaving unrelated completions (Console., keywords) looking unaffected.
+    // Regression tests for "default usings" drift: CSharpCompletionService used to analyse scripts with its own
+    // hardcoded copy of RoslynCompilerService.WrapSourceCode's usings, and it fell out of sync twice (first missing
+    // "using System.Net.Http;", later System.Text, System.Text.RegularExpressions and the ScriptHelpers static import).
+    // Each time completion silently broke for types from the missing namespace while unrelated completions (Console.,
+    // keywords) looked fine. It now shares RoslynCompilerService.DefaultScriptUsings; these tests cover a type from
+    // each namespace that went missing.
     private const string HttpClientCode = """
         var client = new HttpClient();
         var url = "https://example.com/";
@@ -131,5 +133,50 @@ public class CSharpCompletionServiceTests
         var names = completions.Select(c => c.DisplayText).ToHashSet();
         Assert.Contains("StatusCode", names);
         Assert.Contains("IsSuccessStatusCode", names);
+    }
+
+    [Fact]
+    public async Task DotMemberAccess_OnStringBuilder_ReturnsItsMembers()
+    {
+        const string code = """
+            var sb = new StringBuilder();
+            sb.
+            """;
+
+        var completions = await Service.GetCompletionsAsync(code, code.Length, ExecutionLanguageMode.Statements);
+
+        var names = completions.Select(c => c.DisplayText).ToHashSet();
+        Assert.Contains("Append", names);
+        Assert.Contains("AppendLine", names);
+        Assert.Contains("Insert", names);
+    }
+
+    [Fact]
+    public async Task DotMemberAccess_OnRegexType_ReturnsItsStaticMembers()
+    {
+        const string code = "var isDate = Regex.";
+
+        var completions = await Service.GetCompletionsAsync(code, code.Length, ExecutionLanguageMode.Statements);
+
+        var names = completions.Select(c => c.DisplayText).ToHashSet();
+        Assert.Contains("IsMatch", names);
+        Assert.Contains("Replace", names);
+        Assert.Contains("Escape", names);
+    }
+
+    [Fact]
+    public async Task ScopeCompletion_ScriptHelperCheck_RanksFirst()
+    {
+        // Check(...) comes from `using static ScriptHelpers;`, which every script runs with.
+        const string code = """
+            var answer = 42;
+            Chec
+            """;
+
+        var completions = await Service.GetCompletionsAsync(code, code.Length, ExecutionLanguageMode.Statements);
+
+        Assert.NotEmpty(completions);
+        Assert.Equal("Check", completions[0].DisplayText);
+        Assert.Equal(CompletionItemKind.Method, completions[0].Kind);
     }
 }

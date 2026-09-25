@@ -27,16 +27,20 @@ internal static class Usage
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
+              --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
               --panel <tab>          bottom panel tab: results, terminal, problems, tests or debug
               --panel-height <px>    bottom panel height (default 280), e.g. 700 to see a whole visualizer
               --generate-tests       click Generate in the Test Cases panel (Blind 75 problems)
               --run-tests            click Run All in the Test Cases panel
               --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
+              --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
+                                     (the debugger's data tip when paused with --debug)
           notebook <n>           Notebook Studio with problem n's notebook.
               --run                  run all cells first
               --sidebar <view>       explorer, outline, variables or search
               --quick-open <mode>    files or commands
+              --quick-info <text>    rest the mouse on the first <text> in a cell and show its hover card
           hub                    The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned).
               --empty                no scripts or notebooks (first run)
               --templates            the template gallery instead of recent workspaces

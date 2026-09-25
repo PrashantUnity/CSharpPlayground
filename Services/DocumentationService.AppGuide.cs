@@ -115,7 +115,7 @@ numbers.Dump(""Number Powers Table"");"
                 new()
                 {
                     Heading = "Zone 3: Editor Area",
-                    Content = "The central canvas hosts the multi-tab bar (dirty status indicators, close buttons, tab switching), breadcrumbs trail, and the AvaloniaEdit syntax canvas with line numbers, code folding, and breakpoint gutter."
+                    Content = "The central canvas hosts the multi-tab bar (dirty status indicators, close buttons, tab switching), breadcrumbs trail, and the AvaloniaEdit syntax canvas with line numbers, code folding, and breakpoint gutter. Rest the pointer on any symbol (or press Ctrl+K Ctrl+I) to see its signature, where it's declared and its documentation."
                 },
                 new()
                 {

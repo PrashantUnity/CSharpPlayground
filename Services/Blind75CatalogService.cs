@@ -9,7 +9,14 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
 public static partial class Blind75CatalogService
 {
-    private static readonly Lazy<IReadOnlyList<BlindProblemItem>> _problems = new(() =>
+    private static readonly Lazy<IReadOnlyList<BlindProblemItem>> _problems = new(CreateAllProblems);
+
+    /// <summary>
+    /// The catalog as new objects. A view that keeps state on the items (solved and saved flags, the highlighted row,
+    /// generated test cases) builds its own copy, so views and tests never share it; <see cref="GetAllProblems"/> is
+    /// the process-wide copy, for reading the problems.
+    /// </summary>
+    public static IReadOnlyList<BlindProblemItem> CreateAllProblems()
     {
         var list = new List<BlindProblemItem>();
         list.AddRange(GetArraysAndHashingProblems());
@@ -35,7 +42,7 @@ public static partial class Blind75CatalogService
             }
         }
         return sorted;
-    });
+    }
 
     public static IReadOnlyList<BlindProblemItem> GetAllProblems() => _problems.Value;
 
