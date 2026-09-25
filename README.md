@@ -80,6 +80,8 @@ CSharpPlayground/
 │   └── MainWindow.axaml
 ├── Tests/                          # Comprehensive xUnit test suite (244 tests)
 │   └── CSharpEditorPlugin.Tests.csproj
+├── tools/UiSnapshots/              # Headless renderer: real views to PNG, for checking UI changes
+├── docs/                           # Developer guides (docs/headless-ui-snapshots.md)
 └── packaging/                      # macOS DMG & Windows MSIX/Inno packaging assets
 ```
 

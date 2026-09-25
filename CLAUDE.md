@@ -13,3 +13,6 @@ This project (`examples/CSharpEditorPlugin`) implements an authentic **VS Code-i
 3. **Keyboard Ergonomics**: Honor `Ctrl+B` (SideBar), `Ctrl+J` (Bottom Panel), `Ctrl+S` (Save), `F5` / `Ctrl+F5` / `Shift+F5`, `F10` / `F11`, `Ctrl+F` (Find), `Ctrl+Shift+E/F/D/M`.
 4. **Performance**: Zero heavy operations on the Avalonia UI thread. Roslyn compilation and evaluation must run on background threads with cancellation support.
 5. **Quality**: Maintain 0 warnings, 0 errors, and ensure all tests pass.
+
+## Seeing the UI
+To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: `docs/headless-ui-snapshots.md`.

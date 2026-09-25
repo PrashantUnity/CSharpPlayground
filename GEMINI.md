@@ -120,3 +120,7 @@ All contributors and agents must follow `.agents/rules/component_architecture_an
 - **Shared Styles**: Centralize styles in `Controls/SharedStudioStyles.axaml`. Never duplicate hundreds of lines in individual `<UserControl.Styles>`.
 - **100% Backward Compatibility**: All 237+ automated unit tests must continue to pass with 0 warnings and 0 errors.
 
+---
+
+## 7. Seeing the UI: Headless Snapshots
+To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: `docs/headless-ui-snapshots.md`.

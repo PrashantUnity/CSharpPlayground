@@ -12,7 +12,7 @@
     <Version>1.0.4</Version>
     <Company>Code Fry Dev</Company>
     <Description>Full-featured interactive C# Code Studio and Script Automation Workspace for FryPDF</Description>
-    <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**</DefaultItemExcludes>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- NuGet packaging -->
