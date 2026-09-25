@@ -182,6 +182,8 @@ public partial class CSharpCodeStudioViewModel
     public void InsertTemplate(CodeTemplate? template)
     {
         if (template == null) return;
+        // Notes that are all template (none typed yet) read better rendered.
+        if (string.IsNullOrWhiteSpace(Notes) && !string.IsNullOrWhiteSpace(template.Notes)) IsNotesPreviewMode = true;
         if (string.IsNullOrWhiteSpace(Code))
         {
             Code = template.InitialCode;

@@ -438,6 +438,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
             _currentVm.RequestReloadEditorText -= OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
+            _currentVm.RequestFocusNotes -= OnFocusNotes;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
@@ -456,6 +457,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestSyncBreakpoints += OnSyncBreakpoints;
             _currentVm.RequestReloadEditorText += OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument += OnSwitchTabDocument;
+            _currentVm.RequestFocusNotes += OnFocusNotes;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
             _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
@@ -491,6 +493,10 @@ public partial class CSharpCodeStudioView : UserControl
             }
         }
     }
+
+    // Edit was clicked in the Scratchpad: the notes editor has just been shown, so focus it once it's laid out.
+    private void OnFocusNotes() =>
+        Dispatcher.UIThread.Post(() => this.FindControl<TextBox>("NotesEditor")?.Focus(), DispatcherPriority.Loaded);
 
     private void OnSwitchTabDocument(StudioTabItemViewModel tab)
     {

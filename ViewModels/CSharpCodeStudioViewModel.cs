@@ -78,6 +78,26 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [ObservableProperty]
     private string _notes = string.Empty;
 
+    /// <summary>
+    /// True while the Scratchpad shows the notes rendered as markdown, false while they're being edited. A document's
+    /// notes open rendered (a Blind 75 problem's statement reads like a page); an empty scratchpad opens ready to type.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditingNotes))]
+    private bool _isNotesPreviewMode;
+
+    public bool IsEditingNotes => !IsNotesPreviewMode;
+
+    /// <summary>Raised when the user switches the notes to editing, so the view can put the cursor in them.</summary>
+    public event Action? RequestFocusNotes;
+
+    [RelayCommand]
+    private void ToggleNotesPreview()
+    {
+        IsNotesPreviewMode = !IsNotesPreviewMode;
+        if (IsEditingNotes) RequestFocusNotes?.Invoke();
+    }
+
     // ── VS Code Multi-Tab Document Strip ──
     public ObservableCollection<StudioTabItemViewModel> OpenTabs { get; } = new();
 
@@ -214,6 +234,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
 
         _code = script.Code;
         _notes = script.Notes;
+        _isNotesPreviewMode = !string.IsNullOrWhiteSpace(script.Notes);
         _selectedLanguageModeIndex = script.ExecutionMode switch
         {
             "Program" => 1,

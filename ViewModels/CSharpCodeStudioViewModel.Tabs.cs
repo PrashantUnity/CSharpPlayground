@@ -67,6 +67,7 @@ public partial class CSharpCodeStudioViewModel
         Script = tab.Document;
         Code = tab.Document.Code ?? string.Empty;
         Notes = tab.Document.Notes;
+        IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
         SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
         {
             "Program" => 1,

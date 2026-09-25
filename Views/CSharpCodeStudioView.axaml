@@ -305,21 +305,50 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Page 4: Scratchpad & Documentation Notes -->
+                        <!-- Page 4: Scratchpad & Documentation Notes: rendered markdown, or the markdown source while editing -->
                         <Grid RowDefinitions="Auto,*">
-                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="10,4">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Text="DOCUMENTATION &amp; NOTES" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Notes.Length, StringFormat='{}{0} chars'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="10,3,6,3">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="DOCUMENTATION &amp; NOTES" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Notes.Length, StringFormat='{}{0} chars'}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="8,0" />
+                                    <Button Grid.Column="2" Command="{Binding ToggleNotesPreviewCommand}"
+                                            Classes="snippet-action-btn" Height="22" MinHeight="0" Padding="7,0">
+                                        <Panel>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsNotesPreviewMode}"
+                                                        ToolTip.Tip="Edit the markdown">
+                                                <materialIcons:MaterialIcon Kind="PencilOutline" Width="12" Height="12" VerticalAlignment="Center" />
+                                                <TextBlock Text="Edit" FontSize="10.5" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsEditingNotes}"
+                                                        ToolTip.Tip="Show the notes rendered">
+                                                <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" VerticalAlignment="Center" />
+                                                <TextBlock Text="Done" FontSize="10.5" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Panel>
+                                    </Button>
                                 </Grid>
                             </Border>
 
-                            <TextBox Grid.Row="1" Text="{Binding Notes, Mode=TwoWay}"
+                            <ScrollViewer Grid.Row="1" IsVisible="{Binding IsNotesPreviewMode}"
+                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                          Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                                <Panel Margin="14,12">
+                                    <controls:MarkdownView Markdown="{Binding Notes}"
+                                                           FontSize="12.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <TextBlock Text="No notes yet. Click Edit to write requirements, plans or scratch work in markdown."
+                                               IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNullOrEmpty}}"
+                                               FontSize="11.5" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Panel>
+                            </ScrollViewer>
+
+                            <TextBox x:Name="NotesEditor" Grid.Row="1" IsVisible="{Binding IsEditingNotes}"
+                                     Text="{Binding Notes, Mode=TwoWay}"
                                      AcceptsReturn="True" AcceptsTab="True"
                                      FontFamily="Consolas, Menlo, Monaco, monospace" FontSize="12"
                                      Foreground="{DynamicResource M3OnSurfaceBrush}" Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                                      BorderThickness="0" Padding="10" TextWrapping="Wrap"
-                                     PlaceholderText="// Write requirements, scratchpad notes, or plans here..." />
+                                     PlaceholderText="// Write requirements, scratchpad notes, or plans here (markdown)..." />
                         </Grid>
 
                         <!-- Page 5: Problems & Roslyn Diagnostics -->
