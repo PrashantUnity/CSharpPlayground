@@ -121,7 +121,8 @@ public static partial class Blind75CatalogService
             Title = $"{problem.Number}. {problem.Title} (Notebook)"
         };
 
-        void Markdown(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Markdown, Source = source.Trim() });
+        // The notes open rendered; "MD" on a cell still shows its markdown source for editing.
+        void Markdown(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Markdown, Source = source.Trim(), IsMarkdownPreviewMode = true });
         void Code(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = source.Trim() });
 
         // 1. The problem, then how to think about it

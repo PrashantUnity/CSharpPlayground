@@ -170,7 +170,8 @@ public partial class DocumentationService
         notebook.Cells.Add(new NotebookCellItem
         {
             Type = CellType.Markdown,
-            Source = $"# 📘 {snippet.Title}\n\n{snippet.Description}\n\n*Created from C# Code Studio Documentation.*"
+            Source = $"# 📘 {snippet.Title}\n\n{snippet.Description}\n\n*Created from C# Code Studio Documentation.*",
+            IsMarkdownPreviewMode = true
         });
 
         notebook.Cells.Add(new NotebookCellItem

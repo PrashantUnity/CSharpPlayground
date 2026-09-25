@@ -266,6 +266,13 @@ public partial class NotebookTabViewModel : ObservableObject
     [RelayCommand]
     public async Task RunSingleCellAsync(NotebookCellViewModel cell)
     {
+        // Running a markdown cell renders it, as in Jupyter (Ctrl+Enter / Shift+Enter, Run All, Run Above).
+        if (cell.Type == CellType.Markdown)
+        {
+            cell.IsMarkdownPreviewMode = true;
+            return;
+        }
+
         if (cell.Type != CellType.Code || string.IsNullOrWhiteSpace(cell.Source))
         {
             return;
@@ -491,7 +498,11 @@ public partial class NotebookTabViewModel : ObservableObject
             for (int i = 0; i <= targetIndex; i++)
             {
                 var cell = Cells[i];
-                if (cell.Type == CellType.Code)
+                if (cell.Type == CellType.Markdown)
+                {
+                    cell.IsMarkdownPreviewMode = true;
+                }
+                else if (cell.Type == CellType.Code)
                 {
                     await RunSingleCellAsync(cell);
                     if (cell.HasError)
@@ -520,6 +531,12 @@ public partial class NotebookTabViewModel : ObservableObject
         {
             Kernel.HardReset();
             Variables.Clear();
+
+            // The whole notebook is being run, so show all of its notes rendered rather than as markdown source.
+            foreach (var markdown in Cells.Where(c => c.Type == CellType.Markdown))
+            {
+                markdown.IsMarkdownPreviewMode = true;
+            }
 
             foreach (var cell in Cells.Where(c => c.Type == CellType.Code))
             {
