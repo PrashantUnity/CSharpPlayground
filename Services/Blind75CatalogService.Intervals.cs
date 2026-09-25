@@ -79,7 +79,7 @@ public static partial class Blind75CatalogService
                         return merged.ToArray();
                     }
 
-                    Console.WriteLine(Judge.Format(InsertByMergingAgain(new[] { new[] { 1, 3 }, new[] { 6, 9 } }, new[] { 2, 5 })));   // [[1,5],[6,9]]
+                    Show(InsertByMergingAgain(new[] { new[] { 1, 3 }, new[] { 6, 9 } }, new[] { 2, 5 }));   // [[1,5],[6,9]]
                     """
                 },
                 new()
@@ -128,24 +128,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Swallows everything", Input = "intervals = [[2,3],[5,6]], newInterval = [1,10]", Expected = "[[1,10]]", Call = "sol.Insert(new[] { new[] { 2, 3 }, new[] { 5, 6 } }, new[] { 1, 10 })" },
                 new() { Name = "Already covered", Input = "intervals = [[1,10]], newInterval = [3,4]", Expected = "[[1,10]]", Call = "sol.Insert(new[] { new[] { 1, 10 } }, new[] { 3, 4 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random inputs vs merging again",
-                random =>
-                {
-                    var intervals = new List<int[]>();
-                    int at = random.Next(0, 3);
-                    for (int k = random.Next(0, 6); k > 0; k--)
-                    {
-                        int length = random.Next(0, 3);
-                        intervals.Add(new[] { at, at + length });
-                        at += length + random.Next(1, 4);
-                    }
-                    int start = random.Next(0, at + 2);
-                    return (intervals: intervals.ToArray(), newInterval: new[] { start, start + random.Next(0, 5) });
-                },
-                input => InsertByMergingAgain(input.intervals, input.newInterval),
-                input => sol.Insert(input.intervals, input.newInterval));
-            """,
             VisualizerKind = "Canvas",
             VisualizationDescription = """
             Example 2 on a timeline. The purple **new** row is `newInterval`, growing as it absorbs overlapping intervals
@@ -194,7 +176,7 @@ public static partial class Blind75CatalogService
                 i++;
             }
 
-            tracker.Step($"Done: {Judge.Format(result)}", done: Enumerable.Range(0, intervals.Length), result: result);
+            tracker.Step($"Done: {Format(result)}", done: Enumerable.Range(0, intervals.Length), result: result);
             Display.Visualizer(tracker);
             """
         },
@@ -279,7 +261,7 @@ public static partial class Blind75CatalogService
                         return list.OrderBy(i => i[0]).ToArray();
                     }
 
-                    Console.WriteLine(Judge.Format(MergeUntilStable(new[] { new[] { 1, 3 }, new[] { 2, 6 }, new[] { 8, 10 }, new[] { 15, 18 } })));   // [[1,6],[8,10],[15,18]]
+                    Show(MergeUntilStable(new[] { new[] { 1, 3 }, new[] { 2, 6 }, new[] { 8, 10 }, new[] { 15, 18 } }));   // [[1,6],[8,10],[15,18]]
                     """
                 },
                 new()
@@ -326,12 +308,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Nested inside a longer one", Input = "intervals = [[1,10],[2,3],[4,5]]", Expected = "[[1,10]]", Call = "sol.Merge(new[] { new[] { 1, 10 }, new[] { 2, 3 }, new[] { 4, 5 } })" },
                 new() { Name = "A chain that merges into one", Input = "intervals = [[1,4],[2,5],[4,7],[6,9]]", Expected = "[[1,9]]", Call = "sol.Merge(new[] { new[] { 1, 4 }, new[] { 2, 5 }, new[] { 4, 7 }, new[] { 6, 9 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random intervals vs merge-until-stable",
-                random => Enumerable.Range(0, random.Next(1, 9)).Select(_ => { int start = random.Next(0, 20); return new[] { start, start + random.Next(0, 6) }; }).ToArray(),
-                intervals => MergeUntilStable(intervals),
-                intervals => sol.Merge(intervals));
-            """,
             VisualizerKind = "Canvas",
             VisualizationDescription = """
             A timeline for `[[8,10],[1,3],[15,18],[2,6],[9,11]]`, unsorted on purpose. After sorting, the amber row is the
@@ -443,7 +419,7 @@ public static partial class Blind75CatalogService
                         return n - best;
                     }
 
-                    Console.WriteLine(Judge.Format(EraseOverlapIntervalsBruteForce(new[] { new[] { 1, 2 }, new[] { 2, 3 }, new[] { 3, 4 }, new[] { 1, 3 } })));   // 1
+                    Show(EraseOverlapIntervalsBruteForce(new[] { new[] { 1, 2 }, new[] { 2, 3 }, new[] { 3, 4 }, new[] { 1, 3 } }));   // 1
                     """
                 },
                 new()
@@ -468,7 +444,7 @@ public static partial class Blind75CatalogService
                         return sorted.Length - keep.Max();
                     }
 
-                    Console.WriteLine(Judge.Format(EraseOverlapIntervalsDp(new[] { new[] { 1, 2 }, new[] { 1, 2 }, new[] { 1, 2 } })));   // 2
+                    Show(EraseOverlapIntervalsDp(new[] { new[] { 1, 2 }, new[] { 1, 2 }, new[] { 1, 2 } }));   // 2
                     """
                 },
                 new()
@@ -511,16 +487,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Already disjoint", Input = "intervals = [[1,2],[3,4],[5,6]]", Expected = "0", Call = "sol.EraseOverlapIntervals(new[] { new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5, 6 } })" },
                 new() { Name = "One long interval blocks many", Input = "intervals = [[1,10],[2,3],[4,5],[6,7]]", Expected = "1", Call = "sol.EraseOverlapIntervals(new[] { new[] { 1, 10 }, new[] { 2, 3 }, new[] { 4, 5 }, new[] { 6, 7 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random intervals vs trying every subset",
-                random => Enumerable.Range(0, random.Next(1, 9)).Select(_ => { int start = random.Next(-5, 10); return new[] { start, start + random.Next(1, 6) }; }).ToArray(),
-                intervals => EraseOverlapIntervalsBruteForce(intervals),
-                intervals => sol.EraseOverlapIntervals(intervals));
-            judge.Agree("Random intervals vs the DP",
-                random => Enumerable.Range(0, random.Next(1, 30)).Select(_ => { int start = random.Next(-20, 40); return new[] { start, start + random.Next(1, 12) }; }).ToArray(),
-                intervals => EraseOverlapIntervalsDp(intervals),
-                intervals => sol.EraseOverlapIntervals(intervals));
-            """,
             VisualizerKind = "Canvas",
             VisualizationDescription = """
             `[[1,10],[2,3],[4,6],[5,7],[8,9]]` sorted by end. The dashed pink line is where the last kept interval ends:
@@ -627,7 +593,7 @@ public static partial class Blind75CatalogService
                         return true;
                     }
 
-                    Console.WriteLine(Judge.Format(CanAttendByComparingPairs(new[] { new[] { 0, 30 }, new[] { 5, 10 }, new[] { 15, 20 } })));   // false
+                    Show(CanAttendByComparingPairs(new[] { new[] { 0, 30 }, new[] { 5, 10 }, new[] { 15, 20 } }));   // false
                     """
                 },
                 new()
@@ -664,12 +630,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Clash hidden by the order", Input = "intervals = [[5,8],[1,6]]", Expected = "false", Call = "sol.CanAttendMeetings(new[] { new[] { 5, 8 }, new[] { 1, 6 } })" },
                 new() { Name = "One inside another", Input = "intervals = [[1,10],[2,3]]", Expected = "false", Call = "sol.CanAttendMeetings(new[] { new[] { 1, 10 }, new[] { 2, 3 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random meetings vs comparing every pair",
-                random => Enumerable.Range(0, random.Next(0, 6)).Select(_ => { int start = random.Next(0, 30); return new[] { start, start + random.Next(1, 6) }; }).ToArray(),
-                intervals => CanAttendByComparingPairs(intervals),
-                intervals => sol.CanAttendMeetings(intervals));
-            """,
             VisualizerKind = "Canvas",
             VisualizationDescription = """
             `[[9,10],[1,3],[4,6],[5,8]]` on a timeline, sorted by start. Each meeting is compared with the one before it:
@@ -768,7 +728,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MinMeetingRoomsByCounting(new[] { new[] { 0, 30 }, new[] { 5, 10 }, new[] { 15, 20 } })));   // 2
+                    Show(MinMeetingRoomsByCounting(new[] { new[] { 0, 30 }, new[] { 5, 10 }, new[] { 15, 20 } }));   // 2
                     """
                 },
                 new()
@@ -793,7 +753,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MinMeetingRoomsBySweep(new[] { new[] { 7, 10 }, new[] { 2, 4 } })));   // 1
+                    Show(MinMeetingRoomsBySweep(new[] { new[] { 7, 10 }, new[] { 2, 4 } }));   // 1
                     """
                 },
                 new()
@@ -833,16 +793,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "All at once", Input = "intervals = [[1,4],[2,5],[3,6]]", Expected = "3", Call = "sol.MinMeetingRooms(new[] { new[] { 1, 4 }, new[] { 2, 5 }, new[] { 3, 6 } })" },
                 new() { Name = "Rooms get reused", Input = "intervals = [[1,10],[2,7],[3,19],[8,12],[10,20],[11,30]]", Expected = "4", Call = "sol.MinMeetingRooms(new[] { new[] { 1, 10 }, new[] { 2, 7 }, new[] { 3, 19 }, new[] { 8, 12 }, new[] { 10, 20 }, new[] { 11, 30 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random meetings vs counting",
-                random => Enumerable.Range(0, random.Next(1, 10)).Select(_ => { int start = random.Next(0, 20); return new[] { start, start + random.Next(1, 8) }; }).ToArray(),
-                intervals => MinMeetingRoomsByCounting(intervals),
-                intervals => sol.MinMeetingRooms(intervals));
-            judge.Agree("Random meetings vs the two-pointer sweep",
-                random => Enumerable.Range(0, random.Next(1, 30)).Select(_ => { int start = random.Next(0, 50); return new[] { start, start + random.Next(1, 15) }; }).ToArray(),
-                intervals => MinMeetingRoomsBySweep(intervals),
-                intervals => sol.MinMeetingRooms(intervals));
-            """,
             VisualizerKind = "Canvas",
             VisualizationDescription = """
             `[[1,10],[2,7],[3,19],[8,12],[10,20],[11,30]]` sorted by start. The dashed line is the current start time;

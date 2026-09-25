@@ -107,7 +107,9 @@ public class NotebookExecutionKernel
             "PdfEditorApp.Plugins.CSharpEditor.Charting.Services",
             "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models",
             "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls",
-            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services"
+            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services",
+            // A static import: Check(...), Show(...) and Format(...) can be called without any setup.
+            "PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers"
         };
 
         return ScriptOptions.Default

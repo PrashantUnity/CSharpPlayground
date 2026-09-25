@@ -102,7 +102,7 @@ public class Blind75ProblemsTests
                     $"{problem.FullTitle}: an approach cell should show its answer on an example, but printed nothing:\n{FirstLines(cell.Source)}");
             }
             if (cell.Source.Trim() == problem.VisualizationCode.Trim()) visual = run;
-            if (cell.Source.Contains("var judge = new Judge();", StringComparison.Ordinal)) tests = run;
+            if (cell.Source.Contains("Check(\"", StringComparison.Ordinal)) tests = run;
         }
 
         Assert.NotNull(visual);

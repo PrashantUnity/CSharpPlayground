@@ -61,7 +61,7 @@ public static partial class Blind75CatalogService
                     Code = """
                     int ClimbRecursively(int n) => n <= 2 ? n : ClimbRecursively(n - 1) + ClimbRecursively(n - 2);
 
-                    Console.WriteLine(Judge.Format(ClimbRecursively(10)));   // 89
+                    Show(ClimbRecursively(10));   // 89
                     """
                 },
                 new()
@@ -82,7 +82,7 @@ public static partial class Blind75CatalogService
                         return ways[n];
                     }
 
-                    Console.WriteLine(Judge.Format(ClimbWithTable(5)));   // 8
+                    Show(ClimbWithTable(5));   // 8
                     """
                 },
                 new()
@@ -118,9 +118,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Ten stairs", Input = "n = 10", Expected = "89", Call = "sol.ClimbStairs(10)" },
                 new() { Name = "The largest n", Input = "n = 45", Expected = "1836311903", Call = "sol.ClimbStairs(45)" }
             },
-            StressTestCode = """
-            judge.Agree("Every n up to 25 vs the table", random => random.Next(1, 26), n => ClimbWithTable(n), n => sol.ClimbStairs(n));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Two players. First the plain recursion for 5 stairs: the call tree shows `ways(3)` and `ways(2)` being
@@ -217,7 +214,7 @@ public static partial class Blind75CatalogService
                     int RobRecursively(int[] nums, int i = 0) =>
                         i >= nums.Length ? 0 : Math.Max(nums[i] + RobRecursively(nums, i + 2), RobRecursively(nums, i + 1));
 
-                    Console.WriteLine(Judge.Format(RobRecursively(new[] { 2, 7, 9, 3, 1 })));   // 12
+                    Show(RobRecursively(new[] { 2, 7, 9, 3, 1 }));   // 12
                     """
                 },
                 new()
@@ -241,7 +238,7 @@ public static partial class Blind75CatalogService
                         return best[^1];
                     }
 
-                    Console.WriteLine(Judge.Format(RobWithTable(new[] { 1, 2, 3, 1 })));   // 4
+                    Show(RobWithTable(new[] { 1, 2, 3, 1 }));   // 4
                     """
                 },
                 new()
@@ -277,12 +274,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Empty houses", Input = "nums = [0,0,0]", Expected = "0", Call = "sol.Rob(new[] { 0, 0, 0 })" },
                 new() { Name = "The middle beats both ends", Input = "nums = [1,3,1]", Expected = "3", Call = "sol.Rob(new[] { 1, 3, 1 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random streets vs trying every choice",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(0, 20)).ToArray(),
-                nums => RobRecursively(nums),
-                nums => sol.Rob(nums));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 2. The top row is the money in each house and the bottom row the best total up to that house. Each
@@ -395,7 +386,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(RobCircleBruteForce(new[] { 2, 3, 2 })));   // 3
+                    Show(RobCircleBruteForce(new[] { 2, 3, 2 }));   // 3
                     """
                 },
                 new()
@@ -439,12 +430,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The ends touch", Input = "nums = [200,3,140,20,10]", Expected = "340", Call = "sol.Rob(new[] { 200, 3, 140, 20, 10 })" },
                 new() { Name = "The line answer is illegal", Input = "nums = [2,7,9,3,1]", Expected = "11", Call = "sol.Rob(new[] { 2, 7, 9, 3, 1 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random circles vs trying every set",
-                random => Enumerable.Range(0, random.Next(1, 11)).Select(_ => random.Next(0, 20)).ToArray(),
-                nums => RobCircleBruteForce(nums),
-                nums => sol.Rob(nums));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `[2,7,9,3,1]` in a circle. The middle row runs House Robber without the last house, the bottom row without
@@ -551,7 +536,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(LongestPalindromeBruteForce("babad")));   // "bab"
+                    Show(LongestPalindromeBruteForce("babad"));   // "bab"
                     """
                 },
                 new()
@@ -577,7 +562,7 @@ public static partial class Blind75CatalogService
                         return s.Substring(bestStart, bestLength);
                     }
 
-                    Console.WriteLine(Judge.Format(LongestPalindromeDp("cbbd")));   // "bb"
+                    Show(LongestPalindromeDp("cbbd"));   // "bb"
                     """
                 },
                 new()
@@ -621,12 +606,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "An even one inside", Input = "s = \"forgeeksskeegfor\"", Expected = "\"geeksskeeg\"", Call = "sol.LongestPalindrome(\"forgeeksskeegfor\")" },
                 new() { Name = "All the same letter", Input = "s = \"aaaa\"", Expected = "\"aaaa\"", Call = "sol.LongestPalindrome(\"aaaa\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs checking every substring",
-                random => new string(Enumerable.Range(0, random.Next(1, 12)).Select(_ => "ab"[random.Next(2)]).ToArray()),
-                s => LongestPalindromeBruteForce(s),
-                s => sol.LongestPalindrome(s));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `"xabacabay"`. Each step is one centre, on a letter or between two, and highlights the palindrome it grows to
@@ -731,7 +710,7 @@ public static partial class Blind75CatalogService
                         return count;
                     }
 
-                    Console.WriteLine(Judge.Format(CountPalindromesBruteForce("aaa")));   // 6
+                    Show(CountPalindromesBruteForce("aaa"));   // 6
                     """
                 },
                 new()
@@ -757,7 +736,7 @@ public static partial class Blind75CatalogService
                         return count;
                     }
 
-                    Console.WriteLine(Judge.Format(CountPalindromesDp("abc")));   // 3
+                    Show(CountPalindromesDp("abc"));   // 3
                     """
                 },
                 new()
@@ -795,12 +774,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "An odd palindrome", Input = "s = \"aba\"", Expected = "4", Call = "sol.CountSubstrings(\"aba\")" },
                 new() { Name = "Nested even ones", Input = "s = \"abccba\"", Expected = "9", Call = "sol.CountSubstrings(\"abccba\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs testing every substring",
-                random => new string(Enumerable.Range(0, random.Next(1, 12)).Select(_ => "ab"[random.Next(2)]).ToArray()),
-                s => CountPalindromesBruteForce(s),
-                s => sol.CountSubstrings(s));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `"aabaa"`. Every step is one palindrome found while growing from a centre (highlighted between `l` and `r`),
@@ -897,7 +870,7 @@ public static partial class Blind75CatalogService
                         return ways;
                     }
 
-                    Console.WriteLine(Judge.Format(DecodeRecursively("226")));   // 3
+                    Show(DecodeRecursively("226"));   // 3
                     """
                 },
                 new()
@@ -921,7 +894,7 @@ public static partial class Blind75CatalogService
                         return ways[s.Length];
                     }
 
-                    Console.WriteLine(Judge.Format(DecodeWithTable("11106")));   // 2
+                    Show(DecodeWithTable("11106"));   // 2
                     """
                 },
                 new()
@@ -965,12 +938,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A zero in the middle", Input = "s = \"11106\"", Expected = "2", Call = "sol.NumDecodings(\"11106\")" },
                 new() { Name = "Two zeros in a row", Input = "s = \"100\"", Expected = "0", Call = "sol.NumDecodings(\"100\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random digit strings vs trying every split",
-                random => new string(Enumerable.Range(0, random.Next(1, 11)).Select(_ => "01267"[random.Next(5)]).ToArray()),
-                s => DecodeRecursively(s),
-                s => sol.NumDecodings(s));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `"11106"`. The bottom row counts the decodings of each prefix (the first column is the empty prefix). Each
@@ -1093,7 +1060,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(CoinChangeRecursively(new[] { 1, 2, 5 }, 11)));   // 3
+                    Show(CoinChangeRecursively(new[] { 1, 2, 5 }, 11));   // 3
                     """
                 },
                 new()
@@ -1117,7 +1084,7 @@ public static partial class Blind75CatalogService
                         return amount == 0 ? count : -1;
                     }
 
-                    Console.WriteLine(Judge.Format(CoinChangeGreedy(new[] { 1, 3, 4 }, 6)));   // 3, but 3 + 3 needs only 2
+                    Show(CoinChangeGreedy(new[] { 1, 3, 4 }, 6));   // 3, but 3 + 3 needs only 2
                     """
                 },
                 new()
@@ -1148,7 +1115,7 @@ public static partial class Blind75CatalogService
                         return Fewest(amount);
                     }
 
-                    Console.WriteLine(Judge.Format(CoinChangeMemo(new[] { 1, 3, 4 }, 6)));   // 2
+                    Show(CoinChangeMemo(new[] { 1, 3, 4 }, 6));   // 2
                     """
                 },
                 new()
@@ -1189,12 +1156,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Two of one coin", Input = "coins = [2], amount = 4", Expected = "2", Call = "sol.CoinChange(new[] { 2 }, 4)" },
                 new() { Name = "A big amount", Input = "coins = [186,419,83,408], amount = 6249", Expected = "20", Call = "sol.CoinChange(new[] { 186, 419, 83, 408 }, 6249)" }
             },
-            StressTestCode = """
-            judge.Agree("Random coins and amounts vs memoized recursion",
-                random => (coins: Enumerable.Range(1, 12).OrderBy(_ => random.Next()).Take(random.Next(1, 4)).ToArray(), amount: random.Next(0, 40)),
-                input => CoinChangeMemo(input.coins, input.amount),
-                input => sol.CoinChange(input.coins, input.amount));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `coins = [1,3,4]`, `amount = 6`, the case where greedy fails. Cell `a` holds the fewest coins that make `a`
@@ -1299,7 +1260,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxProductBruteForce(new[] { 2, 3, -2, 4 })));   // 6
+                    Show(MaxProductBruteForce(new[] { 2, 3, -2, 4 }));   // 6
                     """
                 },
                 new()
@@ -1341,12 +1302,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "After a zero", Input = "nums = [0,2]", Expected = "2", Call = "sol.MaxProduct(new[] { 0, 2 })" },
                 new() { Name = "Skip the first negative", Input = "nums = [2,-5,-2,-4,3]", Expected = "24", Call = "sol.MaxProduct(new[] { 2, -5, -2, -4, 3 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs every subarray",
-                random => Enumerable.Range(0, random.Next(1, 10)).Select(_ => random.Next(-4, 5)).ToArray(),
-                nums => MaxProductBruteForce(nums),
-                nums => sol.MaxProduct(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `[2,3,-2,4,-1]`. At each index, `maxHere` and `minHere` are the largest and smallest products of a subarray
@@ -1436,7 +1391,7 @@ public static partial class Blind75CatalogService
                     bool WordBreakRecursively(string s, IList<string> wordDict) =>
                         s.Length == 0 || wordDict.Any(word => s.StartsWith(word) && WordBreakRecursively(s[word.Length..], wordDict));
 
-                    Console.WriteLine(Judge.Format(WordBreakRecursively("catsandog", new[] { "cats", "dog", "sand", "and", "cat" })));   // false
+                    Show(WordBreakRecursively("catsandog", new[] { "cats", "dog", "sand", "and", "cat" }));   // false
                     """
                 },
                 new()
@@ -1477,16 +1432,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Mixing word lengths", Input = "s = \"aaaaaaa\", wordDict = [\"aaaa\",\"aaa\"]", Expected = "true", Call = "sol.WordBreak(\"aaaaaaa\", new[] { \"aaaa\", \"aaa\" })" },
                 new() { Name = "Longest word first fails", Input = "s = \"cars\", wordDict = [\"car\",\"ca\",\"rs\"]", Expected = "true", Call = "sol.WordBreak(\"cars\", new[] { \"car\", \"ca\", \"rs\" })" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings and dictionaries vs recursion",
-                random =>
-                {
-                    string Letters(int length) => new string(Enumerable.Range(0, length).Select(_ => "ab"[random.Next(2)]).ToArray());
-                    return (s: Letters(random.Next(1, 10)), words: Enumerable.Range(0, random.Next(1, 4)).Select(_ => Letters(random.Next(1, 4))).Distinct().ToArray());
-                },
-                input => WordBreakRecursively(input.s, input.words),
-                input => sol.WordBreak(input.s, input.words));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 3, `"catsandog"`. The bottom row marks which prefixes can be split into words (the first column is the
@@ -1594,7 +1539,7 @@ public static partial class Blind75CatalogService
                         return Math.Max(skip, take);
                     }
 
-                    Console.WriteLine(Judge.Format(LisBruteForce(new[] { 10, 9, 2, 5, 3, 7, 101, 18 })));   // 4
+                    Show(LisBruteForce(new[] { 10, 9, 2, 5, 3, 7, 101, 18 }));   // 4
                     """
                 },
                 new()
@@ -1618,7 +1563,7 @@ public static partial class Blind75CatalogService
                         return longest.Max();
                     }
 
-                    Console.WriteLine(Judge.Format(LisQuadratic(new[] { 0, 1, 0, 3, 2, 3 })));   // 4
+                    Show(LisQuadratic(new[] { 0, 1, 0, 3, 2, 3 }));   // 4
                     """
                 },
                 new()
@@ -1660,12 +1605,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Decreasing", Input = "nums = [4,3,2,1]", Expected = "1", Call = "sol.LengthOfLIS(new[] { 4, 3, 2, 1 })" },
                 new() { Name = "A later, lower start wins", Input = "nums = [3,5,6,2,5,4,19,5,6,7,12]", Expected = "6", Call = "sol.LengthOfLIS(new[] { 3, 5, 6, 2, 5, 4, 19, 5, 6, 7, 12 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs the O(n²) table",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(-5, 10)).ToArray(),
-                nums => LisQuadratic(nums),
-                nums => sol.LengthOfLIS(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 1. `i` walks the numbers and `tails` (underneath) holds the smallest possible tail for each length.

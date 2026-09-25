@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
@@ -12,7 +13,7 @@ using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
-/// <summary>The pieces the Blind 75 problems are built from: Judge, value watches, array/bar steps, interval and trie trackers.</summary>
+/// <summary>The pieces the Blind 75 problems are built from: Check/Show/Format, value watches, array/bar steps, interval and trie trackers.</summary>
 public class LearningToolkitTests
 {
     private sealed class ListNode
@@ -108,24 +109,20 @@ public class LearningToolkitTests
     }
 
     [Fact]
-    public void JudgeCase_PrintsOneVerdictLinePerCase()
+    public void Check_PrintsOneVerdictLinePerCase()
     {
-        var judge = new Judge();
+        TreeNode? noTree = null;
         string output = CaptureConsole(() =>
         {
-            judge.Case("Example 1", () => new[] { 0, 1 }, "[0,1]");
-            judge.Case("Example 2", () => new[] { 2, 1 }, "[1,2]", anyOrder: true);
-            judge.Case("Wrong", () => 3, "4");
-            judge.Case("Throws", () => Array.Empty<int>()[0], "0");
-            judge.Summary();
+            Assert.True(ScriptHelpers.Check("Example 1", new[] { 0, 1 }, "[0,1]"));
+            Assert.True(ScriptHelpers.Check("Example 2", new[] { 2, 1 }, "[1,2]", anyOrder: true));
+            Assert.False(ScriptHelpers.Check("Wrong", 3, "4"));
+            Assert.True(ScriptHelpers.Check("Empty tree", noTree, "[]"));
         });
 
-        Assert.Equal(2, judge.Passed);
-        Assert.Equal(2, judge.Failed);
         Assert.Contains("✅ Example 1 → [0,1]", output);
         Assert.Contains("❌ Wrong → got 3 · expected 4", output);
-        Assert.Contains("❌ Throws → threw IndexOutOfRangeException", output);
-        Assert.Contains("🏁 2/4 passed, 2 failed", output);
+        Assert.Contains("✅ Empty tree → []", output);
 
         Assert.True(Judge.Verdict(output, "Example 1"));
         Assert.True(Judge.Verdict(output, "Example 2"));
@@ -134,27 +131,38 @@ public class LearningToolkitTests
     }
 
     [Fact]
+    public void ShowAndFormat_WriteValuesTheWayLeetCodeDoes()
+    {
+        string output = CaptureConsole(() => ScriptHelpers.Show(new[] { new[] { 1, 6 }, new[] { 8, 10 } }));
+        Assert.Equal("[[1,6],[8,10]]", output.Trim());
+        Assert.Equal("[1,2,3]", ScriptHelpers.Format(new ListNode(1, new ListNode(2, new ListNode(3)))));
+        ListNode? empty = null;
+        Assert.Equal("[]", ScriptHelpers.Format(empty));
+    }
+
+    [Fact]
+    public async Task Check_Show_AndFormat_NeedNoSetupInAScript()
+    {
+        var outputs = new List<RichCellOutput>();
+        var result = await new NotebookExecutionKernel().ExecuteCellAsync("""
+            Check("Adds up", 1 + 1, "2");
+            Show(new[] { 3, 4 });
+            Console.WriteLine(Format("bab"));
+            """, onRichOutput: outputs.Add);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.Contains("✅ Adds up → 2", result.ConsoleOutput);
+        Assert.Contains("[3,4]", result.ConsoleOutput);
+        Assert.Contains("\"bab\"", result.ConsoleOutput);
+        Assert.Empty(new RoslynCompilerService().CheckDiagnostics("Check(\"x\", 1, \"1\");\nShow(2);", ExecutionLanguageMode.Statements));
+    }
+
+    [Fact]
     public void JudgeVerdict_UsesTheLastLineForACase()
     {
         const string output = "❌ Example 1 → got 1 · expected 2\n✅ Example 1 → 2\n";
         Assert.True(Judge.Verdict(output, "Example 1"));
         Assert.Equal("✅ Example 1 → 2", Judge.LineFor(output, "Example 1"));
-    }
-
-    [Fact]
-    public void JudgeAgree_ReportsTheFirstDisagreement()
-    {
-        var judge = new Judge();
-        string output = CaptureConsole(() =>
-        {
-            judge.Agree("Doubles", random => random.Next(0, 10), x => x * 2, x => x + x);
-            judge.Agree("Broken", random => random.Next(0, 10), x => x * 2, x => x + 1);
-        });
-
-        Assert.Contains("✅ Doubles → 200 random inputs agree with the reference", output);
-        Assert.Contains("❌ Broken → input", output);
-        Assert.Equal(1, judge.Passed);
-        Assert.Equal(1, judge.Failed);
     }
 
     [Fact]

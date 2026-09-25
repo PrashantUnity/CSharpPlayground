@@ -23,7 +23,7 @@ public partial class DocumentationService
                 CreateMatrixAndBoardArticle(),
                 CreateTreesAndGraphsArticle(),
                 CreateLinkedListsAndRecursionArticle(),
-                CreateTimelinesTriesAndJudgeArticle(),
+                CreateTimelinesTriesAndChecksArticle(),
                 CreateCanvasRecorderArticle(),
                 CreateConvenienceHelpersArticle()
             }
@@ -493,16 +493,16 @@ Display.Visualizer(calls);"
         };
     }
 
-    private DocArticle CreateTimelinesTriesAndJudgeArticle()
+    private DocArticle CreateTimelinesTriesAndChecksArticle()
     {
         return new DocArticle
         {
-            Id = "timelines_tries_and_judge",
+            Id = "timelines_tries_and_checks",
             Title = "Timelines, Tries & Checking Answers",
             Subtitle = "Draw intervals and tries, watch plain variables, and check solutions the way LeetCode does.",
             ReadingTime = "5 min read",
-            Summary = "IntervalTracker lays intervals on a shared timeline, TrieTracker draws a trie as a tree of letters, Watch(() => value) shows any variable at every step, bar steps take named pointers and a shaded block, and Judge checks answers with one ✅/❌ line per case.",
-            Keywords = new List<string> { "interval", "timeline", "merge", "meeting rooms", "trie", "prefix tree", "watch", "variable", "bars", "pointers", "water", "judge", "test", "stress test", "leetcode" },
+            Summary = "IntervalTracker lays intervals on a shared timeline, TrieTracker draws a trie as a tree of letters, Watch(() => value) shows any variable at every step, bar steps take named pointers and a shaded block, and Check(...) tests an answer with one ✅/❌ line per case.",
+            Keywords = new List<string> { "interval", "timeline", "merge", "meeting rooms", "trie", "prefix tree", "watch", "variable", "bars", "pointers", "water", "check", "show", "test", "leetcode" },
             Sections = new List<DocSection>
             {
                 new()
@@ -533,8 +533,8 @@ Display.Visualizer(calls);"
                 },
                 new()
                 {
-                    Heading = "Checking Answers with Judge",
-                    Content = "var judge = new Judge(); judge.Case(\"Example 1\", () => sol.TwoSum(nums, 9), \"[0,1]\") runs the call and compares it with the answer written the way LeetCode prints it: lists as [0,1], strings quoted, true/false, linked lists as [1,2,3] and trees in level order. anyOrder: true accepts any order. judge.Agree(...) is a stress test: it runs random inputs through a trusted brute force and your solution and reports the first input where they differ.",
+                    Heading = "Checking Answers with Check",
+                    Content = "Check(\"Example 1\", sol.TwoSum(nums, 9), \"[0,1]\") compares your answer with the expected one written the way LeetCode prints it (lists as [0,1], strings quoted, true/false, linked lists as [1,2,3], trees in level order) and prints ✅ or ❌ with both values. Add anyOrder: true when the order of the items doesn't matter. Show(value) prints a value in the same style and Format(value) gives it as text. All three work in any script or notebook cell without setup, and the Code Studio Test Cases panel reads the ✅/❌ lines.",
                     CalloutType = DocCalloutType.Info,
                     CalloutText = "Each case prints a ✅ or ❌ line; the Code Studio Test Cases panel reads that line, so a case passes only when its own answer matches."
                 }
@@ -564,10 +564,10 @@ Display.Visualizer(calls);"
                 },
                 new()
                 {
-                    MethodName = "judge.Case",
+                    MethodName = "Check",
                     ReturnType = "bool",
-                    Parameters = "string name, Func<T> run, string expected, bool anyOrder = false",
-                    Description = "Runs one case and prints ✅ or ❌ with the difference."
+                    Parameters = "string name, T answer, string expected, bool anyOrder = false",
+                    Description = "Prints ✅ when the answer matches the LeetCode-style expected text, ❌ with both values otherwise."
                 }
             },
             CodeSnippets = new List<DocCodeSnippet>
@@ -651,7 +651,7 @@ Display.Visualizer(bars);"
                 },
                 new()
                 {
-                    Id = "snip_judge_cases",
+                    Id = "snip_check_answers",
                     Title = "Check the Answers, Then Watch It Run",
                     Description = "One ✅/❌ line per case, then the same algorithm drawn step by step.",
                     Language = "csharp",
@@ -667,10 +667,9 @@ Display.Visualizer(bars);"
     return Array.Empty<int>();
 }
 
-var judge = new Judge();
-judge.Case(""Example 1"", () => TwoSum(new[] { 2, 7, 11, 15 }, 9), ""[0,1]"");
-judge.Case(""Any order"", () => TwoSum(new[] { 3, 2, 4 }, 6), ""[2,1]"", anyOrder: true);
-judge.Summary();
+Check(""Example 1"", TwoSum(new[] { 2, 7, 11, 15 }, 9), ""[0,1]"");
+Check(""Any order"", TwoSum(new[] { 3, 2, 4 }, 6), ""[2,1]"", anyOrder: true);
+Show(TwoSum(new[] { 3, 3 }, 6));   // [0,1]
 
 // The same idea, recorded step by step
 var nums = new[] { 3, 8, 2, 7 };

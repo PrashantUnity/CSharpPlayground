@@ -68,7 +68,7 @@ public static partial class Blind75CatalogService
                     Code = """
                     int UniquePathsRecursively(int m, int n) => m == 1 || n == 1 ? 1 : UniquePathsRecursively(m - 1, n) + UniquePathsRecursively(m, n - 1);
 
-                    Console.WriteLine(Judge.Format(UniquePathsRecursively(3, 7)));   // 28
+                    Show(UniquePathsRecursively(3, 7));   // 28
                     """
                 },
                 new()
@@ -89,7 +89,7 @@ public static partial class Blind75CatalogService
                         return paths[m - 1, n - 1];
                     }
 
-                    Console.WriteLine(Judge.Format(UniquePathsTable(3, 2)));   // 3
+                    Show(UniquePathsTable(3, 2));   // 3
                     """
                 },
                 new()
@@ -107,7 +107,7 @@ public static partial class Blind75CatalogService
                         return (int)paths;
                     }
 
-                    Console.WriteLine(Judge.Format(UniquePathsByCounting(10, 10)));   // 48620
+                    Show(UniquePathsByCounting(10, 10));   // 48620
                     """
                 },
                 new()
@@ -145,16 +145,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A square", Input = "m = 3, n = 3", Expected = "6", Call = "sol.UniquePaths(3, 3)" },
                 new() { Name = "A large grid", Input = "m = 23, n = 12", Expected = "193536720", Call = "sol.UniquePaths(23, 12)" }
             },
-            StressTestCode = """
-            judge.Agree("Random grids vs the full table",
-                random => (m: random.Next(1, 15), n: random.Next(1, 15)),
-                size => UniquePathsTable(size.m, size.n),
-                size => sol.UniquePaths(size.m, size.n));
-            judge.Agree("Random grids vs counting orders",
-                random => (m: random.Next(1, 15), n: random.Next(1, 15)),
-                size => UniquePathsByCounting(size.m, size.n),
-                size => sol.UniquePaths(size.m, size.n));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1's 3 × 7 grid. The top row and the left column are 1 (only one way along an edge). Every other cell
@@ -250,7 +240,7 @@ public static partial class Blind75CatalogService
                         return Math.Max(LcsRecursively(a, b, i - 1, j), LcsRecursively(a, b, i, j - 1));
                     }
 
-                    Console.WriteLine(Judge.Format(LcsRecursively("abcde", "ace", 5, 3)));   // 3
+                    Show(LcsRecursively("abcde", "ace", 5, 3));   // 3
                     """
                 },
                 new()
@@ -292,16 +282,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Only one shared letter", Input = "text1 = \"bsbininm\", text2 = \"jmjkbkjkv\"", Expected = "1", Call = "sol.LongestCommonSubsequence(\"bsbininm\", \"jmjkbkjkv\")" },
                 new() { Name = "Letters spread apart", Input = "text1 = \"oxcpqrsvwf\", text2 = \"shmtulqrypy\"", Expected = "2", Call = "sol.LongestCommonSubsequence(\"oxcpqrsvwf\", \"shmtulqrypy\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs recursion",
-                random =>
-                {
-                    string Letters() => new string(Enumerable.Range(0, random.Next(1, 7)).Select(_ => "abc"[random.Next(3)]).ToArray());
-                    return (a: Letters(), b: Letters());
-                },
-                input => LcsRecursively(input.a, input.b, input.a.Length, input.b.Length),
-                input => sol.LongestCommonSubsequence(input.a, input.b));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1: rows are the prefixes of `abcde`, columns the prefixes of `ace` (∅ is the empty prefix). A cell whose
@@ -412,7 +392,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxSubArrayBruteForce(new[] { -2, 1, -3, 4, -1, 2, 1, -5, 4 })));   // 6
+                    Show(MaxSubArrayBruteForce(new[] { -2, 1, -3, 4, -1, 2, 1, -5, 4 }));   // 6
                     """
                 },
                 new()
@@ -434,7 +414,7 @@ public static partial class Blind75CatalogService
                     }
 
                     var example = new[] { 5, 4, -1, 7, 8 };
-                    Console.WriteLine(Judge.Format(MaxSubArrayDivide(example, 0, example.Length - 1)));   // 23
+                    Show(MaxSubArrayDivide(example, 0, example.Length - 1));   // 23
                     """
                 },
                 new()
@@ -476,16 +456,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Ties", Input = "nums = [1,-1,1]", Expected = "1", Call = "sol.MaxSubArray(new[] { 1, -1, 1 })" },
                 new() { Name = "Restart after a deep drop", Input = "nums = [8,-19,5,-4,20]", Expected = "21", Call = "sol.MaxSubArray(new[] { 8, -19, 5, -4, 20 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs every start",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(-10, 11)).ToArray(),
-                nums => MaxSubArrayBruteForce(nums),
-                nums => sol.MaxSubArray(nums));
-            judge.Agree("Random arrays vs divide and conquer",
-                random => Enumerable.Range(0, random.Next(1, 30)).Select(_ => random.Next(-10, 11)).ToArray(),
-                nums => MaxSubArrayDivide(nums, 0, nums.Length - 1),
-                nums => sol.MaxSubArray(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 1. The highlighted cells are the current run, the best subarray ending at `i`. When the run's sum would
@@ -579,7 +549,7 @@ public static partial class Blind75CatalogService
                         return false;
                     }
 
-                    Console.WriteLine(Judge.Format(CanJumpRecursively(new[] { 2, 3, 1, 1, 4 })));   // true
+                    Show(CanJumpRecursively(new[] { 2, 3, 1, 1, 4 }));   // true
                     """
                 },
                 new()
@@ -601,7 +571,7 @@ public static partial class Blind75CatalogService
                         return good[0];
                     }
 
-                    Console.WriteLine(Judge.Format(CanJumpDp(new[] { 3, 2, 1, 0, 4 })));   // false
+                    Show(CanJumpDp(new[] { 3, 2, 1, 0, 4 }));   // false
                     """
                 },
                 new()
@@ -621,7 +591,7 @@ public static partial class Blind75CatalogService
                         return goal == 0;
                     }
 
-                    Console.WriteLine(Judge.Format(CanJumpBackwards(new[] { 2, 3, 1, 1, 4 })));   // true
+                    Show(CanJumpBackwards(new[] { 2, 3, 1, 1, 4 }));   // true
                     """
                 },
                 new()
@@ -663,16 +633,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A zero blocks the way", Input = "nums = [1,1,0,1]", Expected = "false", Call = "sol.CanJump(new[] { 1, 1, 0, 1 })" },
                 new() { Name = "The longest jump isn't best", Input = "nums = [3,0,8,2,0,0,1]", Expected = "true", Call = "sol.CanJump(new[] { 3, 0, 8, 2, 0, 0, 1 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs the DP table",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(0, 4)).ToArray(),
-                nums => CanJumpDp(nums),
-                nums => sol.CanJump(nums));
-            judge.Agree("Random arrays vs moving the goal",
-                random => Enumerable.Range(0, random.Next(1, 30)).Select(_ => random.Next(0, 4)).ToArray(),
-                nums => CanJumpBackwards(nums),
-                nums => sol.CanJump(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 2, `[3,2,1,0,4]`. The highlighted cells are everything reachable so far, up to `farthest`. Each index

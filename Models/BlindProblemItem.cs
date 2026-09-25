@@ -38,14 +38,11 @@ public partial class BlindProblemItem : ObservableObject
     /// <summary>Types and helpers every code cell shares (ListNode, TreeNode, builders), defined once before the rest.</summary>
     public string SupportCode { get; init; } = string.Empty;
 
-    /// <summary>The examples from the statement, checked by <see cref="Services.Judge"/> in the script and the notebook.</summary>
+    /// <summary>The examples from the statement, one <c>Check(...)</c> line each in the script and the notebook.</summary>
     public List<BlindTest> Tests { get; init; } = new();
 
     /// <summary>Edge cases (empty input, duplicates, negatives...) revealed by "Generate test data" and always checked.</summary>
     public List<BlindTest> ExtraTests { get; init; } = new();
-
-    /// <summary>Notebook only: extra checks that can use the approaches, e.g. judge.Agree(...) against the brute force.</summary>
-    public string StressTestCode { get; init; } = string.Empty;
 
     /// <summary>
     /// Helpers the test calls need that depend on the solution (e.g. replaying LeetCode's ["Trie","insert",...] operation

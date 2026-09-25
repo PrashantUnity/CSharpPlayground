@@ -82,7 +82,7 @@ public static partial class Blind75CatalogService
 
                     var image = new[] { new[] { 1, 2, 3 }, new[] { 4, 5, 6 }, new[] { 7, 8, 9 } };
                     RotateWithCopy(image);
-                    Console.WriteLine(Judge.Format(image));   // [[7,4,1],[8,5,2],[9,6,3]]
+                    Show(image);   // [[7,4,1],[8,5,2],[9,6,3]]
                     """
                 },
                 new()
@@ -126,16 +126,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Two by two", Input = "matrix = [[1,2],[3,4]]", Expected = "[[3,1],[4,2]]", Call = "Rotated(new[] { new[] { 1, 2 }, new[] { 3, 4 } })" },
                 new() { Name = "Negative values", Input = "matrix = [[-1,-2],[-3,-4]]", Expected = "[[-3,-1],[-4,-2]]", Call = "Rotated(new[] { new[] { -1, -2 }, new[] { -3, -4 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random squares vs copying",
-                random =>
-                {
-                    int n = random.Next(1, 6);
-                    return Enumerable.Range(0, n).Select(_ => Enumerable.Range(0, n).Select(_ => random.Next(-9, 10)).ToArray()).ToArray();
-                },
-                matrix => { var copy = matrix.Select(row => row.ToArray()).ToArray(); RotateWithCopy(copy); return copy; },
-                matrix => { var copy = matrix.Select(row => row.ToArray()).ToArray(); sol.Rotate(copy); return copy; });
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1. First the transpose swaps each pair across the main diagonal (the two cells being swapped light
@@ -147,15 +137,15 @@ public static partial class Blind75CatalogService
             int n = matrix.Length;
             var grid = MatrixTracker.Create(matrix, "48. Rotate Image: transpose, then reverse each row",
                 new MatrixParseOptions { StateClassifier = _ => GridCellState.Default });
-            void Show(int r, int c) => grid.SetCell(r, c, val: matrix[r][c].ToString());
+            void Redraw(int r, int c) => grid.SetCell(r, c, val: matrix[r][c].ToString());
             void Clear() { for (int r = 0; r < n; r++) for (int c = 0; c < n; c++) grid.SetCell(r, c, state: GridCellState.Default); }
 
             for (int r = 0; r < n; r++)
                 for (int c = r + 1; c < n; c++)
                 {
                     (matrix[r][c], matrix[c][r]) = (matrix[c][r], matrix[r][c]);
-                    Show(r, c);
-                    Show(c, r);
+                    Redraw(r, c);
+                    Redraw(c, r);
                     grid.SetCell(r, c, state: GridCellState.Current);
                     grid.SetCell(c, r, state: GridCellState.Current);
                     grid.Snapshot($"Transpose: swap ({r},{c}) and ({c},{r}) across the diagonal");
@@ -168,14 +158,14 @@ public static partial class Blind75CatalogService
                 Array.Reverse(matrix[r]);
                 for (int c = 0; c < n; c++)
                 {
-                    Show(r, c);
+                    Redraw(r, c);
                     grid.SetCell(r, c, state: GridCellState.Visited);
                 }
                 grid.Snapshot($"Reverse row {r}: [{string.Join(",", matrix[r])}]");
                 Clear();
             }
 
-            grid.Snapshot($"Rotated 90° clockwise: {Judge.Format(matrix)}");
+            grid.Snapshot($"Rotated 90° clockwise: {Format(matrix)}");
             Display.Visualizer(grid);
             """
         },
@@ -254,7 +244,7 @@ public static partial class Blind75CatalogService
                         return order;
                     }
 
-                    Console.WriteLine(Judge.Format(SpiralByTurning(new[] { new[] { 1, 2, 3 }, new[] { 4, 5, 6 }, new[] { 7, 8, 9 } })));   // [1,2,3,6,9,8,7,4,5]
+                    Show(SpiralByTurning(new[] { new[] { 1, 2, 3 }, new[] { 4, 5, 6 }, new[] { 7, 8, 9 } }));   // [1,2,3,6,9,8,7,4,5]
                     """
                 },
                 new()
@@ -302,16 +292,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A single column", Input = "matrix = [[1],[2],[3]]", Expected = "[1,2,3]", Call = "sol.SpiralOrder(new[] { new[] { 1 }, new[] { 2 }, new[] { 3 } })" },
                 new() { Name = "Four by four", Input = "matrix = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]]", Expected = "[1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10]", Call = "sol.SpiralOrder(new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6, 7, 8 }, new[] { 9, 10, 11, 12 }, new[] { 13, 14, 15, 16 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random shapes vs turning at walls",
-                random =>
-                {
-                    int rows = random.Next(1, 6), cols = random.Next(1, 6);
-                    return Enumerable.Range(0, rows).Select(r => Enumerable.Range(0, cols).Select(c => r * cols + c).ToArray()).ToArray();
-                },
-                matrix => (object)SpiralByTurning(matrix),
-                matrix => sol.SpiralOrder(matrix));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 2 (3 × 4). The walk reads the top row, the right column, the bottom row and the left column of the
@@ -346,7 +326,7 @@ public static partial class Blind75CatalogService
                 left++;
             }
 
-            grid.Snapshot($"The walls have crossed: {Judge.Format(order)}");
+            grid.Snapshot($"The walls have crossed: {Format(order)}");
             Display.Visualizer(grid);
             """
         },
@@ -416,7 +396,7 @@ public static partial class Blind75CatalogService
 
                     var example = new[] { new[] { 1, 1, 1 }, new[] { 1, 0, 1 }, new[] { 1, 1, 1 } };
                     SetZeroesWithSets(example);
-                    Console.WriteLine(Judge.Format(example));   // [[1,0,1],[0,0,0],[1,0,1]]
+                    Show(example);   // [[1,0,1],[0,0,0],[1,0,1]]
                     """
                 },
                 new()
@@ -471,16 +451,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A zero in a single column", Input = "matrix = [[1],[0]]", Expected = "[[0],[0]]", Call = "Zeroed(new[] { new[] { 1 }, new[] { 0 } })" },
                 new() { Name = "Only the first row has a zero", Input = "matrix = [[1,0,3],[4,5,6]]", Expected = "[[0,0,0],[4,0,6]]", Call = "Zeroed(new[] { new[] { 1, 0, 3 }, new[] { 4, 5, 6 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random matrices vs remembering sets",
-                random =>
-                {
-                    int rows = random.Next(1, 5), cols = random.Next(1, 5);
-                    return Enumerable.Range(0, rows).Select(_ => Enumerable.Range(0, cols).Select(_ => random.Next(4) == 0 ? 0 : random.Next(1, 9)).ToArray()).ToArray();
-                },
-                matrix => { var copy = matrix.Select(row => row.ToArray()).ToArray(); SetZeroesWithSets(copy); return copy; },
-                matrix => { var copy = matrix.Select(row => row.ToArray()).ToArray(); sol.SetZeroes(copy); return copy; });
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `[[1,1,1,1],[1,0,1,1],[1,1,1,0]]`. The inner zeros are found and their row and column are marked in column 0
@@ -492,7 +462,7 @@ public static partial class Blind75CatalogService
             int rows = matrix.Length, cols = matrix[0].Length;
             var grid = MatrixTracker.Create(matrix, "73. Set Matrix Zeroes: flags in the first row and column",
                 new MatrixParseOptions { StateClassifier = _ => GridCellState.Default });
-            void Show(int r, int c, GridCellState state) => grid.SetCell(r, c, val: matrix[r][c].ToString(), state: state);
+            void Redraw(int r, int c, GridCellState state) => grid.SetCell(r, c, val: matrix[r][c].ToString(), state: state);
 
             bool firstRowZero = matrix[0].Contains(0);
             bool firstColZero = matrix.Any(row => row[0] == 0);
@@ -503,9 +473,9 @@ public static partial class Blind75CatalogService
                     if (matrix[r][c] == 0)
                     {
                         matrix[r][0] = matrix[0][c] = 0;
-                        Show(r, c, GridCellState.Target);
-                        Show(r, 0, GridCellState.Candidate);
-                        Show(0, c, GridCellState.Candidate);
+                        Redraw(r, c, GridCellState.Target);
+                        Redraw(r, 0, GridCellState.Candidate);
+                        Redraw(0, c, GridCellState.Candidate);
                         grid.Snapshot($"A zero at ({r},{c}): flag row {r} in column 0 and column {c} in row 0");
                         grid.SetCell(r, c, state: GridCellState.Default);
                     }
@@ -515,15 +485,15 @@ public static partial class Blind75CatalogService
                     if ((matrix[r][0] == 0 || matrix[0][c] == 0) && matrix[r][c] != 0)
                     {
                         matrix[r][c] = 0;
-                        Show(r, c, GridCellState.Visited);
+                        Redraw(r, c, GridCellState.Visited);
                         grid.Snapshot($"({r},{c}) sits in a flagged {(matrix[r][0] == 0 ? $"row {r}" : $"column {c}")}: clear it");
                     }
 
-            if (firstRowZero) { Array.Fill(matrix[0], 0); for (int c = 0; c < cols; c++) Show(0, c, GridCellState.Visited); }
-            if (firstColZero) { foreach (var row in matrix) row[0] = 0; for (int r = 0; r < rows; r++) Show(r, 0, GridCellState.Visited); }
+            if (firstRowZero) { Array.Fill(matrix[0], 0); for (int c = 0; c < cols; c++) Redraw(0, c, GridCellState.Visited); }
+            if (firstColZero) { foreach (var row in matrix) row[0] = 0; for (int r = 0; r < rows; r++) Redraw(r, 0, GridCellState.Visited); }
             grid.Snapshot(firstRowZero || firstColZero
-                ? $"Finally clear row 0 / column 0 because they had zeros of their own: {Judge.Format(matrix)}"
-                : $"Row 0 and column 0 had no zeros of their own, so they keep only their flags: {Judge.Format(matrix)}");
+                ? $"Finally clear row 0 / column 0 because they had zeros of their own: {Format(matrix)}"
+                : $"Row 0 and column 0 had no zeros of their own, so they keep only their flags: {Format(matrix)}");
             Display.Visualizer(grid);
             """
         },
@@ -588,7 +558,7 @@ public static partial class Blind75CatalogService
                         return result;
                     }
 
-                    Console.WriteLine(Judge.Format(AddBitByBit(-12, 5)));   // -7
+                    Show(AddBitByBit(-12, 5));   // -7
                     """
                 },
                 new()
@@ -628,16 +598,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The extremes", Input = "a = 1000, b = -1000", Expected = "0", Call = "sol.GetSum(1000, -1000)" },
                 new() { Name = "Negative plus positive", Input = "a = -12, b = 5", Expected = "-7", Call = "sol.GetSum(-12, 5)" }
             },
-            StressTestCode = """
-            judge.Agree("Random pairs vs the + operator",
-                random => (a: random.Next(-1000, 1001), b: random.Next(-1000, 1001)),
-                input => input.a + input.b,
-                input => sol.GetSum(input.a, input.b));
-            judge.Agree("Random pairs vs the full adder",
-                random => (a: random.Next(-1000, 1001), b: random.Next(-1000, 1001)),
-                input => AddBitByBit(input.a, input.b),
-                input => sol.GetSum(input.a, input.b));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `5 + 3` in 8-bit binary. Each round writes `a`, the carry-free sum `a ^ b`, and the carries `(a & b) << 1`;
@@ -746,7 +706,7 @@ public static partial class Blind75CatalogService
                         return count;
                     }
 
-                    Console.WriteLine(Judge.Format(CountBitsOneByOne(11)));   // 3
+                    Show(CountBitsOneByOne(11));   // 3
                     """
                 },
                 new()
@@ -786,12 +746,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The largest n", Input = "n = 2147483647", Expected = "31", Call = "sol.HammingWeight(int.MaxValue)" },
                 new() { Name = "A power of two", Input = "n = 1024", Expected = "1", Call = "sol.HammingWeight(1024)" }
             },
-            StressTestCode = """
-            judge.Agree("Random numbers vs testing every bit",
-                random => random.Next(1, int.MaxValue),
-                n => CountBitsOneByOne(n),
-                n => sol.HammingWeight(n));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `n = 11` in 8-bit binary. Each round writes `n` and `n − 1`: subtracting 1 flips the lowest 1 and the 0s below
@@ -891,7 +845,7 @@ public static partial class Blind75CatalogService
                         return bits;
                     }
 
-                    Console.WriteLine(Judge.Format(CountBitsSeparately(5)));   // [0,1,1,2,1,2]
+                    Show(CountBitsSeparately(5));   // [0,1,1,2,1,2]
                     """
                 },
                 new()
@@ -927,12 +881,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "One", Input = "n = 1", Expected = "[0,1]", Call = "sol.CountBits(1)" },
                 new() { Name = "Up to a power of two", Input = "n = 8", Expected = "[0,1,1,2,1,2,2,3,1]", Call = "sol.CountBits(8)" }
             },
-            StressTestCode = """
-            judge.Agree("Random n vs counting separately",
-                random => random.Next(0, 300),
-                n => CountBitsSeparately(n),
-                n => sol.CountBits(n));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `n = 8`. Each cell `i` is filled from the cell `i >> 1` (i without its last bit, highlighted with it) plus
@@ -952,7 +900,7 @@ public static partial class Blind75CatalogService
                     pointers: new { i, half = i >> 1 }, highlight: new[] { i >> 1, i });
             }
 
-            tracker.Step($"Done: {Judge.Format(bits)}");
+            tracker.Step($"Done: {Format(bits)}");
             Display.Visualizer(tracker);
             """
         },
@@ -1020,7 +968,7 @@ public static partial class Blind75CatalogService
                         return sorted.Length;
                     }
 
-                    Console.WriteLine(Judge.Format(MissingBySorting(new[] { 3, 0, 1 })));   // 2
+                    Show(MissingBySorting(new[] { 3, 0, 1 }));   // 2
                     """
                 },
                 new()
@@ -1033,7 +981,7 @@ public static partial class Blind75CatalogService
                     Code = """
                     int MissingBySum(int[] nums) => nums.Length * (nums.Length + 1) / 2 - nums.Sum();
 
-                    Console.WriteLine(Judge.Format(MissingBySum(new[] { 9, 6, 4, 2, 3, 5, 7, 0, 1 })));   // 8
+                    Show(MissingBySum(new[] { 9, 6, 4, 2, 3, 5, 7, 0, 1 }));   // 8
                     """
                 },
                 new()
@@ -1069,16 +1017,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Zero is missing", Input = "nums = [1]", Expected = "0", Call = "sol.MissingNumber(new[] { 1 })" },
                 new() { Name = "Zero missing from two", Input = "nums = [1,2]", Expected = "0", Call = "sol.MissingNumber(new[] { 1, 2 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random ranges vs sorting",
-                random =>
-                {
-                    int n = random.Next(1, 20), gap = random.Next(0, n + 1);
-                    return Enumerable.Range(0, n + 1).Where(x => x != gap).OrderBy(_ => random.Next()).ToArray();
-                },
-                nums => MissingBySorting(nums),
-                nums => sol.MissingNumber(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `[3,0,1]`. `missing` starts at n = 3 and XORs in each index with the value stored there; the binary in each
@@ -1158,7 +1096,7 @@ public static partial class Blind75CatalogService
                     uint ReverseByString(uint n) =>
                         Convert.ToUInt32(new string(Convert.ToString(n, 2).PadLeft(32, '0').Reverse().ToArray()), 2);
 
-                    Console.WriteLine(Judge.Format(ReverseByString(43261596)));   // 964176192
+                    Show(ReverseByString(43261596));   // 964176192
                     """
                 },
                 new()
@@ -1197,12 +1135,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The top bit comes to the bottom", Input = "n = 2147483648", Expected = "1", Call = "sol.reverseBits(2147483648u)" },
                 new() { Name = "All ones", Input = "n = 4294967295", Expected = "4294967295", Call = "sol.reverseBits(4294967295u)" }
             },
-            StressTestCode = """
-            judge.Agree("Random numbers vs the string version",
-                random => (uint)random.NextInt64(0, 1L << 32),
-                n => ReverseByString(n),
-                n => sol.reverseBits(n));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1 in 32 bits. Each step takes the next bit from the right end of `n` (highlighted) and pushes it onto
@@ -1307,7 +1239,7 @@ public static partial class Blind75CatalogService
 
                     var finder = new SortedListMedianFinder();
                     foreach (int num in new[] { 1, 2, 3 }) finder.AddNum(num);
-                    Console.WriteLine(Judge.Format(finder.FindMedian()));   // 2
+                    Show(finder.FindMedian());   // 2
                     """
                 },
                 new()
@@ -1400,12 +1332,6 @@ public static partial class Blind75CatalogService
                     Call = """Replay(new[] { "MedianFinder", "addNum", "addNum", "addNum", "addNum", "findMedian" }, new[] { 0, 4, 3, 2, 1, 0 })"""
                 }
             },
-            StressTestCode = """
-            judge.Agree("Random streams vs a sorted list",
-                random => Enumerable.Range(0, random.Next(1, 20)).Select(_ => random.Next(-20, 21)).ToArray(),
-                stream => { var f = new SortedListMedianFinder(); return stream.Select(x => { f.AddNum(x); return f.FindMedian(); }).ToList(); },
-                stream => { var f = new MedianFinder(); return stream.Select(x => { f.AddNum(x); return f.FindMedian(); }).ToList(); });
-            """,
             VisualizerKind = "Bars",
             VisualizationDescription = """
             Example 2's stream 5, 15, 1, 3 plus 8 and 2. The bars show every number received so far in sorted order (only

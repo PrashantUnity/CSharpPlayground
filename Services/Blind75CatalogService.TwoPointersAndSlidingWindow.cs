@@ -73,7 +73,7 @@ public static partial class Blind75CatalogService
                         return cleaned.SequenceEqual(cleaned.Reverse());
                     }
 
-                    Console.WriteLine(Judge.Format(IsPalindromeByReversing("A man, a plan, a canal: Panama")));   // true
+                    Show(IsPalindromeByReversing("A man, a plan, a canal: Panama"));   // true
                     """
                 },
                 new()
@@ -116,12 +116,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Mixed case", Input = "s = \"Madam, I'm Adam\"", Expected = "true", Call = "sol.IsPalindrome(\"Madam, I'm Adam\")" },
                 new() { Name = "Underscore is skipped", Input = "s = \"ab_a\"", Expected = "true", Call = "sol.IsPalindrome(\"ab_a\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs reverse-and-compare",
-                random => new string(Enumerable.Range(0, random.Next(0, 9)).Select(_ => "aAb ,1"[random.Next(6)]).ToArray()),
-                s => IsPalindromeByReversing(s),
-                s => sol.IsPalindrome(s));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             The characters of `"No 'x' in Nixon"`. `left` and `right` start at the two ends: spaces and apostrophes are
@@ -242,7 +236,7 @@ public static partial class Blind75CatalogService
                         return result;
                     }
 
-                    Console.WriteLine(Judge.Format(ThreeSumBruteForce(new[] { -1, 0, 1, 2, -1, -4 })));   // [[-1,0,1],[-1,-1,2]]
+                    Show(ThreeSumBruteForce(new[] { -1, 0, 1, 2, -1, -4 }));   // [[-1,0,1],[-1,-1,2]]
                     """
                 },
                 new()
@@ -297,13 +291,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Duplicates everywhere", Input = "nums = [-2,0,0,2,2]", Expected = "[[-2,0,2]]", Call = "sol.ThreeSum(new[] { -2, 0, 0, 2, 2 })", AnyOrder = true },
                 new() { Name = "Two triplets", Input = "nums = [-2,-1,0,1,2]", Expected = "[[-2,0,2],[-1,0,1]]", Call = "sol.ThreeSum(new[] { -2, -1, 0, 1, 2 })", AnyOrder = true }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs brute force",
-                random => Enumerable.Range(0, random.Next(3, 9)).Select(_ => random.Next(-4, 5)).ToArray(),
-                nums => (object)ThreeSumBruteForce((int[])nums.Clone()),
-                nums => sol.ThreeSum((int[])nums.Clone()),
-                anyOrder: true);
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 1 sorted to `[-4,-1,-1,0,1,2]`. For each `i`, `lo` and `hi` squeeze toward each other: the `sum` chip
@@ -420,7 +407,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxAreaBruteForce(new[] { 1, 8, 6, 2, 5, 4, 8, 3, 7 })));   // 49
+                    Show(MaxAreaBruteForce(new[] { 1, 8, 6, 2, 5, 4, 8, 3, 7 }));   // 49
                     """
                 },
                 new()
@@ -461,12 +448,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "No height", Input = "height = [0,0]", Expected = "0", Call = "sol.MaxArea(new[] { 0, 0 })" },
                 new() { Name = "Best pair is not the widest", Input = "height = [1,2,4,3]", Expected = "4", Call = "sol.MaxArea(new[] { 1, 2, 4, 3 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random heights vs brute force",
-                random => Enumerable.Range(0, random.Next(2, 12)).Select(_ => random.Next(0, 10)).ToArray(),
-                height => MaxAreaBruteForce(height),
-                height => sol.MaxArea(height));
-            """,
             VisualizerKind = "Bars",
             VisualizationDescription = """
             The lines of Example 1 as bars. The shaded block between `left` and `right` is the water the current
@@ -558,7 +539,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxProfitBruteForce(new[] { 7, 1, 5, 3, 6, 4 })));   // 5
+                    Show(MaxProfitBruteForce(new[] { 7, 1, 5, 3, 6, 4 }));   // 5
                     """
                 },
                 new()
@@ -578,7 +559,7 @@ public static partial class Blind75CatalogService
                         return Enumerable.Range(0, prices.Length).Max(i => prices[i] - minBefore[i]);
                     }
 
-                    Console.WriteLine(Judge.Format(MaxProfitWithPrefixMin(new[] { 7, 6, 4, 3, 1 })));   // 0
+                    Show(MaxProfitWithPrefixMin(new[] { 7, 6, 4, 3, 1 }));   // 0
                     """
                 },
                 new()
@@ -618,12 +599,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A new low later on", Input = "prices = [3,2,6,5,0,3]", Expected = "4", Call = "sol.MaxProfit(new[] { 3, 2, 6, 5, 0, 3 })" },
                 new() { Name = "Two days, rising", Input = "prices = [1,2]", Expected = "1", Call = "sol.MaxProfit(new[] { 1, 2 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random prices vs brute force",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(0, 20)).ToArray(),
-                prices => MaxProfitBruteForce(prices),
-                prices => sol.MaxProfit(prices));
-            """,
             VisualizerKind = "Bars",
             VisualizationDescription = """
             Example 1's prices as bars. `buy` marks the cheapest day so far and `day` walks forward. The shaded band runs
@@ -731,7 +706,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(LengthOfLongestSubstringBruteForce("abcabcbb")));   // 3
+                    Show(LengthOfLongestSubstringBruteForce("abcabcbb"));   // 3
                     """
                 },
                 new()
@@ -755,7 +730,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(LengthWithShrinkingWindow("pwwkew")));   // 3
+                    Show(LengthWithShrinkingWindow("pwwkew"));   // 3
                     """
                 },
                 new()
@@ -799,12 +774,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Stale copy before the window", Input = "s = \"abba\"", Expected = "2", Call = "sol.LengthOfLongestSubstring(\"abba\")" },
                 new() { Name = "Old copy is ignored", Input = "s = \"tmmzuxt\"", Expected = "5", Call = "sol.LengthOfLongestSubstring(\"tmmzuxt\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs brute force",
-                random => new string(Enumerable.Range(0, random.Next(0, 12)).Select(_ => "abcd"[random.Next(4)]).ToArray()),
-                s => LengthOfLongestSubstringBruteForce(s),
-                s => sol.LengthOfLongestSubstring(s));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             The characters of `"tmmzuxt"`. The highlighted cells are the current window between `left` and `right`;
@@ -922,7 +891,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(CharacterReplacementBruteForce("AABABBA", 1)));   // 4
+                    Show(CharacterReplacementBruteForce("AABABBA", 1));   // 4
                     """
                 },
                 new()
@@ -970,12 +939,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A single letter", Input = "s = \"A\", k = 0", Expected = "1", Call = "sol.CharacterReplacement(\"A\", 0)" },
                 new() { Name = "k covers everything", Input = "s = \"ABCD\", k = 4", Expected = "4", Call = "sol.CharacterReplacement(\"ABCD\", 4)" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs brute force",
-                random => (s: new string(Enumerable.Range(0, random.Next(1, 12)).Select(_ => "ABC"[random.Next(3)]).ToArray()), k: random.Next(0, 3)),
-                input => CharacterReplacementBruteForce(input.s, input.k),
-                input => sol.CharacterReplacement(input.s, input.k));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 2, `"AABABBA"` with `k = 1`. The highlighted window grows to the right; `count` holds its letter counts
@@ -1098,7 +1061,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MinWindowBruteForce("ADOBECODEBANC", "ABC")));   // "BANC"
+                    Show(MinWindowBruteForce("ADOBECODEBANC", "ABC"));   // "BANC"
                     """
                 },
                 new()
@@ -1156,13 +1119,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Whole string", Input = "s = \"abc\", t = \"cba\"", Expected = "\"abc\"", Call = "sol.MinWindow(\"abc\", \"cba\")" },
                 new() { Name = "Character not in s", Input = "s = \"a\", t = \"b\"", Expected = "\"\"", Call = "sol.MinWindow(\"a\", \"b\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs brute force",
-                random => (s: new string(Enumerable.Range(0, random.Next(1, 11)).Select(_ => "abc"[random.Next(3)]).ToArray()),
-                           t: new string(Enumerable.Range(0, random.Next(1, 4)).Select(_ => "abc"[random.Next(3)]).ToArray())),
-                input => MinWindowBruteForce(input.s, input.t),
-                input => sol.MinWindow(input.s, input.t));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 1. The highlighted window expands with `right` until `missing` reaches 0 (it holds an A, a B and a C),
@@ -1308,7 +1264,7 @@ public static partial class Blind75CatalogService
                         return s.Length == 0;
                     }
 
-                    Console.WriteLine(Judge.Format(IsValidByRemovingPairs("{[()()]}")));   // true
+                    Show(IsValidByRemovingPairs("{[()()]}"));   // true
                     """
                 },
                 new()
@@ -1352,12 +1308,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Never closed", Input = "s = \"((\"", Expected = "false", Call = "sol.IsValid(\"((\")" },
                 new() { Name = "Deep nesting", Input = "s = \"{[({})]}\"", Expected = "true", Call = "sol.IsValid(\"{[({})]}\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random bracket strings vs deleting pairs",
-                random => new string(Enumerable.Range(0, random.Next(1, 9)).Select(_ => "()[]{}"[random.Next(6)]).ToArray()),
-                s => IsValidByRemovingPairs(s),
-                s => sol.IsValid(s));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             The brackets of `"{[()()]}"`. `i` scans left to right; `expected` is the stack of closers still owed, with the
@@ -1471,7 +1421,7 @@ public static partial class Blind75CatalogService
                         return nums[0];                                  // no drop: rotated all the way round
                     }
 
-                    Console.WriteLine(Judge.Format(FindMinByScanning(new[] { 4, 5, 6, 7, 0, 1, 2 })));   // 0
+                    Show(FindMinByScanning(new[] { 4, 5, 6, 7, 0, 1, 2 }));   // 0
                     """
                 },
                 new()
@@ -1513,17 +1463,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Drop at the very end", Input = "nums = [2,3,4,5,1]", Expected = "1", Call = "sol.FindMin(new[] { 2, 3, 4, 5, 1 })" },
                 new() { Name = "Negative numbers", Input = "nums = [-1,-5,-3]", Expected = "-5", Call = "sol.FindMin(new[] { -1, -5, -3 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random rotations vs scanning",
-                random =>
-                {
-                    var sorted = Enumerable.Range(-10, 30).OrderBy(_ => random.Next()).Take(random.Next(1, 10)).OrderBy(x => x).ToArray();
-                    int shift = random.Next(sorted.Length);
-                    return sorted.Skip(shift).Concat(sorted.Take(shift)).ToArray();
-                },
-                nums => FindMinByScanning(nums),
-                nums => sol.FindMin(nums));
-            """,
             VisualizerKind = "Bars",
             VisualizationDescription = """
             Example 2 as bars: you can see the two ascending runs and the drop between 7 and 0. Each step compares
@@ -1621,7 +1560,7 @@ public static partial class Blind75CatalogService
                     Code = """
                     int SearchByScanning(int[] nums, int target) => Array.IndexOf(nums, target);
 
-                    Console.WriteLine(Judge.Format(SearchByScanning(new[] { 4, 5, 6, 7, 0, 1, 2 }, 0)));   // 4
+                    Show(SearchByScanning(new[] { 4, 5, 6, 7, 0, 1, 2 }, 0));   // 4
                     """
                 },
                 new()
@@ -1653,7 +1592,7 @@ public static partial class Blind75CatalogService
                         return -1;
                     }
 
-                    Console.WriteLine(Judge.Format(SearchWithPivot(new[] { 4, 5, 6, 7, 0, 1, 2 }, 0)));   // 4
+                    Show(SearchWithPivot(new[] { 4, 5, 6, 7, 0, 1, 2 }, 0));   // 4
                     """
                 },
                 new()
@@ -1705,17 +1644,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Target is the first element", Input = "nums = [5,1,3], target = 5", Expected = "0", Call = "sol.Search(new[] { 5, 1, 3 }, 5)" },
                 new() { Name = "Target is the largest", Input = "nums = [4,5,6,7,8,1,2,3], target = 8", Expected = "4", Call = "sol.Search(new[] { 4, 5, 6, 7, 8, 1, 2, 3 }, 8)" }
             },
-            StressTestCode = """
-            judge.Agree("Random rotations and targets vs scanning",
-                random =>
-                {
-                    var sorted = Enumerable.Range(-10, 30).OrderBy(_ => random.Next()).Take(random.Next(1, 10)).OrderBy(x => x).ToArray();
-                    int shift = random.Next(sorted.Length);
-                    return (nums: sorted.Skip(shift).Concat(sorted.Take(shift)).ToArray(), target: random.Next(-11, 21));
-                },
-                input => SearchByScanning(input.nums, input.target),
-                input => sol.Search(input.nums, input.target));
-            """,
             VisualizerKind = "Bars",
             VisualizationDescription = """
             Example 1 as bars, searching for 0. At each `mid` the shaded band marks the half that is sorted and spans its

@@ -147,7 +147,8 @@ using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;";
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
+using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
 
         var allUsings = defaultUsings;
         if (!string.IsNullOrWhiteSpace(hoistedUsings))

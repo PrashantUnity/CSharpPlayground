@@ -168,8 +168,8 @@ public static partial class Blind75CatalogService
         Code(problem.VisualizationCode);
 
         // 4. Check it
-        Markdown("### 🧪 Tests\n\nThe examples from the statement plus edge cases. Each prints ✅ when the answer matches, ❌ with the difference when it doesn't.");
-        Code(BuildTestCode(problem, includeStressTest: true));
+        Markdown("### 🧪 Tests\n\nThe examples from the statement plus a few edge cases. `Check(name, answer, expected)` prints ✅ when the answer matches and ❌ with both values when it doesn't.");
+        Code(BuildTestCode(problem));
 
         return notebook;
     }
@@ -208,8 +208,8 @@ public static partial class Blind75CatalogService
         }
         code.AppendLine(problem.SolutionCode.Trim());
         code.AppendLine();
-        code.AppendLine("// ── Tests: every ✅/❌ line also drives the Test Cases panel ──────────────");
-        code.AppendLine(BuildTestCode(problem, includeStressTest: false));
+        code.AppendLine("// ── Tests: each Check prints ✅ when the answer matches, ❌ when it doesn't ──");
+        code.AppendLine(BuildTestCode(problem));
         code.AppendLine();
         code.AppendLine("// ── Visualizer: the same algorithm with tracker calls that record every step ──");
         code.AppendLine("// (Interviews only need the solution above; this part exists to draw it.)");
@@ -217,15 +217,14 @@ public static partial class Blind75CatalogService
         return code.ToString();
     }
 
-    /// <summary>A Judge run over the examples and edge cases, plus (in the notebook) the stress test against the approaches.</summary>
-    public static string BuildTestCode(BlindProblemItem problem, bool includeStressTest)
+    /// <summary>One Check(name, answer, expected) line per example and edge case, after any helpers the calls need.</summary>
+    public static string BuildTestCode(BlindProblemItem problem)
     {
         var code = new StringBuilder();
         if (problem.SolutionCode.Contains("class Solution", StringComparison.Ordinal))
         {
             code.AppendLine("var sol = new Solution();");
         }
-        code.AppendLine("var judge = new Judge();");
         if (!string.IsNullOrWhiteSpace(problem.TestSetupCode))
         {
             code.AppendLine(problem.TestSetupCode.Trim());
@@ -233,14 +232,9 @@ public static partial class Blind75CatalogService
         foreach (var test in problem.Tests.Concat(problem.ExtraTests))
         {
             string order = test.AnyOrder ? ", anyOrder: true" : string.Empty;
-            code.AppendLine($"judge.Case({Literal(test.Name)}, () => {test.Call.Trim()}, {Literal(test.Expected)}{order});");
+            code.AppendLine($"Check({Literal(test.Name)}, {test.Call.Trim()}, {Literal(test.Expected)}{order});");
         }
-        if (includeStressTest && !string.IsNullOrWhiteSpace(problem.StressTestCode))
-        {
-            code.AppendLine(problem.StressTestCode.Trim());
-        }
-        code.Append("judge.Summary();");
-        return code.ToString();
+        return code.ToString().TrimEnd();
     }
 
     private static string Literal(string text) =>

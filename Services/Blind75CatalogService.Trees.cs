@@ -114,7 +114,7 @@ public static partial class Blind75CatalogService
                     TreeNode MirrorCopy(TreeNode root) =>
                         root == null ? null : new TreeNode(root.val, MirrorCopy(root.right), MirrorCopy(root.left));
 
-                    Console.WriteLine(Judge.Format(MirrorCopy(BuildTree(4, 2, 7, 1, 3, 6, 9))));   // [4,7,2,9,6,3,1]
+                    Show(MirrorCopy(BuildTree(4, 2, 7, 1, 3, 6, 9)));   // [4,7,2,9,6,3,1]
                     """
                 },
                 new()
@@ -139,7 +139,7 @@ public static partial class Blind75CatalogService
                         return root;
                     }
 
-                    Console.WriteLine(Judge.Format(InvertIteratively(BuildTree(2, 1, 3))));   // [2,3,1]
+                    Show(InvertIteratively(BuildTree(2, 1, 3)));   // [2,3,1]
                     """
                 },
                 new()
@@ -177,18 +177,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A left chain becomes a right chain", Input = "root = [1,2,null,3]", Expected = "[1,null,2,null,3]", Call = "sol.InvertTree(BuildTree(1, 2, null, 3))" },
                 new() { Name = "Negative values", Input = "root = [0,-1,1]", Expected = "[0,1,-1]", Call = "sol.InvertTree(BuildTree(0, -1, 1))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(-9, 10), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees vs a mirrored copy",
-                random => RandomTree(random, random.Next(0, 10)),
-                root => MirrorCopy(root),
-                root => sol.InvertTree(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1. The recursion visits each node (amber), swaps its two children, and the tree is redrawn at once so
@@ -218,7 +206,7 @@ public static partial class Blind75CatalogService
 
             Invert(root);
             tracker.ClearCurrent();
-            tracker.Snapshot($"Every node has been swapped, so the whole tree is mirrored: {Judge.Format(root)}");
+            tracker.Snapshot($"Every node has been swapped, so the whole tree is mirrored: {Format(root)}");
             Display.Visualizer(tracker);
             """
         },
@@ -290,7 +278,7 @@ public static partial class Blind75CatalogService
                         return depth;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxDepthByLevels(BuildTree(3, 9, 20, null, null, 15, 7))));   // 3
+                    Show(MaxDepthByLevels(BuildTree(3, 9, 20, null, null, 15, 7)));   // 3
                     """
                 },
                 new()
@@ -325,18 +313,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A left chain", Input = "root = [1,2,null,3,null,4]", Expected = "4", Call = "sol.MaxDepth(BuildTree(1, 2, null, 3, null, 4))" },
                 new() { Name = "Deepest on the right", Input = "root = [1,2,3,null,null,4,5,null,null,6]", Expected = "4", Call = "sol.MaxDepth(BuildTree(1, 2, 3, null, null, 4, 5, null, null, 6))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(-9, 10), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees vs counting levels",
-                random => RandomTree(random, random.Next(0, 12)),
-                root => MaxDepthByLevels(root),
-                root => sol.MaxDepth(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1. Each node is visited on the way down (amber) and answered on the way back up: its label shows
@@ -429,7 +405,7 @@ public static partial class Blind75CatalogService
                     string Serialize(TreeNode node) => node == null ? "#" : $"{node.val},{Serialize(node.left)},{Serialize(node.right)}";
                     bool IsSameBySerializing(TreeNode p, TreeNode q) => Serialize(p) == Serialize(q);
 
-                    Console.WriteLine(Judge.Format(IsSameBySerializing(BuildTree(1, 2), BuildTree(1, null, 2))));   // false
+                    Show(IsSameBySerializing(BuildTree(1, 2), BuildTree(1, null, 2)));   // false
                     """
                 },
                 new()
@@ -465,18 +441,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Differs deep down", Input = "p = [1,2,3,4], q = [1,2,3,5]", Expected = "false", Call = "sol.IsSameTree(BuildTree(1, 2, 3, 4), BuildTree(1, 2, 3, 5))" },
                 new() { Name = "Bigger equal trees", Input = "p = [5,3,8,1,4,7,9], q = [5,3,8,1,4,7,9]", Expected = "true", Call = "sol.IsSameTree(BuildTree(5, 3, 8, 1, 4, 7, 9), BuildTree(5, 3, 8, 1, 4, 7, 9))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(0, 2), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random pairs vs serializing",
-                random => { int size = random.Next(0, 5); return (p: RandomTree(random, size), q: RandomTree(random, size)); },
-                input => IsSameBySerializing(input.p, input.q),
-                input => sol.IsSameTree(input.p, input.q));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             `p = [1,2,3,4]` (left) and `q = [1,2,3,5]` (right) drawn side by side. Each step compares the two nodes in the
@@ -585,7 +549,7 @@ public static partial class Blind75CatalogService
                     string Serialize(TreeNode node) => node == null ? ",#" : $",{node.val}{Serialize(node.left)}{Serialize(node.right)}";
                     bool IsSubtreeBySerializing(TreeNode root, TreeNode subRoot) => Serialize(root).Contains(Serialize(subRoot));
 
-                    Console.WriteLine(Judge.Format(IsSubtreeBySerializing(BuildTree(3, 4, 5, 1, 2), BuildTree(4, 1, 2))));   // true
+                    Show(IsSubtreeBySerializing(BuildTree(3, 4, 5, 1, 2), BuildTree(4, 1, 2)));   // true
                     """
                 },
                 new()
@@ -627,18 +591,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Deep in a chain", Input = "root = [1,null,2,null,3,null,4], subRoot = [3,null,4]", Expected = "true", Call = "sol.IsSubtree(BuildTree(1, null, 2, null, 3, null, 4), BuildTree(3, null, 4))" },
                 new() { Name = "Digits don't blend", Input = "root = [12], subRoot = [2]", Expected = "false", Call = "sol.IsSubtree(BuildTree(12), BuildTree(2))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(0, 3), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees vs serializing",
-                random => (root: RandomTree(random, random.Next(1, 9)), subRoot: RandomTree(random, random.Next(1, 4))),
-                input => IsSubtreeBySerializing(input.root, input.subRoot),
-                input => sol.IsSubtree(input.root, input.subRoot));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 2: `root` on the left, `subRoot` on the right. Each starting node of `root` (teal) is compared with
@@ -778,7 +730,7 @@ public static partial class Blind75CatalogService
                     }
 
                     var bst = BuildTree(6, 2, 8, 0, 4, 7, 9, null, null, 3, 5);
-                    Console.WriteLine(Judge.Format(LcaByPaths(bst, Find(bst, 2), Find(bst, 4)).val));   // 2
+                    Show(LcaByPaths(bst, Find(bst, 2), Find(bst, 4)).val);   // 2
                     """
                 },
                 new()
@@ -824,33 +776,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The root and a leaf", Input = "root = [6,2,8,0,4,7,9,null,null,3,5], p = 5, q = 6", Expected = "6", Call = "LcaValue(BuildTree(6, 2, 8, 0, 4, 7, 9, null, null, 3, 5), 5, 6)" },
                 new() { Name = "Negative values", Input = "root = [0,-5,5,-8,-3], p = -8, q = -3", Expected = "-5", Call = "LcaValue(BuildTree(0, -5, 5, -8, -3), -8, -3)" }
             },
-            StressTestCode = """
-            TreeNode Insert(TreeNode node, int value)
-            {
-                if (node == null) return new TreeNode(value);
-                if (value < node.val) node.left = Insert(node.left, value);
-                else node.right = Insert(node.right, value);
-                return node;
-            }
-            TreeNode RandomBst(Random random, int size)
-            {
-                TreeNode root = null;
-                foreach (int value in Enumerable.Range(0, 30).OrderBy(_ => random.Next()).Take(size)) root = Insert(root, value);
-                return root;
-            }
-            judge.Agree("Random BSTs vs recording paths",
-                random =>
-                {
-                    var root = RandomBst(random, random.Next(2, 12));
-                    var values = new List<int>();
-                    void Collect(TreeNode node) { if (node == null) return; values.Add(node.val); Collect(node.left); Collect(node.right); }
-                    Collect(root);
-                    var pair = values.OrderBy(_ => random.Next()).Take(2).ToArray();
-                    return (root, p: pair[0], q: pair[1]);
-                },
-                input => LcaByPaths(input.root, Find(input.root, input.p), Find(input.root, input.q)).val,
-                input => sol.LowestCommonAncestor(input.root, Find(input.root, input.p), Find(input.root, input.q)).val);
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             The BST from Example 1 with `p = 3` and `q = 5` (teal, labelled). Each step compares both values with the
@@ -971,7 +896,7 @@ public static partial class Blind75CatalogService
                     }
 
                     var tree = BuildTree(3, 5, 1, 6, 2, 0, 8, null, null, 7, 4);
-                    Console.WriteLine(Judge.Format(LcaWithParents(tree, Find(tree, 5), Find(tree, 4)).val));   // 5
+                    Show(LcaWithParents(tree, Find(tree, 5), Find(tree, 4)).val);   // 5
                     """
                 },
                 new()
@@ -1014,31 +939,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Across the root", Input = "root = [3,5,1,6,2,0,8,null,null,7,4], p = 6, q = 8", Expected = "3", Call = "LcaValue(BuildTree(3, 5, 1, 6, 2, 0, 8, null, null, 7, 4), 6, 8)" },
                 new() { Name = "Siblings", Input = "root = [3,5,1,6,2,0,8,null,null,7,4], p = 0, q = 8", Expected = "1", Call = "LcaValue(BuildTree(3, 5, 1, 6, 2, 0, 8, null, null, 7, 4), 0, 8)" }
             },
-            StressTestCode = """
-            TreeNode RandomUniqueTree(Random random, int size)
-            {
-                var values = new Queue<int>(Enumerable.Range(1, size).OrderBy(_ => random.Next()));
-                TreeNode Grow(int count)
-                {
-                    if (count == 0) return null;
-                    int leftCount = random.Next(count);
-                    var node = new TreeNode(values.Dequeue());
-                    node.left = Grow(leftCount);
-                    node.right = Grow(count - 1 - leftCount);
-                    return node;
-                }
-                return Grow(size);
-            }
-            judge.Agree("Random trees vs parent pointers",
-                random =>
-                {
-                    int size = random.Next(2, 12);
-                    var pair = Enumerable.Range(1, size).OrderBy(_ => random.Next()).Take(2).ToArray();
-                    return (root: RandomUniqueTree(random, size), p: pair[0], q: pair[1]);
-                },
-                input => LcaWithParents(input.root, Find(input.root, input.p), Find(input.root, input.q)).val,
-                input => sol.LowestCommonAncestor(input.root, Find(input.root, input.p), Find(input.root, input.q)).val);
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1's tree with `p = 6` and `q = 4`. The search visits nodes on the way down (amber), and on the way back

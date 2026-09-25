@@ -77,7 +77,7 @@ public static partial class Blind75CatalogService
                         return levels;
                     }
 
-                    Console.WriteLine(Judge.Format(LevelOrderByDepth(BuildTree(3, 9, 20, null, null, 15, 7))));   // [[3],[9,20],[15,7]]
+                    Show(LevelOrderByDepth(BuildTree(3, 9, 20, null, null, 15, 7)));   // [[3],[9,20],[15,7]]
                     """
                 },
                 new()
@@ -127,18 +127,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Gaps inside a level", Input = "root = [1,2,3,null,4,null,5]", Expected = "[[1],[2,3],[4,5]]", Call = "sol.LevelOrder(BuildTree(1, 2, 3, null, 4, null, 5))" },
                 new() { Name = "Negative values", Input = "root = [-1,-2,-3]", Expected = "[[-1],[-2,-3]]", Call = "sol.LevelOrder(BuildTree(-1, -2, -3))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(-9, 10), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees vs depth-first",
-                random => RandomTree(random, random.Next(0, 12)),
-                root => (object)LevelOrderByDepth(root),
-                root => sol.LevelOrder(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1 with the queue and the answer shown underneath. Each round starts by reading how many nodes are in
@@ -174,7 +162,7 @@ public static partial class Blind75CatalogService
             }
 
             tracker.ClearCurrent();
-            tracker.Snapshot($"The queue is empty: {Judge.Format(levels)}");
+            tracker.Snapshot($"The queue is empty: {Format(levels)}");
             Display.Visualizer(tracker);
             """
         },
@@ -243,7 +231,7 @@ public static partial class Blind75CatalogService
                             && IsValidByCheckingSubtrees(root.left) && IsValidByCheckingSubtrees(root.right);
                     }
 
-                    Console.WriteLine(Judge.Format(IsValidByCheckingSubtrees(BuildTree(5, 1, 4, null, null, 3, 6))));   // false
+                    Show(IsValidByCheckingSubtrees(BuildTree(5, 1, 4, null, null, 3, 6)));   // false
                     """
                 },
                 new()
@@ -267,7 +255,7 @@ public static partial class Blind75CatalogService
                         return Walk(root);
                     }
 
-                    Console.WriteLine(Judge.Format(IsValidByInorder(BuildTree(2, 1, 3))));   // true
+                    Show(IsValidByInorder(BuildTree(2, 1, 3)));   // true
                     """
                 },
                 new()
@@ -307,31 +295,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A single node", Input = "root = [1]", Expected = "true", Call = "sol.IsValidBST(BuildTree(1))" },
                 new() { Name = "A bigger valid tree", Input = "root = [8,4,12,2,6,10,14]", Expected = "true", Call = "sol.IsValidBST(BuildTree(8, 4, 12, 2, 6, 10, 14))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(0, 6), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            TreeNode Insert(TreeNode node, int value)
-            {
-                if (node == null) return new TreeNode(value);
-                if (value < node.val) node.left = Insert(node.left, value);
-                else node.right = Insert(node.right, value);
-                return node;
-            }
-            TreeNode RandomBst(Random random, int size)
-            {
-                TreeNode root = null;
-                foreach (int value in Enumerable.Range(0, 20).OrderBy(_ => random.Next()).Take(size)) root = Insert(root, value);
-                return root;
-            }
-            judge.Agree("Random trees and BSTs vs checking whole subtrees",
-                random => random.Next(2) == 0 ? RandomBst(random, random.Next(1, 10)) : RandomTree(random, random.Next(1, 6)),
-                root => IsValidByCheckingSubtrees(root),
-                root => sol.IsValidBST(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             `[5,4,6,null,null,3,7]`: every node's label is the range its ancestors allow. Going left lowers the ceiling,
@@ -344,7 +307,7 @@ public static partial class Blind75CatalogService
             string Bound(long value) => value == long.MinValue ? "-∞" : value == long.MaxValue ? "∞" : value.ToString();
 
             // lowFrom / highFrom: the ancestors that set each bound, so a violation can name who it breaks with.
-            bool Check(TreeNode node, long low, long high, TreeNode lowFrom, TreeNode highFrom)
+            bool Validate(TreeNode node, long low, long high, TreeNode lowFrom, TreeNode highFrom)
             {
                 if (node == null) return true;
                 string range = $"({Bound(low)}, {Bound(high)})";
@@ -361,10 +324,10 @@ public static partial class Blind75CatalogService
                 }
 
                 tracker.Visit(node, $"{node.val} lies in {range}: fine. Its left subtree must stay below {node.val}, its right subtree above it", subLabel: range);
-                return Check(node.left, low, node.val, lowFrom, node) && Check(node.right, node.val, high, node, highFrom);
+                return Validate(node.left, low, node.val, lowFrom, node) && Validate(node.right, node.val, high, node, highFrom);
             }
 
-            bool valid = Check(root, long.MinValue, long.MaxValue, null, null);
+            bool valid = Validate(root, long.MinValue, long.MaxValue, null, null);
             if (valid)
             {
                 tracker.ClearCurrent();
@@ -441,7 +404,7 @@ public static partial class Blind75CatalogService
                         return values[k - 1];
                     }
 
-                    Console.WriteLine(Judge.Format(KthSmallestBySorting(BuildTree(5, 3, 6, 2, 4, null, null, 1), 3)));   // 3
+                    Show(KthSmallestBySorting(BuildTree(5, 3, 6, 2, 4, null, null, 1), 3));   // 3
                     """
                 },
                 new()
@@ -487,25 +450,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A right chain", Input = "root = [1,null,2,null,3], k = 2", Expected = "2", Call = "sol.KthSmallest(BuildTree(1, null, 2, null, 3), 2)" },
                 new() { Name = "Inside a right subtree", Input = "root = [3,1,4,null,2], k = 2", Expected = "2", Call = "sol.KthSmallest(BuildTree(3, 1, 4, null, 2), 2)" }
             },
-            StressTestCode = """
-            TreeNode Insert(TreeNode node, int value)
-            {
-                if (node == null) return new TreeNode(value);
-                if (value < node.val) node.left = Insert(node.left, value);
-                else node.right = Insert(node.right, value);
-                return node;
-            }
-            judge.Agree("Random BSTs vs sorting",
-                random =>
-                {
-                    int size = random.Next(1, 12);
-                    TreeNode root = null;
-                    foreach (int value in Enumerable.Range(0, 30).OrderBy(_ => random.Next()).Take(size)) root = Insert(root, value);
-                    return (root, k: random.Next(1, size + 1));
-                },
-                input => KthSmallestBySorting(input.root, input.k),
-                input => sol.KthSmallest(input.root, input.k));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 2 with `k = 3` and the stack underneath. Nodes are pushed while going left (smaller values first);
@@ -608,7 +552,7 @@ public static partial class Blind75CatalogService
                             BuildBySlicing(preorder[(mid + 1)..], inorder[(mid + 1)..]));
                     }
 
-                    Console.WriteLine(Judge.Format(BuildBySlicing(new[] { 3, 9, 20, 15, 7 }, new[] { 9, 3, 15, 20, 7 })));   // [3,9,20,null,null,15,7]
+                    Show(BuildBySlicing(new[] { 3, 9, 20, 15, 7 }, new[] { 9, 3, 15, 20, 7 }));   // [3,9,20,null,null,15,7]
                     """
                 },
                 new()
@@ -659,32 +603,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A full tree", Input = "preorder = [4,2,1,3,6,5,7], inorder = [1,2,3,4,5,6,7]", Expected = "[4,2,6,1,3,5,7]", Call = "sol.BuildTree(new[] { 4, 2, 1, 3, 6, 5, 7 }, new[] { 1, 2, 3, 4, 5, 6, 7 })" },
                 new() { Name = "Two nodes", Input = "preorder = [1,2], inorder = [2,1]", Expected = "[1,2]", Call = "sol.BuildTree(new[] { 1, 2 }, new[] { 2, 1 })" }
             },
-            StressTestCode = """
-            TreeNode RandomUniqueTree(Random random, int size)
-            {
-                var values = new Queue<int>(Enumerable.Range(-size, 3 * size).OrderBy(_ => random.Next()));
-                TreeNode Grow(int count)
-                {
-                    if (count == 0) return null;
-                    int leftCount = random.Next(count);
-                    var node = new TreeNode(values.Dequeue());
-                    node.left = Grow(leftCount);
-                    node.right = Grow(count - 1 - leftCount);
-                    return node;
-                }
-                return Grow(size);
-            }
-            List<int> Preorder(TreeNode node) => node == null ? new List<int>() : new[] { node.val }.Concat(Preorder(node.left)).Concat(Preorder(node.right)).ToList();
-            List<int> Inorder(TreeNode node) => node == null ? new List<int>() : Inorder(node.left).Append(node.val).Concat(Inorder(node.right)).ToList();
-            judge.Agree("Random trees vs slicing",
-                random =>
-                {
-                    var tree = RandomUniqueTree(random, random.Next(1, 12));
-                    return (preorder: Preorder(tree).ToArray(), inorder: Inorder(tree).ToArray());
-                },
-                input => BuildBySlicing(input.preorder, input.inorder),
-                input => sol.BuildTree(input.preorder, input.inorder));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1, built live. Each step takes the next preorder value as the root of the current inorder range
@@ -727,7 +645,7 @@ public static partial class Blind75CatalogService
 
             Build(0, inorder.Length - 1, null, false);
             tracker.ClearCurrent();
-            tracker.Snapshot($"Every preorder value has been placed: {Judge.Format(root)}");
+            tracker.Snapshot($"Every preorder value has been placed: {Format(root)}");
             Display.Visualizer(tracker);
             """
         },
@@ -801,7 +719,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(MaxPathSumBruteForce(BuildTree(-10, 9, 20, null, null, 15, 7))));   // 42
+                    Show(MaxPathSumBruteForce(BuildTree(-10, 9, 20, null, null, 15, 7)));   // 42
                     """
                 },
                 new()
@@ -850,18 +768,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Skip a negative branch", Input = "root = [1,-2,3]", Expected = "4", Call = "sol.MaxPathSum(BuildTree(1, -2, 3))" },
                 new() { Name = "A long winding path", Input = "root = [5,4,8,11,null,13,4,7,2,null,null,null,1]", Expected = "48", Call = "sol.MaxPathSum(BuildTree(5, 4, 8, 11, null, 13, 4, 7, 2, null, null, null, 1))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(-9, 10), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees vs recomputing every path",
-                random => RandomTree(random, random.Next(1, 12)),
-                root => MaxPathSumBruteForce(root),
-                root => sol.MaxPathSum(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 2. On the way back up, each node's label shows the one-sided gain it reports to its parent, and the
@@ -1056,18 +962,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negative values", Input = "root = [-1,null,-2]", Expected = "[-1,null,-2]", Call = "RoundTrip(BuildTree(-1, null, -2))" },
                 new() { Name = "A left chain", Input = "root = [1,2,null,3]", Expected = "[1,2,null,3]", Call = "RoundTrip(BuildTree(1, 2, null, 3))" }
             },
-            StressTestCode = """
-            TreeNode RandomTree(Random random, int size)
-            {
-                if (size == 0) return null;
-                int leftSize = random.Next(size);
-                return new TreeNode(random.Next(-99, 100), RandomTree(random, leftSize), RandomTree(random, size - 1 - leftSize));
-            }
-            judge.Agree("Random trees: preorder round trip vs level-order round trip",
-                random => RandomTree(random, random.Next(0, 14)),
-                root => DeserializeLevels(SerializeLevels(root)),
-                root => RoundTrip(root));
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Two players. First `serialize` walks `[1,2,3,null,null,4,5]` in preorder and `data` grows one token at a time,
@@ -1136,7 +1030,7 @@ public static partial class Blind75CatalogService
             }
             Read(null, true);
             tracker.ClearCurrent();
-            tracker.Snapshot($"All tokens are used: the rebuilt tree is {Judge.Format(rebuilt)}, the same as the original");
+            tracker.Snapshot($"All tokens are used: the rebuilt tree is {Format(rebuilt)}, the same as the original");
             Display.Visualizer(tracker);
             """
         }

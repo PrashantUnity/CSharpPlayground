@@ -79,7 +79,7 @@ public static partial class Blind75CatalogService
 
                     var words = new WordSetTrie();
                     words.Insert("apple");
-                    Console.WriteLine(Judge.Format(new[] { words.Search("apple"), words.Search("app"), words.StartsWith("app") }));   // [true,false,true]
+                    Show(new[] { words.Search("apple"), words.Search("app"), words.StartsWith("app") });   // [true,false,true]
                     """
                 },
                 new()
@@ -325,7 +325,7 @@ public static partial class Blind75CatalogService
 
                     var list = new WordListDictionary();
                     foreach (var word in new[] { "bad", "dad", "mad" }) list.AddWord(word);
-                    Console.WriteLine(Judge.Format(new[] { "pad", "bad", ".ad", "b.." }.Select(list.Search)));   // [false,true,true,true]
+                    Show(new[] { "pad", "bad", ".ad", "b.." }.Select(list.Search));   // [false,true,true,true]
                     """
                 },
                 new()
@@ -433,18 +433,6 @@ public static partial class Blind75CatalogService
                     Call = """Replay(new[] { "WordDictionary", "addWord", "search", "search" }, new[] { "", "apple", "app", "app.." })"""
                 }
             },
-            StressTestCode = """
-            judge.Agree("Random words and patterns vs a plain word list",
-                random =>
-                {
-                    string Word(int length, string letters) => new string(Enumerable.Range(0, length).Select(_ => letters[random.Next(letters.Length)]).ToArray());
-                    var added = Enumerable.Range(0, random.Next(0, 6)).Select(_ => Word(random.Next(1, 4), "ab")).ToArray();
-                    var patterns = Enumerable.Range(0, 5).Select(_ => Word(random.Next(1, 4), "ab.")).ToArray();
-                    return (added, patterns);
-                },
-                input => { var list = new WordListDictionary(); foreach (var w in input.added) list.AddWord(w); return input.patterns.Select(list.Search).ToList(); },
-                input => { var trie = new WordDictionary(); foreach (var w in input.added) trie.AddWord(w); return input.patterns.Select(trie.Search).ToList(); });
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1's words in a trie (word ends are green), then the searches. A plain letter follows one branch; a
@@ -577,7 +565,7 @@ public static partial class Blind75CatalogService
                         return words.Where(word => Enumerable.Range(0, board.Length).Any(r => Enumerable.Range(0, board[0].Length).Any(c => Exists(word, r, c, 0)))).ToList();
                     }
 
-                    Console.WriteLine(Judge.Format(FindWordsOneByOne(Board("oaan", "etae", "ihkr", "iflv"), new[] { "oath", "pea", "eat", "rain" })));   // ["oath","eat"]
+                    Show(FindWordsOneByOne(Board("oaan", "etae", "ihkr", "iflv"), new[] { "oath", "pea", "eat", "rain" }));   // ["oath","eat"]
                     """
                 },
                 new()
@@ -656,19 +644,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Words sharing a prefix", Input = "board = [[\"o\",\"a\",\"b\",\"n\"],[\"o\",\"t\",\"a\",\"e\"],[\"a\",\"h\",\"k\",\"r\"],[\"a\",\"f\",\"l\",\"v\"]], words = [\"oa\",\"oaa\"]", Expected = "[\"oa\",\"oaa\"]", Call = "sol.FindWords(Board(\"oabn\", \"otae\", \"ahkr\", \"aflv\"), new[] { \"oa\", \"oaa\" })", AnyOrder = true },
                 new() { Name = "Found in two places, reported once", Input = "board = [[\"a\",\"b\"],[\"b\",\"a\"]], words = [\"ab\"]", Expected = "[\"ab\"]", Call = "sol.FindWords(Board(\"ab\", \"ba\"), new[] { \"ab\" })", AnyOrder = true }
             },
-            StressTestCode = """
-            judge.Agree("Random boards vs one search per word",
-                random =>
-                {
-                    string Letters(int length) => new string(Enumerable.Range(0, length).Select(_ => "ab"[random.Next(2)]).ToArray());
-                    var rows = Enumerable.Range(0, random.Next(1, 4)).Select(_ => Letters(3)).ToArray();
-                    var words = Enumerable.Range(0, random.Next(1, 6)).Select(_ => Letters(random.Next(1, 5))).Distinct().ToArray();
-                    return (rows, words);
-                },
-                input => (object)FindWordsOneByOne(Board(input.rows), input.words),
-                input => sol.FindWords(Board(input.rows), input.words),
-                anyOrder: true);
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1's board. Every cell is a possible start, but the search only continues while the letters so far
@@ -730,7 +705,7 @@ public static partial class Blind75CatalogService
                 for (int c = 0; c < board[0].Length; c++)
                     Search(r, c, root, "");
 
-            grid.MarkPath(foundCells, $"Every cell has been a starting point: found {Judge.Format(found)}", color: "#15803d");
+            grid.MarkPath(foundCells, $"Every cell has been a starting point: found {Format(found)}", color: "#15803d");
             Display.Visualizer(grid);
             """
         },
@@ -812,7 +787,7 @@ public static partial class Blind75CatalogService
                         return result;
                     }
 
-                    Console.WriteLine(Judge.Format(CombinationSumByCounts(new[] { 2, 3, 6, 7 }, 7)));   // [[7],[2,2,3]]
+                    Show(CombinationSumByCounts(new[] { 2, 3, 6, 7 }, 7));   // [[7],[2,2,3]]
                     """
                 },
                 new()
@@ -866,13 +841,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Unsorted input", Input = "candidates = [7,3,2,6], target = 7", Expected = "[[2,2,3],[7]]", Call = "sol.CombinationSum(new[] { 7, 3, 2, 6 }, 7)", AnyOrder = true },
                 new() { Name = "One number many times", Input = "candidates = [3], target = 9", Expected = "[[3,3,3]]", Call = "sol.CombinationSum(new[] { 3 }, 9)", AnyOrder = true }
             },
-            StressTestCode = """
-            judge.Agree("Random inputs vs choosing counts",
-                random => (candidates: Enumerable.Range(2, 8).OrderBy(_ => random.Next()).Take(random.Next(1, 5)).ToArray(), target: random.Next(1, 16)),
-                input => (object)CombinationSumByCounts(input.candidates, input.target),
-                input => sol.CombinationSum((int[])input.candidates.Clone(), input.target),
-                anyOrder: true);
-            """,
             VisualizerKind = "Tree",
             VisualizationDescription = """
             Example 1 as a tree of choices. Each call is labelled with the number added and what is still missing
@@ -993,7 +961,7 @@ public static partial class Blind75CatalogService
                         return false;
                     }
 
-                    Console.WriteLine(Judge.Format(ExistWithUsedSet(Board("ABCE", "SFCS", "ADEE"), "ABCB")));   // false
+                    Show(ExistWithUsedSet(Board("ABCE", "SFCS", "ADEE"), "ABCB"));   // false
                     """
                 },
                 new()
@@ -1048,16 +1016,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Snaking through the board", Input = "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"E\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCESEEEFS\"", Expected = "true", Call = "sol.Exist(Board(\"ABCE\", \"SFES\", \"ADEE\"), \"ABCESEEEFS\")" },
                 new() { Name = "Needs to turn back", Input = "board = [[\"C\",\"A\",\"A\"],[\"A\",\"A\",\"A\"],[\"B\",\"C\",\"D\"]], word = \"AAB\"", Expected = "true", Call = "sol.Exist(Board(\"CAA\", \"AAA\", \"BCD\"), \"AAB\")" }
             },
-            StressTestCode = """
-            judge.Agree("Random boards vs a set of used cells",
-                random =>
-                {
-                    string Letters(int length) => new string(Enumerable.Range(0, length).Select(_ => "ab"[random.Next(2)]).ToArray());
-                    return (rows: Enumerable.Range(0, random.Next(1, 4)).Select(_ => Letters(3)).ToArray(), word: Letters(random.Next(1, 6)));
-                },
-                input => ExistWithUsedSet(Board(input.rows), input.word),
-                input => sol.Exist(Board(input.rows), input.word));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             The board from the examples, searched first for `ABCCED` and then for `ABCB`. The path being built is

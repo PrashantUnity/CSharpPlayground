@@ -77,7 +77,7 @@ public static partial class Blind75CatalogService
                         return Array.Empty<int>();
                     }
 
-                    Console.WriteLine(Judge.Format(TwoSumBruteForce(new[] { 2, 7, 11, 15 }, 9)));   // [0,1]
+                    Show(TwoSumBruteForce(new[] { 2, 7, 11, 15 }, 9));   // [0,1]
                     """
                 },
                 new()
@@ -103,7 +103,7 @@ public static partial class Blind75CatalogService
                         return Array.Empty<int>();
                     }
 
-                    Console.WriteLine(Judge.Format(TwoSumTwoPointers(new[] { 3, 2, 4 }, 6)));   // [1,2]
+                    Show(TwoSumTwoPointers(new[] { 3, 2, 4 }, 6));   // [1,2]
                     """
                 },
                 new()
@@ -144,22 +144,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Zeros", Input = "nums = [0,4,3,0], target = 0", Expected = "[0,3]", Call = "sol.TwoSum(new[] { 0, 4, 3, 0 }, 0)", AnyOrder = true },
                 new() { Name = "Extreme values", Input = "nums = [-1000000000,7,1000000000], target = 0", Expected = "[0,2]", Call = "sol.TwoSum(new[] { -1000000000, 7, 1000000000 }, 0)", AnyOrder = true }
             },
-            StressTestCode = """
-            // Random arrays can hold several valid pairs, so check that the answer is *a* valid pair.
-            judge.Agree("Random arrays: always a valid pair",
-                random =>
-                {
-                    var nums = Enumerable.Range(0, random.Next(2, 12)).Select(_ => random.Next(-20, 21)).ToArray();
-                    int a = random.Next(nums.Length), b = (a + 1 + random.Next(nums.Length - 1)) % nums.Length;
-                    return (nums, target: nums[a] + nums[b]);
-                },
-                input => true,
-                input =>
-                {
-                    var answer = sol.TwoSum(input.nums, input.target);
-                    return answer.Length == 2 && answer[0] != answer[1] && input.nums[answer[0]] + input.nums[answer[1]] == input.target;
-                });
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             The one-pass hash map on `nums = [3,8,11,2,7]`, `target = 9`, a longer input than Example 1 so the map has time to fill.
@@ -257,7 +241,7 @@ public static partial class Blind75CatalogService
                         return false;
                     }
 
-                    Console.WriteLine(Judge.Format(ContainsDuplicateBruteForce(new[] { 1, 2, 3, 1 })));   // true
+                    Show(ContainsDuplicateBruteForce(new[] { 1, 2, 3, 1 }));   // true
                     """
                 },
                 new()
@@ -276,7 +260,7 @@ public static partial class Blind75CatalogService
                         return false;
                     }
 
-                    Console.WriteLine(Judge.Format(ContainsDuplicateBySorting(new[] { 1, 2, 3, 4 })));   // false
+                    Show(ContainsDuplicateBySorting(new[] { 1, 2, 3, 4 }));   // false
                     """
                 },
                 new()
@@ -315,12 +299,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negatives and zero", Input = "nums = [-1,0,1,-1]", Expected = "true", Call = "sol.ContainsDuplicate(new[] { -1, 0, 1, -1 })" },
                 new() { Name = "Extreme values", Input = "nums = [-1000000000,1000000000]", Expected = "false", Call = "sol.ContainsDuplicate(new[] { -1000000000, 1000000000 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs brute force",
-                random => Enumerable.Range(0, random.Next(1, 12)).Select(_ => random.Next(-6, 7)).ToArray(),
-                nums => ContainsDuplicateBruteForce(nums),
-                nums => sol.ContainsDuplicate(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             One pass over `nums = [3,1,4,5,9,2,6,5]`. The `i` pointer walks the array and the `seen` strip under it grows
@@ -415,7 +393,7 @@ public static partial class Blind75CatalogService
                     bool IsAnagramBySorting(string s, string t) =>
                         s.Length == t.Length && s.OrderBy(c => c).SequenceEqual(t.OrderBy(c => c));
 
-                    Console.WriteLine(Judge.Format(IsAnagramBySorting("anagram", "nagaram")));   // true
+                    Show(IsAnagramBySorting("anagram", "nagaram"));   // true
                     """
                 },
                 new()
@@ -462,17 +440,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "listen and silent", Input = """s = "listen", t = "silent" """, Expected = "true", Call = """sol.IsAnagram("listen", "silent")""" },
                 new() { Name = "One letter off", Input = """s = "abcd", t = "abce" """, Expected = "false", Call = """sol.IsAnagram("abcd", "abce")""" }
             },
-            StressTestCode = """
-            judge.Agree("Random strings vs sorting",
-                random =>
-                {
-                    string Word(int length) => new string(Enumerable.Range(0, length).Select(_ => (char)('a' + random.Next(3))).ToArray());
-                    int length = random.Next(1, 7);
-                    return (s: Word(length), t: Word(random.Next(2) == 0 ? length : random.Next(1, 7)));
-                },
-                input => IsAnagramBySorting(input.s, input.t),
-                input => sol.IsAnagram(input.s, input.t));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `s = "anagram"` on the top row and `t = "nagaram"` underneath, walked one column at a time. The `counts` strip
@@ -578,7 +545,7 @@ public static partial class Blind75CatalogService
                         return groups;
                     }
 
-                    Console.WriteLine(Judge.Format(GroupByComparing(new[] { "eat", "tea", "tan", "ate", "nat", "bat" })));
+                    Show(GroupByComparing(new[] { "eat", "tea", "tan", "ate", "nat", "bat" }));
                     """
                 },
                 new()
@@ -594,7 +561,7 @@ public static partial class Blind75CatalogService
                             .Select(group => group.ToList())
                             .ToList();
 
-                    Console.WriteLine(Judge.Format(GroupBySortedKey(new[] { "eat", "tea", "tan", "ate", "nat", "bat" })));
+                    Show(GroupBySortedKey(new[] { "eat", "tea", "tan", "ate", "nat", "bat" }));
                     """
                 },
                 new()
@@ -653,15 +620,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Counts matter, not just letters", Input = """strs = ["aab","aba","abb"]""", Expected = """[["aab","aba"],["abb"]]""", Call = """sol.GroupAnagrams(new[] { "aab", "aba", "abb" })""", AnyOrder = true },
                 new() { Name = "Repeated words", Input = """strs = ["x","x"]""", Expected = """[["x","x"]]""", Call = """sol.GroupAnagrams(new[] { "x", "x" })""", AnyOrder = true }
             },
-            StressTestCode = """
-            judge.Agree("Random words vs comparing every group",
-                random => Enumerable.Range(0, random.Next(1, 9))
-                    .Select(_ => new string(Enumerable.Range(0, random.Next(0, 4)).Select(_ => (char)('a' + random.Next(3))).ToArray()))
-                    .ToArray(),
-                strs => (object)GroupByComparing(strs),
-                strs => sol.GroupAnagrams(strs),
-                anyOrder: true);
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             The words of Example 1 in a row. For each word the `key` chip shows its letter counts (`"eat"` → `a1e1t1`) and
@@ -761,7 +719,7 @@ public static partial class Blind75CatalogService
                     int[] TopKBySorting(int[] nums, int k) =>
                         nums.GroupBy(n => n).OrderByDescending(g => g.Count()).Take(k).Select(g => g.Key).ToArray();
 
-                    Console.WriteLine(Judge.Format(TopKBySorting(new[] { 1, 1, 1, 2, 2, 3 }, 2)));   // [1,2]
+                    Show(TopKBySorting(new[] { 1, 1, 1, 2, 2, 3 }, 2));   // [1,2]
                     """
                 },
                 new()
@@ -789,7 +747,7 @@ public static partial class Blind75CatalogService
                         return result;
                     }
 
-                    Console.WriteLine(Judge.Format(TopKWithHeap(new[] { 4, 1, -1, 2, -1, 2, 3 }, 2)));   // [2,-1] or [-1,2]
+                    Show(TopKWithHeap(new[] { 4, 1, -1, 2, -1, 2, 3 }, 2));   // [2,-1] or [-1,2]
                     """
                 },
                 new()
@@ -838,19 +796,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Clear winners", Input = "nums = [1,2,2,3,3,3], k = 2", Expected = "[3,2]", Call = "sol.TopKFrequent(new[] { 1, 2, 2, 3, 3, 3 }, 2)", AnyOrder = true },
                 new() { Name = "Negative values", Input = "nums = [-7,-7,0,1], k = 1", Expected = "[-7]", Call = "sol.TopKFrequent(new[] { -7, -7, 0, 1 }, 1)", AnyOrder = true }
             },
-            StressTestCode = """
-            // Every value gets its own count, so the answer is always unique.
-            judge.Agree("Random arrays vs count-and-sort",
-                random =>
-                {
-                    int distinct = random.Next(1, 6);
-                    var nums = Enumerable.Range(0, distinct).SelectMany(v => Enumerable.Repeat(v * 3 - 5, v + 1)).OrderBy(_ => random.Next()).ToArray();
-                    return (nums, k: random.Next(1, distinct + 1));
-                },
-                input => TopKBySorting(input.nums, input.k),
-                input => sol.TopKFrequent(input.nums, input.k),
-                anyOrder: true);
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Two parts on `nums = [4,1,4,2,4,1,3]`, `k = 2`. First the counting pass: `i` walks the array and the `count` map
@@ -971,7 +916,7 @@ public static partial class Blind75CatalogService
                         return answer;
                     }
 
-                    Console.WriteLine(Judge.Format(ProductExceptSelfBruteForce(new[] { 1, 2, 3, 4 })));   // [24,12,8,6]
+                    Show(ProductExceptSelfBruteForce(new[] { 1, 2, 3, 4 }));   // [24,12,8,6]
                     """
                 },
                 new()
@@ -995,7 +940,7 @@ public static partial class Blind75CatalogService
                         return Enumerable.Range(0, n).Select(i => left[i] * right[i]).ToArray();
                     }
 
-                    Console.WriteLine(Judge.Format(ProductExceptSelfWithArrays(new[] { -1, 1, 0, -3, 3 })));   // [0,0,9,0,0]
+                    Show(ProductExceptSelfWithArrays(new[] { -1, 1, 0, -3, 3 }));   // [0,0,9,0,0]
                     """
                 },
                 new()
@@ -1044,12 +989,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "One zero", Input = "nums = [2,0,3]", Expected = "[0,6,0]", Call = "sol.ProductExceptSelf(new[] { 2, 0, 3 })" },
                 new() { Name = "All negative", Input = "nums = [-1,-2,-3]", Expected = "[6,3,2]", Call = "sol.ProductExceptSelf(new[] { -1, -2, -3 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs brute force",
-                random => Enumerable.Range(0, random.Next(2, 9)).Select(_ => random.Next(-4, 5)).ToArray(),
-                nums => ProductExceptSelfBruteForce(nums),
-                nums => sol.ProductExceptSelf(nums));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             `nums = [2,3,4,5]` on the top row. The left-to-right pass fills **left** (the product of everything before each
@@ -1174,7 +1113,7 @@ public static partial class Blind75CatalogService
                     IList<string> DecodeWithComma(string s) => s.Split(',');
 
                     // The comma inside "a,b" is read as a separator, so three words come back instead of two:
-                    Console.WriteLine(Judge.Format(DecodeWithComma(EncodeWithComma(new[] { "a,b", "c" }))));   // ["a","b","c"]
+                    Show(DecodeWithComma(EncodeWithComma(new[] { "a,b", "c" })));   // ["a","b","c"]
                     """
                 },
                 new()
@@ -1233,14 +1172,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "One empty string", Input = """strs = [""]""", Expected = """[""]""", Call = """RoundTrip("")""" },
                 new() { Name = "Digits, spaces and a long word", Input = """strs = ["12"," ","#","aaaaaaaaaaaa"]""", Expected = """["12"," ","#","aaaaaaaaaaaa"]""", Call = """RoundTrip("12", " ", "#", "aaaaaaaaaaaa")""" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists of tricky words survive the round trip",
-                random => Enumerable.Range(0, random.Next(0, 6))
-                    .Select(_ => new string(Enumerable.Range(0, random.Next(0, 5)).Select(_ => "a#1, "[random.Next(5)]).ToArray()))
-                    .ToArray(),
-                strs => (IList<string>)strs,
-                strs => RoundTrip(strs));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             `["we","4#ab","","yes"]` is encoded character by character: each word adds its length, a `#` and then itself
@@ -1356,7 +1287,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(LongestConsecutiveBruteForce(new[] { 100, 4, 200, 1, 3, 2 })));   // 4
+                    Show(LongestConsecutiveBruteForce(new[] { 100, 4, 200, 1, 3, 2 }));   // 4
                     """
                 },
                 new()
@@ -1380,7 +1311,7 @@ public static partial class Blind75CatalogService
                         return best;
                     }
 
-                    Console.WriteLine(Judge.Format(LongestConsecutiveBySorting(new[] { 0, 3, 7, 2, 5, 8, 4, 6, 0, 1 })));   // 9
+                    Show(LongestConsecutiveBySorting(new[] { 0, 3, 7, 2, 5, 8, 4, 6, 0, 1 }));   // 9
                     """
                 },
                 new()
@@ -1424,12 +1355,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negative run", Input = "nums = [-3,-1,-2,5]", Expected = "3", Call = "sol.LongestConsecutive(new[] { -3, -1, -2, 5 })" },
                 new() { Name = "Two runs, the longer wins", Input = "nums = [10,5,12,3,11,4,6]", Expected = "4", Call = "sol.LongestConsecutive(new[] { 10, 5, 12, 3, 11, 4, 6 })" }
             },
-            StressTestCode = """
-            judge.Agree("Random arrays vs sorting",
-                random => Enumerable.Range(0, random.Next(0, 12)).Select(_ => random.Next(-5, 12)).ToArray(),
-                nums => LongestConsecutiveBySorting(nums),
-                nums => sol.LongestConsecutive(nums));
-            """,
             VisualizerKind = "ArrayPointers",
             VisualizationDescription = """
             Example 1, `[100,4,200,1,3,2]`, with every value in the `present` set. The `i` pointer visits each value: if

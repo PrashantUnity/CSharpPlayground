@@ -92,7 +92,7 @@ public static partial class Blind75CatalogService
                         return islands;
                     }
 
-                    Console.WriteLine(Judge.Format(NumIslandsBfs(Grid("11000", "11000", "00100", "00011"))));   // 3
+                    Show(NumIslandsBfs(Grid("11000", "11000", "00100", "00011")));   // 3
                     """
                 },
                 new()
@@ -147,12 +147,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Diagonals don't connect", Input = "grid = [\"101\",\"010\",\"101\"]", Expected = "5", Call = "sol.NumIslands(Grid(\"101\", \"010\", \"101\"))" },
                 new() { Name = "One winding island", Input = "grid = [\"111\",\"001\",\"111\"]", Expected = "1", Call = "sol.NumIslands(Grid(\"111\", \"001\", \"111\"))" }
             },
-            StressTestCode = """
-            judge.Agree("Random grids vs the breadth-first version",
-                random => Enumerable.Range(0, random.Next(1, 6)).Select(_ => new string(Enumerable.Range(0, 5).Select(_ => random.Next(3) == 0 ? '0' : '1').ToArray())).ToArray(),
-                rows => NumIslandsBfs(Grid(rows)),
-                rows => sol.NumIslands(Grid(rows)));
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 2 (grey is land, dark blue water). The scan finds a land cell no island has reached, counts a new
@@ -271,7 +265,7 @@ public static partial class Blind75CatalogService
                         return copies[start];
                     }
 
-                    Console.WriteLine(Judge.Format(CloneBfs(BuildGraph(new[] { new[] { 2, 4 }, new[] { 1, 3 }, new[] { 2, 4 }, new[] { 1, 3 } }))));   // [[2,4],[1,3],[2,4],[1,3]]
+                    Show(CloneBfs(BuildGraph(new[] { new[] { 2, 4 }, new[] { 1, 3 }, new[] { 2, 4 }, new[] { 1, 3 } })));   // [[2,4],[1,3],[2,4],[1,3]]
                     """
                 },
                 new()
@@ -334,7 +328,7 @@ public static partial class Blind75CatalogService
                             stack.Push(next);
                     return seen;
                 }
-                return !Reach(copy).Overlaps(Reach(original)) && Judge.Format(copy) == Judge.Format(original);
+                return !Reach(copy).Overlaps(Reach(original)) && Format(copy) == Format(original);
             }
             """,
             Tests = new List<BlindTest>
@@ -350,25 +344,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A triangle", Input = "adjList = [[2,3],[1,3],[1,2]]", Expected = "[[2,3],[1,3],[1,2]]", Call = "sol.CloneGraph(BuildGraph(new[] { new[] { 2, 3 }, new[] { 1, 3 }, new[] { 1, 2 } }))" },
                 new() { Name = "A line", Input = "adjList = [[2],[1,3],[2]]", Expected = "[[2],[1,3],[2]]", Call = "sol.CloneGraph(BuildGraph(new[] { new[] { 2 }, new[] { 1, 3 }, new[] { 2 } }))" }
             },
-            StressTestCode = """
-            judge.Agree("Random connected graphs are copied exactly",
-                random =>
-                {
-                    int n = random.Next(1, 8);
-                    var edges = new HashSet<(int, int)>();
-                    for (int v = 2; v <= n; v++) edges.Add((random.Next(1, v), v));          // a random tree keeps it connected
-                    for (int k = random.Next(0, n); k > 0; k--)
-                    {
-                        int a = random.Next(1, n + 1), b = random.Next(1, n + 1);
-                        if (a != b) edges.Add((Math.Min(a, b), Math.Max(a, b)));
-                    }
-                    return Enumerable.Range(1, n)
-                        .Select(v => edges.Where(e => e.Item1 == v || e.Item2 == v).Select(e => e.Item1 == v ? e.Item2 : e.Item1).OrderBy(x => x).ToArray())
-                        .ToArray();
-                },
-                adjacency => Judge.Format(CloneBfs(BuildGraph(adjacency))),
-                adjacency => Judge.Format(new Solution().CloneGraph(BuildGraph(adjacency))));
-            """,
             VisualizerKind = "Graph",
             VisualizationDescription = """
             Example 1's square. Depth-first cloning copies a node (it turns into "copied"), records it in the map, then
@@ -410,7 +385,7 @@ public static partial class Blind75CatalogService
 
             var cloneOfStart = Clone(start);
             tracker.ClearCurrent();
-            tracker.Snapshot($"Every node has one copy and every edge is linked: {Judge.Format(cloneOfStart)}");
+            tracker.Snapshot($"Every node has one copy and every edge is linked: {Format(cloneOfStart)}");
             Display.Visualizer(tracker);
             """
         },
@@ -496,7 +471,7 @@ public static partial class Blind75CatalogService
                         return result;
                     }
 
-                    Console.WriteLine(Judge.Format(PacificAtlanticBruteForce(new[] { new[] { 1, 2 }, new[] { 2, 1 } })));   // [[0,1],[1,0]]
+                    Show(PacificAtlanticBruteForce(new[] { new[] { 1, 2 }, new[] { 2, 1 } }));   // [[0,1],[1,0]]
                     """
                 },
                 new()
@@ -549,13 +524,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A pit in the middle", Input = "heights = [[3,3,3],[3,1,3],[3,3,3]]", Expected = "[[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,1],[2,2]]", Call = "sol.PacificAtlantic(new[] { new[] { 3, 3, 3 }, new[] { 3, 1, 3 }, new[] { 3, 3, 3 } })", AnyOrder = true },
                 new() { Name = "Only the corners", Input = "heights = [[1,2],[2,1]]", Expected = "[[0,1],[1,0]]", Call = "sol.PacificAtlantic(new[] { new[] { 1, 2 }, new[] { 2, 1 } })", AnyOrder = true }
             },
-            StressTestCode = """
-            judge.Agree("Random islands vs following the water",
-                random => Enumerable.Range(0, random.Next(1, 5)).Select(_ => Enumerable.Range(0, 4).Select(_ => random.Next(0, 4)).ToArray()).ToArray(),
-                heights => (object)PacificAtlanticBruteForce(heights),
-                heights => sol.PacificAtlantic(heights),
-                anyOrder: true);
-            """,
             VisualizerKind = "Matrix",
             VisualizationDescription = """
             Example 1's heights. First the Pacific search climbs from the top and left edges (blue), then the Atlantic
@@ -671,7 +639,7 @@ public static partial class Blind75CatalogService
                         return !Enumerable.Range(0, numCourses).Any(HasCycle);
                     }
 
-                    Console.WriteLine(Judge.Format(CanFinishDfs(2, new[] { new[] { 1, 0 }, new[] { 0, 1 } })));   // false
+                    Show(CanFinishDfs(2, new[] { new[] { 1, 0 }, new[] { 0, 1 } }));   // false
                     """
                 },
                 new()
@@ -723,18 +691,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "A course that needs itself", Input = "numCourses = 1, prerequisites = [[0,0]]", Expected = "false", Call = "sol.CanFinish(1, new[] { new[] { 0, 0 } })" },
                 new() { Name = "A loop off to the side", Input = "numCourses = 4, prerequisites = [[1,0],[2,3],[3,2]]", Expected = "false", Call = "sol.CanFinish(4, new[] { new[] { 1, 0 }, new[] { 2, 3 }, new[] { 3, 2 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random prerequisites vs three-colour DFS",
-                random =>
-                {
-                    int n = random.Next(1, 7);
-                    var pairs = Enumerable.Range(0, random.Next(0, 8)).Select(_ => new[] { random.Next(n), random.Next(n) })
-                        .GroupBy(p => (p[0], p[1])).Select(g => g.First()).ToArray();
-                    return (n, pairs);
-                },
-                input => CanFinishDfs(input.n, input.pairs),
-                input => sol.CanFinish(input.n, input.pairs));
-            """,
             VisualizerKind = "Graph",
             VisualizationDescription = """
             Six courses; an arrow `b → a` means b comes before a, and each label counts the prerequisites a course still
@@ -862,7 +818,7 @@ public static partial class Blind75CatalogService
                         return NoCycle(0, -1) && visited.Count == n;
                     }
 
-                    Console.WriteLine(Judge.Format(ValidTreeDfs(5, new[] { new[] { 0, 1 }, new[] { 0, 2 }, new[] { 0, 3 }, new[] { 1, 4 } })));   // true
+                    Show(ValidTreeDfs(5, new[] { new[] { 0, 1 }, new[] { 0, 2 }, new[] { 0, 3 }, new[] { 1, 4 } }));   // true
                     """
                 },
                 new()
@@ -905,22 +861,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Right count, but a cycle", Input = "n = 4, edges = [[0,1],[1,2],[2,0]]", Expected = "false", Call = "sol.ValidTree(4, new[] { new[] { 0, 1 }, new[] { 1, 2 }, new[] { 2, 0 } })" },
                 new() { Name = "A straight line", Input = "n = 3, edges = [[0,1],[1,2]]", Expected = "true", Call = "sol.ValidTree(3, new[] { new[] { 0, 1 }, new[] { 1, 2 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random graphs vs depth-first search",
-                random =>
-                {
-                    int n = random.Next(1, 7);
-                    var edges = new HashSet<(int, int)>();
-                    for (int k = random.Next(0, n + 1); k > 0; k--)
-                    {
-                        int a = random.Next(n), b = random.Next(n);
-                        if (a != b) edges.Add((Math.Min(a, b), Math.Max(a, b)));
-                    }
-                    return (n, edges: edges.Select(e => new[] { e.Item1, e.Item2 }).ToArray());
-                },
-                input => ValidTreeDfs(input.n, input.edges),
-                input => sol.ValidTree(input.n, input.edges));
-            """,
             VisualizerKind = "Graph",
             VisualizationDescription = """
             `n = 5` with edges `[[0,1],[1,2],[2,0],[3,4]]`: the right number of edges for a tree, but not a tree. Each edge
@@ -1040,7 +980,7 @@ public static partial class Blind75CatalogService
                         return components;
                     }
 
-                    Console.WriteLine(Judge.Format(CountComponentsDfs(5, new[] { new[] { 0, 1 }, new[] { 1, 2 }, new[] { 3, 4 } })));   // 2
+                    Show(CountComponentsDfs(5, new[] { new[] { 0, 1 }, new[] { 1, 2 }, new[] { 3, 4 } }));   // 2
                     """
                 },
                 new()
@@ -1084,22 +1024,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Isolated nodes count", Input = "n = 6, edges = [[0,1],[4,5]]", Expected = "4", Call = "sol.CountComponents(6, new[] { new[] { 0, 1 }, new[] { 4, 5 } })" },
                 new() { Name = "Joined through the middle", Input = "n = 4, edges = [[0,1],[2,3],[1,2]]", Expected = "1", Call = "sol.CountComponents(4, new[] { new[] { 0, 1 }, new[] { 2, 3 }, new[] { 1, 2 } })" }
             },
-            StressTestCode = """
-            judge.Agree("Random graphs vs depth-first search",
-                random =>
-                {
-                    int n = random.Next(1, 9);
-                    var edges = new HashSet<(int, int)>();
-                    for (int k = random.Next(0, n + 2); k > 0; k--)
-                    {
-                        int a = random.Next(n), b = random.Next(n);
-                        if (a != b) edges.Add((Math.Min(a, b), Math.Max(a, b)));
-                    }
-                    return (n, edges: edges.Select(e => new[] { e.Item1, e.Item2 }).ToArray());
-                },
-                input => CountComponentsDfs(input.n, input.edges),
-                input => sol.CountComponents(input.n, input.edges));
-            """,
             VisualizerKind = "Graph",
             VisualizationDescription = """
             Six nodes with edges `[[0,1],[1,2],[2,0],[3,4]]`. Each piece with more than one node gets a colour, and
@@ -1314,24 +1238,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "The same word twice", Input = "words = [\"x\",\"x\"]", Expected = "\"x\"", Call = "sol.AlienOrder(new[] { \"x\", \"x\" })" },
                 new() { Name = "Example 1's order is consistent", Input = "words = [\"wrt\",\"wrf\",\"er\",\"ett\",\"rftt\"]", Expected = "true", Call = "IsConsistent(new[] { \"wrt\", \"wrf\", \"er\", \"ett\", \"rftt\" }, sol.AlienOrder(new[] { \"wrt\", \"wrf\", \"er\", \"ett\", \"rftt\" }))" }
             },
-            StressTestCode = """
-            judge.Agree("Word lists sorted by a random alphabet: the order found sorts them the same way",
-                random =>
-                {
-                    var alphabet = new string("abcde".OrderBy(_ => random.Next()).ToArray());
-                    string Word() => new string(Enumerable.Range(0, random.Next(1, 4)).Select(_ => alphabet[random.Next(5)]).ToArray());
-                    return Enumerable.Range(0, random.Next(1, 7)).Select(_ => Word())
-                        .OrderBy(w => w, Comparer<string>.Create((x, y) =>
-                        {
-                            for (int k = 0; k < Math.Min(x.Length, y.Length); k++)
-                                if (x[k] != y[k]) return alphabet.IndexOf(x[k]).CompareTo(alphabet.IndexOf(y[k]));
-                            return x.Length.CompareTo(y.Length);
-                        }))
-                        .ToArray();
-                },
-                words => true,
-                words => IsConsistent(words, sol.AlienOrder(words)) && IsConsistent(words, AlienOrderDfs(words)));
-            """,
             VisualizerKind = "Graph",
             VisualizationDescription = """
             Example 1. First each pair of neighbouring words is compared and the rule from their first difference is

@@ -95,7 +95,7 @@ public static partial class Blind75CatalogService
                         return dummy.next;
                     }
 
-                    Console.WriteLine(Judge.Format(ReverseByCopying(BuildList(1, 2, 3, 4, 5))));   // [5,4,3,2,1]
+                    Show(ReverseByCopying(BuildList(1, 2, 3, 4, 5)));   // [5,4,3,2,1]
                     """
                 },
                 new()
@@ -115,7 +115,7 @@ public static partial class Blind75CatalogService
                         return newHead;
                     }
 
-                    Console.WriteLine(Judge.Format(ReverseRecursively(BuildList(1, 2))));   // [2,1]
+                    Show(ReverseRecursively(BuildList(1, 2)));   // [2,1]
                     """
                 },
                 new()
@@ -157,12 +157,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negative values", Input = "head = [-1,0,1]", Expected = "[1,0,-1]", Call = "sol.ReverseList(BuildList(-1, 0, 1))" },
                 new() { Name = "Repeated values", Input = "head = [2,2,1]", Expected = "[1,2,2]", Call = "sol.ReverseList(BuildList(2, 2, 1))" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists vs copying",
-                random => Enumerable.Range(0, random.Next(0, 9)).Select(_ => random.Next(-5, 6)).ToArray(),
-                values => ReverseByCopying(BuildList(values)),
-                values => sol.ReverseList(BuildList(values)));
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             `[1,2,3,4,5]`. The nodes stay where they are and the arrows flip one by one: each round saves `next`, points
@@ -255,7 +249,7 @@ public static partial class Blind75CatalogService
                         return BuildList(values.ToArray());
                     }
 
-                    Console.WriteLine(Judge.Format(MergeBySorting(BuildList(1, 2, 4), BuildList(1, 3, 4))));   // [1,1,2,3,4,4]
+                    Show(MergeBySorting(BuildList(1, 2, 4), BuildList(1, 3, 4)));   // [1,1,2,3,4,4]
                     """
                 },
                 new()
@@ -279,7 +273,7 @@ public static partial class Blind75CatalogService
                         return list2;
                     }
 
-                    Console.WriteLine(Judge.Format(MergeRecursively(BuildList(), BuildList(0))));   // [0]
+                    Show(MergeRecursively(BuildList(), BuildList(0)));   // [0]
                     """
                 },
                 new()
@@ -323,13 +317,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negative values", Input = "list1 = [-3,0], list2 = [-2]", Expected = "[-3,-2,0]", Call = "sol.MergeTwoLists(BuildList(-3, 0), BuildList(-2))" },
                 new() { Name = "Equal values", Input = "list1 = [1,1], list2 = [1]", Expected = "[1,1,1]", Call = "sol.MergeTwoLists(BuildList(1, 1), BuildList(1))" }
             },
-            StressTestCode = """
-            judge.Agree("Random sorted lists vs sorting",
-                random => (a: Enumerable.Range(0, random.Next(0, 6)).Select(_ => random.Next(-5, 6)).OrderBy(x => x).ToArray(),
-                           b: Enumerable.Range(0, random.Next(0, 6)).Select(_ => random.Next(-5, 6)).OrderBy(x => x).ToArray()),
-                input => MergeBySorting(BuildList(input.a), BuildList(input.b)),
-                input => sol.MergeTwoLists(BuildList(input.a), BuildList(input.b)));
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             Example 1, one row per chain. The grey dummy starts the result row and the finished part turns green. Each
@@ -361,7 +348,7 @@ public static partial class Blind75CatalogService
             tail.next = list1 ?? list2;
             for (var node = tail.next; node != null; node = node.next) tracker.Mark(node);
             tracker.Step($"{(list1 == null ? "list1" : "list2")} is empty: attach the other list's remaining nodes, already sorted", new { list1, list2, tail });
-            tracker.Step($"Done: dummy.next is the merged list {Judge.Format(dummy.next)}", new { head = dummy.next });
+            tracker.Step($"Done: dummy.next is the merged list {Format(dummy.next)}", new { head = dummy.next });
             Display.Visualizer(tracker);
             """
         },
@@ -433,7 +420,7 @@ public static partial class Blind75CatalogService
                         return false;
                     }
 
-                    Console.WriteLine(Judge.Format(HasCycleWithSet(BuildCycle(new[] { 3, 2, 0, -4 }, 1))));   // true
+                    Show(HasCycleWithSet(BuildCycle(new[] { 3, 2, 0, -4 }, 1)));   // true
                     """
                 },
                 new()
@@ -490,16 +477,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Tail points at itself", Input = "head = [1,2,3,4], pos = 3", Expected = "true", Call = "sol.HasCycle(BuildCycle(new[] { 1, 2, 3, 4 }, 3))" },
                 new() { Name = "Equal values, no cycle", Input = "head = [1,1,1], pos = -1", Expected = "false", Call = "sol.HasCycle(BuildCycle(new[] { 1, 1, 1 }, -1))" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists and loops vs a visited set",
-                random =>
-                {
-                    int size = random.Next(0, 9);
-                    return (values: Enumerable.Range(0, size).Select(_ => random.Next(0, 4)).ToArray(), pos: size == 0 ? -1 : random.Next(-1, size));
-                },
-                input => HasCycleWithSet(BuildCycle(input.values, input.pos)),
-                input => sol.HasCycle(BuildCycle(input.values, input.pos)));
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             `[1,2,3,4,5,6]` with the tail looping back to 3 (the red arrow). `slow` moves one node per step and `fast`
@@ -611,7 +588,7 @@ public static partial class Blind75CatalogService
 
                     var example = BuildList(1, 2, 3, 4, 5);
                     ReorderWithArray(example);
-                    Console.WriteLine(Judge.Format(example));   // [1,5,2,4,3]
+                    Show(example);   // [1,5,2,4,3]
                     """
                 },
                 new()
@@ -686,12 +663,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Three nodes", Input = "head = [1,2,3]", Expected = "[1,3,2]", Call = "Reordered(1, 2, 3)" },
                 new() { Name = "Six nodes", Input = "head = [1,2,3,4,5,6]", Expected = "[1,6,2,5,3,4]", Call = "Reordered(1, 2, 3, 4, 5, 6)" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists vs the array version",
-                random => Enumerable.Range(0, random.Next(1, 10)).Select(_ => random.Next(1, 20)).ToArray(),
-                values => { var head = BuildList(values); ReorderWithArray(head); return head; },
-                values => { var head = BuildList(values); sol.ReorderList(head); return head; });
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             `[1,2,3,4,5]`, one row per chain. slow/fast find the middle, the cut splits off the second half (orange),
@@ -742,7 +713,7 @@ public static partial class Blind75CatalogService
                 second = secondNext;
             }
 
-            tracker.Step($"Done: {Judge.Format(head)}, alternating front and back", new { head });
+            tracker.Step($"Done: {Format(head)}, alternating front and back", new { head });
             Display.Visualizer(tracker);
             """
         },
@@ -815,7 +786,7 @@ public static partial class Blind75CatalogService
                         return dummy.next;
                     }
 
-                    Console.WriteLine(Judge.Format(RemoveWithTwoPasses(BuildList(1, 2, 3, 4, 5), 2)));   // [1,2,3,5]
+                    Show(RemoveWithTwoPasses(BuildList(1, 2, 3, 4, 5), 2));   // [1,2,3,5]
                     """
                 },
                 new()
@@ -859,16 +830,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Middle of a longer list", Input = "head = [1,2,3,4,5,6], n = 3", Expected = "[1,2,3,5,6]", Call = "sol.RemoveNthFromEnd(BuildList(1, 2, 3, 4, 5, 6), 3)" },
                 new() { Name = "Two nodes, remove the first", Input = "head = [1,2], n = 2", Expected = "[2]", Call = "sol.RemoveNthFromEnd(BuildList(1, 2), 2)" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists vs two passes",
-                random =>
-                {
-                    int size = random.Next(1, 10);
-                    return (values: Enumerable.Range(0, size).Select(_ => random.Next(0, 10)).ToArray(), n: random.Next(1, size + 1));
-                },
-                input => RemoveWithTwoPasses(BuildList(input.values), input.n),
-                input => sol.RemoveNthFromEnd(BuildList(input.values), input.n));
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             Example 1 behind a grey dummy node. `fast` first gets a head start of `n + 1 = 3` nodes, then both move
@@ -904,7 +865,7 @@ public static partial class Blind75CatalogService
             slow.next = slow.next.next;
             tracker.Mark(removed, "#7f1d1d");
             tracker.Step($"Skip it: {slow.val}.next jumps over {removed.val} straight to {Name(slow.next)}", new { slow, removed });
-            tracker.Step($"Return dummy.next: {Judge.Format(dummy.next)}", new { head = dummy.next });
+            tracker.Step($"Return dummy.next: {Format(dummy.next)}", new { head = dummy.next });
             Display.Visualizer(tracker);
             """
         },
@@ -974,7 +935,7 @@ public static partial class Blind75CatalogService
                         return BuildList(values.ToArray());
                     }
 
-                    Console.WriteLine(Judge.Format(MergeKBySorting(new[] { BuildList(1, 4, 5), BuildList(1, 3, 4), BuildList(2, 6) })));   // [1,1,2,3,4,4,5,6]
+                    Show(MergeKBySorting(new[] { BuildList(1, 4, 5), BuildList(1, 3, 4), BuildList(2, 6) }));   // [1,1,2,3,4,4,5,6]
                     """
                 },
                 new()
@@ -1013,7 +974,7 @@ public static partial class Blind75CatalogService
                         return round[0];
                     }
 
-                    Console.WriteLine(Judge.Format(MergeKByPairs(new[] { BuildList(1, 4, 5), BuildList(1, 3, 4), BuildList(2, 6) })));   // [1,1,2,3,4,4,5,6]
+                    Show(MergeKByPairs(new[] { BuildList(1, 4, 5), BuildList(1, 3, 4), BuildList(2, 6) }));   // [1,1,2,3,4,4,5,6]
                     """
                 },
                 new()
@@ -1061,14 +1022,6 @@ public static partial class Blind75CatalogService
                 new() { Name = "Negative values", Input = "lists = [[-3,5],[-1]]", Expected = "[-3,-1,5]", Call = "sol.MergeKLists(new[] { BuildList(-3, 5), BuildList(-1) })" },
                 new() { Name = "Many single nodes", Input = "lists = [[5],[4],[3],[2],[1]]", Expected = "[1,2,3,4,5]", Call = "sol.MergeKLists(new[] { BuildList(5), BuildList(4), BuildList(3), BuildList(2), BuildList(1) })" }
             },
-            StressTestCode = """
-            judge.Agree("Random lists vs sorting everything",
-                random => Enumerable.Range(0, random.Next(0, 5))
-                    .Select(_ => Enumerable.Range(0, random.Next(0, 5)).Select(_ => random.Next(-5, 6)).OrderBy(x => x).ToArray())
-                    .ToArray(),
-                lists => MergeKBySorting(lists.Select(values => BuildList(values)).ToArray()),
-                lists => sol.MergeKLists(lists.Select(values => BuildList(values)).ToArray()));
-            """,
             VisualizerKind = "LinkedList",
             VisualizationDescription = """
             Example 1, one row per chain, with the heap of current fronts underneath (smallest first). Each step pops
@@ -1099,7 +1052,7 @@ public static partial class Blind75CatalogService
                 tracker.Step($"Pop the smallest front, {node.val}, and link it after tail; {pushed}", new { tail });
             }
 
-            tracker.Step($"The heap is empty: dummy.next is {Judge.Format(dummy.next)}", new { head = dummy.next });
+            tracker.Step($"The heap is empty: dummy.next is {Format(dummy.next)}", new { head = dummy.next });
             Display.Visualizer(tracker);
             """
         }

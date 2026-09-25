@@ -11,11 +11,12 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
 /// <summary>
-/// Checks answers against LeetCode-style expected output and prints one line per case:
-/// <c>✅ Example 1 → [0,1]</c> or <c>❌ Example 1 → got [1,0] · expected [0,1]</c>. The Code Studio Test Cases panel
-/// reads these lines, so a case passes only when its own line is a ✅.
+/// Compares answers with LeetCode-style expected output and formats values the way LeetCode prints them. Scripts use it
+/// through <see cref="ScriptHelpers"/> (<c>Check</c>, <c>Show</c>, <c>Format</c>); each check prints one line,
+/// <c>✅ Example 1 → [0,1]</c> or <c>❌ Example 1 → got [1,0] · expected [0,1]</c>, and the Code Studio Test Cases panel
+/// reads those lines, so a case passes only when its own line is a ✅.
 /// </summary>
-public sealed class Judge
+public static class Judge
 {
     public const string PassMark = "✅";
     public const string FailMark = "❌";
@@ -26,89 +27,16 @@ public sealed class Judge
     // Answers are for reading, not for HTML: keep <, &, ' and accented letters as they are.
     private static readonly JsonSerializerOptions TextOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-    public int Passed { get; private set; }
-    public int Failed { get; private set; }
-    public bool AllPassed => Failed == 0 && Passed > 0;
-
-    /// <summary>Runs one case. Expected is written the way LeetCode prints it: <c>[0,1]</c>, <c>true</c>, <c>"bab"</c>, <c>[[1,2],[3]]</c>.</summary>
-    public bool Case<T>(string name, Func<T> run, string expected, bool anyOrder = false)
-    {
-        object? actual;
-        try
-        {
-            actual = run();
-        }
-        catch (Exception ex)
-        {
-            Report(name, false, $"threw {ex.GetType().Name}: {ex.Message}");
-            return false;
-        }
-        return Check(name, Format(actual, typeof(T)), expected, anyOrder);
-    }
-
-    public bool Case(string name, object? actual, string expected, bool anyOrder = false) =>
-        Check(name, Format(actual), expected, anyOrder);
-
     /// <summary>
-    /// Stress test: runs <paramref name="trials"/> random inputs through a trusted (usually brute-force) version and
-    /// the candidate, and reports the first input where they disagree.
+    /// Prints the case's ✅/❌ line and returns whether it passed. Expected is written the way LeetCode prints it:
+    /// <c>[0,1]</c>, <c>true</c>, <c>"bab"</c>, <c>[[1,2],[3]]</c>; with <paramref name="anyOrder"/> the order of list
+    /// items (at every level) doesn't matter.
     /// </summary>
-    public bool Agree<TInput, TOutput>(
-        string name,
-        Func<Random, TInput> generate,
-        Func<TInput, TOutput> reference,
-        Func<TInput, TOutput> candidate,
-        int trials = 200,
-        bool anyOrder = false,
-        int seed = 75)
+    public static bool Check(string name, string actual, string expected, bool anyOrder = false)
     {
-        var random = new Random(seed);
-        for (int trial = 1; trial <= trials; trial++)
-        {
-            var input = generate(random);
-            string expected, actual;
-            try
-            {
-                expected = Format(reference(input), typeof(TOutput));
-                actual = Format(candidate(input), typeof(TOutput));
-            }
-            catch (Exception ex)
-            {
-                Report(name, false, $"input {Format(input)} threw {ex.GetType().Name}: {ex.Message}");
-                return false;
-            }
-
-            if (Canonical(actual, anyOrder) != Canonical(expected, anyOrder))
-            {
-                Report(name, false, $"input {Format(input)}: got {actual} · expected {expected}");
-                return false;
-            }
-        }
-
-        Report(name, true, $"{trials} random inputs agree with the reference");
-        return true;
-    }
-
-    public void Summary()
-    {
-        int total = Passed + Failed;
-        Console.WriteLine(Failed == 0
-            ? $"🏁 All {total} test{(total == 1 ? "" : "s")} passed"
-            : $"🏁 {Passed}/{total} passed, {Failed} failed");
-    }
-
-    private bool Check(string name, string got, string expected, bool anyOrder)
-    {
-        bool ok = Canonical(got, anyOrder) == Canonical(expected, anyOrder);
-        Report(name, ok, ok ? got : $"got {got} · expected {expected}");
+        bool ok = Canonical(actual, anyOrder) == Canonical(expected, anyOrder);
+        Console.WriteLine($"{(ok ? PassMark : FailMark)} {name}{Arrow}{(ok ? actual : $"got {actual} · expected {expected}")}");
         return ok;
-    }
-
-    private void Report(string name, bool ok, string detail)
-    {
-        if (ok) Passed++;
-        else Failed++;
-        Console.WriteLine($"{(ok ? PassMark : FailMark)} {name}{Arrow}{detail}");
     }
 
     /// <summary>For the Test Cases panel: true or false when the output has this case's line, null when it has none.</summary>
