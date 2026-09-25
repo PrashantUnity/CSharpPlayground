@@ -13,7 +13,7 @@
     <AssemblyName>CSharpEditorPlugin</AssemblyName>
     <PackageId>FryPdf.Plugin.CSharpEditor</PackageId>
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Company>Code Fry Dev</Company>
     <Description>Full-featured interactive C# Code Studio and Script Automation Workspace for FryPDF</Description>
     <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**</DefaultItemExcludes>
