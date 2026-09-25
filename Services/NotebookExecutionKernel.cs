@@ -495,6 +495,12 @@ public class NotebookExecutionKernel
             case RecursionTracker recursionTracker:
                 Display.Visualizer(recursionTracker);
                 return true;
+            case IntervalTracker intervalTracker:
+                Display.Visualizer(intervalTracker);
+                return true;
+            case TrieTracker trieTracker:
+                Display.Visualizer(trieTracker);
+                return true;
         }
 
         switch (DataStructureDetector.Detect(value))

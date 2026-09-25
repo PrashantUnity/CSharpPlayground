@@ -1125,10 +1125,9 @@
                                                                                                  FontSize="13" />
 
                                                                     <!-- Markdown View (Rendered Header & Notes) -->
-                                                                    <StackPanel IsVisible="{Binding IsViewingMarkdown}" Spacing="6" Margin="8,6">
-                                                                        <TextBlock Text="{Binding MarkdownTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                                        <TextBlock Text="{Binding MarkdownBody}" FontSize="12.5" LineHeight="19" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
-                                                                    </StackPanel>
+                                                                    <controls:MarkdownView IsVisible="{Binding IsViewingMarkdown}" Margin="8,6"
+                                                                                           Markdown="{Binding Source}"
+                                                                                           FontSize="12.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
 
                                                                     <!-- Markdown Edit Mode -->
                                                                     <TextBox IsVisible="{Binding IsEditingMarkdown}"

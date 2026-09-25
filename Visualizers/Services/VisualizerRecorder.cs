@@ -61,6 +61,17 @@ public class VisualizerRecorder
         return recorder;
     }
 
+    /// <summary>
+    /// Records an array, list or string as a row of cells. Steps re-read a live array or list, so writes made by the
+    /// algorithm (swaps, DP updates) show up and are outlined as changes.
+    /// </summary>
+    public static VisualizerRecorder CreateArray(
+        System.Collections.IEnumerable values,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "") =>
+        CreateArray(ArrayPointerDataParser.Parse(values), title, sourceLine, sourceFile);
+
     public static TreeVisualizerRecorder CreateTree(
         object root,
         string? title = null,
@@ -111,8 +122,29 @@ public class VisualizerRecorder
             BarData = bars
         };
         var recorder = new BarVisualizerRecorder(options);
-        recorder.Step("Initial Bar State", sourceLine, sourceFile);
+        recorder.Step("Initial Bar State", sourceLine: sourceLine, sourceFile: sourceFile);
         return recorder;
+    }
+
+    /// <summary>Records numbers as bars. Steps re-read a live array or list, so updates the algorithm makes show up.</summary>
+    public static BarVisualizerRecorder CreateBars(
+        IEnumerable<int> values,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
+    {
+        var bars = new BarChartVisualizerData(values) { Source = values as System.Collections.IList };
+        return CreateBars(bars, title, sourceLine, sourceFile);
+    }
+
+    public static BarVisualizerRecorder CreateBars(
+        IEnumerable<double> values,
+        string? title = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
+    {
+        var bars = new BarChartVisualizerData(values) { Source = values as System.Collections.IList };
+        return CreateBars(bars, title, sourceLine, sourceFile);
     }
 
     public static BoardVisualizerRecorder CreateBoard(
@@ -181,6 +213,7 @@ public class VisualizerRecorder
     {
         if (Options.BarData != null)
         {
+            Options.BarData.RefreshFromSource();
             updateBars?.Invoke(Options.BarData);
 
             var step = NewStep(description, sourceLine, sourceFile);
@@ -266,6 +299,7 @@ public class VisualizerRecorder
         IEnumerable<string>? activeNodeIds = null,
         object? pointers = null,
         IDictionary<string, string>? auxiliaryInfo = null,
+        IEnumerable<int>? highlight = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
@@ -278,6 +312,12 @@ public class VisualizerRecorder
         if (activeCells != null)
         {
             step.ActiveCells.AddRange(activeCells);
+        }
+
+        // Array cells to light up, e.g. the current window: highlight: Enumerable.Range(left, right - left + 1)
+        if (highlight != null)
+        {
+            foreach (int index in highlight) step.ActiveCells.Add((0, index));
         }
 
         if (!string.IsNullOrEmpty(activeNodeId))
@@ -311,6 +351,7 @@ public class VisualizerRecorder
         }
         else if (Options.BarData != null)
         {
+            Options.BarData.RefreshFromSource();
             step.Snapshot = Options.BarData.Clone();
         }
         else if (Options.BoardData != null)
@@ -409,12 +450,44 @@ public class BarVisualizerRecorder : VisualizerRecorder
 {
     public BarVisualizerRecorder(VisualizerOptions options) : base(options) { }
 
+    /// <summary>
+    /// Records the bars with named pointers under them (<c>pointers: new { left, right }</c>), extra bars to light up,
+    /// and an optional shaded block, such as the water between two walls.
+    /// </summary>
     public BarVisualizerRecorder Step(
         string description,
+        object? pointers = null,
+        IEnumerable<int>? highlight = null,
+        BarShade? shade = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
-        StepBars(description, null, sourceLine, sourceFile);
+        StepBars(description, bars =>
+        {
+            foreach (var item in bars.Items)
+            {
+                item.PointerLabel = null;
+                item.IsActive = false;
+            }
+
+            var lit = new HashSet<int>(highlight ?? Array.Empty<int>());
+            if (pointers != null)
+            {
+                foreach (var prop in pointers.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (prop.GetValue(pointers) is not int index || index < 0 || index >= bars.Items.Count) continue;
+                    var item = bars.Items[index];
+                    item.PointerLabel = item.PointerLabel == null ? prop.Name : $"{item.PointerLabel},{prop.Name}";
+                    lit.Add(index);
+                }
+            }
+
+            foreach (int index in lit)
+            {
+                if (index >= 0 && index < bars.Items.Count) bars.Items[index].IsActive = true;
+            }
+            bars.Shade = shade;
+        }, sourceLine, sourceFile);
         return this;
     }
 

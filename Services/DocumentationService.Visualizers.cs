@@ -23,6 +23,7 @@ public partial class DocumentationService
                 CreateMatrixAndBoardArticle(),
                 CreateTreesAndGraphsArticle(),
                 CreateLinkedListsAndRecursionArticle(),
+                CreateTimelinesTriesAndJudgeArticle(),
                 CreateCanvasRecorderArticle(),
                 CreateConvenienceHelpersArticle()
             }
@@ -238,7 +239,7 @@ Display.Visualizer(recorder);"
                 new()
                 {
                     Heading = "Grid Traversal Recording (CreateMatrix)",
-                    Content = "VisualizerRecorder.CreateMatrix(...) models 2D grids. You can specify the active cell (Row, Col) or a collection of active cells, along with an auxiliary info dictionary (e.g. Queue contents, current distance, or step count).",
+                    Content = "VisualizerRecorder.CreateMatrix(...) models 2D grids. You can specify the active cell (Row, Col) or a collection of active cells, along with an auxiliary info dictionary (e.g. Queue contents, current distance, or step count). MatrixTracker.Create(grid, title, options, rowHeaders: new[] { \"nums\", \"dp\" }, columnHeaders: …) labels rows and columns from the very first step, which suits DP tables; MatrixTracker.CreateEmpty(rows, cols, title, rowHeaders, columnHeaders) starts a blank table to fill with SetCell. Highlights are temporary: setting a cell back to Default after Target, Start or Path restores what the cell is (land, water, a plain value); walls stay walls.",
                     CalloutType = DocCalloutType.Info,
                     CalloutText = "Coordinates (r, c) and values are displayed in high-contrast tiles with smooth zooming and panning."
                 },
@@ -332,14 +333,14 @@ Display.Visualizer(recorder);"
                 new()
                 {
                     Heading = "Tree Layout & Traversals (CreateTree)",
-                    Content = "VisualizerRecorder.CreateTree(...) accepts any object root (e.g. TreeNode, BSTNode). It automatically discovers Left/Right or Children properties via reflection and calculates clean non-overlapping coordinates using the Buchheim tree algorithm.",
+                    Content = "VisualizerRecorder.CreateTree(...) accepts any object root (e.g. TreeNode, BSTNode). It automatically discovers Left/Right or Children properties via reflection and calculates clean non-overlapping coordinates using the Buchheim tree algorithm. With TreeTracker, call tracker.Sync() after your code adds, removes or swaps nodes (building a tree, inverting it): the drawing is re-read while every node keeps its colour, label and pointer. tracker.Mark(node, state) colours a node without recording a step, so two nodes can light up together (comparing trees in lockstep); ClearMarks() resets the colours and ClearCurrent() ends the glow before a closing summary step.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "You can record In-Order, Pre-Order, Post-Order, or Level-Order traversals highlighting activeNodeId."
                 },
                 new()
                 {
                     Heading = "Graph Networks (CreateGraph)",
-                    Content = "VisualizerRecorder.CreateGraph(...) builds a graph model from adjacency lists or edge collections. Call Step with activeNodeId or activeNodeIds to step through BFS, DFS, or topological sorting."
+                    Content = "VisualizerRecorder.CreateGraph(...) builds a graph model from adjacency lists or edge collections. Call Step with activeNodeId or activeNodeIds to step through BFS, DFS, or topological sorting. With GraphTracker, a dictionary's keys fix the order of the nodes around the circle; tracker.Paint(node, \"#0f766e\") colours a node (one colour per component), Mark(node, state) and MarkEdge(from, to, state) change states without recording a step, AddEdge(from, to) draws an edge discovered while running (rules between letters, say), and ClearCurrent() ends the glow before a summary step."
                 }
             },
             CodeSnippets = new List<DocCodeSnippet>
@@ -398,14 +399,14 @@ Display.Visualizer(recorder);"
                 new()
                 {
                     Heading = "LinkedListTracker",
-                    Content = "LinkedListTracker.Create(head) follows next pointers through your own nodes. Call tracker.Step(\"...\", new { prev, curr, next }) after each change: every node keeps its place, arrows follow the real next pointers, and your variables are drawn as labelled pointers. A null variable points at the null box, and a null next in the middle of the list shows as a slash.",
+                    Content = "LinkedListTracker.Create(head) follows next pointers through your own nodes. Call tracker.Step(\"...\", new { prev, curr, next }) after each change: every node keeps its place, arrows follow the real next pointers, and your variables are drawn as labelled pointers. A null variable points at the null box, and a null next in the middle of the list shows as a slash. Pass rows: true when lists are merged, split or woven: every step is then redrawn in link order with one row per separate chain. tracker.Mark(node) fills a node (green by default, or any colour) from the next step on, e.g. the finished part of a merged list, and a loop is drawn as a red Cycle Loop arrow.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "New nodes are picked up automatically, whether they are linked into the list or only held by a variable (a second list to merge, a dummy head)."
                 },
                 new()
                 {
                     Heading = "RecursionTracker",
-                    Content = "Open each call with using var call = calls.Enter($\"fib({n})\") and finish it with call.Return(value), call.Memo(value) for a cache hit, or call.Prune(reason) for a dead-end branch. The tree grows call by call; the path from main to the glowing call is the call stack, and teal calls are waiting for a result.",
+                    Content = "Open each call with using var call = calls.Enter($\"fib({n})\") and finish it with call.Return(value), call.Memo(value) for a cache hit, or call.Prune(reason) for a dead-end branch. For backtracking, call.Found(note) marks a branch that reached a solution (green ✓) and call.Done(note) ends a call that returns nothing, with its own step text. The tree grows call by call; the path from main to the glowing call is the call stack, and teal calls are waiting for a result.",
                     CalloutType = DocCalloutType.Info,
                     CalloutText = "Drawing stops after 255 calls so large inputs stay responsive; the recursion itself keeps running normally."
                 }
@@ -487,6 +488,206 @@ long Fib(int n)
 
 Fib(4);
 Display.Visualizer(calls);"
+                }
+            }
+        };
+    }
+
+    private DocArticle CreateTimelinesTriesAndJudgeArticle()
+    {
+        return new DocArticle
+        {
+            Id = "timelines_tries_and_judge",
+            Title = "Timelines, Tries & Checking Answers",
+            Subtitle = "Draw intervals and tries, watch plain variables, and check solutions the way LeetCode does.",
+            ReadingTime = "5 min read",
+            Summary = "IntervalTracker lays intervals on a shared timeline, TrieTracker draws a trie as a tree of letters, Watch(() => value) shows any variable at every step, bar steps take named pointers and a shaded block, and Judge checks answers with one ✅/❌ line per case.",
+            Keywords = new List<string> { "interval", "timeline", "merge", "meeting rooms", "trie", "prefix tree", "watch", "variable", "bars", "pointers", "water", "judge", "test", "stress test", "leetcode" },
+            Sections = new List<DocSection>
+            {
+                new()
+                {
+                    Heading = "IntervalTracker",
+                    Content = "IntervalTracker.Create(intervals) draws every interval as a bar on one timeline, a row each. Call tracker.Step(\"...\", current: i, done: ..., removed: ..., result: merged, marker: end) as the algorithm goes: the current row is amber, rows in play teal, removed rows red, and the answer builds up in a green result lane underneath (a group that just changed is outlined in lime). A marker draws a dashed line across the timeline, such as the end of the current group.",
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "Rows are read from your live array at every step, so sorting it in place reorders them."
+                },
+                new()
+                {
+                    Heading = "TrieTracker",
+                    Content = "TrieTracker.Create(root) finds your node's children (a Dictionary<char, Node> or a Node[26] array) and its end-of-word flag by reflection, then re-reads the trie at every step. New letters are outlined in lime, word ends are green with the word underneath, and Step(\"...\", path: \"app\") lights up the letters walked from the root.",
+                    CalloutType = DocCalloutType.Info,
+                    CalloutText = "For any other shape, pass the children and the word-end check yourself: TrieTracker.Create(root, n => n.Next, n => n.IsWord)."
+                },
+                new()
+                {
+                    Heading = "Watching Plain Variables",
+                    Content = "Watch also takes a lambda: tracker.Watch(() => best) is read again at every step and shown as \"best = 49\" next to the other values, lighting up when it changes. It works on every recorder and tracker, so sums, counts and running maxima no longer need to be squeezed into the step text.",
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "Pointers are for indices only; anything else (a sum, a value, a count) belongs in a Watch."
+                },
+                new()
+                {
+                    Heading = "Arrays, Strings and Bars",
+                    Content = "VisualizerRecorder.CreateArray(nums) accepts arrays, lists and strings directly, and re-reads a live array at every step. Steps take pointers: new { left, right } and highlight: Enumerable.Range(left, width) for a window. Bars work the same way, plus shade: new BarShade(left, right, level, \"area 49\") to shade a block between two bars, such as the water a container holds; add Floor: buyPrice to shade a band instead, such as the profit above a buy price. The shade sits over the bars and its label on top."
+                },
+                new()
+                {
+                    Heading = "Checking Answers with Judge",
+                    Content = "var judge = new Judge(); judge.Case(\"Example 1\", () => sol.TwoSum(nums, 9), \"[0,1]\") runs the call and compares it with the answer written the way LeetCode prints it: lists as [0,1], strings quoted, true/false, linked lists as [1,2,3] and trees in level order. anyOrder: true accepts any order. judge.Agree(...) is a stress test: it runs random inputs through a trusted brute force and your solution and reports the first input where they differ.",
+                    CalloutType = DocCalloutType.Info,
+                    CalloutText = "Each case prints a ✅ or ❌ line; the Code Studio Test Cases panel reads that line, so a case passes only when its own answer matches."
+                }
+            },
+            ApiSignatures = new List<DocApiSignature>
+            {
+                new()
+                {
+                    MethodName = "IntervalTracker.Step",
+                    ReturnType = "IntervalTracker",
+                    Parameters = "string description, int? current, IEnumerable<int>? active, IEnumerable<int>? done, IEnumerable<int>? removed, object? result, object? pending, double? marker, string? markerLabel",
+                    Description = "Records the timeline with the given rows marked and the answer so far in the result lane."
+                },
+                new()
+                {
+                    MethodName = "TrieTracker.Step",
+                    ReturnType = "TrieTracker",
+                    Parameters = "string description, string? path = null",
+                    Description = "Records the trie as it is now, lighting up the letters of path from the root."
+                },
+                new()
+                {
+                    MethodName = "tracker.Watch",
+                    ReturnType = "void / tracker",
+                    Parameters = "Func<object> value",
+                    Description = "Watch(() => best) shows a variable's current value at every later step."
+                },
+                new()
+                {
+                    MethodName = "judge.Case",
+                    ReturnType = "bool",
+                    Parameters = "string name, Func<T> run, string expected, bool anyOrder = false",
+                    Description = "Runs one case and prints ✅ or ❌ with the difference."
+                }
+            },
+            CodeSnippets = new List<DocCodeSnippet>
+            {
+                new()
+                {
+                    Id = "snip_merge_intervals_timeline",
+                    Title = "Merge Intervals on a Timeline",
+                    Description = "Sort, then extend or start a group; the result lane shows the answer growing.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"var intervals = new[] { new[] { 8, 10 }, new[] { 1, 3 }, new[] { 2, 6 } };
+var tracker = IntervalTracker.Create(intervals, ""Merge intervals"");
+
+Array.Sort(intervals, (a, b) => a[0].CompareTo(b[0]));
+tracker.Step(""Sort by start"");
+
+var merged = new List<int[]>();
+for (int i = 0; i < intervals.Length; i++)
+{
+    if (merged.Count > 0 && intervals[i][0] <= merged[^1][1])
+        merged[^1][1] = Math.Max(merged[^1][1], intervals[i][1]);
+    else
+        merged.Add(new[] { intervals[i][0], intervals[i][1] });
+    tracker.Step($""Place [{intervals[i][0]},{intervals[i][1]}]"", current: i, result: merged, marker: merged[^1][1]);
+}
+
+Display.Visualizer(tracker);"
+                },
+                new()
+                {
+                    Id = "snip_trie_letters",
+                    Title = "Grow a Trie Letter by Letter",
+                    Description = "Words that share a prefix share its letters.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"public class TrieNode
+{
+    public Dictionary<char, TrieNode> Children { get; } = new();
+    public bool IsEnd { get; set; }
+}
+
+var root = new TrieNode();
+var tracker = TrieTracker.Create(root, ""Trie"");
+
+foreach (var word in new[] { ""car"", ""cat"" })
+{
+    var node = root;
+    foreach (char c in word)
+    {
+        if (!node.Children.TryGetValue(c, out var next)) node.Children[c] = next = new TrieNode();
+        node = next;
+    }
+    node.IsEnd = true;
+    tracker.Step($""insert {word}"", path: word);
+}
+
+Display.Visualizer(tracker);"
+                },
+                new()
+                {
+                    Id = "snip_container_water",
+                    Title = "Bars with Pointers and Water",
+                    Description = "Two pointers close in; the shaded block is the water between them.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"var height = new[] { 1, 8, 6, 2, 5, 4, 8, 3, 7 };
+var bars = VisualizerRecorder.CreateBars(height, ""Container with most water"");
+int left = 0, right = height.Length - 1, best = 0;
+bars.Watch(() => best);
+
+while (left < right)
+{
+    int level = Math.Min(height[left], height[right]);
+    best = Math.Max(best, level * (right - left));
+    bars.Step($""{left}..{right} holds {level * (right - left)}"", pointers: new { left, right }, shade: new BarShade(left, right, level));
+    if (height[left] < height[right]) left++; else right--;
+}
+
+Display.Visualizer(bars);"
+                },
+                new()
+                {
+                    Id = "snip_judge_cases",
+                    Title = "Check the Answers, Then Watch It Run",
+                    Description = "One ✅/❌ line per case, then the same algorithm drawn step by step.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"int[] TwoSum(int[] nums, int target)
+{
+    var seen = new Dictionary<int, int>();
+    for (int i = 0; i < nums.Length; i++)
+    {
+        if (seen.TryGetValue(target - nums[i], out int j)) return new[] { j, i };
+        seen[nums[i]] = i;
+    }
+    return Array.Empty<int>();
+}
+
+var judge = new Judge();
+judge.Case(""Example 1"", () => TwoSum(new[] { 2, 7, 11, 15 }, 9), ""[0,1]"");
+judge.Case(""Any order"", () => TwoSum(new[] { 3, 2, 4 }, 6), ""[2,1]"", anyOrder: true);
+judge.Summary();
+
+// The same idea, recorded step by step
+var nums = new[] { 3, 8, 2, 7 };
+var seen = new Dictionary<int, int>();
+var tracker = VisualizerRecorder.CreateArray(nums, ""Two Sum, target 9"");
+tracker.Watch(seen);
+for (int i = 0; i < nums.Length; i++)
+{
+    if (seen.ContainsKey(9 - nums[i]))
+    {
+        tracker.Step($""{9 - nums[i]} was seen: done"", pointers: new { i });
+        break;
+    }
+    seen[nums[i]] = i;
+    tracker.Step($""Remember {nums[i]}"", pointers: new { i });
+}
+Display.Visualizer(tracker);"
                 }
             }
         };

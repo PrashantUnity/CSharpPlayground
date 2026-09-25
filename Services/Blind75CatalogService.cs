@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -19,9 +20,20 @@ public static partial class Blind75CatalogService
         list.AddRange(GetDynamicProgrammingProblems());
         list.AddRange(GetIntervalsAndMathProblems());
 
-        // Sort naturally by problem number or default curriculum order
         var sorted = list.OrderBy(p => p.Number).ToList();
-        Blind75CurriculumEnhancer.Enhance(sorted);
+
+        // The panel starts with the statement's examples ("Generate test data" adds the edge cases); the script and
+        // notebook always check both and print a ✅/❌ line per case.
+        foreach (var problem in sorted)
+        {
+            if (problem.TestCases.Count == 0)
+            {
+                foreach (var test in problem.Tests)
+                {
+                    problem.TestCases.Add(test.ToTestCase());
+                }
+            }
+        }
         return sorted;
     });
 
@@ -81,27 +93,24 @@ public static partial class Blind75CatalogService
 
     public static ScriptDocumentItem ConvertToScript(BlindProblemItem problem)
     {
-        var scriptCode = BuildScriptCode(problem);
-        var notes = !string.IsNullOrWhiteSpace(problem.DescriptionMarkdown)
-            ? $"# {problem.FullTitle}\n\nDifficulty: {problem.DifficultyBadgeText} | Category: {problem.Category}\n\n{problem.DescriptionMarkdown}"
-            : $"# {problem.FullTitle}\n\nDifficulty: {problem.DifficultyBadgeText}\nCategory: {problem.Category}";
-
+        var notes = new StringBuilder();
+        notes.Append($"# {problem.FullTitle}\n\n**{problem.DifficultyBadgeText}** · {problem.Category}\n\n{problem.DescriptionMarkdown.Trim()}");
         if (!string.IsNullOrWhiteSpace(problem.ThinkingProcessMarkdown))
         {
-            notes += $"\n\n{problem.ThinkingProcessMarkdown}";
+            notes.Append($"\n\n## How to think\n\n{problem.ThinkingProcessMarkdown.Trim()}");
         }
 
         return new ScriptDocumentItem
         {
             Title = $"{problem.Number}. {problem.Title}",
-            Code = scriptCode,
-            Notes = notes,
-            TestCases = problem.TestCases.Count > 0 ? problem.TestCases.Select(t => new TestCaseItem
+            Code = BuildScriptCode(problem),
+            Notes = notes.ToString(),
+            TestCases = problem.TestCases.Select(t => new TestCaseItem
             {
                 Name = t.Name,
                 Input = t.Input,
                 ExpectedOutput = t.ExpectedOutput
-            }).ToList() : new List<TestCaseItem>()
+            }).ToList()
         };
     }
 
@@ -112,164 +121,128 @@ public static partial class Blind75CatalogService
             Title = $"{problem.Number}. {problem.Title} (Notebook)"
         };
 
-        // 1. Problem Statement Header
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Markdown,
-            Source = $"# {problem.FullTitle}\n\n**Category:** `{problem.Category}` | **Difficulty:** `{problem.DifficultyBadgeText}` | **Acceptance:** `{problem.AcceptanceRateText}`\n\n{problem.DescriptionMarkdown}"
-        });
+        void Markdown(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Markdown, Source = source.Trim() });
+        void Code(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = source.Trim() });
 
-        // 2. How to Think / Mental Model
+        // 1. The problem, then how to think about it
+        Markdown($"# {problem.FullTitle}\n\n**Category:** `{problem.Category}` · **Difficulty:** `{problem.DifficultyBadgeText}` · **Acceptance:** `{problem.AcceptanceRateText}`\n\n{problem.DescriptionMarkdown.Trim()}");
         if (!string.IsNullOrWhiteSpace(problem.ThinkingProcessMarkdown))
         {
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = problem.ThinkingProcessMarkdown
-            });
+            Markdown($"## 🧠 How to think\n\n{problem.ThinkingProcessMarkdown.Trim()}");
         }
 
-        // 3. Naive / Brute Force Approach
-        if (problem.NaiveApproach != null)
+        if (!string.IsNullOrWhiteSpace(problem.SupportCode))
         {
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = $"### 1. Naive / Brute Force Approach\n\n- **Time Complexity:** `{problem.NaiveApproach.TimeComplexity}`\n- **Space Complexity:** `{problem.NaiveApproach.SpaceComplexity}`\n\n{problem.NaiveApproach.Intuition}\n\n> ⚠️ **Bottleneck:** {problem.NaiveApproach.BottleneckExplanation}"
-            });
-
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = problem.NaiveApproach.Code.Trim()
-            });
+            Markdown("### 🧰 Setup\n\nRun this first: the node types and helpers every later cell uses.");
+            Code(problem.SupportCode);
         }
 
-        // 4. Greedy Approach (if applicable)
-        if (problem.GreedyApproach != null)
+        // 2. Approaches from the most direct to the best, each one runnable
+        int number = 0;
+        foreach (var approach in problem.Approaches.Where(a => a.Kind != ApproachKind.Optimal))
         {
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = $"### 2. Greedy Paradigm\n\n- **Time Complexity:** `{problem.GreedyApproach.TimeComplexity}`\n- **Space Complexity:** `{problem.GreedyApproach.SpaceComplexity}`\n\n**Greedy Choice Property:** {problem.GreedyApproach.GreedyChoiceProperty}\n\n{problem.GreedyApproach.Intuition}"
-            });
-
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = problem.GreedyApproach.Code.Trim()
-            });
+            Markdown(DescribeApproach(++number, approach));
+            if (!string.IsNullOrWhiteSpace(approach.Code)) Code(approach.Code);
         }
 
-        // 5. Dynamic Programming Approach (if applicable)
-        if (problem.DpApproach != null)
+        var optimal = problem.OptimalApproach;
+        Markdown(DescribeApproach(++number, optimal ?? new ProblemApproachItem
         {
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = $"### 3. Dynamic Programming Formulation\n\n- **Time Complexity:** `{problem.DpApproach.TimeComplexity}`\n- **Space Complexity:** `{problem.DpApproach.SpaceComplexity}`\n\n**Recurrence Relation:**\n```text\n{problem.DpApproach.RecurrenceRelation}\n```\n\n{problem.DpApproach.Intuition}"
-            });
+            Name = "Optimal Solution",
+            Kind = ApproachKind.Optimal,
+            TimeComplexity = problem.TimeComplexity,
+            SpaceComplexity = problem.SpaceComplexity
+        }));
+        Code(problem.SolutionCode);
 
-            notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = problem.DpApproach.Code.Trim()
-            });
-        }
+        // 3. Watch it run
+        Markdown($"""
+            ### 🎬 Watch it run
 
-        // 6. Optimal Solution
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Markdown,
-            Source = $"### 4. Optimal Production Solution\n\n- **Time Complexity:** `{problem.TimeComplexity}`\n- **Space Complexity:** `{problem.SpaceComplexity}`"
-        });
+            {(string.IsNullOrWhiteSpace(problem.VisualizationDescription) ? "The same algorithm with tracker calls that record each step." : problem.VisualizationDescription.Trim())}
 
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = !string.IsNullOrWhiteSpace(problem.SolutionCode) ? problem.SolutionCode : problem.StarterCode
-        });
+            > **Using the player:** ◀ ▶ (or the arrow keys) step through, **Space** plays, the **Ln** badge jumps to the line that recorded the step, **Fit** shows the whole drawing and **⛶** opens it full screen. Values that changed since the previous step are outlined in lime.
+            >
+            > In an interview you write only the solution above; the tracker calls exist only to draw it.
+            """);
+        Code(problem.VisualizationCode);
 
-        // 7. Interactive Visualizer
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Markdown,
-            Source = """
-                ### 🎨 5. Interactive Time-Travel Visualizer (Tracer Harness)
-
-                > 💡 **Interview & Coding Tip**: In an interview or submission, write your solution normally as shown above without instrumentation.
-                > The code below is an **extra execution tracer** using `VisualizerRecorder` and specialized trackers (`TreeTracker`, `LinkedListTracker`, `MatrixTracker`) to record state transitions for step-by-step visual scrubbing.
-                """
-        });
-
-        string visCode = !string.IsNullOrWhiteSpace(problem.VisualizationCode)
-            ? problem.VisualizationCode.Trim()
-            : Blind75CurriculumEnhancer.GenerateDefaultVisualizerCode(problem);
-
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = $"// --- Extra Tracer / Step Recorder Harness (For Interactive Visualizer) ---\n{visCode}"
-        });
-
-        // 8. Test Suite & On-Demand Data Generator
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Markdown,
-            Source = "### 🧪 6. Test Suite & Dynamic Data Generator\n\nRun this cell to evaluate all test cases and generate dynamic edge-case test data on demand."
-        });
-
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = Blind75CurriculumEnhancer.GenerateDefaultTestSuiteCode(problem)
-        });
+        // 4. Check it
+        Markdown("### 🧪 Tests\n\nThe examples from the statement plus edge cases. Each prints ✅ when the answer matches, ❌ with the difference when it doesn't.");
+        Code(BuildTestCode(problem, includeStressTest: true));
 
         return notebook;
     }
 
-    private static string BuildScriptCode(BlindProblemItem problem)
+    private static string DescribeApproach(int number, ProblemApproachItem approach)
     {
-        var cleanSolution = !string.IsNullOrWhiteSpace(problem.StarterCode)
-            ? problem.StarterCode.Trim()
-            : GetDefaultBoilerplate(problem).Trim();
-
-        string visHarness = !string.IsNullOrWhiteSpace(problem.VisualizationCode)
-            ? problem.VisualizationCode.Trim()
-            : Blind75CurriculumEnhancer.GenerateDefaultVisualizerCode(problem).Trim();
-
-        return $$"""
-            {{cleanSolution}}
-
-            // =========================================================================
-            // 🎨 EXTRA TRACER HARNESS (Interactive Time-Travel Step Recorder)
-            // =========================================================================
-            // Note: In an interview or submission, write your Solution cleanly as above.
-            // Below is an extra tracer harness wrapping your algorithm with trackers
-            // (VisualizerRecorder, TreeTracker, LinkedListTracker, MatrixTracker).
-            // Press F5 to mount the interactive time-travel player in the Bottom Deck!
-
-            {{visHarness}}
-            """;
+        var text = new StringBuilder();
+        string badge = approach.Kind switch
+        {
+            ApproachKind.Naive => "🐢",
+            ApproachKind.Greedy => "🎯",
+            ApproachKind.DynamicProgramming => "🧮",
+            ApproachKind.Optimal => "✅",
+            _ => "💡"
+        };
+        text.Append($"### {badge} Approach {number}: {approach.Name}\n\n");
+        text.Append($"**Time:** `{approach.TimeComplexity}` · **Space:** `{approach.SpaceComplexity}`\n\n");
+        if (!string.IsNullOrWhiteSpace(approach.Intuition)) text.Append(approach.Intuition.Trim()).Append("\n\n");
+        if (!string.IsNullOrWhiteSpace(approach.RecurrenceRelation)) text.Append($"**Recurrence:**\n\n```text\n{approach.RecurrenceRelation.Trim()}\n```\n\n");
+        if (!string.IsNullOrWhiteSpace(approach.GreedyChoiceProperty)) text.Append($"**Greedy choice:** {approach.GreedyChoiceProperty.Trim()}\n\n");
+        if (!string.IsNullOrWhiteSpace(approach.BottleneckExplanation)) text.Append($"> ⚠️ **Why it's not enough:** {approach.BottleneckExplanation.Trim()}\n");
+        return text.ToString();
     }
 
-    private static string GetDefaultBoilerplate(BlindProblemItem p) => $$"""
-        // LeetCode {{p.Number}}: {{p.Title}} ({{p.DifficultyBadgeText}})
-        // Category: {{p.Category}}
-        // Time Complexity: {{p.TimeComplexity}} | Space Complexity: {{p.SpaceComplexity}}
-        using System;
-        using System.Collections.Generic;
-        using System.Linq;
-
-        public class Solution 
+    private static string BuildScriptCode(BlindProblemItem problem)
+    {
+        var code = new StringBuilder();
+        code.AppendLine($"// {problem.FullTitle} · {problem.DifficultyBadgeText} · {problem.Category}");
+        code.AppendLine("// Run (F5): the tests print ✅/❌, then the step-by-step visualizer opens in the Results panel.");
+        code.AppendLine("// The full statement and hints are in the Notes panel.");
+        code.AppendLine();
+        if (!string.IsNullOrWhiteSpace(problem.SupportCode))
         {
-            // Implement your solution here
+            code.AppendLine(problem.SupportCode.Trim());
+            code.AppendLine();
         }
+        code.AppendLine(problem.SolutionCode.Trim());
+        code.AppendLine();
+        code.AppendLine("// ── Tests: every ✅/❌ line also drives the Test Cases panel ──────────────");
+        code.AppendLine(BuildTestCode(problem, includeStressTest: false));
+        code.AppendLine();
+        code.AppendLine("// ── Visualizer: the same algorithm with tracker calls that record every step ──");
+        code.AppendLine("// (Interviews only need the solution above; this part exists to draw it.)");
+        code.AppendLine(problem.VisualizationCode.Trim());
+        return code.ToString();
+    }
 
-        var sol = new Solution();
-        Console.WriteLine("Ready to solve: {{p.FullTitle}}");
+    /// <summary>A Judge run over the examples and edge cases, plus (in the notebook) the stress test against the approaches.</summary>
+    public static string BuildTestCode(BlindProblemItem problem, bool includeStressTest)
+    {
+        var code = new StringBuilder();
+        if (problem.SolutionCode.Contains("class Solution", StringComparison.Ordinal))
+        {
+            code.AppendLine("var sol = new Solution();");
+        }
+        code.AppendLine("var judge = new Judge();");
+        if (!string.IsNullOrWhiteSpace(problem.TestSetupCode))
+        {
+            code.AppendLine(problem.TestSetupCode.Trim());
+        }
+        foreach (var test in problem.Tests.Concat(problem.ExtraTests))
+        {
+            string order = test.AnyOrder ? ", anyOrder: true" : string.Empty;
+            code.AppendLine($"judge.Case({Literal(test.Name)}, () => {test.Call.Trim()}, {Literal(test.Expected)}{order});");
+        }
+        if (includeStressTest && !string.IsNullOrWhiteSpace(problem.StressTestCode))
+        {
+            code.AppendLine(problem.StressTestCode.Trim());
+        }
+        code.Append("judge.Summary();");
+        return code.ToString();
+    }
 
-        // Visualization:
-        {{(!string.IsNullOrWhiteSpace(p.VisualizationCode) ? p.VisualizationCode : Blind75CurriculumEnhancer.GenerateDefaultVisualizerCode(p))}}
-        """;
+    private static string Literal(string text) =>
+        Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(text, quote: true);
 }

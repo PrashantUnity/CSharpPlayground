@@ -52,7 +52,7 @@ public class ArrayPointerData
         for (int i = 0; i < Source.Count; i++)
         {
             var value = Source[i];
-            var display = value?.ToString() ?? string.Empty;
+            var display = Services.VisualizerValueFormatter.Format(value);
             if (i < Items.Count)
             {
                 Items[i].RawValue = value;

@@ -41,6 +41,12 @@ public class LinkedListData
     public bool HasCycle { get; set; }
     public int? CycleTargetIndex { get; set; }
 
+    /// <summary>The node whose next pointer closes the cycle (defaults to the last node).</summary>
+    public int? CycleSourceIndex { get; set; }
+
+    /// <summary>Each chain start begins a new row instead of continuing the same row after a gap.</summary>
+    public bool StackChains { get; set; }
+
     /// <summary>Named variables pointing into the list (prev, curr, slow…); Index -1 means the variable is null.</summary>
     public List<PointerMarkerData> Pointers { get; set; } = new();
 
@@ -52,6 +58,8 @@ public class LinkedListData
         Nodes = Nodes.Select(n => n.Clone()).ToList(),
         HasCycle = HasCycle,
         CycleTargetIndex = CycleTargetIndex,
+        CycleSourceIndex = CycleSourceIndex,
+        StackChains = StackChains,
         Pointers = Pointers.Select(p => new PointerMarkerData(p.Name, p.Index, p.Color)).ToList(),
         ChainStarts = new List<int>(ChainStarts)
     };

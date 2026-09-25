@@ -90,6 +90,75 @@ public class LinkedListAndRecursionTrackerTests
     }
 
     [Fact]
+    public void RecursionTracker_FoundAndDone_EndCallsWithTheirOwnColourAndNote()
+    {
+        var calls = RecursionTracker.Create("combos");
+        var root = calls.Enter("7");
+        calls.Enter("+7 → 0").Found("adds up to 7");
+        root.Done("every choice tried");
+
+        var tree = Assert.IsType<TreeNodeData>(calls.Sequence.Steps[^1].Snapshot);
+        var solution = tree.Children[0].Children[0];
+        Assert.Equal((TreeNodeState.Matched, "✓"), (solution.State, solution.SubLabel));
+        Assert.Equal(TreeNodeState.Visited, tree.Children[0].State);
+        Assert.Equal("+7 → 0: adds up to 7", calls.Sequence.Steps[^2].Description);
+        Assert.Equal("every choice tried", calls.Sequence.Steps[^1].Description);
+        Assert.False(calls.Sequence.Steps[^1].AuxiliaryInfo.ContainsKey("Memo hits"));
+    }
+
+    [Fact]
+    public void LinkedListTracker_Rows_RedrawEachStepInLinkOrderWithOneRowPerChain()
+    {
+        var a = new ListNode(1, new ListNode(3));
+        var b = new ListNode(2, new ListNode(4));
+        var tracker = LinkedListTracker.Create(a, "merge", rows: true);
+        tracker.Step("both lists", new { a, b });
+
+        var both = ListAt(tracker, -1);
+        Assert.True(both.StackChains);
+        Assert.Equal(new[] { "1", "3", "2", "4" }, both.Nodes.Select(n => n.DisplayValue));
+        Assert.Equal(new[] { 2 }, both.ChainStarts);
+
+        // Splice 1 -> 2 -> 4; the 3 left behind becomes its own row.
+        var rest = a.next!;
+        a.next = b;
+        tracker.Mark(a);
+        tracker.Step("spliced", new { a, rest });
+
+        var spliced = ListAt(tracker, -1);
+        Assert.Equal(new[] { "1", "2", "4", "3" }, spliced.Nodes.Select(n => n.DisplayValue));
+        Assert.Equal(new int?[] { 1, 2, null, null }, spliced.Nodes.Select(n => n.NextIndex));
+        Assert.Equal(new[] { 3 }, spliced.ChainStarts);
+        Assert.Equal(("rest", 3), (spliced.Pointers[1].Name, spliced.Pointers[1].Index));
+        Assert.Equal(LinkedListTracker.DoneColor, spliced.Nodes[0].Color);
+        Assert.Null(spliced.Nodes[1].Color);
+
+        // Nodes are matched by identity, so only the rewired 1 counts as changed although the others moved.
+        Assert.Equal(new[] { 0 }, StepChanges.LinkedListNodes(both, spliced));
+    }
+
+    [Fact]
+    public void LinkedListTracker_NamesTheFirstPointerAfterTheArgument()
+    {
+        var dummy = new ListNode(0, new ListNode(1));
+        Assert.Equal("dummy", ListAt(LinkedListTracker.Create(dummy), 0).Pointers.Single().Name);
+        Assert.Equal("head", ListAt(LinkedListTracker.Create(new ListNode(5)), 0).Pointers.Single().Name);
+    }
+
+    [Fact]
+    public void LinkedListTracker_FlagsTheLinkThatClosesACycle()
+    {
+        var head = new ListNode(3, new ListNode(2, new ListNode(0, new ListNode(-4))));
+        head.next!.next!.next!.next = head.next;
+
+        var data = ListAt(LinkedListTracker.Create(head), 0);
+
+        Assert.True(data.HasCycle);
+        Assert.Equal((3, 1), (data.CycleSourceIndex, data.CycleTargetIndex));
+        Assert.False(ListAt(LinkedListTracker.Create(new ListNode(1, new ListNode(2))), 0).HasCycle);
+    }
+
+    [Fact]
     public void LinkedListTracker_PointerBagWithANextProperty_IsNotMistakenForANode()
     {
         var head = new ListNode(1, new ListNode(2));

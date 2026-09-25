@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -32,6 +33,12 @@ public class BarVisualizerItem
     }
 }
 
+/// <summary>
+/// A translucent block drawn across bars From..To between Floor and Level, e.g. the water a container holds
+/// (floor 0) or the rise from a buy price to today's price (floor = the buy price).
+/// </summary>
+public sealed record BarShade(int From, int To, double Level, string? Label = null, double Floor = 0);
+
 public class BarChartVisualizerData
 {
     public List<BarVisualizerItem> Items { get; set; } = new();
@@ -40,8 +47,34 @@ public class BarChartVisualizerData
     public bool ShowValues { get; set; } = true;
     public bool ShowIndices { get; set; } = true;
     public string? Description { get; set; }
+    public BarShade? Shade { get; set; }
+
+    /// <summary>Live list the bars mirror; recorded steps re-read it, so in-place updates and swaps show up.</summary>
+    public IList? Source { get; set; }
 
     public BarChartVisualizerData() { }
+
+    public void RefreshFromSource()
+    {
+        if (Source == null) return;
+
+        for (int i = 0; i < Source.Count; i++)
+        {
+            double value = Convert.ToDouble(Source[i], System.Globalization.CultureInfo.InvariantCulture);
+            if (i >= Items.Count) Items.Add(new BarVisualizerItem { Index = i });
+            Items[i].Value = value;
+            Items[i].DisplayValue = Services.VisualizerValueFormatter.Format(Source[i]);
+
+            // The scale only grows, so bars never jump when a value drops.
+            MaxValue = Math.Max(MaxValue, value);
+            MinValue = Math.Min(MinValue, value);
+        }
+
+        if (Items.Count > Source.Count)
+        {
+            Items.RemoveRange(Source.Count, Items.Count - Source.Count);
+        }
+    }
 
     public BarChartVisualizerData(IEnumerable<double> values)
     {
@@ -91,7 +124,8 @@ public class BarChartVisualizerData
             MinValue = MinValue,
             ShowValues = ShowValues,
             ShowIndices = ShowIndices,
-            Description = Description
+            Description = Description,
+            Shade = Shade
         };
         foreach (var item in Items)
         {

@@ -24,11 +24,24 @@ public class VisualizerOptions
 
     public VisualizerSequence? Sequence { get; set; }
 
+    /// <summary>
+    /// Shrink the drawing to fit when it first appears, if it would be cut off at 100% and fits at 50% or more.
+    /// Bigger drawings stay at 100% (trees then follow the current node); the Fit button still fits anything.
+    /// </summary>
+    public bool FitOnOpen { get; set; } = true;
+
+    /// <summary>Text for the header's stats pill when the data type alone can't describe it (e.g. "Intervals: 4").</summary>
+    public string? Summary { get; set; }
+
     /// <summary>A second view of the same visualization: it shares the data and the playback, but zooms and pans on its own.</summary>
     public VisualizerOptions CloneView() => (VisualizerOptions)MemberwiseClone();
 
     public string GetSummaryText()
     {
+        if (!string.IsNullOrEmpty(Summary))
+        {
+            return Summary;
+        }
         if (MatrixData != null)
         {
             if (MatrixData.Islands.Count > 0)
@@ -49,7 +62,10 @@ public class VisualizerOptions
         }
         if (ArrayData != null)
         {
-            return $"Items: {ArrayData.Items.Count} • Pointers: {ArrayData.Pointers.Count}";
+            // Pointers usually arrive per step, so a count of the up-front ones would read "Pointers: 0" mid-walk.
+            return ArrayData.Pointers.Count > 0
+                ? $"Items: {ArrayData.Items.Count} • Pointers: {ArrayData.Pointers.Count}"
+                : $"Items: {ArrayData.Items.Count}";
         }
         if (BarData != null)
         {

@@ -1201,6 +1201,108 @@ Display.Visualizer(tracker);", onRichOutput: r => richOut = r, sourceId: "cellC"
         Assert.Equal("0", renderer.HitTest(new Point(200, 95), bounds, options)?.NodeId);
         Assert.Null(renderer.HitTest(new Point(200, 40), bounds, options));
     }
+
+    [Fact]
+    public void TreeTracker_Sync_PicksUpNewAndRewiredNodesAndKeepsTheirMarks()
+    {
+        var root = new PublicFieldTreeNode(2, new PublicFieldTreeNode(1));
+        var tracker = TreeTracker.Create(root, "grow");
+        tracker.Visit(root.left, "visit 1");
+        tracker.Annotate(root, "top");
+
+        root.right = new PublicFieldTreeNode(3);
+        (root.left, root.right) = (root.right, root.left);
+        tracker.Sync(note: "grew and swapped");
+
+        var tree = Assert.IsType<TreeNodeData>(tracker.Sequence.Steps[^1].Snapshot);
+        Assert.Equal("2", tree.DisplayValue);
+        Assert.Equal("top", tree.SubLabel);
+        Assert.Equal(new[] { "3", "1" }, new[] { tree.Left!.DisplayValue, tree.Right!.DisplayValue });
+        Assert.Equal(TreeNodeState.Current, tree.Right!.State);
+        Assert.StartsWith("synced_", tree.Left!.Id);
+
+        // Visiting the new node hands it the glow; the old one keeps only its "visited" colour.
+        tracker.Visit(root.left, "visit 3");
+        var after = Assert.IsType<TreeNodeData>(tracker.Sequence.Steps[^1].Snapshot);
+        Assert.Equal(TreeNodeState.Current, after.Left!.State);
+        Assert.Equal((TreeNodeState.Visited, false), (after.Right!.State, after.Right.IsActive));
+    }
+
+    [Fact]
+    public void TreeTracker_Visit_LeavesAHighlightInPlaceButStopsItsGlow()
+    {
+        var root = new PublicFieldTreeNode(1, new PublicFieldTreeNode(2), new PublicFieldTreeNode(3));
+        var tracker = TreeTracker.Create(root);
+        tracker.Visit(root, "visit 1");
+        tracker.Highlight(root, TreeNodeState.Swapped, "swapped");
+        tracker.Visit(root.left, "visit 2");
+
+        var tree = Assert.IsType<TreeNodeData>(tracker.Sequence.Steps[^1].Snapshot);
+        Assert.Equal((TreeNodeState.Swapped, false), (tree.State, tree.IsActive));
+        Assert.Equal(new[] { tree.Left!.Id }, tracker.Sequence.Steps[^1].ActiveNodeIds);
+    }
+
+    [Fact]
+    public void GridCell_LeavingThePathState_DropsThePathColour()
+    {
+        var cell = new GridCell { State = GridCellState.Path };
+        Assert.Equal(CellKind.Path, cell.Kind);
+
+        cell.State = GridCellState.Default;
+        Assert.Equal(CellKind.Standard, cell.Kind);
+
+        var wall = new GridCell { State = GridCellState.Wall };
+        wall.State = GridCellState.Visited;
+        Assert.Equal(CellKind.Wall, wall.Kind);
+
+        // A passing Target highlight on land gives the land back afterwards.
+        var land = new GridCell { Kind = CellKind.Land };
+        land.State = GridCellState.Target;
+        land.State = GridCellState.Default;
+        Assert.Equal(CellKind.Land, land.Kind);
+        Assert.Equal(CellKind.Land, land.Clone().Kind);
+    }
+
+    [Fact]
+    public void GraphTracker_MarkPaintAndVisit_ChangeNodesWithoutAStaleGlow()
+    {
+        var tracker = GraphTracker.Create(new[] { new[] { 0, 1 }, new[] { 1, 2 } }, "g", isDirected: false);
+        tracker.Visit(0, "visit 0");
+        tracker.Mark(0, GraphNodeState.Cycle);
+        tracker.Paint(2, "#123456");
+        tracker.MarkEdge(1, 2, GraphEdgeState.Rejected);
+        tracker.Visit(1, "visit 1");
+
+        var graph = Assert.IsType<GraphData>(tracker.Sequence.Steps[^1].Snapshot);
+        Assert.Equal((GraphNodeState.Cycle, false), (graph.FindNode("0")!.State, graph.FindNode("0")!.IsActive));
+        Assert.Equal("#123456", graph.FindNode("2")!.Color);
+        Assert.Equal(GraphEdgeState.Rejected, graph.FindEdge("2", "1")!.State);
+        Assert.Equal(new[] { "1" }, tracker.Sequence.Steps[^1].ActiveNodeIds);
+    }
+
+    [Fact]
+    public void GraphTracker_AddEdge_DrawsEdgesDiscoveredWhileRunning()
+    {
+        var tracker = GraphTracker.Create(new Dictionary<char, List<char>> { ['w'] = new(), ['e'] = new() }, "letters");
+        tracker.AddEdge('w', 'e');
+        tracker.AddEdge('w', 'e');
+        tracker.AddEdge('e', 'r');
+        tracker.Snapshot("rules so far");
+
+        var graph = Assert.IsType<GraphData>(tracker.Sequence.Steps[^1].Snapshot);
+        Assert.Equal(new[] { "w", "e", "r" }, graph.Nodes.Select(n => n.Id));
+        Assert.Equal(new[] { ("w", "e"), ("e", "r") }, graph.Edges.Select(e => (e.FromId, e.ToId)));
+        Assert.Empty(Assert.IsType<GraphData>(tracker.Sequence.Steps[0].Snapshot).Edges);
+    }
+
+    [Fact]
+    public void GraphDataParser_Dictionary_KeepsTheKeysInOrder()
+    {
+        var square = new Dictionary<int, List<int>> { [1] = new() { 2, 4 }, [2] = new() { 1, 3 }, [3] = new() { 2, 4 }, [4] = new() { 1, 3 } };
+        var graph = GraphDataParser.Parse(square, isDirected: false);
+        Assert.Equal(new[] { "1", "2", "3", "4" }, graph.Nodes.Select(n => n.Id));
+        Assert.Equal(4, graph.Edges.Count);
+    }
 }
 
 

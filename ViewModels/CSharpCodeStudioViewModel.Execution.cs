@@ -626,8 +626,13 @@ public partial class CSharpCodeStudioViewModel
         try
         {
             await RunCodeAsync();
-            testCase.ActualOutput = ConsoleOutput;
-            if (!string.IsNullOrEmpty(testCase.ExpectedOutput) && ConsoleOutput.Contains(testCase.ExpectedOutput))
+
+            // Scripts that check themselves with Judge print a ✅/❌ line per case; that line is the verdict.
+            // Anything else falls back to "the output mentions the expected text".
+            var verdict = Judge.Verdict(ConsoleOutput, testCase.Name);
+            testCase.ActualOutput = Judge.LineFor(ConsoleOutput, testCase.Name) ?? ConsoleOutput;
+            bool passed = verdict ?? (!string.IsNullOrEmpty(testCase.ExpectedOutput) && ConsoleOutput.Contains(testCase.ExpectedOutput));
+            if (passed)
             {
                 testCase.Passed = true;
                 CheckAndMarkBlindProblemSolved();

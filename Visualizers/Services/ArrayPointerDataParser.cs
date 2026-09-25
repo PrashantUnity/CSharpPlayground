@@ -29,7 +29,7 @@ public static class ArrayPointerDataParser
             int idx = 0;
             foreach (var item in enumerable)
             {
-                data.Items.Add(new ArrayItemData(idx, item?.ToString() ?? string.Empty)
+                data.Items.Add(new ArrayItemData(idx, VisualizerValueFormatter.Format(item))
                 {
                     RawValue = item
                 });

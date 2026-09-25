@@ -84,6 +84,26 @@ public static class StepChanges
         var changed = new HashSet<int>();
         if (previous == null) return changed;
 
+        // Row layouts redraw nodes in link order, so a node is matched by identity rather than by position.
+        if (current.StackChains && previous.StackChains)
+        {
+            var before = new Dictionary<object, (string Value, object? Next)>(ReferenceEqualityComparer.Instance);
+            foreach (var node in previous.Nodes)
+            {
+                if (node.RawValue != null) before[node.RawValue] = (node.DisplayValue, NextOf(previous, node));
+            }
+            for (int i = 0; i < current.Nodes.Count; i++)
+            {
+                var node = current.Nodes[i];
+                if (node.RawValue == null || !before.TryGetValue(node.RawValue, out var was) ||
+                    was.Value != node.DisplayValue || !ReferenceEquals(was.Next, NextOf(current, node)))
+                {
+                    changed.Add(i);
+                }
+            }
+            return changed;
+        }
+
         for (int i = 0; i < current.Nodes.Count; i++)
         {
             if (i >= previous.Nodes.Count ||
@@ -95,6 +115,9 @@ public static class StepChanges
         }
         return changed;
     }
+
+    private static object? NextOf(LinkedListData data, LinkedListNodeData node) =>
+        node.NextIndex is int next && next >= 0 && next < data.Nodes.Count ? data.Nodes[next].RawValue : null;
 
     /// <summary>Ids of nodes that are new, hold a different value or label, or moved to another parent or side.</summary>
     public static HashSet<string> TreeNodes(TreeNodeData? previous, TreeNodeData current)

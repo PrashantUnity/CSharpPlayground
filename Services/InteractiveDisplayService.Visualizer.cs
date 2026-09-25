@@ -65,6 +65,16 @@ public static partial class Display
         return Visualizer(tracker.Options);
     }
 
+    public static InteractiveVisualizerControl Visualizer(IntervalTracker tracker)
+    {
+        return Visualizer(tracker.Options);
+    }
+
+    public static InteractiveVisualizerControl Visualizer(TrieTracker tracker)
+    {
+        return Visualizer(tracker.Options);
+    }
+
     public static InteractiveVisualizerControl Islands(
         object grid,
         string? title = null,

@@ -9,8 +9,10 @@ public class TreeTracker
 {
     private readonly WatchList _watches = new();
     private TreeNodeData? _currentActiveNode;
+    private object? _source;
+    private int _syncedIds;
 
-    public TreeNodeData Root { get; }
+    public TreeNodeData Root { get; private set; }
     public VisualizerOptions Options { get; }
     public VisualizerSequence Sequence { get; }
 
@@ -35,9 +37,68 @@ public class TreeTracker
             TreeData = root
         };
 
-        var tracker = new TreeTracker(root, options);
+        var tracker = new TreeTracker(root, options) { _source = treeSource };
         tracker.Snapshot("Initial Tree State", sourceLine, sourceFile);
         return tracker;
+    }
+
+    /// <summary>
+    /// Re-reads your tree after the algorithm added, removed or rewired nodes (building a tree, inverting it). Every node
+    /// keeps its state, labels and pointer. Pass <paramref name="root"/> when the root itself changed; a
+    /// <paramref name="note"/> also records a step.
+    /// </summary>
+    public void Sync(
+        object? root = null,
+        string? note = null,
+        [CallerLineNumber] int sourceLine = 0,
+        [CallerFilePath] string sourceFile = "")
+    {
+        if (root != null) _source = root;
+        if (TreeDataParser.Parse(_source) is not { } fresh || ReferenceEquals(fresh, Root)) return;
+
+        var before = new Dictionary<object, TreeNodeData>(ReferenceEqualityComparer.Instance);
+        Walk(Root, node =>
+        {
+            if (node.RawValue != null) before[node.RawValue] = node;
+        });
+
+        // Known nodes keep their id (so the change outline and the playback focus follow them); new ones get fresh ids.
+        Walk(fresh, node =>
+        {
+            if (node.RawValue != null && before.TryGetValue(node.RawValue, out var old))
+            {
+                node.Id = old.Id;
+                node.State = old.State;
+                node.IsActive = old.IsActive;
+                node.IsVisited = old.IsVisited;
+                node.PointerLabel = old.PointerLabel;
+                node.SubLabel = old.SubLabel;
+                node.CustomColor = old.CustomColor;
+                node.Metadata = new Dictionary<string, object?>(old.Metadata);
+            }
+            else
+            {
+                node.Id = $"synced_{++_syncedIds}";
+            }
+        });
+
+        Root = fresh;
+        Options.TreeData = fresh;
+        _currentActiveNode = _currentActiveNode?.RawValue is { } raw ? FindByRawValue(fresh, raw) : null;
+
+        if (!string.IsNullOrEmpty(note))
+        {
+            Snapshot(note, sourceLine, sourceFile);
+        }
+    }
+
+    private static void Walk(TreeNodeData node, Action<TreeNodeData> visit)
+    {
+        visit(node);
+        foreach (var child in node.Children)
+        {
+            Walk(child, visit);
+        }
     }
 
     /// <summary>Shows a live queue, stack, set, map or list beneath the tree at every step recorded after this call.</summary>
@@ -103,10 +164,11 @@ public class TreeTracker
         var node = ResolveNode(nodeOrTarget);
         if (node == null) return;
 
-        if (_currentActiveNode != null && _currentActiveNode != node && _currentActiveNode.State == TreeNodeState.Current)
+        // The previous node stops glowing; it only turns "visited" if nothing else (swapped, matched...) was marked on it.
+        if (_currentActiveNode != null && _currentActiveNode != node)
         {
-            _currentActiveNode.State = TreeNodeState.Visited;
             _currentActiveNode.IsActive = false;
+            if (_currentActiveNode.State == TreeNodeState.Current) _currentActiveNode.State = TreeNodeState.Visited;
         }
 
         node.State = TreeNodeState.Current;
@@ -147,6 +209,42 @@ public class TreeTracker
 
         string desc = note ?? $"{state} Node [{node.DisplayValue}]";
         Snapshot(desc, sourceLine, sourceFile);
+    }
+
+    /// <summary>
+    /// Colours a node without recording a step, so several nodes can change at once (comparing two trees in lockstep);
+    /// the next recorded step shows them.
+    /// </summary>
+    public void Mark(object? nodeOrTarget, TreeNodeState state)
+    {
+        var node = ResolveNode(nodeOrTarget);
+        if (node == null) return;
+
+        node.State = state;
+        node.IsActive = state == TreeNodeState.Current;
+        if (state == TreeNodeState.Current) _currentActiveNode = node;
+    }
+
+    /// <summary>Ends the current node's glow (it turns visited), e.g. before a closing summary step.</summary>
+    public void ClearCurrent()
+    {
+        Walk(Root, node =>
+        {
+            if (node.State == TreeNodeState.Current) node.State = TreeNodeState.Visited;
+            node.IsActive = false;
+        });
+        _currentActiveNode = null;
+    }
+
+    /// <summary>Returns every node to its default colour (labels and pointers stay), e.g. before trying the next candidate.</summary>
+    public void ClearMarks()
+    {
+        Walk(Root, node =>
+        {
+            node.State = TreeNodeState.Default;
+            node.IsActive = false;
+        });
+        _currentActiveNode = null;
     }
 
     public void SetPointer(

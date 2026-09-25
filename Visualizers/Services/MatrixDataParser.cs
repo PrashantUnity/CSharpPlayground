@@ -200,9 +200,9 @@ public static class MatrixDataParser
         switch (val)
         {
             case char ch:
-                if (ch == options.StartChar || ch == 'S') cell.State = GridCellState.Start;
-                else if (ch == options.TargetChar || ch == 'E' || ch == 'T') cell.State = GridCellState.Target;
-                else if (ch == options.WallChar || ch == 'W' || ch == 'X') cell.State = GridCellState.Wall;
+                if (ch == options.StartChar || ch == 'S') cell.Kind = CellKind.Start;
+                else if (ch == options.TargetChar || ch == 'E' || ch == 'T') cell.Kind = CellKind.Target;
+                else if (ch == options.WallChar || ch == 'W' || ch == 'X') cell.Kind = CellKind.Wall;
                 else if (ch == '.') cell.State = GridCellState.Default;
                 else if (ch == '1') { cell.Kind = CellKind.Land; cell.State = GridCellState.Default; }
                 else if (ch == '0') { cell.Kind = CellKind.Water; cell.State = GridCellState.Default; }
@@ -212,7 +212,7 @@ public static class MatrixDataParser
             case int i:
                 if (i == 1) { cell.Kind = CellKind.Land; cell.State = GridCellState.Default; }
                 else if (i == 0) { cell.Kind = CellKind.Water; cell.State = GridCellState.Default; }
-                else if (i < 0) cell.State = GridCellState.Wall;
+                else if (i < 0) cell.Kind = CellKind.Wall;
                 else cell.State = GridCellState.Default;
                 break;
 
@@ -223,9 +223,9 @@ public static class MatrixDataParser
 
             case string s:
                 var trimmed = s.Trim();
-                if (trimmed.Equals("start", StringComparison.OrdinalIgnoreCase) || trimmed == "S") cell.State = GridCellState.Start;
-                else if (trimmed.Equals("end", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("target", StringComparison.OrdinalIgnoreCase) || trimmed == "T" || trimmed == "E") cell.State = GridCellState.Target;
-                else if (trimmed == "#" || trimmed.Equals("wall", StringComparison.OrdinalIgnoreCase)) cell.State = GridCellState.Wall;
+                if (trimmed.Equals("start", StringComparison.OrdinalIgnoreCase) || trimmed == "S") cell.Kind = CellKind.Start;
+                else if (trimmed.Equals("end", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("target", StringComparison.OrdinalIgnoreCase) || trimmed == "T" || trimmed == "E") cell.Kind = CellKind.Target;
+                else if (trimmed == "#" || trimmed.Equals("wall", StringComparison.OrdinalIgnoreCase)) cell.Kind = CellKind.Wall;
                 else if (trimmed == "1") { cell.Kind = CellKind.Land; cell.State = GridCellState.Default; }
                 else if (trimmed == "0") { cell.Kind = CellKind.Water; cell.State = GridCellState.Default; }
                 else if (trimmed.Equals("land", StringComparison.OrdinalIgnoreCase)) { cell.Kind = CellKind.Land; cell.State = GridCellState.Default; }
@@ -307,7 +307,7 @@ public class MatrixBuilder
 
     public MatrixBuilder WithWall(int r, int c)
     {
-        if (_grid.IsInBounds(r, c)) _grid[r, c].State = GridCellState.Wall;
+        if (_grid.IsInBounds(r, c)) _grid[r, c].Kind = CellKind.Wall;
         return this;
     }
 
@@ -315,7 +315,7 @@ public class MatrixBuilder
     {
         if (_grid.IsInBounds(r, c))
         {
-            _grid[r, c].State = GridCellState.Start;
+            _grid[r, c].Kind = CellKind.Start;
             _grid[r, c].DisplayValue = label;
         }
         return this;
@@ -325,7 +325,7 @@ public class MatrixBuilder
     {
         if (_grid.IsInBounds(r, c))
         {
-            _grid[r, c].State = GridCellState.Target;
+            _grid[r, c].Kind = CellKind.Target;
             _grid[r, c].DisplayValue = label;
         }
         return this;

@@ -16,8 +16,10 @@ public class LinkedListRenderer : VisualizerRendererBase
     private const double ArrowGap = 26.0;
     private const double ChainGap = 30.0;
     private const double MarkerWidth = 44.0;
+    private const double RowGap = 64.0;
 
-    private sealed record Layout(double Scale, Rect[] Cells, Rect? NullBox, Rect? EndBox);
+    // EndBoxes: the NULL (or "…") box after each chain's last node, keyed by that node.
+    private sealed record Layout(double Scale, Rect[] Cells, Rect? NullBox, Dictionary<int, Rect> EndBoxes);
 
     public override void Render(DrawingContext context, Rect bounds, VisualizerOptions options)
     {
@@ -45,7 +47,10 @@ public class LinkedListRenderer : VisualizerRendererBase
 
             var valRect = new Rect(cell.X, cell.Y, BoxWidth * scale, cell.Height);
             var slotRect = new Rect(valRect.Right, cell.Y, NextSlotWidth * scale, cell.Height);
-            var fillBrush = node.IsCycleTarget ? GetBrush("#881337") : (isActive ? GetBrush("#1e3a8a") : GetBrush("#1e293b"));
+            var fillBrush = node.IsCycleTarget ? GetBrush("#881337")
+                : isActive ? GetBrush("#1e3a8a")
+                : !string.IsNullOrEmpty(node.Color) ? GetBrush(node.Color)
+                : GetBrush("#1e293b");
             var borderPen = node.IsCycleTarget ? GetPen("#f43f5e", 1.8) : (isActive ? GetPen("#60a5fa", 1.8) : GetPen("#475569", 1));
             context.DrawRectangle(fillBrush, borderPen, new RoundedRect(valRect, 4, 0, 0, 4));
             context.DrawRectangle(GetBrush("#0f172a"), borderPen, new RoundedRect(slotRect, 0, 4, 4, 0));
@@ -58,7 +63,7 @@ public class LinkedListRenderer : VisualizerRendererBase
             context.DrawText(ftVal, new Point(valRect.Left + (valRect.Width - ftVal.Width) / 2.0, valRect.Top + (valRect.Height - ftVal.Height) / 2.0));
 
             // A null next pointer in the middle of the drawing is a slash, the usual box-and-pointer notation.
-            if (node.NextIndex == null && !node.ContinuesBeyondView && i != last)
+            if (node.NextIndex == null && !node.ContinuesBeyondView && !layout.EndBoxes.ContainsKey(i))
             {
                 double inset = 3.5 * scale;
                 context.DrawLine(arrowPen, new Point(slotRect.Left + inset, slotRect.Bottom - inset), new Point(slotRect.Right - inset, slotRect.Top + inset));
@@ -74,7 +79,7 @@ public class LinkedListRenderer : VisualizerRendererBase
         {
             if (data.Nodes[i].NextIndex is not int target) continue;
 
-            bool isCycleLink = data.HasCycle && i == last && target == data.CycleTargetIndex;
+            bool isCycleLink = data.HasCycle && i == (data.CycleSourceIndex ?? last) && target == data.CycleTargetIndex;
             var labelPoint = DrawLink(context, layout, i, target, isCycleLink ? cyclePen : arrowPen);
             if (isCycleLink)
             {
@@ -83,15 +88,15 @@ public class LinkedListRenderer : VisualizerRendererBase
             }
         }
 
-        // 3. End of the chain: NULL, or "…" when the list goes on past the drawing limit
-        if (layout.EndBox is { } endBox)
+        // 3. End of each chain: NULL, or "…" when the list goes on past the drawing limit
+        foreach (var (index, endBox) in layout.EndBoxes)
         {
-            var lastCell = layout.Cells[last];
-            var from = new Point(lastCell.Right - NextSlotWidth * scale / 2.0, lastCell.Center.Y);
+            var endCell = layout.Cells[index];
+            var from = new Point(endCell.Right - NextSlotWidth * scale / 2.0, endCell.Center.Y);
             var to = new Point(endBox.Left, endBox.Center.Y);
             context.DrawLine(arrowPen, from, to);
             DrawArrowTip(context, to, 1, 0, 6 * scale, arrowPen.Brush!);
-            DrawMarkerBox(context, endBox, data.Nodes[last].ContinuesBeyondView ? "…" : "NULL", scale);
+            DrawMarkerBox(context, endBox, data.Nodes[index].ContinuesBeyondView ? "…" : "NULL", scale);
         }
 
         if (layout.NullBox is { } nullBox)
@@ -125,6 +130,26 @@ public class LinkedListRenderer : VisualizerRendererBase
         var fromCell = layout.Cells[from];
         var targetCell = layout.Cells[to];
         var slotCenter = new Point(fromCell.Right - NextSlotWidth * scale / 2.0, fromCell.Center.Y);
+
+        // Into another row (two chains joining): an S-curve from this row's edge to the target's.
+        if (Math.Abs(fromCell.Y - targetCell.Y) > 0.5)
+        {
+            bool down = targetCell.Y > fromCell.Y;
+            var exit = new Point(slotCenter.X, down ? fromCell.Bottom : fromCell.Top);
+            var entry = new Point(targetCell.Left + BoxWidth * scale / 2.0, down ? targetCell.Top : targetCell.Bottom);
+            double pull = (entry.Y - exit.Y) / 2.0;
+
+            var curve = new StreamGeometry();
+            using (var ctx = curve.Open())
+            {
+                ctx.BeginFigure(exit, isFilled: false);
+                ctx.CubicBezierTo(new Point(exit.X, exit.Y + pull), new Point(entry.X, entry.Y - pull), entry);
+                ctx.EndFigure(isClosed: false);
+            }
+            context.DrawGeometry(null, pen, curve);
+            DrawArrowTip(context, entry, 0, down ? 1 : -1, 7 * scale, pen.Brush!);
+            return new Point((exit.X + entry.X) / 2.0, (exit.Y + entry.Y) / 2.0);
+        }
 
         if (to == from + 1)
         {
@@ -167,36 +192,58 @@ public class LinkedListRenderer : VisualizerRendererBase
         double gap = ArrowGap * scale;
         double chainGap = ChainGap * scale;
         double markerWidth = MarkerWidth * scale;
-
-        var chainStarts = new HashSet<int>(data.ChainStarts);
-        int gapCount = Enumerable.Range(1, Math.Max(0, data.Nodes.Count - 1)).Count(chainStarts.Contains);
         bool hasNullPointer = data.Pointers.Any(p => p.Index < 0);
-        bool hasEndBox = data.Nodes[^1].NextIndex == null;
 
-        double total = data.Nodes.Count * (cellWidth + gap) - gap + gapCount * chainGap
-            + (hasNullPointer ? markerWidth + gap : 0)
-            + (hasEndBox ? gap + markerWidth : 0);
-
-        double x = Math.Max(20, (bounds.Width - total) / 2.0) + options.PanOffsetX;
-        double y = Math.Max(20, (bounds.Height - cellHeight) / 2.0) + options.PanOffsetY;
-
-        Rect? nullBox = null;
-        if (hasNullPointer)
+        // Rows of node indices: one row, or one per chain when chains are stacked.
+        var chainStarts = new HashSet<int>(data.ChainStarts);
+        var rows = new List<List<int>> { new() };
+        for (int i = 0; i < data.Nodes.Count; i++)
         {
-            nullBox = new Rect(x, y, markerWidth, cellHeight);
-            x += markerWidth + gap;
+            if (data.StackChains && i > 0 && chainStarts.Contains(i)) rows.Add(new List<int>());
+            rows[^1].Add(i);
         }
+
+        // Stacked rows each end in their own NULL box; a single row only after its last node.
+        var ends = new HashSet<int>();
+        foreach (var row in rows)
+        {
+            int end = row[^1];
+            if (data.Nodes[end].NextIndex == null && (data.StackChains || end == data.Nodes.Count - 1)) ends.Add(end);
+        }
+
+        double RowWidth(List<int> row) =>
+            row.Count * (cellWidth + gap) - gap
+            + (data.StackChains ? 0 : row.Skip(1).Count(chainStarts.Contains) * chainGap)
+            + (ends.Contains(row[^1]) ? gap + markerWidth : 0);
+
+        double lead = hasNullPointer ? markerWidth + gap : 0;
+        double total = lead + rows.Max(RowWidth);
+        double rowPitch = cellHeight + RowGap * scale;
+        double height = cellHeight + (rows.Count - 1) * rowPitch;
+
+        double left = Math.Max(20, (bounds.Width - total) / 2.0) + options.PanOffsetX;
+        double top = Math.Max(20, (bounds.Height - height) / 2.0) + options.PanOffsetY;
+
+        Rect? nullBox = hasNullPointer ? new Rect(left, top, markerWidth, cellHeight) : null;
 
         var cells = new Rect[data.Nodes.Count];
-        for (int i = 0; i < cells.Length; i++)
+        var endBoxes = new Dictionary<int, Rect>();
+        for (int r = 0; r < rows.Count; r++)
         {
-            if (i > 0 && chainStarts.Contains(i)) x += chainGap;
-            cells[i] = new Rect(x, y, cellWidth, cellHeight);
-            x += cellWidth + gap;
+            double x = left + lead;
+            double y = top + r * rowPitch;
+            foreach (int i in rows[r])
+            {
+                if (!data.StackChains && i > 0 && chainStarts.Contains(i)) x += chainGap;
+                cells[i] = new Rect(x, y, cellWidth, cellHeight);
+                x += cellWidth + gap;
+            }
+
+            int end = rows[r][^1];
+            if (ends.Contains(end)) endBoxes[end] = new Rect(cells[end].Right + gap, y, markerWidth, cellHeight);
         }
 
-        Rect? endBox = hasEndBox ? new Rect(cells[^1].Right + gap, y, markerWidth, cellHeight) : null;
-        return new Layout(scale, cells, nullBox, endBox);
+        return new Layout(scale, cells, nullBox, endBoxes);
     }
 
     private void DrawArrowTip(DrawingContext context, Point tip, double dirX, double dirY, double size, IBrush brush)

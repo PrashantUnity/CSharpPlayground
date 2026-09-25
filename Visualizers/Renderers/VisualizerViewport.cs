@@ -30,14 +30,14 @@ public static class VisualizerViewport
     /// The zoom and pan that show the whole drawing, or null when there is nothing to fit. With a playback sequence the
     /// first and last steps count too, so a structure that grows while it plays (a recursion tree) stays in view throughout.
     /// </summary>
-    public static VisualizerViewFit? ComputeFit(VisualizerOptions options, Size canvasSize)
+    public static VisualizerViewFit? ComputeFit(VisualizerOptions options, Size canvasSize, double maxZoom = MaxFitZoom)
     {
         var renderer = VisualizerRendererFactory.GetRenderer(options.Kind);
-        return ComputeFit((zoom, step) => MeasureContent(renderer, options, canvasSize, zoom, step), canvasSize, StepsToFit(options.Sequence));
+        return ComputeFit((zoom, step) => MeasureContent(renderer, options, canvasSize, zoom, step), canvasSize, StepsToFit(options.Sequence), maxZoom);
     }
 
     /// <summary>The fit search over any measurement: <paramref name="measure"/> gives the drawn extent for a zoom and step, with no pan.</summary>
-    internal static VisualizerViewFit? ComputeFit(Func<double, int?, Rect?> measure, Size canvasSize, IReadOnlyList<int?> steps)
+    internal static VisualizerViewFit? ComputeFit(Func<double, int?, Rect?> measure, Size canvasSize, IReadOnlyList<int?> steps, double maxZoom = MaxFitZoom)
     {
         var available = new Size(canvasSize.Width - FitMargin * 2, canvasSize.Height - FitMargin * 2);
         if (available.Width <= 0 || available.Height <= 0) return null;
@@ -54,7 +54,7 @@ public static class VisualizerViewport
             return cached;
         }
 
-        double zoom = MaxFitZoom;
+        double zoom = Math.Clamp(maxZoom, MinZoom, MaxFitZoom);
         foreach (var step in steps)
         {
             zoom = FitZoom(z => Measure(z, step), available, zoom);

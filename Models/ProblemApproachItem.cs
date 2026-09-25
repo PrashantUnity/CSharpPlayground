@@ -8,7 +8,10 @@ public enum ApproachKind
     Greedy,
     DynamicProgramming,
     Optimal,
-    Visualization
+    Visualization,
+
+    /// <summary>Another sound way worth knowing (sort first, a heap, a different key), between brute force and optimal.</summary>
+    Alternative
 }
 
 public class ProblemApproachItem

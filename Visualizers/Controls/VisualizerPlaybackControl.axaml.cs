@@ -171,7 +171,21 @@ public partial class VisualizerPlaybackControl : UserControl
         var previous = sequence.CurrentIndex > 0 ? sequence.Steps[sequence.CurrentIndex - 1].Watches : null;
         var rows = new List<WatchStripRow>();
 
-        foreach (var watch in step.Watches)
+        // Plain values (Watch(() => best)) share one row of "name = value" chips; a changed value lights up.
+        var values = step.Watches.Where(w => w.Kind == WatchKind.Value).ToList();
+        if (values.Count > 0)
+        {
+            var chips = values.Select(watch =>
+            {
+                string text = watch.Items.Count > 0 ? watch.Items[0] : string.Empty;
+                var before = previous?.FirstOrDefault(p => p.Name == watch.Name);
+                bool changed = previous != null && (before == null || before.Items.Count == 0 || before.Items[0] != text);
+                return new WatchStripCell($"{watch.Name} = {text}", changed, IsMarker: false);
+            }).ToList();
+            rows.Add(new WatchStripRow("values", "Watched values at this step", chips));
+        }
+
+        foreach (var watch in step.Watches.Where(w => w.Kind != WatchKind.Value))
         {
             var added = StepChanges.AddedWatchItems(previous?.FirstOrDefault(p => p.Name == watch.Name), watch);
             var (leading, trailing) = watch.Kind switch
@@ -199,9 +213,7 @@ public partial class VisualizerPlaybackControl : UserControl
                 if (trailing != null) cells.Add(WatchStripCell.Marker(trailing));
             }
 
-            string summary = watch.Kind == WatchKind.Value
-                ? watch.Name
-                : $"{watch.Kind} • {watch.Count} item{(watch.Count == 1 ? "" : "s")}";
+            string summary = $"{watch.Kind} • {watch.Count} item{(watch.Count == 1 ? "" : "s")}";
             rows.Add(new WatchStripRow(watch.Name, summary, cells));
         }
 

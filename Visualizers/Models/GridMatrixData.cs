@@ -47,7 +47,10 @@ public class GridCellArrow
 
 public class GridCell
 {
+    // _baseKind is what the cell is (land, water, a wall, the start…); _kind can briefly differ while a Start, Target
+    // or Path state is shown on it, and returns to _baseKind when the state moves on.
     private CellKind _kind = CellKind.Standard;
+    private CellKind _baseKind = CellKind.Standard;
     private GridCellState _state = GridCellState.Default;
 
     public int Row { get; set; }
@@ -62,6 +65,7 @@ public class GridCell
         set
         {
             _kind = value;
+            _baseKind = value;
             _state = value switch
             {
                 CellKind.Wall => GridCellState.Wall,
@@ -79,13 +83,14 @@ public class GridCell
         set
         {
             _state = value;
+            if (value == GridCellState.Wall) _baseKind = CellKind.Wall;   // a wall is part of the grid, not a passing state
             _kind = value switch
             {
                 GridCellState.Wall => CellKind.Wall,
                 GridCellState.Start => CellKind.Start,
                 GridCellState.Target => CellKind.Target,
                 GridCellState.Path => CellKind.Path,
-                _ => _kind
+                _ => _baseKind   // highlight over: the cell looks like what it is again
             };
         }
     }
@@ -112,7 +117,7 @@ public class GridCell
             DisplayValue = DisplayValue,
             RawValue = RawValue,
             SubLabel = SubLabel,
-            Kind = Kind,
+            Kind = _baseKind,
             State = State,
             ClusterId = ClusterId,
             CustomColor = CustomColor,

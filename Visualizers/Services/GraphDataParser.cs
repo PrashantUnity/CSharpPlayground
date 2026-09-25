@@ -38,10 +38,15 @@ public static class GraphDataParser
         // Case 1: IDictionary (Adjacency List e.g. Dictionary<string, List<string>>)
         if (input is IDictionary dict)
         {
+            // The keys fix the drawing order (0, 1, 2 … around the circle), even when a neighbour is listed first.
+            foreach (DictionaryEntry entry in dict)
+            {
+                GetOrAddNode(entry.Key?.ToString() ?? string.Empty);
+            }
+
             foreach (DictionaryEntry entry in dict)
             {
                 string u = entry.Key?.ToString() ?? string.Empty;
-                GetOrAddNode(u);
 
                 if (entry.Value is IEnumerable neighbors)
                 {

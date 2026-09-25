@@ -34,7 +34,7 @@ public class BlindProblemsCatalogAndProgressTests
             Assert.False(string.IsNullOrWhiteSpace(p.Title), $"Problem {p.Number} has empty Title");
             Assert.False(string.IsNullOrWhiteSpace(p.Category), $"Problem {p.Number} has empty Category");
             Assert.InRange(p.AcceptanceRate, 1.0, 100.0);
-            Assert.False(string.IsNullOrWhiteSpace(p.StarterCode), $"Problem {p.Number} has empty StarterCode");
+            Assert.False(string.IsNullOrWhiteSpace(p.SolutionCode), $"Problem {p.Number} has empty SolutionCode");
             Assert.NotEmpty(p.TestCases);
         }
     }
@@ -236,7 +236,7 @@ public class BlindProblemsCatalogAndProgressTests
     }
 
     [Fact]
-    public void Blind75CurriculumEnhancer_KeyProblems_ShouldHaveMultiParadigmApproaches()
+    public void Blind75Catalog_KeyProblems_ShouldHaveMultiParadigmApproaches()
     {
         // 1. Two Sum
         var twoSum = Blind75CatalogService.GetProblemByNumber(1)!;
@@ -278,7 +278,7 @@ public class BlindProblemsCatalogAndProgressTests
         Assert.Contains("322. Coin Change", notebook.Cells[0].Source);
 
         // Contains How to Think cell
-        Assert.Contains(notebook.Cells, c => c.Source.Contains("How to Think"));
+        Assert.Contains(notebook.Cells, c => c.Source.Contains("How to think", StringComparison.OrdinalIgnoreCase));
 
         // Contains Interactive Visualizer cell
         Assert.Contains(notebook.Cells, c => c.Source.Contains("Interactive Time-Travel Visualizer") || c.Source.Contains("Display."));

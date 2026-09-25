@@ -8,14 +8,17 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
-/// <summary>Live collections registered with Watch(...); every step recorded afterwards snapshots them.</summary>
+/// <summary>
+/// Live collections registered with Watch(...); every step recorded afterwards snapshots them. A lambda such as
+/// <c>Watch(() => maxArea)</c> watches a plain variable: it is read again at every step.
+/// </summary>
 public sealed class WatchList
 {
     private readonly List<(string Name, object Source)> _entries = new();
 
     public void Add(object source, string name)
     {
-        name = string.IsNullOrWhiteSpace(name) ? source.GetType().Name : name.Trim();
+        name = CleanName(name, source);
         int existing = _entries.FindIndex(e => e.Name == name);
         if (existing >= 0)
         {
@@ -28,6 +31,18 @@ public sealed class WatchList
     }
 
     public List<StepWatch> Capture() => _entries.Select(e => WatchCapture.Capture(e.Name, e.Source)).ToList();
+
+    // Watch(() => maxArea) is labelled "maxArea", not with the lambda's text.
+    private static string CleanName(string name, object source)
+    {
+        name = name?.Trim() ?? string.Empty;
+        if (source is Delegate && name.StartsWith("(", StringComparison.Ordinal))
+        {
+            int arrow = name.IndexOf("=>", StringComparison.Ordinal);
+            if (arrow >= 0) name = name[(arrow + 2)..].Trim();
+        }
+        return string.IsNullOrWhiteSpace(name) ? source.GetType().Name : name;
+    }
 }
 
 public static class WatchCapture
@@ -45,12 +60,19 @@ public static class WatchCapture
         catch (Exception ex)
         {
             // Snapshotting runs inside the learner's algorithm; a throwing getter must not break it.
-            return new StepWatch(name, WatchKind.Value, new[] { $"({ex.GetType().Name})" }, 1);
+            var cause = ex is System.Reflection.TargetInvocationException { InnerException: { } inner } ? inner : ex;
+            return new StepWatch(name, WatchKind.Value, new[] { $"({cause.GetType().Name})" }, 1);
         }
     }
 
     private static StepWatch CaptureCore(string name, object? source)
     {
+        // Watch(() => best): a closure over a local variable, read afresh at every step.
+        if (source is Delegate getter && getter.Method.GetParameters().Length == 0)
+        {
+            source = getter.DynamicInvoke();
+        }
+
         if (source == null || source is string || ObjectInspectorBuilder.IsScalarType(source.GetType()))
         {
             return new StepWatch(name, WatchKind.Value, new[] { Describe(source) }, 1);
@@ -112,7 +134,12 @@ public static class WatchCapture
         }
 
         entries.Sort((a, b) => (int)compare.Invoke(comparer, new[] { a.Priority, b.Priority })!);
-        var described = entries.Take(MaxItems).Select(e => Truncate($"{Describe(e.Element)} ({Describe(e.Priority)})")).ToList();
+        // A heap keyed by its own values (heap.Enqueue(x, x), or a node by node.val) shows each value once, not "4 (4)".
+        // Otherwise both parts stay, even when they happen to match: in Dijkstra, "2 (2)" is node 2 at distance 2.
+        var texts = entries.Select(e => (Element: Describe(e.Element), Priority: Describe(e.Priority), e.Element)).ToList();
+        bool keyedBySelf = texts.All(t => t.Element == t.Priority) &&
+            (texts.Count > 1 || texts.Any(t => t.Element != null && t.Element is not string && !ObjectInspectorBuilder.IsScalarType(t.Element.GetType())));
+        var described = texts.Take(MaxItems).Select(t => Truncate(keyedBySelf ? t.Element : $"{t.Element} ({t.Priority})")).ToList();
         return new StepWatch(name, WatchKind.PriorityQueue, described, entries.Count);
     }
 

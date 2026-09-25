@@ -81,7 +81,7 @@ public sealed class RecursionTracker
         return new RecursionCall(this, node);
     }
 
-    internal void Complete(TreeNodeData node, TreeNodeState finalState, string? subLabel, string description, int sourceLine, string sourceFile)
+    internal void Complete(TreeNodeData node, TreeNodeState finalState, string? subLabel, string description, int sourceLine, string sourceFile, bool memoHit = false)
     {
         if (!_stack.Contains(node)) return;
 
@@ -97,7 +97,7 @@ public sealed class RecursionTracker
         node.State = finalState;
         node.IsActive = false;
         node.SubLabel = subLabel;
-        if (finalState == TreeNodeState.Matched) _memoHits++;
+        if (memoHit) _memoHits++;
 
         var caller = _stack.Count > 0 ? _stack.Peek() : null;
         if (caller != null)
@@ -173,9 +173,28 @@ public sealed class RecursionCall : IDisposable
         if (TryComplete())
         {
             string text = RecursionTracker.Describe(value);
-            _tracker.Complete(_node!, TreeNodeState.Matched, $"memo {text}", $"{_node!.DisplayValue} is already in the memo: {text}", sourceLine, sourceFile);
+            _tracker.Complete(_node!, TreeNodeState.Matched, $"memo {text}", $"{_node!.DisplayValue} is already in the memo: {text}", sourceLine, sourceFile, memoHit: true);
         }
         return value;
+    }
+
+    /// <summary>Ends a backtracking branch that reached a solution; it is drawn green with a ✓.</summary>
+    public void Found(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
+    {
+        if (TryComplete())
+        {
+            string description = note == null ? $"{_node!.DisplayValue} is a solution" : $"{_node!.DisplayValue}: {note}";
+            _tracker.Complete(_node!, TreeNodeState.Matched, "✓", description, sourceLine, sourceFile);
+        }
+    }
+
+    /// <summary>Ends a call that returns nothing, with a note for the step (the call stays in the tree as visited).</summary>
+    public void Done(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
+    {
+        if (TryComplete())
+        {
+            _tracker.Complete(_node!, TreeNodeState.Visited, null, note ?? $"{_node!.DisplayValue} returns", sourceLine, sourceFile);
+        }
     }
 
     /// <summary>Ends a backtracking branch that cannot lead to a solution.</summary>

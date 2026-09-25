@@ -5,6 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemDetailFlyoutControl"
              x:DataType="vm:CSharpBlindProblemsViewModel">
@@ -89,7 +90,15 @@
                         </Grid>
                     </Border>
 
-                    <!-- How to Think Section (if present) -->
+                    <!-- Problem Description: read the problem first -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="PROBLEM" FontSize="11" FontWeight="Bold"
+                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <controls:MarkdownView Markdown="{Binding SelectedProblem.DescriptionMarkdown}"
+                                               FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                    </StackPanel>
+
+                    <!-- How to Think: then the idea that cracks it -->
                     <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="12"
@@ -97,23 +106,13 @@
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="#A855F7" VerticalAlignment="Center" />
-                                <TextBlock Text="HOW TO THINK (MENTAL MODEL)" FontSize="11" FontWeight="Bold"
+                                <TextBlock Text="HOW TO THINK" FontSize="11" FontWeight="Bold"
                                            Foreground="#A855F7" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Text="{Binding SelectedProblem.ThinkingProcessMarkdown}"
-                                       FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                       TextWrapping="Wrap" />
+                            <controls:MarkdownView Markdown="{Binding SelectedProblem.ThinkingProcessMarkdown}"
+                                                   FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
                         </StackPanel>
                     </Border>
-
-                    <!-- Problem Description Markdown -->
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="PROBLEM DESCRIPTION" FontSize="11" FontWeight="Bold"
-                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                        <TextBlock Text="{Binding SelectedProblem.DescriptionMarkdown}"
-                                   FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
 
                     <!-- Approaches Section (Naive, Greedy, DP, Optimal) -->
                     <StackPanel Spacing="8" IsVisible="{Binding SelectedProblem.Approaches.Count}">
@@ -131,24 +130,24 @@
                                                 <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                                 <TextBlock Grid.Column="1" Text="{Binding TimeComplexity}" FontSize="10.5" FontWeight="SemiBold" Foreground="#38BDF8" />
                                             </Grid>
-                                            <TextBlock Text="{Binding Intuition}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                            <controls:MarkdownView Markdown="{Binding Intuition}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" />
                                             
                                             <!-- Recurrence Relation if DP -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding RecurrenceRelation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="#A855F7" />
+                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="#A855F7" TextWrapping="Wrap" />
                                             </Border>
 
                                             <!-- Greedy Choice Property if Greedy -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding GreedyChoiceProperty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding GreedyChoiceProperty, StringFormat='Greedy Choice: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="#EAB308" TextWrapping="Wrap" />
+                                                <controls:MarkdownView Markdown="{Binding GreedyChoiceProperty, StringFormat='**Greedy choice:** {0}'}" FontSize="10.5" Foreground="#EAB308" />
                                             </Border>
 
                                             <!-- Bottleneck if Naive -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding BottleneckExplanation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding BottleneckExplanation, StringFormat='Bottleneck: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="#EF4444" TextWrapping="Wrap" />
+                                                <controls:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="#F87171" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
@@ -156,6 +155,23 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
+
+                    <!-- What the step-by-step visualizer shows -->
+                    <Border Background="#0FE3B341"
+                            BorderBrush="#66E3B341"
+                            BorderThickness="1" CornerRadius="8" Padding="12"
+                            IsVisible="{Binding SelectedProblem.VisualizationDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="#E3B341" VerticalAlignment="Center" />
+                                <TextBlock Text="WATCH IT RUN" FontSize="11" FontWeight="Bold" Foreground="#E3B341" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <controls:MarkdownView Markdown="{Binding SelectedProblem.VisualizationDescription}"
+                                                   FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Open the Script or Notebook and run it to step through."
+                                       FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
 
                     <!-- Test Cases Summary & Dynamic Generator -->
                     <StackPanel Spacing="8">

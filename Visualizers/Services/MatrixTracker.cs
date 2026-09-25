@@ -45,24 +45,38 @@ public class MatrixTracker
         [CallerFilePath] string sourceFile = "") =>
         new(grid, title, sourceLine, sourceFile);
 
+    /// <param name="rowHeaders">Labels drawn left of each row (e.g. "nums", "dp"), shown from the very first step.</param>
+    /// <param name="columnHeaders">Labels drawn above each column instead of the column numbers.</param>
     public static MatrixTracker Create(
         object rawInput,
         string? title = null,
         MatrixParseOptions? options = null,
+        IEnumerable<string>? rowHeaders = null,
+        IEnumerable<string>? columnHeaders = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
         var grid = MatrixDataParser.Parse(rawInput, options);
+        if (rowHeaders != null) grid.RowHeaders.AddRange(rowHeaders);
+        if (columnHeaders != null) grid.ColHeaders.AddRange(columnHeaders);
         return new MatrixTracker(grid, title, sourceLine, sourceFile);
     }
 
+    /// <summary>A blank grid to fill with SetCell, e.g. a DP table; headers label the rows and columns from the first step.</summary>
     public static MatrixTracker CreateEmpty(
         int rows,
         int cols,
         string? title = null,
+        IEnumerable<string>? rowHeaders = null,
+        IEnumerable<string>? columnHeaders = null,
         [CallerLineNumber] int sourceLine = 0,
-        [CallerFilePath] string sourceFile = "") =>
-        new(new GridMatrixData(rows, cols), title, sourceLine, sourceFile);
+        [CallerFilePath] string sourceFile = "")
+    {
+        var grid = new GridMatrixData(rows, cols);
+        if (rowHeaders != null) grid.RowHeaders.AddRange(rowHeaders);
+        if (columnHeaders != null) grid.ColHeaders.AddRange(columnHeaders);
+        return new MatrixTracker(grid, title, sourceLine, sourceFile);
+    }
 
     // Built-in algorithms record their own steps; those must not point at lines in the learner's code.
     internal static MatrixTracker CreateUnlinked(GridMatrixData grid, string? title) =>
@@ -85,7 +99,7 @@ public class MatrixTracker
     {
         if (IsInBounds(r, c))
         {
-            Grid[r, c].State = GridCellState.Start;
+            Grid[r, c].Kind = CellKind.Start;
             Grid[r, c].DisplayValue = label;
         }
         return this;
@@ -95,7 +109,7 @@ public class MatrixTracker
     {
         if (IsInBounds(r, c))
         {
-            Grid[r, c].State = GridCellState.Target;
+            Grid[r, c].Kind = CellKind.Target;
             Grid[r, c].DisplayValue = label;
         }
         return this;

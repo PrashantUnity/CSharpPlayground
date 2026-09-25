@@ -29,6 +29,11 @@ public class VisualizerCanvasControl : Control
 
     // Set by Fit to View; the drawing is refitted as the canvas resizes until the learner zooms or pans.
     private bool _stayFitted;
+    private double _fitCap = VisualizerViewport.MaxFitZoom;
+    private bool _openFitPending = true;
+
+    // Shrinking further than this on open would make a big drawing unreadable; leave those at 100%.
+    private const double MinOpenFitZoom = 0.5;
     private bool _refitQueued;
 
     /// <summary>Raised whenever zoom or pan changes, whether from the wheel, a drag, the toolbar or a fit.</summary>
@@ -79,12 +84,25 @@ public class VisualizerCanvasControl : Control
     public void FitToView()
     {
         _stayFitted = true;
+        _fitCap = VisualizerViewport.MaxFitZoom;
+        ApplyFit();
+    }
+
+    // First real size: if the drawing is cut off but fits at a readable zoom, shrink it (never enlarge).
+    private void FitOnOpenIfNeeded()
+    {
+        if (Options is not { FitOnOpen: true }) return;
+        if (VisualizerViewport.ComputeFit(Options, Bounds.Size, maxZoom: 1.0) is not { } fit) return;
+        if (fit.Zoom >= Options.Zoom - 1e-6 || fit.Zoom < MinOpenFitZoom) return;
+
+        _stayFitted = true;
+        _fitCap = 1.0;
         ApplyFit();
     }
 
     private void ApplyFit()
     {
-        if (Options == null || VisualizerViewport.ComputeFit(Options, Bounds.Size) is not { } fit) return;
+        if (Options == null || VisualizerViewport.ComputeFit(Options, Bounds.Size, _fitCap) is not { } fit) return;
         Options.Zoom = fit.Zoom;
         Options.PanOffsetX = fit.PanX;
         Options.PanOffsetY = fit.PanY;
@@ -100,6 +118,17 @@ public class VisualizerCanvasControl : Control
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
+        if (_openFitPending && e.NewSize.Width > 0 && e.NewSize.Height > 0)
+        {
+            _openFitPending = false;
+
+            // An explicit fit (full screen asks for one before it has a size) wins over the gentle open-time one.
+            if (!_stayFitted)
+            {
+                FitOnOpenIfNeeded();
+                return;
+            }
+        }
         if (!_stayFitted) return;
 
         // The first real size is fitted before it is ever drawn; later resizes (a grip drag, a window resize) arrive in
@@ -121,6 +150,7 @@ public class VisualizerCanvasControl : Control
 
     private void OnOptionsChanged(VisualizerOptions? oldOpt, VisualizerOptions? newOpt)
     {
+        _openFitPending = true;
         _stayFitted = false;
         if (oldOpt?.Sequence != null)
         {

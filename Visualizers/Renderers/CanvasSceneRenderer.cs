@@ -35,6 +35,20 @@ public class CanvasSceneRenderer : VisualizerRendererBase
 
     private void RenderShape(DrawingContext context, SceneShape shape, double ox, double oy, double zoom)
     {
+        if (shape.Opacity < 1.0)
+        {
+            using (context.PushOpacity(Math.Max(0.0, shape.Opacity)))
+            {
+                RenderShapeCore(context, shape, ox, oy, zoom);
+            }
+            return;
+        }
+
+        RenderShapeCore(context, shape, ox, oy, zoom);
+    }
+
+    private void RenderShapeCore(DrawingContext context, SceneShape shape, double ox, double oy, double zoom)
+    {
         switch (shape)
         {
             case SceneRect rect:
@@ -98,7 +112,9 @@ public class CanvasSceneRenderer : VisualizerRendererBase
     {
         var p1 = new Point(ox + l.X1 * zoom, oy + l.Y1 * zoom);
         var p2 = new Point(ox + l.X2 * zoom, oy + l.Y2 * zoom);
-        var pen = GetPen(l.Stroke ?? "#64748b", l.StrokeThickness * zoom);
+        var pen = l.IsDashed
+            ? new Pen(GetBrush(l.Stroke ?? "#64748b"), l.StrokeThickness * zoom, DashStyle.Dash)
+            : GetPen(l.Stroke ?? "#64748b", l.StrokeThickness * zoom);
         context.DrawLine(pen, p1, p2);
     }
 

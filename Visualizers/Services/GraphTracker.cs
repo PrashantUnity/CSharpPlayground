@@ -74,10 +74,11 @@ public class GraphTracker
         var node = ResolveNode(nodeOrId);
         if (node == null) return;
 
-        if (_currentActiveNode != null && _currentActiveNode != node && _currentActiveNode.State == GraphNodeState.Current)
+        // The previous node stops glowing; it only turns "visited" if nothing else was marked on it meanwhile.
+        if (_currentActiveNode != null && _currentActiveNode != node)
         {
-            _currentActiveNode.State = GraphNodeState.Visited;
             _currentActiveNode.IsActive = false;
+            if (_currentActiveNode.State == GraphNodeState.Current) _currentActiveNode.State = GraphNodeState.Visited;
         }
 
         node.State = GraphNodeState.Current;
@@ -191,6 +192,63 @@ public class GraphTracker
         edge.State = state;
         string desc = note ?? $"{state} Edge ({from} -> {to})";
         Snapshot(desc, sourceLine, sourceFile);
+    }
+
+    /// <summary>
+    /// Adds an edge, and any endpoint that isn't drawn yet, for graphs discovered while the algorithm runs. Nothing is
+    /// recorded until the next step; adding an edge that already exists does nothing.
+    /// </summary>
+    public void AddEdge(object from, object to, double? weight = null)
+    {
+        string u = from.ToString() ?? string.Empty;
+        string v = to.ToString() ?? string.Empty;
+        foreach (var id in new[] { u, v })
+        {
+            if (Graph.FindNode(id) == null) Graph.Nodes.Add(new GraphNodeData(id));
+        }
+        if (Graph.FindEdge(u, v) == null)
+        {
+            Graph.Edges.Add(new GraphEdgeData(u, v, weight, Graph.IsDirected));
+        }
+    }
+
+    /// <summary>Sets a node's state without recording a step, so several nodes can change in one step.</summary>
+    public void Mark(object? nodeOrId, GraphNodeState state)
+    {
+        var node = ResolveNode(nodeOrId);
+        if (node == null) return;
+
+        node.State = state;
+        node.IsActive = state == GraphNodeState.Current;
+        if (state == GraphNodeState.Current) _currentActiveNode = node;
+    }
+
+    /// <summary>Fills a node with a colour from the next recorded step on (e.g. one colour per component); null clears it.</summary>
+    public void Paint(object? nodeOrId, string? color)
+    {
+        var node = ResolveNode(nodeOrId);
+        if (node != null) node.Color = color;
+    }
+
+    /// <summary>Sets an edge's state without recording a step.</summary>
+    public void MarkEdge(object? from, object? to, GraphEdgeState state)
+    {
+        var edge = ResolveEdge(from, to);
+        if (edge == null) return;
+
+        edge.State = state;
+        edge.IsActive = state is GraphEdgeState.Active or GraphEdgeState.Path;
+    }
+
+    /// <summary>Ends the current node's glow (it turns visited), e.g. before a closing summary step.</summary>
+    public void ClearCurrent()
+    {
+        foreach (var node in Graph.Nodes)
+        {
+            if (node.State == GraphNodeState.Current) node.State = GraphNodeState.Visited;
+            node.IsActive = false;
+        }
+        _currentActiveNode = null;
     }
 
     public void SetPointer(
