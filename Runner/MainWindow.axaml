@@ -5,7 +5,7 @@
         xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.MainWindow"
-        Title="✨ FrySharp - C# Code Studio"
+        Title="C# Code Studio"
         Icon="/Assets/app-logo.ico"
         Width="1200" Height="820"
         MinWidth="900" MinHeight="600"

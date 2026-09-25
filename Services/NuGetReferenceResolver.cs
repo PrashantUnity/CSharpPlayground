@@ -202,7 +202,7 @@ public class NuGetReferenceResolver
             }
             else
             {
-                result.Messages.Add($"✨ Using host runtime assembly: {packageId} v{hostVer}");
+                result.Messages.Add($"[NuGet] Using host runtime assembly: {packageId} v{hostVer}");
             }
 
             try
@@ -432,7 +432,7 @@ public class NuGetReferenceResolver
                             return IntPtr.Zero;
                         });
 
-                        result?.Messages.Add($"✨ Native runtime linked for {asmName}: [{string.Join(", ", handles.Keys.Distinct().Take(3))}]");
+                        result?.Messages.Add($"[NuGet] Native runtime linked for {asmName}: [{string.Join(", ", handles.Keys.Distinct().Take(3))}]");
                     }
                     catch (InvalidOperationException)
                     {
@@ -634,7 +634,7 @@ public class NuGetReferenceResolver
 
                 Directory.CreateDirectory(targetDir);
                 ZipFile.ExtractToDirectory(tempNupkg, targetDir, overwriteFiles: true);
-                result.Messages.Add($"✨ Restored '{packageId} {targetVersion}' successfully.");
+                result.Messages.Add($"[NuGet] Restored '{packageId} {targetVersion}' successfully.");
                 return targetDir;
             }
             finally

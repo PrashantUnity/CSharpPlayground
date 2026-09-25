@@ -20,26 +20,27 @@
                     <Border Grid.Row="0"
                             BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="0,0,0,1"
-                            Padding="20,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                            <!-- Gradient Icon Container -->
-                            <Border Width="32" Height="32" CornerRadius="8">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                        <GradientStop Offset="0" Color="#2F81F7" />
-                                        <GradientStop Offset="1" Color="#7C3AED" />
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <materialIcons:MaterialIcon Kind="HexagonOutline"
-                                                            Width="18" Height="18"
-                                                            Foreground="#FFFFFF"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            Padding="16,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="11">
+                            <!-- Official Brand Logo Container (Circular) -->
+                            <Border Width="34" Height="34" CornerRadius="17"
+                                    Background="#FFFFFF"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1"
+                                    ClipToBounds="True">
+                                <Image Source="avares://CSharpEditorPlugin/Assets/app-logo.png"
+                                       Width="32" Height="32"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
                             </Border>
 
-                            <!-- Brand Name -->
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Fry" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                <TextBlock Text="Sharp" FontSize="13" Foreground="{DynamicResource DsMutedBrush}" Margin="5,2,0,0" />
+                            <!-- Brand Identity -->
+                            <StackPanel VerticalAlignment="Center" Spacing="1">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="5">
+                                    <TextBlock Text="C#" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Code Studio" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                </StackPanel>
+                                <TextBlock Text="FrySharp • .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -211,7 +212,7 @@
                                     ToolTip.Tip="Return to FryPDF Studio Home (Esc / ⌘W)">
                                 <Grid ColumnDefinitions="Auto,*">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="HomeOutline" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="FryC#" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="FrySharp" Margin="12,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
@@ -232,7 +233,7 @@
                                     <!-- User Text -->
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="Developer" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                        <TextBlock Text="Local .NET 10" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <TextBlock Text=".NET 10" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>

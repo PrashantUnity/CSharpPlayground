@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
   <!-- Packaging into .fryplugin distribution archive -->
@@ -72,6 +73,6 @@
     <ZipDirectory SourceDirectory="$(PluginStagingDir)" DestinationFile="$(OutputFryPlugin)" />
     <RemoveDir Directories="$(PluginStagingDir)" />
 
-    <Message Importance="High" Text="✨ Successfully packaged FryPDF plugin: $(OutputFryPlugin)" />
+    <Message Importance="High" Text="Successfully packaged FryPDF plugin: $(OutputFryPlugin)" />
   </Target>
 </Project>

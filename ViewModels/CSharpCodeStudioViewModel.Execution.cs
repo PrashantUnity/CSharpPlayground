@@ -472,7 +472,7 @@ public partial class CSharpCodeStudioViewModel
                     return;
                 }
 
-                var startMsg = "✨ Build succeeded! Executing in-memory...\n--------------------------------------------------\n";
+                var startMsg = "[Build] Succeeded. Executing in-memory...\n--------------------------------------------------\n";
                 if (runningTab != null) runningTab.ConsoleOutput += startMsg;
                 if (runningTab == null || runningTab.IsActive)
                 {

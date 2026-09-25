@@ -118,7 +118,7 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        var readyMsg = "✨ Instrumentation ready! Executing in-memory...\n--------------------------------------------------\n";
+        var readyMsg = "[Debug] Instrumentation ready. Executing in-memory...\n--------------------------------------------------\n";
         if (debuggingTab != null)
         {
             debuggingTab.ConsoleOutput += readyMsg;
