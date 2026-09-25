@@ -64,6 +64,16 @@ public partial class CSharpCodeStudioViewModel
 
     public ObservableCollection<DumpTableResult> DumpResults { get; } = new();
     public ObservableCollection<RichCellOutput> RichOutputs { get; } = new();
+
+    /// <summary>
+    /// True when the Results tab has nothing to draw, so it shows its "No Visual Dumps Yet" hint: no table dumps and no
+    /// image, HTML, chart, visualizer, control or object-inspector output. Text and error outputs aren't drawn there.
+    /// </summary>
+    public bool HasNoResults => DumpResults.Count == 0 && !RichOutputs.Any(IsDrawnInResults);
+
+    // The kinds the Results tab's RichOutputs template draws (StudioBottomDeckControl.axaml).
+    private static bool IsDrawnInResults(RichCellOutput output) =>
+        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind;
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
@@ -249,6 +259,25 @@ public partial class CSharpCodeStudioViewModel
         // newer run has already started.
         var myRunId = ++_executionRunId;
 
+        // Everything the script prints reaches the Terminal once and in order, however its queued live writes and the
+        // end of the run interleave (see RunConsoleRelay).
+        var terminal = new RunConsoleRelay(text =>
+        {
+            if (myRunId != _executionRunId) return;
+            if (runningTab != null)
+            {
+                runningTab.ConsoleOutput += text;
+                if (runningTab.IsActive)
+                {
+                    ConsoleOutput = runningTab.ConsoleOutput;
+                }
+            }
+            else
+            {
+                ConsoleOutput += text;
+            }
+        }, _postToUiThread);
+
         using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -296,34 +325,7 @@ public partial class CSharpCodeStudioViewModel
                 var kernelExecutionTask = Task.Run(() => _kernel.ExecuteCellAsync(
                     codeToRun,
                     ct: token,
-                    onLiveConsole: liveText =>
-                    {
-                        Action append = () =>
-                        {
-                            if (myRunId != _executionRunId) return;
-                            if (runningTab != null)
-                            {
-                                runningTab.ConsoleOutput += liveText;
-                                if (runningTab.IsActive)
-                                {
-                                    ConsoleOutput = runningTab.ConsoleOutput;
-                                }
-                            }
-                            else
-                            {
-                                ConsoleOutput += liveText;
-                            }
-                        };
-
-                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-                        {
-                            Avalonia.Threading.Dispatcher.UIThread.Post(append);
-                        }
-                        else
-                        {
-                            append();
-                        }
-                    },
+                    onLiveConsole: terminal.Write,
                     onRichOutput: rich =>
                     {
                         Action appendRich = () =>
@@ -391,6 +393,9 @@ public partial class CSharpCodeStudioViewModel
                     }, TaskScheduler.Default);
                 }
 
+                // The kernel's ConsoleOutput repeats what it wrote live; it only adds text that never arrived live.
+                terminal.Complete(kernelResult.Success ? kernelResult.ConsoleOutput : null);
+
                 if (kernelResult.Success)
                 {
                     var timeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
@@ -402,10 +407,6 @@ public partial class CSharpCodeStudioViewModel
 
                     if (runningTab != null)
                     {
-                        if (!string.IsNullOrEmpty(kernelResult.ConsoleOutput) && !runningTab.ConsoleOutput.Contains(kernelResult.ConsoleOutput))
-                        {
-                            runningTab.ConsoleOutput += kernelResult.ConsoleOutput;
-                        }
                         runningTab.ExecutionTimeText = timeText;
                         runningTab.CompilerStatusText = statusText;
                     }
@@ -414,10 +415,6 @@ public partial class CSharpCodeStudioViewModel
                         if (runningTab != null)
                         {
                             ConsoleOutput = runningTab.ConsoleOutput;
-                        }
-                        else if (!string.IsNullOrEmpty(kernelResult.ConsoleOutput) && !ConsoleOutput.Contains(kernelResult.ConsoleOutput))
-                        {
-                            ConsoleOutput += kernelResult.ConsoleOutput;
                         }
                         ExecutionTimeText = timeText;
                         CompilerStatusText = statusText;
@@ -480,37 +477,7 @@ public partial class CSharpCodeStudioViewModel
                     CompilerStatusText = "Running...";
                 }
 
-                var executionTask = _executionEngine.ExecuteAsync(
-                    bytes,
-                    liveText =>
-                    {
-                        Action appendOutput = () =>
-                        {
-                            if (myRunId != _executionRunId) return;
-                            if (runningTab != null)
-                            {
-                                runningTab.ConsoleOutput += liveText;
-                                if (runningTab.IsActive)
-                                {
-                                    ConsoleOutput = runningTab.ConsoleOutput;
-                                }
-                            }
-                            else
-                            {
-                                ConsoleOutput += liveText;
-                            }
-                        };
-
-                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-                        {
-                            Avalonia.Threading.Dispatcher.UIThread.Post(appendOutput);
-                        }
-                        else
-                        {
-                            appendOutput();
-                        }
-                    },
-                    token);
+                var executionTask = _executionEngine.ExecuteAsync(bytes, terminal.Write, token);
 
                 ExecutionResult result;
                 if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, token))
@@ -539,6 +506,9 @@ public partial class CSharpCodeStudioViewModel
                         });
                     }, TaskScheduler.Default);
                 }
+
+                // Before the closing lines, so they always come after the program's own output.
+                terminal.Complete();
 
                 var endMsg = "\n--------------------------------------------------\n";
                 if (result.Success)
@@ -613,6 +583,20 @@ public partial class CSharpCodeStudioViewModel
             {
                 IsExecuting = false;
             }
+        }
+    }
+
+    // How a running script's output reaches the UI thread unless the constructor was given another way: queued when it
+    // comes from another thread, right away on the UI thread or with no app at all (unit tests).
+    private static void RunOnUiThread(Action action)
+    {
+        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(action);
+        }
+        else
+        {
+            action();
         }
     }
 

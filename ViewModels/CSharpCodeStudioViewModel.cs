@@ -68,6 +68,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private CancellationTokenSource? _executionCts;
     private int _executionRunId;
     private readonly Func<int> _getTimeoutSeconds;
+    private readonly Action<Action> _postToUiThread;
 
     [ObservableProperty]
     private ScriptDocumentItem _script;
@@ -218,7 +219,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Action? backToHomeAction = null,
         Func<int>? getTimeoutSeconds = null,
         Action<NotebookDocumentItem>? openNotebookAction = null,
-        Action? navigateToDocsAction = null)
+        Action? navigateToDocsAction = null,
+        Action<Action>? postToUiThread = null)
     {
         _script = script;
         _storageService = storageService;
@@ -230,7 +232,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _openNotebookAction = openNotebookAction;
         _navigateToDocsAction = navigateToDocsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
+        _postToUiThread = postToUiThread ?? RunOnUiThread;
         _kernel = new NotebookExecutionKernel();
+
+        // The Results tab's empty hint depends on both lists it draws.
+        DumpResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoResults));
+        RichOutputs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoResults));
 
         _code = script.Code;
         _notes = script.Notes;

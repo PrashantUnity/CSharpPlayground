@@ -114,7 +114,7 @@
                 <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,10">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="12">
-                            <Border IsVisible="{Binding !DumpResults.Count}" Padding="24,30" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border IsVisible="{Binding HasNoResults}" Padding="24,30" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <StackPanel Spacing="10" HorizontalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
@@ -130,6 +130,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
+                            <!-- The kinds drawn here are the ones CSharpCodeStudioViewModel.HasNoResults counts; keep them in step. -->
                             <ItemsControl ItemsSource="{Binding RichOutputs}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="services:RichCellOutput">
