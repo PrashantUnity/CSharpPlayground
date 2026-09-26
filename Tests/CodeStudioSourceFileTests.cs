@@ -82,10 +82,14 @@ public class CodeStudioSourceFileTests : IDisposable
     {
         var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
 
-        var python = Assert.Single(studio.NewFileOptions);
+        Assert.Equal(2, studio.NewFileOptions.Count);
+        var python = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Python);
+        var js = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.JavaScript);
 
         Assert.Equal("New Python File", python.Label);
         Assert.Equal("LanguagePython", python.IconKind);
+        Assert.Equal("New JavaScript File", js.Label);
+        Assert.Equal("LanguageJavascript", js.IconKind);
     }
 
     [Fact]
@@ -95,7 +99,7 @@ public class CodeStudioSourceFileTests : IDisposable
         var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
         var folder = All(studio.ExplorerRootItems).Single(i => i.IsDirectory && i.Name == "tools");
 
-        await studio.NewFileOptions.Single().Command.ExecuteAsync(folder);
+        await studio.NewFileOptions.First(o => o.LanguageId == LanguageIds.Python).Command.ExecuteAsync(folder);
 
         Assert.StartsWith(Path.Combine(_storage.LibraryRootPath, "tools", "script_"), studio.Script.SourceFilePath);
         Assert.True(File.Exists(studio.Script.SourceFilePath));

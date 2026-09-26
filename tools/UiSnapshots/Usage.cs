@@ -43,6 +43,7 @@ internal static class Usage
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
           notebook <n>           Notebook Studio with problem n's notebook.
+              --polyglot-demo        a notebook of C#, Python and JavaScript cells sharing data both ways
               --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,
                                      input()) instead of a problem's
               --python <path>        the Python interpreter Python cells run with (default: the one the studio finds)

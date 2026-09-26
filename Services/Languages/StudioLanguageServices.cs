@@ -1,4 +1,5 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
@@ -38,6 +39,7 @@ public sealed class StudioLanguageServices
         {
             Registry.Register(new CSharpLanguage());
             Registry.Register(new PythonLanguage(this));
+            Registry.Register(new JavaScriptLanguage(this));
         }
 
         configure?.Invoke(this, Registry);

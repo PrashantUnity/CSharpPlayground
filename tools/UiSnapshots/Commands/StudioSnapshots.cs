@@ -193,10 +193,11 @@ internal static class StudioSnapshots
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
 
-        var demo = options.Flag("python-demo");
-        int number = demo ? 0 : options.Problem();
+        var pyDemo = options.Flag("python-demo");
+        var jsDemo = options.Flag("js-demo") || options.Flag("polyglot-demo");
+        int number = (pyDemo || jsDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            demo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -214,7 +215,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (demo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -347,6 +348,49 @@ internal static class StudioSnapshots
                 Type = CellType.Code,
                 Language = LanguageIds.Python,
                 Source = "name = input(\"Your name? \") or \"there\"\nprint(f\"Hi {name}: the numbers add up to {arr.sum()}\")"
+            }
+        }
+    };
+
+    private static NotebookDocumentItem PolyglotDemoNotebook() => new()
+    {
+        Title = "Polyglot: C#, Python & JavaScript",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = "## Polyglot Notebook (C#, Python & JavaScript)\nEach cell runs in its native runtime. Data shares seamlessly across all three languages with `#!share`."
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.CSharp,
+                Source = "var scores = new[] { 88, 95, 72, 91, 84 };\n$\"C# generated {scores.Length} test scores; average is {scores.Average():F1}\""
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.JavaScript,
+                Source = "#!share --from csharp scores\nconsole.log(`Node.js ${process.version} received ${scores.length} scores from C#!`);\nconst grades = scores.map(s => ({\n    score: s,\n    letter: s >= 90 ? 'A' : s >= 80 ? 'B' : 'C',\n    passed: s >= 80\n}));\ndisplay(grades);\ngrades"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = "#!share --from js grades\npassed = sum(1 for g in grades if g['passed'])\navg = sum(g['score'] for g in grades) / len(grades)\nprint(f\"Python analyzed {len(grades)} grades from JavaScript:\")\nprint(f\"Passed: {passed}/{len(grades)} students. Mean score: {avg:.1f}\")\ngrades"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.JavaScript,
+                Source = "const stats = { count: scores.length, max: Math.max(...scores), min: Math.min(...scores) };\nstats"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.CSharp,
+                Source = "#!share --from js stats\n$\"C# received stats from JavaScript: Max={stats[\"max\"]}, Min={stats[\"min\"]}\""
             }
         }
     };

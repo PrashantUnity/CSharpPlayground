@@ -22,6 +22,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly HashSet<string> _files;
     private readonly HashSet<string> _directories;
     private readonly Dictionary<string, FakePython> _pythons;
+    private readonly Dictionary<string, FakeNode> _nodes;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -30,6 +31,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _files = new HashSet<string>(comparer);
         _directories = new HashSet<string>(comparer);
         _pythons = new Dictionary<string, FakePython>(comparer);
+        _nodes = new Dictionary<string, FakeNode>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -84,6 +86,22 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return python;
     }
 
+    /// <summary>Makes <paramref name="path"/> a Node.js runtime that answers the studio's probe.</summary>
+    public FakeNode AddNode(string path, string version, string? executable = null, int exitCode = 0)
+    {
+        AddFile(path);
+        var node = new FakeNode(version, executable ?? path) { ExitCode = exitCode };
+        _nodes[Normalize(path)] = node;
+        return node;
+    }
+
+    /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
+    public void AddBrokenNode(string path, int exitCode = 1)
+    {
+        AddFile(path);
+        _nodes[Normalize(path)] = new FakeNode("0.0.0", path) { ExitCode = exitCode };
+    }
+
     /// <summary>A path that exists but isn't a working Python (exits with <paramref name="exitCode"/>), like a broken venv or a Store shortcut.</summary>
     public void AddBrokenPython(string path, int exitCode = 1)
     {
@@ -123,6 +141,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
             return Task.FromResult(python.ProbeAnswer());
         }
 
+        if (arguments.Count > 0 && arguments[0] == "-e" && _nodes.TryGetValue(Normalize(fileName), out var node))
+        {
+            return Task.FromResult(node.ProbeAnswer());
+        }
+
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
     }
 
@@ -156,5 +179,21 @@ public sealed record FakePython(string Version, string Prefix, string? BasePrefi
             ["site_packages"] = SitePackages
         });
         return new CommandResult(0, Noise + "__FRY_PROBE__" + json + "\n", string.Empty, false);
+    }
+}
+
+public sealed record FakeNode(string Version, string Executable)
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working Node.js", false);
+        var json = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["version"] = Version,
+            ["executable"] = Executable
+        });
+        return new CommandResult(0, "__FRY_PROBE__" + json + "\n", string.Empty, false);
     }
 }
