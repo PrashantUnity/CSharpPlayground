@@ -23,6 +23,7 @@ try
         case "visualizer": VisualizerSnapshots.Frames(options); break;
         case "hub": HubAndDocsSnapshots.Hub(options); break;
         case "docs": HubAndDocsSnapshots.Docs(options); break;
+        case "settings": HubAndDocsSnapshots.Settings(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

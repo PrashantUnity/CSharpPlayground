@@ -33,6 +33,7 @@ public sealed class StudioLanguageServices
         Host = host ?? new HostEnvironment();
         Processes = processLauncher ?? new ProcessLauncher();
         ToolchainSettings = new ToolchainSettingsStore(Path.Combine(BaseDirectory, "toolchains.json"));
+        StudioSettings = new Settings.StudioSettingsStore(Path.Combine(BaseDirectory, "studio_settings.json"));
         Registry = new LanguageRegistry();
 
         if (registerBuiltInLanguages)
@@ -49,6 +50,7 @@ public sealed class StudioLanguageServices
     public IHostEnvironment Host { get; }
     public IProcessLauncher Processes { get; }
     public ToolchainSettingsStore ToolchainSettings { get; }
+    public Settings.StudioSettingsStore StudioSettings { get; }
     public LanguageRegistry Registry { get; }
 
     public ILanguageDefinition CSharp => Registry.Get(LanguageIds.CSharp) ?? throw new InvalidOperationException("C# isn't registered.");

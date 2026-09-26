@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="700"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.EditorSettingsSectionControl"
+             x:DataType="vm:CSharpSettingsViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" Margin="24,18,24,24" MaxWidth="820" HorizontalAlignment="Left">
+
+            <!-- 1. EDITOR & INDENTATION -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16">
+                <StackPanel Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="20" Height="20" Foreground="{DynamicResource M3PrimaryBrush}" />
+                        <TextBlock Text="EDITOR &amp; INDENTATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Tab Size -->
+                    <Grid ColumnDefinitions="*,120">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Tab Size" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="The number of spaces a tab is equal to." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding TabSize, Mode=TwoWay}" Minimum="1" Maximum="16" Increment="1" FormatString="0" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Insert Spaces -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Insert Spaces" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Insert spaces when pressing Tab." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ConvertTabsToSpaces, Mode=TwoWay}" OnContent="" OffContent="" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Line Numbers -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Line Numbers" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Controls the display of line numbers in the editor margin." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLineNumbers, Mode=TwoWay}" OnContent="" OffContent="" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Word Wrap -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Word Wrap" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Controls how lines should wrap in the code canvas." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding WordWrap, Mode=TwoWay}" OnContent="" OffContent="" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Font Size -->
+                    <Grid ColumnDefinitions="*,120">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Editor Font Size" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Font size in pixels for AvaloniaEdit editor canvases." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding FontSize, Mode=TwoWay}" Minimum="9" Maximum="28" Increment="0.5" FormatString="0.0" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 2. ROSLYN C# COMPILER OPTIONS -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16">
+                <StackPanel Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="Microsoft" Width="20" Height="20" Foreground="#58A6FF" />
+                        <TextBlock Text="ROSLYN C# COMPILER OPTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Nullable Reference Checks -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Nullable Reference Types" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Enable nullable static analysis diagnostics (#nullable enable)." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding NullableChecksEnabled, Mode=TwoWay}" OnContent="" OffContent="" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Language Version -->
+                    <Grid ColumnDefinitions="*,140">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="C# Language Version" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Target C# compiler language specification." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <TextBox Grid.Column="1" Text="{Binding LanguageVersion, Mode=TwoWay}"
+                                 FontFamily="Consolas,Menlo,monospace" FontSize="12"
+                                 HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 3. EXECUTION & TERMINAL TIMEOUTS -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16">
+                <StackPanel Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="Console" Width="20" Height="20" Foreground="#3FB950" />
+                        <TextBlock Text="EXECUTION &amp; TERMINAL" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Execution Timeout -->
+                    <Grid ColumnDefinitions="*,120">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Execution Timeout (seconds)" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Maximum seconds before halting execution (0 = unlimited / manual stop)." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding ExecutionTimeoutSeconds, Mode=TwoWay}" Minimum="0" Maximum="600" Increment="5" FormatString="0" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Auto Clear Console -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Auto-Clear Console Before Run" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Automatically clear terminal buffer upon starting a new execution." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoClearConsoleOnRun, Mode=TwoWay}" OnContent="" OffContent="" />
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                    <!-- Max Lines -->
+                    <Grid ColumnDefinitions="*,120">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Max Terminal Buffer Lines" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Maximum scrollback lines kept in stdout/stderr buffer." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding MaxTerminalOutputLines, Mode=TwoWay}" Minimum="500" Maximum="50000" Increment="1000" FormatString="0" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

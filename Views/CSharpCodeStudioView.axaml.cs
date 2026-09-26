@@ -264,6 +264,14 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
+        // ── VS Code & JetBrains Open Settings (Ctrl+, / Cmd+,) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemComma || e.Key == Key.Oem1))
+        {
+            _currentVm.NavigateToSettings();
+            e.Handled = true;
+            return;
+        }
+
         // ── VS Code Toggle Line Comment (Ctrl+/ / Cmd+/) ──
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemQuestion || e.Key == Key.Oem2 || e.Key == Key.Divide))
         {

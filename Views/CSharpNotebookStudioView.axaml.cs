@@ -132,6 +132,14 @@ public partial class CSharpNotebookStudioView : UserControl
             return;
         }
 
+        // VS Code & JetBrains Open Settings (Ctrl+, / Cmd+,)
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemComma || e.Key == Key.Oem1))
+        {
+            vm.NavigateToSettings();
+            e.Handled = true;
+            return;
+        }
+
         // VS Code Shortcut: Ctrl+B / Cmd+B -> Toggle Primary SideBar
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.B)
         {

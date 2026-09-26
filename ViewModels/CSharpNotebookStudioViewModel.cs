@@ -21,6 +21,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly Action? _backToHomeAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
     private readonly Action? _navigateToDocsAction;
+    private readonly Action? _navigateToSettingsAction;
     private readonly Func<int> _getTimeoutSeconds;
 
     public QuickOpenViewModel QuickOpen { get; } = new();
@@ -323,7 +324,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         Func<int>? getTimeoutSeconds = null,
         Action<ScriptDocumentItem>? openScriptAction = null,
         Action? navigateToDocsAction = null,
-        StudioLanguageServices? languages = null)
+        StudioLanguageServices? languages = null,
+        Action? navigateToSettingsAction = null)
     {
         _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
@@ -334,6 +336,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _openScriptAction = openScriptAction;
         _navigateToDocsAction = navigateToDocsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
 
         var initialTab = CreateTab(_notebook, "Library", $"{notebook.Title}.frynb");
@@ -937,6 +940,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         _ = SaveAsync();
         _navigateToDocsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings()
+    {
+        _ = SaveAsync();
+        _navigateToSettingsAction?.Invoke();
     }
 
     [RelayCommand]

@@ -180,18 +180,24 @@
                                        Foreground="{DynamicResource DsMutedBrush}"
                                        Margin="12,22,12,8" />
 
-                            <!-- Data Connections / Document APIs -->
-                            <Button Classes="nexus-nav-item" IsHitTestVisible="False">
-                                <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="DatabaseOutline" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="Document APIs" Margin="12,0,0,0" VerticalAlignment="Center" />
+                            <!-- Toolchains & Environment Setup -->
+                            <Button Command="{Binding NavigateToSettingsCommand}"
+                                    CommandParameter="Languages"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Configure language interpreters, SDKs, and environments">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <materialIcons:MaterialIcon Kind="TuneVariant" Width="18" Height="18" Foreground="#4EBA6F" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Toolchains &amp; SDKs" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Background="{DynamicResource DsBorderBrush}" CornerRadius="10" Padding="6,1.5">
+                                        <TextBlock Text="Setup" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
                                 </Grid>
                             </Button>
 
                             <!-- Roslyn .NET 10 Kernel -->
                             <Button Classes="nexus-nav-item" IsHitTestVisible="False">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Cpu64Bit" Width="18" Height="18" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="18" Height="18" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text=".NET 10 Kernels" Margin="12,0,0,0" VerticalAlignment="Center" />
                                     <Border Grid.Column="2" Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
                                 </Grid>
@@ -206,6 +212,16 @@
                             BorderThickness="0,1,0,0"
                             Padding="16">
                         <StackPanel Spacing="10">
+                            <!-- Settings & Preferences -->
+                            <Button Command="{Binding NavigateToSettingsCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Settings &amp; Environment Setup (Ctrl+, / ⌘,)">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CogOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Settings" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
                             <!-- Return to FryPDF Home -->
                             <Button Command="{Binding NavigateToHomeCommand}"
                                     Classes="nexus-nav-item"

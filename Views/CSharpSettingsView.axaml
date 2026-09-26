@@ -1,0 +1,203 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpSettingsView"
+             x:DataType="vm:CSharpSettingsViewModel"
+             Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="52,*">
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 1. TOP HEADER BAR (52px)                                       -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,0">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                <!-- Back Button -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding BackToPreviousCommand}"
+                            Classes="snippet-action-btn"
+                            ToolTip.Tip="Return (Esc)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="16" Height="16" />
+                            <TextBlock Text="Back" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Rectangle Width="1" Height="20" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+                </StackPanel>
+
+                <!-- Page Title & Badge -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
+                    <materialIcons:MaterialIcon Kind="CogOutline" Width="22" Height="22" Foreground="{DynamicResource M3PrimaryBrush}" />
+                    <TextBlock Text="Settings &amp; Environment Setup" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                        <TextBlock Text="JetBrains Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Status / Notification Pill (when saving or error) -->
+                <Border Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource M3SurfaceContainerHighestBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="1" CornerRadius="14" Padding="12,4"
+                        IsVisible="{Binding HasStatusMessage}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="15" Height="15" Foreground="#4EBA6F" />
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                        <Button Command="{Binding DismissNotificationCommand}" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand" Margin="4,0,0,0">
+                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Action Buttons: Reset & Apply -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Command="{Binding ResetDefaultsCommand}"
+                            Classes="cs-toolbar-outlined"
+                            ToolTip.Tip="Reset all settings to default values">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="Restore" Width="15" Height="15" />
+                            <TextBlock Text="Reset Defaults" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ApplyCommand}"
+                            Classes="cs-toolbar-filled"
+                            ToolTip.Tip="Save and apply configuration">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
+                            <TextBlock Text="Apply" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 2. MASTER-DETAIL BODY                                          -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1" ColumnDefinitions="250,1,*">
+            <!-- LEFT NAVIGATION RAIL -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Search Input Box -->
+                    <Border Grid.Row="0" Padding="12,12,12,8">
+                        <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
+                                 PlaceholderText="Search settings &amp; runtimes…"
+                                 FontSize="12" Height="32">
+                            <TextBox.InnerLeftContent>
+                                <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="6,0,0,0" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </TextBox.InnerLeftContent>
+                        </TextBox>
+                    </Border>
+
+                    <!-- Category Items & Languages Subtree -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="3" Margin="8,4">
+                            <!-- Category: Languages & Runtimes -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Languages"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsLanguagesCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="Languages &amp; Runtimes" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Sub-items: Each registered language -->
+                            <StackPanel Spacing="2" Margin="16,2,0,8" IsVisible="{Binding IsLanguagesCategoryActive}">
+                                <ItemsControl ItemsSource="{Binding FilteredLanguages}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LanguageSettingItemViewModel">
+                                            <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Classes="doc-nav-item"
+                                                    Margin="0,1">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                                    <Ellipse Grid.Column="2" Width="6" Height="6" Fill="{Binding StatusColor}" VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- Category: Editor & Formatting -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Editor"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsEditorCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CodeBraces" Width="18" Height="18" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Editor &amp; Formatting" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Category: Execution & Terminal -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Execution"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsExecutionCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Console" Width="18" Height="18" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Execution &amp; Terminal" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Category: Keymap Reference -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Keymap"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsKeymapCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="KeyboardOutline" Width="18" Height="18" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Keymap &amp; Shortcuts" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- SPLITTER BORDER -->
+            <Rectangle Grid.Column="1" Fill="{DynamicResource M3OutlineVariantBrush}" Width="1" />
+
+            <!-- RIGHT DETAIL CANVAS -->
+            <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                <Panel>
+                    <!-- Detail for Languages & Runtimes -->
+                    <controls:LanguageEnvironmentSettingControl
+                        DataContext="{Binding SelectedLanguage}"
+                        IsVisible="{Binding ((vm:CSharpSettingsViewModel)DataContext).IsLanguagesCategoryActive, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+
+                    <!-- Detail for Editor & Formatting -->
+                    <controls:EditorSettingsSectionControl
+                        DataContext="{Binding}"
+                        IsVisible="{Binding IsEditorCategoryActive}" />
+
+                    <!-- Detail for Execution & Terminal -->
+                    <controls:EditorSettingsSectionControl
+                        DataContext="{Binding}"
+                        IsVisible="{Binding IsExecutionCategoryActive}" />
+
+                    <!-- Detail for Keymap Reference -->
+                    <controls:KeymapSettingsSectionControl
+                        DataContext="{Binding}"
+                        IsVisible="{Binding IsKeymapCategoryActive}" />
+                </Panel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

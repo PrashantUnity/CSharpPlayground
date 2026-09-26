@@ -20,6 +20,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
     private readonly Action? _navigateToDocsAction;
+    private readonly Action? _navigateToSettingsAction;
     private readonly StudioLanguageServices _languages;
 
     /// <summary>The languages this studio opens, runs and creates files of.</summary>
@@ -234,7 +235,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         Action? navigateToDocsAction = null,
         Action<Action>? postToUiThread = null,
         IBlindProgressService? blindProgress = null,
-        StudioLanguageServices? languages = null)
+        StudioLanguageServices? languages = null,
+        Action? navigateToSettingsAction = null)
     {
         _script = script;
         _languages = languages ?? StudioLanguageServices.Default;
@@ -246,6 +248,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
         _navigateToDocsAction = navigateToDocsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
         _postToUiThread = postToUiThread ?? RunOnUiThread;
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
@@ -394,6 +397,13 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     {
         _ = SaveDocumentAsync(userAsked: false);
         _navigateToDocsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings()
+    {
+        _ = SaveDocumentAsync(userAsked: false);
+        _navigateToSettingsAction?.Invoke();
     }
 
     [RelayCommand]

@@ -76,6 +76,26 @@ internal static class HubAndDocsSnapshots
         var window = Snapshot.Show(new CSharpDocsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         Snapshot.Save(window, options, "docs");
     }
+
+    /// <summary><c>settings</c>: the Settings and Environment Setup page.</summary>
+    public static void Settings(Options options)
+    {
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        var vm = new CSharpSettingsViewModel(languages);
+        if (options.Value("category") is { } cat) vm.SelectCategory(cat);
+        if (options.Value("language") is { } lang)
+        {
+            var target = vm.Languages.FirstOrDefault(l => l.Language.Id.Equals(lang, StringComparison.OrdinalIgnoreCase) || l.DisplayName.Equals(lang, StringComparison.OrdinalIgnoreCase));
+            if (target != null)
+            {
+                vm.SelectLanguageItem(target);
+                if (target.IsToolchainLanguage) Snapshot.Wait(vm.RefreshLanguageToolchainAsync(target));
+            }
+        }
+        var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        Snapshot.Settle();
+        Snapshot.Save(window, options, "settings");
+    }
 }
 
 /// <summary>A machine with nothing installed (for --nothing-installed): no files, no PATH, and no programs run.</summary>

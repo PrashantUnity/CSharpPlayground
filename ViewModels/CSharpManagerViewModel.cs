@@ -133,6 +133,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     private readonly Action? _navigateToHomeAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToBlindProblemsAction;
+    private readonly Action<string?>? _navigateToSettingsAction;
 
     [RelayCommand]
     public void NavigateToDocs()
@@ -144,6 +145,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     public void NavigateToBlindProblems()
     {
         _navigateToBlindProblemsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings(string? category = null)
+    {
+        _navigateToSettingsAction?.Invoke(category);
     }
 
     public bool IsAllFilterActive => SelectedTypeFilter == "All";
@@ -552,7 +559,8 @@ public partial class CSharpManagerViewModel : ObservableObject
         Action? navigateToHomeAction = null,
         Action? navigateToDocsAction = null,
         Action? navigateToBlindProblemsAction = null,
-        StudioLanguageServices? languages = null)
+        StudioLanguageServices? languages = null,
+        Action<string?>? navigateToSettingsAction = null)
     {
         _storageService = storageService;
         var registry = (languages ?? StudioLanguageServices.Default).Registry;
@@ -565,6 +573,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         _navigateToHomeAction = navigateToHomeAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToBlindProblemsAction = navigateToBlindProblemsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
 
         foreach (var t in CodeTemplateLibrary.GetTemplates())
         {

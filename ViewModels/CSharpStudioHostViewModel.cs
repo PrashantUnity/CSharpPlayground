@@ -57,6 +57,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpManagerViewModel ManagerViewModel { get; }
     public CSharpDocsViewModel DocsViewModel { get; }
     public CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
+    public CSharpSettingsViewModel SettingsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
@@ -92,6 +93,13 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
 
+        // ── Initialize Settings & Environment Setup page ──
+        SettingsViewModel = new CSharpSettingsViewModel(
+            _languages,
+            _languages.StudioSettings,
+            backToHubAction: NavigateToManager,
+            backToPreviousAction: NavigateToPreviousPage);
+
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(
             _storageService,
@@ -100,7 +108,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             navigateToHomeAction: NavigateToHome,
             navigateToDocsAction: () => NavigateToDocs(),
             navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
-            languages: _languages);
+            languages: _languages,
+            navigateToSettingsAction: cat => NavigateToSettings(cat));
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -168,7 +177,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 openNotebookAction: NavigateToNotebookStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
                 blindProgress: _blindProgress,
-                languages: _languages);
+                languages: _languages,
+                navigateToSettingsAction: () => NavigateToSettings());
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -185,7 +195,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openScriptAction: NavigateToCodeStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
-                languages: _languages);
+                languages: _languages,
+                navigateToSettingsAction: () => NavigateToSettings());
         });
 
         void Publish()
@@ -291,6 +302,36 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         CurrentPage = BlindProblemsViewModel;
         IsOnManagerPage = false;
         ActiveDocumentTitle = "Blind 75";
+    }
+
+    private object? _previousPageBeforeSettings;
+
+    [RelayCommand]
+    public void NavigateToSettings(string? category = null)
+    {
+        _previousPageBeforeSettings = CurrentPage;
+        if (!string.IsNullOrEmpty(category))
+        {
+            SettingsViewModel.SelectCategory(category);
+        }
+        CurrentPage = SettingsViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = "Settings";
+    }
+
+    [RelayCommand]
+    public void NavigateToPreviousPage()
+    {
+        if (_previousPageBeforeSettings != null)
+        {
+            CurrentPage = _previousPageBeforeSettings;
+            IsOnManagerPage = ReferenceEquals(CurrentPage, ManagerViewModel);
+            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : "Editor")));
+        }
+        else
+        {
+            NavigateToManager();
+        }
     }
 
     [RelayCommand]
