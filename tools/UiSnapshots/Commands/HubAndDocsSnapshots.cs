@@ -93,8 +93,17 @@ internal static class HubAndDocsSnapshots
             }
         }
         var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
-        Snapshot.Settle();
-        Snapshot.Save(window, options, "settings");
+        string defaultName = options.Value("name") switch
+        {
+            { } custom => custom,
+            _ when options.Flag("nothing-installed") && options.Value("language") is { } nl => $"settings_toolchain_{nl.ToLowerInvariant().Replace(' ', '_').Replace('#', 's')}_missing",
+            _ when options.Flag("nothing-installed") => "settings_toolchain_nothing_installed",
+            _ when options.Value("language") is { } l => $"settings_toolchain_{l.ToLowerInvariant().Replace(' ', '_').Replace('#', 's')}",
+            _ when options.Value("category") is { } c => $"settings_category_{c.ToLowerInvariant().Replace(' ', '_')}",
+            _ => "settings_toolchain_csharp"
+        };
+
+        Snapshot.Save(window, options, defaultName);
     }
 }
 

@@ -65,6 +65,10 @@ internal static class Usage
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
+          settings               The Settings and Environment Setup page.
+              --language <id>        select a language setting item (csharp, python, javascript)
+              --category <name>      select a category (Languages, Editor, Keymap)
+              --nothing-installed    simulate environment with no toolchains installed to test guidance
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)
@@ -75,6 +79,8 @@ internal static class Usage
           --light                       light theme instead of dark
           --hover <x,y>                 move the mouse there before saving, to show hover states
           --name <file>                 file name without .png (single-image commands)
+          --unique                      if a file with this name exists, append _1, _2, etc. instead of overwriting
+          --timestamp                   append current timestamp to filename (_yyyyMMdd_HHmmss)
           --out <folder>                where images go (default: tools/UiSnapshots/out)
 
         Every saved file's full path is printed, one per line. To look closer (zoom, coordinate grid, before/after

@@ -97,11 +97,33 @@ internal static class Snapshot
 
     /// <summary>
     /// Applies <c>--hover</c>, then saves what the window drew as <c>{--name or defaultName}.png</c> and prints its path.
+    /// Supports <c>--timestamp</c> to append a date-time stamp and <c>--unique</c> to avoid overriding existing files.
     /// </summary>
     public static string Save(Window window, Options options, string defaultName)
     {
         if (options.Value("hover") is { } hover) Hover(window, ParsePoint(hover));
-        return Save(window, options.Value("name") ?? defaultName);
+        string baseName = options.Value("name") ?? defaultName;
+        if (options.Flag("timestamp"))
+        {
+            baseName = $"{baseName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+        }
+        else if (options.Flag("unique"))
+        {
+            baseName = GetUniqueName(OutputFolder, baseName);
+        }
+        return Save(window, baseName);
+    }
+
+    /// <summary>Finds an unused file name by appending an incremental index if <c>baseName.png</c> already exists.</summary>
+    public static string GetUniqueName(string folder, string baseName)
+    {
+        string candidate = baseName;
+        int counter = 1;
+        while (File.Exists(Path.Combine(folder, candidate + ".png")))
+        {
+            candidate = $"{baseName}_{counter++}";
+        }
+        return candidate;
     }
 
     public static string Save(Window window, string name)
