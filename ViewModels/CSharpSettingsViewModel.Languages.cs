@@ -21,13 +21,20 @@ public partial class CSharpSettingsViewModel
 
         foreach (var language in _languageServices.Registry.All)
         {
-            var item = new LanguageSettingItemViewModel(language);
+            var item = new LanguageSettingItemViewModel(language, parent: this);
             Languages.Add(item);
             FilteredLanguages.Add(item);
         }
 
         SelectedLanguage = Languages.FirstOrDefault();
+        if (SelectedLanguage != null) SelectedLanguage.IsSelected = true;
         _ = RefreshAllLanguagesAsync();
+    }
+
+    partial void OnSelectedLanguageChanged(LanguageSettingItemViewModel? oldValue, LanguageSettingItemViewModel? newValue)
+    {
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null) newValue.IsSelected = true;
     }
 
     [RelayCommand]
@@ -207,5 +214,7 @@ public partial class CSharpSettingsViewModel
         {
             SelectedLanguage = FilteredLanguages.FirstOrDefault();
         }
+
+        KeymapSearchQuery = trimmed;
     }
 }

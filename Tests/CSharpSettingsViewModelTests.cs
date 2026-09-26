@@ -231,4 +231,70 @@ public class CSharpSettingsViewModelTests : IDisposable
 
         Assert.Equal("Languages", navigatedCategory);
     }
+
+    [Fact]
+    public void Languages_ExposeCapabilitiesAndStorageProfile()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var csharp = vm.Languages.First(l => l.Language.Id == LanguageIds.CSharp);
+
+        Assert.True(csharp.IsCSharp);
+        Assert.NotEmpty(csharp.CapabilityItems);
+        Assert.Contains(csharp.CapabilityItems, c => c.Name == "Live Diagnostics" && c.IsSupported);
+        Assert.Contains(csharp.CapabilityItems, c => c.Name == "Interactive Debugging" && c.IsSupported);
+        Assert.Contains(".frycs", csharp.FileExtensionsDisplay);
+        Assert.Equal("FryDocument (.frycs)", csharp.StorageBadge);
+
+        var python = vm.Languages.First(l => l.Language.Id == LanguageIds.Python);
+        Assert.False(python.IsCSharp);
+        Assert.NotEmpty(python.CapabilityItems);
+        Assert.Contains(python.CapabilityItems, c => c.Name == "Variable Sharing" && c.IsSupported);
+        Assert.Contains(python.CapabilityItems, c => c.Name == "Notebook Code Cells" && c.IsSupported);
+        Assert.Contains(".py", python.FileExtensionsDisplay);
+        Assert.Equal("Source File", python.StorageBadge);
+    }
+
+    [Fact]
+    public void Languages_SelectionUpdatesIsSelectedFlag()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var csharp = vm.Languages.First(l => l.Language.Id == LanguageIds.CSharp);
+        var python = vm.Languages.First(l => l.Language.Id == LanguageIds.Python);
+
+        vm.SelectLanguageItem(csharp);
+        Assert.True(csharp.IsSelected);
+        Assert.False(python.IsSelected);
+
+        vm.SelectLanguageItem(python);
+        Assert.False(csharp.IsSelected);
+        Assert.True(python.IsSelected);
+    }
+
+    [Fact]
+    public void Keymap_CategoryChipsAndSearchFilteringWork()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        Assert.NotEmpty(vm.KeymapCategoryChips);
+        Assert.True(vm.KeymapCategoryChips.First(c => c.Name == "All").IsSelected);
+        Assert.Equal(vm.Shortcuts.Count, vm.FilteredShortcuts.Count);
+
+        // Filter by category
+        var debugChip = vm.KeymapCategoryChips.First(c => c.Name == "Debug");
+        vm.SelectKeymapCategory(debugChip);
+
+        Assert.True(debugChip.IsSelected);
+        Assert.All(vm.FilteredShortcuts, s => Assert.Equal("Debug", s.Category));
+
+        // Filter by search query
+        vm.KeymapSearchQuery = "F10";
+        Assert.Single(vm.FilteredShortcuts);
+        Assert.Equal("Step Over", vm.FilteredShortcuts[0].Action);
+
+        // Clear filter
+        var allChip = vm.KeymapCategoryChips.First(c => c.Name == "All");
+        vm.SelectKeymapCategory(allChip);
+        vm.KeymapSearchQuery = string.Empty;
+        Assert.Equal(vm.Shortcuts.Count, vm.FilteredShortcuts.Count);
+    }
 }

@@ -42,7 +42,7 @@
                     <materialIcons:MaterialIcon Kind="CogOutline" Width="22" Height="22" Foreground="{DynamicResource M3PrimaryBrush}" />
                     <TextBlock Text="Settings &amp; Environment Setup" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                     <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
-                        <TextBlock Text="JetBrains Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="VS Code Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
                     </Border>
                 </StackPanel>
 
@@ -125,6 +125,7 @@
                                             <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Classes="doc-nav-item"
+                                                    Classes.active="{Binding IsSelected}"
                                                     Margin="0,1">
                                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
@@ -188,7 +189,7 @@
                         IsVisible="{Binding IsEditorCategoryActive}" />
 
                     <!-- Detail for Execution & Terminal -->
-                    <controls:EditorSettingsSectionControl
+                    <controls:ExecutionSettingsSectionControl
                         DataContext="{Binding}"
                         IsVisible="{Binding IsExecutionCategoryActive}" />
 

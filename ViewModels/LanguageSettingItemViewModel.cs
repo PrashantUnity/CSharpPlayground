@@ -6,20 +6,32 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 public sealed record EnvironmentPropertyItem(string Key, string Value);
+public sealed record CapabilityItem(string Name, bool IsSupported, string Description, string IconKind);
 
 /// <summary>
-/// JetBrains-style language and environment model for a single language in the settings deck.
+/// Language and environment model for a single language in the settings deck.
 /// </summary>
 public sealed partial class LanguageSettingItemViewModel : ObservableObject
 {
     public ILanguageDefinition Language { get; }
     public IToolchainProvider? Provider { get; }
+    public CSharpSettingsViewModel? ParentSettings { get; }
     public bool IsToolchainLanguage => Provider != null;
+    public bool IsCSharp => Language.Id == LanguageIds.CSharp;
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;
     public string AccentHex => Language.AccentHex;
     public string RuntimeDescription => Language.RuntimeDescription;
+    public string FileExtensionsDisplay => string.Join(", ", Language.FileExtensions);
+    public string StorageBadge => Language.Storage == LanguageStorageKind.FryDocument ? "FryDocument (.frycs)" : "Source File";
+    public string StorageExplanation => Language.Storage == LanguageStorageKind.FryDocument
+        ? "Stores code, notebook metadata, notes, and breakpoints in structured JSON."
+        : "Standard plain-text file compatible with external editors, command-line tools, and git.";
+    public string CommentPrefix => Language.LineCommentPrefix;
+
+    [ObservableProperty]
+    private bool _isSelected;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMissing))]
@@ -80,11 +92,15 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public ObservableCollection<ToolchainAction> AvailableActions { get; } = new();
     public ObservableCollection<string> MissingSteps { get; } = new();
     public ObservableCollection<EnvironmentPropertyItem> EnvironmentDetails { get; } = new();
+    public ObservableCollection<CapabilityItem> CapabilityItems { get; } = new();
 
-    public LanguageSettingItemViewModel(ILanguageDefinition language, IToolchainProvider? provider = null)
+    public LanguageSettingItemViewModel(ILanguageDefinition language, IToolchainProvider? provider = null, CSharpSettingsViewModel? parent = null)
     {
         Language = language;
         Provider = provider ?? language.Toolchain;
+        ParentSettings = parent;
+
+        PopulateCapabilities();
 
         if (Provider == null)
         {
@@ -101,6 +117,8 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
             EnvironmentDetails.Add(new EnvironmentPropertyItem("Language Standard", "C# 13.0"));
             EnvironmentDetails.Add(new EnvironmentPropertyItem("Target Framework", ".NET 10.0"));
             EnvironmentDetails.Add(new EnvironmentPropertyItem("Execution Sandbox", "In-Process Interactive Kernel"));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Host Architecture", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem(".NET Runtime", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription));
         }
         else
         {
@@ -112,6 +130,23 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                 AvailableActions.Add(action);
             }
         }
+    }
+
+    private void PopulateCapabilities()
+    {
+        CapabilityItems.Clear();
+        CapabilityItems.Add(new CapabilityItem("Syntax Highlighting", true, "VS Code Dark+ & Light+ theme palettes", "PaletteOutline"));
+        CapabilityItems.Add(new CapabilityItem("Smart Indentation", true, "Language-aware smart indentation rules", "FormatAlignLeft"));
+        CapabilityItems.Add(new CapabilityItem("Live Diagnostics", Language.Has(LanguageCapabilities.LiveDiagnostics), "Real-time compiler diagnostics while editing", "AlertCircleOutline"));
+        CapabilityItems.Add(new CapabilityItem("Interactive Debugging", Language.Has(LanguageCapabilities.Debugging), "Breakpoints, stepping (F10/F11), and variable inspector", "BugPlayOutline"));
+        CapabilityItems.Add(new CapabilityItem("Hover Quick Info", Language.Has(LanguageCapabilities.QuickInfo), "Symbol signatures and XML documentation on hover", "InformationOutline"));
+        CapabilityItems.Add(new CapabilityItem("Document Formatting", Language.Has(LanguageCapabilities.Formatting), "Format document code indentation (Shift+Alt+F)", "FormatLineSpacing"));
+        CapabilityItems.Add(new CapabilityItem("Code Completion", Language.Has(LanguageCapabilities.Completion), "IntelliSense symbol and keyword completions", "CodeBraces"));
+        CapabilityItems.Add(new CapabilityItem("Interactive Stdin", Language.Has(LanguageCapabilities.StandardInput), "Stream interactive input() from terminal buffer", "ConsoleLine"));
+        CapabilityItems.Add(new CapabilityItem("Notebook Code Cells", Language.Has(LanguageCapabilities.NotebookCells), "Polyglot interactive notebook cell execution", "BookOpenOutline"));
+        CapabilityItems.Add(new CapabilityItem("Variable Sharing", Language.Has(LanguageCapabilities.ValueSharing), "Cross-kernel value exchange via #!share", "SwapHorizontal"));
+        CapabilityItems.Add(new CapabilityItem("Package Manager", Language.Has(LanguageCapabilities.Packages), "In-app package resolution and installation", "PackageVariantClosed"));
+        CapabilityItems.Add(new CapabilityItem("Test Cases Deck", Language.Has(LanguageCapabilities.TestCases), "Automated Check(...) assertion verification", "CheckboxMarkedCircleOutline"));
     }
 
     public void UpdateResolution(ToolchainResolution resolution, IReadOnlyList<ToolchainInfo> allFound)

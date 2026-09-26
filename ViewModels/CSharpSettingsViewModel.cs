@@ -59,6 +59,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
 
         PopulateCategories();
         PopulateKeymap();
+        InitializeKeymap();
         InitializeEditorSettings();
         InitializeLanguages();
     }
