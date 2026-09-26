@@ -6,11 +6,12 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 /// <summary>
-/// Minimal read-only, syntax-highlighted C# code viewer for static snippets
+/// Minimal read-only, syntax-highlighted code viewer (C# unless <see cref="Language"/> says otherwise) for static snippets
 /// (e.g. documentation cards). Unlike <see cref="BindableTextEditor"/> it has
 /// no folding, completion, search panel, or debugging chrome.
 /// </summary>
@@ -25,6 +26,16 @@ public class CodeViewer : TextEditor
     {
         get => GetValue(CodeProperty);
         set => SetValue(CodeProperty, value);
+    }
+
+    /// <summary>The snippet's language ("csharp", "python"…), which picks its highlighting; C# when unset or unknown.</summary>
+    public static readonly StyledProperty<string?> LanguageProperty =
+        AvaloniaProperty.Register<CodeViewer, string?>(nameof(Language));
+
+    public string? Language
+    {
+        get => GetValue(LanguageProperty);
+        set => SetValue(LanguageProperty, value);
     }
 
     public CodeViewer()
@@ -51,15 +62,16 @@ public class CodeViewer : TextEditor
         bool isDark = ActualThemeVariant == ThemeVariant.Dark ||
                       (ActualThemeVariant != ThemeVariant.Light && (Application.Current?.ActualThemeVariant == ThemeVariant.Dark));
 
+        var language = StudioLanguageServices.Default.Registry.Get(Language);
         if (isDark)
         {
-            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            SyntaxHighlighting = language?.GetHighlighting(isDark: true) ?? CSharpSyntaxHighlightingTheme.GetDarkTheme();
             Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
         }
         else
         {
-            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            SyntaxHighlighting = language?.GetHighlighting(isDark: false) ?? CSharpSyntaxHighlightingTheme.GetLightTheme();
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
             TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
         }
@@ -72,6 +84,10 @@ public class CodeViewer : TextEditor
         if (change.Property == CodeProperty)
         {
             Text = change.GetNewValue<string?>() ?? string.Empty;
+        }
+        else if (change.Property == LanguageProperty)
+        {
+            ApplyThemeVariant();
         }
     }
 }

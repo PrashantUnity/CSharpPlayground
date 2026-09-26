@@ -7,10 +7,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
-public class LocalScriptStorageService : IScriptStorageService
+public partial class LocalScriptStorageService : IScriptStorageService
 {
     private readonly string _baseDir;
     private readonly string _libraryRoot;
@@ -24,7 +25,8 @@ public class LocalScriptStorageService : IScriptStorageService
     // In-memory only: lets a document opened from outside the active workspace root (a loose file,
     // or a tab left open across a root switch) still be found and saved in place via Ctrl+S, without
     // resurrecting a persistent cross-root registry.
-    private readonly Dictionary<string, string> _knownFileLocations = new(StringComparer.OrdinalIgnoreCase);
+    // Concurrent: the workspace walks run on the thread pool (so a caller blocking on them can't deadlock the UI thread).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _knownFileLocations = new(StringComparer.OrdinalIgnoreCase);
 
     private class WorkspaceState
     {
@@ -38,8 +40,10 @@ public class LocalScriptStorageService : IScriptStorageService
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
     public event Action? ActiveWorkspaceChanged;
 
-    public LocalScriptStorageService(string? customBaseDir = null)
+    /// <param name="languages">The languages whose plain source files (main.py) the workspace lists; the built-in ones by default.</param>
+    public LocalScriptStorageService(string? customBaseDir = null, LanguageRegistry? languages = null)
     {
+        _languages = languages ?? StudioLanguageServices.Default.Registry;
         _baseDir = !string.IsNullOrEmpty(customBaseDir)
             ? customBaseDir
             : Path.Combine(
@@ -125,14 +129,15 @@ public class LocalScriptStorageService : IScriptStorageService
         }
 
         var root = EffectiveWorkspaceRoot;
-        var direct = Directory.EnumerateFiles(root, $"{id}{extension}", SearchOption.AllDirectories).FirstOrDefault();
+        var candidates = await Task.Run(() => WorkspaceWalker.Files(root, f => f.EndsWith(extension, StringComparison.OrdinalIgnoreCase))).ConfigureAwait(false);
+        var direct = candidates.FirstOrDefault(f => string.Equals(Path.GetFileName(f), $"{id}{extension}", StringComparison.OrdinalIgnoreCase));
         if (direct != null)
         {
             _knownFileLocations[id] = direct;
             return direct;
         }
 
-        foreach (var file in Directory.EnumerateFiles(root, $"*{extension}", SearchOption.AllDirectories))
+        foreach (var file in candidates)
         {
             try
             {
@@ -157,8 +162,9 @@ public class LocalScriptStorageService : IScriptStorageService
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
         var list = new List<WorkspaceItemSummary>();
+        var files = await Task.Run(() => WorkspaceWalker.Files(root, IsWorkspaceFile)).ConfigureAwait(false);
 
-        foreach (var file in Directory.EnumerateFiles(root, "*.frycs", SearchOption.AllDirectories))
+        foreach (var file in files.Where(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)))
         {
             try
             {
@@ -189,7 +195,7 @@ public class LocalScriptStorageService : IScriptStorageService
             }
         }
 
-        foreach (var file in Directory.EnumerateFiles(root, "*.frynb", SearchOption.AllDirectories))
+        foreach (var file in files.Where(f => f.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)))
         {
             try
             {
@@ -220,12 +226,18 @@ public class LocalScriptStorageService : IScriptStorageService
             }
         }
 
+        foreach (var file in files)
+        {
+            if (_languages.FindSourceFileLanguage(file) is { } language) list.Add(SourceFileSummary(file, language, root));
+        }
+
         return list.OrderByDescending(x => x.LastModified).ToList();
     }
 
     public async Task<ScriptDocumentItem?> LoadScriptAsync(string id)
     {
         await EnsureInitializedAsync();
+        if (IsSourceFileId(id)) return await LoadSourceFileAsync(id);
         var file = await FindExistingFilePathAsync(id, ".frycs");
         if (file == null) return null;
 
@@ -243,6 +255,12 @@ public class LocalScriptStorageService : IScriptStorageService
 
     public async Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null)
     {
+        // A source file is saved as its text, and only when that's safe without asking (see SaveSourceFileAsync).
+        if (script.SourceFilePath != null || IsSourceFileId(script.Id))
+        {
+            return await SaveSourceFileAsync(script, overwriteChangesOnDisk: false);
+        }
+
         try
         {
             script.LastModified = DateTime.UtcNow;
@@ -426,6 +444,12 @@ public class LocalScriptStorageService : IScriptStorageService
 
     public async Task DeleteItemAsync(string id)
     {
+        if (IsSourceFileId(id))
+        {
+            DeleteSourceFile(id);
+            return;
+        }
+
         var scriptFile = await FindExistingFilePathAsync(id, ".frycs");
         if (scriptFile != null)
         {
@@ -438,18 +462,15 @@ public class LocalScriptStorageService : IScriptStorageService
             File.Delete(nbFile);
         }
 
-        _knownFileLocations.Remove(id);
+        _knownFileLocations.TryRemove(id, out _);
     }
 
     public Task<List<string>> LoadFolderPathsAsync()
     {
         var root = EffectiveWorkspaceRoot;
-        var result = new List<string>();
-        foreach (var dir in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories))
-        {
-            result.Add(Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'));
-        }
-        return Task.FromResult(result);
+        return Task.Run(() => WorkspaceWalker.Folders(root)
+            .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
+            .ToList());
     }
 
     public Task<string> CreateFolderAsync(string? parentFolderPath, string desiredName)
@@ -531,7 +552,7 @@ public class LocalScriptStorageService : IScriptStorageService
     {
         var summaries = await LoadWorkspaceSummariesAsync();
         var results = new List<ScriptProjectItem>();
-        foreach (var s in summaries)
+        foreach (var s in summaries.Where(x => !x.IsSourceFile))
         {
             if (s.IsNotebook)
             {
@@ -677,6 +698,17 @@ public class LocalScriptStorageService : IScriptStorageService
             return await OpenCsSourceFileAsync(path);
         }
 
+        if (_languages.FindSourceFileLanguage(path) is { } sourceLanguage)
+        {
+            var id = RegisterSourceFile(path);
+            return new OpenProjectResult(
+                Success: true,
+                Message: $"Opened {sourceLanguage.DisplayName} file '{Path.GetFileName(path)}'",
+                PrimaryDocumentId: id,
+                PrimaryDocumentKind: WorkspaceItemKind.Script,
+                DocumentsLoadedCount: 1);
+        }
+
         if (ext == ".csproj")
         {
             var folder = Path.GetDirectoryName(path);
@@ -686,7 +718,8 @@ public class LocalScriptStorageService : IScriptStorageService
             }
         }
 
-        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .cs, .csx, .csproj, .zip");
+        var sourceExtensions = string.Concat(_languages.SourceFileLanguages.SelectMany(l => l.FileExtensions).Select(e => ", " + e));
+        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .cs, .csx, .csproj, .zip{sourceExtensions}");
     }
 
     private async Task<OpenProjectResult> OpenFolderAsync(string dirPath)

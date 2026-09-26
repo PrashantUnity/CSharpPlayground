@@ -26,6 +26,11 @@ It operates both as:
   - NuGet package resolution directly in scripts (`#r "nuget: ..."`).
   - Rich output display: text, images, charts, and custom Avalonia controls (`Display.Image(...)`, `Display.Control(...)`).
   - Cell input/output collapsing, folding, and export.
+- **Python & Polyglot Notebooks**:
+  - `.py` files open, run (F5 / Ctrl+F5) and take `input()` in Code Studio, with your installed Python, so numpy, pandas, matplotlib and every other package work. Tracebacks land in Problems with an "Install <package>" fix.
+  - Notebooks mix C# and Python cells, as in Polyglot Notebooks. Each language has its own kernel, and `#!share --from csharp nums` copies values between them. `%pip install` works in cells.
+  - The studio finds Python as your terminal would (a project `.venv` first) and says what's missing when it can't. See the App Guide's "Languages & Python".
+  - More languages plug in as modules: [docs/adding-a-language.md](docs/adding-a-language.md), [docs/kernel-protocol.md](docs/kernel-protocol.md).
 - **Tabular Data Analytics**:
   - Native display and profiling for `DataTable`, `DataView`, and Microsoft.Data.Analysis `DataFrame`.
   - Column summaries, data types, row counts, and inline search.
@@ -42,6 +47,7 @@ It operates both as:
 
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- Optional: [Python 3.9+](https://www.python.org/downloads/) for `.py` files and Python notebook cells
 
 ### Run Standalone Desktop App (FrySharp)
 ```bash
@@ -55,7 +61,7 @@ dotnet run --project Runner/CSharpEditorPlugin.Runner.csproj
 
 ### Run Automated Unit Tests
 ```bash
-# Run all 244 unit tests
+# Run the unit tests (the real-Python ones run when Python 3.9+ is installed)
 dotnet test CSharpEditorPlugin.slnx
 ```
 
@@ -72,16 +78,19 @@ CSharpPlayground/
 ├── Controls/                       # VS Code activity bar, status bar, tabs, editor
 ├── Models/                         # POCO models for scripts, cells, diagnostics
 ├── Services/                       # Roslyn compiler, kernel, completion, debugger
+│   ├── Languages/                  # Language registry; C# and Python modules (Python/Kernel: the kernel program)
+│   ├── Toolchains/ Processes/      # Finding installed toolchains; running programs (stdin, Stop, cleanup)
+│   └── Kernels/ Packages/          # Notebook kernels per language, #!share, the kernel protocol; pip
 ├── ViewModels/                     # Reactive MVVM view models
 ├── Views/                          # Avalonia XAML views (Studio, Notebook, Manager)
 ├── Runner/                         # Standalone desktop executable (FrySharp)
 │   ├── CSharpEditorPlugin.Runner.csproj
 │   ├── Program.cs / App.axaml
 │   └── MainWindow.axaml
-├── Tests/                          # Comprehensive xUnit test suite (244 tests)
+├── Tests/                          # Comprehensive xUnit test suite (1,100+ tests; RealPython/ needs Python)
 │   └── CSharpEditorPlugin.Tests.csproj
 ├── tools/UiSnapshots/              # Headless renderer: real views to PNG, for checking UI changes
-├── docs/                           # Developer guides (docs/headless-ui-snapshots.md)
+├── docs/                           # Developer guides: headless UI snapshots, adding a language, the kernel protocol
 └── packaging/                      # macOS DMG & Windows MSIX/Inno packaging assets
 ```
 

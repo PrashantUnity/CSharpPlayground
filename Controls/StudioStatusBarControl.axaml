@@ -71,6 +71,7 @@
 
                 <!-- Language Mode Selector Flyout -->
                 <Button Classes="status-item"
+                        IsVisible="{Binding SupportsExecutionModes}"
                         ToolTip.Tip="Select C# Execution Mode">
                     <Button.Flyout>
                         <MenuFlyout Placement="TopEdgeAlignedRight">
@@ -80,6 +81,55 @@
                         </MenuFlyout>
                     </Button.Flyout>
                     <TextBlock Text="{Binding LanguageModeStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Toolchain picker (e.g. which Python runs .py files), for a language that runs with an installed toolchain -->
+                <Button Classes="status-item"
+                        IsVisible="{Binding HasToolchain}"
+                        Command="{Binding RefreshToolchainsCommand}"
+                        ToolTip.Tip="Choose which installed toolchain runs this file">
+                    <Button.Flyout>
+                        <Flyout Placement="TopEdgeAlignedRight">
+                            <StackPanel Spacing="2" MinWidth="300" MaxWidth="460">
+                                <TextBlock Text="Run with" FontSize="11" FontWeight="SemiBold" Margin="8,4,8,2" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <ItemsControl ItemsSource="{Binding ToolchainChoices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding Command}" Classes="status-item" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4">
+                                                <Grid ColumnDefinitions="18,*">
+                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13" IsVisible="{Binding IsSelected}"
+                                                                                Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                    <StackPanel Grid.Column="1" Spacing="1">
+                                                        <TextBlock Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                        <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Separator Margin="4,2" />
+                                <ItemsControl ItemsSource="{Binding ToolchainActions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding Command}" Classes="status-item" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                    Padding="8,4" ToolTip.Tip="{Binding Description}">
+                                                <TextBlock Text="{Binding Label}" FontSize="11.5" Margin="18,0,0,0" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Command="{Binding RefreshToolchainsCommand}" Classes="status-item" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4">
+                                    <TextBlock Text="Look again for installed toolchains" FontSize="11.5" Margin="18,0,0,0" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                </Button>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" IsVisible="{Binding IsToolchainMissing}"
+                                                    Foreground="{DynamicResource M3WarningBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding LanguageStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
                 </Button>
 
                 <!-- Bottom Deck Toggle Button -->

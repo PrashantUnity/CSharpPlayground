@@ -66,6 +66,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # The Python language's tests run real Python; the same version on every OS keeps them comparable.
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Restore
         run: dotnet restore CSharpEditorPlugin.slnx
 
@@ -74,6 +81,10 @@ jobs:
 
       - name: Test
         run: dotnet test CSharpEditorPlugin.slnx -c Release --no-build --verbosity normal
+        env:
+          # Real-Python tests fail instead of skipping when Python can't be found.
+          FRY_TEST_PYTHON: ${{ steps.python.outputs.python-path }}
+          FRY_REQUIRE_PYTHON: '1'
 
   # ── 2. Pack NuGet + .fryplugin ───────────────────────────────────────────
   build-and-pack:

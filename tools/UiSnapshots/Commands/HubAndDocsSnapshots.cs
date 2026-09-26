@@ -1,5 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -15,7 +17,11 @@ internal static class HubAndDocsSnapshots
     /// </summary>
     public static void Hub(Options options)
     {
-        var storage = new LocalScriptStorageService(Snapshot.TempFolder("hub"));
+        // Languages over a throwaway folder: the STUDIO ENVIRONMENT rows show the machine's own Python (or --python's),
+        // or with --nothing-installed what the Hub says when there's none.
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("hub"), languages.Registry);
         if (!options.Flag("empty"))
         {
             foreach (string title in new[] { "Sorting playground", "PDF invoice parser", "LINQ practice" })
@@ -28,7 +34,7 @@ internal static class HubAndDocsSnapshots
             }
         }
 
-        var vm = new CSharpManagerViewModel(storage, openScriptAction: _ => { }, openNotebookAction: _ => { });
+        var vm = new CSharpManagerViewModel(storage, openScriptAction: _ => { }, openNotebookAction: _ => { }, languages: languages);
         Snapshot.Wait(vm.LoadWorkspaceItemsAsync());
         if (vm.AllItems.FirstOrDefault() is { } first) Snapshot.Wait(vm.TogglePinAsync(first));
 
@@ -40,6 +46,8 @@ internal static class HubAndDocsSnapshots
         }
 
         var window = Snapshot.Show(new CSharpManagerView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        Snapshot.Wait(vm.RefreshToolchainStatusesAsync()); // the panel started it when it was shown
+        Snapshot.Settle();
         string name = options.Flag("templates") ? "hub_templates" : options.Value("create") is { } kind ? $"hub_create_{kind}" : "hub";
         Snapshot.Save(window, options, name);
     }
@@ -68,4 +76,24 @@ internal static class HubAndDocsSnapshots
         var window = Snapshot.Show(new CSharpDocsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         Snapshot.Save(window, options, "docs");
     }
+}
+
+/// <summary>A machine with nothing installed (for --nothing-installed): no files, no PATH, and no programs run.</summary>
+internal sealed class NothingInstalledHost : IHostEnvironment
+{
+    private readonly HostEnvironment _real = new();
+
+    public bool IsWindows => _real.IsWindows;
+    public bool IsMacOS => _real.IsMacOS;
+    public bool IsLinux => _real.IsLinux;
+    public string HomeDirectory => _real.HomeDirectory;
+
+    public string? GetEnvironmentVariable(string name) => name.Equals("PATH", StringComparison.OrdinalIgnoreCase) ? string.Empty : _real.GetEnvironmentVariable(name);
+    public bool FileExists(string path) => false;
+    public bool DirectoryExists(string path) => false;
+    public IReadOnlyList<string> GetDirectories(string path) => Array.Empty<string>();
+    public Task<string?> GetLoginShellPathAsync(CancellationToken ct = default) => Task.FromResult<string?>(string.Empty);
+
+    public Task<CommandResult> RunAsync(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, CancellationToken ct = default) =>
+        Task.FromResult(new CommandResult(-1, string.Empty, string.Empty, TimedOut: false));
 }

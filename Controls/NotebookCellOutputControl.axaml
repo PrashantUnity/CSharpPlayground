@@ -257,6 +257,35 @@
                         </Grid>
                     </Border>
 
+                    <!-- Missing package hint (Python's ModuleNotFoundError): install it, then the cell runs again -->
+                    <Border IsVisible="{Binding HasMissingDependency}"
+                            Background="{DynamicResource M3WarningContainerBrush}"
+                            BorderBrush="{DynamicResource M3WarningBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            Margin="0,0,0,2">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariantClosed" Width="16" Height="16" Foreground="{DynamicResource M3OnWarningContainerBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding MissingDependencyHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnWarningContainerBrush}" />
+                                <TextBlock Text="{Binding MissingDependencyHintDetail}"
+                                           FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Command="{Binding InstallMissingDependencyCommand}"
+                                    Classes="cell-output-tab-btn active"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    ToolTip.Tip="Install the package, then run this cell again">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Download" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding InstallMissingDependencyLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
                     <!-- 1. Interactive Object Inspector Tree -->
                     <Border IsVisible="{Binding IsInspectorTabActive}" Margin="0,1,0,3">
                         <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />

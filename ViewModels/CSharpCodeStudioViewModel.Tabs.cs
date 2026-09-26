@@ -10,8 +10,11 @@ public partial class CSharpCodeStudioViewModel
 {
     private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
+        var sourceLanguage = document.SourceFilePath != null ? _languages.LanguageOf(document) : null;
         return new StudioTabItemViewModel(document, isActive)
         {
+            LanguageIconKind = sourceLanguage?.IconKind,
+            LanguageIconColor = sourceLanguage?.AccentHex,
             OnSelect = t => { _ = SwitchToTabAsync(t); },
             OnClose = t => { _ = CloseTabAsync(t); },
             OnCloseOthers = t => { _ = CloseOtherTabsAsync(t); },
@@ -83,6 +86,7 @@ public partial class CSharpCodeStudioViewModel
         IsDebugging = tab.IsDebugging;
         IsPaused = tab.IsPaused;
         SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
+        IsAcceptingProgramInput = tab.ActiveRun is { AcceptsInput: true } && SupportsStandardInput;
 
         Diagnostics.Clear();
         foreach (var d in tab.Diagnostics) Diagnostics.Add(d);
@@ -145,6 +149,7 @@ public partial class CSharpCodeStudioViewModel
         int index = OpenTabs.IndexOf(tab);
         if (index >= 0)
         {
+            StopTabRun(tab);
             OpenTabs.Remove(tab);
             if (tab.IsActive && OpenTabs.Count > 0)
             {
@@ -161,6 +166,7 @@ public partial class CSharpCodeStudioViewModel
         var toRemove = OpenTabs.Where(t => t.Id != tab.Id).ToList();
         foreach (var t in toRemove)
         {
+            StopTabRun(t);
             OpenTabs.Remove(t);
         }
         if (!tab.IsActive)
@@ -178,6 +184,7 @@ public partial class CSharpCodeStudioViewModel
         var toRemove = OpenTabs.Skip(index + 1).ToList();
         foreach (var t in toRemove)
         {
+            StopTabRun(t);
             OpenTabs.Remove(t);
         }
         if (!tab.IsActive && !OpenTabs.Any(t => t.IsActive))
@@ -196,6 +203,7 @@ public partial class CSharpCodeStudioViewModel
             Notes = string.Empty
         };
         var freshTab = CreateTab(freshScript, isActive: true);
+        foreach (var t in OpenTabs) StopTabRun(t);
         OpenTabs.Clear();
         OpenTabs.Add(freshTab);
         await SwitchToTabAsync(freshTab);
@@ -243,7 +251,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public async Task ExportScriptToCsAsync()
     {
-        if (Script == null) return;
+        if (Script == null || Script.SourceFilePath != null) return;
         var content = DocumentExportService.ExportScriptToCs(Script);
         await CopyTextToClipboardAsync(content);
         ConsoleOutput += $"\n[Export] Script '{Script.Title}' exported to standalone C# source (.cs) and copied to clipboard!\n";
@@ -252,7 +260,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public async Task ExportScriptToCsxAsync()
     {
-        if (Script == null) return;
+        if (Script == null || Script.SourceFilePath != null) return;
         var content = DocumentExportService.ExportScriptToCsx(Script);
         await CopyTextToClipboardAsync(content);
         ConsoleOutput += $"\n[Export] Script '{Script.Title}' exported to C# Script (.csx) and copied to clipboard!\n";

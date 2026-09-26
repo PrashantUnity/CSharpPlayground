@@ -8,6 +8,7 @@ using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using PdfEditorApp.Core.Plugins.Manifests;
 using PdfEditorApp.Core.Plugins.Settings;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -394,8 +395,14 @@ public class CSharpEditorPlugin : IFryPlugin
             })
         };
 
+        // Programs the studio starts (Python runs and notebook kernels) end with it: when the app exits, and when the plugin
+        // is unloaded.
+        var killProcessesOnExit = ProcessRegistry.KillAllOnExit();
+
         ctx.RegisterEffect(() =>
         {
+            killProcessesOnExit.Dispose();
+            ProcessRegistry.KillAll();
             navReg.Dispose();
             cmdReg.Dispose();
             statusReg.Dispose();

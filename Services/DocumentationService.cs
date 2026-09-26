@@ -177,7 +177,9 @@ public partial class DocumentationService
         notebook.Cells.Add(new NotebookCellItem
         {
             Type = CellType.Code,
-            Source = snippet.Code
+            Source = snippet.Code,
+            // A Python snippet is a Python cell; C# is the notebook's own language.
+            Language = Languages.StudioLanguageServices.Default.Registry.Get(snippet.Language) is { Id: not Languages.LanguageIds.CSharp } language ? language.Id : null
         });
 
         return notebook;

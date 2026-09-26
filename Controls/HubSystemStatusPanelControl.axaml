@@ -47,6 +47,40 @@
                                                 <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                                             </Grid>
 
+                                            <!-- A row per language that runs with an installed toolchain (Python): what was found, or how to install it -->
+                                            <ItemsControl ItemsSource="{Binding ToolchainStatuses}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="12" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ToolchainStatusItem">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ToolTip.Tip="{Binding Detail}" Background="Transparent">
+                                                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6"
+                                                                    Background="{DynamicResource DsPrimarySubtleBrush}">
+                                                                <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentHex}"
+                                                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                                <TextBlock Text="{Binding Status}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                            <Button Grid.Column="2" Command="{Binding $parent[ItemsControl].((vm:CSharpManagerViewModel)DataContext).LookAgainForToolchainsCommand}"
+                                                                    Background="Transparent" BorderThickness="0" Padding="4" Margin="4,0" VerticalAlignment="Center"
+                                                                    IsVisible="{Binding IsMissing}" ToolTip.Tip="Look again (after installing it)">
+                                                                <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                                            </Button>
+                                                            <Panel Grid.Column="3" VerticalAlignment="Center">
+                                                                <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsGreenBrush}" IsVisible="{Binding IsFound}" />
+                                                                <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource DsMutedBrush}" IsVisible="{Binding IsChecking}" />
+                                                                <materialIcons:MaterialIcon Kind="AlertOutline" Width="14" Height="14" Foreground="{DynamicResource M3WarningBrush}" IsVisible="{Binding IsMissing}" />
+                                                            </Panel>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
                                             <Border Height="1" Background="{DynamicResource DsBorderBrush}" Margin="0,2" />
 
                                             <!-- Mini Resource Usage Meters -->

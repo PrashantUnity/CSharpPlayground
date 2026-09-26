@@ -16,6 +16,7 @@ using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -38,6 +39,11 @@ public partial class CSharpCodeStudioView : UserControl
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
     private DebugHoverDataTipControl? _debugHoverTip;
     private DebugHoverDataTipController? _debugHoverController;
+
+    // The language of the document in the editor: its colors, indentation, folding and comment prefix, and whether the
+    // C# completion and hover apply. A language with editor help of its own attaches it here.
+    private ILanguageDefinition? _editorLanguage;
+    private IDisposable? _languageAssistant;
 
     public CSharpCodeStudioView()
     {
@@ -127,6 +133,14 @@ public partial class CSharpCodeStudioView : UserControl
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
         {
             _ = _currentVm.SaveCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F5 && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)) &&
+            !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !_currentVm.IsExecuting && !_currentVm.IsDebugging)
+        {
+            _ = _currentVm.RunCodeCommand.ExecuteAsync(null);
             e.Handled = true;
             return;
         }
@@ -290,16 +304,19 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    private bool IsDarkTheme() =>
+        ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
+        (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+
     public void ApplyThemeVariant()
     {
         if (_editor == null) return;
 
-        bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
-                      (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+        bool isDark = IsDarkTheme();
 
         if (isDark)
         {
-            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
             _editor.Background = new SolidColorBrush(Color.Parse("#14171F"));
             _editor.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
@@ -310,7 +327,7 @@ public partial class CSharpCodeStudioView : UserControl
         }
         else
         {
-            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
             _editor.Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
             _editor.Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
             _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
@@ -384,7 +401,19 @@ public partial class CSharpCodeStudioView : UserControl
         {
             try
             {
-                _foldingStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                if (_editorLanguage == null)
+                {
+                    _foldingStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                }
+                else if (_editorLanguage.Folding is { } folding)
+                {
+                    var foldings = folding.CreateFoldings(_editor.Document, out var firstErrorOffset);
+                    _foldingManager.UpdateFoldings(foldings, firstErrorOffset);
+                }
+                else
+                {
+                    _foldingManager.Clear();
+                }
             }
             catch
             {
@@ -445,6 +474,9 @@ public partial class CSharpCodeStudioView : UserControl
             _completionController = null;
             _quickInfoController?.Dispose();
             _quickInfoController = null;
+            _languageAssistant?.Dispose();
+            _languageAssistant = null;
+            _editorLanguage = null;
         }
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
@@ -467,15 +499,18 @@ public partial class CSharpCodeStudioView : UserControl
 
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
-                LanguageMode = _currentVm.CurrentLanguageMode
+                LanguageMode = _currentVm.CurrentLanguageMode,
+                IsSuppressed = () => _editorLanguage?.Has(LanguageCapabilities.Completion) == false
             };
 
             // While the debugger is paused, hovering shows the debug data tip instead.
             var compiler = _currentVm.CompilerService;
             _quickInfoController = new CSharpQuickInfoController(_editor, () => new CSharpQuickInfoService(compiler))
             {
-                IsSuppressed = () => _currentVm?.IsPaused == true
+                IsSuppressed = () => _currentVm?.IsPaused == true || _editorLanguage?.Has(LanguageCapabilities.QuickInfo) == false
             };
+
+            ApplyEditorLanguage(_currentVm.ActiveLanguage);
 
             _editor.WordWrap = _currentVm.IsWordWrap;
             if (_editor.Options != null)
@@ -511,6 +546,7 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSwitchTabDocument(StudioTabItemViewModel tab)
     {
         if (_editor == null) return;
+        if (_currentVm != null) ApplyEditorLanguage(_currentVm.Languages.LanguageOf(tab.Document));
         SetStepLine(-1);
 
         _isUpdatingText = true;
@@ -591,6 +627,35 @@ public partial class CSharpCodeStudioView : UserControl
         {
             SetStepLine(-1);
         }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.ActiveLanguage))
+        {
+            ApplyEditorLanguage(_currentVm.ActiveLanguage);
+        }
+    }
+
+    /// <summary>Makes the editor fit <paramref name="language"/>. Runs before a document of it is shown.</summary>
+    private void ApplyEditorLanguage(ILanguageDefinition language)
+    {
+        if (_editor == null) return;
+
+        var changed = !ReferenceEquals(_editorLanguage, language);
+        _editorLanguage = language;
+        _editor.SyntaxHighlighting = language.GetHighlighting(IsDarkTheme());
+        _breakpointMargin.IsVisible = language.Has(LanguageCapabilities.Breakpoints);
+        if (!changed) return;
+
+        _editor.TextArea.IndentationStrategy = language.CreateIndentationStrategy(_editor.Options);
+        _completionController?.Close();
+        _quickInfoController?.Hide();
+        _languageAssistant?.Dispose();
+        _languageAssistant = null;
+        if (language.EditorAssistants is { } assistants)
+        {
+            var vm = _currentVm;
+            _languageAssistant = assistants.Attach(_editor, new EditorAssistantContext(IsSuppressed: () => vm?.IsPaused == true));
+        }
+
+        UpdateCodeFolding();
     }
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
@@ -790,20 +855,25 @@ public partial class CSharpCodeStudioView : UserControl
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.StorageProvider is not { } storageProvider) return;
 
+        var registry = _currentVm.Languages.Registry;
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open Project or Script File",
             AllowMultiple = false,
             FileTypeFilter = new List<FilePickerFileType>
             {
-                new("FryPDF Project / Document (*.frycsproj, *.frynbproj, *.frycs, *.frynb, *.csproj, *.cs, *.csx, *.zip)")
+                new("FryPDF Project / Document / Source File")
                 {
-                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.csproj", "*.cs", "*.csx", "*.zip" }
+                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.csproj", "*.cs", "*.csx", "*.zip" }.Concat(LanguageFileTypes.Patterns(registry)).ToArray()
                 },
                 new("C# Files (*.cs, *.csx, *.frycs)")
                 {
                     Patterns = new[] { "*.cs", "*.csx", "*.frycs" }
-                },
+                }
+            }
+            .Concat(LanguageFileTypes.PerLanguage(registry))
+            .Concat(new List<FilePickerFileType>
+            {
                 new("C# Notebooks (*.frynb, *.frynbproj)")
                 {
                     Patterns = new[] { "*.frynb", "*.frynbproj" }
@@ -816,7 +886,7 @@ public partial class CSharpCodeStudioView : UserControl
                 {
                     Patterns = new[] { "*.*" }
                 }
-            }
+            }).ToList()
         });
 
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)
@@ -891,6 +961,7 @@ public partial class CSharpCodeStudioView : UserControl
     {
         if (_editor?.Document == null) return;
         var document = _editor.Document;
+        var prefix = _editorLanguage?.LineCommentPrefix ?? "//";
         var selection = _editor.TextArea.Selection;
         int startLine;
         int endLine;
@@ -913,7 +984,7 @@ public partial class CSharpCodeStudioView : UserControl
             {
                 var line = document.GetLineByNumber(i);
                 var lineText = document.GetText(line.Offset, line.Length).TrimStart();
-                if (!string.IsNullOrEmpty(lineText) && !lineText.StartsWith("//"))
+                if (!string.IsNullOrEmpty(lineText) && !lineText.StartsWith(prefix, StringComparison.Ordinal))
                 {
                     allCommented = false;
                     break;
@@ -926,10 +997,10 @@ public partial class CSharpCodeStudioView : UserControl
                 var lineText = document.GetText(line.Offset, line.Length);
                 if (allCommented)
                 {
-                    int slashIdx = lineText.IndexOf("//");
+                    int slashIdx = lineText.IndexOf(prefix, StringComparison.Ordinal);
                     if (slashIdx >= 0)
                     {
-                        int removeLen = (slashIdx + 2 < lineText.Length && lineText[slashIdx + 2] == ' ') ? 3 : 2;
+                        int removeLen = (slashIdx + prefix.Length < lineText.Length && lineText[slashIdx + prefix.Length] == ' ') ? prefix.Length + 1 : prefix.Length;
                         document.Remove(line.Offset + slashIdx, removeLen);
                     }
                 }
@@ -937,7 +1008,7 @@ public partial class CSharpCodeStudioView : UserControl
                 {
                     int indent = 0;
                     while (indent < lineText.Length && char.IsWhiteSpace(lineText[indent])) indent++;
-                    document.Insert(line.Offset + indent, "// ");
+                    document.Insert(line.Offset + indent, prefix + " ");
                 }
             }
         }

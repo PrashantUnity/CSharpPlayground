@@ -83,6 +83,21 @@
                                 <Button Command="{Binding NewScriptCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Script">
                                     <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
+                                <!-- "New Python File" and one button per other source-file language. -->
+                                <ItemsControl ItemsSource="{Binding NewFileOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="2" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:NewFileOption">
+                                            <Button Command="{Binding Command}" Classes="explorer-tool-btn" ToolTip.Tip="{Binding Label}">
+                                                <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{Binding AccentHex}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <Button Command="{Binding NewFolderCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Folder">
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
@@ -461,7 +476,7 @@
                             <!-- Start Debugging Button -->
                             <Button Command="{Binding DebugCodeCommand}"
                                     Classes="cs-toolbar-tonal"
-                                    IsVisible="{Binding !IsExecuting}"
+                                    IsVisible="{Binding ShowDebugButton}"
                                     ToolTip.Tip="Start Debugging (F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
@@ -472,7 +487,7 @@
                             <Rectangle Width="1" Height="16" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
 
                             <!-- Format Document -->
-                            <Button Command="{Binding FormatCodeCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Format Document (Shift+Alt+F)">
+                            <Button Command="{Binding FormatCodeCommand}" Classes="cs-toolbar-icon" IsVisible="{Binding SupportsFormatting}" ToolTip.Tip="Format Document (Shift+Alt+F)">
                                 <materialIcons:MaterialIcon Kind="FormatAlignLeft" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 

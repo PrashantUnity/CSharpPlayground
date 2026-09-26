@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -201,6 +203,51 @@ public partial class CSharpManagerViewModel : ObservableObject
     public string RoslynEngineTitle => "Local Roslyn Engine";
     public string RoslynEngineStatus => "Ready • Roslyn 4.12 & C# 13";
     public bool IsRoslynEngineActive => true;
+
+    /// <summary>A STUDIO ENVIRONMENT row per language that runs with an installed toolchain (Python): found, or how to install it.</summary>
+    public ObservableCollection<ToolchainStatusItem> ToolchainStatuses { get; } = new();
+
+    private Task? _toolchainCheck;
+
+    /// <summary>
+    /// Looks for each language's toolchain in the background (the Hub calls this when it's shown). <paramref name="lookAgain"/>
+    /// forgets what was found before, e.g. after installing Python.
+    /// </summary>
+    public Task RefreshToolchainStatusesAsync(bool lookAgain = false)
+    {
+        if (_toolchainCheck is { IsCompleted: false } running) return running;
+        return _toolchainCheck = CheckToolchainsAsync(lookAgain);
+    }
+
+    [RelayCommand]
+    private Task LookAgainForToolchainsAsync() => RefreshToolchainStatusesAsync(lookAgain: true);
+
+    private async Task CheckToolchainsAsync(bool lookAgain)
+    {
+        var workspace = _storageService.ActiveWorkspaceRootPath;
+        foreach (var item in ToolchainStatuses)
+        {
+            if (lookAgain) item.ShowChecking();
+            ToolchainResolution resolution;
+            try
+            {
+                resolution = await Task.Run(async () =>
+                {
+                    if (lookAgain) item.Provider.Refresh();
+                    return await item.Provider.ResolveAsync(new ToolchainQuery(workspace, workspace)).ConfigureAwait(false);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Couldn't look for {item.Provider.ToolName}: {ex.Message}");
+                resolution = ToolchainResolution.NotFound(new MissingToolchainGuidance($"Couldn't look for {item.Provider.ToolName}", ex.Message, Array.Empty<string>()));
+            }
+
+            void Show() => item.Show(resolution);
+            if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Show();
+            else Dispatcher.UIThread.Post(Show);
+        }
+    }
 
     public string StorageEngineTitle => "Document Storage";
     public string StorageEngineStatus => Directory.Exists(LibraryRootPath)
@@ -504,9 +551,15 @@ public partial class CSharpManagerViewModel : ObservableObject
         Action<NotebookDocumentItem> openNotebookAction,
         Action? navigateToHomeAction = null,
         Action? navigateToDocsAction = null,
-        Action? navigateToBlindProblemsAction = null)
+        Action? navigateToBlindProblemsAction = null,
+        StudioLanguageServices? languages = null)
     {
         _storageService = storageService;
+        var registry = (languages ?? StudioLanguageServices.Default).Registry;
+        foreach (var language in registry.All)
+        {
+            if (language.Toolchain is { } provider) ToolchainStatuses.Add(new ToolchainStatusItem(language, provider));
+        }
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
         _navigateToHomeAction = navigateToHomeAction;

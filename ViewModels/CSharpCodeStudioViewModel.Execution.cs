@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -43,6 +44,7 @@ public partial class CSharpCodeStudioViewModel
     partial void OnIsExecutingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsNormalExecuting));
+        OnPropertyChanged(nameof(ShowDebugButton));
     }
 
     public bool IsNormalExecuting => IsExecuting && !IsDebugging;
@@ -80,6 +82,13 @@ public partial class CSharpCodeStudioViewModel
 
     private void TriggerDiagnosticsCheck()
     {
+        if (!ActiveLanguage.Has(LanguageCapabilities.LiveDiagnostics))
+        {
+            // Problems of such a document come from its runs; they stay until the next one.
+            _diagnosticsCts?.Cancel();
+            return;
+        }
+
         _diagnosticsCts?.Cancel();
         _diagnosticsCts = new CancellationTokenSource();
         var token = _diagnosticsCts.Token;
@@ -222,6 +231,12 @@ public partial class CSharpCodeStudioViewModel
     private async Task RunCodeAsync()
     {
         if (IsExecuting) return;
+
+        if (ActiveLanguage.ScriptRunner != null)
+        {
+            await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage);
+            return;
+        }
 
         var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         // Every run checks the script's test cases; their results land on them even if another tab is active by the end.
@@ -613,8 +628,16 @@ public partial class CSharpCodeStudioViewModel
     {
         if (!IsExecuting) return;
         var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        targetTab?.ExecutionCts?.Cancel();
-        _executionCts?.Cancel();
+        if (targetTab?.ActiveRun != null)
+        {
+            // A program of this tab (a Python run): end it and what it started, and leave other tabs' runs alone.
+            targetTab.ActiveRun.Stop();
+        }
+        else
+        {
+            targetTab?.ExecutionCts?.Cancel();
+            _executionCts?.Cancel();
+        }
         if (targetTab != null)
         {
             targetTab.ConsoleOutput += "\n🛑 Cancellation requested by user...\n";

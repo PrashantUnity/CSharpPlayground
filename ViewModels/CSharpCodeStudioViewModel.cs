@@ -4,10 +4,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -19,6 +20,13 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
     private readonly Action? _navigateToDocsAction;
+    private readonly StudioLanguageServices _languages;
+
+    /// <summary>The languages this studio opens, runs and creates files of.</summary>
+    public StudioLanguageServices Languages => _languages;
+
+    /// <summary>The active document's language; C# for .frycs documents.</summary>
+    public ILanguageDefinition ActiveLanguage => _languages.LanguageOf(Script);
 
     public QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
@@ -58,7 +66,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [RelayCommand]
     public void SetLanguageMode(string? modeIndexStr)
     {
-        if (int.TryParse(modeIndexStr, out var idx) && idx >= 0 && idx <= 2)
+        if (SupportsExecutionModes && int.TryParse(modeIndexStr, out var idx) && idx >= 0 && idx <= 2)
         {
             SelectedLanguageModeIndex = idx;
         }
@@ -225,9 +233,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Action<NotebookDocumentItem>? openNotebookAction = null,
         Action? navigateToDocsAction = null,
         Action<Action>? postToUiThread = null,
-        IBlindProgressService? blindProgress = null)
+        IBlindProgressService? blindProgress = null,
+        StudioLanguageServices? languages = null)
     {
         _script = script;
+        _languages = languages ?? StudioLanguageServices.Default;
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
@@ -285,6 +295,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        OnActiveLanguageChanged();
     }
 
     partial void OnCodeChanged(string value)
@@ -315,6 +326,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             _ => "Statements"
         };
         OnPropertyChanged(nameof(LanguageModeStatusText));
+        OnPropertyChanged(nameof(LanguageStatusText));
         TriggerDiagnosticsCheck();
     }
 
@@ -325,14 +337,35 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveAsync()
+    private Task SaveAsync() => SaveDocumentAsync(userAsked: true);
+
+    /// <summary>
+    /// Saves the active document. <paramref name="userAsked"/> is false for the saves the studio makes on its own
+    /// (switching files, leaving the studio): those never write over a source file another program changed meanwhile.
+    /// </summary>
+    private async Task SaveDocumentAsync(bool userAsked)
     {
         Script.Code = Code;
         Script.Notes = Notes;
         Script.TestCases = TestCases.ToList();
         Script.LastModified = DateTime.UtcNow;
-        var saved = await _storageService.SaveScriptAsync(Script);
-        CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
+        bool saved;
+        if (Script.SourceFilePath != null)
+        {
+            saved = await _storageService.SaveSourceFileAsync(Script, overwriteChangesOnDisk: userAsked);
+            CompilerStatusText = saved
+                ? "Saved"
+                : userAsked
+                    ? $"⚠️ Couldn't save {Script.Title}: check the folder's permissions"
+                    : $"⚠️ {Script.Title} changed on disk, so it wasn't saved over. Ctrl+S saves your version.";
+        }
+        else
+        {
+            saved = await _storageService.SaveScriptAsync(Script);
+            CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
+        }
+
+        if (!saved) return;
 
         var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         if (activeTab != null)
@@ -345,21 +378,21 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [RelayCommand]
     private void BackToHub()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _backToHubAction.Invoke();
     }
 
     [RelayCommand]
     private void BackToHome()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _backToHomeAction?.Invoke();
     }
 
     [RelayCommand]
     private void NavigateToDocs()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _navigateToDocsAction?.Invoke();
     }
 

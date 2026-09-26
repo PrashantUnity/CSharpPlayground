@@ -23,6 +23,20 @@ public class WorkspaceItemSummary : ObservableObject
     public int CellCount { get; set; }
     public string ExecutionMode { get; set; } = "Statements";
 
+    /// <summary>The script's language id; C# unless it's a plain source file of another language.</summary>
+    public string LanguageId { get; set; } = Services.Languages.LanguageIds.CSharp;
+
+    /// <summary>E.g. "Python", shown on badges; empty for C#.</summary>
+    public string LanguageName { get; set; } = string.Empty;
+
+    /// <summary>The file's extension with the dot. Set by storage; the .frycs/.frynb default fits documents.</summary>
+    public string? FileExtension { get; set; }
+
+    /// <summary>True for a plain source file (main.py) rather than a .frycs/.frynb document.</summary>
+    public bool IsSourceFile { get; set; }
+
+    public string DisplayExtension => FileExtension ?? (IsNotebook ? ".frynb" : ".frycs");
+
     private bool _isPinned;
     public bool IsPinned
     {
@@ -46,7 +60,7 @@ public class WorkspaceItemSummary : ObservableObject
     public string KindLabel => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeText => IsNotebook ? "Notebook" : "Script";
     public string KindBadgeColor => KindBadgeForeground;
-    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : "Roslyn C# 13";
+    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : IsSourceFile ? LanguageName : "Roslyn C# 13";
     public bool HasRuntimeDot => IsScript;
 
     public bool IsExternal => IsExternalRoot;
@@ -118,9 +132,9 @@ public class WorkspaceItemSummary : ObservableObject
 
     public string DetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")} • Interactive C#"
-        : $"{ExecutionMode} mode • Roslyn C# 13";
+        : IsSourceFile ? $"{LanguageName} script" : $"{ExecutionMode} mode • Roslyn C# 13";
 
     public string ShortDetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")}"
-        : ExecutionMode;
+        : IsSourceFile ? LanguageName : ExecutionMode;
 }

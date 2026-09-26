@@ -3,6 +3,7 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -68,7 +69,7 @@ public partial class CSharpCodeStudioViewModel
 
         foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
-            var ext = s.IsScript ? ".frycs" : ".frynb";
+            var ext = s.DisplayExtension;
             var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
 
             var parent = GetOrCreateFolder(s.FolderPath);
@@ -80,14 +81,16 @@ public partial class CSharpCodeStudioViewModel
                 continue;
             }
 
-            var docItem = CreateFileItem(name, s.Id, parent, fullPath);
+            var docItem = CreateFileItem(name, s.Id, parent, fullPath, s.IsSourceFile ? _languages.Registry.Get(s.LanguageId) : null);
             AddToTree(parent, docItem);
         }
 
         if (Script != null && !string.IsNullOrEmpty(Script.Id) && FindByDocumentId(ExplorerRootItems, Script.Id) == null)
         {
-            var fileName = Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
-            var expItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName);
+            // The open document isn't in this workspace (a file opened from elsewhere): show it at the top.
+            var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
+            var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
+            var expItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
             ExplorerRootItems.Add(expItem);
         }
 
@@ -186,13 +189,17 @@ public partial class CSharpCodeStudioViewModel
         };
     }
 
-    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath)
+    /// <param name="sourceLanguage">The language of a plain source file (main.py), or null for a .frycs/.frynb document.</param>
+    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath, ILanguageDefinition? sourceLanguage = null)
     {
         return new ExplorerItemViewModel
         {
             Name = name,
             DocumentId = documentId,
             IsDirectory = false,
+            IsSourceFile = sourceLanguage != null,
+            LanguageIconKind = sourceLanguage?.IconKind,
+            LanguageIconColor = sourceLanguage?.AccentHex,
             FileExtension = Path.GetExtension(name),
             Parent = parent,
             Depth = (parent?.Depth ?? -1) + 1,
@@ -239,7 +246,7 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        await SaveAsync();
+        await SaveDocumentAsync(userAsked: false);
 
         var loaded = await _storageService.LoadScriptAsync(item.DocumentId);
         if (loaded == null) return;
@@ -313,7 +320,7 @@ public partial class CSharpCodeStudioViewModel
                 var loaded = await _storageService.LoadScriptAsync(result.PrimaryDocumentId);
                 if (loaded != null)
                 {
-                    await SaveAsync();
+                    await SaveDocumentAsync(userAsked: false);
                     await UpdateActiveScriptAsync(loaded);
                 }
             }
@@ -352,7 +359,47 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        await SaveAsync();
+        await SaveDocumentAsync(userAsked: false);
+        await UpdateActiveScriptAsync(newDoc);
+        FindByDocumentId(ExplorerRootItems, newDoc.Id)?.StartRename();
+    }
+
+    private IReadOnlyList<NewFileOption>? _newFileOptions;
+
+    /// <summary>"New Python File" and so on: one entry per language whose documents are plain source files.</summary>
+    public IReadOnlyList<NewFileOption> NewFileOptions => _newFileOptions ??= _languages.Registry.SourceFileLanguages
+        .Select(language => new NewFileOption(
+            language.Id,
+            $"New {language.DisplayName} File",
+            language.IconKind,
+            language.AccentHex,
+            new AsyncRelayCommand<ExplorerItemViewModel?>(target => NewSourceFileAsync(language.Id, target))))
+        .ToArray();
+
+    /// <summary>Creates a source file (script_HHmmss.py) in <paramref name="target"/>'s folder, or the selected one, opens it and starts renaming it.</summary>
+    public async Task NewSourceFileAsync(string languageId, ExplorerItemViewModel? target = null)
+    {
+        target ??= FindSelectedItem(ExplorerRootItems);
+        var folder = target == null ? null : target.IsDirectory ? target : target.Parent;
+
+        ScriptDocumentItem? newDoc;
+        try
+        {
+            newDoc = await _storageService.CreateNewSourceFileAsync(languageId, folderPath: folder?.FullPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            CompilerStatusText = $"⚠️ Couldn't create the file: {ex.Message}";
+            return;
+        }
+
+        if (newDoc == null)
+        {
+            CompilerStatusText = "⚠️ Couldn't create the file.";
+            return;
+        }
+
+        await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
         FindByDocumentId(ExplorerRootItems, newDoc.Id)?.StartRename();
     }
@@ -386,7 +433,7 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        await SaveAsync();
+        await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
 
         var newItem = FindByDocumentId(ExplorerRootItems, newDoc.Id);
@@ -429,6 +476,12 @@ public partial class CSharpCodeStudioViewModel
     {
         if (item == null || item.IsDirectory || string.IsNullOrEmpty(item.DocumentId)) return;
 
+        if (item.IsSourceFile)
+        {
+            await DuplicateSourceFileAsync(item);
+            return;
+        }
+
         var parent = item.Parent;
         var originalTitle = item.Name.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)
             ? item.Name.Substring(0, item.Name.Length - 6)
@@ -465,6 +518,22 @@ public partial class CSharpCodeStudioViewModel
         await SwitchToScriptAsync(copyItem);
     }
 
+    // main.py → main_copy.py next to it, with the text as it is in the editor if it's open.
+    private async Task DuplicateSourceFileAsync(ExplorerItemViewModel item)
+    {
+        var isActive = string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase);
+        var original = isActive ? Script : await _storageService.LoadScriptAsync(item.DocumentId!);
+        if (original == null) return;
+
+        var copy = await _storageService.CreateNewSourceFileAsync(original.LanguageId, $"{Path.GetFileNameWithoutExtension(item.Name)}_copy", item.Parent?.FullPath);
+        if (copy == null) return;
+        copy.Code = isActive ? Code : original.Code;
+        await _storageService.SaveSourceFileAsync(copy, overwriteChangesOnDisk: true);
+
+        await SaveDocumentAsync(userAsked: false);
+        await UpdateActiveScriptAsync(copy);
+    }
+
     private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
 
     internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
@@ -489,6 +558,12 @@ public partial class CSharpCodeStudioViewModel
 
         if (string.IsNullOrEmpty(item.DocumentId)) return;
 
+        if (item.IsSourceFile)
+        {
+            await RenameSourceFileAsync(item);
+            return;
+        }
+
         var newTitle = item.Name.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)
             ? item.Name.Substring(0, item.Name.Length - 6)
             : item.Name;
@@ -507,6 +582,40 @@ public partial class CSharpCodeStudioViewModel
                 doc.Title = newTitle;
                 await _storageService.SaveScriptAsync(doc);
             }
+        }
+    }
+
+    // A source file's name is its file name: renaming moves the file (and its id, which follows the path).
+    private async Task RenameSourceFileAsync(ExplorerItemViewModel item)
+    {
+        var oldId = item.DocumentId!;
+        var oldName = Path.GetFileName(item.FullPath);
+        try
+        {
+            var renamed = await _storageService.RenameSourceFileAsync(oldId, item.Name);
+            var newName = Path.GetFileName(renamed.FilePath);
+            item.DocumentId = renamed.Id;
+            item.Name = newName;
+            item.FullPath = item.Parent == null ? newName : $"{item.Parent.FullPath}/{newName}";
+
+            // An open tab keeps editing the same file under its new name.
+            var tab = OpenTabs.FirstOrDefault(t => string.Equals(t.Id, oldId, StringComparison.OrdinalIgnoreCase));
+            var document = tab?.Document ?? (string.Equals(Script.Id, oldId, StringComparison.OrdinalIgnoreCase) ? Script : null);
+            if (document != null)
+            {
+                document.Id = renamed.Id;
+                document.Title = newName;
+                document.SourceFilePath = renamed.FilePath;
+                tab?.NotifyTitleChanged();
+                if (ReferenceEquals(document, Script)) OnPropertyChanged(nameof(Script));
+                RefreshQuickOpenDocuments();
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            item.Name = oldName;
+            item.FileExtension = Path.GetExtension(oldName);
+            CompilerStatusText = $"⚠️ Couldn't rename {oldName}: {ex.Message}";
         }
     }
 

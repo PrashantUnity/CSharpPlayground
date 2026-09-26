@@ -23,7 +23,13 @@ internal static class Usage
           markdown <n>           Problem n's statement and "How to think", as the markdown renderer draws them.
           script <n>             Print the script and notebook code generated for problem n (no image).
           studio <n>             Code Studio with problem n's script open.
-              --file <path>          open a script file instead
+              --file <path>          open a script file instead; a source file (main.py) opens as one, in a
+                                     throwaway workspace
+              --python <path>        the Python interpreter .py files run with (default: the one the studio finds)
+              --stdin <text>         with --run: type this into the Terminal once the program waits for input
+              --while-running        with --run: take the picture while the program runs (e.g. waiting for input),
+                                     then stop it
+              --menu toolchain       also save the picture with the status bar's toolchain menu open (<name>_menu)
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
@@ -37,12 +43,22 @@ internal static class Usage
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
           notebook <n>           Notebook Studio with problem n's notebook.
+              --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,
+                                     input()) instead of a problem's
+              --python <path>        the Python interpreter Python cells run with (default: the one the studio finds)
               --run                  run all cells first
+              --stdin <text>         with --run: the answer a cell's input() gets (default: end of input)
+              --while-running        with --run: take the picture while a cell waits for input, then stop
+              --cell <n>             select the n-th cell (from 1), so its toolbar shows
+              --menu <which>         also save the picture with a menu open (as <name>_menu): language (the selected
+                                     cell's language menu) or kernel (the kernel pill's)
               --sidebar <view>       explorer, outline, variables or search
               --quick-open <mode>    files or commands
               --quick-info <text>    rest the mouse on the first <text> in a cell and show its hover card
           hub                    The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned).
               --empty                no scripts or notebooks (first run)
+              --python <path>        the Python its STUDIO ENVIRONMENT card shows (default: the one the studio finds)
+              --nothing-installed    as on a machine without Python: the card says what's missing
               --templates            the template gallery instead of recent workspaces
               --create <kind>        the "New Script" / "New Notebook" dialog: script or notebook
           docs                   The Docs learning center.

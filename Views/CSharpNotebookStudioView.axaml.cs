@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -248,7 +249,11 @@ public partial class CSharpNotebookStudioView : UserControl
                 new("C# Files (*.cs, *.csx, *.frycs)")
                 {
                     Patterns = new[] { "*.cs", "*.csx", "*.frycs" }
-                },
+                }
+            }
+            .Concat(LanguageFileTypes.PerLanguage(StudioLanguageServices.Default.Registry))
+            .Concat(new List<FilePickerFileType>
+            {
                 new("Project Archives (*.zip)")
                 {
                     Patterns = new[] { "*.zip" }
@@ -257,7 +262,7 @@ public partial class CSharpNotebookStudioView : UserControl
                 {
                     Patterns = new[] { "*.*" }
                 }
-            }
+            }).ToList()
         });
 
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)

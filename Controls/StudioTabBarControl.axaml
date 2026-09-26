@@ -69,7 +69,12 @@
                                         Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="14" Height="14"
+                                                                    IsVisible="{Binding !HasLanguageIcon}"
                                                                     Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                        <!-- A source file (main.py) shows its language's icon. -->
+                                        <materialIcons:MaterialIcon Kind="{Binding LanguageIconKind}" Width="14" Height="14"
+                                                                    IsVisible="{Binding HasLanguageIcon}"
+                                                                    Foreground="{Binding LanguageIconColor}" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding Title}"
                                                    FontSize="12"
                                                    FontWeight="Medium"

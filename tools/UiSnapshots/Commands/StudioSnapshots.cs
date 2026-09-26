@@ -1,12 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -28,28 +30,61 @@ internal static class StudioSnapshots
     public static void CodeStudio(Options options)
     {
         string? file = options.Value("file");
-        var script = file != null
+
+        // Languages over a throwaway folder: the toolchains found are the machine's own, but nothing chosen or created
+        // here reaches the user's settings. --python picks the interpreter for .py files.
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry);
+
+        // A source file (main.py) is copied into the throwaway workspace and opened as one; any other file is a C# script.
+        var sourceLanguage = languages.Registry.FindSourceFileLanguage(file);
+        var script = file != null && sourceLanguage == null
             ? new ScriptDocumentItem { Title = Path.GetFileName(file), Code = File.ReadAllText(file) }
-            : Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem())!);
+            : file != null
+                ? new ScriptDocumentItem { Title = "Notes" }
+                : Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem())!);
 
         // Throwaway progress too: --run-tests marks a Blind 75 problem solved when all its cases pass.
         var vm = new CSharpCodeStudioViewModel(
             script,
-            new LocalScriptStorageService(Snapshot.TempFolder("scripts")),
+            storage,
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
             backToHubAction: () => { },
             backToHomeAction: () => { },
-            blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")));
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? "notes", "--sidebar");
+            blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")),
+            languages: languages);
+        if (file != null && sourceLanguage != null) OpenSourceFile(vm, storage, file);
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (sourceLanguage != null ? "explorer" : "notes"), "--sidebar");
         vm.IsSideBarVisible = true;
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
 
         var window = Snapshot.Show(new CSharpCodeStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         ShowQuickOpen(vm.QuickOpen, options);
-        if (options.Flag("run"))
+        Task? stillRunning = null;
+        if (options.Flag("run") && options.Flag("while-running"))
         {
-            Snapshot.Wait(vm.RunCodeCommand.ExecuteAsync(null));
+            // --while-running: the picture is taken while the program runs (waiting for input, say), then it's stopped.
+            stillRunning = vm.RunCodeCommand.ExecuteAsync(null);
+            Snapshot.WaitFor(() => vm.IsAcceptingProgramInput || stillRunning.IsCompleted, TimeSpan.FromSeconds(30));
+            Snapshot.WaitFor(() => false, TimeSpan.FromMilliseconds(500));
+        }
+        else if (options.Flag("run"))
+        {
+            var run = vm.RunCodeCommand.ExecuteAsync(null);
+            // --stdin <text>: typed into the Terminal once the program waits for input, as a person would.
+            if (options.Value("stdin") is { } input)
+            {
+                if (!Snapshot.WaitFor(() => vm.IsAcceptingProgramInput || run.IsCompleted, TimeSpan.FromSeconds(60)) || run.IsCompleted)
+                {
+                    throw new ArgumentException("--stdin: the program never waited for input.");
+                }
+                Snapshot.WaitFor(() => false, TimeSpan.FromMilliseconds(300)); // let its prompt arrive
+                vm.ProgramInputText = input;
+                Snapshot.Wait(vm.SendProgramInputCommand.ExecuteAsync(null));
+            }
+            Snapshot.Wait(run);
             Snapshot.Settle();
         }
         if (options.Value("debug") != null) PauseAt(vm, options.Int("debug", 1));
@@ -75,8 +110,30 @@ internal static class StudioSnapshots
         Snapshot.Settle();
         ShowQuickInfo(window, options);
 
-        Snapshot.Save(window, options, file != null ? $"studio_{Path.GetFileNameWithoutExtension(file)}" : $"studio_{options.Problem()}");
+        var name = options.Value("name") ?? (file != null ? $"studio_{Path.GetFileNameWithoutExtension(file)}" : $"studio_{options.Problem()}");
+        Snapshot.Save(window, options, name);
+        if (options.Value("menu") is { } menu)
+        {
+            // The toolchain menu lists what's installed, which takes a moment to look for.
+            Snapshot.Wait(vm.RefreshToolchainsCommand.ExecuteAsync(null));
+            SaveMenu(window, menu, name, selectedCell: null);
+        }
         if (vm.IsDebugging) vm.StopDebug();
+        if (stillRunning != null)
+        {
+            vm.StopCommand.Execute(null);
+            Snapshot.Wait(stillRunning);
+        }
+    }
+
+    // The file goes into the workspace under its own name and is opened from the Explorer, as a person would.
+    private static void OpenSourceFile(CSharpCodeStudioViewModel vm, LocalScriptStorageService storage, string file)
+    {
+        var copy = Path.Combine(storage.LibraryRootPath, Path.GetFileName(file));
+        File.Copy(file, copy, overwrite: true);
+        Snapshot.Wait(vm.RefreshExplorerAsync());
+        var item = vm.ExplorerRootItems.First(i => string.Equals(i.Name, Path.GetFileName(file), StringComparison.OrdinalIgnoreCase));
+        Snapshot.Wait(vm.SwitchToScriptAsync(item));
     }
 
     // --debug <line>: a breakpoint on that line, then Debug (F5), returning once the debugger has paused there. The
@@ -126,17 +183,26 @@ internal static class StudioSnapshots
         Snapshot.Settle();
     }
 
-    /// <summary><c>notebook n</c>: Notebook Studio with the problem's notebook; <c>--run</c> runs every cell first.</summary>
+    /// <summary>
+    /// <c>notebook n</c>: Notebook Studio with the problem's notebook; <c>notebook --python-demo</c>: a notebook of C# and
+    /// Python cells. <c>--run</c> runs every cell first.
+    /// </summary>
     public static void Notebook(Options options)
     {
-        int number = options.Problem();
+        // Languages over a throwaway folder, as for Code Studio: --python picks the interpreter Python cells run with.
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
+
+        var demo = options.Flag("python-demo");
+        int number = demo ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
-            new LocalScriptStorageService(Snapshot.TempFolder("notebooks")),
+            demo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
             backToHubAction: () => { },
-            backToHomeAction: () => { });
+            backToHomeAction: () => { },
+            languages: languages);
 
         if (options.Value("sidebar") is { } sidebar)
         {
@@ -146,15 +212,144 @@ internal static class StudioSnapshots
 
         var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         ShowQuickOpen(vm.QuickOpen, options);
-        if (options.Flag("run"))
+        try
         {
-            Snapshot.Wait(vm.RunAllCellsAsync());
+            var name = options.Value("name") ?? (demo ? "notebook_python_demo" : $"notebook_{number}");
+            if (options.Flag("run") && RunAll(vm, window, options, name)) return;
+
+            // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
+            if (options.Int("cell", 0) is > 0 and var cell && vm.ActiveTab is { } tab)
+            {
+                tab.SelectCell(tab.Cells[Math.Min(cell, tab.Cells.Count) - 1]);
+                Snapshot.Settle();
+            }
+
+            ShowQuickInfo(window, options);
+            Snapshot.Save(window, options, name);
+            if (options.Value("menu") is { } menu) SaveMenu(window, menu, name, vm.ActiveCell);
+        }
+        finally
+        {
+            // The Python kernel runs as a program of its own.
+            foreach (var tab in vm.Tabs) tab.ShutdownKernels();
+        }
+    }
+
+    // Runs every cell. A cell that asks for input (Python's input()) gets --stdin's text, or end of input; with
+    // --while-running the picture is taken while it waits instead (true: it's saved, and the rest is stopped).
+    private static bool RunAll(CSharpNotebookStudioViewModel vm, Window window, Options options, string name)
+    {
+        var run = vm.RunAllCellsAsync();
+        while (Snapshot.WaitFor(() => run.IsCompleted || vm.Cells.Any(c => c.IsAwaitingInput), TimeSpan.FromSeconds(120)) && !run.IsCompleted)
+        {
+            var asking = vm.Cells.First(c => c.IsAwaitingInput);
+            if (options.Flag("while-running"))
+            {
+                vm.ActiveTab?.SelectCell(asking);
+                Snapshot.Settle();
+                Snapshot.Save(window, options, name);
+                vm.ActiveTab?.InterruptExecution();
+                Snapshot.Wait(run);
+                return true;
+            }
+
+            if (options.Value("stdin") is not { } answer)
+            {
+                asking.EndInput();
+                continue;
+            }
+
+            // Typed into the cell's input box and sent with Enter, as a person would (the box takes the focus itself).
             Snapshot.Settle();
+            window.KeyTextInput(answer);
+            window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+            window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+            Snapshot.Settle();
+            if (asking.IsAwaitingInput) throw new InvalidOperationException("--stdin: typing into the cell's input box didn't send the answer.");
         }
 
-        ShowQuickInfo(window, options);
-        Snapshot.Save(window, options, $"notebook_{number}");
+        Snapshot.Wait(run);
+        Snapshot.Settle();
+        return false;
     }
+
+    // --menu language|kernel: opens the selected cell's language menu or the kernel pill's and saves the picture again
+    // as <name>_menu (and the menu on its own, when it opens in a window of its own).
+    private static void SaveMenu(Window window, string menu, string name, NotebookCellViewModel? selectedCell)
+    {
+        menu = menu.ToLowerInvariant();
+        var tip = menu switch
+        {
+            "language" => "The cell's language",
+            "kernel" => "The notebook's kernels",
+            "toolchain" => "Choose which installed toolchain",
+            _ => throw new ArgumentException($"--menu is language or kernel (notebook), or toolchain (studio); not '{menu}'.")
+        };
+        // Every cell has a language menu (only the selected cell's toolbar is opaque), so it's the selected cell's.
+        var button = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b =>
+                         b.IsEffectivelyVisible && b.Flyout != null && ToolTip.GetTip(b) is string text && text.StartsWith(tip, StringComparison.Ordinal) &&
+                         (menu != "language" || ReferenceEquals(b.DataContext, selectedCell)))
+                     ?? throw new ArgumentException($"--menu {menu}: that menu's button isn't showing (for language, select a code cell with --cell).");
+
+        button.Flyout!.ShowAt(button);
+        Snapshot.Settle();
+        Snapshot.Save(window, name + "_menu");
+        if (button.Flyout is Flyout { Content: Visual content } && TopLevel.GetTopLevel(content) is { } popup && !ReferenceEquals(popup, window))
+        {
+            using var frame = popup.CaptureRenderedFrame();
+            if (frame != null)
+            {
+                var path = Path.Combine(Snapshot.OutputFolder, name + "_menu_popup.png");
+                frame.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+                Console.WriteLine(path);
+            }
+        }
+        button.Flyout.Hide();
+    }
+
+    // C# and Python cells side by side, sharing values both ways (#!share): numpy, a pandas table, a matplotlib figure
+    // and input() (what each needs installed shows as an "Install" offer in the cell when it's missing).
+    private static NotebookDocumentItem PythonDemoNotebook() => new()
+    {
+        Title = "CSharp and Python",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = "## C# and Python in one notebook\nEach cell runs in its language's kernel: pick it from the cell's language menu, or start the cell with `#!python`."
+            },
+            new NotebookCellItem { Type = CellType.Code, Source = "var nums = new[] { 3, 1, 4, 1, 5, 9, 2, 6 };\nnums.Sum()" },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = "#!share --from csharp nums\nimport sys\nimport numpy as np\n\nprint(\"Python\", sys.version.split()[0], \"with numpy\", np.__version__)\narr = np.array(nums)\narr.mean(), arr.std().round(3)"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = "import pandas as pd\n\nframe = pd.DataFrame({\"n\": arr, \"square\": arr ** 2, \"even\": arr % 2 == 0})\nsquares = frame[\"square\"]\nframe"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "#!python\nimport matplotlib.pyplot as plt\n\nplt.figure(figsize=(6, 2.4))\nplt.plot(arr, marker=\"o\")\nplt.title(\"nums\")\nplt.show()"
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = "#!share --from python squares\n$\"C# got {squares.Length} squares from Python; the biggest is {squares.Max()}\""
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = "name = input(\"Your name? \") or \"there\"\nprint(f\"Hi {name}: the numbers add up to {arr.sum()}\")"
+            }
+        }
+    };
 
     // --quick-open files|commands: the Ctrl+P / Ctrl+Shift+P palette over the studio.
     private static void ShowQuickOpen(QuickOpenViewModel quickOpen, Options options)

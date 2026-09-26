@@ -308,7 +308,7 @@
 
                                             <!-- Code Block Canvas -->
                                             <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="4">
-                                                <controls:CodeViewer Code="{Binding Code}" />
+                                                <controls:CodeViewer Code="{Binding Code}" Language="{Binding Language}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>

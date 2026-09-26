@@ -974,14 +974,41 @@
                         <!-- Right: Kernel Indicator Badge -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 
-                            <!-- Kernel Indicator Pill (.NET (C#)) -->
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            <!-- Kernel Indicator Pill (.NET (C#) · Python 3.x): a menu of the language new cells get, and Restart -->
+                            <Button Classes="nb-action-btn"
+                                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                     BorderThickness="1"
                                     CornerRadius="{StaticResource M3ShapeCornerSmall}"
                                     Height="26"
                                     Padding="10,0"
-                                    VerticalAlignment="Center">
+                                    VerticalAlignment="Center"
+                                    ToolTip.Tip="The notebook's kernels">
+                                <Button.Flyout>
+                                    <Flyout Placement="BottomEdgeAlignedRight">
+                                        <StackPanel Spacing="2" MinWidth="220">
+                                            <TextBlock Text="New cells are written in" FontSize="11" FontWeight="SemiBold" Margin="8,4,8,2" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                            <ItemsControl ItemsSource="{Binding ActiveTab.DefaultLanguageChoices}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:CellLanguageChoice">
+                                                        <Button Command="{Binding Command}" Classes="nb-action-btn" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4">
+                                                            <Grid ColumnDefinitions="18,Auto">
+                                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13" IsVisible="{Binding IsSelected}"
+                                                                                            Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Separator Margin="4,2" />
+                                            <Button Command="{Binding RestartKernelCommand}" Classes="nb-action-btn" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4"
+                                                    ToolTip.Tip="Restart every kernel of this notebook: all variables are cleared">
+                                                <TextBlock Text="Restart kernels" FontSize="11.5" Margin="18,0,0,0" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="FlaskOutline" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding KernelName}"
@@ -990,8 +1017,9 @@
                                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                VerticalAlignment="Center" />
                                     <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" Margin="2,0,0,0" ToolTip.Tip="Kernel: Ready" />
+                                    <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
-                            </Border>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -1155,12 +1183,51 @@
                                                                         <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                                                                 CornerRadius="3"
                                                                                 Padding="5,1"
-                                                                                VerticalAlignment="Center">
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding !HasLanguageChoices}">
                                                                             <TextBlock Text="{Binding LanguageTag}"
                                                                                        FontSize="10"
                                                                                        FontWeight="SemiBold"
                                                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                                         </Border>
+
+                                                                        <!-- The code cell's language (C# / PY), a menu when the notebook has more than one -->
+                                                                        <Button Classes="cell-tool-btn"
+                                                                                Width="NaN"
+                                                                                Height="20"
+                                                                                Padding="5,0"
+                                                                                IsVisible="{Binding HasLanguageChoices}"
+                                                                                ToolTip.Tip="The cell's language (or start it with a line like #!python)">
+                                                                            <Button.Flyout>
+                                                                                <Flyout Placement="BottomEdgeAlignedRight">
+                                                                                    <StackPanel Spacing="2" MinWidth="170">
+                                                                                        <TextBlock Text="Run this cell as" FontSize="11" FontWeight="SemiBold" Margin="8,4,8,2" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                                        <ItemsControl ItemsSource="{Binding LanguageChoices}">
+                                                                                            <ItemsControl.ItemTemplate>
+                                                                                                <DataTemplate x:DataType="vm:CellLanguageChoice">
+                                                                                                    <Button Command="{Binding Command}" Classes="cell-tool-btn" Width="NaN" Height="NaN"
+                                                                                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4">
+                                                                                                        <Grid ColumnDefinitions="18,Auto">
+                                                                                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13" IsVisible="{Binding IsSelected}"
+                                                                                                                                        Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                                                            <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                                                                                        </Grid>
+                                                                                                    </Button>
+                                                                                                </DataTemplate>
+                                                                                            </ItemsControl.ItemTemplate>
+                                                                                        </ItemsControl>
+                                                                                    </StackPanel>
+                                                                                </Flyout>
+                                                                            </Button.Flyout>
+                                                                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                                                                <TextBlock Text="{Binding LanguageTag}"
+                                                                                           FontSize="10"
+                                                                                           FontWeight="SemiBold"
+                                                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                                                           VerticalAlignment="Center" />
+                                                                                <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
 
                                                                         <!-- Markdown preview/edit toggle button (if markdown cell) -->
                                                                         <Button Command="{Binding ToggleMarkdownPreviewCommand}"
@@ -1390,6 +1457,40 @@
 
                                                             <!-- INLINE OUTPUT STREAM (Inside Card) -->
                                                             <controls:NotebookCellOutputControl Margin="4,4,4,8" IsVisible="{Binding HasOutput}" />
+
+                                                            <!-- The running code asks for a line of input (Python's input()) -->
+                                                            <Border IsVisible="{Binding IsAwaitingInput}"
+                                                                    Margin="4,0,4,8"
+                                                                    Padding="8,4"
+                                                                    CornerRadius="6"
+                                                                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                                    BorderBrush="{DynamicResource M3PrimaryBrush}"
+                                                                    BorderThickness="1">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                    <TextBlock Grid.Column="0" Text="{Binding InputPrompt}"
+                                                                               FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace" FontSize="12"
+                                                                               Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                                               MaxWidth="360" TextTrimming="CharacterEllipsis" />
+                                                                    <TextBox Grid.Column="1"
+                                                                             controls:FocusOnTrueBehavior.IsActive="{Binding IsAwaitingInput}"
+                                                                             Text="{Binding InputText, Mode=TwoWay}"
+                                                                             PasswordChar="•"
+                                                                             RevealPassword="{Binding !IsPasswordInput}"
+                                                                             FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace" FontSize="12"
+                                                                             PlaceholderText="Type the input, then Enter"
+                                                                             Background="Transparent" BorderThickness="0" MinHeight="22" VerticalContentAlignment="Center">
+                                                                        <TextBox.KeyBindings>
+                                                                            <KeyBinding Gesture="Enter" Command="{Binding SubmitInputCommand}" />
+                                                                        </TextBox.KeyBindings>
+                                                                    </TextBox>
+                                                                    <Button Grid.Column="2" Command="{Binding SubmitInputCommand}" Classes="cell-tool-btn" ToolTip.Tip="Send (Enter)">
+                                                                        <materialIcons:MaterialIcon Kind="KeyboardReturn" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                                    </Button>
+                                                                    <Button Grid.Column="3" Command="{Binding EndInputCommand}" Classes="cell-tool-btn" ToolTip.Tip="End of input (as Ctrl+D would)">
+                                                                        <materialIcons:MaterialIcon Kind="KeyboardOffOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                    </Button>
+                                                                </Grid>
+                                                            </Border>
                                                         </StackPanel>
                                                     </Grid>
                                                 </Border>

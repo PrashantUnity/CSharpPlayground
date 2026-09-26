@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -89,7 +90,7 @@ public partial class NotebookCellViewModel : ObservableObject
 
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
-    public string LanguageTag => IsCodeCell ? "C#" : "MD";
+    public string LanguageTag => IsCodeCell ? EffectiveLanguageDefinition?.ShortName ?? "C#" : "MD";
 
     public string ExecutionBadgeText => IsExecuting ? "[*]" : ExecutionCount.HasValue ? $"[{ExecutionCount}]" : "[ ]";
 
@@ -209,6 +210,7 @@ public partial class NotebookCellViewModel : ObservableObject
     partial void OnSourceChanged(string value)
     {
         Model.Source = value;
+        NotifyLanguageChanged(); // a #!python first line changes the language
         OnPropertyChanged(nameof(MarkdownTitle));
         OnPropertyChanged(nameof(MarkdownBody));
         OnPropertyChanged(nameof(InputCollapsedSummaryText));
@@ -218,6 +220,7 @@ public partial class NotebookCellViewModel : ObservableObject
     partial void OnTypeChanged(CellType value)
     {
         Model.Type = value;
+        NotifyLanguageChanged(force: true);
         OnPropertyChanged(nameof(IsCodeCell));
         OnPropertyChanged(nameof(IsMarkdownCell));
         OnPropertyChanged(nameof(LanguageTag));
@@ -638,6 +641,7 @@ public partial class NotebookCellViewModel : ObservableObject
         HasChartOutput = false;
         MissingVariableName = null;
         HasMissingVariableError = false;
+        MissingDependency = null;
 
         HasOutput = false;
         IsOutputCollapsed = false;
@@ -774,6 +778,8 @@ public partial class NotebookCellViewModel : ObservableObject
     public void FormatCode()
     {
         if (Type != CellType.Code || string.IsNullOrWhiteSpace(Source)) return;
+        // Formatting is Roslyn's: it would rewrite another language's code.
+        if (EffectiveLanguageDefinition?.Has(LanguageCapabilities.Formatting) == false) return;
 
         try
         {

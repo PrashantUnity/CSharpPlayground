@@ -141,6 +141,23 @@ public class DocumentationServiceTests
     }
 
     [Fact]
+    public void ThePythonGuide_OpensItsSnippetsAsPythonCells_AndCSharpSnippetsStayCSharp()
+    {
+        var service = DocumentationService.Instance;
+        var guide = service.Categories.Single(c => c.Id == "app_guide");
+        var python = guide.Articles.Single(a => a.Id == "languages_python");
+        var welcome = guide.Articles.Single(a => a.Id == "welcome_guide");
+
+        Assert.All(python.CodeSnippets, snippet =>
+        {
+            Assert.Equal(WorkspaceItemKind.Notebook, snippet.TargetKind);
+            Assert.Equal("python", service.CreateNotebookFromSnippet(snippet).Cells.Single(c => c.Type == CellType.Code).Language);
+        });
+        Assert.Null(service.CreateNotebookFromSnippet(welcome.CodeSnippets[0]).Cells.Single(c => c.Type == CellType.Code).Language);
+        Assert.Contains(service.SearchArticles("pandas"), a => a.Id == "languages_python");
+    }
+
+    [Fact]
     public void DocumentationService_Search_ShouldReturnRelevantResults()
     {
         var service = DocumentationService.Instance;

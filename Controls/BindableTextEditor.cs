@@ -14,6 +14,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
@@ -60,6 +61,9 @@ public class BindableTextEditor : TextEditor
     private readonly DispatcherTimer _foldingTimer;
     private readonly SearchPanel? _searchPanel;
     private NotebookCellViewModel? _cellVm;
+    // The cell's language (null: C#, as for an editor that isn't a notebook cell's).
+    private ILanguageDefinition? _language;
+    private IDisposable? _languageAssistant;
     private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
     private static readonly Lazy<CSharpQuickInfoService> SharedQuickInfo = new(() => new CSharpQuickInfoService(SharedCompiler.Value));
     private readonly CSharpEditorCompletionController _completionController;
@@ -106,13 +110,16 @@ public class BindableTextEditor : TextEditor
         TextArea.TextView.BackgroundRenderers.Add(_stepLineRenderer);
         TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
 
+        // C# completion and hover, for cells whose language has them (Roslyn would only misread a Python cell).
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
         {
-            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty
+            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
+            IsSuppressed = () => !Supports(LanguageCapabilities.Completion)
         };
         _quickInfoController = new CSharpQuickInfoController(this, () => SharedQuickInfo.Value)
         {
-            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty
+            PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
+            IsSuppressed = () => !Supports(LanguageCapabilities.QuickInfo)
         };
 
         TextChanged += OnEditorTextChanged;
@@ -148,7 +155,7 @@ public class BindableTextEditor : TextEditor
 
         if (isDark)
         {
-            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            SyntaxHighlighting = _language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
             Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
@@ -159,7 +166,7 @@ public class BindableTextEditor : TextEditor
         }
         else
         {
-            SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            SyntaxHighlighting = _language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
             Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
@@ -205,14 +212,39 @@ public class BindableTextEditor : TextEditor
     {
         base.OnDataContextChanged(e);
         UnsubscribeCellVm();
-        if (DataContext is NotebookCellViewModel vm)
-        {
-            _cellVm = vm;
-            _cellVm.RequestFoldAllCode += FoldAll;
-            _cellVm.RequestUnfoldAllCode += UnfoldAll;
-            _cellVm.RequestFormatCode += FormatCode;
-            _cellVm.PropertyChanged += OnCellPropertyChanged;
-        }
+        SubscribeCellVm();
+        if (_cellVm == null) ApplyLanguage(null);
+    }
+
+    private void SubscribeCellVm()
+    {
+        if (_cellVm != null || DataContext is not NotebookCellViewModel vm) return;
+        _cellVm = vm;
+        _cellVm.RequestFoldAllCode += FoldAll;
+        _cellVm.RequestUnfoldAllCode += UnfoldAll;
+        _cellVm.RequestFormatCode += FormatCode;
+        _cellVm.PropertyChanged += OnCellPropertyChanged;
+        ApplyLanguage(vm.EffectiveLanguageDefinition);
+    }
+
+    private bool Supports(LanguageCapabilities capability) => _language?.Has(capability) ?? true;
+
+    /// <summary>Makes the editor fit the cell's language: highlighting, indentation, folding, and the C# helpers only for C#.</summary>
+    private void ApplyLanguage(ILanguageDefinition? language)
+    {
+        if (ReferenceEquals(_language, language)) return;
+        _language = language;
+
+        TextArea.IndentationStrategy = language?.CreateIndentationStrategy(Options)
+                                       ?? new AvaloniaEdit.Indentation.CSharp.CSharpIndentationStrategy(Options);
+        _breakpointMargin.IsVisible = Supports(LanguageCapabilities.Breakpoints);
+        _completionController.Close();
+        _quickInfoController.Hide();
+        _languageAssistant?.Dispose();
+        _languageAssistant = language?.EditorAssistants?.Attach(this, new EditorAssistantContext(() => _cellVm?.GetPrecedingContext() ?? string.Empty));
+
+        ApplyThemeVariant();
+        UpdateCodeFolding();
     }
 
     private void UnsubscribeCellVm()
@@ -234,18 +266,26 @@ public class BindableTextEditor : TextEditor
         {
             SetStepLine(-1);
         }
+        else if (e.PropertyName == nameof(NotebookCellViewModel.EffectiveLanguage) && _cellVm != null)
+        {
+            ApplyLanguage(_cellVm.EffectiveLanguageDefinition);
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
         UnsubscribeCellVm();
+        _languageAssistant?.Dispose();
+        _languageAssistant = null;
+        _language = null;
         _foldingTimer?.Stop();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        SubscribeCellVm();
         ApplyThemeVariant();
         UpdateCodeFolding();
     }
@@ -256,7 +296,19 @@ public class BindableTextEditor : TextEditor
         {
             try
             {
-                _foldingStrategy.UpdateFoldings(_foldingManager, Document);
+                if (_language == null)
+                {
+                    _foldingStrategy.UpdateFoldings(_foldingManager, Document);
+                }
+                else if (_language.Folding is { } folding)
+                {
+                    var foldings = folding.CreateFoldings(Document, out var firstErrorOffset);
+                    _foldingManager.UpdateFoldings(foldings, firstErrorOffset);
+                }
+                else
+                {
+                    _foldingManager.Clear();
+                }
             }
             catch { }
         }
@@ -294,7 +346,8 @@ public class BindableTextEditor : TextEditor
 
     public void FormatCode()
     {
-        if (string.IsNullOrWhiteSpace(Text)) return;
+        // Formatting is Roslyn's, so only for a language that has it (C#).
+        if (string.IsNullOrWhiteSpace(Text) || !Supports(LanguageCapabilities.Formatting)) return;
         try
         {
             var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Text);
@@ -399,7 +452,7 @@ public class BindableTextEditor : TextEditor
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.F9)
+        if (e.Key == Key.F9 && Supports(LanguageCapabilities.Breakpoints))
         {
             var line = TextArea.Caret.Line;
             if (_breakpointMargin.HasBreakpoint(line))

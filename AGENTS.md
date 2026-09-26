@@ -99,5 +99,13 @@ All contributors and agents must follow `.agents/rules/component_architecture_an
 
 ---
 
-## 7. Seeing the UI: Headless Snapshots
+## 7. Languages: One Module Each
+The studio runs C# in-process (Roslyn) and other languages (Python today) with the user's installed toolchains. A language is a module registered in `StudioLanguageServices`; views and view models switch features on its `LanguageCapabilities`, never on a language's id.
+- To add or change a language, follow `docs/adding-a-language.md`; notebook kernels in their own program speak `docs/kernel-protocol.md`.
+- Start programs only through `IProcessLauncher` (so they're killed on Stop, on tab close and when the plugin unloads). Read the machine only through `IHostEnvironment` (so tests can fake it).
+- Tests build `new StudioLanguageServices(tempFolder)` and never touch the user's toolchain settings or environments. Real-toolchain tests use `[PythonFact]` (skipped without Python 3.9+, required in CI via `FRY_REQUIRE_PYTHON=1`).
+
+---
+
+## 8. Seeing the UI: Headless Snapshots
 To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: `docs/headless-ui-snapshots.md`.

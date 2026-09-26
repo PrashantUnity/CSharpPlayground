@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -23,6 +24,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     // One progress store for the whole studio: the Blind 75 page and Code Studio (which marks a problem solved when
     // every case passes) must see each other's changes, and two stores on one file would overwrite each other.
     private readonly IBlindProgressService _blindProgress;
+
+    // One set of languages for every page: the same registry lists the workspace's files, and the same saved toolchain
+    // choices, studio environments and processes serve the Code Studio, the notebooks and the Hub.
+    private readonly StudioLanguageServices _languages;
+    public StudioLanguageServices Languages => _languages;
     private RoslynCompilerService? _compilerService;
     private ScriptExecutionEngine? _executionEngine;
 
@@ -60,9 +66,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpStudioHostViewModel(
         IServiceProvider? serviceProvider = null,
         IPluginSettingsStore? settingsStore = null,
-        IBlindProgressService? blindProgress = null)
+        IBlindProgressService? blindProgress = null,
+        StudioLanguageServices? languages = null)
     {
-        _storageService = new LocalScriptStorageService();
+        _languages = languages ?? StudioLanguageServices.Default;
+        _storageService = new LocalScriptStorageService(languages: _languages.Registry);
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -91,7 +99,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             openNotebookAction: NavigateToNotebookStudio,
             navigateToHomeAction: NavigateToHome,
             navigateToDocsAction: () => NavigateToDocs(),
-            navigateToBlindProblemsAction: () => NavigateToBlindProblems());
+            navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
+            languages: _languages);
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -158,7 +167,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openNotebookAction: NavigateToNotebookStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
-                blindProgress: _blindProgress);
+                blindProgress: _blindProgress,
+                languages: _languages);
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -174,7 +184,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 backToHomeAction: NavigateToHome,
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openScriptAction: NavigateToCodeStudio,
-                navigateToDocsAction: () => NavigateToDocs());
+                navigateToDocsAction: () => NavigateToDocs(),
+                languages: _languages);
         });
 
         void Publish()

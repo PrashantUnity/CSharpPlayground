@@ -17,6 +17,8 @@ using Microsoft.CodeAnalysis.Scripting;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
@@ -31,9 +33,15 @@ public class KernelExecutionResult
     public TimeSpan Elapsed { get; set; }
     public bool WasCancelled { get; set; }
     public IReadOnlyList<DiagnosticItem> Diagnostics { get; set; } = Array.Empty<DiagnosticItem>();
+
+    /// <summary>A dependency the code tried to use that isn't installed (a Python module), so the cell can offer to install it.</summary>
+    public string? MissingDependency { get; set; }
+
+    /// <summary>A name the code used that isn't defined (C#'s CS0103, Python's NameError), for the "run the cell that defines it" hint.</summary>
+    public string? MissingName { get; set; }
 }
 
-public class NotebookExecutionKernel
+public class NotebookExecutionKernel : INotebookKernel
 {
     private ScriptState<object>? _currentState;
     private ScriptOptions _scriptOptions;
@@ -60,6 +68,46 @@ public class NotebookExecutionKernel
     {
         _ = CachedDefaultScriptOptions.Value;
         ConsoleRoutingContext.EnsureInstalled();
+        CompileAsync(CSharpScript.Create<object>("new List<double> { 1 }.Sum()", CachedDefaultScriptOptions.Value), CancellationToken.None)
+            .GetAwaiter().GetResult();
+    }
+
+    // Roslyn shares what it reads from the referenced assemblies between compilations. When cells compile at the same
+    // time in a process that hasn't compiled one yet, some notebooks' submissions end up with .NET types of their own,
+    // and a later cell of theirs then can't convert between those and everyone else's: "'List<double>' does not contain
+    // a definition for 'Sum'" about a list an earlier cell made. So cells compile one at a time (they still run side
+    // by side), and the first compilation is kept, so what it read stays shared.
+    private static readonly SemaphoreSlim CompileGate = new(1, 1);
+    private static Script? _firstCompiled;
+
+    private static async Task<Script<object>> CompileAsync(Script<object> script, CancellationToken ct)
+    {
+        await CompileGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            script.Compile(ct);
+            _firstCompiled ??= script;
+        }
+        finally
+        {
+            CompileGate.Release();
+        }
+
+        return script;
+    }
+
+    // A cell's code as the next submission: the first, or one that continues from the state so far.
+    private Script<object> Submission(string code) =>
+        _currentState == null
+            ? CSharpScript.Create<object>(code, _scriptOptions, assemblyLoader: _assemblyLoader)
+            : _currentState.Script.ContinueWith<object>(code, _scriptOptions);
+
+    private async Task<ScriptState<object>> RunSubmissionAsync(string code, CancellationToken ct)
+    {
+        var script = await CompileAsync(Submission(code), ct);
+        return _currentState == null
+            ? await script.RunAsync(cancellationToken: ct)
+            : await script.RunFromAsync(_currentState, cancellationToken: ct);
     }
 
     public NotebookExecutionKernel()
@@ -222,23 +270,7 @@ public class NotebookExecutionKernel
                         onRichOutput?.Invoke(richOutput);
                     }))
                     {
-                        ScriptState<object> newState;
-
-                        if (_currentState == null)
-                        {
-                            var script = CSharpScript.Create<object>(
-                                cleanCode,
-                                _scriptOptions,
-                                assemblyLoader: _assemblyLoader);
-                            newState = await script.RunAsync(cancellationToken: ct);
-                        }
-                        else
-                        {
-                            newState = await _currentState.ContinueWithAsync(
-                                cleanCode,
-                                _scriptOptions,
-                                cancellationToken: ct);
-                        }
+                        var newState = await RunSubmissionAsync(cleanCode, ct);
 
                         _currentState = newState;
                         result.Success = true;
@@ -530,7 +562,12 @@ public class NotebookExecutionKernel
 
         var variables = new List<NotebookVariableInfo>();
 
-        foreach (var v in _currentState.Variables)
+        // ScriptState.Variables lists a name once per cell that declared it; only the latest one is in scope.
+        var latest = _currentState.Variables
+            .GroupBy(v => v.Name)
+            .Select(g => g.Last());
+
+        foreach (var v in latest)
         {
             try
             {
@@ -573,6 +610,93 @@ public class NotebookExecutionKernel
     {
         ResetSession();
         _executionLock = new SemaphoreSlim(1, 1);
+    }
+
+    string INotebookKernel.LanguageId => LanguageIds.CSharp;
+
+    string INotebookKernel.DisplayName => ".NET (C#)";
+
+    // A statement blocked inside the studio's own process can't be interrupted, so Stop may have to abandon it.
+    bool INotebookKernel.CanForceStop => false;
+
+    Task<KernelExecutionResult> INotebookKernel.ExecuteAsync(KernelExecutionRequest request, CancellationToken ct) =>
+        ExecuteCellAsync(request.Code, request.OnConsole, request.OnRichOutput, ct, request.SourceId);
+
+    Task<IReadOnlyList<NotebookVariableInfo>> INotebookKernel.GetVariablesAsync(CancellationToken ct) =>
+        Task.FromResult(GetActiveVariables());
+
+    async Task<string> INotebookKernel.GetValueJsonAsync(string name, CancellationToken ct)
+    {
+        var bareName = name.TrimStart('@');
+        var executionLock = _executionLock;
+        await executionLock.WaitAsync(ct);
+        try
+        {
+            if (_currentState == null) throw new KernelValueException($"No C# cell has run yet, so there's no '{name}'.");
+            var variable = _currentState.Variables.LastOrDefault(v => v.Name == bareName)
+                           ?? throw new KernelValueException($"C# has no variable named '{name}'. Run the C# cell that declares it first.");
+            return KernelValueSharing.ToJson(variable.Value, variable.Type, name);
+        }
+        finally
+        {
+            executionLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// A shared value in C#: a variable of that name keeps its type (the value is converted to it) when it can; otherwise
+    /// a new one is declared with the type that fits the value (<c>int[]</c>, <c>Dictionary&lt;string, object&gt;</c>…).
+    /// </summary>
+    async Task INotebookKernel.SetValueFromJsonAsync(string name, string json, CancellationToken ct)
+    {
+        var identifier = KernelValueSharing.Identifier(name);
+        var bareName = identifier.TrimStart('@');
+        var (inferredType, inferredValue) = KernelValueSharing.Infer(json);
+
+        var executionLock = _executionLock;
+        await executionLock.WaitAsync(ct);
+        try
+        {
+            var existing = _currentState?.Variables.LastOrDefault(v => v.Name == bareName);
+            if (existing is { IsReadOnly: false })
+            {
+                if (existing.Type == typeof(object))
+                {
+                    existing.Value = inferredValue;
+                    return;
+                }
+
+                if (KernelValueSharing.TryFromJson(json, existing.Type, out var converted, out _))
+                {
+                    existing.Value = converted;
+                    return;
+                }
+            }
+
+            // Declared by a line of C# (so the variable is like any other a cell declares), then given the value. The line
+            // names only .NET types: naming one of the plugin's own can make Roslyn load references mid-chain, after which
+            // later cells can't bind LINQ over earlier cells' variables.
+            var code = $"{KernelValueSharing.TypeName(inferredType)} {identifier} = default;";
+            try
+            {
+                var state = await RunSubmissionAsync(code, ct);
+                state.GetVariable(bareName)!.Value = inferredValue;
+                _currentState = state;
+            }
+            catch (CompilationErrorException ex)
+            {
+                throw new KernelValueException($"Couldn't declare '{name}' in C#: {ex.Diagnostics.FirstOrDefault()?.GetMessage()}");
+            }
+        }
+        finally
+        {
+            executionLock.Release();
+        }
+    }
+
+    // Everything lives in the studio's own process; there's nothing to shut down.
+    void IDisposable.Dispose()
+    {
     }
 
     private static string FormatValue(object? val)

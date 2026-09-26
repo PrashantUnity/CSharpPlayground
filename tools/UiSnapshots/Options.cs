@@ -7,7 +7,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 internal sealed class Options
 {
     // Options that never take a value, so `visualizer --quiet 1 11` doesn't read "1" as --quiet's value.
-    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test" };
+    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test", "while-running", "python-demo", "nothing-installed" };
 
     private readonly Dictionary<string, string?> _named = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _positional = new();

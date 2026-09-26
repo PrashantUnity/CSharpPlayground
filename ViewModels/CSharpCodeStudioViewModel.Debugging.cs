@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -42,6 +43,16 @@ public partial class CSharpCodeStudioViewModel
     public async Task DebugCodeAsync()
     {
         if (IsExecuting || IsDebugging) return;
+
+        if (!ActiveLanguage.Has(LanguageCapabilities.Debugging))
+        {
+            if (ActiveLanguage.ScriptRunner != null)
+            {
+                await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage,
+                    $"ℹ️ There's no {ActiveLanguage.DisplayName} debugger yet, so F5 runs the file without one.");
+            }
+            return;
+        }
 
         var debuggingTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
 
@@ -381,6 +392,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public void ToggleBreakpoint(int line)
     {
+        if (!SupportsBreakpoints) return;
         var existing = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
         if (existing != null)
         {

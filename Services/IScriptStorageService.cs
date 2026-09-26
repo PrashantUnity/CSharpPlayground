@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -32,6 +33,21 @@ public interface IScriptStorageService
     Task SaveScriptsAsync(IEnumerable<ScriptProjectItem> scripts);
 
     Task<OpenProjectResult> OpenExternalProjectAsync(string path);
+
+    /// <summary>The languages whose plain source files (main.py) the workspace lists alongside its documents.</summary>
+    LanguageRegistry Languages { get; }
+
+    /// <summary>Creates a source file of a language (script_HHmmss.py, or <paramref name="fileName"/>) with its starter text.</summary>
+    Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null);
+
+    /// <summary>Renames a source file on disk; its id changes with its path.</summary>
+    Task<SourceFileRename> RenameSourceFileAsync(string id, string newFileName);
+
+    /// <summary>
+    /// Writes a source file's text. Without <paramref name="overwriteChangesOnDisk"/> it writes only when the text changed
+    /// and nothing else changed the file since it was read (<see cref="SaveScriptAsync"/> saves source files this way).
+    /// </summary>
+    Task<bool> SaveSourceFileAsync(ScriptDocumentItem document, bool overwriteChangesOnDisk);
 }
 
 public record OpenProjectResult(
@@ -41,3 +57,5 @@ public record OpenProjectResult(
     WorkspaceItemKind? PrimaryDocumentKind = null,
     int DocumentsLoadedCount = 0);
 
+/// <summary>A renamed source file's new id and path.</summary>
+public sealed record SourceFileRename(string Id, string FilePath);

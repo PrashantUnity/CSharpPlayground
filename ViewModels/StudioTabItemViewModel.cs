@@ -52,6 +52,12 @@ public partial class StudioTabItemViewModel : ObservableObject
 
     public CancellationTokenSource? ExecutionCts { get; set; }
 
+    /// <summary>The program running this tab's file (a Python run), for typing into it and stopping it.</summary>
+    public Services.Processes.ScriptRunSession? ActiveRun { get; set; }
+
+    /// <summary>Adds text to the running program's Terminal output (what's typed into it), while there's a run.</summary>
+    public Action<string>? AppendToConsole { get; set; }
+
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<DumpTableResult> DumpResults { get; } = new();
     public ObservableCollection<RichCellOutput> RichOutputs { get; } = new();
@@ -60,6 +66,11 @@ public partial class StudioTabItemViewModel : ObservableObject
 
     public string Id => Document.Id;
     public string Title => Document.Title;
+
+    /// <summary>A source file's language icon and color (set when the tab is created); null for a C# document.</summary>
+    public string? LanguageIconKind { get; init; }
+    public string? LanguageIconColor { get; init; }
+    public bool HasLanguageIcon => LanguageIconKind != null;
 
     public Action<StudioTabItemViewModel>? OnSelect { get; set; }
     public Action<StudioTabItemViewModel>? OnClose { get; set; }

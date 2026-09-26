@@ -48,6 +48,8 @@
   <ItemGroup>
     <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
     <AvaloniaResource Include="Assets\**" />
+    <!-- The notebook's Python kernel program, written out next to the plugin's data when a Python cell first runs. -->
+    <EmbeddedResource Include="Services\Languages\Python\Kernel\*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Packaging into .fryplugin distribution archive -->
