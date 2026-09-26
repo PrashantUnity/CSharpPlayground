@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
 
-**CSharpPlayground** (standalone executable: **FrySharp**) is an interactive C# code studio, interactive Jupyter-style notebook environment, and script automation engine for .NET 10 and Avalonia UI.
+**CSharpPlayground** (standalone executable: **FrySharp**) is an interactive multi-language code studio, polyglot Jupyter-style notebook environment, and script automation engine for .NET 10, Python, and extensible language toolchains built with Avalonia UI.
 
 It operates both as:
 1. **A Standalone Desktop Application (`FrySharp`)**: Native desktop app for macOS (`.dmg`) and Windows (`.msix` / `.exe` installer) with an authentic VS Code-inspired 5-zone IDE layout.
@@ -16,11 +16,11 @@ It operates both as:
 ## 🌟 Key Features
 
 - **Authentic VS Code Layout & Ergonomics**:
-  - **Activity Bar**: Explorer, Search, Run & Debug, NuGet Package Manager, Scratchpad, and Problems badges.
-  - **Primary Side Bar**: File tree, project explorer, and script management hub.
+  - **Activity Bar**: Explorer, Search, Run & Debug, Package & Dependency Manager (NuGet, pip, npm), Scratchpad, and Problems badges.
+  - **Primary Side Bar**: Multi-language file tree, project explorer, and script management hub.
   - **Multi-Tab Editor**: Smooth horizontal tab bar with dirty indicators (`●`), quick close, and isolated execution states.
-  - **Bottom Tool Deck**: Roslyn Problems, Output, Terminal Console, Debug REPL, and Rich Results.
-  - **Status Bar**: Execution timer (`⏱ 14ms`), line/column coordinates, spaces, UTF-8, and compiler status.
+  - **Bottom Tool Deck**: Problems (Roslyn diagnostics and external language tracebacks with quick-fixes), Output, Terminal Console (with interactive stdin), Debug REPL, and Rich Results.
+  - **Status Bar**: Execution timer (`⏱ 14ms`), line/column coordinates, spaces, UTF-8, active language & toolchain status (`C# (.NET 10 Roslyn)`, `Python 3.12 (.venv)`, etc.), and compiler status.
 - **Interactive Jupyter-Style C# Notebooks**:
   - Stateful cell execution kernel chaining submissions using Roslyn Scripting API.
   - NuGet package resolution directly in scripts (`#r "nuget: ..."`).
@@ -30,7 +30,7 @@ It operates both as:
   - `.py` files open, run (F5 / Ctrl+F5) and take `input()` in Code Studio, with your installed Python, so numpy, pandas, matplotlib and every other package work. Tracebacks land in Problems with an "Install <package>" fix.
   - Notebooks mix C# and Python cells, as in Polyglot Notebooks. Each language has its own kernel, and `#!share --from csharp nums` copies values between them. `%pip install` works in cells.
   - The studio finds Python as your terminal would (a project `.venv` first) and says what's missing when it can't. See the App Guide's "Languages & Python".
-  - More languages plug in as modules: [docs/adding-a-language.md](docs/adding-a-language.md), [docs/kernel-protocol.md](docs/kernel-protocol.md).
+  - Extensible language module architecture with roadmap support for JavaScript, Java, C++, and C: [docs/adding-a-language.md](docs/adding-a-language.md), [docs/kernel-protocol.md](docs/kernel-protocol.md).
 - **Tabular Data Analytics**:
   - Native display and profiling for `DataTable`, `DataView`, and Microsoft.Data.Analysis `DataFrame`.
   - Column summaries, data types, row counts, and inline search.

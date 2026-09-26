@@ -5,22 +5,22 @@ This document defines the project-specific architecture, ergonomics, and impleme
 ---
 
 ## 1. Core Paradigm: Authentic VS Code Ergonomics
-C# Code Studio is a premier, in-app IDE for .NET 10 document automation, Roslyn scripting, algorithms, and interactive notebooks within FryPDF.
+C# Code Studio is a premier, in-app IDE and standalone application (**FrySharp**) for .NET 10 document automation, Roslyn scripting, algorithms, and polyglot interactive notebooks within FryPDF. While rooted in high-performance C# execution, the studio natively supports multiple languages (C#, Python, and extensible external language modules such as JavaScript/Node) via a unified toolchain and kernel architecture, with roadmap support planned for compiled languages: **Java**, **C++**, and **C**.
 Its layout, structure, chrome, navigation, and keybindings must faithfully adhere to **Visual Studio Code**.
 
 ---
 
 ## 2. The 5-Zone VS Code Layout Mandate
-Every main studio interface must strictly follow the 5-zone VS Code structure:
+Every main studio interface (both script code studio and notebook studio) must strictly follow the 5-zone VS Code structure:
 
 ```
 ┌────┬──────────────────────┬──────────────────────────────────────────────────┐
 │ A  │   PRIMARY SIDE BAR   │                   EDITOR AREA                    │
 │ C  │                      │                                                  │
-│ T  │  (Dynamic view based │  [Tab: Script.csx ×] [Breadcrumbs: frypdf > ...] │
+│ T  │  (Dynamic view based │  [Tab: Script.py ×]  [Breadcrumbs: frypdf > ...] │
 │ I  │   on selected tool:  ├──────────────────────────────────────────────────┤
 │ V  │   Explorer, Search,  │  AvaloniaEdit Code Canvas                        │
-│ I  │   Debug, NuGet,      │  (Breakpoints, Syntax, Folding, Hover Tooltip)   │
+│ I  │   Debug, Packages,   │  (Syntax, Folding, Line Numbers, Hover Tooltips) │
 │ T  │   Templates, Notes,  │                                                  │
 │ Y  │   Problems)          ├──────────────────────────────────────────────────┤
 │    │                      │                BOTTOM PANEL / DOCK               │
@@ -29,20 +29,20 @@ Every main studio interface must strictly follow the 5-zone VS Code structure:
 │ R  │                      │                                                  │
 ├────┴──────────────────────┴──────────────────────────────────────────────────┤
 │                          STATUS BAR (22px fixed)                             │
-│ >< C# Studio  (× 0 ! 0)  Ready   Ln 12, Col 4   Spaces: 4   UTF-8   C#       │
+│ >< C# Studio  (× 0 ! 0)  Ready   Ln 12, Col 4   Spaces: 4   UTF-8  Python 3.12│
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Zone 1: Activity Bar (Leftmost, 48px fixed)
 - Fixed 48px vertical rail on the left edge.
 - Standard tool icons:
-  - **Explorer** (`FolderMultipleOutline`)
+  - **Explorer** (`FolderMultipleOutline` / `FileTreeOutline`)
   - **Search** (`Magnify`)
-  - **Run & Debug** (`BugPlayOutline`)
-  - **Dependencies & NuGet** (`PackageVariantClosed`)
+  - **Run & Debug** (`BugPlayOutline` / `PlayBoxOutline`)
+  - **Dependencies & Packages** (`PackageVariantClosed` — NuGet for C#, pip for Python, npm for JS/Node)
   - **Scratchpad & Notes** (`FileDocumentOutline`)
   - **Problems** (`AlertCircleOutline` with error badge)
-- Bottom utilities: **Settings** (`CogOutline`) and **Return to Hub** (`ArrowLeft`).
+- Bottom utilities: **Settings** (`CogOutline`) and **Return to Hub** (`ArrowLeft` / `HomeOutline`).
 - Active item displays a 2px vertical high-contrast accent indicator on the left edge (`#007ACC` / `{DynamicResource M3PrimaryBrush}`).
 - Clicking the active item toggles the Primary Side Bar closed/open (`Ctrl+B`).
 
@@ -51,29 +51,30 @@ Every main studio interface must strictly follow the 5-zone VS Code structure:
 - Dynamically renders the view corresponding to the active Activity Bar icon.
 - Explorer header features standard action buttons: **New File** (`FilePlusOutline`), **New Folder** (`FolderPlusOutline`), **Open Project** (`FolderOpenOutline`), **Refresh** (`Refresh`), and **Collapse All** (`ArrowCollapseVertical`).
 - Features standard all-caps header with section title and contextual action buttons.
+- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
 - Collapsible via `IsSideBarVisible` or keyboard shortcut `Ctrl+B`.
 
 ### Zone 3: Editor Area (Central Canvas)
 - **Editor Multi-Tab Bar**: Located at the top of the editor canvas with all open script/notebook tabs displayed side-by-side in a horizontal scrollable strip, close buttons (`×`), dirty status dots (`●`), file-type icons, and a new tab (`+`) button.
-- **Editor Action Toolbar**: Located at the top-right of the editor header with Run, Debug, Stepping controls, Format Document, Word Wrap, Find, and Bottom Panel toggle.
-- **Breadcrumbs Bar**: Dedicated 24px navigation trail below tabs (`scripts > {Script.Title} > C# (.NET 10 Roslyn)`).
-- **Code Canvas**: AvaloniaEdit text editor with Dark+ theme, line numbers, folding markers, breakpoint gutter, debug line highlighter, and debug hover tooltips.
+- **Editor Action Toolbar**: Located at the top-right of the editor header with Run, Debug (when supported by active language capabilities), Stepping controls, Format Document, Word Wrap, Find, and Bottom Panel toggle.
+- **Breadcrumbs Bar**: Dedicated 24px navigation trail below tabs showing active file path and resolved language runtime (`workspace > scripts > {FileName} > {Language} ({Toolchain/Version})`, e.g. `scripts > main.py > Python (3.12)` or `scripts > script.csx > C# (.NET 10 Roslyn)`).
+- **Code Canvas**: AvaloniaEdit text editor with Dark+ and Light+ themes, language-specific syntax highlighting definitions (`IHighlightingDefinition`), language-aware indentation strategies (`IIndentationStrategy`), line numbers, folding markers, breakpoint gutter, debug line highlighter, and hover Quick Info tooltips.
 
 ### Zone 4: Bottom Panel / Tool Deck (Dynamic Resizable, Collapsible)
 - Tabbed deck:
-  - `PROBLEMS` (badge: `(×) {ErrorCount}`)
-  - `OUTPUT` (Roslyn compiler output)
-  - `TERMINAL / CONSOLE` (execution stdout/stderr)
-  - `DEBUG CONSOLE (REPL)` (immediate expression evaluation prompt)
-  - `RESULTS (.DUMP)` (rich interactive tables, HTML viewer, object inspector)
-  - `TEST CASES` (unit/algorithm test cases)
+  - `PROBLEMS` (badge: `(×) {ErrorCount}`): Live Roslyn diagnostics for C#, and run-time traceback/diagnostic parsers (`IDiagnosticParser`) for external languages (Python, JS) with one-click "Install <package>" quick fixes.
+  - `OUTPUT`: Roslyn compiler output, language runner process logs, and package installation streams.
+  - `TERMINAL / CONSOLE`: Execution stdout/stderr with interactive stdin support via `TerminalTextBuffer` (supports user `input()` during script execution).
+  - `DEBUG CONSOLE (REPL)`: Immediate expression evaluation prompt.
+  - `RESULTS (.DUMP)`: Rich interactive tables (`DataTable`, `DataFrame`), HTML viewer, images (`Display.Image`), and object inspector.
+  - `TEST CASES`: Unit/algorithm test cases and verification assertions.
 - Dynamic vertical expansion via `GridSplitter` and `BottomDeckGridLength` (expands smoothly without clipping results).
 - Right-side actions: Clear Output, Maximize/Restore, Close (`×`).
 - Collapsible with `Ctrl+J`.
 
 ### Zone 5: Status Bar (Bottom, 22px fixed)
-- Left: Remote/Workspace pill (`>< C# Studio`), Problems counter `(× 0 ! 0)`, Roslyn compiler status (`Ready` / `Compiling...`), Run/Pause state.
-- Right: Execution timer (`⏱ 14ms`), `Ln X, Col Y`, `Spaces: 4`, `UTF-8`, `C# (.NET 10 Roslyn)`, Bottom Deck toggle button.
+- Left: Remote/Workspace pill (`>< C# Studio`), Problems counter `(× 0 ! 0)`, Roslyn/Language compiler/runner status (`Ready` / `Compiling...` / `Running...`), Run/Pause state.
+- Right: Execution timer (`⏱ 14ms`), `Ln X, Col Y`, `Spaces: 4`, `UTF-8`, Active Language & Toolchain selector/status (`C# (.NET 10 Roslyn)`, `Python 3.12 (.venv)`, etc.), Bottom Deck toggle button.
 
 ---
 
@@ -82,12 +83,13 @@ Every studio view must register and honor standard VS Code shortcuts:
 - `Ctrl+B` (Mac: `Cmd+B`): Toggle Primary Side Bar.
 - `Ctrl+J` (Mac: `Cmd+J`): Toggle Bottom Panel / Terminal.
 - `Ctrl+S` (Mac: `Cmd+S`): Save Active Script.
-- `F5`: Start Debugging / Continue Execution.
+- `F5`: Start Debugging (C#) / Run Script (when debugger not supported by language).
 - `Ctrl+F5`: Run Script without Debugging.
 - `Shift+F5`: Stop Execution / Stop Debugging.
 - `F10`: Step Over.
 - `F11`: Step Into.
 - `Ctrl+K Ctrl+D` or `Shift+Alt+F`: Format Document.
+- `Ctrl+K Ctrl+I`: Show Hover (Quick Info) for the symbol at the caret.
 - `Ctrl+F` (Mac: `Cmd+F`): Find & Replace.
 - `Ctrl+Shift+E`: Focus Explorer in SideBar.
 - `Ctrl+Shift+F`: Focus Search in SideBar.
@@ -97,30 +99,57 @@ Every studio view must register and honor standard VS Code shortcuts:
 ---
 
 ## 4. Performance & Zero UI-Thread Freeze
-- **NEVER** construct `RoslynCompilerService`, resolve NuGet packages, perform heavy reflection, or run scripts on the Avalonia UI thread.
+- **NEVER** construct `RoslynCompilerService`, resolve NuGet/pip/npm packages, probe external toolchains (`IToolchainProvider`), run external processes, perform heavy reflection, or run scripts on the Avalonia UI thread.
 - All background operations must run in `Task.Run` with a `CancellationToken`.
 - UI updates must be dispatched via `Dispatcher.UIThread.Post`.
 - Visual components must clean up timers, events, and background tasks when unloaded or unmounted.
+- All external child processes must be spawned through `IProcessLauncher` and tracked in `ProcessRegistry` (using Job Objects on Windows and process groups on Unix) so all process trees are terminated cleanly on Stop, tab close, or plugin unload.
 
 ---
 
 ## 5. Architectural MVVM Separation
 - `Views/`: Pure XAML views with minimal code-behind focused on AvaloniaEdit, focus management, and keyboard routing.
-- `ViewModels/`: Reactive ViewModels based on `CommunityToolkit.Mvvm` (`ObservableObject`, `[ObservableProperty]`, `[RelayCommand]`).
+- `ViewModels/`: Reactive ViewModels based on `CommunityToolkit.Mvvm` (`ObservableObject`, `[ObservableProperty]`, `[RelayCommand]`). Partition complex ViewModels into domain partials (e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`, `.Debugging.cs`, `.Tabs.cs`).
 - `Models/`: Immutable or POCO data models for scripts, notebooks, cells, diagnostics, and test cases.
-- `Services/`: Isolated headless engines for compilation, execution, debugging, storage, and NuGet resolution.
-- `Controls/`: Reusable specialized Avalonia controls (margins, hover tips, syntax themes).
+- `Services/`: Isolated headless engines for compilation, execution, debugging, storage, toolchain discovery, and package management.
+- `Controls/`: Reusable specialized Avalonia controls (margins, hover tips, syntax themes, tab bars, tool decks).
 
 ---
 
 ## 6. Component Architecture & Codebase Health Mandate
 All contributors and agents must follow `.agents/rules/component_architecture_and_reuse_mandate.md`:
-- **Line budgets**: AXAML views < 400 lines, View code-behind < 150 lines, ViewModels < 400 lines per file (use domain partials e.g. `.Explorer.cs`, `.Debugging.cs`), Services < 500 lines.
+- **Line budgets**: AXAML views < 400 lines, View code-behind < 150 lines, ViewModels < 400 lines per file (use domain partials e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`), Services < 500 lines.
 - **Mandatory Control Reusability**: Shared UI (Activity Bar, Status Bar, Bottom Tool Deck, Explorer Panel, Search Panel, Breadcrumbs, Tab Bar) must be implemented as reusable controls in `Controls/`.
 - **Shared Styles**: Centralize styles in `Controls/SharedStudioStyles.axaml`. Never duplicate hundreds of lines in individual `<UserControl.Styles>`.
-- **100% Backward Compatibility**: All 237+ automated unit tests must continue to pass with 0 warnings and 0 errors.
+- **100% Backward Compatibility**: All 1,100+ automated unit tests must continue to pass with 0 warnings and 0 errors.
 
 ---
 
-## 7. Seeing the UI: Headless Snapshots
-To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: `docs/headless-ui-snapshots.md`.
+## 7. Multi-Language & Polyglot Architecture Mandate
+The studio is designed from the ground up for multi-language extensibility:
+- **One Module Per Language (`ILanguageDefinition`)**:
+  Every language is a standalone module deriving from `LanguageDefinition` in `Services/Languages/<Name>/` and registered in `StudioLanguageServices`. The studio core never hardcodes language names or IDs.
+- **Feature Switching on `LanguageCapabilities`**:
+  Views and ViewModels switch features strictly via `LanguageCapabilities` flags (`Completion`, `QuickInfo`, `Formatting`, `Debugging`, `Breakpoints`, `LiveDiagnostics`, `TestCases`, `Templates`, `ExecutionModes`, `StandardInput`, `NotebookCells`, `ValueSharing`, `Packages`). Never branch on a language's string ID in UI logic.
+- **Toolchain Discovery & Management (`IToolchainProvider`)**:
+  Languages that rely on external runtimes resolve them via `IToolchainProvider`. Toolchains look for interpreters the way a user terminal does (reading PATH via `IHostEnvironment.GetLoginShellPathAsync`), prioritizing local project virtual environments (`.venv`, `venv`, `env`), user-selected toolchains (`ToolchainSettingsStore`), and isolated studio-managed environments. If a toolchain is missing, actionable guidance (`MissingToolchainGuidance`) with per-OS installation instructions is presented.
+- **Process Management & Interactive Script Execution (`IScriptRunner`, `IProcessLauncher`)**:
+  External scripts run via `ScriptRunPlan` and `ScriptRunExecutor`. Real-time stdout/stderr is buffered via `TerminalTextBuffer`, and interactive user input (`input()`) is routed seamlessly from the Terminal input bar to the process's standard input. Process trees are guaranteed to terminate on Stop or plugin unload via `ProcessRegistry`.
+- **Polyglot Notebooks & Fry Kernel Protocol (`ProtocolKernel`)**:
+  Notebooks support mixed-language cells (e.g. C# and Python). External language kernels communicate over stdin/stdout pipes using the line-delimited JSON Fry Kernel Protocol (`docs/kernel-protocol.md`). Cross-language variable sharing is supported via `#!share --from <language> <variable> [--as <name>]`, automatically converting data structures (arrays, dictionaries, dataframes, primitives) across kernels via JSON.
+- **Diagnostic Parsing & Package Management (`IDiagnosticParser`, `IPackageManager`)**:
+  Run failures and tracebacks are parsed into structured `DiagnosticItem`s pointing to source lines and columns. Missing module errors automatically expose one-click "Install <package>" fixes that invoke the language's package manager (`%pip install`, etc.) in the active environment.
+- **Document Storage Kinds (`LanguageStorageKind`)**:
+  Languages specify their persistence model: `FryDocument` (JSON metadata, notes, and breakpoints for C# `.frycs`) or `SourceFile` (plain text source files like `.py`, `.js`, `.csx`, `.java`, `.cpp`, `.c` readable by external editors and git).
+- **Compiled Languages Architecture (Java, C++, C Roadmap)**:
+  Compiled languages execute through a two-phase `ScriptRunPlan` in `ScriptRunExecutor`:
+  1. *Build Step* (`ProcessStep` with `IsBuildStep = true`): Calls the language compiler (`javac` for Java, `clang++`/`g++` for C++, `clang`/`gcc` for C). If compilation fails, the executor stops immediately, parses compiler error streams into structured diagnostics via `IDiagnosticParser` (e.g. `JavaCompilerDiagnosticParser`, `ClangDiagnosticParser` for line/column errors), and populates the Problems panel without executing.
+  2. *Run Step* (`ProcessStep` with `IsBuildStep = false`): Executes the generated byte code (`java ClassName`) or native binary (`./a.out` / `.exe`), with full interactive stdin streaming via `TerminalTextBuffer`.
+  3. *Toolchain Discovery*: `IToolchainProvider` discovers local compilers and JDKs (`JAVA_HOME`, PATH, Xcode Command Line Tools, Visual Studio C++ Build Tools) with automated version probing and actionable missing-toolchain guidance (`MissingToolchainGuidance`).
+  4. *Polyglot Notebook Integration*: Kernels for compiled languages speak the Fry Kernel Protocol (`ProtocolKernel`) via dedicated interactive runtime wrappers (e.g., JShell for Java, Cling/custom REPL for C/C++), supporting cell evaluation and cross-language value sharing (`#!share`).
+- For complete step-by-step instructions on adding a new language, follow [`docs/adding-a-language.md`](docs/adding-a-language.md) and [`docs/kernel-protocol.md`](docs/kernel-protocol.md).
+
+---
+
+## 8. Seeing the UI: Headless Snapshots
+To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: [`docs/headless-ui-snapshots.md`](docs/headless-ui-snapshots.md).

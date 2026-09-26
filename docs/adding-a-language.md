@@ -51,9 +51,13 @@ A language that runs with something installed needs a way to find it, say what i
 
 ## 3. Running files (`IScriptRunner`, `IDiagnosticParser`)
 
-- `PlanAsync(ScriptRunContext)` returns a `ScriptRunPlan` of `ProcessStep`s. Build steps come first (`IsBuildStep`, e.g. `javac` or `clang++`), and the run stops at the first one that fails; then the run step. `ScriptRunExecutor` runs them, streams output to the Terminal as a terminal would show it (`TerminalTextBuffer`), and sends typed input to the run step.
+- `PlanAsync(ScriptRunContext)` returns a `ScriptRunPlan` of `ProcessStep`s:
+  - **Interpreted scripts (Python, JS):** single run step (e.g. `python -u file.py` or `node file.js`).
+  - **Compiled languages (Java, C++, C):** two-phase execution plan:
+    1. *Build step* (`IsBuildStep = true`): compiler invocation (e.g., `javac -d <temp> file.java`, `clang++ -std=c++20 -o <bin> file.cpp`, or `clang -o <bin> file.c`). If compilation fails with non-zero exit code, `ScriptRunExecutor` stops immediately, parses errors via `IDiagnosticParser`, and does not run the executable.
+    2. *Run step* (`IsBuildStep = false`): execution of the generated artifact (e.g., `java -cp <temp> Main` or `<bin>`).
 - Start programs only through `IProcessLauncher` (`StudioLanguageServices.Processes`). It registers them with `ProcessRegistry`, which kills them when the plugin unloads or the app exits, and Stop kills the whole process tree.
-- `IDiagnosticParser.Parse(output, file)` turns a failed run's output into Problems (line, column, message). It can also name a `MissingDependency`, which Problems offers to install.
+- `IDiagnosticParser.Parse(output, file)` turns a failed run or build's output into Problems (line, column, message). It understands compiler formats (`javac`, `clang`/`gcc`, or Python tracebacks). It can also name a `MissingDependency`, which Problems offers to install.
 
 ## 4. Notebook cells (`INotebookKernelFactory`)
 

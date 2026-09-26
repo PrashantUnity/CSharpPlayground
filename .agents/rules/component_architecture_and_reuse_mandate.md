@@ -41,15 +41,17 @@ To keep files maintainable, human-reviewable, and resilient against merge confli
 
 ## 3. ViewModel Domain Partial Pattern
 
-When a ViewModel manages multiple complex domains (e.g., Roslyn script studio with tabs, debugger, compiler, explorer, search, nuget):
+When a ViewModel manages multiple complex domains (e.g., multi-language script studio with tabs, debugger, compiler, explorer, search, package manager, external language runners, polyglot notebooks):
 - Maintain the class as a `public partial class [Name]ViewModel : ObservableObject`.
 - Separate concerns into clean feature files following the naming pattern:
   - `[Name]ViewModel.cs` — Primary constructor, dependencies, core observable properties, and lifecycle.
   - `[Name]ViewModel.Tabs.cs` — Tab collection, switching, document tracking, dirty states.
   - `[Name]ViewModel.Explorer.cs` — Workspace file tree, directory creation, rename, duplicate, delete.
   - `[Name]ViewModel.Search.cs` — Search in files, regex/word matching, results collection.
+  - `[Name]ViewModel.Languages.cs` — Multi-language switching, toolchain selection, capabilities binding.
+  - `[Name]ViewModel.ExternalRun.cs` — External script runners, process lifecycle, terminal I/O streaming.
   - `[Name]ViewModel.Debugging.cs` — Breakpoints, stepping, pause/resume, call stack, variables.
-  - `[Name]ViewModel.NuGet.cs` — Package search, metadata fetching, installation, dependency tracking.
+  - `[Name]ViewModel.NuGet.cs` / Package management — Package search, metadata fetching, installation, dependency tracking.
   - `[Name]ViewModel.BottomDeck.cs` — Output routing, terminal streaming, REPL command evaluation.
   - `[Name]ViewModel.Testing.cs` — Test case discovery and test execution engine.
 - This pattern preserves **100% binary and API backward compatibility** with all existing unit tests and XAML bindings while slashing individual file sizes.
@@ -58,10 +60,11 @@ When a ViewModel manages multiple complex domains (e.g., Roslyn script studio wi
 
 ## 4. Zero UI-Thread Freezes & Performance Rules
 
-- Heavy initialization (Roslyn compiler, assembly reflection, NuGet resolution, file I/O) must **NEVER** run synchronously on the Avalonia UI thread.
+- Heavy initialization (Roslyn compiler, assembly reflection, NuGet/pip/npm package resolution, toolchain discovery, file I/O, external processes) must **NEVER** run synchronously on the Avalonia UI thread.
 - Always execute async background work via `Task.Run(..., cancellationToken)`.
 - Push UI updates back to the UI thread via `Dispatcher.UIThread.Post(...)`.
 - Visual components must clean up event subscriptions, timers, and background tasks when unloaded or unmounted.
+- Child processes must be managed via `IProcessLauncher` and registered with `ProcessRegistry` to ensure complete cleanup on stop or exit.
 
 ---
 
@@ -69,9 +72,9 @@ When a ViewModel manages multiple complex domains (e.g., Roslyn script studio wi
 
 - Every refactoring or control extraction must maintain **0 warnings and 0 errors** during compilation:
   ```bash
-  dotnet build examples/CSharpEditorPlugin/CSharpEditorPlugin.slnx
+  dotnet build CSharpEditorPlugin.slnx
   ```
-- All automated unit tests must continue to pass with 100% success:
+- All 1,100+ automated unit tests must continue to pass with 100% success:
   ```bash
-  dotnet test examples/CSharpEditorPlugin/Tests/CSharpEditorPlugin.Tests.csproj
+  dotnet test CSharpEditorPlugin.slnx
   ```
