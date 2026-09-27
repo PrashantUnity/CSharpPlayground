@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -32,6 +33,12 @@ public static class DumpTableBuilder
         if (IsTabularObject(obj, out var tabularResult, label))
         {
             return tabularResult!;
+        }
+
+        // Dedicated HTTP Inspection Formats (HttpResponseMessage, HttpRequestMessage, HttpContent)
+        if (HttpDumpTableBuilder.TryCreate(obj, label, out var httpResult))
+        {
+            return httpResult!;
         }
 
         var type = obj.GetType();

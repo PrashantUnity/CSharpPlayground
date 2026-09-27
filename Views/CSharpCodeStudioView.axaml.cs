@@ -37,8 +37,11 @@ public partial class CSharpCodeStudioView : UserControl
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
+    private readonly InlineDebugValuesRenderer _inlineDebugRenderer = new();
     private DebugHoverDataTipControl? _debugHoverTip;
     private DebugHoverDataTipController? _debugHoverController;
+    private CollectionViewControl? _collectionViewOverlay;
+    private ValueViewerControl? _valueViewerOverlay;
 
     private readonly StudioBottomDeckControl _deckControl = new();
 
@@ -76,10 +79,21 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_stepLineRenderer);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
+            _editor.TextArea.TextView.BackgroundRenderers.Add(_inlineDebugRenderer);
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
             _searchPanel = SearchPanel.Install(_editor);
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
+            _collectionViewOverlay = this.FindControl<CollectionViewControl>("CollectionViewOverlay");
+            if (_collectionViewOverlay != null)
+            {
+                _collectionViewOverlay.CloseRequested += () => _collectionViewOverlay.IsVisible = false;
+            }
+            _valueViewerOverlay = this.FindControl<ValueViewerControl>("ValueViewerOverlay");
+            if (_valueViewerOverlay != null)
+            {
+                _valueViewerOverlay.CloseRequested += () => _valueViewerOverlay.IsVisible = false;
+            }
 
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
@@ -407,7 +421,10 @@ public partial class CSharpCodeStudioView : UserControl
                 () => _currentVm?.IsPaused == true,
                 () => _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : Array.Empty<DebugVariableItem>(),
                 expr => _currentVm != null ? _currentVm.EvaluateExpressionAsync(expr) : Task.FromResult((false, "", "")),
-                expr => _ = _currentVm?.AddWatchExpressionAsync(expr));
+                expr => _ = _currentVm?.AddWatchExpressionAsync(expr),
+                exploreAction: item => OpenCollectionView(item),
+                viewAction: item => OpenValueViewer(item),
+                getChildrenFunc: item => _currentVm != null ? _currentVm.GetVariableChildrenAsync(item) : Task.FromResult<IReadOnlyList<DebugVariableItem>>(item.Children));
         }
     }
 
@@ -523,6 +540,8 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestReloadEditorText -= OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
             _currentVm.RequestFocusNotes -= OnFocusNotes;
+            _currentVm.RequestExploreVariable -= OpenCollectionView;
+            _currentVm.RequestViewVariable -= OpenValueViewer;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
@@ -552,9 +571,11 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestReloadEditorText += OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument += OnSwitchTabDocument;
             _currentVm.RequestFocusNotes += OnFocusNotes;
+            _currentVm.RequestExploreVariable += OpenCollectionView;
+            _currentVm.RequestViewVariable += OpenValueViewer;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
-            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
 
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
@@ -887,10 +908,45 @@ public partial class CSharpCodeStudioView : UserControl
         if (line == -1)
         {
             _debugHoverController?.HideTip();
+            _inlineDebugRenderer.PausedLine = -1;
+            _inlineDebugRenderer.Variables = null;
+        }
+        else
+        {
+            _inlineDebugRenderer.PausedLine = line;
+            _inlineDebugRenderer.Document = _editor.Document;
+            _inlineDebugRenderer.Variables = _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : null;
         }
         _breakpointMargin.CurrentPausedLine = line;
         _debugLineRenderer.HighlightedLine = line;
         _editor.TextArea.TextView.InvalidateVisual();
+    }
+
+    private async void OpenCollectionView(DebugVariableItem item)
+    {
+        if (_collectionViewOverlay == null || item == null) return;
+
+        if (item.CanExpand && !item.ChildrenLoaded && _currentVm != null)
+        {
+            try
+            {
+                await _currentVm.GetVariableChildrenAsync(item);
+            }
+            catch
+            {
+                // Ignore child load failure
+            }
+        }
+
+        _collectionViewOverlay.SetData(item);
+        _collectionViewOverlay.IsVisible = true;
+    }
+
+    private void OpenValueViewer(DebugVariableItem item)
+    {
+        if (_valueViewerOverlay == null || item == null) return;
+        _valueViewerOverlay.SetValue(item);
+        _valueViewerOverlay.IsVisible = true;
     }
 
     private void OnSyncBreakpoints(IEnumerable<int> lines)
@@ -901,7 +957,14 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        _breakpointMargin.SetBreakpoints(lines);
+        if (_currentVm != null)
+        {
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
+        }
+        else
+        {
+            _breakpointMargin.SetBreakpoints(lines);
+        }
     }
 
     private void ToggleFoldAtCaret(bool? fold = null)

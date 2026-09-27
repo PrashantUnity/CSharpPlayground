@@ -37,9 +37,23 @@ public sealed class StudioLanguageServices
         StudioSettings = new Settings.StudioSettingsStore(Path.Combine(BaseDirectory, "studio_settings.json"));
         Registry = new LanguageRegistry();
 
+        AdapterManager = new Debugging.Dap.DapAdapterManager(Processes, Host);
+
         if (registerBuiltInLanguages)
         {
-            Registry.Register(new CSharpLanguage());
+            var roslynCompiler = new RoslynCompilerService();
+            var execEngine = new ScriptExecutionEngine();
+            var scriptDebugger = new ScriptDebuggerService(roslynCompiler, execEngine);
+            var csharpDebugger = new Debugging.CSharpDebuggerProvider(
+                roslynCompiler,
+                scriptDebugger,
+                execEngine,
+                Processes,
+                Host,
+                Path.Combine(BaseDirectory, "csharp_debug"),
+                AdapterManager);
+
+            Registry.Register(new CSharpLanguage(csharpDebugger));
             Registry.Register(new PythonLanguage(this));
             Registry.Register(new JavaScriptLanguage(this));
             Registry.Register(new JavaLanguage(this));
@@ -51,6 +65,7 @@ public sealed class StudioLanguageServices
     public string BaseDirectory { get; }
     public IHostEnvironment Host { get; }
     public IProcessLauncher Processes { get; }
+    public Debugging.Dap.DapAdapterManager AdapterManager { get; }
     public ToolchainSettingsStore ToolchainSettings { get; }
     public Settings.StudioSettingsStore StudioSettings { get; }
     public LanguageRegistry Registry { get; }

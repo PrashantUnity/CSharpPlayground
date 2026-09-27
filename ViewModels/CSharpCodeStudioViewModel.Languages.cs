@@ -51,6 +51,9 @@ public partial class CSharpCodeStudioViewModel
 
     public ObservableCollection<ToolchainActionChoice> ToolchainActions { get; } = new();
 
+    /// <summary>The watermark prompt for the immediate evaluation REPL console in the bottom deck.</summary>
+    public string ImmediatePromptWatermark => $"> Evaluate {ActiveLanguage?.DisplayName ?? "expression"}...";
+
     partial void OnToolchainLabelChanged(string? value)
     {
         OnPropertyChanged(nameof(RuntimeLabel));
@@ -71,6 +74,7 @@ public partial class CSharpCodeStudioViewModel
         OnPropertyChanged(nameof(HasToolchain));
         OnPropertyChanged(nameof(RuntimeLabel));
         OnPropertyChanged(nameof(LanguageStatusText));
+        OnPropertyChanged(nameof(ImmediatePromptWatermark));
 
         ToolchainLabel = null;
         IsToolchainMissing = false;

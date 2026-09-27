@@ -176,9 +176,15 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
 
     private static bool SamePath(string a, string b)
     {
+        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return true;
         var fileNameA = Path.GetFileName(a);
         var fileNameB = Path.GetFileName(b);
         if (string.Equals(fileNameA, fileNameB, StringComparison.OrdinalIgnoreCase)) return true;
+
+        if (a.EndsWith(".java", StringComparison.OrdinalIgnoreCase) && b.EndsWith(".java", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
 
         try
         {

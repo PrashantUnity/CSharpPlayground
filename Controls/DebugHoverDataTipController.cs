@@ -20,6 +20,9 @@ public class DebugHoverDataTipController : IDisposable
     private readonly Func<IReadOnlyList<DebugVariableItem>> _getLocalsFunc;
     private readonly Func<string, Task<(bool Success, string Result, string TypeName)>>? _evaluateFunc;
     private readonly Action<string>? _addWatchAction;
+    private readonly Action<DebugVariableItem>? _exploreAction;
+    private readonly Action<DebugVariableItem>? _viewAction;
+    private readonly Func<DebugVariableItem, Task<IReadOnlyList<DebugVariableItem>>>? _getChildrenFunc;
 
     private readonly DispatcherTimer _hoverTimer;
     private readonly DispatcherTimer _dismissTimer;
@@ -39,7 +42,10 @@ public class DebugHoverDataTipController : IDisposable
         Func<bool> isPausedFunc,
         Func<IReadOnlyList<DebugVariableItem>> getLocalsFunc,
         Func<string, Task<(bool Success, string Result, string TypeName)>>? evaluateFunc = null,
-        Action<string>? addWatchAction = null)
+        Action<string>? addWatchAction = null,
+        Action<DebugVariableItem>? exploreAction = null,
+        Action<DebugVariableItem>? viewAction = null,
+        Func<DebugVariableItem, Task<IReadOnlyList<DebugVariableItem>>>? getChildrenFunc = null)
     {
         _editor = editor;
         _tipControl = tipControl;
@@ -47,6 +53,9 @@ public class DebugHoverDataTipController : IDisposable
         _getLocalsFunc = getLocalsFunc;
         _evaluateFunc = evaluateFunc;
         _addWatchAction = addWatchAction;
+        _exploreAction = exploreAction;
+        _viewAction = viewAction;
+        _getChildrenFunc = getChildrenFunc;
 
         _hoverTimer = new DispatcherTimer
         {
@@ -78,6 +87,8 @@ public class DebugHoverDataTipController : IDisposable
         _tipControl.PointerExited += OnTipPointerExited;
         _tipControl.CloseRequested += HideTip;
         _tipControl.AddWatchRequested += OnTipAddWatchRequested;
+        _tipControl.ExploreRequested += OnTipExploreRequested;
+        _tipControl.ViewRequested += OnTipViewRequested;
     }
 
     private void OnTipPointerEntered(object? sender, PointerEventArgs e)
@@ -258,11 +269,25 @@ public class DebugHoverDataTipController : IDisposable
                 var (ok, res, type) = await _evaluateFunc(evalExpr);
                 if (ok && !string.IsNullOrEmpty(res) && !res.Contains("does not exist in the current context"))
                 {
+                    bool isCol = (type.Contains("list", StringComparison.OrdinalIgnoreCase) ||
+                                  type.Contains("dict", StringComparison.OrdinalIgnoreCase) ||
+                                  type.Contains("array", StringComparison.OrdinalIgnoreCase) ||
+                                  type.Contains("IEnumerable", StringComparison.OrdinalIgnoreCase) ||
+                                  type.Contains("[]") ||
+                                  res.Contains("Count ="));
+                    bool isTxt = (type.Contains("string", StringComparison.OrdinalIgnoreCase) ||
+                                  type.Contains("str", StringComparison.OrdinalIgnoreCase) ||
+                                  res.Length > 20 || res.Contains('\n'));
+
                     targetVar = new DebugVariableItem
                     {
                         Name = evalExpr,
                         ValueDisplay = res,
-                        TypeName = type
+                        TypeName = type,
+                        PathExpression = evalExpr,
+                        IsCollection = isCol,
+                        IsTextOrStructured = isTxt,
+                        HasChildren = isCol || (!type.Equals("string", StringComparison.OrdinalIgnoreCase) && !type.Equals("int", StringComparison.OrdinalIgnoreCase) && !type.Equals("bool", StringComparison.OrdinalIgnoreCase))
                     };
                 }
             }
@@ -273,6 +298,18 @@ public class DebugHoverDataTipController : IDisposable
         }
 
         if (targetVar == null) return;
+
+        if (targetVar.HasChildren && !targetVar.ChildrenLoaded && _getChildrenFunc != null)
+        {
+            try
+            {
+                await _getChildrenFunc(targetVar);
+            }
+            catch
+            {
+                // Ignore child fetching failure
+            }
+        }
 
         // Position the hover tip
         var textView = _editor.TextArea.TextView;
@@ -313,6 +350,16 @@ public class DebugHoverDataTipController : IDisposable
         }
     }
 
+    private void OnTipExploreRequested(DebugVariableItem item)
+    {
+        _exploreAction?.Invoke(item);
+    }
+
+    private void OnTipViewRequested(DebugVariableItem item)
+    {
+        _viewAction?.Invoke(item);
+    }
+
     public void Dispose()
     {
         _hoverTimer.Stop();
@@ -328,5 +375,7 @@ public class DebugHoverDataTipController : IDisposable
         _tipControl.PointerExited -= OnTipPointerExited;
         _tipControl.CloseRequested -= HideTip;
         _tipControl.AddWatchRequested -= OnTipAddWatchRequested;
+        _tipControl.ExploreRequested -= OnTipExploreRequested;
+        _tipControl.ViewRequested -= OnTipViewRequested;
     }
 }

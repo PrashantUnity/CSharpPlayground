@@ -122,7 +122,7 @@
                                 <ItemsControl ItemsSource="{Binding FilteredLanguages}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:LanguageSettingItemViewModel">
-                                            <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
                                                     CommandParameter="{Binding}"
                                                     Classes="doc-nav-item"
                                                     Classes.active="{Binding IsSelected}"
@@ -179,23 +179,21 @@
             <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
                 <Panel>
                     <!-- Detail for Languages & Runtimes -->
-                    <controls:LanguageEnvironmentSettingControl
-                        DataContext="{Binding SelectedLanguage}"
-                        IsVisible="{Binding ((vm:CSharpSettingsViewModel)DataContext).IsLanguagesCategoryActive, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    <Panel IsVisible="{Binding IsLanguagesCategoryActive}">
+                        <controls:LanguageEnvironmentSettingControl
+                            DataContext="{Binding SelectedLanguage}" />
+                    </Panel>
 
                     <!-- Detail for Editor & Formatting -->
                     <controls:EditorSettingsSectionControl
-                        DataContext="{Binding}"
                         IsVisible="{Binding IsEditorCategoryActive}" />
 
                     <!-- Detail for Execution & Terminal -->
                     <controls:ExecutionSettingsSectionControl
-                        DataContext="{Binding}"
                         IsVisible="{Binding IsExecutionCategoryActive}" />
 
                     <!-- Detail for Keymap Reference -->
                     <controls:KeymapSettingsSectionControl
-                        DataContext="{Binding}"
                         IsVisible="{Binding IsKeymapCategoryActive}" />
                 </Panel>
             </Border>

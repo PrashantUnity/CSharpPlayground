@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.ValueViewerControl">
+
+    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            BoxShadow="0 12 40 0 #A0000000"
+            MinWidth="420"
+            MaxWidth="600"
+            MinHeight="260"
+            MaxHeight="420"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- 1. Header Bar -->
+            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="10,6">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="FormatQuoteClose" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Name="TitleText" Text="Value View" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, monospace" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Button Name="CopyButton" Classes="m3-icon-btn" Width="24" Height="24" ToolTip.Tip="Copy to clipboard">
+                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                        <Button Name="CloseButton" Classes="m3-icon-btn" Width="24" Height="24" ToolTip.Tip="Close (Esc)">
+                            <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. Text Content -->
+            <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}" Margin="8,6" CornerRadius="4" Padding="6">
+                <TextBox Name="ValueTextBox"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Foreground="{DynamicResource M3OnSurfaceBrush}"
+                         FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                         FontSize="11.5" />
+            </Border>
+
+            <!-- 3. Footer -->
+            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="8,4">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Name="LengthInfoText" Text="0 characters" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

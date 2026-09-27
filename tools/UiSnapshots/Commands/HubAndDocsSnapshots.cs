@@ -32,7 +32,14 @@ internal static class HubAndDocsSnapshots
             {
                 Snapshot.Wait(storage.CreateNewNotebookAsync(title));
             }
+
+            // Add demo source files for all supported languages so the TYPE badge colour-coding is visible.
+            var libRoot = storage.LibraryRootPath;
+            File.WriteAllText(Path.Combine(libRoot, "data_pipeline.py"), "# Python demo\nfor x in range(10):\n    print(x)\n");
+            File.WriteAllText(Path.Combine(libRoot, "HelloWorld.java"),  "// Java demo\npublic class HelloWorld { }\n");
+            File.WriteAllText(Path.Combine(libRoot, "fetch_api.js"),     "// JS demo\nfetch('/api').then(r => r.json());\n");
         }
+
 
         var vm = new CSharpManagerViewModel(storage, openScriptAction: _ => { }, openNotebookAction: _ => { }, languages: languages);
         Snapshot.Wait(vm.LoadWorkspaceItemsAsync());

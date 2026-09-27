@@ -100,4 +100,24 @@ public class JavaProgramRunTests : IDisposable
         Assert.Equal("JAVAC", diag.Id);
         Assert.Equal(3, diag.Line);
     }
+
+    [JavaFact]
+    public async Task AScriptWithMismatchedPublicClassName_CompilesAndRunsSeamlessly()
+    {
+        var path = Write("script_123456.java", """
+            public class Quicksort {
+                public static void main(String[] args) {
+                    System.out.println("Quicksort running inside script_123456.java!");
+                }
+            }
+            """);
+        var (session, output) = await Start(path);
+
+        var result = await session.Completion.WaitAsync(Patience);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.True(result.Succeeded);
+        var text = string.Concat(output);
+        Assert.Contains("Quicksort running inside script_123456.java!", text);
+    }
 }

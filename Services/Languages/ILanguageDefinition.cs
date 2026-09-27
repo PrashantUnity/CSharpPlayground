@@ -75,6 +75,9 @@ public interface ILanguageDefinition
 
     IPackageManager? Packages { get; }
 
+    /// <summary>Creates and configures debug sessions for this language, or null when debugging is not supported.</summary>
+    PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.IDebuggerProvider? Debugger { get; }
+
     /// <summary>How Jupyter knows the language, for .ipynb export; null when it has no Jupyter kernel.</summary>
     JupyterLanguageInfo? Jupyter { get; }
 }
@@ -123,6 +126,7 @@ public abstract class LanguageDefinition : ILanguageDefinition
     public virtual IDiagnosticParser? RunDiagnostics => null;
     public virtual INotebookKernelFactory? NotebookKernels => null;
     public virtual IPackageManager? Packages => null;
+    public virtual PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.IDebuggerProvider? Debugger => null;
     public virtual JupyterLanguageInfo? Jupyter => null;
 
     public override string ToString() => DisplayName;
