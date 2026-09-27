@@ -4,27 +4,38 @@ using System.Threading;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 
 /// <summary>
-/// Discovers JDK's native <c>jdb</c> debugger, compiles Java source with debug symbols (<c>javac -g</c>),
-/// and launches headless interactive <see cref="JavaDebugSession"/>.
+/// Discovers JDK tools / java-debug, compiles Java source with debug symbols (<c>javac -g</c>),
+/// and launches an interactive DAP session running through <see cref="DapDebugSession"/>.
 /// </summary>
-public sealed class JavaDebuggerProvider : IDebuggerProvider
+public sealed class JavaDebuggerProvider : IDebuggerProvider, IDapAdapterRegistration
 {
     private readonly JavaToolchainProvider _toolchain;
     private readonly IProcessLauncher _processes;
     private readonly IHostEnvironment _host;
+    private readonly DapAdapterManager _adapterManager;
 
-    public JavaDebuggerProvider(JavaToolchainProvider toolchain, IProcessLauncher processes, IHostEnvironment host)
+    public JavaDebuggerProvider(
+        JavaToolchainProvider toolchain,
+        IProcessLauncher processes,
+        IHostEnvironment host,
+        DapAdapterManager? adapterManager = null)
     {
-        _toolchain = toolchain;
-        _processes = processes;
-        _host = host;
+        _toolchain = toolchain ?? throw new ArgumentNullException(nameof(toolchain));
+        _processes = processes ?? throw new ArgumentNullException(nameof(processes));
+        _host = host ?? throw new ArgumentNullException(nameof(host));
+        _adapterManager = adapterManager ?? new DapAdapterManager(processes, host);
+        _adapterManager.RegisterAdapter(this);
     }
+
+    public string LanguageId => LanguageIds.Java;
+    public string AdapterName => "java-debug (jdb / Eclipse JDT)";
 
     public async ValueTask<DebuggerResolution> ResolveDebuggerAsync(ToolchainResolution? toolchain, CancellationToken ct = default)
     {
@@ -33,7 +44,7 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider
         {
             return new DebuggerResolution(
                 IsAvailable: false,
-                DebuggerName: "jdb (Java SE Debugger)",
+                DebuggerName: "java-debug (jdb / Eclipse JDT)",
                 ExecutablePath: null,
                 Version: null,
                 MissingGuidance: resolved.Missing);
@@ -56,7 +67,7 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider
 
                 return new DebuggerResolution(
                     IsAvailable: true,
-                    DebuggerName: "jdb (Java SE Debugger)",
+                    DebuggerName: "java-debug (jdb / Eclipse JDT)",
                     ExecutablePath: jdbPath,
                     Version: version.ToString(),
                     MissingGuidance: null);
@@ -68,14 +79,14 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider
         }
 
         var missing = new MissingToolchainGuidance(
-            "Java Debugger (jdb) not found",
-            "jdb is included with standard JDK distributions. Ensure JDK 11+ is installed.",
+            "Java Debugger not found",
+            "jdb or Eclipse JDT java-debug is included with standard JDK distributions. Ensure JDK 11+ is installed.",
             [_host.IsMacOS ? "brew install openjdk@17" : "sudo apt install default-jdk"],
             "https://adoptium.net");
 
         return new DebuggerResolution(
             IsAvailable: false,
-            DebuggerName: "jdb",
+            DebuggerName: "java-debug",
             ExecutablePath: null,
             Version: null,
             MissingGuidance: missing);
@@ -152,30 +163,26 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider
             Environment = env
         };
 
-        JavaDebugSession? session = null;
+        JavaDapAdapter? adapter = null;
         var managedProcess = _processes.Start(
             spec,
-            onStandardOutput: text =>
-            {
-                context.OnLiveOutput?.Invoke(text);
-                session?.OnProcessOutput(text);
-            },
-            onStandardError: text =>
-            {
-                context.OnLiveOutput?.Invoke(text);
-                session?.OnProcessOutput(text);
-            });
+            onStandardOutput: text => adapter?.OnProcessOutput(text),
+            onStandardError: text => adapter?.OnProcessOutput(text));
 
-        session = new JavaDebugSession(managedProcess, scriptFile, fqn);
+        adapter = new JavaDapAdapter(managedProcess, scriptFile, fqn, context.OnLiveOutput);
 
-        // Set initial breakpoints and start run
-        if (context.Breakpoints.Count > 0)
-        {
-            await session.SetBreakpointsAsync(scriptFile, context.Breakpoints, ct).ConfigureAwait(false);
-        }
-
-        await session.StartRunAsync(ct).ConfigureAwait(false);
+        var session = await _adapterManager.LaunchBridgeAdapterAsync(
+            LanguageIds.Java,
+            adapter.ClientInputStream,
+            adapter.ClientOutputStream,
+            managedProcess,
+            context,
+            postHandshake: null,
+            ct).ConfigureAwait(false);
 
         return session;
     }
+
+    Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>
+        LaunchAsync(context, ct);
 }

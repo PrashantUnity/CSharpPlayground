@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -12,18 +10,28 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 
-public sealed class JavaScriptDebuggerProvider : IDebuggerProvider
+public sealed class JavaScriptDebuggerProvider : IDebuggerProvider, IDapAdapterRegistration
 {
     private readonly JavaScriptToolchainProvider _toolchain;
     private readonly IProcessLauncher _processes;
     private readonly IHostEnvironment _host;
+    private readonly DapAdapterManager _adapterManager;
 
-    public JavaScriptDebuggerProvider(JavaScriptToolchainProvider toolchain, IProcessLauncher processes, IHostEnvironment host)
+    public JavaScriptDebuggerProvider(
+        JavaScriptToolchainProvider toolchain,
+        IProcessLauncher processes,
+        IHostEnvironment host,
+        DapAdapterManager? adapterManager = null)
     {
         _toolchain = toolchain ?? throw new ArgumentNullException(nameof(toolchain));
         _processes = processes ?? throw new ArgumentNullException(nameof(processes));
         _host = host ?? throw new ArgumentNullException(nameof(host));
+        _adapterManager = adapterManager ?? new DapAdapterManager(processes, host);
+        _adapterManager.RegisterAdapter(this);
     }
+
+    public string LanguageId => LanguageIds.JavaScript;
+    public string AdapterName => "Node.js Inspector (V8)";
 
     public async ValueTask<DebuggerResolution> ResolveDebuggerAsync(ToolchainResolution? toolchainResolution, CancellationToken ct = default)
     {
@@ -56,7 +64,7 @@ public sealed class JavaScriptDebuggerProvider : IDebuggerProvider
         }
 
         var nodeExe = resolved.Toolchain.ExecutablePath;
-        int port = GetAvailablePort();
+        int port = DapAdapterManager.GetAvailablePort();
 
         var workingDir = string.IsNullOrEmpty(context.SourceFilePath)
             ? Directory.GetCurrentDirectory()
@@ -76,53 +84,15 @@ public sealed class JavaScriptDebuggerProvider : IDebuggerProvider
             WorkingDirectory = workingDir
         };
 
-        var managedProcess = _processes.Start(
+        return await _adapterManager.LaunchSocketAdapterAsync(
+            LanguageIds.JavaScript,
             spec,
-            onStandardOutput: text => context.OnLiveOutput?.Invoke(text),
-            onStandardError: text => context.OnLiveOutput?.Invoke(text));
-
-        // Connect over local socket
-        TcpClient? tcpClient = null;
-        for (int i = 0; i < 20; i++)
-        {
-            if (managedProcess.HasExited)
-            {
-                throw new InvalidOperationException("Node.js debuggee process exited unexpectedly.");
-            }
-
-            try
-            {
-                var client = new TcpClient();
-                await client.ConnectAsync(IPAddress.Loopback, port, ct).ConfigureAwait(false);
-                tcpClient = client;
-                break;
-            }
-            catch (SocketException)
-            {
-                await Task.Delay(100, ct).ConfigureAwait(false);
-            }
-        }
-
-        if (tcpClient == null)
-        {
-            managedProcess.Kill();
-            throw new TimeoutException($"Timed out connecting to Node.js inspector on port {port}.");
-        }
-
-        var stream = tcpClient.GetStream();
-        var dapClient = new DapClient(stream, stream);
-        dapClient.Start();
-
-        var session = new DapDebugSession(LanguageIds.JavaScript, dapClient, managedProcess);
-        return session;
+            port,
+            context,
+            postHandshake: null,
+            ct).ConfigureAwait(false);
     }
 
-    private static int GetAvailablePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
+    Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>
+        LaunchAsync(context, ct);
 }

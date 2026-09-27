@@ -26,7 +26,7 @@ public sealed class JavaLanguage : LanguageDefinition
             Path.Combine(services.BaseDirectory, "java"));
         JavaToolchain = toolchain;
         ScriptRunner = new JavaBuildAndRunScriptRunner(services.Host);
-        Debugger = new JavaDebuggerProvider(toolchain, services.Processes, services.Host);
+        Debugger = new JavaDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
 
         var launcher = new JavaKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "java", "kernel"));
         NotebookKernels = new DelegateKernelFactory(context =>

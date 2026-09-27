@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
@@ -42,12 +43,10 @@ public partial class CSharpCodeStudioViewModel
     [ObservableProperty]
     private int _currentPausedLine = -1;
 
-    public ObservableCollection<BreakpointItem> Breakpoints { get; } = new();
     public ObservableCollection<DebugVariableItem> Locals { get; } = new();
     public ObservableCollection<CallStackFrameItem> CallStack { get; } = new();
 
     public event Action<int>? RequestSetPausedLine;
-    public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
     partial void OnIsDebuggingChanged(bool value)
     {
@@ -130,6 +129,19 @@ public partial class CSharpCodeStudioViewModel
             session.Resumed += () => Dispatcher.UIThread.Post(() => HandleSessionResumed(debuggingTab));
             session.OutputReceived += text => Dispatcher.UIThread.Post(() => AppendLiveDebugOutput(text, debuggingTab));
             session.Terminated += args => Dispatcher.UIThread.Post(() => HandleSessionTerminated(args, debuggingTab, sw));
+
+            if (session is DapDebugSession dapSession)
+            {
+                dapSession.BreakpointVerifiedChanged += (line, verified) => Dispatcher.UIThread.Post(() =>
+                {
+                    var bp = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
+                    if (bp != null)
+                    {
+                        bp.IsVerified = verified;
+                        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+                    }
+                });
+            }
 
             var readyMsg = $"[Debug] {ActiveLanguage.DisplayName} debug session attached.\n--------------------------------------------------\n";
             AppendLiveDebugOutput(readyMsg, debuggingTab);
@@ -291,6 +303,9 @@ public partial class CSharpCodeStudioViewModel
             RequestSetPausedLine?.Invoke(-1);
         }
 
+        foreach (var bp in Breakpoints) bp.IsVerified = true;
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+
         _activeDebugSession = null;
     }
 
@@ -341,64 +356,6 @@ public partial class CSharpCodeStudioViewModel
         StopDebug();
         await Task.Delay(200);
         await DebugCodeAsync();
-    }
-
-    [RelayCommand]
-    public void ToggleBreakpoint(int line)
-    {
-        if (!SupportsBreakpoints) return;
-        var existing = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
-        if (existing != null)
-        {
-            Breakpoints.Remove(existing);
-            Script.Breakpoints.Remove(line);
-        }
-        else
-        {
-            var bp = new BreakpointItem { LineNumber = line, IsEnabled = true };
-            Breakpoints.Add(bp);
-            if (!Script.Breakpoints.Contains(line))
-            {
-                Script.Breakpoints.Add(line);
-            }
-        }
-
-        var sorted = Breakpoints.OrderBy(b => b.LineNumber).ToList();
-        Breakpoints.Clear();
-        foreach (var b in sorted) Breakpoints.Add(b);
-
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        _ = _storageService.SaveScriptAsync(Script);
-
-        var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        var sourcePath = currentTab?.Document.SourceFilePath ?? (Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs");
-        _ = _activeDebugSession?.SetBreakpointsAsync(sourcePath, Breakpoints.ToList());
-    }
-
-    [RelayCommand]
-    public void RemoveBreakpoint(BreakpointItem? item)
-    {
-        if (item == null) return;
-        Breakpoints.Remove(item);
-        Script.Breakpoints.Remove(item.LineNumber);
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        _ = _storageService.SaveScriptAsync(Script);
-    }
-
-    [RelayCommand]
-    public void ClearAllBreakpoints()
-    {
-        Breakpoints.Clear();
-        Script.Breakpoints.Clear();
-        RequestSyncBreakpoints?.Invoke(Array.Empty<int>());
-        _ = _storageService.SaveScriptAsync(Script);
-    }
-
-    [RelayCommand]
-    public void ToggleBreakpointEnabled(BreakpointItem? item)
-    {
-        if (item == null) return;
-        item.IsEnabled = !item.IsEnabled;
     }
 
     public event Action<DebugVariableItem>? RequestExploreVariable;

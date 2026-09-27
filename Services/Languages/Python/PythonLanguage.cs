@@ -28,7 +28,7 @@ public sealed class PythonLanguage : LanguageDefinition
         PythonToolchain = toolchain;
         ScriptRunner = new PythonScriptRunner(services.Host);
         Packages = new PipPackageManager(toolchain, services.Processes, services.Host);
-        Debugger = new PythonDebuggerProvider(toolchain, services.Processes, services.Host);
+        Debugger = new PythonDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
 
         // Each notebook gets its own kernel program, started with its first Python cell.
         var launcher = new PythonKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "python", "kernel"));

@@ -13,9 +13,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 public class BreakpointMargin : AbstractMargin, ICustomHitTest
 {
+    public sealed record BreakpointVisualInfo(int LineNumber, bool IsEnabled = true, bool IsVerified = true);
+
     private int _hoveredLine = -1;
     private int _currentPausedLine = -1;
-    private readonly HashSet<int> _breakpoints = new();
+    private readonly Dictionary<int, BreakpointVisualInfo> _breakpoints = new();
 
     public event Action<int>? BreakpointToggled;
 
@@ -69,17 +71,25 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
         _breakpoints.Clear();
         foreach (var l in lines)
         {
-            _breakpoints.Add(l);
+            _breakpoints[l] = new BreakpointVisualInfo(l, IsEnabled: true, IsVerified: true);
         }
         InvalidateVisual();
     }
 
-    public void AddBreakpoint(int line)
+    public void SetBreakpoints(IEnumerable<BreakpointItem> items)
     {
-        if (_breakpoints.Add(line))
+        _breakpoints.Clear();
+        foreach (var item in items)
         {
-            InvalidateVisual();
+            _breakpoints[item.LineNumber] = new BreakpointVisualInfo(item.LineNumber, item.IsEnabled, item.IsVerified);
         }
+        InvalidateVisual();
+    }
+
+    public void AddBreakpoint(int line, bool isEnabled = true, bool isVerified = true)
+    {
+        _breakpoints[line] = new BreakpointVisualInfo(line, isEnabled, isVerified);
+        InvalidateVisual();
     }
 
     public void RemoveBreakpoint(int line)
@@ -90,7 +100,7 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
         }
     }
 
-    public bool HasBreakpoint(int line) => _breakpoints.Contains(line);
+    public bool HasBreakpoint(int line) => _breakpoints.ContainsKey(line);
 
     protected override Size MeasureOverride(Size availableSize)
     {
@@ -106,6 +116,14 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
 
         var bpBrush = new SolidColorBrush(Color.Parse("#EF4444"));
         var bpPen = new Pen(new SolidColorBrush(Color.Parse("#B91C1C")), 1.2);
+
+        // VS Code style unverified hollow breakpoint (red border, translucent center)
+        var unverifiedPen = new Pen(new SolidColorBrush(Color.Parse("#EF4444")), 1.6);
+        var unverifiedFill = new SolidColorBrush(Color.FromArgb(35, 239, 68, 68));
+
+        // Disabled breakpoint (muted gray)
+        var disabledPen = new Pen(new SolidColorBrush(Color.Parse("#6E7681")), 1.2);
+        var disabledFill = new SolidColorBrush(Color.FromArgb(50, 110, 118, 129));
 
         var pausedBrush = new SolidColorBrush(Color.Parse("#FBBF24"));
         var pausedPen = new Pen(new SolidColorBrush(Color.Parse("#D97706")), 1.2);
@@ -124,17 +142,31 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
             var centerY = y + h / 2.0;
 
             var isPausedLine = lineNum == _currentPausedLine;
-            var hasBp = _breakpoints.Contains(lineNum);
+            var hasBp = _breakpoints.TryGetValue(lineNum, out var bpInfo);
             var isHovered = lineNum == _hoveredLine;
 
-            if (hasBp)
+            if (hasBp && bpInfo != null)
             {
                 if (isHovered)
                 {
                     drawingContext.DrawEllipse(null, highlightRingPen, new Point(centerX, centerY), 7.5, 7.5);
                 }
 
-                drawingContext.DrawEllipse(bpBrush, bpPen, new Point(centerX, centerY), 5.5, 5.5);
+                if (!bpInfo.IsEnabled)
+                {
+                    // Disabled breakpoint: subtle hollow/muted circle
+                    drawingContext.DrawEllipse(disabledFill, disabledPen, new Point(centerX, centerY), 4.8, 4.8);
+                }
+                else if (!bpInfo.IsVerified)
+                {
+                    // Unverified breakpoint: hollow circle with red stroke (VS Code standard)
+                    drawingContext.DrawEllipse(unverifiedFill, unverifiedPen, new Point(centerX, centerY), 4.8, 4.8);
+                }
+                else
+                {
+                    // Verified breakpoint: solid red circle
+                    drawingContext.DrawEllipse(bpBrush, bpPen, new Point(centerX, centerY), 5.5, 5.5);
+                }
 
                 if (isPausedLine)
                 {
@@ -241,13 +273,13 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
         var line = GetLineFromPointer(e);
         if (line > 0)
         {
-            if (_breakpoints.Contains(line))
+            if (_breakpoints.ContainsKey(line))
             {
                 _breakpoints.Remove(line);
             }
             else
             {
-                _breakpoints.Add(line);
+                _breakpoints[line] = new BreakpointVisualInfo(line);
             }
             InvalidateVisual();
             BreakpointToggled?.Invoke(line);

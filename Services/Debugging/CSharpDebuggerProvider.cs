@@ -12,7 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 
-public sealed class CSharpDebuggerProvider : IDebuggerProvider
+public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegistration
 {
     private readonly RoslynCompilerService _compilerService;
     private readonly ScriptDebuggerService _debuggerService;
@@ -21,6 +21,7 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider
     private readonly IHostEnvironment _host;
     private readonly CSharpCoreClrCompiler _coreClrCompiler;
     private readonly string _cacheDirectory;
+    private readonly DapAdapterManager _adapterManager;
 
     public CSharpDebuggerProvider(
         RoslynCompilerService compilerService,
@@ -28,7 +29,8 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider
         ScriptExecutionEngine executionEngine,
         IProcessLauncher processLauncher,
         IHostEnvironment host,
-        string? cacheDirectory = null)
+        string? cacheDirectory = null,
+        DapAdapterManager? adapterManager = null)
     {
         _compilerService = compilerService ?? throw new ArgumentNullException(nameof(compilerService));
         _debuggerService = debuggerService ?? throw new ArgumentNullException(nameof(debuggerService));
@@ -37,7 +39,12 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _coreClrCompiler = new CSharpCoreClrCompiler(compilerService);
         _cacheDirectory = cacheDirectory ?? Path.Combine(Path.GetTempPath(), "frysharp_debug");
+        _adapterManager = adapterManager ?? new DapAdapterManager(processLauncher, host);
+        _adapterManager.RegisterAdapter(this);
     }
+
+    public string LanguageId => LanguageIds.CSharp;
+    public string AdapterName => "CoreCLR (netcoredbg)";
 
     public async ValueTask<DebuggerResolution> ResolveDebuggerAsync(ToolchainResolution? toolchain, CancellationToken ct = default)
     {
@@ -110,75 +117,25 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider
             WorkingDirectory = outDir
         };
 
-        var serverToClientPipe = new Pipe();
-        var clientToServerPipe = new Pipe();
-
-        var clientIn = serverToClientPipe.Reader.AsStream();
-        var serverOut = serverToClientPipe.Writer.AsStream();
-
-        var clientOut = clientToServerPipe.Writer.AsStream();
-        var serverIn = clientToServerPipe.Reader.AsStream();
-
-        var managedProcess = _processLauncher.Start(
+        return await _adapterManager.LaunchStdioAdapterAsync(
+            LanguageIds.CSharp,
             spec,
-            onStandardOutput: text =>
+            context,
+            postHandshake: async dapClient =>
             {
-                var bytes = System.Text.Encoding.UTF8.GetBytes(text);
-                serverOut.Write(bytes, 0, bytes.Length);
-                serverOut.Flush();
-            },
-            onStandardError: err => context.OnLiveOutput?.Invoke(err));
-
-        _ = Task.Run(async () =>
-        {
-            var buffer = new byte[4096];
-            try
-            {
-                while (!managedProcess.HasExited)
+                await dapClient.SendRequestAsync("launch", new
                 {
-                    int read = await serverIn.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    if (read == 0) break;
-                    var text = System.Text.Encoding.UTF8.GetString(buffer, 0, read);
-                    await managedProcess.WriteInputAsync(text).ConfigureAwait(false);
-                }
-            }
-            catch
-            {
-            }
-        });
-
-        var dapClient = new DapClient(clientIn, clientOut);
-        dapClient.Start();
-
-        var session = new DapDebugSession(LanguageIds.CSharp, dapClient, managedProcess);
-
-        // Handshake
-        await dapClient.SendRequestAsync("initialize", new
-        {
-            clientID = "frysharp",
-            adapterID = "coreclr",
-            pathFormat = "path",
-            linesStartAt1 = true,
-            columnsStartAt1 = true
-        }, ct).ConfigureAwait(false);
-
-        await dapClient.SendRequestAsync("launch", new
-        {
-            program = "dotnet",
-            args = new[] { dllPath },
-            cwd = outDir,
-            stopAtEntry = false
-        }, ct).ConfigureAwait(false);
-
-        if (context.Breakpoints.Count > 0)
-        {
-            await session.SetBreakpointsAsync(context.SourceFilePath, context.Breakpoints, ct).ConfigureAwait(false);
-        }
-
-        await dapClient.SendRequestAsync("configurationDone", null, ct).ConfigureAwait(false);
-
-        return session;
+                    program = "dotnet",
+                    args = new[] { dllPath },
+                    cwd = outDir,
+                    stopAtEntry = false
+                }, ct).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
     }
+
+    Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>
+        LaunchAsync(context, ct);
 
     private IDebugSession LaunchInProcessSession(DebugLaunchContext context)
     {

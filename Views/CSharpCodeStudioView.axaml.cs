@@ -575,7 +575,7 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestViewVariable += OpenValueViewer;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
-            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
 
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
@@ -957,7 +957,14 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
-        _breakpointMargin.SetBreakpoints(lines);
+        if (_currentVm != null)
+        {
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
+        }
+        else
+        {
+            _breakpointMargin.SetBreakpoints(lines);
+        }
     }
 
     private void ToggleFoldAtCaret(bool? fold = null)

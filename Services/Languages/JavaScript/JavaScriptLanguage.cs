@@ -28,7 +28,7 @@ public sealed class JavaScriptLanguage : LanguageDefinition
         JavaScriptToolchain = toolchain;
         ScriptRunner = new JavaScriptScriptRunner(services.Host);
         Packages = new NpmPackageManager(services.Processes, services.Host);
-        Debugger = new JavaScriptDebuggerProvider(toolchain, services.Processes, services.Host);
+        Debugger = new JavaScriptDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
 
         var launcher = new JavaScriptKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "javascript", "kernel"));
         NotebookKernels = new DelegateKernelFactory(context =>

@@ -37,6 +37,7 @@ public sealed class DapDebugSession : IDebugSession
     public event Action? Resumed;
     public event Action<string>? OutputReceived;
     public event Action<DebugTerminatedEventArgs>? Terminated;
+    public event Action<int, bool>? BreakpointVerifiedChanged;
 
     public DapDebugSession(string languageId, DapClient client, IManagedProcess? process = null)
     {
@@ -70,7 +71,30 @@ public sealed class DapDebugSession : IDebugSession
             lines = enabledBreakpoints.Select(b => b.Line).ToList()
         };
 
-        await _client.SendRequestAsync("setBreakpoints", args, ct).ConfigureAwait(false);
+        var response = await _client.SendRequestAsync("setBreakpoints", args, ct).ConfigureAwait(false);
+        if (response.Body.HasValue &&
+            response.Body.Value.TryGetProperty("breakpoints", out var bpArray) &&
+            bpArray.ValueKind == JsonValueKind.Array)
+        {
+            var dapBps = bpArray.Deserialize<List<DapBreakpoint>>(JsonOptions);
+            if (dapBps != null)
+            {
+                var enabledBps = breakpoints.Where(b => b.IsEnabled).ToList();
+                for (int i = 0; i < enabledBps.Count; i++)
+                {
+                    if (i < dapBps.Count)
+                    {
+                        enabledBps[i].IsVerified = dapBps[i].Verified;
+                        BreakpointVerifiedChanged?.Invoke(enabledBps[i].LineNumber, dapBps[i].Verified);
+                    }
+                    else
+                    {
+                        enabledBps[i].IsVerified = false;
+                        BreakpointVerifiedChanged?.Invoke(enabledBps[i].LineNumber, false);
+                    }
+                }
+            }
+        }
     }
 
     public async Task ContinueAsync(CancellationToken ct = default)
@@ -358,10 +382,26 @@ public sealed class DapDebugSession : IDebugSession
             case "output":
                 HandleOutputEvent(evt.Body);
                 break;
+            case "breakpoint":
+                HandleBreakpointEvent(evt.Body);
+                break;
             case "terminated":
             case "exited":
                 SetTerminatedState(0, "Process terminated.", wasCancelled: false);
                 break;
+        }
+    }
+
+    private void HandleBreakpointEvent(JsonElement? body)
+    {
+        if (!body.HasValue) return;
+        if (body.Value.TryGetProperty("breakpoint", out var bpElem))
+        {
+            var dapBp = bpElem.Deserialize<DapBreakpoint>(JsonOptions);
+            if (dapBp != null && dapBp.Line.HasValue)
+            {
+                BreakpointVerifiedChanged?.Invoke(dapBp.Line.Value, dapBp.Verified);
+            }
         }
     }
 

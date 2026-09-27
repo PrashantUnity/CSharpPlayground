@@ -1,7 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -12,18 +11,28 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 
-public sealed class PythonDebuggerProvider : IDebuggerProvider
+public sealed class PythonDebuggerProvider : IDebuggerProvider, IDapAdapterRegistration
 {
     private readonly PythonToolchainProvider _toolchain;
     private readonly IProcessLauncher _processes;
     private readonly IHostEnvironment _host;
+    private readonly DapAdapterManager _adapterManager;
 
-    public PythonDebuggerProvider(PythonToolchainProvider toolchain, IProcessLauncher processes, IHostEnvironment host)
+    public PythonDebuggerProvider(
+        PythonToolchainProvider toolchain,
+        IProcessLauncher processes,
+        IHostEnvironment host,
+        DapAdapterManager? adapterManager = null)
     {
         _toolchain = toolchain ?? throw new ArgumentNullException(nameof(toolchain));
         _processes = processes ?? throw new ArgumentNullException(nameof(processes));
         _host = host ?? throw new ArgumentNullException(nameof(host));
+        _adapterManager = adapterManager ?? new DapAdapterManager(processes, host);
+        _adapterManager.RegisterAdapter(this);
     }
+
+    public string LanguageId => LanguageIds.Python;
+    public string AdapterName => "debugpy";
 
     public async ValueTask<DebuggerResolution> ResolveDebuggerAsync(ToolchainResolution? toolchainResolution, CancellationToken ct = default)
     {
@@ -68,13 +77,16 @@ public sealed class PythonDebuggerProvider : IDebuggerProvider
         }
         catch
         {
-            // debugpy not installed or probe failed
+            // Probe failed or timed out
         }
 
         var missingGuidance = new MissingToolchainGuidance(
-            "debugpy isn't installed",
-            "debugpy is required for Python interactive debugging.",
-            [$"{pythonExe} -m pip install debugpy"],
+            "debugpy isn't installed in this Python environment",
+            "C# Code Studio uses debugpy for interactive Python debugging with breakpoints, locals and expression evaluation.",
+            [
+                $"{pythonExe} -m pip install debugpy",
+                "Or run in bottom panel terminal: pip install debugpy"
+            ],
             "https://github.com/microsoft/debugpy");
 
         return new DebuggerResolution(
@@ -95,7 +107,7 @@ public sealed class PythonDebuggerProvider : IDebuggerProvider
         }
 
         var pythonExe = resolved.Toolchain.ExecutablePath;
-        int port = GetAvailablePort();
+        int port = DapAdapterManager.GetAvailablePort();
 
         var workingDir = string.IsNullOrEmpty(context.SourceFilePath)
             ? Directory.GetCurrentDirectory()
@@ -122,87 +134,24 @@ public sealed class PythonDebuggerProvider : IDebuggerProvider
             }
         };
 
-        var managedProcess = _processes.Start(
+        return await _adapterManager.LaunchSocketAdapterAsync(
+            LanguageIds.Python,
             spec,
-            onStandardOutput: text => context.OnLiveOutput?.Invoke(text),
-            onStandardError: text => context.OnLiveOutput?.Invoke(text));
-
-        // Wait for debugpy to open port and connect
-        TcpClient? tcpClient = null;
-        for (int i = 0; i < 20; i++)
-        {
-            if (managedProcess.HasExited)
+            port,
+            context,
+            postHandshake: async dapClient =>
             {
-                throw new InvalidOperationException("Python debuggee process exited before debugger could attach.");
-            }
-
-            try
-            {
-                var client = new TcpClient();
-                await client.ConnectAsync(IPAddress.Loopback, port, ct).ConfigureAwait(false);
-                tcpClient = client;
-                break;
-            }
-            catch (SocketException)
-            {
-                await Task.Delay(100, ct).ConfigureAwait(false);
-            }
-        }
-
-        if (tcpClient == null)
-        {
-            managedProcess.Kill();
-            throw new TimeoutException($"Timed out connecting to debugpy on port {port}.");
-        }
-
-        var stream = tcpClient.GetStream();
-        var dapClient = new DapClient(stream, stream);
-        dapClient.Start();
-
-        var session = new DapDebugSession(LanguageIds.Python, dapClient, managedProcess);
-
-        // DAP Handshake:
-        // 1. Initialize
-        await dapClient.SendRequestAsync("initialize", new
-        {
-            clientID = "frysharp",
-            clientName = "C# Code Studio",
-            adapterID = "debugpy",
-            pathFormat = "path",
-            linesStartAt1 = true,
-            columnsStartAt1 = true
-        }, ct).ConfigureAwait(false);
-
-        // 2. Start attach in background (debugpy only completes attach after configurationDone)
-        var attachTask = dapClient.SendRequestAsync("attach", new
-        {
-            name = "Python: Attach",
-            type = "python",
-            request = "attach",
-            connect = new { host = "127.0.0.1", port }
-        }, ct);
-
-        // 3. Set breakpoints
-        if (context.Breakpoints.Count > 0)
-        {
-            await session.SetBreakpointsAsync(scriptFile, context.Breakpoints, ct).ConfigureAwait(false);
-        }
-
-        // 4. Configuration done
-        await dapClient.SendRequestAsync("configurationDone", null, ct).ConfigureAwait(false);
-
-        // 5. Complete attach handshake
-        await attachTask.ConfigureAwait(false);
-
-        return session;
+                await dapClient.SendRequestAsync("attach", new
+                {
+                    name = "Python: Attach",
+                    type = "python",
+                    request = "attach",
+                    connect = new { host = "127.0.0.1", port }
+                }, ct).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
     }
 
-    private static int GetAvailablePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
+    Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>
+        LaunchAsync(context, ct);
 }
