@@ -380,56 +380,19 @@
                                                                                     ToolTip.Tip="Delete Workspace">
                                                                                 <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
                                                                             </Button>
-
-                                                                            <!-- Direct Open Cue -->
                                                                             <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                                         </StackPanel>
-
                                                                     </Grid>
                                                                 </Border>
                                                             </Button>
                                                         </DataTemplate>
                                                     </ItemsControl.DataTemplates>
                                                 </ItemsControl>
-
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
 
-                                    <!-- ======================================================== -->
-                                    <!-- 3B. STARTER TEMPLATES GALLERY VIEW                      -->
-                                    <!-- ======================================================== -->
-                                    <StackPanel Spacing="24" IsVisible="{Binding IsTemplatesTabActive}">
-                                        <!-- Script Templates Group -->
-                                        <StackPanel Spacing="12">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="C# Automation Scripts" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                <TextBlock Text="— runs top to bottom" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                            </StackPanel>
-                                            <ItemsControl ItemsSource="{Binding ScriptTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <WrapPanel Orientation="Horizontal" />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                            </ItemsControl>
-                                        </StackPanel>
-
-                                        <!-- Notebook Templates Group -->
-                                        <StackPanel Spacing="12">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="Interactive C# Notebooks" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                <TextBlock Text="— multi-cell interactive exploration" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                            </StackPanel>
-                                            <ItemsControl ItemsSource="{Binding NotebookTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <WrapPanel Orientation="Horizontal" />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </StackPanel>
-
+                                    <!-- 3B. STARTER TEMPLATES GALLERY VIEW -->
+                                    <controls:HubStarterTemplatesGalleryControl IsVisible="{Binding IsTemplatesTabActive}" />
                                 </StackPanel>
 </UserControl>

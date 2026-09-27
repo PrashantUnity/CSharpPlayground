@@ -38,7 +38,19 @@ internal static class HubAndDocsSnapshots
         Snapshot.Wait(vm.LoadWorkspaceItemsAsync());
         if (vm.AllItems.FirstOrDefault() is { } first) Snapshot.Wait(vm.TogglePinAsync(first));
 
-        if (options.Flag("templates")) vm.ActiveDashboardView = "Templates";
+        if (options.Flag("templates") || options.Value("template") != null || options.Value("category") != null || string.Equals(options.Value("tab"), "templates", StringComparison.OrdinalIgnoreCase))
+        {
+            vm.ActiveDashboardView = "Templates";
+        }
+        if (options.Value("category") is { } category) vm.SelectedTemplateCategory = category;
+        if (options.Value("search") is { } search) vm.SearchQuery = search;
+        if (options.Value("template") is { } templateQuery)
+        {
+            if (vm.StarterTemplates.FirstOrDefault(t => t.Id.Contains(templateQuery, StringComparison.OrdinalIgnoreCase) || t.Title.Contains(templateQuery, StringComparison.OrdinalIgnoreCase)) is { } template)
+            {
+                vm.SelectTemplateCommand.Execute(template);
+            }
+        }
         if (options.Value("create") is { } create)
         {
             vm.PendingCreateKind = create.Equals("notebook", StringComparison.OrdinalIgnoreCase) ? WorkspaceItemKind.Notebook : WorkspaceItemKind.Script;

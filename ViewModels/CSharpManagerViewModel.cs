@@ -117,8 +117,8 @@ public partial class CSharpManagerViewModel : ObservableObject
     public ObservableCollection<object> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
 
-    public IEnumerable<CodeTemplate> ScriptTemplates => StarterTemplates.Where(t => !t.IsNotebook);
-    public IEnumerable<CodeTemplate> NotebookTemplates => StarterTemplates.Where(t => t.IsNotebook);
+    public IEnumerable<CodeTemplate> ScriptTemplates => FilterTemplates(StarterTemplates.Where(t => !t.IsNotebook));
+    public IEnumerable<CodeTemplate> NotebookTemplates => FilterTemplates(StarterTemplates.Where(t => t.IsNotebook));
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
@@ -707,9 +707,14 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
     }
 
-    partial void OnSelectedTemplateChanged(CodeTemplate? value)
+    partial void OnSelectedTemplateChanged(CodeTemplate? oldValue, CodeTemplate? newValue)
     {
-        if (value != null) SelectedWorkspaceItem = null;
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null)
+        {
+            newValue.IsSelected = true;
+            SelectedWorkspaceItem = null;
+        }
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(IsShowingTemplate));
     }
@@ -760,8 +765,14 @@ public partial class CSharpManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SelectTemplate(CodeTemplate template)
+    private async Task SelectTemplateAsync(CodeTemplate template)
     {
+        if (template == null) return;
+        if (ReferenceEquals(SelectedTemplate, template))
+        {
+            await LaunchTemplateAsync(template);
+            return;
+        }
         SelectedTemplate = template;
     }
 
@@ -790,6 +801,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
         var query = SearchQuery.Trim().ToLowerInvariant();
         HasSearchQuery = !string.IsNullOrEmpty(query);
+        RefreshFilteredTemplates();
         var typeFilter = SelectedTypeFilter;
 
         var matches = AllItems.Where(item =>

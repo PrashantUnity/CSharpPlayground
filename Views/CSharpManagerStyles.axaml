@@ -49,6 +49,46 @@
         <Setter Property="RenderTransform" Value="translateY(-2px)" />
     </Style>
 
+    <!-- Selected Glass Card State -->
+    <Style Selector="Border.nexus-glass-card.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BoxShadow" Value="0 4 20 0 #442F81F7" />
+    </Style>
+    <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-glass-card.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    </Style>
+
+    <!-- Direct Use Button on Template Card -->
+    <Style Selector="Button.nexus-card-use-btn">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-card-use-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Border.nexus-glass-card.selected Button.nexus-card-use-btn">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+
     <!-- Sidebar Nav Button -->
     <Style Selector="Button.nexus-nav-item">
         <Setter Property="Background" Value="Transparent" />
