@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -120,18 +121,18 @@ public partial class BlindProblemItem : ObservableObject
 
     public string DifficultyColor => Difficulty switch
     {
-        ProblemDifficulty.Easy => "#00B8A3", // LeetCode Easy Teal/Green
-        ProblemDifficulty.Medium => "#FFC01E", // LeetCode Medium Amber/Yellow
-        ProblemDifficulty.Hard => "#EF4444", // LeetCode Hard Rose/Red
-        _ => "#FFC01E"
+        ProblemDifficulty.Easy => ThemeService.IsDark ? "#00B8A3" : "#0D9488",
+        ProblemDifficulty.Medium => ThemeService.IsDark ? "#FFC01E" : "#D97706",
+        ProblemDifficulty.Hard => ThemeService.IsDark ? "#EF4444" : "#DC2626",
+        _ => ThemeService.IsDark ? "#FFC01E" : "#D97706"
     };
 
     public string DifficultyBackground => Difficulty switch
     {
-        ProblemDifficulty.Easy => "#1A00B8A3",
-        ProblemDifficulty.Medium => "#1AFFC01E",
-        ProblemDifficulty.Hard => "#1AEF4444",
-        _ => "#1AFFC01E"
+        ProblemDifficulty.Easy => ThemeService.IsDark ? "#1A00B8A3" : "#1A0D9488",
+        ProblemDifficulty.Medium => ThemeService.IsDark ? "#1AFFC01E" : "#1AD97706",
+        ProblemDifficulty.Hard => ThemeService.IsDark ? "#1AEF4444" : "#1ADC2626",
+        _ => ThemeService.IsDark ? "#1AFFC01E" : "#1AD97706"
     };
 
     // Lowercase letters and digits, one hyphen for each run of spaces or hyphens, everything else dropped.

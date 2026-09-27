@@ -169,8 +169,8 @@ public class BindableTextEditor : TextEditor
             SyntaxHighlighting = _language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
             Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
-            LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
-            TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
+            LineNumbersForeground = new SolidColorBrush(Color.Parse("#64748B"));
+            TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#ADD6FF"));
             TextArea.SelectionForeground = null;
             TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
             TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));

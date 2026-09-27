@@ -45,10 +45,23 @@
         <Setter Property="Padding" Value="12,0,8,0" />
         <Setter Property="Height" Value="35" />
     </Style>
+    <Style Selector="Border.vscode-tab:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
+    </Style>
     <Style Selector="Border.vscode-tab.active">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
         <Setter Property="BorderThickness" Value="0,2,1,0" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab:pointerover TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab.active TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="Button.vscode-tab-btn">

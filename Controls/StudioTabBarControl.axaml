@@ -25,7 +25,6 @@
                     <DataTemplate x:DataType="vm:StudioTabItemViewModel">
                         <Border Classes="vscode-tab"
                                 Classes.active="{Binding IsActive}"
-                                Background="Transparent"
                                 PointerPressed="OnTabPointerPressed">
                             <Border.ContextMenu>
                                 <ContextMenu>
@@ -75,10 +74,10 @@
                                         <materialIcons:MaterialIcon Kind="{Binding LanguageIconKind}" Width="14" Height="14"
                                                                     IsVisible="{Binding HasLanguageIcon}"
                                                                     Foreground="{Binding LanguageIconColor}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding Title}"
+                                        <TextBlock Classes="tab-title"
+                                                   Text="{Binding Title}"
                                                    FontSize="12"
                                                    FontWeight="Medium"
-                                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                    VerticalAlignment="Center" />
                                         <!-- Unsaved dirty dot -->
                                         <Ellipse Width="6" Height="6"

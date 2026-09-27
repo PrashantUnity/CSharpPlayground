@@ -26,12 +26,12 @@
                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
                             <Border Grid.Column="0" Width="36" Height="36"
                                     CornerRadius="8"
-                                    Background="{Binding AccentBackground}"
-                                    BorderBrush="{Binding AccentBorder}"
+                                    Background="{DynamicResource DsPrimarySubtleBrush}"
+                                    BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
                                     BorderThickness="1">
                                 <materialIcons:MaterialIcon Kind="{Binding IconKind}"
                                                             Width="18" Height="18"
-                                                            Foreground="{Binding AccentColor}"
+                                                            Foreground="{DynamicResource DsPrimaryBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
 

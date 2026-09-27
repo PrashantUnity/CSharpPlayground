@@ -188,29 +188,29 @@
                         </StackPanel>
 
                         <!-- Simulated Editor Preview -->
-                        <Border Background="#1E1E1E" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="12" ClipToBounds="True">
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="8" Padding="12" ClipToBounds="True">
                             <Grid ColumnDefinitions="Auto,*">
                                 <!-- Line Numbers Gutter -->
-                                <Border Grid.Column="0" BorderBrush="#333333" BorderThickness="0,0,1,0" Padding="0,0,8,0" Margin="0,0,10,0" IsVisible="{Binding ShowLineNumbers}">
+                                <Border Grid.Column="0" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,1,0" Padding="0,0,8,0" Margin="0,0,10,0" IsVisible="{Binding ShowLineNumbers}">
                                     <StackPanel Spacing="2">
-                                        <TextBlock Text="1" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="2" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="3" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="4" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="5" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="6" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
-                                        <TextBlock Text="7" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="#858585" TextAlignment="Right" />
+                                        <TextBlock Text="1" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="2" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="3" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="4" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="5" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="6" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="7" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextAlignment="Right" />
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Code Lines -->
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="#C586C0" Text="using " /><Run Foreground="#DCDCDC" Text="System;" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource BrainPurpleBrush}" Text="using " /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="System;" /></TextBlock>
                                     <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="#57A64A" Text="// Live editor preview canvas" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="#569CD6" Text="string " /><Run Foreground="#9CDCFE" Text="msg " /><Run Foreground="#D4D4D4" Text="= " /><Run Foreground="#D69D85" Text="&quot;Hello, FryPDF&quot;" /><Run Foreground="#D4D4D4" Text=";" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="#4EC9B0" Text="Console" /><Run Foreground="#D4D4D4" Text="." /><Run Foreground="#DCDCAA" Text="WriteLine" /><Run Foreground="#D4D4D4" Text="(" /><Run Foreground="#9CDCFE" Text="msg" /><Run Foreground="#D4D4D4" Text=");" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="#4EC9B0" Text="Display" /><Run Foreground="#D4D4D4" Text="." /><Run Foreground="#DCDCAA" Text="Dump" /><Run Foreground="#D4D4D4" Text="(" /><Run Foreground="#9CDCFE" Text="msg" /><Run Foreground="#D4D4D4" Text=");" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource ComplexitySpaceBrush}" Text="// Live editor preview canvas" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource M3PrimaryBrush}" Text="string " /><Run Foreground="{DynamicResource ComplexityTimeBrush}" Text="msg " /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="= " /><Run Foreground="{DynamicResource BadgeAmberFgBrush}" Text="&quot;Hello, FryPDF&quot;" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text=";" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource BadgeEasyFgBrush}" Text="Console" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="." /><Run Foreground="{DynamicResource ComplexityTimeBrush}" Text="WriteLine" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="(" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="msg" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text=");" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource BadgeEasyFgBrush}" Text="Display" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="." /><Run Foreground="{DynamicResource ComplexityTimeBrush}" Text="Dump" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="(" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text="msg" /><Run Foreground="{DynamicResource M3OnSurfaceBrush}" Text=");" /></TextBlock>
                                     <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
                                 </StackPanel>
                             </Grid>

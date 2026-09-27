@@ -70,19 +70,19 @@
                 </Border>
 
                 <!-- 2. MISSING TOOLCHAIN BANNER -->
-                <Border Background="#2B1A1A" BorderBrush="#F85149" BorderThickness="1" CornerRadius="8" Padding="16" IsVisible="{Binding IsMissing}">
+                <Border Background="{DynamicResource M3ErrorContainerBrush}" BorderBrush="{DynamicResource M3ErrorBrush}" BorderThickness="1" CornerRadius="8" Padding="16" IsVisible="{Binding IsMissing}">
                     <StackPanel Spacing="10">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="#F85149" />
-                            <TextBlock Text="{Binding MissingTitle}" FontSize="14" FontWeight="Bold" Foreground="#F85149" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="{DynamicResource M3OnErrorContainerBrush}" />
+                            <TextBlock Text="{Binding MissingTitle}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnErrorContainerBrush}" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Text="{Binding MissingSummary}" FontSize="12.5" Foreground="#E6EDF3" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding MissingSummary}" FontSize="12.5" Foreground="{DynamicResource M3OnErrorContainerBrush}" TextWrapping="Wrap" />
 
                         <ItemsControl ItemsSource="{Binding MissingSteps}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#161B22" BorderBrush="#21262D" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
-                                        <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,Menlo,monospace" FontSize="11.5" Foreground="#7EE787" />
+                                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
+                                        <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,Menlo,monospace" FontSize="11.5" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -231,13 +231,13 @@
                         </ItemsControl>
 
                         <!-- Real-Time Output Drawer -->
-                        <Border Background="#0D1117" BorderBrush="#21262D" BorderThickness="1" CornerRadius="6" Padding="12"
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
                                 IsVisible="{Binding ActionOutputLog.Length}">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="{Binding ActionStatusMessage}" FontSize="11.5" FontWeight="SemiBold" Foreground="#58A6FF" />
+                                <TextBlock Text="{Binding ActionStatusMessage}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                 <SelectableTextBlock Text="{Binding ActionOutputLog}"
                                                      FontFamily="Consolas,Menlo,monospace"
-                                                     FontSize="11" Foreground="#C9D1D9"
+                                                     FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                      TextWrapping="Wrap" MaxHeight="140" />
                             </StackPanel>
                         </Border>

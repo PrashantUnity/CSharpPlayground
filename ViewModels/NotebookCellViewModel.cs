@@ -388,9 +388,15 @@ public partial class NotebookCellViewModel : ObservableObject
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
     public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 
-    public string StatusBadgeForeground => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#9BA1AD";
-    public string StatusBadgeBackground => HasError ? "#93000A" : IsExecuting ? "#0F387D" : ExecutionCount.HasValue ? "#343E4E" : "#252C36";
-    public string StatusBadgeBorder => HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#3D4450";
+    public string StatusBadgeForeground => ThemeService.IsDark
+        ? (HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#9BA1AD")
+        : (HasError ? "#BA1A1A" : IsExecuting ? "#0B57D0" : ExecutionCount.HasValue ? "#334155" : "#64748B");
+    public string StatusBadgeBackground => ThemeService.IsDark
+        ? (HasError ? "#93000A" : IsExecuting ? "#0F387D" : ExecutionCount.HasValue ? "#343E4E" : "#252C36")
+        : (HasError ? "#FFDAD6" : IsExecuting ? "#D3E3FD" : ExecutionCount.HasValue ? "#E2E8F0" : "#F1F5F9");
+    public string StatusBadgeBorder => ThemeService.IsDark
+        ? (HasError ? "#FFB4AB" : IsExecuting ? "#A8C7FA" : ExecutionCount.HasValue ? "#BDC7DC" : "#3D4450")
+        : (HasError ? "#BA1A1A" : IsExecuting ? "#0B57D0" : ExecutionCount.HasValue ? "#CBD5E1" : "#E2E8F0");
 
     public string MarkdownTitle
     {

@@ -384,8 +384,8 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
             _editor.Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
             _editor.Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
-            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
-            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
+            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#64748B"));
+            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#ADD6FF"));
             _editor.TextArea.SelectionForeground = null;
             _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
             _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
@@ -605,6 +605,12 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSwitchTabDocument(StudioTabItemViewModel tab)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSwitchTabDocument(tab));
+            return;
+        }
+
         if (_currentVm != null) ApplyEditorLanguage(_currentVm.Languages.LanguageOf(tab.Document));
         SetStepLine(-1);
 
@@ -636,6 +642,11 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnReloadEditorText()
     {
         if (_editor == null || _currentVm == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(OnReloadEditorText);
+            return;
+        }
 
         _isUpdatingText = true;
         try
@@ -867,6 +878,12 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSetPausedLine(int line)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSetPausedLine(line));
+            return;
+        }
+
         if (line == -1)
         {
             _debugHoverController?.HideTip();
@@ -878,6 +895,12 @@ public partial class CSharpCodeStudioView : UserControl
 
     private void OnSyncBreakpoints(IEnumerable<int> lines)
     {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSyncBreakpoints(lines));
+            return;
+        }
+
         _breakpointMargin.SetBreakpoints(lines);
     }
 
@@ -919,6 +942,11 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnNavigateToCaret(int line, int col)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnNavigateToCaret(line, col));
+            return;
+        }
 
         try
         {
@@ -1038,6 +1066,12 @@ public partial class CSharpCodeStudioView : UserControl
     public void ScrollToAndSelectLine(int lineNumber)
     {
         if (_editor?.Document == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ScrollToAndSelectLine(lineNumber));
+            return;
+        }
+
         if (lineNumber < 1) lineNumber = 1;
         if (lineNumber > _editor.Document.LineCount) lineNumber = _editor.Document.LineCount;
 

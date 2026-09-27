@@ -86,7 +86,7 @@ public class BarVisualizerRenderer : VisualizerRendererBase
             if (data.ShowValues && barWidth >= 16)
             {
                 double fontSize = Math.Clamp(barWidth * 0.45, 9.0, 13.0);
-                var valText = CreateFormattedText(item.DisplayValue, fontSize, WhiteBrush, FontWeight.Bold);
+                var valText = CreateFormattedText(item.DisplayValue, fontSize, PrimaryTextBrush, FontWeight.Bold);
                 context.DrawText(valText, new Point(x + (barWidth - valText.Width) / 2.0, barRect.Y - valText.Height - 3));
             }
 
@@ -101,7 +101,7 @@ public class BarVisualizerRenderer : VisualizerRendererBase
             // Pointer label (e.g. "i", "j", "mid")
             if (!string.IsNullOrEmpty(item.PointerLabel))
             {
-                var ptrText = CreateFormattedText(item.PointerLabel, 11.0, GetBrush("#38bdf8"), FontWeight.Bold);
+                var ptrText = CreateFormattedText(item.PointerLabel, 11.0, IsDarkTheme ? GetBrush("#38bdf8") : GetBrush("#0284c7"), FontWeight.Bold);
                 context.DrawText(ptrText, new Point(x + (barWidth - ptrText.Width) / 2.0, baselineY + 18));
             }
         }

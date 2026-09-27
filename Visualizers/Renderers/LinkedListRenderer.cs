@@ -48,18 +48,21 @@ public class LinkedListRenderer : VisualizerRendererBase
             var valRect = new Rect(cell.X, cell.Y, BoxWidth * scale, cell.Height);
             var slotRect = new Rect(valRect.Right, cell.Y, NextSlotWidth * scale, cell.Height);
             var fillBrush = node.IsCycleTarget ? GetBrush("#881337")
-                : isActive ? GetBrush("#1e3a8a")
+                : isActive ? ActiveCellBgBrush
                 : !string.IsNullOrEmpty(node.Color) ? GetBrush(node.Color)
-                : GetBrush("#1e293b");
-            var borderPen = node.IsCycleTarget ? GetPen("#f43f5e", 1.8) : (isActive ? GetPen("#60a5fa", 1.8) : GetPen("#475569", 1));
+                : DefaultCellBgBrush;
+            var borderPen = node.IsCycleTarget ? GetPen("#f43f5e", 1.8) : (isActive ? ActiveBorderPen : DefaultCellBorderPen);
             context.DrawRectangle(fillBrush, borderPen, new RoundedRect(valRect, 4, 0, 0, 4));
-            context.DrawRectangle(GetBrush("#0f172a"), borderPen, new RoundedRect(slotRect, 0, 4, 4, 0));
+            context.DrawRectangle(IsDarkTheme ? GetBrush("#0f172a") : GetBrush("#e2e8f0"), borderPen, new RoundedRect(slotRect, 0, 4, 4, 0));
             if (changed.Contains(i))
             {
                 DrawChangedOutline(context, cell, 4);
             }
 
-            var ftVal = CreateFormattedText(node.DisplayValue, Math.Max(8, 12 * scale), WhiteBrush, FontWeight.Bold);
+            var valBrush = !string.IsNullOrEmpty(node.Color) || node.IsCycleTarget
+                ? WhiteBrush
+                : (isActive && !IsDarkTheme ? GetBrush("#1E40AF") : PrimaryTextBrush);
+            var ftVal = CreateFormattedText(node.DisplayValue, Math.Max(8, 12 * scale), valBrush, FontWeight.Bold);
             context.DrawText(ftVal, new Point(valRect.Left + (valRect.Width - ftVal.Width) / 2.0, valRect.Top + (valRect.Height - ftVal.Height) / 2.0));
 
             // A null next pointer in the middle of the drawing is a slash, the usual box-and-pointer notation.
@@ -70,7 +73,7 @@ public class LinkedListRenderer : VisualizerRendererBase
             }
             else
             {
-                context.DrawEllipse(WhiteBrush, null, slotRect.Center, 2.5 * scale, 2.5 * scale);
+                context.DrawEllipse(IsDarkTheme ? WhiteBrush : GetBrush("#475569"), null, slotRect.Center, 2.5 * scale, 2.5 * scale);
             }
         }
 
@@ -179,7 +182,9 @@ public class LinkedListRenderer : VisualizerRendererBase
 
     private void DrawMarkerBox(DrawingContext context, Rect box, string text, double scale)
     {
-        context.DrawRectangle(GetBrush("#0f172a"), GetPen("#334155", 1), new RoundedRect(box, 4));
+        var boxBg = IsDarkTheme ? GetBrush("#0f172a") : GetBrush("#e2e8f0");
+        var boxPen = IsDarkTheme ? GetPen("#334155", 1) : GetPen("#cbd5e1", 1);
+        context.DrawRectangle(boxBg, boxPen, new RoundedRect(box, 4));
         var ft = CreateFormattedText(text, Math.Max(7, 10 * scale), MutedTextBrush, FontWeight.Bold);
         context.DrawText(ft, new Point(box.Left + (box.Width - ft.Width) / 2.0, box.Top + (box.Height - ft.Height) / 2.0));
     }

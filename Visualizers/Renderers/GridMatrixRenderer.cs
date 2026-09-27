@@ -260,7 +260,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
         return set;
     }
 
-    private static (IBrush Fill, IPen Border) ResolveCellStyling(GridCell cell)
+    private (IBrush Fill, IPen Border) ResolveCellStyling(GridCell cell)
     {
         if (!string.IsNullOrEmpty(cell.CustomColor))
         {
@@ -272,7 +272,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
         if (cell.Heat.HasValue)
         {
             string heatColor = VisualizerPaletteService.GetHeatmapColor(cell.Heat.Value);
-            return (GetBrush(heatColor), GetPen("#334155", 1.0));
+            return (GetBrush(heatColor), GetPen(IsDarkTheme ? "#334155" : "#cbd5e1", 1.0));
         }
 
         if (cell.State != GridCellState.Default)
@@ -288,7 +288,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
             case CellKind.Land:
                 return (GetBrush(VisualizerPaletteService.UnvisitedLandColor), GetPen(VisualizerPaletteService.UnvisitedLandBorderColor, 1.2));
             case CellKind.Wall:
-                return (GetBrush(VisualizerPaletteService.WallColor), GetPen("#27272a", 1.2));
+                return (GetBrush(VisualizerPaletteService.WallColor), GetPen(IsDarkTheme ? "#27272a" : "#475569", 1.2));
             case CellKind.Path:
                 return (GetBrush(VisualizerPaletteService.PathColor), GetPen("#ca8a04", 1.5));
             case CellKind.Start:
@@ -296,11 +296,11 @@ public class GridMatrixRenderer : VisualizerRendererBase
             case CellKind.Target:
                 return (GetBrush(VisualizerPaletteService.TargetColor), GetPen("#dc2626", 1.5));
             default:
-                return (GetBrush("#1e293b"), GetPen("#334155", 1));
+                return (DefaultCellBgBrush, DefaultCellBorderPen);
         }
     }
 
-    private static IBrush DetermineTextBrush(GridCell cell)
+    private IBrush DetermineTextBrush(GridCell cell)
     {
         if (!string.IsNullOrEmpty(cell.TextColor))
         {
@@ -317,6 +317,6 @@ public class GridMatrixRenderer : VisualizerRendererBase
         {
             return GetBrush(VisualizerPaletteService.WaterTextColor);
         }
-        return WhiteBrush;
+        return PrimaryTextBrush;
     }
 }

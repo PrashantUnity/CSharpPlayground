@@ -71,13 +71,13 @@
                         </Border>
 
                         <!-- Visualizer Ready Badge -->
-                        <Border Background="#1AE3B341"
-                                BorderBrush="#E3B341"
+                        <Border Background="{DynamicResource BadgeAmberBgBrush}"
+                                BorderBrush="{DynamicResource BadgeAmberBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8" Padding="8,3" Margin="0,0,6,6">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="12" Height="12" Foreground="#E3B341" VerticalAlignment="Center" />
-                                <TextBlock Text="Interactive Visualizer Ready" FontSize="10.5" FontWeight="SemiBold" Foreground="#E3B341" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="12" Height="12" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Interactive Visualizer Ready" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -89,11 +89,11 @@
                         <Grid ColumnDefinitions="*,*">
                             <StackPanel Grid.Column="0" Spacing="2">
                                 <TextBlock Text="Time Complexity" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                <TextBlock Text="{Binding SelectedProblem.TimeComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="#38BDF8" />
+                                <TextBlock Text="{Binding SelectedProblem.TimeComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource ComplexityTimeBrush}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="2">
                                 <TextBlock Text="Space Complexity" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                <TextBlock Text="{Binding SelectedProblem.SpaceComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="#22C55E" />
+                                <TextBlock Text="{Binding SelectedProblem.SpaceComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource ComplexitySpaceBrush}" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -113,9 +113,9 @@
                             IsVisible="{Binding SelectedProblem.ThinkingProcessMarkdown, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="#A855F7" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource BrainPurpleBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="HOW TO THINK" FontSize="11" FontWeight="Bold"
-                                           Foreground="#A855F7" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource BrainPurpleBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <controls:MarkdownView Markdown="{Binding SelectedProblem.ThinkingProcessMarkdown}"
                                                    FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
@@ -136,26 +136,26 @@
                                         <StackPanel Spacing="4">
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding TimeComplexity}" FontSize="10.5" FontWeight="SemiBold" Foreground="#38BDF8" />
+                                                <TextBlock Grid.Column="1" Text="{Binding TimeComplexity}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource ComplexityTimeBrush}" />
                                             </Grid>
                                             <controls:MarkdownView Markdown="{Binding Intuition}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" />
                                             
                                             <!-- Recurrence Relation if DP -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding RecurrenceRelation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="#A855F7" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource BrainPurpleBrush}" TextWrapping="Wrap" />
                                             </Border>
 
                                             <!-- Greedy Choice Property if Greedy -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding GreedyChoiceProperty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <controls:MarkdownView Markdown="{Binding GreedyChoiceProperty, StringFormat='**Greedy choice:** {0}'}" FontSize="10.5" Foreground="#EAB308" />
+                                                <controls:MarkdownView Markdown="{Binding GreedyChoiceProperty, StringFormat='**Greedy choice:** {0}'}" FontSize="10.5" Foreground="{DynamicResource BadgeAmberFgBrush}" />
                                             </Border>
 
                                             <!-- Bottleneck if Naive -->
                                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding BottleneckExplanation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <controls:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="#F87171" />
+                                                <controls:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="{DynamicResource M3ErrorBrush}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
@@ -165,14 +165,14 @@
                     </StackPanel>
 
                     <!-- What the step-by-step visualizer shows -->
-                    <Border Background="#0FE3B341"
-                            BorderBrush="#66E3B341"
+                    <Border Background="{DynamicResource BadgeAmberBgBrush}"
+                            BorderBrush="{DynamicResource BadgeAmberBorderBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="12"
                             IsVisible="{Binding SelectedProblem.VisualizationDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="#E3B341" VerticalAlignment="Center" />
-                                <TextBlock Text="WATCH IT RUN" FontSize="11" FontWeight="Bold" Foreground="#E3B341" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="WATCH IT RUN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <controls:MarkdownView Markdown="{Binding SelectedProblem.VisualizationDescription}"
                                                    FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
@@ -194,7 +194,7 @@
                                     Classes="snippet-action-btn" Height="26" Padding="8,0"
                                     ToolTip.Tip="Generate fresh randomized &amp; boundary test data">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="AutoAwesome" Width="13" Height="13" Foreground="#EAB308" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="AutoAwesome" Width="13" Height="13" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="Generate Test Data" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -209,7 +209,7 @@
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="{Binding Name}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                             <TextBlock Text="{Binding Input, StringFormat='Input: {0}'}" FontSize="11" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" FontSize="11" FontFamily="Consolas,Menlo,monospace" Foreground="#22C55E" />
+                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" FontSize="11" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource ComplexitySpaceBrush}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
