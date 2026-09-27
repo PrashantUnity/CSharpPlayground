@@ -72,7 +72,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:KeymapCategoryChip">
-                                        <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectKeymapCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectKeymapCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
                                                 CommandParameter="{Binding}"
                                                 Classes="snippet-action-btn"
                                                 Classes.active="{Binding IsSelected}"

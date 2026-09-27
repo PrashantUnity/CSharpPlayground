@@ -21,6 +21,10 @@ public partial class CSharpSettingsViewModel : ObservableObject
     private readonly Action? _backToPreviousAction;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLanguagesCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
     private string _activeCategory = "Languages";
 
     [ObservableProperty]
