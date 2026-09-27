@@ -33,6 +33,38 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     public event Action<int>? RequestGoToLine;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
+    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+
+    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+
+    [RelayCommand]
+    public void ZoomIn()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ZoomOut()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ResetZoom()
+    {
+        EditorFontSize = Controls.EditorZoomController.Reset();
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    public void ApplyFontSize(double fontSize)
+    {
+        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+    }
+
+    [ObservableProperty]
     private int _indentationSize = 4;
 
     public string IndentationStatusText => $"Spaces: {IndentationSize}";
@@ -294,11 +326,26 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
 
+        var initialSettings = _languages.StudioSettings.GetSettings();
+        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
+
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
         OnActiveLanguageChanged();
+    }
+
+    private void OnStudioSettingsChanged(StudioSettings s)
+    {
+        _postToUiThread(() =>
+        {
+            if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
+            {
+                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+            }
+        });
     }
 
     partial void OnCodeChanged(string value)

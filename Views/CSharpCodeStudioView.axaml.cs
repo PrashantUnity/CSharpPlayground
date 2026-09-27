@@ -95,10 +95,30 @@ public partial class CSharpCodeStudioView : UserControl
 
         DataContextChanged += OnDataContextChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (_currentVm == null) return;
+
+        var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (!isModifier) return;
+
+        if (e.Delta.Y > 0)
+        {
+            _currentVm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Delta.Y < 0)
+        {
+            _currentVm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
@@ -122,6 +142,28 @@ public partial class CSharpCodeStudioView : UserControl
         }
 
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // ── Typography & Font Zoom (Ctrl+= / Ctrl+- / Ctrl+0) ──
+        if (isModifier && (e.Key == Key.OemPlus || e.Key == Key.Add || e.PhysicalKey == PhysicalKey.Equal || e.PhysicalKey == PhysicalKey.NumPadAdd))
+        {
+            _currentVm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemMinus || e.Key == Key.Subtract || e.PhysicalKey == PhysicalKey.Minus || e.PhysicalKey == PhysicalKey.NumPadSubtract))
+        {
+            _currentVm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.D0 || e.Key == Key.NumPad0 || e.PhysicalKey == PhysicalKey.Digit0 || e.PhysicalKey == PhysicalKey.NumPad0))
+        {
+            _currentVm.ResetZoomCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
 
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.O)
         {

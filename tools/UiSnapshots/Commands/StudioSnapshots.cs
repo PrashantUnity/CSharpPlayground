@@ -60,7 +60,16 @@ internal static class StudioSnapshots
         vm.IsSideBarVisible = true;
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
 
+        if (options.Value("zoom") is { } zoomStr && double.TryParse(zoomStr, System.Globalization.CultureInfo.InvariantCulture, out var zoomSize))
+        {
+            vm.EditorFontSize = zoomSize;
+        }
+
         var window = Snapshot.Show(new CSharpCodeStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        if (options.Value("zoom-keys") is { } zoomKeys)
+        {
+            ApplyZoomKeys(window, zoomKeys);
+        }
         ShowQuickOpen(vm.QuickOpen, options);
         Task? stillRunning = null;
         if (options.Flag("run") && options.Flag("while-running"))
@@ -124,6 +133,51 @@ internal static class StudioSnapshots
             vm.StopCommand.Execute(null);
             Snapshot.Wait(stillRunning);
         }
+    }
+
+    private static void ApplyZoomKeys(Window window, string zoomKeys)
+    {
+        var target = window.GetVisualDescendants().OfType<TextEditor>().FirstOrDefault() as InputElement
+            ?? window.Content as InputElement
+            ?? window;
+
+        foreach (var action in zoomKeys.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (action.Equals("in", StringComparison.OrdinalIgnoreCase))
+            {
+                target.RaiseEvent(new KeyEventArgs
+                {
+                    RoutedEvent = InputElement.KeyDownEvent,
+                    Key = Key.OemPlus,
+                    PhysicalKey = PhysicalKey.Equal,
+                    KeyModifiers = KeyModifiers.Control,
+                    Source = target
+                });
+            }
+            else if (action.Equals("out", StringComparison.OrdinalIgnoreCase))
+            {
+                target.RaiseEvent(new KeyEventArgs
+                {
+                    RoutedEvent = InputElement.KeyDownEvent,
+                    Key = Key.OemMinus,
+                    PhysicalKey = PhysicalKey.Minus,
+                    KeyModifiers = KeyModifiers.Control,
+                    Source = target
+                });
+            }
+            else if (action.Equals("reset", StringComparison.OrdinalIgnoreCase))
+            {
+                target.RaiseEvent(new KeyEventArgs
+                {
+                    RoutedEvent = InputElement.KeyDownEvent,
+                    Key = Key.D0,
+                    PhysicalKey = PhysicalKey.Digit0,
+                    KeyModifiers = KeyModifiers.Control,
+                    Source = target
+                });
+            }
+        }
+        Snapshot.Settle();
     }
 
     // The file goes into the workspace under its own name and is opened from the Explorer, as a person would.
@@ -214,7 +268,16 @@ internal static class StudioSnapshots
             vm.IsSideBarVisible = true;
         }
 
+        if (options.Value("zoom") is { } nbZoomStr && double.TryParse(nbZoomStr, System.Globalization.CultureInfo.InvariantCulture, out var nbZoomSize))
+        {
+            vm.EditorFontSize = nbZoomSize;
+        }
+
         var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        if (options.Value("zoom-keys") is { } nbZoomKeys)
+        {
+            ApplyZoomKeys(window, nbZoomKeys);
+        }
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {

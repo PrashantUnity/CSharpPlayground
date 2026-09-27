@@ -20,11 +20,31 @@ public partial class CSharpNotebookStudioView : UserControl
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         Unloaded += OnViewUnloaded;
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (DataContext is not CSharpNotebookStudioViewModel vm) return;
+
+        var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (!isModifier) return;
+
+        if (e.Delta.Y > 0)
+        {
+            vm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Delta.Y < 0)
+        {
+            vm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     // Each cell compiles under its id, so a step's source file names the cell whose code recorded it.
@@ -104,6 +124,28 @@ public partial class CSharpNotebookStudioView : UserControl
         }
 
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // ── Typography & Font Zoom (Ctrl+= / Ctrl+- / Ctrl+0) ──
+        if (isCmdOrCtrl && (e.Key == Key.OemPlus || e.Key == Key.Add || e.PhysicalKey == PhysicalKey.Equal || e.PhysicalKey == PhysicalKey.NumPadAdd))
+        {
+            vm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemMinus || e.Key == Key.Subtract || e.PhysicalKey == PhysicalKey.Minus || e.PhysicalKey == PhysicalKey.NumPadSubtract))
+        {
+            vm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.D0 || e.Key == Key.NumPad0 || e.PhysicalKey == PhysicalKey.Digit0 || e.PhysicalKey == PhysicalKey.NumPad0))
+        {
+            vm.ResetZoomCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
 
         // VS Code Quick Open (Ctrl+P / Cmd+P)
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)

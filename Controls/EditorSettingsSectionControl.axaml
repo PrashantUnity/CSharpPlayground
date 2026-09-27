@@ -255,6 +255,20 @@
                                         <TextBlock Text="Ctrl+F" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </Border>
                                 </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Zoom In / Out" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+= / Ctrl+-" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Reset Zoom (100%)" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+0" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    </Border>
+                                </Grid>
                             </StackPanel>
                         </Border>
                     </StackPanel>

@@ -163,7 +163,7 @@
                     <Grid RowDefinitions="*,Auto">
                         <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                             <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
-                                     FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="12"
+                                     FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
                                      Background="Transparent" Foreground="{DynamicResource M3PrimaryBrush}"
                                      BorderThickness="0" IsReadOnly="True" TextWrapping="Wrap" />
                         </ScrollViewer>
@@ -174,7 +174,7 @@
                                                             Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 <TextBox Grid.Column="1" Text="{Binding ProgramInputText, Mode=TwoWay}"
                                          controls:FocusOnTrueBehavior.IsActive="{Binding IsAcceptingProgramInput}"
-                                         FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="12"
+                                         FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
                                          PlaceholderText="Type input for the program, then Enter"
                                          Background="Transparent" BorderThickness="0" MinHeight="22">
                                     <TextBox.KeyBindings>

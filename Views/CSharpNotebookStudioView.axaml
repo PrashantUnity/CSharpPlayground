@@ -1212,12 +1212,12 @@
                                                                                                  ExecuteCommand="{Binding RunCellCommand}"
                                                                                                  ExecuteAndNextCommand="{Binding RunCellAndSelectNextCommand}"
                                                                                                  MinHeight="24"
-                                                                                                 FontSize="13" />
+                                                                                                 FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}" />
 
                                                                     <!-- Markdown View (Rendered Header & Notes) -->
                                                                     <controls:MarkdownView IsVisible="{Binding IsViewingMarkdown}" Margin="8,6"
                                                                                            Markdown="{Binding Source}"
-                                                                                           FontSize="12.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                                                           FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.5}" Foreground="{DynamicResource M3OnSurfaceBrush}" />
 
                                                                     <!-- Markdown Edit Mode -->
                                                                     <TextBox IsVisible="{Binding IsEditingMarkdown}"
@@ -1227,7 +1227,7 @@
                                                                              Background="Transparent"
                                                                              BorderThickness="0"
                                                                              MinHeight="24"
-                                                                             FontSize="13"
+                                                                             FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}"
                                                                              Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                                              PlaceholderText="Write markdown documentation (# Header, notes)..."
                                                                              TextWrapping="Wrap" />

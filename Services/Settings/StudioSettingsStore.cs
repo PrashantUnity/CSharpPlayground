@@ -29,14 +29,19 @@ public sealed class StudioSettingsStore
         }
     }
 
+    public event Action<StudioSettings>? SettingsChanged;
+
     public void SaveSettings(StudioSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        StudioSettings cloned;
         lock (_gate)
         {
             _settings = settings.Clone();
             SaveInternal(_settings);
+            cloned = _settings.Clone();
         }
+        SettingsChanged?.Invoke(cloned);
     }
 
     private StudioSettings Load()

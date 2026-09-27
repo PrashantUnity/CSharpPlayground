@@ -174,6 +174,38 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
+    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+
+    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+
+    [RelayCommand]
+    public void ZoomIn()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ZoomOut()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ResetZoom()
+    {
+        EditorFontSize = Controls.EditorZoomController.Reset();
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    public void ApplyFontSize(double fontSize)
+    {
+        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+    }
+
+    [ObservableProperty]
     private bool _isVariableInspectorOpen = false;
 
     [ObservableProperty]
@@ -351,11 +383,26 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         Tabs.Add(initialTab);
         SelectTab(initialTab);
 
+        var initialSettings = _languages.StudioSettings.GetSettings();
+        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
+
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
+    }
+
+    private void OnStudioSettingsChanged(StudioSettings s)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
+            {
+                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+            }
+        });
     }
 
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
@@ -637,6 +684,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             new() { Title = "File: Close Active Tab", Subtitle = "Close the current notebook tab", Category = "Tabs", IconKind = "Close", IconColorHex = "#E5534B", ShortcutHint = "Ctrl+W", ExecuteAction = () => CloseTab(ActiveTab) },
             new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except active", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => CloseOtherTabs(ActiveTab) },
             new() { Title = "File: Close All Tabs", Subtitle = "Close all open notebook tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = CloseAllTabs },
+            new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase notebook cell typography size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
+            new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease notebook cell typography size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
+            new() { Title = "View: Reset Font Zoom", Subtitle = "Reset typography to default 100% (13px)", Category = "View", IconKind = "MagnifyScan", IconColorHex = "#D97706", ShortcutHint = "Ctrl+0", ExecuteAction = ResetZoom },
             new() { Title = "View: Toggle Primary Side Bar", Subtitle = "Expand or collapse activity sidebar", Category = "View", IconKind = "DockLeft", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+B", ExecuteAction = ToggleSideBar },
             new() { Title = "View: Show Explorer", Subtitle = "Browse workspace notebooks and scripts", Category = "Navigation", IconKind = "FolderMultipleOutline", IconColorHex = "#D97706", ShortcutHint = "Ctrl+Shift+E", ExecuteAction = () => SelectActivityBarItem(0) },
             new() { Title = "View: Show Outline", Subtitle = "Navigate cells in table of contents", Category = "Navigation", IconKind = "FormatListBulleted", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+Shift+O", ExecuteAction = () => SelectActivityBarItem(1) },

@@ -69,6 +69,13 @@
 
                 <TextBlock Text="UTF-8" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="5,0" />
 
+                <!-- Zoom Level Indicator / Reset Button -->
+                <Button Command="{Binding ResetZoomCommand}"
+                        Classes="status-item"
+                        ToolTip.Tip="Editor Font Zoom (Cmd+= / Cmd+- / Cmd+0 / Cmd+Scroll) — Click to reset to 100%">
+                    <TextBlock Text="{Binding ZoomPercentageText}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                </Button>
+
                 <!-- Language Mode Selector Flyout -->
                 <Button Classes="status-item"
                         IsVisible="{Binding SupportsExecutionModes}"

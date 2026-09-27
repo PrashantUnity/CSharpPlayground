@@ -62,6 +62,20 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeKeymap();
         InitializeEditorSettings();
         InitializeLanguages();
+
+        _settingsStore.SettingsChanged += OnStoreSettingsChanged;
+    }
+
+    private void OnStoreSettingsChanged(StudioSettings s)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!HasPendingChanges && Math.Abs(FontSize - s.FontSize) > 0.05)
+            {
+                FontSize = s.FontSize;
+                HasPendingChanges = false;
+            }
+        });
     }
 
     private void PopulateCategories()
@@ -85,6 +99,10 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Shortcuts.Add(new KeymapShortcutItem("Format Document", "Shift+Alt+F / Ctrl+K Ctrl+D", "Editor", "Format code using language standard indentation"));
         Shortcuts.Add(new KeymapShortcutItem("Hover Quick Info", "Ctrl+K Ctrl+I", "Editor", "Display XML doc comments and symbol signature"));
         Shortcuts.Add(new KeymapShortcutItem("Find & Replace", "Ctrl+F / ⌘F", "Editor", "Search text within the active document canvas"));
+        Shortcuts.Add(new KeymapShortcutItem("Zoom In", "Ctrl+= / ⌘+", "Editor", "Increase code canvas and terminal font size"));
+        Shortcuts.Add(new KeymapShortcutItem("Zoom Out", "Ctrl+- / ⌘-", "Editor", "Decrease code canvas and terminal font size"));
+        Shortcuts.Add(new KeymapShortcutItem("Reset Zoom", "Ctrl+0 / ⌘0", "Editor", "Reset font typography to default 100% (13px)"));
+        Shortcuts.Add(new KeymapShortcutItem("Mouse Wheel Zoom", "Ctrl+Wheel / ⌘+Wheel", "Editor", "Smoothly scale font size up or down"));
         Shortcuts.Add(new KeymapShortcutItem("Focus Explorer", "Ctrl+Shift+E", "Side Bar", "Open Explorer tree view in side bar"));
         Shortcuts.Add(new KeymapShortcutItem("Focus Search", "Ctrl+Shift+F", "Side Bar", "Open Workspace Text Search in side bar"));
         Shortcuts.Add(new KeymapShortcutItem("Focus Run & Debug", "Ctrl+Shift+D", "Side Bar", "Open Debugger panel in side bar"));

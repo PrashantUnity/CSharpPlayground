@@ -522,7 +522,7 @@
                     <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
                         <avaloniaEdit:TextEditor Name="Editor"
                                                  FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
-                                                 FontSize="13"
+                                                 FontSize="{Binding EditorFontSize}"
                                                  ShowLineNumbers="True"
                                                  WordWrap="False"
                                                  HorizontalScrollBarVisibility="Auto"

@@ -42,6 +42,8 @@ internal static class Usage
               --quick-open <mode>    show the Quick Open palette: files or commands
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
+              --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
+              --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           notebook <n>           Notebook Studio with problem n's notebook.
               --polyglot-demo        a notebook of C#, Python and JavaScript cells sharing data both ways
               --java-share           a test notebook attempting cross-language sharing with Java
@@ -57,6 +59,8 @@ internal static class Usage
               --sidebar <view>       explorer, outline, variables or search
               --quick-open <mode>    files or commands
               --quick-info <text>    rest the mouse on the first <text> in a cell and show its hover card
+              --zoom <size>          notebook font size in px (e.g. 18 for 138%, 10 for 77%)
+              --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           hub                    The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned).
               --empty                no scripts or notebooks (first run)
               --python <path>        the Python its STUDIO ENVIRONMENT card shows (default: the one the studio finds)
