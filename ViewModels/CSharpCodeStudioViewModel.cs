@@ -124,15 +124,15 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     private bool _isSideBarVisible = true;
 
     [ObservableProperty]
-    private Avalonia.Controls.GridLength _sideBarGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
+    private Avalonia.Controls.GridLength _sideBarGridLength = new(290, Avalonia.Controls.GridUnitType.Pixel);
 
-    private double _savedSideBarWidth = 280;
+    private double _savedSideBarWidth = 290;
 
     partial void OnIsSideBarVisibleChanged(bool value)
     {
         if (value)
         {
-            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 280, Avalonia.Controls.GridUnitType.Pixel);
+            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 290, Avalonia.Controls.GridUnitType.Pixel);
         }
         else
         {

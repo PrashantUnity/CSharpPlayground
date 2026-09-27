@@ -23,6 +23,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly HashSet<string> _directories;
     private readonly Dictionary<string, FakePython> _pythons;
     private readonly Dictionary<string, FakeNode> _nodes;
+    private readonly Dictionary<string, FakeJava> _javas;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -32,6 +33,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _directories = new HashSet<string>(comparer);
         _pythons = new Dictionary<string, FakePython>(comparer);
         _nodes = new Dictionary<string, FakeNode>(comparer);
+        _javas = new Dictionary<string, FakeJava>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -95,6 +97,22 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return node;
     }
 
+    /// <summary>Makes <paramref name="path"/> a Java JDK runtime that answers the studio's probe.</summary>
+    public FakeJava AddJava(string path, string version, bool hasCompiler = true, int exitCode = 0)
+    {
+        AddFile(path);
+        if (hasCompiler)
+        {
+            var bin = ParentOf(Normalize(path));
+            var javacName = IsWindows ? "javac.exe" : "javac";
+            var javacPath = !string.IsNullOrEmpty(bin) ? $"{bin}/{javacName}" : javacName;
+            AddFile(javacPath);
+        }
+        var java = new FakeJava(version, path, hasCompiler) { ExitCode = exitCode };
+        _javas[Normalize(path)] = java;
+        return java;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -146,6 +164,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
             return Task.FromResult(node.ProbeAnswer());
         }
 
+        if (arguments.Count > 0 && arguments[0] == "-version" && _javas.TryGetValue(Normalize(fileName), out var java))
+        {
+            return Task.FromResult(java.ProbeAnswer());
+        }
+
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
     }
 
@@ -195,5 +218,16 @@ public sealed record FakeNode(string Version, string Executable)
             ["executable"] = Executable
         });
         return new CommandResult(0, "__FRY_PROBE__" + json + "\n", string.Empty, false);
+    }
+}
+
+public sealed record FakeJava(string Version, string Executable, bool HasCompiler = true)
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working Java", false);
+        return new CommandResult(0, string.Empty, $"openjdk version \"{Version}\"\nOpenJDK Runtime Environment\n", false);
     }
 }

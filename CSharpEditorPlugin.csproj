@@ -52,6 +52,8 @@
     <EmbeddedResource Include="Services\Languages\Python\Kernel\*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />
     <!-- The notebook's JavaScript kernel program, written out next to the plugin's data when a JavaScript cell first runs. -->
     <EmbeddedResource Include="Services\Languages\JavaScript\Kernel\*.js" LogicalName="JavaScriptKernel.%(Filename)%(Extension)" />
+    <!-- The notebook's Java kernel program, written out next to the plugin's data when a Java cell first runs. -->
+    <EmbeddedResource Include="Services\Languages\Java\Kernel\*.java" LogicalName="JavaKernel.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Packaging into .fryplugin distribution archive -->

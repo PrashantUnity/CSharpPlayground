@@ -55,4 +55,5 @@ public static class LanguageIds
     public const string CSharp = "csharp";
     public const string Python = "python";
     public const string JavaScript = "javascript";
+    public const string Java = "java";
 }

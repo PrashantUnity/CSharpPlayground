@@ -195,9 +195,12 @@ internal static class StudioSnapshots
 
         var pyDemo = options.Flag("python-demo");
         var jsDemo = options.Flag("js-demo") || options.Flag("polyglot-demo");
-        int number = (pyDemo || jsDemo) ? 0 : options.Problem();
+        var javaShare = options.Flag("java-share");
+        var javaException = options.Flag("java-exception");
+        var javaTable = options.Flag("java-table");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -215,7 +218,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -318,79 +321,264 @@ internal static class StudioSnapshots
             new NotebookCellItem
             {
                 Type = CellType.Markdown,
-                Source = "## C# and Python in one notebook\nEach cell runs in its language's kernel: pick it from the cell's language menu, or start the cell with `#!python`."
-            },
-            new NotebookCellItem { Type = CellType.Code, Source = "var nums = new[] { 3, 1, 4, 1, 5, 9, 2, 6 };\nnums.Sum()" },
-            new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Language = LanguageIds.Python,
-                Source = "#!share --from csharp nums\nimport sys\nimport numpy as np\n\nprint(\"Python\", sys.version.split()[0], \"with numpy\", np.__version__)\narr = np.array(nums)\narr.mean(), arr.std().round(3)"
+                Source = """
+                    ## C# and Python in one notebook
+                    Each cell runs in its language's kernel: pick it from the cell's language menu, or start the cell with `#!python`.
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
-                Language = LanguageIds.Python,
-                Source = "import pandas as pd\n\nframe = pd.DataFrame({\"n\": arr, \"square\": arr ** 2, \"even\": arr % 2 == 0})\nsquares = frame[\"square\"]\nframe"
-            },
-            new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "#!python\nimport matplotlib.pyplot as plt\n\nplt.figure(figsize=(6, 2.4))\nplt.plot(arr, marker=\"o\")\nplt.title(\"nums\")\nplt.show()"
-            },
-            new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "#!share --from python squares\n$\"C# got {squares.Length} squares from Python; the biggest is {squares.Max()}\""
+                Source = """
+                    var nums = new[] { 3, 1, 4, 1, 5, 9, 2, 6 };
+                    nums.Sum()
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.Python,
-                Source = "name = input(\"Your name? \") or \"there\"\nprint(f\"Hi {name}: the numbers add up to {arr.sum()}\")"
+                Source = """
+                    #!share --from csharp nums
+                    import sys
+                    import numpy as np
+
+                    print("Python", sys.version.split()[0], "with numpy", np.__version__)
+                    arr = np.array(nums)
+                    arr.mean(), arr.std().round(3)
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = """
+                    import pandas as pd
+
+                    frame = pd.DataFrame({"n": arr, "square": arr ** 2, "even": arr % 2 == 0})
+                    squares = frame["square"]
+                    frame
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = """
+                    #!python
+                    import matplotlib.pyplot as plt
+
+                    plt.figure(figsize=(6, 2.4))
+                    plt.plot(arr, marker="o")
+                    plt.title("nums")
+                    plt.show()
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = """
+                    #!share --from python squares
+                    $"C# got {squares.Length} squares from Python; the biggest is {squares.Max()}"
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Python,
+                Source = """
+                    name = input("Your name? ") or "there"
+                    print(f"Hi {name}: the numbers add up to {arr.sum()}")
+                    """
             }
         }
     };
 
     private static NotebookDocumentItem PolyglotDemoNotebook() => new()
     {
-        Title = "Polyglot: C#, Python & JavaScript",
+        Title = "Polyglot: C#, Python, JavaScript & Java",
         Cells =
         {
             new NotebookCellItem
             {
                 Type = CellType.Markdown,
-                Source = "## Polyglot Notebook (C#, Python & JavaScript)\nEach cell runs in its native runtime. Data shares seamlessly across all three languages with `#!share`."
+                Source = """
+                    ## Polyglot Notebook (C#, Python, JavaScript & Java)
+                    Each cell runs in its native runtime. Data shares seamlessly across all four languages with `#!share`.
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.CSharp,
-                Source = "var scores = new[] { 88, 95, 72, 91, 84 };\n$\"C# generated {scores.Length} test scores; average is {scores.Average():F1}\""
+                Source = """
+                    var scores = new[] { 88, 95, 72, 91, 84 };
+                    $"C# generated {scores.Length} test scores; average is {scores.Average():F1}"
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.JavaScript,
-                Source = "#!share --from csharp scores\nconsole.log(`Node.js ${process.version} received ${scores.length} scores from C#!`);\nconst grades = scores.map(s => ({\n    score: s,\n    letter: s >= 90 ? 'A' : s >= 80 ? 'B' : 'C',\n    passed: s >= 80\n}));\ndisplay(grades);\ngrades"
+                Source = """
+                    #!share --from csharp scores
+                    console.log(`Node.js ${process.version} received ${scores.length} scores from C#!`);
+                    const grades = scores.map(s => ({
+                        score: s,
+                        letter: s >= 90 ? 'A' : s >= 80 ? 'B' : 'C',
+                        passed: s >= 80
+                    }));
+                    display(grades);
+                    grades
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.Python,
-                Source = "#!share --from js grades\npassed = sum(1 for g in grades if g['passed'])\navg = sum(g['score'] for g in grades) / len(grades)\nprint(f\"Python analyzed {len(grades)} grades from JavaScript:\")\nprint(f\"Passed: {passed}/{len(grades)} students. Mean score: {avg:.1f}\")\ngrades"
+                Source = """
+                    #!share --from js grades
+                    passed = sum(1 for g in grades if g['passed'])
+                    avg = sum(g['score'] for g in grades) / len(grades)
+                    print(f"Python analyzed {len(grades)} grades from JavaScript:")
+                    print(f"Passed: {passed}/{len(grades)} students. Mean score: {avg:.1f}")
+                    grades
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Java,
+                Source = """
+                    #!share --from csharp scores
+                    int sum = Arrays.stream(scores).sum();
+                    double avg = Arrays.stream(scores).average().orElse(0.0);
+                    System.out.println("Java JShell: sum = " + sum + ", avg = " + avg);
+                    Map<String, Object> javaStats = Map.of("sum", sum, "avg", avg, "count", scores.length);
+                    javaStats;
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.JavaScript,
-                Source = "const stats = { count: scores.length, max: Math.max(...scores), min: Math.min(...scores) };\nstats"
+                Source = """
+                    const stats = { count: scores.length, max: Math.max(...scores), min: Math.min(...scores) };
+                    stats
+                    """
             },
             new NotebookCellItem
             {
                 Type = CellType.Code,
                 Language = LanguageIds.CSharp,
-                Source = "#!share --from js stats\n$\"C# received stats from JavaScript: Max={stats[\"max\"]}, Min={stats[\"min\"]}\""
+                Source = """
+                    #!share --from js stats
+                    #!share --from java javaStats
+                    $"C# received: JS Max={stats["max"]}, Java Sum={javaStats["sum"]}, Java Avg={javaStats["avg"]}"
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem JavaShareDemoNotebook() => new()
+    {
+        Title = "Polyglot: Testing #!share with Java",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    ## Polyglot Share: Java Value Sharing Demo
+                    Cross-language bidirectional sharing between C# Roslyn and Java JShell kernel with `#!share`.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Java,
+                Source = """
+                    int[] scores = new int[] { 88, 95, 72, 91, 84 };
+                    int sum = Arrays.stream(scores).sum();
+                    System.out.println("Java JShell computed sum: " + sum);
+                    sum;
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.CSharp,
+                Source = """
+                    #!share --from java scores
+                    #!share --from java sum --as javaSum
+                    $"C# received sum {javaSum} and scores [{string.Join(", ", scores)}] from Java JShell!"
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem JavaExceptionDemoNotebook() => new()
+    {
+        Title = "Java: Exception and Traceback Handling",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    ## Java Exception Handling
+                    Verifying that runtime exceptions in Java JShell are caught, formatted, and displayed cleanly without bringing down the kernel.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Java,
+                Source = """
+                    int divide(int a, int b) {
+                        return a / b;
+                    }
+                    divide(10, 0);
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Java,
+                Source = """
+                    int recovery = divide(10, 2);
+                    System.out.println("Kernel survived exception! recovery = " + recovery);
+                    recovery;
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem JavaTableDemoNotebook() => new()
+    {
+        Title = "Java: Interactive Tables and Mime Displays",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    ## Java Rich Table Display
+                    Calling `display(...)` in Java JShell to render rich interactive tables with column sorting in the notebook UI.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Java,
+                Source = """
+                    var rows = List.of(
+                        Map.of("id", 101, "package", "com.frypdf.core", "stars", 450),
+                        Map.of("id", 102, "package", "com.frypdf.editor", "stars", 920),
+                        Map.of("id", 103, "package", "com.frypdf.csharp", "stars", 780)
+                    );
+                    display(rows);
+                    "Rendered " + rows.size() + " packages in interactive table."
+                    """
             }
         }
     };

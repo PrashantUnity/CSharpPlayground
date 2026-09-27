@@ -104,6 +104,7 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.Contains(vm.Languages, l => l.Language.Id == LanguageIds.CSharp);
         Assert.Contains(vm.Languages, l => l.Language.Id == LanguageIds.Python);
         Assert.Contains(vm.Languages, l => l.Language.Id == LanguageIds.JavaScript);
+        Assert.Contains(vm.Languages, l => l.Language.Id == LanguageIds.Java);
     }
 
     [Fact]
@@ -131,6 +132,21 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.False(python.IsAutoDetect);
         Assert.Equal(customBinary, python.CustomPath);
         Assert.Equal(customBinary, _services.ToolchainSettings.GetSelectedPath(LanguageIds.Python));
+    }
+
+    [Fact]
+    public void Languages_CanSelectCustomJdkPathForJava()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var java = vm.Languages.FirstOrDefault(l => l.Language.Id == LanguageIds.Java);
+        Assert.NotNull(java);
+
+        const string customBinary = "/custom/path/to/java";
+        vm.ApplyCustomPath(java, customBinary);
+
+        Assert.False(java.IsAutoDetect);
+        Assert.Equal(customBinary, java.CustomPath);
+        Assert.Equal(customBinary, _services.ToolchainSettings.GetSelectedPath(LanguageIds.Java));
     }
 
     [Fact]
