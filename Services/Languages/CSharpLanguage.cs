@@ -4,7 +4,10 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
 using AvaloniaEdit.Indentation.CSharp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
@@ -17,6 +20,20 @@ public sealed class CSharpLanguage : LanguageDefinition
     private static readonly string[] CSharpAliases = ["c#", "cs"];
     private static readonly string[] CSharpExtensions = [".frycs"];
     private static readonly INotebookKernelFactory Kernels = new DelegateKernelFactory(_ => new NotebookExecutionKernel());
+
+    public CSharpLanguage(IDebuggerProvider? debugger = null)
+    {
+        var compiler = new RoslynCompilerService();
+        var exec = new ScriptExecutionEngine();
+        Debugger = debugger ?? new CSharpDebuggerProvider(
+            compiler,
+            new ScriptDebuggerService(compiler, exec),
+            exec,
+            new ProcessLauncher(),
+            new HostEnvironment());
+    }
+
+    public override IDebuggerProvider Debugger { get; }
 
     public override string Id => LanguageIds.CSharp;
     public override string DisplayName => "C#";

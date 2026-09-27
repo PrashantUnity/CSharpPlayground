@@ -402,7 +402,7 @@
                             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                 <TextBox Grid.Column="0" Text="{Binding ImmediateInputText, Mode=TwoWay}"
                                          FontFamily="Consolas, monospace" FontSize="11"
-                                         Classes="sidebar-search-box" PlaceholderText="> Evaluate C# expression...">
+                                         Classes="sidebar-search-box" PlaceholderText="{Binding ImmediatePromptWatermark}">
                                     <TextBox.KeyBindings>
                                         <KeyBinding Gesture="Enter" Command="{Binding EvaluateImmediateCommand}" />
                                     </TextBox.KeyBindings>

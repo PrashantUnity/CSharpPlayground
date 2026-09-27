@@ -14,6 +14,27 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
     [GeneratedRegex(@"^\s*package\s+(?<pkg>[a-zA-Z0-9_.]+)\s*;", RegexOptions.Multiline)]
     private static partial Regex PackageDeclarationRegex();
 
+    [GeneratedRegex(@"\bpublic\s+(?:final\s+|abstract\s+)*class\s+(?<name>[a-zA-Z0-9_$]+)", RegexOptions.Multiline)]
+    private static partial Regex PublicClassRegex();
+
+    [GeneratedRegex(@"\bclass\s+(?<name>[a-zA-Z0-9_$]+)", RegexOptions.Multiline)]
+    private static partial Regex AnyClassRegex();
+
+    public static string DetectClassName(string sourceCode, string fallbackFileName)
+    {
+        if (!string.IsNullOrWhiteSpace(sourceCode))
+        {
+            var pubMatch = PublicClassRegex().Match(sourceCode);
+            if (pubMatch.Success) return pubMatch.Groups["name"].Value;
+
+            var anyMatch = AnyClassRegex().Match(sourceCode);
+            if (anyMatch.Success) return anyMatch.Groups["name"].Value;
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(fallbackFileName);
+        return !string.IsNullOrWhiteSpace(baseName) ? baseName : "Main";
+    }
+
     public async Task<ScriptRunPlan> PlanAsync(ScriptRunContext context, CancellationToken ct = default)
     {
         var binDir = Path.GetDirectoryName(context.Toolchain.ExecutablePath);
@@ -35,8 +56,8 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
         }
 
         var package = ParsePackage(sourceCode);
-        var className = Path.GetFileNameWithoutExtension(context.SourceFilePath);
-        var fqn = !string.IsNullOrEmpty(package) ? $"{package}.{className}" : className;
+        var declaredClass = DetectClassName(sourceCode, context.SourceFilePath);
+        var fqn = !string.IsNullOrEmpty(package) ? $"{package}.{declaredClass}" : declaredClass;
 
         // Isolated compilation folder based on script path hash
         var hash = Math.Abs(context.SourceFilePath.GetHashCode(StringComparison.OrdinalIgnoreCase)).ToString("x8");
@@ -50,6 +71,26 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             // Ignore directory creation issues; javac will report errors if unwritable
         }
 
+        string compileFile = context.SourceFilePath;
+        var fileBaseName = Path.GetFileNameWithoutExtension(context.SourceFilePath);
+
+        // If the declared class does not match the file name (e.g. script_HHmmss.java containing public class Quicksort),
+        // stage it under outDir/src/<declaredClass>.java so javac compiles it cleanly without JLS §7.6 filename mismatch error.
+        if (!string.Equals(declaredClass, fileBaseName, StringComparison.Ordinal))
+        {
+            var srcDir = Path.Combine(outDir, "src");
+            try
+            {
+                Directory.CreateDirectory(srcDir);
+                compileFile = Path.Combine(srcDir, $"{declaredClass}.java");
+                await File.WriteAllTextAsync(compileFile, sourceCode, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                compileFile = context.SourceFilePath;
+            }
+        }
+
         var environment = await JavaProcessEnvironment.ForAsync(host, context.Toolchain, ct);
 
         return new ScriptRunPlan(
@@ -57,7 +98,7 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             new ProcessStep("Compile", new ProcessStartSpec
             {
                 FileName = javacPath,
-                Arguments = ["-d", outDir, "-encoding", "UTF-8", context.SourceFilePath],
+                Arguments = ["-d", outDir, "-encoding", "UTF-8", compileFile],
                 WorkingDirectory = context.WorkingDirectory,
                 Environment = environment
             }, IsBuildStep: true),

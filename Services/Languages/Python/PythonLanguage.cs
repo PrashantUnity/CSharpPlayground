@@ -1,6 +1,7 @@
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
@@ -27,6 +28,7 @@ public sealed class PythonLanguage : LanguageDefinition
         PythonToolchain = toolchain;
         ScriptRunner = new PythonScriptRunner(services.Host);
         Packages = new PipPackageManager(toolchain, services.Processes, services.Host);
+        Debugger = new PythonDebuggerProvider(toolchain, services.Processes, services.Host);
 
         // Each notebook gets its own kernel program, started with its first Python cell.
         var launcher = new PythonKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "python", "kernel"));
@@ -46,7 +48,8 @@ public sealed class PythonLanguage : LanguageDefinition
 
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.StandardInput | LanguageCapabilities.NotebookCells |
-        LanguageCapabilities.ValueSharing | LanguageCapabilities.Packages;
+        LanguageCapabilities.ValueSharing | LanguageCapabilities.Packages |
+        LanguageCapabilities.Debugging | LanguageCapabilities.Breakpoints;
 
     public override string IconKind => "LanguagePython";
     public override string AccentHex => "#4B8BBE";
@@ -67,4 +70,5 @@ public sealed class PythonLanguage : LanguageDefinition
     public override IDiagnosticParser RunDiagnostics { get; } = new PythonTracebackParser();
     public override IPackageManager Packages { get; }
     public override INotebookKernelFactory NotebookKernels { get; }
+    public override IDebuggerProvider Debugger { get; }
 }

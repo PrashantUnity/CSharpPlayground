@@ -39,7 +39,18 @@ public sealed class StudioLanguageServices
 
         if (registerBuiltInLanguages)
         {
-            Registry.Register(new CSharpLanguage());
+            var roslynCompiler = new RoslynCompilerService();
+            var execEngine = new ScriptExecutionEngine();
+            var scriptDebugger = new ScriptDebuggerService(roslynCompiler, execEngine);
+            var csharpDebugger = new Debugging.CSharpDebuggerProvider(
+                roslynCompiler,
+                scriptDebugger,
+                execEngine,
+                Processes,
+                Host,
+                Path.Combine(BaseDirectory, "csharp_debug"));
+
+            Registry.Register(new CSharpLanguage(csharpDebugger));
             Registry.Register(new PythonLanguage(this));
             Registry.Register(new JavaScriptLanguage(this));
             Registry.Register(new JavaLanguage(this));

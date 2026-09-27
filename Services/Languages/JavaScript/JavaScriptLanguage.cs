@@ -1,6 +1,7 @@
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
@@ -27,6 +28,7 @@ public sealed class JavaScriptLanguage : LanguageDefinition
         JavaScriptToolchain = toolchain;
         ScriptRunner = new JavaScriptScriptRunner(services.Host);
         Packages = new NpmPackageManager(services.Processes, services.Host);
+        Debugger = new JavaScriptDebuggerProvider(toolchain, services.Processes, services.Host);
 
         var launcher = new JavaScriptKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "javascript", "kernel"));
         NotebookKernels = new DelegateKernelFactory(context =>
@@ -45,7 +47,8 @@ public sealed class JavaScriptLanguage : LanguageDefinition
 
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.StandardInput | LanguageCapabilities.NotebookCells |
-        LanguageCapabilities.ValueSharing | LanguageCapabilities.Packages;
+        LanguageCapabilities.ValueSharing | LanguageCapabilities.Packages |
+        LanguageCapabilities.Debugging | LanguageCapabilities.Breakpoints;
 
     public override string IconKind => "LanguageJavascript";
     public override string AccentHex => "#F7DF1E";
@@ -65,4 +68,5 @@ public sealed class JavaScriptLanguage : LanguageDefinition
     public override IDiagnosticParser RunDiagnostics { get; } = new JavaScriptTracebackParser();
     public override IPackageManager Packages { get; }
     public override INotebookKernelFactory NotebookKernels { get; }
+    public override IDebuggerProvider Debugger { get; }
 }
