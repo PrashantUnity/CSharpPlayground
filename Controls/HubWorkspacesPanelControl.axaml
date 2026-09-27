@@ -331,16 +331,24 @@
                                                                             </StackPanel>
                                                                         </Grid>
 
-                                                                        <!-- Col 1: Type Pill -->
+                                                                        <!-- Col 1: Language-aware Type Badge -->
                                                                         <Border Grid.Column="1"
-                                                                                Background="{DynamicResource DsBgBrush}"
-                                                                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                                                                Background="{Binding KindBadgeBackground}"
+                                                                                BorderBrush="{Binding KindBadgeBorder}"
                                                                                 BorderThickness="1"
-                                                                                CornerRadius="4"
-                                                                                Padding="7,2"
+                                                                                CornerRadius="5"
+                                                                                Padding="6,3"
                                                                                 HorizontalAlignment="Left"
                                                                                 VerticalAlignment="Center">
-                                                                            <TextBlock Text="{Binding KindBadgeText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                                                <materialIcons:MaterialIcon Kind="{Binding IconKind}"
+                                                                                                            Width="12" Height="12"
+                                                                                                            Foreground="{Binding KindBadgeForeground}"
+                                                                                                            VerticalAlignment="Center" />
+                                                                                <TextBlock Text="{Binding KindBadgeText}"
+                                                                                           FontSize="10.5" FontWeight="Medium"
+                                                                                           Foreground="{Binding KindBadgeForeground}" />
+                                                                            </StackPanel>
                                                                         </Border>
 
                                                                         <!-- Col 2: Modified Relative Date -->
