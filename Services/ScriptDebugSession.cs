@@ -7,24 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Visualizers;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
-
-public enum DebugStepMode
-{
-    None,
-    StepOver,
-    StepInto,
-    Continue
-}
-
-public enum DebugSessionState
-{
-    Idle,
-    Running,
-    Paused,
-    Terminated
-}
 
 public class ScriptDebugSession
 {
@@ -108,17 +94,7 @@ public class ScriptDebugSession
         return new DebugFrameScope(parent);
     }
 
-    public readonly struct DebugFrameScope : IDisposable
-    {
-        private readonly DebugFrame? _parent;
-
-        internal DebugFrameScope(DebugFrame? parent)
-        {
-            _parent = parent;
-        }
-
-        public void Dispose() => CurrentFrame.Value = _parent;
-    }
+    internal static void PopFrame(DebugFrame? parent) => CurrentFrame.Value = parent;
 
     internal sealed class DebugFrame
     {
@@ -255,14 +231,7 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
-        }
-        else
-        {
-            Resumed?.Invoke();
-        }
+        DispatchToUI(Resumed);
     }
 
     public void StepOver()
@@ -276,14 +245,7 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
-        }
-        else
-        {
-            Resumed?.Invoke();
-        }
+        DispatchToUI(Resumed);
     }
 
     public void StepInto()
@@ -296,14 +258,7 @@ public class ScriptDebugSession
             PausedLine = -1;
             _stepGate?.TrySetResult(true);
         }
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => Resumed?.Invoke());
-        }
-        else
-        {
-            Resumed?.Invoke();
-        }
+        DispatchToUI(Resumed);
     }
 
     public void Stop()
@@ -315,14 +270,16 @@ public class ScriptDebugSession
             _cts?.Cancel();
             _stepGate?.TrySetCanceled();
         }
+        DispatchToUI(Stopped);
+    }
+
+    private static void DispatchToUI(Action? action)
+    {
+        if (action == null) return;
         if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => Stopped?.Invoke());
-        }
+            Dispatcher.UIThread.Post(action);
         else
-        {
-            Stopped?.Invoke();
-        }
+            action();
     }
 
     private IReadOnlyList<CallStackFrameItem> BuildCallStack(DebugFrame? current)
@@ -359,13 +316,14 @@ public class ScriptDebugSession
     private static DebugVariableItem CreateVariableItem(string name, object? value)
     {
         int budget = MaxInspectNodesPerVariable;
-        return CreateVariableItem(name, value, 0, new HashSet<object>(ReferenceEqualityComparer.Instance), ref budget);
+        return CreateVariableItem(name, value, 0, name, new HashSet<object>(ReferenceEqualityComparer.Instance), ref budget);
     }
 
     private static DebugVariableItem CreateVariableItem(
         string name,
         object? value,
         int depth,
+        string path,
         HashSet<object> ancestors,
         ref int budget)
     {
@@ -373,7 +331,9 @@ public class ScriptDebugSession
         var item = new DebugVariableItem
         {
             Name = name,
-            RawValue = value
+            RawValue = value,
+            PathExpression = path,
+            NodeKind = depth == 0 ? "Local" : (name.StartsWith('[') ? "CollectionItem" : "Property")
         };
 
         if (value == null)
@@ -386,6 +346,23 @@ public class ScriptDebugSession
         var type = value.GetType();
         item.TypeName = GetFriendlyTypeName(type);
         item.ValueDisplay = FormatValueDisplay(value);
+
+        if (value is IEnumerable && !(value is string))
+        {
+            item.IsCollection = true;
+            if (value is Array arr)
+            {
+                item.CollectionItemCount = arr.Length;
+            }
+            else if (value is ICollection coll)
+            {
+                item.CollectionItemCount = coll.Count;
+            }
+        }
+        else if (value is string str)
+        {
+            item.IsTextOrStructured = str.Length > 20 || str.Contains('\n') || str.TrimStart().StartsWith('{') || str.TrimStart().StartsWith('<');
+        }
 
         if (ObjectInspectorBuilder.IsScalarType(type) || depth >= MaxInspectDepth || budget <= 0)
         {
@@ -404,7 +381,8 @@ public class ScriptDebugSession
             foreach (var (childName, childValue) in GetChildren(value, type))
             {
                 if (budget <= 0) break;
-                item.Children.Add(CreateVariableItem(childName, childValue, depth + 1, ancestors, ref budget));
+                string childPath = childName.StartsWith('[') ? $"{path}{childName}" : $"{path}.{childName}";
+                item.Children.Add(CreateVariableItem(childName, childValue, depth + 1, childPath, ancestors, ref budget));
             }
         }
         finally
@@ -412,72 +390,68 @@ public class ScriptDebugSession
             ancestors.Remove(value);
         }
 
+        item.HasChildren = item.Children.Count > 0;
+        item.ChildrenLoaded = true;
+
         return item;
+    }
+
+    /// <summary>
+    /// Lazily expands a variable's children on demand using the registered type visualizer pipeline.
+    /// </summary>
+    public static IReadOnlyList<DebugVariableItem> ExpandVariableChildren(DebugVariableItem parent)
+    {
+        if (parent == null || parent.RawValue == null)
+            return Array.Empty<DebugVariableItem>();
+
+        if (parent.ChildrenLoaded && parent.Children.Count > 0)
+            return parent.Children;
+
+        var val = parent.RawValue;
+        var type = val.GetType();
+        if (ObjectInspectorBuilder.IsScalarType(type))
+        {
+            parent.HasChildren = false;
+            parent.ChildrenLoaded = true;
+            return Array.Empty<DebugVariableItem>();
+        }
+
+        int budget = MaxInspectNodesPerVariable;
+        var ancestors = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var children = new List<DebugVariableItem>();
+
+        foreach (var (childName, childValue) in GetChildren(val, type))
+        {
+            string childPath = childName.StartsWith('[') ? $"{parent.PathExpression}{childName}" : $"{parent.PathExpression}.{childName}";
+            children.Add(CreateVariableItem(childName, childValue, 1, childPath, ancestors, ref budget));
+        }
+
+        parent.Children.Clear();
+        foreach (var child in children)
+        {
+            parent.Children.Add(child);
+        }
+        parent.HasChildren = parent.Children.Count > 0;
+        parent.ChildrenLoaded = true;
+
+        return parent.Children;
     }
 
     private static List<(string Name, object? Value)> GetChildren(object value, Type type)
     {
-        var children = new List<(string Name, object? Value)>();
-        try
+        var visualizer = DebugTypeVisualizerRegistry.Default.FindVisualizer(value, type);
+        if (visualizer != null)
         {
-            if (value is IDictionary dict)
-            {
-                foreach (DictionaryEntry entry in dict)
-                {
-                    if (children.Count >= MaxInspectItems) break;
-                    children.Add(($"[{entry.Key}]", entry.Value));
-                }
-                return children;
-            }
-
-            if (value is IEnumerable enumerable)
-            {
-                foreach (var element in enumerable)
-                {
-                    if (children.Count >= MaxInspectItems) break;
-                    children.Add(($"[{children.Count}]", element));
-                }
-                return children;
-            }
-        }
-        catch
-        {
-            // A user-defined enumerator threw; show what was collected so far
-            return children;
-        }
-
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-        {
-            if (children.Count >= MaxInspectMembers) return children;
-            if (!prop.CanRead || prop.GetIndexParameters().Length > 0) continue;
-
-            // Reading Result of an unfinished task would block the paused script thread.
-            if (value is Task { IsCompleted: false } && prop.Name == nameof(Task<object>.Result)) continue;
-
             try
             {
-                children.Add((prop.Name, prop.GetValue(value)));
+                return visualizer.GetChildren(value, type).ToList();
             }
             catch
             {
-                // Ignore property evaluation errors
+                return new List<(string Name, object? Value)>();
             }
         }
-
-        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
-        {
-            if (children.Count >= MaxInspectMembers) break;
-            try
-            {
-                children.Add((field.Name, field.GetValue(value)));
-            }
-            catch
-            {
-                // Ignore field read errors
-            }
-        }
-
-        return children;
+        return new List<(string Name, object? Value)>();
     }
 
     private static string GetFriendlyTypeName(Type type)
@@ -498,8 +472,14 @@ public class ScriptDebugSession
             if (val is string s) return $"\"{s}\"";
             if (val is bool b) return b ? "true" : "false";
             if (val is char c) return $"'{c}'";
-            if (val is ICollection col) return $"Count = {col.Count}";
-            return val.ToString() ?? val.GetType().Name;
+
+            var type = val.GetType();
+            var visualizer = DebugTypeVisualizerRegistry.Default.FindVisualizer(val, type);
+            if (visualizer != null)
+            {
+                return visualizer.FormatSummary(val, type);
+            }
+            return val.ToString() ?? type.Name;
         }
         catch (Exception ex)
         {

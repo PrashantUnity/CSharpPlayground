@@ -107,6 +107,47 @@ public partial class CSharpCodeStudioViewModel
             if (eval.Success)
             {
                 ImmediateOutput.Add($"  {eval.Value} ({eval.TypeName ?? "object"})");
+
+                if (IsPaused)
+                {
+                    try
+                    {
+                        var refreshed = await _activeDebugSession.GetVariablesAsync(0);
+                        if (refreshed.Count > 0)
+                        {
+                            _variableChangeTracker.TrackAndMarkChanges(refreshed);
+                            Locals.Clear();
+                            foreach (var l in refreshed) Locals.Add(l);
+                        }
+
+                        var resultVar = Locals.FirstOrDefault(l => l.Name == "$result");
+                        if (resultVar == null)
+                        {
+                            resultVar = new DebugVariableItem
+                            {
+                                Name = "$result",
+                                TypeName = eval.TypeName ?? "object",
+                                ValueDisplay = eval.Value,
+                                Kind = "Result",
+                                NodeKind = "Special",
+                                HasValueChanged = true
+                            };
+                            Locals.Insert(0, resultVar);
+                        }
+                        else
+                        {
+                            resultVar.TypeName = eval.TypeName ?? "object";
+                            resultVar.ValueDisplay = eval.Value;
+                            resultVar.HasValueChanged = true;
+                        }
+
+                        _ = UpdateWatchExpressionsAsync();
+                    }
+                    catch
+                    {
+                        // Ignore variable refresh exceptions
+                    }
+                }
             }
             else
             {

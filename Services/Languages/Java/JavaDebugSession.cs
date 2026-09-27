@@ -212,46 +212,6 @@ public sealed partial class JavaDebugSession : IDebugSession
         return frames;
     }
 
-    private static IReadOnlyList<DebugVariableItem> ParseLocals(string text)
-    {
-        var locals = new List<DebugVariableItem>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var matches = VarRegex().Matches(text);
-        foreach (Match m in matches)
-        {
-            var name = m.Groups["name"].Value.Trim();
-            var val = m.Groups["val"].Value.Trim();
-
-            if (name.Equals("main", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("thread", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("[cmd_", StringComparison.OrdinalIgnoreCase) ||
-                name.Equals("Method", StringComparison.OrdinalIgnoreCase) ||
-                name.Equals("Local", StringComparison.OrdinalIgnoreCase) ||
-                !seen.Add(name))
-            {
-                continue;
-            }
-
-            var typeName = "object";
-            if (val.StartsWith("instance of ", StringComparison.OrdinalIgnoreCase))
-            {
-                typeName = val.Substring("instance of ".Length).Split(' ')[0];
-            }
-            else if (int.TryParse(val, out _)) typeName = "int";
-            else if (double.TryParse(val, out _)) typeName = "double";
-            else if (bool.TryParse(val, out _)) typeName = "boolean";
-
-            locals.Add(new DebugVariableItem
-            {
-                Name = name,
-                TypeName = typeName,
-                ValueDisplay = val,
-                Kind = "Local"
-            });
-        }
-        return locals;
-    }
-
     private async Task<string> SendCommandWaitPromptAsync(string command)
     {
         await _commandLock.WaitAsync().ConfigureAwait(false);
@@ -378,8 +338,6 @@ public sealed partial class JavaDebugSession : IDebugSession
     public Task<IReadOnlyList<DebugVariableItem>> GetVariablesAsync(int frameIndex, CancellationToken ct = default) =>
         Task.FromResult(_lastLocals);
 
-    public Task<IReadOnlyList<DebugVariableItem>> GetVariableChildrenAsync(DebugVariableItem parent, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<DebugVariableItem>>(Array.Empty<DebugVariableItem>());
 
     public async Task<EvaluationResult> EvaluateAsync(string expression, int? frameIndex, EvaluationContext context, CancellationToken ct = default)
     {

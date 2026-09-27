@@ -20,6 +20,18 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 public partial class CSharpCodeStudioViewModel
 {
     private IDebugSession? _activeDebugSession;
+    private readonly DebugVariableChangeTracker _variableChangeTracker = new();
+
+    public IDebugSession? ActiveDebugSession => _activeDebugSession;
+
+    public async Task<IReadOnlyList<DebugVariableItem>> GetVariableChildrenAsync(DebugVariableItem item)
+    {
+        if (_activeDebugSession != null)
+        {
+            return await _activeDebugSession.GetVariableChildrenAsync(item);
+        }
+        return item.Children;
+    }
 
     [ObservableProperty]
     private bool _isDebugging;
@@ -193,6 +205,7 @@ public partial class CSharpCodeStudioViewModel
     private void HandleSessionPaused(DebugPausedEventArgs args, StudioTabItemViewModel? tab)
     {
         int line = args.LineNumber;
+        _variableChangeTracker.TrackAndMarkChanges(args.Locals);
 
         if (tab != null)
         {
@@ -386,5 +399,45 @@ public partial class CSharpCodeStudioViewModel
     {
         if (item == null) return;
         item.IsEnabled = !item.IsEnabled;
+    }
+
+    public event Action<DebugVariableItem>? RequestExploreVariable;
+    public event Action<DebugVariableItem>? RequestViewVariable;
+
+    [RelayCommand]
+    public void ExploreVariable(DebugVariableItem? item)
+    {
+        if (item != null)
+        {
+            RequestExploreVariable?.Invoke(item);
+        }
+    }
+
+    [RelayCommand]
+    public void ViewVariable(DebugVariableItem? item)
+    {
+        if (item != null)
+        {
+            RequestViewVariable?.Invoke(item);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ExpandVariableAsync(DebugVariableItem? item)
+    {
+        if (item == null) return;
+        item.IsExpanded = !item.IsExpanded;
+        if (item.IsExpanded && !item.ChildrenLoaded && item.HasChildren)
+        {
+            item.IsLoadingChildren = true;
+            try
+            {
+                await GetVariableChildrenAsync(item);
+            }
+            finally
+            {
+                item.IsLoadingChildren = false;
+            }
+        }
     }
 }

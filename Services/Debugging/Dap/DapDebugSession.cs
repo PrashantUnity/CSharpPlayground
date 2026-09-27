@@ -193,19 +193,7 @@ public sealed class DapDebugSession : IDebugSession
                         if (dapVar == null || string.IsNullOrWhiteSpace(dapVar.Name)) continue;
                         if (!seenNames.Add(dapVar.Name)) continue;
 
-                        var item = new DebugVariableItem
-                        {
-                            Name = dapVar.Name,
-                            TypeName = dapVar.Type ?? "object",
-                            ValueDisplay = dapVar.Value,
-                            Kind = scope.Name
-                        };
-
-                        if (dapVar.VariablesReference > 0)
-                        {
-                            _variableReferences[item] = dapVar.VariablesReference;
-                        }
-
+                        var item = CreateDebugVariable(dapVar, scope.Name, null);
                         locals.Add(item);
                     }
                 }
@@ -219,38 +207,110 @@ public sealed class DapDebugSession : IDebugSession
     {
         if (!_variableReferences.TryGetValue(parent, out int varRef) || varRef <= 0)
         {
+            parent.HasChildren = false;
+            parent.ChildrenLoaded = true;
             return Array.Empty<DebugVariableItem>();
         }
 
-        var varsResp = await _client.SendRequestAsync("variables", new { variablesReference = varRef }, ct).ConfigureAwait(false);
-        if (varsResp.Body == null) return Array.Empty<DebugVariableItem>();
-
-        var children = new List<DebugVariableItem>();
-        if (varsResp.Body.Value.TryGetProperty("variables", out var varsArray) && varsArray.ValueKind == JsonValueKind.Array)
+        parent.IsLoadingChildren = true;
+        try
         {
-            foreach (var varElem in varsArray.EnumerateArray())
+            var varsResp = await _client.SendRequestAsync("variables", new { variablesReference = varRef }, ct).ConfigureAwait(false);
+            if (varsResp.Body == null) return Array.Empty<DebugVariableItem>();
+
+            var children = new List<DebugVariableItem>();
+            if (varsResp.Body.Value.TryGetProperty("variables", out var varsArray) && varsArray.ValueKind == JsonValueKind.Array)
             {
-                var dapVar = varElem.Deserialize<DapVariable>(JsonOptions);
-                if (dapVar == null) continue;
-
-                var item = new DebugVariableItem
+                foreach (var varElem in varsArray.EnumerateArray())
                 {
-                    Name = dapVar.Name,
-                    TypeName = dapVar.Type ?? "object",
-                    ValueDisplay = dapVar.Value,
-                    Kind = "Member"
-                };
+                    var dapVar = varElem.Deserialize<DapVariable>(JsonOptions);
+                    if (dapVar == null) continue;
 
-                if (dapVar.VariablesReference > 0)
-                {
-                    _variableReferences[item] = dapVar.VariablesReference;
+                    var item = CreateDebugVariable(dapVar, "Member", parent.PathExpression);
+                    children.Add(item);
                 }
-
-                children.Add(item);
             }
+
+            parent.Children.Clear();
+            foreach (var child in children)
+            {
+                parent.Children.Add(child);
+            }
+            parent.HasChildren = parent.Children.Count > 0;
+            parent.ChildrenLoaded = true;
+
+            return children;
+        }
+        finally
+        {
+            parent.IsLoadingChildren = false;
+        }
+    }
+
+    private DebugVariableItem CreateDebugVariable(DapVariable dapVar, string kind, string? parentPath = null)
+    {
+        string name = dapVar.Name;
+        string typeName = dapVar.Type ?? "object";
+        string valueDisplay = dapVar.Value;
+
+        string path = parentPath != null
+            ? (name.StartsWith('[') ? $"{parentPath}{name}" : $"{parentPath}.{name}")
+            : name;
+
+        string nodeKind = kind switch
+        {
+            "Locals" => "Local",
+            "Arguments" => "Parameter",
+            "Registers" => "Local",
+            _ when name.StartsWith('[') => "CollectionItem",
+            _ when name.StartsWith("special variables", StringComparison.OrdinalIgnoreCase) || name.StartsWith("function variables", StringComparison.OrdinalIgnoreCase) => "StaticMember",
+            _ when name.Equals("this", StringComparison.OrdinalIgnoreCase) || name.Equals("self", StringComparison.OrdinalIgnoreCase) => "Local",
+            _ => "Property"
+        };
+
+        bool isCollection = (dapVar.Type != null && (
+            dapVar.Type.Contains("list", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("dict", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("array", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("tuple", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("DataFrame", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("ndarray", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("Set", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("Map", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.EndsWith("[]")))
+            || (dapVar.Value != null && (
+                dapVar.Value.StartsWith('[') ||
+                dapVar.Value.StartsWith('{') ||
+                dapVar.Value.Contains("Count =") ||
+                dapVar.Value.Contains("len =") ||
+                dapVar.Value.Contains("len:")));
+
+        bool isText = (dapVar.Type != null && (
+            dapVar.Type.Contains("str", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("string", StringComparison.OrdinalIgnoreCase) ||
+            dapVar.Type.Contains("text", StringComparison.OrdinalIgnoreCase)))
+            || (dapVar.Value != null && (dapVar.Value.Length > 20 || dapVar.Value.Contains('\n')));
+
+        var item = new DebugVariableItem
+        {
+            Name = name,
+            TypeName = typeName,
+            ValueDisplay = valueDisplay,
+            Kind = kind,
+            NodeKind = nodeKind,
+            PathExpression = path,
+            VariablesReference = dapVar.VariablesReference,
+            HasChildren = dapVar.VariablesReference > 0,
+            IsCollection = isCollection,
+            IsTextOrStructured = isText
+        };
+
+        if (dapVar.VariablesReference > 0)
+        {
+            _variableReferences[item] = dapVar.VariablesReference;
         }
 
-        return children;
+        return item;
     }
 
     public async Task<EvaluationResult> EvaluateAsync(string expression, int? frameIndex, EvaluationContext context, CancellationToken ct = default)

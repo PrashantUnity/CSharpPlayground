@@ -157,6 +157,14 @@ public sealed class InProcessRoslynDebugSession : IDebugSession
 
     public Task<IReadOnlyList<DebugVariableItem>> GetVariableChildrenAsync(DebugVariableItem parent, CancellationToken ct = default)
     {
+        if (parent == null) return Task.FromResult<IReadOnlyList<DebugVariableItem>>(Array.Empty<DebugVariableItem>());
+
+        if (!parent.ChildrenLoaded && parent.RawValue != null)
+        {
+            var children = ScriptDebugSession.ExpandVariableChildren(parent);
+            return Task.FromResult(children);
+        }
+
         return Task.FromResult<IReadOnlyList<DebugVariableItem>>(parent.Children);
     }
 

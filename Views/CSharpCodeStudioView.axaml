@@ -551,6 +551,18 @@
                                                            HorizontalAlignment="Left"
                                                            VerticalAlignment="Top"
                                                            IsVisible="False" />
+
+                        <!-- Interactive Collection View Overlay (Data Explorer) -->
+                        <controls:CollectionViewControl Name="CollectionViewOverlay"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        IsVisible="False" />
+
+                        <!-- Text / JSON Value Viewer Overlay -->
+                        <controls:ValueViewerControl Name="ValueViewerOverlay"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     IsVisible="False" />
                     </Grid>
 
                     <!-- Vertical Splitter (Editor vs Right Dock) -->
