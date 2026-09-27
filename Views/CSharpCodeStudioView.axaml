@@ -506,6 +506,14 @@
                                 <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 
+                            <!-- Side-by-Side Right Dock / Bottom Dock Toggle -->
+                            <Button Command="{Binding ToggleDeckPositionCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="{Binding DeckPositionTooltip}">
+                                <Panel>
+                                    <materialIcons:MaterialIcon Kind="DockRight" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsDeckDockedToRight}" />
+                                    <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding IsDeckDockedToRight}" />
+                                </Panel>
+                            </Button>
+
                             <!-- Save Script -->
                             <Button Command="{Binding SaveCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Save Script (Ctrl+S)">
                                 <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -517,25 +525,46 @@
                 <!-- Row 1: VS Code Breadcrumbs Bar -->
                 <controls:StudioBreadcrumbsControl Grid.Row="1" />
 
-                <!-- Row 2: AvaloniaEdit Code Canvas -->
-                <Grid Grid.Row="2" Name="EditorHostGrid">
-                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
-                        <avaloniaEdit:TextEditor Name="Editor"
-                                                 FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
-                                                 FontSize="{Binding EditorFontSize}"
-                                                 ShowLineNumbers="True"
-                                                 WordWrap="False"
-                                                 HorizontalScrollBarVisibility="Auto"
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                 Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                    </Border>
+                <!-- Row 2: AvaloniaEdit Code Canvas + Right Dock Host -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="300" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="{Binding RightDeckGridLength, Mode=TwoWay}" MinWidth="0" />
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Live Debug Hover Data Tip Card -->
-                    <controls:DebugHoverDataTipControl Name="DebugHoverTip"
-                                                       HorizontalAlignment="Left"
-                                                       VerticalAlignment="Top"
-                                                       IsVisible="False" />
+                    <Grid Grid.Column="0" Name="EditorHostGrid">
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                            <avaloniaEdit:TextEditor Name="Editor"
+                                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
+                                                     FontSize="{Binding EditorFontSize}"
+                                                     ShowLineNumbers="True"
+                                                     WordWrap="False"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                     Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        </Border>
+
+                        <!-- Live Debug Hover Data Tip Card -->
+                        <controls:DebugHoverDataTipControl Name="DebugHoverTip"
+                                                           HorizontalAlignment="Left"
+                                                           VerticalAlignment="Top"
+                                                           IsVisible="False" />
+                    </Grid>
+
+                    <!-- Vertical Splitter (Editor vs Right Dock) -->
+                    <GridSplitter Grid.Column="1"
+                                  Classes="studio-sash"
+                                  Width="4"
+                                  ResizeDirection="Columns"
+                                  Cursor="SizeWestEast"
+                                  IsVisible="{Binding ShowRightDeckSplitter}" />
+
+                    <!-- Collapsible Right Tool Deck Host -->
+                    <ContentControl Grid.Column="2"
+                                    Name="RightDeckContainer"
+                                    IsVisible="{Binding ShowRightDeck}" />
                 </Grid>
 
                 <!-- Row 3: Horizontal Splitter (Editor vs Bottom Dock) -->
@@ -544,11 +573,12 @@
                               Height="4"
                               ResizeDirection="Rows"
                               Cursor="SizeNorthSouth"
-                              IsVisible="{Binding IsBottomDeckExpanded}" />
+                              IsVisible="{Binding ShowBottomDeckSplitter}" />
 
-                <!-- Row 4: Collapsible Bottom Tool Deck -->
-                <controls:StudioBottomDeckControl Grid.Row="4"
-                                                  IsVisible="{Binding IsBottomDeckExpanded}" />
+                <!-- Row 4: Collapsible Bottom Tool Deck Host -->
+                <ContentControl Grid.Row="4"
+                                Name="BottomDeckContainer"
+                                IsVisible="{Binding ShowBottomDeck}" />
             </Grid>
 
         </Grid>

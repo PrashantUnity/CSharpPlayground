@@ -9,7 +9,7 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubSystemStatusPanelControl"
              x:DataType="vm:CSharpManagerViewModel">
 
-                                <StackPanel Grid.Column="2" Spacing="16">
+    <StackPanel Spacing="16">
 
                                     <!-- Card 1: Studio Environment & System Health -->
                                     <Border Classes="nexus-glass-card" Padding="16">

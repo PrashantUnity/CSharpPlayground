@@ -64,4 +64,13 @@ public partial class CSharpManagerView : UserControl
             }
         }
     }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (DataContext is CSharpManagerViewModel vm && e.NewSize.Width > 0)
+        {
+            vm.UpdateAdaptiveRail(e.NewSize.Width);
+        }
+    }
 }

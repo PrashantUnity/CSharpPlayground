@@ -81,7 +81,7 @@
                         <ItemsControl ItemsSource="{Binding MissingSteps}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
+                                    <Border Background="#161B22" BorderBrush="#21262D" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
                                         <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,Menlo,monospace" FontSize="11.5" Foreground="#7EE787" />
                                     </Border>
                                 </DataTemplate>
@@ -231,7 +231,7 @@
                         </ItemsControl>
 
                         <!-- Real-Time Output Drawer -->
-                        <Border Background="#0D1117" BorderBrush="#30363D" BorderThickness="1" CornerRadius="6" Padding="12"
+                        <Border Background="#0D1117" BorderBrush="#21262D" BorderThickness="1" CornerRadius="6" Padding="12"
                                 IsVisible="{Binding ActionOutputLog.Length}">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding ActionStatusMessage}" FontSize="11.5" FontWeight="SemiBold" Foreground="#58A6FF" />

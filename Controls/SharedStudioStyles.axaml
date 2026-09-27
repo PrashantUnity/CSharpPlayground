@@ -40,13 +40,14 @@
     <!-- ============================================================ -->
     <Style Selector="Border.vscode-tab">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
-        <Setter Property="BorderThickness" Value="0,2,1,0" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
         <Setter Property="Padding" Value="12,0,8,0" />
         <Setter Property="Height" Value="35" />
     </Style>
     <Style Selector="Border.vscode-tab.active">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="BorderThickness" Value="0,2,1,0" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
     </Style>
 
@@ -391,8 +392,7 @@
     <Style Selector="Button.snippet-run-btn">
         <Setter Property="Background" Value="{DynamicResource M3SuccessContainerBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessContainerBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3SuccessBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="10,4" />
         <Setter Property="FontSize" Value="11" />

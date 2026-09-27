@@ -40,6 +40,8 @@ public partial class CSharpCodeStudioView : UserControl
     private DebugHoverDataTipControl? _debugHoverTip;
     private DebugHoverDataTipController? _debugHoverController;
 
+    private readonly StudioBottomDeckControl _deckControl = new();
+
     // The language of the document in the editor: its colors, indentation, folding and comment prefix, and whether the
     // C# completion and hover apply. A language with editor help of its own attaches it here.
     private ILanguageDefinition? _editorLanguage;
@@ -48,6 +50,7 @@ public partial class CSharpCodeStudioView : UserControl
     public CSharpCodeStudioView()
     {
         InitializeComponent();
+        UpdateDeckPlacement();
 
         _foldingTimer = new DispatcherTimer
         {
@@ -94,6 +97,7 @@ public partial class CSharpCodeStudioView : UserControl
         }
 
         DataContextChanged += OnDataContextChanged;
+        SizeChanged += OnViewSizeChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
         AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
@@ -530,6 +534,11 @@ public partial class CSharpCodeStudioView : UserControl
         }
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
+        UpdateDeckPlacement();
+        if (_currentVm != null && Bounds.Width > 0)
+        {
+            _currentVm.UpdateAdaptiveDeckWidth(Bounds.Width);
+        }
 
         if (_currentVm != null && _editor != null)
         {
@@ -680,6 +689,37 @@ public partial class CSharpCodeStudioView : UserControl
         else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.ActiveLanguage))
         {
             ApplyEditorLanguage(_currentVm.ActiveLanguage);
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsDeckDockedToRight))
+        {
+            UpdateDeckPlacement();
+        }
+    }
+
+    private void OnViewSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width > 0 && _currentVm != null)
+        {
+            _currentVm.UpdateAdaptiveDeckWidth(e.NewSize.Width);
+        }
+    }
+
+    private void UpdateDeckPlacement()
+    {
+        var bottomContainer = this.FindControl<ContentControl>("BottomDeckContainer");
+        var rightContainer = this.FindControl<ContentControl>("RightDeckContainer");
+        if (bottomContainer == null || rightContainer == null) return;
+
+        bool isRight = _currentVm?.IsDeckDockedToRight ?? false;
+        if (isRight)
+        {
+            bottomContainer.Content = null;
+            rightContainer.Content = _deckControl;
+        }
+        else
+        {
+            rightContainer.Content = null;
+            bottomContainer.Content = _deckControl;
         }
     }
 

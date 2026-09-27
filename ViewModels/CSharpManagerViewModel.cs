@@ -101,6 +101,27 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isStatusBannerError;
 
+    [ObservableProperty]
+    private bool _isSystemStatusRailVisible = true;
+
+    private bool _userExplicitlyToggledRail;
+
+    [RelayCommand]
+    private void ToggleSystemStatusRail()
+    {
+        _userExplicitlyToggledRail = true;
+        IsSystemStatusRailVisible = !IsSystemStatusRailVisible;
+    }
+
+    public void UpdateAdaptiveRail(double width)
+    {
+        if (width <= 0) return;
+        if (!_userExplicitlyToggledRail)
+        {
+            IsSystemStatusRailVisible = width >= 1100;
+        }
+    }
+
     private string? _pendingTemplateId;
 
     public bool IsCreatePromptOpen => PendingCreateKind.HasValue;

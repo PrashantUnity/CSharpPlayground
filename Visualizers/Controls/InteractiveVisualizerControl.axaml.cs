@@ -13,8 +13,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
 public partial class InteractiveVisualizerControl : UserControl
 {
-    public const double DefaultCanvasHeight = 300;
-    private const double MinCanvasHeight = 140;
+    public const double DefaultCanvasHeight = 200;
+    private const double MinCanvasHeight = 80;
     private const double MaxCanvasHeight = 1400;
     private const double ZoomStep = 1.2;
 
@@ -215,6 +215,24 @@ public partial class InteractiveVisualizerControl : UserControl
         }
     }
 
+    private double GetDefaultCanvasHeightForKind()
+    {
+        if (Options == null) return DefaultCanvasHeight;
+        return Options.Kind switch
+        {
+            VisualizerKind.ArrayPointers => 125,
+            VisualizerKind.LinkedList => 125,
+            VisualizerKind.Bars => 140,
+            VisualizerKind.Tree => 220,
+            VisualizerKind.Graph => 230,
+            VisualizerKind.Matrix => 210,
+            VisualizerKind.Islands => 210,
+            VisualizerKind.Board => 220,
+            VisualizerKind.Canvas => 240,
+            _ => DefaultCanvasHeight
+        };
+    }
+
     private void ApplyViewMode()
     {
         // Inline, the card hugs its content; full screen, it fills the window and the canvas takes the spare height.
@@ -222,7 +240,7 @@ public partial class InteractiveVisualizerControl : UserControl
 
         if (this.FindControl<Border>("CanvasHost") is { } host)
         {
-            host.Height = IsFullScreenView ? double.NaN : DefaultCanvasHeight;
+            host.Height = IsFullScreenView ? double.NaN : GetDefaultCanvasHeightForKind();
         }
 
         if (this.FindControl<Border>("ResizeGrip") is { } grip) grip.IsVisible = !IsFullScreenView;
@@ -250,6 +268,11 @@ public partial class InteractiveVisualizerControl : UserControl
     public void ApplyOptions()
     {
         if (Options == null) return;
+
+        if (this.FindControl<Border>("CanvasHost") is { } host && !IsFullScreenView)
+        {
+            host.Height = GetDefaultCanvasHeightForKind();
+        }
 
         var titleBlock = this.FindControl<TextBlock>("VisualizerTitleText");
         var statsBlock = this.FindControl<TextBlock>("StatsSummaryText");

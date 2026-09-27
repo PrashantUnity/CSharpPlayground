@@ -331,6 +331,43 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
     }
 
     [Fact]
+    public void DeckPosition_TogglesBetweenBottomAndRight_AndManagesGridLengths()
+    {
+        var studio = CreateStudio();
+        Assert.False(studio.IsDeckDockedToRight);
+        Assert.True(studio.ShowBottomDeck);
+        Assert.True(studio.ShowBottomDeckSplitter);
+        Assert.False(studio.ShowRightDeckSplitter);
+        Assert.Equal("Dock Panel to Right", studio.DeckPositionTooltip);
+
+        // Toggle to Right Dock
+        studio.ToggleDeckPositionCommand.Execute(null);
+        Assert.True(studio.IsDeckDockedToRight);
+        Assert.False(studio.ShowBottomDeck);
+        Assert.False(studio.ShowBottomDeckSplitter);
+        Assert.True(studio.ShowRightDeckSplitter);
+        Assert.Equal(0, studio.BottomDeckGridLength.Value);
+        Assert.True(studio.RightDeckGridLength.Value >= 400);
+        Assert.Equal("Dock Panel to Bottom", studio.DeckPositionTooltip);
+
+        // Collapse while right docked
+        studio.IsBottomDeckExpanded = false;
+        Assert.Equal(0, studio.RightDeckGridLength.Value);
+        Assert.False(studio.ShowRightDeckSplitter);
+
+        // Expand again
+        studio.IsBottomDeckExpanded = true;
+        Assert.True(studio.RightDeckGridLength.Value >= 400);
+        Assert.True(studio.ShowRightDeckSplitter);
+
+        // Toggle back to Bottom Dock
+        studio.ToggleDeckPositionCommand.Execute(null);
+        Assert.False(studio.IsDeckDockedToRight);
+        Assert.True(studio.ShowBottomDeck);
+        Assert.True(studio.BottomDeckGridLength.Value >= 280);
+    }
+
+    [Fact]
     public void SideBarGridLength_UpdatesDynamicallyOnExpandAndCollapse()
     {
         var studio = CreateStudio();

@@ -144,7 +144,7 @@
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="TrophyOutline" Width="18" Height="18" Foreground="#E3B341" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="Blind 75" Margin="12,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Background="#262115" BorderBrush="#E3B341" BorderThickness="1" CornerRadius="10" Padding="6,1.5">
+                                    <Border Grid.Column="2" Background="#262115" BorderBrush="#40E3B341" BorderThickness="1" CornerRadius="10" Padding="6,1.5">
                                         <TextBlock Text="76" FontSize="9.5" FontWeight="SemiBold" Foreground="#E3B341" />
                                     </Border>
                                 </Grid>
@@ -157,7 +157,7 @@
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="BookOpenPageVariantOutline" Width="18" Height="18" Foreground="#38BDF8" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="Documentation" Margin="12,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Background="#1C2D3D" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="10" Padding="6,1.5">
+                                    <Border Grid.Column="2" Background="#1C2D3D" BorderBrush="#400284C7" BorderThickness="1" CornerRadius="10" Padding="6,1.5">
                                         <TextBlock Text="Docs" FontSize="9.5" FontWeight="SemiBold" Foreground="#38BDF8" />
                                     </Border>
                                 </Grid>
@@ -241,7 +241,7 @@
                                 <Grid ColumnDefinitions="Auto,*">
                                     <!-- User Avatar Circle -->
                                     <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
-                                            Background="{DynamicResource DsPrimaryBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                                            Background="{DynamicResource DsPrimaryBrush}">
                                         <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>

@@ -41,6 +41,16 @@ public class UiPolishTests : IDisposable
         Assert.Equal($"{other.Title} > {article.Title}", docs.ActiveBreadcrumb);
     }
 
+    [Fact]
+    public void DocsViewModel_HasOutlineVisibleDefault_AndCanBeToggled()
+    {
+        var docs = new CSharpDocsViewModel();
+        Assert.True(docs.IsOutlineVisible);
+
+        docs.IsOutlineVisible = false;
+        Assert.False(docs.IsOutlineVisible);
+    }
+
     // ── Hub ───────────────────────────────────────────────────────────────────
 
     [Fact]

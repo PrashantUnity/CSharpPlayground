@@ -28,7 +28,10 @@
         <!-- ============================================================ -->
         <!-- ROOT 2-COLUMN LAYOUT: SIDEBAR + MAIN CONTENT                -->
         <!-- ============================================================ -->
-        <Grid ColumnDefinitions="256,*">
+        <!-- ============================================================ -->
+        <!-- ROOT 3-COLUMN LAYOUT: SIDEBAR + MAIN CANVAS + STICKY RIGHT RAIL -->
+        <!-- ============================================================ -->
+        <Grid ColumnDefinitions="256,*,Auto">
 
             <!-- ============================================================ -->
             <!-- 1. LEFT SIDEBAR (w-64 bg-ds-surface border-r border-ds-border) -->
@@ -36,7 +39,7 @@
             <controls:HubSidebarControl Grid.Column="0" />
 
             <!-- ============================================================ -->
-            <!-- 2. MAIN CONTENT (main.flex-1 flex flex-col h-full bg-ds-bg)   -->
+            <!-- 2. MAIN CONTENT (Center canvas, dynamic width)               -->
             <!-- ============================================================ -->
             <Grid Grid.Column="1" RowDefinitions="64,*">
 
@@ -59,8 +62,8 @@
                                 </Border.Background>
                             </Border>
 
-                            <!-- Dashboard Content Max-Width 1120px -->
-                            <StackPanel MaxWidth="1120" Margin="32,28,32,48" Spacing="28">
+                            <!-- Dashboard Content (Fills 100% of available canvas across all displays) -->
+                            <StackPanel Margin="32,28,32,48" Spacing="28" HorizontalAlignment="Stretch">
 
                                 <!-- Status Notification Toast Banner -->
                                 <Border CornerRadius="8" BorderThickness="1" Padding="14,10" Margin="0,0,0,4"
@@ -81,25 +84,14 @@
                                     </Grid>
                                 </Border>
 
+                                <!-- SECTION 1: WELCOME & HERO BANNER -->
                                 <controls:HubWelcomeSectionControl />
 
-                                <!-- ============================================================ -->
-                                <!-- SECTION 2: PINNED WORKSPACES                                 -->
-                                <!-- ============================================================ -->
+                                <!-- SECTION 2: PINNED WORKSPACES -->
                                 <controls:HubPinnedWorkspacesControl IsVisible="{Binding IsWorkspacesTabActive}" />
 
-                                <!-- ============================================================ -->
-                                <!-- SECTION 3: 2-COLUMN SPLIT (RECENT ACTIVITY + SYSTEM STATUS)  -->
-                                <!-- ============================================================ -->
-                                <Grid ColumnDefinitions="*,28,340">
-
-                                    <!-- LEFT COLUMN: RECENT ACTIVITY / TEMPLATES -->
-                                    <controls:HubWorkspacesPanelControl Grid.Column="0" />
-
-                                    <!-- RIGHT COLUMN: SYSTEM STATUS, RESOURCE USAGE & SHORTCUTS -->
-                                    <controls:HubSystemStatusPanelControl Grid.Column="2" />
-
-                                </Grid>
+                                <!-- SECTION 3: RECENT WORKSPACES / STARTER TEMPLATES GALLERY -->
+                                <controls:HubWorkspacesPanelControl />
 
                             </StackPanel>
                         </Panel>
@@ -172,6 +164,43 @@
                 </Panel>
 
             </Grid>
+
+            <!-- ============================================================ -->
+            <!-- 3. STICKY RIGHT RAIL: SYSTEM STATUS & ENVIRONMENT (340px)    -->
+            <!-- ============================================================ -->
+            <Border Grid.Column="2"
+                    Width="340"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="1,0,0,0"
+                    IsVisible="{Binding IsSystemStatusRailVisible}">
+                <Grid RowDefinitions="64,*">
+                    <!-- Sticky Rail Header matching Top Header height (64px) -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="20,0">
+                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="TuneVertical" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="SYSTEM &amp; RUNTIME" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Command="{Binding ToggleSystemStatusRailCommand}"
+                                    Classes="nexus-btn-ghost"
+                                    Width="26" Height="26" Padding="0"
+                                    ToolTip.Tip="Collapse System Rail">
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Sticky Rail Body (Independent Scroll) -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,20,20,32">
+                        <controls:HubSystemStatusPanelControl />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
 
         </Grid>
 

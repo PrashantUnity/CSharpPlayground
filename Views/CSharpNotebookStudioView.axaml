@@ -972,9 +972,7 @@
                         </StackPanel>
 
                         <!-- Right: Kernel Indicator Badge -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-
-                            <!-- Kernel Indicator Pill (.NET (C#) · Python 3.x): a menu of the language new cells get, and Restart -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">                            <!-- Kernel Indicator Pill (.NET (C#) · Python 3.x): a menu of the language new cells get, and Restart -->
                             <Button Classes="nb-action-btn"
                                     Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
@@ -983,7 +981,7 @@
                                     Height="26"
                                     Padding="10,0"
                                     VerticalAlignment="Center"
-                                    ToolTip.Tip="The notebook's kernels">
+                                    ToolTip.Tip="{Binding KernelName}">
                                 <Button.Flyout>
                                     <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="ide-menu-flyout">
                                         <StackPanel Spacing="3" MinWidth="270" MaxWidth="320">
@@ -999,7 +997,7 @@
                                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="14" Height="14"
                                                                                             Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
                                                                 <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="11.5" FontWeight="Medium"
-                                                                           Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" Margin="6,0,8,0" />
+                                                                            Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" Margin="6,0,8,0" />
                                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                     <Border Width="6" Height="6" CornerRadius="3"
                                                                             Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" />
@@ -1076,7 +1074,9 @@
                                                FontSize="11.5"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource M3OnSurfaceBrush}"
-                                               VerticalAlignment="Center" />
+                                               VerticalAlignment="Center"
+                                               MaxWidth="240"
+                                               TextTrimming="CharacterEllipsis" />
                                     <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource M3SuccessBrush}" VerticalAlignment="Center" Margin="2,0,0,0" ToolTip.Tip="Kernel: Ready" />
                                     <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
@@ -1097,7 +1097,8 @@
                                   ScrollViewer.BringIntoViewOnFocusChange="False"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="0" Margin="24,16,24,48" HorizontalAlignment="Stretch">
+                        <!-- Full-Width Responsive Notebook Cells Container -->
+                        <StackPanel Spacing="0" Margin="24,16,36,48" HorizontalAlignment="Stretch">
 
                             <!-- Top Insert Divider (before first cell) -->
                             <Border Classes="cell-insert-divider" Margin="56,0,0,8">
@@ -1237,7 +1238,7 @@
                                                                 <Border Classes="cell-floating-toolbar"
                                                                         HorizontalAlignment="Right"
                                                                         VerticalAlignment="Top"
-                                                                        Margin="0,4,6,0"
+                                                                        Margin="0,4,12,0"
                                                                         Padding="4,2">
                                                                     <StackPanel Orientation="Horizontal" Spacing="2">
                                                                         <!-- Language Tag Chip (C# / MD) -->

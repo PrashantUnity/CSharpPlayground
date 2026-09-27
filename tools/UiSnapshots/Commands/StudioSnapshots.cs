@@ -116,6 +116,29 @@ internal static class StudioSnapshots
             vm.IsBottomDeckExpanded = true;
             vm.BottomDeckGridLength = new GridLength(options.Int("panel-height", 280));
         }
+        if (options.Value("panel-dock") == "bottom")
+        {
+            vm.IsBottomDeckExpanded = true;
+            vm.ToggleDeckPosition();
+            vm.IsDeckDockedToRight = false;
+        }
+        else if (options.Value("panel-dock") == "right" || options.Flag("dock-right"))
+        {
+            vm.IsBottomDeckExpanded = true;
+            vm.IsDeckDockedToRight = true;
+            if (options.Value("panel-width") != null)
+            {
+                vm.RightDeckGridLength = new GridLength(options.Int("panel-width", 540));
+            }
+            else
+            {
+                vm.UpdateAdaptiveDeckWidth(options.Int("width", 1400));
+            }
+        }
+        else
+        {
+            vm.UpdateAdaptiveDeckWidth(options.Int("width", 1400));
+        }
         Snapshot.Settle();
         ShowQuickInfo(window, options);
 

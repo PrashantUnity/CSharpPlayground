@@ -13,7 +13,7 @@
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1,0,0,0"
-            Width="410">
+            Width="{Binding DetailFlyoutWidth}">
         <Grid RowDefinitions="52,*,60">
             <!-- 1. Header with Close Button -->
             <Border Grid.Row="0"

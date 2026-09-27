@@ -37,6 +37,9 @@ public partial class CSharpDocsViewModel : ObservableObject
     [ObservableProperty]
     private string _activeBreadcrumb = "Overview";
 
+    [ObservableProperty]
+    private bool _isOutlineVisible = true;
+
     public ObservableCollection<DocCategory> Categories { get; } = new();
     public ObservableCollection<DocArticle> FilteredArticles { get; } = new();
 

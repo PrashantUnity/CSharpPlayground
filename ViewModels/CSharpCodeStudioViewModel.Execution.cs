@@ -18,15 +18,131 @@ public partial class CSharpCodeStudioViewModel
     private bool _isBottomDeckExpanded = true;
 
     [ObservableProperty]
+    private bool _isDeckDockedToRight;
+
+    [ObservableProperty]
     private Avalonia.Controls.GridLength _bottomDeckGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
 
+    [ObservableProperty]
+    private Avalonia.Controls.GridLength _rightDeckGridLength = new(0, Avalonia.Controls.GridUnitType.Pixel);
+
     private double _savedBottomDeckHeight = 280;
+    private double _savedRightDeckWidth = 520;
+
+    public bool ShowBottomDeck => !IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowRightDeck => IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowBottomDeckSplitter => !IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowRightDeckSplitter => IsDeckDockedToRight && IsBottomDeckExpanded;
+    public string DeckPositionTooltip => IsDeckDockedToRight ? "Dock Panel to Bottom" : "Dock Panel to Right";
+
+    private bool _userExplicitlySetDeckPosition;
+
+    public void UpdateAdaptiveDeckWidth(double viewWidth)
+    {
+        if (viewWidth <= 0) return;
+
+        // Auto-adapt deck position on widescreen displays (>= 1350px) unless user explicitly toggled it
+        if (!_userExplicitlySetDeckPosition)
+        {
+            bool shouldDockRight = viewWidth >= 1350;
+            if (IsDeckDockedToRight != shouldDockRight)
+            {
+                IsDeckDockedToRight = shouldDockRight;
+            }
+        }
+
+        double targetWidth;
+        if (viewWidth < 1400)
+        {
+            targetWidth = Math.Min(480, viewWidth * 0.45);
+        }
+        else if (viewWidth < 2000)
+        {
+            targetWidth = Math.Min(680, viewWidth * 0.42);
+        }
+        else if (viewWidth < 3000)
+        {
+            targetWidth = Math.Min(1100, viewWidth * 0.45);
+        }
+        else
+        {
+            targetWidth = Math.Min(1750, viewWidth * 0.48);
+        }
+
+        _savedRightDeckWidth = targetWidth;
+        if (IsDeckDockedToRight && IsBottomDeckExpanded)
+        {
+            RightDeckGridLength = new Avalonia.Controls.GridLength(targetWidth, Avalonia.Controls.GridUnitType.Pixel);
+        }
+        else
+        {
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleDeckPosition()
+    {
+        _userExplicitlySetDeckPosition = true;
+        IsDeckDockedToRight = !IsDeckDockedToRight;
+    }
+
+    partial void OnIsDeckDockedToRightChanged(bool value)
+    {
+        if (value)
+        {
+            if (BottomDeckGridLength.IsAbsolute && BottomDeckGridLength.Value > 60)
+            {
+                _savedBottomDeckHeight = BottomDeckGridLength.Value;
+            }
+            BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsBottomDeckExpanded)
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(_savedRightDeckWidth > 60 ? _savedRightDeckWidth : 520, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+        }
+        else
+        {
+            if (RightDeckGridLength.IsAbsolute && RightDeckGridLength.Value > 60)
+            {
+                _savedRightDeckWidth = RightDeckGridLength.Value;
+            }
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsBottomDeckExpanded)
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+        }
+
+        OnPropertyChanged(nameof(ShowBottomDeck));
+        OnPropertyChanged(nameof(ShowRightDeck));
+        OnPropertyChanged(nameof(ShowBottomDeckSplitter));
+        OnPropertyChanged(nameof(ShowRightDeckSplitter));
+        OnPropertyChanged(nameof(DeckPositionTooltip));
+    }
 
     partial void OnIsBottomDeckExpandedChanged(bool value)
     {
         if (value)
         {
-            BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsDeckDockedToRight)
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(_savedRightDeckWidth > 60 ? _savedRightDeckWidth : 520, Avalonia.Controls.GridUnitType.Pixel);
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+                RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
         }
         else
         {
@@ -34,8 +150,18 @@ public partial class CSharpCodeStudioViewModel
             {
                 _savedBottomDeckHeight = BottomDeckGridLength.Value;
             }
+            if (RightDeckGridLength.IsAbsolute && RightDeckGridLength.Value > 60)
+            {
+                _savedRightDeckWidth = RightDeckGridLength.Value;
+            }
             BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
         }
+
+        OnPropertyChanged(nameof(ShowBottomDeck));
+        OnPropertyChanged(nameof(ShowRightDeck));
+        OnPropertyChanged(nameof(ShowBottomDeckSplitter));
+        OnPropertyChanged(nameof(ShowRightDeckSplitter));
     }
 
     [ObservableProperty]

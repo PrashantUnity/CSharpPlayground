@@ -104,6 +104,12 @@
                         <Button Command="{Binding ClearConsoleCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Clear Console">
                             <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </Button>
+                        <Button Command="{Binding ToggleDeckPositionCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="{Binding DeckPositionTooltip}">
+                            <Panel>
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsDeckDockedToRight}" />
+                                <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding IsDeckDockedToRight}" />
+                            </Panel>
+                        </Button>
                         <Button Command="{Binding ToggleBottomDeckCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Minimize Deck (Ctrl+J)">
                             <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </Button>

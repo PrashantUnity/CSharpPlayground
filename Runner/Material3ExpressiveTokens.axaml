@@ -118,8 +118,8 @@
             <!-- 6. M3 Text & Outlines -->
             <Color x:Key="M3OnSurfaceColor">#191C20</Color>
             <Color x:Key="M3OnSurfaceVariantColor">#44474E</Color>
-            <Color x:Key="M3OutlineColor">#74777F</Color>
-            <Color x:Key="M3OutlineVariantColor">#C4C7D0</Color>
+            <Color x:Key="M3OutlineColor">#94A3B8</Color>
+            <Color x:Key="M3OutlineVariantColor">#E0E4EB</Color>
             <Color x:Key="M3InverseSurfaceColor">#2E3135</Color>
             <Color x:Key="M3InverseOnSurfaceColor">#F0F1F5</Color>
             <Color x:Key="M3InversePrimaryColor">#A8C7FA</Color>
@@ -284,8 +284,8 @@
             <!-- 6. M3 Text & Outlines -->
             <Color x:Key="M3OnSurfaceColor">#E2E2E6</Color>
             <Color x:Key="M3OnSurfaceVariantColor">#9BA1AD</Color>
-            <Color x:Key="M3OutlineColor">#8E919A</Color>
-            <Color x:Key="M3OutlineVariantColor">#3D4450</Color>
+            <Color x:Key="M3OutlineColor">#5A6270</Color>
+            <Color x:Key="M3OutlineVariantColor">#262C36</Color>
             <Color x:Key="M3InverseSurfaceColor">#E2E2E6</Color>
             <Color x:Key="M3InverseOnSurfaceColor">#191C20</Color>
             <Color x:Key="M3InversePrimaryColor">#1E5EEB</Color>

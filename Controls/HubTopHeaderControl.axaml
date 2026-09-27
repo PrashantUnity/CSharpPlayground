@@ -80,6 +80,14 @@
                                     <TextBlock Text="Sync" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+
+                            <!-- Toggle System Status Rail -->
+                            <ToggleButton IsChecked="{Binding IsSystemStatusRailVisible, Mode=TwoWay}"
+                                          Classes="nexus-btn-ghost"
+                                          Width="36" Height="36" Padding="0"
+                                          ToolTip.Tip="Toggle System Status &amp; Environment Rail">
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="18" Height="18" Foreground="{DynamicResource DsMutedBrush}" />
+                            </ToggleButton>
                         </StackPanel>
 
                     </Grid>
