@@ -865,4 +865,15 @@
         <Setter Property="Padding" Value="8,2" />
     </Style>
 
+    <!-- Modern IDE Flyout Presenter -->
+    <Style Selector="FlyoutPresenter.ide-menu-flyout">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+
 </Styles>

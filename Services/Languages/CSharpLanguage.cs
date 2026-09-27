@@ -32,7 +32,7 @@ public sealed class CSharpLanguage : LanguageDefinition
         LanguageCapabilities.TestCases | LanguageCapabilities.Templates | LanguageCapabilities.ExecutionModes |
         LanguageCapabilities.NotebookCells | LanguageCapabilities.ValueSharing;
 
-    public override string IconKind => "FileCodeOutline";
+    public override string IconKind => "LanguageCsharp";
     public override string AccentHex => "#58A6FF";
     public override string LineCommentPrefix => "//";
     public override string RuntimeDescription => "C# (.NET 10 Roslyn)";

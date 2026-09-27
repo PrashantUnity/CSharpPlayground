@@ -6,7 +6,15 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 /// <summary>An entry of a cell's language menu.</summary>
-public sealed record CellLanguageChoice(string LanguageId, string Label, string IconKind, string AccentHex, bool IsSelected, IRelayCommand Command);
+public sealed record CellLanguageChoice(
+    string LanguageId,
+    string Label,
+    string IconKind,
+    string AccentHex,
+    bool IsSelected,
+    IRelayCommand Command,
+    string? Directive = null,
+    string? Detail = null);
 
 /// <summary>
 /// The language a code cell runs in, as in Polyglot Notebooks: a <c>#!python</c> (or any language's) first line, else
@@ -56,9 +64,14 @@ public partial class NotebookCellViewModel
     /// <summary>The languages the cell can be switched to, the current one ticked.</summary>
     public IReadOnlyList<CellLanguageChoice> LanguageChoices =>
         _languages?.NotebookLanguages.Select(l => new CellLanguageChoice(
-            l.Id, l.DisplayName, l.IconKind, l.AccentHex,
+            l.Id,
+            l.DisplayName,
+            l.IconKind,
+            l.AccentHex,
             string.Equals(l.Id, EffectiveLanguage, StringComparison.OrdinalIgnoreCase),
-            new RelayCommand(() => SetLanguage(l.Id)))).ToList()
+            new RelayCommand(() => SetLanguage(l.Id)),
+            Directive: $"#!{l.Id}",
+            Detail: l.RuntimeDescription)).ToList()
         ?? (IReadOnlyList<CellLanguageChoice>)Array.Empty<CellLanguageChoice>();
 
     /// <summary>True when the cell can be switched between languages (more than one can run in notebooks).</summary>

@@ -1,4 +1,5 @@
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -9,6 +10,15 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+
+/// <summary>Status of one kernel active in this notebook.</summary>
+public sealed record NotebookKernelStatusItem(
+    string LanguageId,
+    string DisplayName,
+    string IconKind,
+    string AccentHex,
+    string StatusText,
+    bool IsSessionActive);
 
 /// <summary>
 /// A notebook of many languages, as in Polyglot Notebooks: each code cell runs in its language's kernel (the tab's C#
@@ -22,6 +32,9 @@ public partial class NotebookTabViewModel
     private readonly StudioLanguageServices _languages;
     private readonly Func<string?>? _workspaceRoot;
     private readonly NotebookKernelRouter _router;
+
+    [ObservableProperty]
+    private IReadOnlyList<NotebookKernelStatusItem> _activeKernels = Array.Empty<NotebookKernelStatusItem>();
 
     public StudioLanguageServices Languages => _languages;
 
@@ -53,9 +66,14 @@ public partial class NotebookTabViewModel
     /// <summary>The languages the notebook's default can be set to, the current one ticked.</summary>
     public IReadOnlyList<CellLanguageChoice> DefaultLanguageChoices =>
         _languages.Registry.NotebookLanguages.Select(l => new CellLanguageChoice(
-            l.Id, l.DisplayName, l.IconKind, l.AccentHex,
+            l.Id,
+            l.DisplayName,
+            l.IconKind,
+            l.AccentHex,
             string.Equals(l.Id, DefaultLanguage, StringComparison.OrdinalIgnoreCase),
-            new RelayCommand(() => SetDefaultLanguage(l.Id)))).ToList();
+            new RelayCommand(() => SetDefaultLanguage(l.Id)),
+            Directive: $"#!{l.Id}",
+            Detail: l.RuntimeDescription)).ToList();
 
     /// <summary>
     /// Makes <paramref name="languageId"/> the notebook's default. Cells keep the language they have: those that
@@ -91,6 +109,20 @@ public partial class NotebookTabViewModel
             var language = cell.EffectiveLanguage;
             if (!used.Contains(language, StringComparer.OrdinalIgnoreCase)) used.Add(language);
         }
+
+        var activeList = new List<NotebookKernelStatusItem>();
+        foreach (var id in used)
+        {
+            if (_languages.Registry.Get(id) is { } lang && IsNotebookLanguage(lang))
+            {
+                var kernel = _router.Find(lang.Id);
+                var isSession = kernel?.IsSessionActive == true;
+                var displayName = kernel?.DisplayName ?? lang.DisplayName;
+                var statusText = isSession ? "Active session" : "Ready";
+                activeList.Add(new NotebookKernelStatusItem(lang.Id, displayName, lang.IconKind, lang.AccentHex, statusText, isSession));
+            }
+        }
+        ActiveKernels = activeList;
 
         KernelName = string.Join(" · ", used
             .Select(id => _languages.Registry.Get(id))

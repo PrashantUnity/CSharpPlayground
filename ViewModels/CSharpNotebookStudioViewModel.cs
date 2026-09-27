@@ -206,6 +206,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public NotebookCellViewModel? ActiveCell => ActiveTab?.ActiveCell;
     public bool IsExecuting => ActiveTab?.IsExecuting ?? false;
     public string KernelName => ActiveTab?.KernelName ?? ".NET (C#)";
+    public IReadOnlyList<NotebookKernelStatusItem> ActiveKernels => ActiveTab?.ActiveKernels ?? Array.Empty<NotebookKernelStatusItem>();
     public string CompilerStatusText
     {
         get => ActiveTab?.KernelStatusText ?? "Kernel Ready";
@@ -274,6 +275,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(KernelName));
         }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.ActiveKernels))
+        {
+            OnPropertyChanged(nameof(ActiveKernels));
+        }
         else if (e.PropertyName == nameof(NotebookTabViewModel.IsExecuting))
         {
             OnPropertyChanged(nameof(IsExecuting));
@@ -304,6 +309,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         OnPropertyChanged(nameof(ActiveCell));
         OnPropertyChanged(nameof(IsExecuting));
         OnPropertyChanged(nameof(KernelName));
+        OnPropertyChanged(nameof(ActiveKernels));
         OnPropertyChanged(nameof(CompilerStatusText));
         OnPropertyChanged(nameof(BreadcrumbFolder));
         OnPropertyChanged(nameof(BreadcrumbDocument));
