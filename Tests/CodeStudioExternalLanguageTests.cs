@@ -153,7 +153,7 @@ public class CodeStudioExternalLanguageTests : IDisposable
         var studio = await StudioWith("hello.fake", "ask Name?\n");
 
         var run = studio.RunCodeCommand.ExecuteAsync(null);
-        await WaitUntil(() => studio.IsAcceptingProgramInput);
+        await WaitUntil(() => studio.IsAcceptingProgramInput && studio.ConsoleOutput.Contains("Name? "));
         studio.ProgramInputText = "Ada";
         await studio.SendProgramInputCommand.ExecuteAsync(null);
         await run.WaitAsync(Patience);

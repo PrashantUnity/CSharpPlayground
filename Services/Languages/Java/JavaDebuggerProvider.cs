@@ -163,13 +163,38 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider, IDapAdapterRegistr
             Environment = env
         };
 
+        var earlyBuffer = new List<string>();
         JavaDapAdapter? adapter = null;
+        var bufferLock = new object();
+
         var managedProcess = _processes.Start(
             spec,
-            onStandardOutput: text => adapter?.OnProcessOutput(text),
-            onStandardError: text => adapter?.OnProcessOutput(text));
+            onStandardOutput: text =>
+            {
+                lock (bufferLock)
+                {
+                    if (adapter != null) adapter.OnProcessOutput(text);
+                    else earlyBuffer.Add(text);
+                }
+            },
+            onStandardError: text =>
+            {
+                lock (bufferLock)
+                {
+                    if (adapter != null) adapter.OnProcessOutput(text);
+                    else earlyBuffer.Add(text);
+                }
+            });
 
         adapter = new JavaDapAdapter(managedProcess, scriptFile, fqn, context.OnLiveOutput);
+        lock (bufferLock)
+        {
+            foreach (var text in earlyBuffer)
+            {
+                adapter.OnProcessOutput(text);
+            }
+            earlyBuffer.Clear();
+        }
 
         var session = await _adapterManager.LaunchBridgeAdapterAsync(
             LanguageIds.Java,

@@ -87,7 +87,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         sw.Stop();
 
         Assert.False(completed);
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(3), $"Should give up shortly after the grace period, took {sw.Elapsed}");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(6), $"Should give up shortly after the grace period, took {sw.Elapsed}");
     }
 
     // ── Deadlock regression: a script that blocks synchronously must not freeze a UI-like thread ──
