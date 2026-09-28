@@ -129,8 +129,10 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,32,0" Spacing="2">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{Binding SelectedTemplate.Title}" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1.5" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding SelectedTemplate.KindBadgeText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                            Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SelectedTemplate.KindBadgeText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Text="{Binding SelectedTemplate.Description}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" MaxWidth="480" TextTrimming="CharacterEllipsis" />

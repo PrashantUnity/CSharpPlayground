@@ -39,6 +39,27 @@ public partial class StudioTabItemViewModel : ObservableObject
     private string _consoleOutput = string.Empty;
 
     [ObservableProperty]
+    private string _consoleHeader = string.Empty;
+
+    [ObservableProperty]
+    private string _consoleBody = string.Empty;
+
+    [ObservableProperty]
+    private string _consoleFooter = string.Empty;
+
+    [ObservableProperty]
+    private int? _consoleExitCode;
+
+    public bool IsConsoleExitSuccess => ConsoleExitCode == 0;
+    public bool IsConsoleExitError => ConsoleExitCode != null && ConsoleExitCode != 0;
+
+    partial void OnConsoleExitCodeChanged(int? value)
+    {
+        OnPropertyChanged(nameof(IsConsoleExitSuccess));
+        OnPropertyChanged(nameof(IsConsoleExitError));
+    }
+
+    [ObservableProperty]
     private string _executionTimeText = string.Empty;
 
     [ObservableProperty]

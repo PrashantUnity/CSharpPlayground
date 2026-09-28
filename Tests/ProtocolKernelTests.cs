@@ -217,7 +217,9 @@ public class ProtocolKernelTests
         var processes = KernelProgram();
         using var kernel = Kernel(processes);
         await Run(kernel, "print warm-up");
-        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        // 500 ms gives the interrupt + protocol round-trip enough headroom under full-suite
+        // parallel load (200 ms was too tight on slower CI runners).
+        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
 
         var (result, _, _) = await Run(kernel, "wait", stop.Token);
         var (after, _, _) = await Run(kernel, "print still here");

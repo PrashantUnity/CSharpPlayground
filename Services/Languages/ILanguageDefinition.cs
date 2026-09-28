@@ -34,6 +34,9 @@ public interface ILanguageDefinition
 
     LanguageStorageKind Storage { get; }
 
+    /// <summary>True when the language relies on an ahead-of-time compiler (Java, C++, C) rather than a pure script interpreter.</summary>
+    bool IsCompiled { get; }
+
     LanguageCapabilities Capabilities { get; }
 
     /// <summary>A Material icon name (<c>MaterialIconKind</c>), e.g. <c>LanguagePython</c>.</summary>
@@ -110,6 +113,7 @@ public abstract class LanguageDefinition : ILanguageDefinition
     public virtual IReadOnlyList<string> Aliases => Array.Empty<string>();
     public abstract IReadOnlyList<string> FileExtensions { get; }
     public virtual LanguageStorageKind Storage => LanguageStorageKind.SourceFile;
+    public virtual bool IsCompiled => false;
     public virtual LanguageCapabilities Capabilities => LanguageCapabilities.None;
     public virtual string IconKind => "FileCodeOutline";
     public virtual string AccentHex => "#8B949E";

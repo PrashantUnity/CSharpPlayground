@@ -41,11 +41,24 @@
                     <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="Blind 75" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                <Border Background="{DynamicResource M3PrimaryContainerBrush}"
-                        BorderThickness="0" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
-                    <TextBlock Text="C# .NET 10" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"
-                               Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
-                </Border>
+                <Button Classes="status-item"
+                        ToolTip.Tip="Select language for Blind 75 solutions, scripts and notebooks"
+                        Padding="6,2" CornerRadius="4"
+                        Background="{DynamicResource M3PrimaryContainerBrush}">
+                    <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                            <MenuItem Header="C# (.NET 10 Roslyn)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="csharp" />
+                            <MenuItem Header="Python 3.12" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="python" />
+                            <MenuItem Header="JavaScript (Node.js)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="javascript" />
+                            <MenuItem Header="Java (OpenJDK)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="java" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding SelectedLanguageDisplayName}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
+                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="12" Height="12" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <!-- 3. Search: number, title, category or tag -->

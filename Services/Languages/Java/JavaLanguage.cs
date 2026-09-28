@@ -3,6 +3,7 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
@@ -26,6 +27,7 @@ public sealed class JavaLanguage : LanguageDefinition
             Path.Combine(services.BaseDirectory, "java"));
         JavaToolchain = toolchain;
         ScriptRunner = new JavaBuildAndRunScriptRunner(services.Host);
+        Packages = new MavenPackageManager(new MavenCentralResolver(services.Host), services.Host);
         Debugger = new JavaDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
 
         var launcher = new JavaKernelLauncher(toolchain, services.Host, Path.Combine(services.BaseDirectory, "java", "kernel"));
@@ -42,10 +44,15 @@ public sealed class JavaLanguage : LanguageDefinition
     public override IReadOnlyList<string> Aliases => JavaAliases;
     public override IReadOnlyList<string> FileExtensions => JavaExtensions;
     public override LanguageStorageKind Storage => LanguageStorageKind.SourceFile;
+    public override bool IsCompiled => true;
 
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.StandardInput | LanguageCapabilities.NotebookCells |
-        LanguageCapabilities.ValueSharing | LanguageCapabilities.Debugging | LanguageCapabilities.Breakpoints;
+        LanguageCapabilities.ValueSharing | LanguageCapabilities.Debugging |
+        LanguageCapabilities.Breakpoints | LanguageCapabilities.Packages |
+        LanguageCapabilities.Completion;
+
+    public override IEditorAssistantFactory EditorAssistants { get; } = JavaEditorAssistantFactory.Instance;
 
     public override string IconKind => "LanguageJava";
     public override string AccentHex => "#EA2D2E";
@@ -70,5 +77,6 @@ public sealed class JavaLanguage : LanguageDefinition
     public override IScriptRunner ScriptRunner { get; }
     public override IDebuggerProvider? Debugger { get; }
     public override IDiagnosticParser RunDiagnostics { get; } = new JavaCompilerDiagnosticParser();
+    public override IPackageManager Packages { get; }
     public override INotebookKernelFactory NotebookKernels { get; }
 }

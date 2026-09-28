@@ -24,6 +24,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly Dictionary<string, FakePython> _pythons;
     private readonly Dictionary<string, FakeNode> _nodes;
     private readonly Dictionary<string, FakeJava> _javas;
+    private readonly Dictionary<string, FakeCpp> _cpps;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -34,6 +35,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _pythons = new Dictionary<string, FakePython>(comparer);
         _nodes = new Dictionary<string, FakeNode>(comparer);
         _javas = new Dictionary<string, FakeJava>(comparer);
+        _cpps = new Dictionary<string, FakeCpp>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -113,6 +115,15 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return java;
     }
 
+    /// <summary>Makes <paramref name="path"/> a C++ compiler that answers the studio's probe.</summary>
+    public FakeCpp AddCpp(string path, string version, string vendor = "clang", int exitCode = 0)
+    {
+        AddFile(path);
+        var cpp = new FakeCpp(version, path, vendor) { ExitCode = exitCode };
+        _cpps[Normalize(path)] = cpp;
+        return cpp;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -167,6 +178,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && arguments[0] == "-version" && _javas.TryGetValue(Normalize(fileName), out var java))
         {
             return Task.FromResult(java.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && (arguments[0] == "--version" || arguments[0] == "/?") && _cpps.TryGetValue(Normalize(fileName), out var cpp))
+        {
+            return Task.FromResult(cpp.ProbeAnswer());
         }
 
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
@@ -229,5 +245,23 @@ public sealed record FakeJava(string Version, string Executable, bool HasCompile
     {
         if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working Java", false);
         return new CommandResult(0, string.Empty, $"openjdk version \"{Version}\"\nOpenJDK Runtime Environment\n", false);
+    }
+}
+
+public sealed record FakeCpp(string Version, string Executable, string Vendor = "clang")
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working compiler", false);
+        string output = Vendor.ToLowerInvariant() switch
+        {
+            "apple" or "appleclang" => $"Apple clang version {Version} (clang-1500.0.40.1)\nTarget: arm64-apple-darwin23.4.0\nThread model: posix",
+            "gcc" or "g++" => $"g++ (Ubuntu {Version}-1ubuntu1) {Version}\nCopyright (C) 2023 Free Software Foundation, Inc.",
+            "msvc" or "cl" => $"Microsoft (R) C/C++ Optimizing Compiler Version {Version} for x64\nCopyright (C) Microsoft Corporation.",
+            _ => $"clang version {Version} (Homebrew LLVM {Version})\nTarget: arm64-apple-darwin25.5.0\nThread model: posix"
+        };
+        return new CommandResult(0, output, string.Empty, false);
     }
 }

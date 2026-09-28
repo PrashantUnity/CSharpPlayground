@@ -48,6 +48,7 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
     private readonly StringBuilder _jdbOutputBuffer = new();
     private readonly object _stateLock = new();
 
+    private readonly TaskCompletionSource<bool> _initialPromptTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private TaskCompletionSource<string>? _activeJdbCommandTcs;
     private int _jdbCommandStartOffset;
     private int _seq;
@@ -95,7 +96,13 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
             checkOffset = _lastResumeIndex;
             shouldCheckStop = !_isCurrentlyPaused;
 
-            if (_activeJdbCommandTcs != null && PromptRegex().IsMatch(fullText))
+            if (!_initialPromptTcs.Task.IsCompleted && PromptRegex().IsMatch(fullText))
+            {
+                _initialPromptTcs.TrySetResult(true);
+            }
+
+            var textSinceCommand = fullText.Length > _jdbCommandStartOffset ? fullText[_jdbCommandStartOffset..] : string.Empty;
+            if (_activeJdbCommandTcs != null && PromptRegex().IsMatch(textSinceCommand))
             {
                 cmdTcs = _activeJdbCommandTcs;
                 _activeJdbCommandTcs = null;
@@ -110,7 +117,7 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
         {
             var textToCheck = checkOffset < fullText.Length ? fullText[checkOffset..] : string.Empty;
             var stopMatch = StopRegex().Match(textToCheck);
-            if (stopMatch.Success)
+            if (stopMatch.Success && PromptRegex().IsMatch(textToCheck))
             {
                 lock (_stateLock)
                 {
@@ -197,6 +204,13 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
         await _jdbLock.WaitAsync().ConfigureAwait(false);
         try
         {
+            if (!_initialPromptTcs.Task.IsCompleted)
+            {
+                using var readyCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                using var regReady = readyCts.Token.Register(() => _initialPromptTcs.TrySetResult(false));
+                await _initialPromptTcs.Task.ConfigureAwait(false);
+            }
+
             var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_stateLock)
             {
@@ -206,8 +220,18 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
 
             await _process.WriteInputAsync(cmd + "\n").ConfigureAwait(false);
 
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            using var reg = timeoutCts.Token.Register(() => tcs.TrySetResult(string.Empty));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            using var reg = timeoutCts.Token.Register(() =>
+            {
+                lock (_stateLock)
+                {
+                    if (_activeJdbCommandTcs == tcs)
+                    {
+                        _activeJdbCommandTcs = null;
+                    }
+                }
+                tcs.TrySetResult(string.Empty);
+            });
             return await tcs.Task.ConfigureAwait(false);
         }
         finally
@@ -273,6 +297,12 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
         try
         {
             int exitCode = await _process.Completion.ConfigureAwait(false);
+            lock (_stateLock)
+            {
+                _initialPromptTcs.TrySetResult(false);
+                _activeJdbCommandTcs?.TrySetResult(string.Empty);
+                _activeJdbCommandTcs = null;
+            }
             await EmitDapEventAsync("terminated", new { exitCode }).ConfigureAwait(false);
         }
         catch
@@ -308,6 +338,13 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+
+        lock (_stateLock)
+        {
+            _initialPromptTcs.TrySetResult(false);
+            _activeJdbCommandTcs?.TrySetResult(string.Empty);
+            _activeJdbCommandTcs = null;
+        }
 
         try { _clientToServerPipe.Writer.Complete(); } catch { }
         try { _clientToServerPipe.Reader.Complete(); } catch { }

@@ -41,6 +41,35 @@ public partial class CSharpCodeStudioViewModel
         new("FluentValidation", "11.11.0", "Popular validation library for building strongly-typed rules", "Jeremy Skinner", 900000000)
     ];
 
+    private static readonly NuGetPackageItem[] PopularJavaPackages =
+    [
+        new("com.google.code.gson:gson", "2.11.0", "Google JSON library for Java", "Google", 100000000),
+        new("com.fasterxml.jackson.core:jackson-databind", "2.17.0", "General data-binding functionality for Jackson", "FasterXML", 200000000),
+        new("org.apache.commons:commons-lang3", "3.14.0", "Java standard library extensions", "Apache", 300000000),
+        new("commons-io:commons-io", "2.16.1", "Utility classes, stream implementations, file filters", "Apache", 250000000),
+        new("com.google.guava:guava", "33.1.0-jre", "Google Core Libraries for Java", "Google", 250000000),
+        new("org.slf4j:slf4j-api", "2.0.12", "The slf4j logging API", "QOS.ch", 500000000),
+        new("org.xerial:sqlite-jdbc", "3.45.1.0", "SQLite JDBC Driver", "Taro L. Saito", 50000000),
+        new("org.knowm.xchart:xchart", "3.8.7", "Light-weight charting library for Java", "Knowm", 5000000)
+    ];
+
+    private static readonly NuGetPackageItem[] PopularCppPackages =
+    [
+        new("nlohmann-json", "3.11.3", "JSON for Modern C++", "Niels Lohmann", 50000000),
+        new("fmt", "10.2.1", "Fast and safe alternative to C stdio and C++ iostreams", "Victor Zverovich", 80000000),
+        new("spdlog", "1.13.0", "Fast C++ logging library", "Gabi Melman", 40000000),
+        new("cxxopts", "3.2.0", "Lightweight C++ command line option parser", "Jarryd Beck", 15000000),
+        new("eigen3", "3.4.0", "C++ template library for linear algebra", "Benoît Jacob, Gaël Guennebaud", 30000000),
+        new("boost", "1.85.0", "Peer-reviewed portable C++ source libraries", "Boost Contributors", 100000000),
+        new("catch2", "3.5.4", "Modern, C++-native test framework", "Phil Nash", 20000000),
+        new("opencv4", "4.9.0", "Open Source Computer Vision Library", "OpenCV team", 25000000)
+    ];
+
+    public string ActivePackageManagerName => ActiveLanguage?.Packages?.ToolName ?? "NuGet";
+    public string ActivePackageManagerTitle => $"{ActivePackageManagerName.ToUpperInvariant()} PACKAGES";
+    public string ActivePackageSearchPlaceholder => $"Search {ActivePackageManagerName} packages...";
+    public string ActiveScriptDirectivesTitle => $"{ActiveLanguage?.DisplayName.ToUpperInvariant() ?? "SCRIPT"} DIRECTIVES";
+
     [ObservableProperty]
     private string _nuGetSearchQuery = string.Empty;
 
@@ -54,26 +83,39 @@ public partial class CSharpCodeStudioViewModel
 
     public ObservableCollection<string> DocumentNuGetPackages { get; } = new();
 
+    public NuGetPackageItem[] GetPopularPackagesForActiveLanguage()
+    {
+        var id = ActiveLanguage?.Id;
+        if (string.Equals(id, Services.Languages.LanguageIds.Java, StringComparison.OrdinalIgnoreCase))
+            return PopularJavaPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
+            return PopularCppPackages;
+        return PopularNuGetPackages;
+    }
+
     public void InitializeNuGetPackages()
     {
         RefreshDocumentNuGetPackages();
-        if (NuGetSearchResults.Count == 0)
+        NuGetSearchResults.Clear();
+        foreach (var p in GetPopularPackagesForActiveLanguage())
         {
-            foreach (var p in PopularNuGetPackages)
-            {
-                NuGetSearchResults.Add(p);
-            }
+            NuGetSearchResults.Add(p);
         }
+        OnPropertyChanged(nameof(ActivePackageManagerName));
+        OnPropertyChanged(nameof(ActivePackageManagerTitle));
+        OnPropertyChanged(nameof(ActivePackageSearchPlaceholder));
+        OnPropertyChanged(nameof(ActiveScriptDirectivesTitle));
     }
 
     [RelayCommand]
     public async Task SearchNuGetPackagesAsync()
     {
         var query = NuGetSearchQuery.Trim();
+        var popular = GetPopularPackagesForActiveLanguage();
         if (string.IsNullOrWhiteSpace(query))
         {
             NuGetSearchResults.Clear();
-            foreach (var p in PopularNuGetPackages)
+            foreach (var p in popular)
             {
                 NuGetSearchResults.Add(p);
             }
@@ -81,6 +123,63 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
+        // C++ package search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularCppPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Java Maven search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Java, StringComparison.OrdinalIgnoreCase))
+        {
+            IsSearchingNuGet = true;
+            NuGetStatusMessage = $"Searching Maven Central for '{query}'...";
+
+            try
+            {
+                var resolver = new Services.Languages.Java.MavenCentralResolver(new Services.Toolchains.HostEnvironment());
+                var docs = await resolver.SearchAsync(query);
+
+                NuGetSearchResults.Clear();
+                if (docs.Count > 0)
+                {
+                    foreach (var doc in docs)
+                    {
+                        NuGetSearchResults.Add(new NuGetPackageItem(
+                            $"{doc.GroupId}:{doc.ArtifactId}",
+                            doc.LatestVersion ?? "1.0.0",
+                            $"Maven coordinate: {doc.GroupId}:{doc.ArtifactId}",
+                            doc.GroupId,
+                            doc.VersionCount * 1000));
+                    }
+                    NuGetStatusMessage = $"Found {docs.Count} packages on Maven Central";
+                }
+                else
+                {
+                    var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    foreach (var p in filtered) NuGetSearchResults.Add(p);
+                    NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found on Maven Central";
+                }
+            }
+            catch
+            {
+                NuGetSearchResults.Clear();
+                var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+                foreach (var p in filtered) NuGetSearchResults.Add(p);
+                NuGetStatusMessage = "Network unavailable: showing offline packages";
+            }
+            finally
+            {
+                IsSearchingNuGet = false;
+            }
+            return;
+        }
+
+        // C# NuGet search
         IsSearchingNuGet = true;
         NuGetStatusMessage = $"Searching NuGet for '{query}'...";
 
@@ -107,26 +206,16 @@ public partial class CSharpCodeStudioViewModel
             }
             else
             {
-                // Fallback to local filtering of popular packages
                 var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
-                foreach (var p in filtered)
-                {
-                    NuGetSearchResults.Add(p);
-                }
-                NuGetStatusMessage = filtered.Length > 0
-                    ? $"Found {filtered.Length} matching package{(filtered.Length == 1 ? "" : "s")}"
-                    : "No packages found on NuGet";
+                foreach (var p in filtered) NuGetSearchResults.Add(p);
+                NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found on NuGet";
             }
         }
         catch
         {
-            // Offline fallback
             NuGetSearchResults.Clear();
             var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
-            foreach (var p in filtered)
-            {
-                NuGetSearchResults.Add(p);
-            }
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = "Network unavailable: showing offline packages";
         }
         finally
@@ -140,7 +229,16 @@ public partial class CSharpCodeStudioViewModel
     {
         if (package == null) return;
 
-        var directive = $"#r \"nuget: {package.Id}, {package.Version}\"";
+        var langId = ActiveLanguage?.Id;
+        string directive = langId switch
+        {
+            Services.Languages.LanguageIds.Java => $"//DEPS {package.Id}:{package.Version}",
+            Services.Languages.LanguageIds.Cpp => $"// #vcpkg: {package.Id}",
+            Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
+            Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
+            _ => $"#r \"nuget: {package.Id}, {package.Version}\""
+        };
+
         if (Code.Contains(directive, StringComparison.OrdinalIgnoreCase))
         {
             NuGetStatusMessage = $"'{package.Id}' is already referenced in script.";
@@ -150,7 +248,7 @@ public partial class CSharpCodeStudioViewModel
         // Insert at the top of the editor code
         Code = directive + Environment.NewLine + Code;
         RefreshDocumentNuGetPackages();
-        NuGetStatusMessage = $"Added {package.Id} v{package.Version} to script references!";
+        NuGetStatusMessage = $"Added {package.Id} to script references!";
     }
 
     [RelayCommand]
@@ -169,7 +267,9 @@ public partial class CSharpCodeStudioViewModel
     public void RefreshDocumentNuGetPackages()
     {
         DocumentNuGetPackages.Clear();
-        var regex = new Regex(@"^\s*#r\s+""nuget:\s*([a-zA-Z0-9_\-\.]+)(?:,\s*([^""]+))?""\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        if (string.IsNullOrEmpty(Code)) return;
+
+        var regex = new Regex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
         var matches = regex.Matches(Code);
         foreach (Match m in matches)
         {

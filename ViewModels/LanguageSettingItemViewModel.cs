@@ -22,11 +22,37 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public bool HasDotNetToolchain => DotNetProvider != null;
     public bool HasToolchainConfiguration => IsToolchainLanguage || (IsCSharp && HasDotNetToolchain);
 
-    public string ToolchainSectionTitle => IsCSharp ? ".NET SDK ENVIRONMENT CONFIGURATION (EXTERNAL CLI)" : "INTERPRETER CONFIGURATION";
-    public string ToolchainAutoDetectLabel => IsCSharp ? "Auto-detect (.NET SDK from DOTNET_ROOT, PATH)" : "Auto-detect (System, Virtualenv, Homebrew, PATH)";
-    public string ToolchainDetectedRuntimesLabel => IsCSharp ? "Detected .NET SDKs on this Machine:" : "Detected Runtimes on this Machine:";
-    public string ToolchainExecutablePathLabel => IsCSharp ? ".NET SDK (dotnet) Executable / Binary Path:" : "Executable / Binary Path:";
-    public string ToolchainPlaceholderText => IsCSharp ? "/usr/local/share/dotnet/dotnet" : "/path/to/executable";
+    public bool IsCompiled => Language.IsCompiled;
+
+    public string ToolchainSectionTitle => IsCSharp
+        ? ".NET SDK ENVIRONMENT CONFIGURATION (EXTERNAL CLI)"
+        : IsCompiled
+            ? "COMPILER & RUNTIME CONFIGURATION"
+            : "INTERPRETER CONFIGURATION";
+
+    public string ToolchainAutoDetectLabel => IsCSharp
+        ? "Auto-detect (.NET SDK from DOTNET_ROOT, PATH)"
+        : IsCompiled
+            ? "Auto-detect (System, Homebrew, Xcode, MSVC, PATH)"
+            : "Auto-detect (System, Virtualenv, Homebrew, PATH)";
+
+    public string ToolchainDetectedRuntimesLabel => IsCSharp
+        ? "Detected .NET SDKs on this Machine:"
+        : IsCompiled
+            ? "Detected Compilers on this Machine:"
+            : "Detected Runtimes on this Machine:";
+
+    public string ToolchainExecutablePathLabel => IsCSharp
+        ? ".NET SDK (dotnet) Executable / Binary Path:"
+        : IsCompiled
+            ? "Compiler Executable / Binary Path:"
+            : "Executable / Binary Path:";
+
+    public string ToolchainPlaceholderText => IsCSharp
+        ? "/usr/local/share/dotnet/dotnet"
+        : IsCompiled
+            ? (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac")
+            : "/path/to/executable";
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;
@@ -263,9 +289,9 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
             SelectedDiscoveredToolchain = DiscoveredToolchains.FirstOrDefault(d =>
                 string.Equals(d.ExecutablePath, toolchain.ExecutablePath, StringComparison.OrdinalIgnoreCase));
 
-            EnvironmentDetails.Add(new EnvironmentPropertyItem("Executable Path", toolchain.ExecutablePath));
-            EnvironmentDetails.Add(new EnvironmentPropertyItem("Runtime Version", toolchain.Version.ToString()));
-            EnvironmentDetails.Add(new EnvironmentPropertyItem("Environment Source", toolchain.Source));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem(IsCompiled ? "Compiler Path" : "Executable Path", toolchain.ExecutablePath));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem(IsCompiled ? "Compiler Version" : "Runtime Version", toolchain.Version.ToString()));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem(IsCompiled ? "Toolchain Source" : "Environment Source", toolchain.Source));
 
             foreach (var (k, v) in toolchain.Properties)
             {
@@ -281,6 +307,9 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                         "venv" => "Virtualenv Module (venv)",
                         "sitePackages" => "Site-Packages Directory",
                         "studioEnvironment" => "Studio Environment",
+                        "compilerVendor" => "Compiler Vendor",
+                        "languageStandard" => "Language Standard",
+                        "hostArchitecture" => "Host Architecture",
                         _ => k
                     };
                     EnvironmentDetails.Add(new EnvironmentPropertyItem(label, v));

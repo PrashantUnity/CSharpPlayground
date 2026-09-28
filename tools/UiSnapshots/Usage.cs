@@ -45,8 +45,9 @@ internal static class Usage
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
               --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           notebook <n>           Notebook Studio with problem n's notebook.
-              --polyglot-demo        a notebook of C#, Python and JavaScript cells sharing data both ways
+              --polyglot-demo        a notebook of C#, Python, JavaScript, Java, and C++ cells sharing data across kernels
               --java-share           a test notebook attempting cross-language sharing with Java
+              --cpp-demo             a notebook of C++ cells (standard library, vector, display tables)
               --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,
                                      input()) instead of a problem's
               --python <path>        the Python interpreter Python cells run with (default: the one the studio finds)
@@ -71,7 +72,7 @@ internal static class Usage
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
           settings               The Settings and Environment Setup page.
-              --language <id>        select a language setting item (csharp, python, javascript)
+              --language <id>        select a language setting item (csharp, python, javascript, java, cpp)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows

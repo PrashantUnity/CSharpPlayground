@@ -76,13 +76,33 @@ public partial class CSharpCodeStudioViewModel
         var buffer = new TerminalTextBuffer();
         var header = note == null ? string.Empty : note + "\n";
         var footer = string.Empty;
+        int? exitCode = null;
         var refreshQueued = 0;
         void ShowNow()
         {
             string text;
-            lock (buffer) text = header + buffer.Text + footer;
-            if (runningTab != null) runningTab.ConsoleOutput = text;
-            if (runningTab == null || runningTab.IsActive) ConsoleOutput = text;
+            string body;
+            lock (buffer)
+            {
+                body = buffer.Text;
+                text = header + body + footer;
+            }
+            if (runningTab != null)
+            {
+                runningTab.ConsoleHeader = header;
+                runningTab.ConsoleBody = body;
+                runningTab.ConsoleFooter = footer;
+                runningTab.ConsoleExitCode = exitCode;
+                runningTab.ConsoleOutput = text;
+            }
+            if (runningTab == null || runningTab.IsActive)
+            {
+                ConsoleHeader = header;
+                ConsoleBody = body;
+                ConsoleFooter = footer;
+                ConsoleExitCode = exitCode;
+                ConsoleOutput = text;
+            }
         }
         void Show()
         {
@@ -191,6 +211,7 @@ public partial class CSharpCodeStudioViewModel
             if (runningTab != null) runningTab.ActiveRun = null;
 
             var seconds = $"{result.Elapsed.TotalSeconds:0.00} s";
+            exitCode = result.ExitCode;
             if (result.WasCancelled)
             {
                 var timedOut = timeoutCts.IsCancellationRequested;
@@ -228,11 +249,13 @@ public partial class CSharpCodeStudioViewModel
         }
         catch (OperationCanceledException)
         {
+            exitCode = null;
             footer = "\n🛑 Stopped.\n";
             status = "🛑 Cancelled";
         }
         catch (Exception ex)
         {
+            exitCode = 1;
             Debug.WriteLine($"[CSharpEditorPlugin] Running {sourceFile} failed: {ex}");
             footer = $"\n❌ {ex.Message}\n";
             status = "Run failed";

@@ -24,16 +24,25 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
     [GeneratedRegex(@"^\s*at\s+(?:(?<method>[a-zA-Z0-9_$.]+)\s*\()?(?<file>[^:]+):(?<line>\d+)\)?$")]
     private static partial Regex StackFrameRegex();
 
+    [GeneratedRegex(@"package\s+(?<pkg>[a-zA-Z0-9_.]+)\s+does not exist", RegexOptions.IgnoreCase)]
+    private static partial Regex MissingPackageRegex();
+
+    [GeneratedRegex(@"cannot find symbol.*?\bsymbol:\s+class\s+(?<name>[a-zA-Z0-9_$]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex MissingClassRegex();
+
+    [GeneratedRegex(@"cannot find symbol:\s*class\s+(?<name>[a-zA-Z0-9_$]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex InlineMissingClassRegex();
+
     public DiagnosticParseResult Parse(string output, string sourceFilePath)
     {
         if (string.IsNullOrWhiteSpace(output)) return DiagnosticParseResult.Empty;
 
         var lines = output.Replace("\r\n", "\n").Split('\n');
-        var diagnostics = ParseCompilerDiagnostics(lines, sourceFilePath);
+        var diagnostics = ParseCompilerDiagnostics(lines, sourceFilePath, out var missingDep);
 
         if (diagnostics.Count > 0)
         {
-            return new DiagnosticParseResult(diagnostics);
+            return new DiagnosticParseResult(diagnostics, missingDep);
         }
 
         // If no javac compiler errors were found, parse runtime exceptions and stack traces
@@ -41,9 +50,10 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
         return new DiagnosticParseResult(runtimeDiagnostics);
     }
 
-    private static List<DiagnosticItem> ParseCompilerDiagnostics(string[] lines, string sourceFilePath)
+    private static List<DiagnosticItem> ParseCompilerDiagnostics(string[] lines, string sourceFilePath, out string? missingDependency)
     {
         var diagnostics = new List<DiagnosticItem>();
+        missingDependency = null;
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -70,6 +80,24 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
 
             var message = match.Groups["message"].Value.Trim();
 
+            // Check for missing package directive in primary message
+            if (missingDependency == null)
+            {
+                var pkgMatch = MissingPackageRegex().Match(message);
+                if (pkgMatch.Success)
+                {
+                    missingDependency = pkgMatch.Groups["pkg"].Value;
+                }
+                else
+                {
+                    var inlineMatch = InlineMissingClassRegex().Match(message);
+                    if (inlineMatch.Success)
+                    {
+                        missingDependency = inlineMatch.Groups["name"].Value;
+                    }
+                }
+            }
+
             // Look ahead for caret column and additional message details (symbol:, location:)
             var extraDetails = new List<string>();
             var lookAheadLimit = Math.Min(lines.Length, i + 6);
@@ -91,6 +119,15 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
                     trimmed.StartsWith("location:", StringComparison.OrdinalIgnoreCase))
                 {
                     extraDetails.Add(trimmed);
+
+                    if (missingDependency == null && trimmed.StartsWith("symbol:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var symMatch = Regex.Match(trimmed, @"symbol:\s+class\s+(?<name>[a-zA-Z0-9_$]+)", RegexOptions.IgnoreCase);
+                        if (symMatch.Success)
+                        {
+                            missingDependency = symMatch.Groups["name"].Value;
+                        }
+                    }
                 }
             }
 

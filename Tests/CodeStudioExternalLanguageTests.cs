@@ -77,6 +77,12 @@ public class CodeStudioExternalLanguageTests : IDisposable
         Assert.Contains("▶ FakeLang 1.2.3 (Test) · hello.fake", studio.ConsoleOutput);
         Assert.Contains("hello from fakelang", studio.ConsoleOutput);
         Assert.Contains("exited with code 0", studio.ConsoleOutput);
+        Assert.Contains("▶ FakeLang 1.2.3 (Test) · hello.fake", studio.ConsoleHeader);
+        Assert.Equal("hello from fakelang\n", studio.ConsoleBody);
+        Assert.Contains("exited with code 0", studio.ConsoleFooter);
+        Assert.Equal(0, studio.ConsoleExitCode);
+        Assert.True(studio.IsConsoleExitSuccess);
+        Assert.False(studio.IsConsoleExitError);
         Assert.Equal("Completed", studio.CompilerStatusText);
         Assert.False(studio.IsExecuting);
         Assert.Equal("FakeLang 1.2.3 (Test)", studio.RuntimeLabel);
@@ -153,7 +159,7 @@ public class CodeStudioExternalLanguageTests : IDisposable
         var studio = await StudioWith("hello.fake", "ask Name?\n");
 
         var run = studio.RunCodeCommand.ExecuteAsync(null);
-        await WaitUntil(() => studio.IsAcceptingProgramInput);
+        await WaitUntil(() => studio.IsAcceptingProgramInput && studio.ConsoleOutput.Contains("Name? "));
         studio.ProgramInputText = "Ada";
         await studio.SendProgramInputCommand.ExecuteAsync(null);
         await run.WaitAsync(Patience);

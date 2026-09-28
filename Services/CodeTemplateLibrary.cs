@@ -202,6 +202,56 @@ Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
         },
         new()
         {
+            Id = "cpp_algorithms_starter",
+            Title = "C++20 Algorithms & Visual Dumps",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Modern C++20 workspace with STL algorithms, ranges, interactive table dumps, and compiler diagnostics.",
+            IconKind = MaterialIconKind.LanguageCpp,
+            AccentColor = "#659AD2",
+            AccentBackground = "#1A2634",
+            AccentBorder = "#2D425A",
+            CategoryBadge = "C++20 • Native",
+            Tags = new List<string> { "C++20", "STL", "Display::table", "Native" },
+            Notes = @"# C++20 Algorithms & Interactive Visual Dumps
+
+This script compiles natively using your system's C++ toolchain (Clang, GCC, or MSVC) with `-std=c++20`.
+
+### Key Features:
+- **Zero Configuration Display Runtime**: `<fry/display.hpp>` is staged automatically.
+- **Interactive Tables**: Call `fry::display::table(...)` or `Display::table(...)` on `std::vector`, `std::map`, or nested structures.
+- **Instant .DUMP**: Call `fry::dump(data, ""Title"")` to inspect collections inline in the Results deck.
+- **Native DAP Debugging**: Set breakpoints in the gutter and press F5 to debug with `lldb-dap`.",
+            InitialCode = @"// C++20 Algorithm Workspace with Interactive Visual Dumps
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <fry/display.hpp>
+
+int main() {
+    std::cout << ""=== C++20 Algorithm Pipeline ===\n"";
+
+    // Initialize Fibonacci sequence
+    std::vector<long long> fib = { 0, 1 };
+    for (int i = 2; i < 20; ++i) {
+        fib.push_back(fib[i - 1] + fib[i - 2]);
+    }
+
+    std::cout << ""Generated "" << fib.size() << "" Fibonacci numbers.\n"";
+
+    // Visualize interactive data table in the Results (.DUMP) deck
+    Display::table(fib, ""Fibonacci Sequence (20 terms)"");
+
+    // Cumulative sum using std::accumulate
+    long long total = std::accumulate(fib.begin(), fib.end(), 0LL);
+    std::cout << ""Sum of sequence: "" << total << ""\n"";
+
+    return 0;
+}"
+        },
+        new()
+        {
             Id = "animation_studio",
             Title = "Live Animation Studio",
             Category = "Animation",

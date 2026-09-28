@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -20,6 +21,29 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
 
     [ObservableProperty]
     private BlindProblemItem? _selectedProblem;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedLanguageDisplayName))]
+    private string _selectedLanguage = "csharp";
+
+    public string SelectedLanguageDisplayName => SelectedLanguage.ToLowerInvariant() switch
+    {
+        "python" => "Python 3.12",
+        "javascript" => "JavaScript (Node.js)",
+        "java" => "Java (OpenJDK)",
+        _ => "C# .NET 10"
+    };
+
+    [RelayCommand]
+    public void SetSelectedLanguage(string? languageId)
+    {
+        if (!string.IsNullOrWhiteSpace(languageId))
+        {
+            SelectedLanguage = languageId;
+        }
+    }
+
+    public IReadOnlyList<string> AvailableLanguages => ProblemLanguageRegistry.SupportedLanguageIds;
 
     [ObservableProperty]
     private bool _isDetailFlyoutOpen;
@@ -210,7 +234,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     {
         var target = problem ?? SelectedProblem;
         if (target == null) return;
-        var script = Blind75CatalogService.ConvertToScript(target);
+        var script = Blind75CatalogService.ConvertToScript(target, SelectedLanguage);
         _openScriptAction?.Invoke(script);
     }
 
@@ -219,7 +243,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     {
         var target = problem ?? SelectedProblem;
         if (target == null) return;
-        var notebook = Blind75CatalogService.ConvertToNotebook(target);
+        var notebook = Blind75CatalogService.ConvertToNotebook(target, SelectedLanguage);
         _openNotebookAction?.Invoke(notebook);
     }
 

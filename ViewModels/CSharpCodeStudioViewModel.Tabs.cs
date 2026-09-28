@@ -10,7 +10,9 @@ public partial class CSharpCodeStudioViewModel
 {
     private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
-        var sourceLanguage = document.SourceFilePath != null ? _languages.LanguageOf(document) : null;
+        var sourceLanguage = (document.SourceFilePath != null || !string.Equals(document.LanguageId, PdfEditorApp.Plugins.CSharpEditor.Services.Languages.LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase))
+            ? _languages.LanguageOf(document)
+            : null;
         return new StudioTabItemViewModel(document, isActive)
         {
             LanguageIconKind = sourceLanguage?.IconKind,
@@ -35,6 +37,10 @@ public partial class CSharpCodeStudioViewModel
         {
             currentTab.Document.Code = Code;
             currentTab.Document.Notes = Notes;
+            currentTab.ConsoleHeader = ConsoleHeader;
+            currentTab.ConsoleBody = ConsoleBody;
+            currentTab.ConsoleFooter = ConsoleFooter;
+            currentTab.ConsoleExitCode = ConsoleExitCode;
             currentTab.ConsoleOutput = ConsoleOutput;
             currentTab.ExecutionTimeText = ExecutionTimeText;
             currentTab.CompilerStatusText = CompilerStatusText;
@@ -78,6 +84,10 @@ public partial class CSharpCodeStudioViewModel
             _ => 0
         };
 
+        ConsoleHeader = tab.ConsoleHeader;
+        ConsoleBody = tab.ConsoleBody;
+        ConsoleFooter = tab.ConsoleFooter;
+        ConsoleExitCode = tab.ConsoleExitCode;
         ConsoleOutput = tab.ConsoleOutput;
         ExecutionTimeText = tab.ExecutionTimeText;
         CompilerStatusText = tab.CompilerStatusText;

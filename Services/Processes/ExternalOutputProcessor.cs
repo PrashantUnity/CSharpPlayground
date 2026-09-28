@@ -107,6 +107,12 @@ public sealed class ExternalOutputProcessor
     {
         var trimmed = line.Trim();
 
+        // 0. Filter out launcher runtime diagnostic banners that are not part of user code
+        if (IsRuntimeNoise(trimmed))
+        {
+            return;
+        }
+
         // 1. Explicit Fry display marker: __FRY_DISPLAY__ {json}
         if (trimmed.StartsWith(DisplayMarker, StringComparison.Ordinal))
         {
@@ -171,6 +177,22 @@ public sealed class ExternalOutputProcessor
         catch
         {
             // Defensive ignore
+        }
+
+        return false;
+    }
+
+    /// <summary>Checks whether a line is a runtime launcher diagnostic banner (e.g. JVM Picked up JAVA_TOOL_OPTIONS).</summary>
+    public static bool IsRuntimeNoise(string trimmed)
+    {
+        if (string.IsNullOrWhiteSpace(trimmed)) return false;
+
+        // JVM launcher diagnostic notices when JAVA_TOOL_OPTIONS or _JAVA_OPTIONS are present
+        if (trimmed.StartsWith("Picked up JAVA_TOOL_OPTIONS:", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("Picked up _JAVA_OPTIONS:", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("Picked up JAVA_OPTIONS:", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
         }
 
         return false;

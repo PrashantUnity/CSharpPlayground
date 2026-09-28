@@ -190,6 +190,35 @@ public partial class CSharpCodeStudioViewModel
     [ObservableProperty]
     private string _consoleOutput = string.Empty;
 
+    [ObservableProperty]
+    private string _consoleHeader = string.Empty;
+
+    [ObservableProperty]
+    private string _consoleBody = string.Empty;
+
+    [ObservableProperty]
+    private string _consoleFooter = string.Empty;
+
+    [ObservableProperty]
+    private int? _consoleExitCode;
+
+    public bool IsConsoleExitSuccess => ConsoleExitCode == 0;
+    public bool IsConsoleExitError => ConsoleExitCode != null && ConsoleExitCode != 0;
+
+    partial void OnConsoleExitCodeChanged(int? value)
+    {
+        OnPropertyChanged(nameof(IsConsoleExitSuccess));
+        OnPropertyChanged(nameof(IsConsoleExitError));
+    }
+
+    partial void OnConsoleOutputChanged(string value)
+    {
+        if (string.IsNullOrEmpty(_consoleBody) && string.IsNullOrEmpty(_consoleHeader) && string.IsNullOrEmpty(_consoleFooter))
+        {
+            ConsoleBody = value;
+        }
+    }
+
     public ObservableCollection<DumpTableResult> DumpResults { get; } = new();
     public ObservableCollection<RichCellOutput> RichOutputs { get; } = new();
 
@@ -378,10 +407,15 @@ public partial class CSharpCodeStudioViewModel
         var runningCode = Code;
         bool completed = false;
         foreach (var testCase in runningCases) testCase.IsRunning = true;
+        var csharpHeader = "🚀 Running C# code (.Dump enabled)...\n";
         if (runningTab != null)
         {
             runningTab.IsExecuting = true;
-            runningTab.ConsoleOutput = "🚀 Running C# code (.Dump enabled)...\n";
+            runningTab.ConsoleHeader = csharpHeader;
+            runningTab.ConsoleBody = string.Empty;
+            runningTab.ConsoleFooter = string.Empty;
+            runningTab.ConsoleExitCode = null;
+            runningTab.ConsoleOutput = csharpHeader;
             runningTab.DumpResults.Clear();
             runningTab.RichOutputs.Clear();
         }
@@ -391,7 +425,11 @@ public partial class CSharpCodeStudioViewModel
         RichOutputs.Clear();
         SelectedBottomTabIndex = 0;
         IsBottomDeckExpanded = true;
-        ConsoleOutput = "🚀 Running C# code (.Dump enabled)...\n";
+        ConsoleHeader = csharpHeader;
+        ConsoleBody = string.Empty;
+        ConsoleFooter = string.Empty;
+        ConsoleExitCode = null;
+        ConsoleOutput = csharpHeader;
         CompilerStatusText = "Executing...";
         IsExecuting = true;
 
@@ -420,14 +458,17 @@ public partial class CSharpCodeStudioViewModel
             if (myRunId != _executionRunId) return;
             if (runningTab != null)
             {
+                runningTab.ConsoleBody += text;
                 runningTab.ConsoleOutput += text;
                 if (runningTab.IsActive)
                 {
+                    ConsoleBody = runningTab.ConsoleBody;
                     ConsoleOutput = runningTab.ConsoleOutput;
                 }
             }
             else
             {
+                ConsoleBody += text;
                 ConsoleOutput += text;
             }
         }, _postToUiThread);
@@ -559,9 +600,25 @@ public partial class CSharpCodeStudioViewModel
                 terminal.Complete(kernelResult.Success ? kernelResult.ConsoleOutput : null);
                 completed = kernelResult.Success;
 
+                var timeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
+                var exitCode = kernelResult.Success ? 0 : 1;
+                var footerText = kernelResult.Success
+                    ? $"— completed in {timeText}"
+                    : (kernelResult.WasCancelled ? "— cancelled" : "— execution failed");
+
+                if (runningTab != null)
+                {
+                    runningTab.ConsoleFooter = footerText;
+                    runningTab.ConsoleExitCode = exitCode;
+                }
+                if (runningTab == null || runningTab.IsActive)
+                {
+                    ConsoleFooter = footerText;
+                    ConsoleExitCode = exitCode;
+                }
+
                 if (kernelResult.Success)
                 {
-                    var timeText = $"{kernelResult.Elapsed.TotalMilliseconds:N0} ms";
                     var statusText = DumpResults.Count > 0
                         ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
                         : "Completed";
@@ -796,7 +853,20 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     private void ClearConsole()
     {
+        ConsoleHeader = string.Empty;
+        ConsoleBody = string.Empty;
+        ConsoleFooter = string.Empty;
+        ConsoleExitCode = null;
         ConsoleOutput = string.Empty;
+        var tab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (tab != null)
+        {
+            tab.ConsoleHeader = string.Empty;
+            tab.ConsoleBody = string.Empty;
+            tab.ConsoleFooter = string.Empty;
+            tab.ConsoleExitCode = null;
+            tab.ConsoleOutput = string.Empty;
+        }
     }
 
     [RelayCommand]
