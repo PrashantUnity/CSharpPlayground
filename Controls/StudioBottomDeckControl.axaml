@@ -19,12 +19,12 @@
 
     <Border MinHeight="100"
             VerticalAlignment="Stretch"
-            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            Background="{DynamicResource DsBgBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
             BorderThickness="0,1,0,0">
         <Grid RowDefinitions="Auto,*">
             <!-- Bottom Deck Tab Bar -->
-            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <!-- Tab 0: Results (.Dump) -->
@@ -32,12 +32,12 @@
                                 Classes="ide-tab-btn"
                                 Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="Table" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <materialIcons:MaterialIcon Kind="Table" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Results (.Dump)" VerticalAlignment="Center" />
                                 <Border Classes="ide-tab-badge"
-                                        Background="{DynamicResource M3PrimaryBrush}"
+                                        Background="{DynamicResource DsPrimaryBrush}"
                                         IsVisible="{Binding DumpResults.Count}">
-                                    <TextBlock Text="{Binding DumpResults.Count}" Foreground="{DynamicResource M3OnPrimaryBrush}" />
+                                    <TextBlock Text="{Binding DumpResults.Count}" Foreground="#FFFFFF" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -57,12 +57,12 @@
                                 Classes="ide-tab-btn"
                                 Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource M3WarningBrush}" />
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#EAB308" />
                                 <TextBlock Text="Problems" VerticalAlignment="Center" />
                                 <Border Classes="ide-tab-badge"
-                                        Background="{DynamicResource M3ErrorBrush}"
+                                        Background="#EF4444"
                                         IsVisible="{Binding ErrorCount}">
-                                    <TextBlock Text="{Binding ErrorCount}" Foreground="{DynamicResource M3OnErrorBrush}" />
+                                    <TextBlock Text="{Binding ErrorCount}" Foreground="#FFFFFF" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -84,13 +84,13 @@
                                 IsVisible="{Binding SupportsDebugging}"
                                 Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Debug Console" VerticalAlignment="Center" />
                                 <Border Classes="ide-tab-badge"
-                                        Background="{DynamicResource M3WarningBrush}"
+                                        Background="#F59E0B"
                                         Padding="5,0"
                                         IsVisible="{Binding IsPaused}">
-                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="{DynamicResource M3OnWarningBrush}" />
+                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="#000000" FontWeight="Bold" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -99,19 +99,19 @@
                     <!-- Right Actions: Clear, Minimize -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="0,0,8,0" VerticalAlignment="Center">
                         <Button Command="{Binding ClearResultsCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Clear Results">
-                            <materialIcons:MaterialIcon Kind="TableRemove" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="TableRemove" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
                         </Button>
                         <Button Command="{Binding ClearConsoleCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Clear Console">
-                            <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="Eraser" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
                         </Button>
                         <Button Command="{Binding ToggleDeckPositionCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="{Binding DeckPositionTooltip}">
                             <Panel>
-                                <materialIcons:MaterialIcon Kind="DockRight" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsDeckDockedToRight}" />
-                                <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding IsDeckDockedToRight}" />
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsDeckDockedToRight}" />
+                                <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding IsDeckDockedToRight}" />
                             </Panel>
                         </Button>
                         <Button Command="{Binding ToggleBottomDeckCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Minimize Deck (Ctrl+J)">
-                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -120,14 +120,14 @@
             <!-- Bottom Deck Content -->
             <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedBottomTabIndex}">
                 <!-- Tab 0: Results (.Dump) -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,10">
+                <Border Background="{DynamicResource DsBgBrush}" Padding="12,10">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="12">
                             <Border IsVisible="{Binding HasNoResults}" Padding="24,30" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <StackPanel Spacing="10" HorizontalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Call .Dump() in C#, Display.dump() in Java/JS, or dump() in Python to inspect results in a rich interactive table." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Call .Dump() in C#, Display.dump() in Java/JS, or dump() in Python to inspect results in a rich interactive table." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
@@ -144,10 +144,10 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="services:RichCellOutput">
                                         <StackPanel Spacing="0">
-                                            <Border IsVisible="{Binding IsImageKind}" Background="#080C11" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
+                                            <Border IsVisible="{Binding IsImageKind}" Background="#080C11" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
                                                 <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
                                             </Border>
-                                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
                                                 <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
                                             </Border>
                                             <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
@@ -165,7 +165,7 @@
                 </Border>
 
                 <!-- Tab 1: Terminal / Console Output, and an input line while the running program reads input -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
+                <Border Background="{DynamicResource DsBgBrush}" Padding="12,8">
                     <Grid RowDefinitions="*,Auto">
                         <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="4">
@@ -175,7 +175,7 @@
                                     <TextBlock Text="{Binding ConsoleHeader}"
                                                FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
                                                FontSize="{Binding EditorFontSize}"
-                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                               Foreground="{DynamicResource DsMutedBrush}"
                                                Opacity="0.65"
                                                TextWrapping="Wrap" />
                                 </Border>
@@ -185,7 +185,7 @@
                                          FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
                                          FontSize="{Binding EditorFontSize}"
                                          Background="Transparent"
-                                         Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                         Foreground="{DynamicResource DsTextWhiteBrush}"
                                          BorderThickness="0"
                                          IsReadOnly="True"
                                          TextWrapping="Wrap"
@@ -194,18 +194,18 @@
                                 <!-- 3. Process Exit Footer: Subtle status indicator with status icon -->
                                 <Border IsVisible="{Binding ConsoleFooter, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                         Margin="0,4,0,2" Padding="0,6,0,0"
-                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0">
+                                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0">
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="13" Height="13"
-                                                                    Foreground="{DynamicResource M3SuccessBrush}"
+                                                                    Foreground="{DynamicResource DsGreenBrush}"
                                                                     IsVisible="{Binding IsConsoleExitSuccess}" />
                                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13"
-                                                                    Foreground="{DynamicResource M3ErrorBrush}"
+                                                                    Foreground="#EF4444"
                                                                     IsVisible="{Binding IsConsoleExitError}" />
                                         <TextBlock Text="{Binding ConsoleFooter}"
                                                    FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
                                                    FontSize="{Binding EditorFontSize}"
-                                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                   Foreground="{DynamicResource DsMutedBrush}"
                                                    Opacity="0.75"
                                                    VerticalAlignment="Center" />
                                     </StackPanel>
@@ -213,10 +213,10 @@
                             </StackPanel>
                         </ScrollViewer>
                         <Border Grid.Row="1" IsVisible="{Binding IsAcceptingProgramInput}"
-                                BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,4,0,0">
+                                BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,4,0,0">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="ChevronRight" Width="14" Height="14"
-                                                            Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                            Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 <TextBox Grid.Column="1" Text="{Binding ProgramInputText, Mode=TwoWay}"
                                          controls:FocusOnTrueBehavior.IsActive="{Binding IsAcceptingProgramInput}"
                                          FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
@@ -227,7 +227,7 @@
                                     </TextBox.KeyBindings>
                                 </TextBox>
                                 <Button Grid.Column="2" Command="{Binding SendProgramInputCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Send (Enter)">
-                                    <materialIcons:MaterialIcon Kind="KeyboardReturn" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <materialIcons:MaterialIcon Kind="KeyboardReturn" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 </Button>
                             </Grid>
                         </Border>
@@ -237,17 +237,17 @@
                 <!-- Tab 2: Problems / Diagnostics -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12,8">
-                        <TextBlock Text="No problems detected in script." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
+                        <TextBlock Text="No problems detected in script." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
                         <ItemsControl ItemsSource="{Binding Diagnostics}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
-                                    <Border Background="Transparent" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+                                    <Border Background="Transparent" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
                                         <Button Command="{Binding NavigateCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Cursor="Hand">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIconKind}" Foreground="{Binding SeverityColorHex}" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" />
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11.5" Foreground="{Binding SeverityColorHex}" />
-                                                    <TextBlock Text="{Binding Message}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Message}" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                                 <Button Grid.Column="2" Command="{Binding QuickFixCommand}" IsVisible="{Binding HasQuickFix}"
                                                         Classes="cs-toolbar-tonal" Padding="8,2" Margin="8,0,0,0" VerticalAlignment="Center">
@@ -256,7 +256,7 @@
                                                         <TextBlock Text="{Binding QuickFixLabel}" FontSize="11" FontWeight="SemiBold" />
                                                     </StackPanel>
                                                 </Button>
-                                                <TextBlock Grid.Column="3" Text="{Binding LocationString}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                                <TextBlock Grid.Column="3" Text="{Binding LocationString}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
                                             </Grid>
                                         </Button>
                                     </Border>
@@ -269,11 +269,11 @@
                 <!-- Tab 3: Test Cases. Each case is a Check("name", answer, "expected") line in the script; every run
                      reads its ✅/❌ line back into the card. -->
                 <Grid RowDefinitions="Auto,*">
-                    <Border Grid.Row="0" Padding="14,7" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Padding="14,7" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                                <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding TestCasesSummary}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding TestCasesSummary}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <Button Command="{Binding GenerateTestCasesCommand}" IsVisible="{Binding CanGenerateTestCases}" Classes="cs-toolbar-tonal"
@@ -286,7 +286,7 @@
                                 <Button Command="{Binding RunAllTestCasesCommand}" IsVisible="{Binding HasTestCases}" Classes="cs-toolbar-tonal"
                                         ToolTip.Tip="Run the script once and check every case">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource M3SuccessBrush}" />
+                                        <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
                                         <TextBlock Text="Run All" FontSize="11" />
                                     </StackPanel>
                                 </Button>
@@ -303,21 +303,21 @@
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="14,10" Spacing="8">
                             <TextBlock Text="{Binding TestCasesStatus}" IsVisible="{Binding TestCasesStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                       FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                             <!-- New case: what to check and the answer expected -->
-                            <Border IsVisible="{Binding IsAddingTestCase}" Background="{DynamicResource M3SurfaceContainerBrush}"
-                                    BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                            <Border IsVisible="{Binding IsAddingTestCase}" Background="{DynamicResource DsSurfaceHighBrush}"
+                                    BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="New test case" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <TextBlock Text="New test case" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     <Grid ColumnDefinitions="72,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                                        <TextBlock Grid.Row="0" Text="Name" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="0" Text="Name" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewTestCaseName, Mode=TwoWay}" Classes="sidebar-search-box" />
-                                        <TextBlock Grid.Row="1" Text="Check" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="1" Text="Check" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewTestCaseCall, Mode=TwoWay}" Classes="sidebar-search-box"
                                                  FontFamily="Consolas, Menlo, Monaco, monospace"
                                                  PlaceholderText="The C# expression to check, e.g. sol.MaxArea(new[] { 1, 1 })" />
-                                        <TextBlock Grid.Row="2" Text="Expected" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="2" Text="Expected" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto">
                                             <TextBox Text="{Binding NewTestCaseExpected, Mode=TwoWay}" Classes="sidebar-search-box"
                                                      FontFamily="Consolas, Menlo, Monaco, monospace"
@@ -329,10 +329,10 @@
                                         </Grid>
                                     </Grid>
                                     <TextBlock Text="{Binding TestCaseFormError}" IsVisible="{Binding TestCaseFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               FontSize="11" Foreground="{DynamicResource M3ErrorBrush}" TextWrapping="Wrap" />
+                                               FontSize="11" Foreground="#EF4444" TextWrapping="Wrap" />
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBlock Text="Adds a Check(...) line to the script; Run or F5 shows whether it passes."
-                                                   FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                   FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0">
                                             <Button Command="{Binding CancelAddTestCaseCommand}" Classes="cs-toolbar-outlined">
                                                 <TextBlock Text="Cancel" FontSize="11" />
@@ -345,28 +345,28 @@
                                 </StackPanel>
                             </Border>
 
-                            <TextBlock IsVisible="{Binding !HasTestCases}" TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                            <TextBlock IsVisible="{Binding !HasTestCases}" TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}"
                                        Text="No test cases yet. Add one to check a value your code computes; for a Blind 75 problem, Generate brings in its examples and edge cases." />
 
                             <ItemsControl ItemsSource="{Binding TestCases}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:TestCaseItem">
-                                        <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <!-- Passed, failed, running, or not run yet -->
                                                 <Panel Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,0,10,0">
                                                     <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsPassed}" ToolTip.Tip="Passed" />
                                                     <materialIcons:MaterialIcon Kind="CloseCircle" Foreground="#EF4444" IsVisible="{Binding IsFailed}" ToolTip.Tip="Failed" />
-                                                    <materialIcons:MaterialIcon Kind="TimerSand" Foreground="{DynamicResource M3PrimaryBrush}" IsVisible="{Binding IsRunning}" ToolTip.Tip="Running" />
-                                                    <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource M3OutlineBrush}" IsVisible="{Binding IsNotRun}" ToolTip.Tip="Not run yet" />
+                                                    <materialIcons:MaterialIcon Kind="TimerSand" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsRunning}" ToolTip.Tip="Running" />
+                                                    <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsBorderBrush}" IsVisible="{Binding IsNotRun}" ToolTip.Tip="Not run yet" />
                                                 </Panel>
                                                 <StackPanel Grid.Column="1" Spacing="3">
-                                                    <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                                    <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding Input, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                    <TextBlock Text="{Binding Call, StringFormat='{}Checks: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding Call, StringFormat='{}Checks: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding ShowsCall}" />
-                                                    <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding ExpectedOutput, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                     <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="#22C55E" TextWrapping="Wrap"
                                                                IsVisible="{Binding IsPassed}" />
@@ -388,21 +388,21 @@
                 <!-- Tab 4: Debug Console & Immediate REPL -->
                 <Grid ColumnDefinitions="*,4,*">
                     <!-- Left: Locals Inspection -->
-                    <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,1,0">
+                    <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource DsBgBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0">
                         <Grid RowDefinitions="Auto,*">
                             <!-- Same 20px header row as the REPL pane, so both titles sit on one line. -->
                             <Grid Grid.Row="0" MinHeight="20" Margin="0,0,0,4">
-                                <TextBlock Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </Grid>
                             <TextBlock Grid.Row="1" IsVisible="{Binding !Locals.Count}"
                                        Text="Start debugging (F5) and stop at a breakpoint to see the local variables here."
-                                       FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
                             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Locals}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models:DebugVariableItem">
-                                            <Border Background="{DynamicResource M3SurfaceContainerBrush}" CornerRadius="4" Padding="6,3" Margin="0,0,0,3">
+                                            <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,0,0,3">
                                                 <StackPanel Orientation="Vertical">
                                                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
                                                         <!-- Expander arrow -->
@@ -413,15 +413,15 @@
                                                                 Classes="m3-icon-btn"
                                                                 Width="18" Height="18"
                                                                 Padding="0" Margin="0,0,3,0">
-                                                            <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                            <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                                                         </Button>
 
                                                         <!-- Node Icon -->
-                                                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Variable Name -->
                                                         <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="#9CDCFE" VerticalAlignment="Center" Margin="0,0,4,0" />
-                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Type Name -->
                                                         <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="#4EC9B0" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -430,7 +430,7 @@
                                                         <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding ValueDisplay}"
                                                                        FontFamily="Consolas, monospace" FontSize="10.5"
-                                                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                                                       Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        VerticalAlignment="Center" />
                                                             <Border IsVisible="{Binding HasValueChanged}" Background="#FF79C6" CornerRadius="3" Padding="3,0" Margin="4,0,0,0" ToolTip.Tip="Value has changed since last evaluation">
                                                                 <TextBlock Text="changed" FontSize="9" FontWeight="Bold" Foreground="#1E1E2E" />
@@ -456,7 +456,7 @@
                                                     <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}" Margin="18,3,0,1">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate x:DataType="models:DebugVariableItem">
-                                                                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" CornerRadius="3" Padding="4,2" Margin="0,1">
+                                                                <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="3" Padding="4,2" Margin="0,1">
                                                                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
                                                                         <Button Grid.Column="0"
                                                                                 Command="{Binding $parent[UserControl].DataContext.ExpandVariableCommand}"
@@ -465,13 +465,13 @@
                                                                                 Classes="m3-icon-btn"
                                                                                 Width="16" Height="16"
                                                                                 Padding="0" Margin="0,0,2,0">
-                                                                            <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="10" Height="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                            <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                                         </Button>
-                                                                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
                                                                         <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="#9CDCFE" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
                                                                         <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="#4EC9B0" VerticalAlignment="Center" Margin="0,0,5,0" />
-                                                                        <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                                        <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                                                         <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                                             <Button Command="{Binding $parent[UserControl].DataContext.ExploreVariableCommand}" CommandParameter="{Binding}"
                                                                                     IsVisible="{Binding IsCollection}"
@@ -501,10 +501,10 @@
                     <GridSplitter Grid.Column="1" Classes="studio-sash" Width="4" ResizeDirection="Columns" />
 
                     <!-- Right: Immediate REPL Console -->
-                    <Border Grid.Column="2" Padding="10,8" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                    <Border Grid.Column="2" Padding="10,8" Background="{DynamicResource DsBgBrush}">
                         <Grid RowDefinitions="Auto,*,Auto">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                <TextBlock Grid.Column="0" Text="IMMEDIATE REPL CONSOLE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="0" Text="IMMEDIATE REPL CONSOLE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 <Button Grid.Column="1" Command="{Binding ClearImmediateCommand}" Classes="cs-toolbar-icon" Width="20" Height="20">
                                     <materialIcons:MaterialIcon Kind="Eraser" Width="12" Height="12" />
                                 </Button>
@@ -514,7 +514,7 @@
                                 <ItemsControl ItemsSource="{Binding ImmediateOutput}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" TextWrapping="Wrap" Margin="0,1" />
+                                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource DsPrimaryBrush}" TextWrapping="Wrap" Margin="0,1" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

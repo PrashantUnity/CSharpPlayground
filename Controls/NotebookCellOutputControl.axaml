@@ -11,9 +11,22 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl"
              x:DataType="vm:NotebookCellViewModel">
 
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
     <StackPanel Spacing="4">
         <!-- Subtle separator between input and output -->
-        <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" Opacity="0.4" Margin="0,0,0,4" />
+        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" Opacity="0.6" Margin="0,0,0,4" />
 
         <!-- Collapsed Output Banner -->
         <Border Classes="notebook-collapsed-output-banner"
@@ -26,32 +39,34 @@
                     <materialIcons:MaterialIcon Grid.Column="0"
                                                 Kind="ChevronRight"
                                                 Width="14" Height="14"
-                                                Foreground="{DynamicResource M3PrimaryBrush}"
+                                                Foreground="{DynamicResource DsPrimaryBrush}"
                                                 VerticalAlignment="Center"
                                                 Margin="0,0,6,0" />
 
                     <materialIcons:MaterialIcon Grid.Column="1"
                                                 Kind="Console"
                                                 Width="14" Height="14"
-                                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                Foreground="{DynamicResource DsMutedBrush}"
                                                 VerticalAlignment="Center"
                                                 Margin="0,0,8,0" />
 
                     <TextBlock Grid.Column="2"
                                Text="{Binding OutputCollapsedSummaryText}"
                                FontSize="11.5"
-                               Foreground="{DynamicResource M3OnSurfaceBrush}"
+                               Foreground="{DynamicResource DsTextWhiteBrush}"
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center" />
 
                     <Border Grid.Column="3"
-                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                            CornerRadius="3"
+                            Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
                             Padding="6,2"
                             VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Expand Output" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Expand Output" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -67,8 +82,8 @@
                     <!-- Single Output Kind Header (e.g. only Console or only Table) -->
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
                                 IsVisible="{Binding !HasMultipleOutputKinds}">
-                        <materialIcons:MaterialIcon Kind="{Binding SingleOutputIconKind}" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SingleOutputTitle}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="{Binding SingleOutputIconKind}" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SingleOutputTitle}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Multiple Output Kinds: Sleek Segmented Tab Strip -->
@@ -198,28 +213,28 @@
                             Width="20" Height="20"
                             IsVisible="{Binding HasTextOutput}"
                             ToolTip.Tip="Copy Console Text">
-                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
                     <Button Command="{Binding ToggleOutputScrolledCommand}"
                             Classes="cell-tool-btn"
                             Width="20" Height="20"
                             ToolTip.Tip="{Binding OutputScrolledTooltip}">
                         <Panel Width="12" Height="12">
-                            <materialIcons:MaterialIcon Kind="FormatLineSpacing" IsVisible="{Binding IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" />
-                            <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" IsVisible="{Binding !IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="FormatLineSpacing" IsVisible="{Binding IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" IsVisible="{Binding !IsOutputScrolled}" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                         </Panel>
                     </Button>
                     <Button Command="{Binding ToggleOutputCollapseCommand}"
                             Classes="cell-tool-btn"
                             Width="20" Height="20"
                             ToolTip.Tip="Collapse Output">
-                        <materialIcons:MaterialIcon Kind="ChevronUp" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <materialIcons:MaterialIcon Kind="ChevronUp" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
                     <Button Command="{Binding ClearOutputCommand}"
                             Classes="cell-tool-btn"
                             Width="20" Height="20"
                             ToolTip.Tip="Clear Output">
-                        <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
                 </StackPanel>
             </Grid>
@@ -230,18 +245,18 @@
                 <StackPanel Spacing="6">
                     <!-- Missing Variable Smart Hint (CS0103) -->
                     <Border IsVisible="{Binding HasMissingVariableError}"
-                            Background="{DynamicResource M3WarningContainerBrush}"
-                            BorderBrush="{DynamicResource M3WarningBrush}"
+                            Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="#D29922"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             Margin="0,0,0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="{DynamicResource M3OnWarningContainerBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnWarningContainerBrush}" />
+                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E3B341" />
                                 <TextBlock Text="This variable may be defined in an earlier cell. Run previous cells to initialize it in this session."
-                                           FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                           FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="2"
                                     Command="{Binding RunCellAndAboveCommand}"
@@ -250,7 +265,7 @@
                                     VerticalAlignment="Center"
                                     ToolTip.Tip="Execute all cells from the top down to this cell">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="FastForward" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="FastForward" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="Run All Above" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -259,18 +274,18 @@
 
                     <!-- Missing package hint (Python's ModuleNotFoundError): install it, then the cell runs again -->
                     <Border IsVisible="{Binding HasMissingDependency}"
-                            Background="{DynamicResource M3WarningContainerBrush}"
-                            BorderBrush="{DynamicResource M3WarningBrush}"
+                            Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="#D29922"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             Margin="0,0,0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariantClosed" Width="16" Height="16" Foreground="{DynamicResource M3OnWarningContainerBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariantClosed" Width="16" Height="16" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding MissingDependencyHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnWarningContainerBrush}" />
+                                <TextBlock Text="{Binding MissingDependencyHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E3B341" />
                                 <TextBlock Text="{Binding MissingDependencyHintDetail}"
-                                           FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                           FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="2"
                                     Command="{Binding InstallMissingDependencyCommand}"
@@ -279,7 +294,7 @@
                                     VerticalAlignment="Center"
                                     ToolTip.Tip="Install the package, then run this cell again">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="Download" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="Download" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding InstallMissingDependencyLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -292,8 +307,8 @@
                     </Border>
 
                     <!-- 2. Dark Terminal Card for Console Stdout Output -->
-                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    <Border Background="{DynamicResource DsBgBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
@@ -301,7 +316,7 @@
                         <SelectableTextBlock Text="{Binding OutputText, Mode=OneWay}"
                                  FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
                                  FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.0}"
-                                 Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                 Foreground="{DynamicResource DsTextWhiteBrush}"
                                  TextWrapping="Wrap" />
                     </Border>
 
@@ -311,32 +326,44 @@
                     </Border>
 
                     <!-- 3b. Interactive Native Vector Chart -->
-                    <Border IsVisible="{Binding IsChartTabActive}">
+                    <Border IsVisible="{Binding IsChartTabActive}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="8">
                         <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
                     </Border>
 
                     <!-- 3c. Interactive Native Vector Data Structure Visualizer -->
-                    <Border IsVisible="{Binding IsVisualizerTabActive}">
+                    <Border IsVisible="{Binding IsVisualizerTabActive}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="8">
                         <visControls:InteractiveVisualizerControl Options="{Binding VisualizerOptions}" />
                     </Border>
 
                     <!-- 4. Rendered Graphic / Image Output -->
                     <Border IsVisible="{Binding IsImageTabActive}"
-                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10">
                         <Grid RowDefinitions="Auto,*">
                             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                    <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Rendered Graphic" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </StackPanel>
                                 <Border Grid.Column="1" HorizontalAlignment="Left" Margin="8,0,0,0"
-                                        Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                        Background="{DynamicResource DsSurfaceHighBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                        BorderThickness="1"
                                         CornerRadius="4" Padding="6,1">
-                                    <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 </Border>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <Button Command="{Binding CopyImageCommand}" Classes="cell-tool-btn" Width="24" Height="24" ToolTip.Tip="Copy Image">
@@ -348,8 +375,8 @@
                                 </StackPanel>
                             </Grid>
                             <Border Grid.Row="1"
-                                    Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                    Background="{DynamicResource DsBgBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="4"
                                     Padding="8"
@@ -365,15 +392,15 @@
 
                     <!-- 5. Interactive Avalonia UI Control -->
                     <Border IsVisible="{Binding IsWidgetTabActive}"
-                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,8">
                         <Grid RowDefinitions="Auto,*">
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <materialIcons:MaterialIcon Kind="ApplicationOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="Interactive UI Widget" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             </StackPanel>
                             <ContentControl Grid.Row="1" Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
                         </Grid>
@@ -381,32 +408,32 @@
 
                     <!-- 5b. Interactive Control Placeholder -->
                     <Border IsVisible="{Binding InteractiveControlPlaceholderVisible}"
-                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,10">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="ReloadAlert" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
                             <TextBlock Text="Interactive widget / animation not restored — re-run this cell to bring it back."
                                        FontSize="11.5"
                                        FontStyle="Italic"
-                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                       Foreground="{DynamicResource DsMutedBrush}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
                     <!-- 6. HTML / Markdown Rich Output -->
                     <Border IsVisible="{Binding IsHtmlTabActive}"
-                            Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,8">
                         <Grid RowDefinitions="Auto,*">
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             </StackPanel>
                             <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
                         </Grid>

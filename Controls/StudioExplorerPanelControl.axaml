@@ -19,13 +19,13 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.explorer-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         </Style>
         <Style Selector="Button.explorer-item-btn StackPanel.explorer-row-actions">
             <Setter Property="Opacity" Value="0" />
@@ -73,7 +73,7 @@
                             </MenuItem>
                             <MenuItem Header="Delete" Command="{Binding RequestDeleteCommand}" IsVisible="{Binding !IsExternalGroup}">
                                 <MenuItem.Icon>
-                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource M3ErrorBrush}" />
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="#EF4444" />
                                 </MenuItem.Icon>
                             </MenuItem>
                             <Separator />
@@ -89,7 +89,7 @@
                         <Border Grid.Column="0" Width="16" Height="16" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="{Binding ChevronKind}"
                                                         Width="12" Height="12"
-                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                        Foreground="{DynamicResource DsMutedBrush}"
                                                         VerticalAlignment="Center"
                                                         HorizontalAlignment="Center"
                                                         IsVisible="{Binding IsDirectory}" />
@@ -107,7 +107,7 @@
                         <TextBlock Grid.Column="2"
                                    Text="{Binding Name}"
                                    FontSize="12"
-                                   Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                   Foreground="{DynamicResource DsTextWhiteBrush}"
                                    VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding !IsRenaming}" />
@@ -139,28 +139,28 @@
                                     Width="19" Height="19"
                                     ToolTip.Tip="New Script Here"
                                     IsVisible="{Binding IsManageableDirectory}">
-                                <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
                             <Button Command="{Binding RequestNewFolderCommand}"
                                     Classes="explorer-tool-btn"
                                     Width="19" Height="19"
                                     ToolTip.Tip="New Folder Here"
                                     IsVisible="{Binding IsManageableDirectory}">
-                                <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
                             <Button Command="{Binding RequestDuplicateCommand}"
                                     Classes="explorer-tool-btn"
                                     Width="19" Height="19"
                                     ToolTip.Tip="Duplicate Script"
                                     IsVisible="{Binding !IsDirectory}">
-                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <materialIcons:MaterialIcon Kind="ContentCopy" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
                             <Button Command="{Binding RequestDeleteCommand}"
                                     Classes="explorer-tool-btn delete-tool"
                                     Width="19" Height="19"
                                     ToolTip.Tip="Delete"
                                     IsVisible="{Binding !IsExternalGroup}">
-                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -168,21 +168,21 @@
 
                 <!-- Deleting a source file removes the user's own file from disk, so it's confirmed first. -->
                 <Border IsVisible="{Binding IsConfirmingDelete}"
-                        Background="{DynamicResource M3ErrorContainerBrush}"
-                        CornerRadius="{StaticResource M3ShapeCornerExtraSmall}"
+                        Background="#3A1D28"
+                        CornerRadius="4"
                         Margin="{Binding IndentPadding}"
                         Padding="8,4">
                     <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding DeleteConfirmationText}"
-                                   FontSize="11" Foreground="{DynamicResource M3OnErrorContainerBrush}"
+                                   FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}"
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         <Button Grid.Column="1" Command="{Binding ConfirmDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" Margin="6,0,2,0" ToolTip.Tip="Delete the file">
-                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3ErrorBrush}" />
+                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" />
                         </Button>
                         <Button Grid.Column="2" Command="{Binding CancelDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" ToolTip.Tip="Keep the file">
-                            <TextBlock Text="Cancel" FontSize="11" Foreground="{DynamicResource M3OnErrorContainerBrush}" />
+                            <TextBlock Text="Cancel" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </Button>
                     </Grid>
                 </Border>

@@ -16,16 +16,16 @@
         <StackPanel Margin="10,8" Spacing="10">
 
             <!-- NuGet Search Section -->
-            <Border Background="{DynamicResource M3SurfaceContainerBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
                     BorderThickness="1" CornerRadius="6" Padding="8">
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding ActivePackageManagerTitle, FallbackValue='PACKAGES &amp; DEPENDENCIES'}" FontSize="10.5" FontWeight="Bold"
-                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                   Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Command="{Binding SearchNuGetPackagesCommand}" Classes="explorer-tool-btn"
                                 Width="20" Height="20" ToolTip.Tip="Search packages">
-                            <materialIcons:MaterialIcon Kind="Magnify" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                            <materialIcons:MaterialIcon Kind="Magnify" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
                         </Button>
                     </Grid>
 
@@ -37,8 +37,8 @@
                             </TextBox.KeyBindings>
                         </TextBox>
                         <Button Grid.Column="1" Command="{Binding SearchNuGetPackagesCommand}"
-                                Classes="cs-toolbar-filled" Background="{DynamicResource M3PrimaryBrush}"
-                                Foreground="{DynamicResource M3OnPrimaryBrush}"
+                                Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}"
+                                Foreground="#FFFFFF"
                                 Height="26" MinHeight="0" Margin="4,0,0,0" Padding="8,0"
                                 ToolTip.Tip="Search">
                             <TextBlock Text="Search" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />
@@ -47,26 +47,26 @@
 
                     <!-- Status Message / Loading -->
                     <TextBlock Text="{Binding NuGetStatusMessage}" FontSize="10"
-                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis"
                                IsVisible="{Binding NuGetStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Search Results -->
                     <ItemsControl ItemsSource="{Binding NuGetSearchResults}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:NuGetPackageItem">
-                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                <Border Background="{DynamicResource DsSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,2">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <StackPanel Orientation="Horizontal" Spacing="4">
                                                 <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11"
-                                                           Foreground="{DynamicResource M3PrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                           Foreground="{DynamicResource DsPrimaryBrush}" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="9.5"
-                                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                                                           Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                             <TextBlock Text="{Binding Description}" FontSize="9.5"
-                                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                       Foreground="{DynamicResource DsMutedBrush}"
                                                        MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.AddNuGetPackageCommand}"
@@ -87,19 +87,19 @@
             </Border>
 
             <!-- Active Script NuGet Directives -->
-            <Border Background="{DynamicResource M3SurfaceContainerBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
                     BorderThickness="1" CornerRadius="6" Padding="8"
                     IsVisible="{Binding DocumentNuGetPackages.Count}">
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding ActiveScriptDirectivesTitle, FallbackValue='SCRIPT DIRECTIVES'}" FontSize="10.5" FontWeight="Bold"
-                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                   Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceBrush}"
                                 Height="16" MinHeight="16" MinWidth="16" CornerRadius="8" Padding="4,0"
                                 VerticalAlignment="Center">
                             <TextBlock Text="{Binding DocumentNuGetPackages.Count}" FontSize="9" FontWeight="Bold"
-                                       Foreground="{DynamicResource M3PrimaryBrush}"
+                                       Foreground="{DynamicResource DsPrimaryBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                         </Border>
                     </Grid>
@@ -109,11 +109,11 @@
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,1">
                                     <TextBlock Grid.Column="0" Text="{Binding}" FontFamily="Consolas, monospace" FontSize="10"
-                                               Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                               Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                     <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.RemoveNuGetPackageCommand}"
                                             CommandParameter="{Binding}" Classes="explorer-tool-btn" Width="18" Height="18"
                                             ToolTip.Tip="Remove from script">
-                                        <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Button>
                                 </Grid>
                             </DataTemplate>
@@ -123,26 +123,26 @@
             </Border>
 
             <!-- Assembly References Section (C# only) -->
-            <Border Background="{DynamicResource M3SurfaceContainerBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
                     BorderThickness="1" CornerRadius="6" Padding="8"
                     IsVisible="{Binding SupportsExecutionModes}">
                 <StackPanel Spacing="6">
                     <TextBlock Text="ASSEMBLY REFERENCES" FontSize="10.5" FontWeight="Bold"
-                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,2" />
+                               Foreground="{DynamicResource DsMutedBrush}" Margin="0,0,0,2" />
 
                     <ItemsControl ItemsSource="{Binding References}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:AssemblyReferenceViewModel">
-                                <Border Padding="6,4" Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1"
-                                        CornerRadius="{StaticResource M3ShapeCornerSmall}" Margin="0,1">
+                                <Border Padding="6,4" Background="{DynamicResource DsSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                        CornerRadius="6" Margin="0,1">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariant" Width="13" Height="13"
-                                                                    Foreground="{DynamicResource M3PrimaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                                    Foreground="{DynamicResource DsPrimaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                            <TextBlock Text="{Binding AssemblyPath}" FontSize="9" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            <TextBlock Text="{Binding AssemblyPath}" FontSize="9" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled}" IsEnabled="{Binding !IsSystem}" VerticalAlignment="Center" Margin="4,0,0,0" />
                                     </Grid>

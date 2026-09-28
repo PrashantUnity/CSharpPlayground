@@ -12,18 +12,18 @@
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
     </UserControl.Styles>
 
-    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+    <Border Background="{DynamicResource DsBgBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
             BorderThickness="0,0,0,1"
-            Padding="12,2">
-        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <TextBlock Text="scripts" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding RuntimeLabel}" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" IsVisible="{Binding SupportsExecutionModes}">
-                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+            Padding="14,2">
+        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="scripts" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding RuntimeLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="6,0,0,0" IsVisible="{Binding SupportsExecutionModes}">
+                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
             </Border>
         </StackPanel>
     </Border>
