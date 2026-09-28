@@ -82,10 +82,11 @@ public class CodeStudioSourceFileTests : IDisposable
     {
         var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
 
-        Assert.Equal(3, studio.NewFileOptions.Count);
+        Assert.Equal(4, studio.NewFileOptions.Count);
         var python = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Python);
         var js = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.JavaScript);
         var java = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Java);
+        var cpp = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Cpp);
 
         Assert.Equal("New Python File", python.Label);
         Assert.Equal("LanguagePython", python.IconKind);
@@ -93,6 +94,8 @@ public class CodeStudioSourceFileTests : IDisposable
         Assert.Equal("LanguageJavascript", js.IconKind);
         Assert.Equal("New Java File", java.Label);
         Assert.Equal("LanguageJava", java.IconKind);
+        Assert.Equal("New C++ File", cpp.Label);
+        Assert.Equal("LanguageCpp", cpp.IconKind);
     }
 
     [Fact]

@@ -42,6 +42,7 @@ public sealed class JavaLanguage : LanguageDefinition
     public override IReadOnlyList<string> Aliases => JavaAliases;
     public override IReadOnlyList<string> FileExtensions => JavaExtensions;
     public override LanguageStorageKind Storage => LanguageStorageKind.SourceFile;
+    public override bool IsCompiled => true;
 
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.StandardInput | LanguageCapabilities.NotebookCells |

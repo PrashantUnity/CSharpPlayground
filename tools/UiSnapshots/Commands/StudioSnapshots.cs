@@ -282,9 +282,10 @@ internal static class StudioSnapshots
         var javaShare = options.Flag("java-share");
         var javaException = options.Flag("java-exception");
         var javaTable = options.Flag("java-table");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable) ? 0 : options.Problem();
+        var cppDemo = options.Flag("cpp-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -311,7 +312,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -489,15 +490,15 @@ internal static class StudioSnapshots
 
     private static NotebookDocumentItem PolyglotDemoNotebook() => new()
     {
-        Title = "Polyglot: C#, Python, JavaScript & Java",
+        Title = "Polyglot: C#, Python, JavaScript, Java & C++",
         Cells =
         {
             new NotebookCellItem
             {
                 Type = CellType.Markdown,
                 Source = """
-                    ## Polyglot Notebook (C#, Python, JavaScript & Java)
-                    Each cell runs in its native runtime. Data shares seamlessly across all four languages with `#!share`.
+                    ## Polyglot Notebook (C#, Python, JavaScript, Java & C++)
+                    Each cell runs in its native runtime. Data shares seamlessly across all five languages with `#!share`.
                     """
             },
             new NotebookCellItem
@@ -554,6 +555,20 @@ internal static class StudioSnapshots
             new NotebookCellItem
             {
                 Type = CellType.Code,
+                Language = LanguageIds.Cpp,
+                Source = """
+                    #!share --from csharp scores
+                    int maxScore = 0;
+                    for (int s : scores) {
+                        if (s > maxScore) maxScore = s;
+                    }
+                    std::cout << "C++ calculated maximum score: " << maxScore << std::endl;
+                    fry::display::table(scores, "C++ Processed Scores");
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
                 Language = LanguageIds.JavaScript,
                 Source = """
                     const stats = { count: scores.length, max: Math.max(...scores), min: Math.min(...scores) };
@@ -568,6 +583,52 @@ internal static class StudioSnapshots
                     #!share --from js stats
                     #!share --from java javaStats
                     $"C# received: JS Max={stats["max"]}, Java Sum={javaStats["sum"]}, Java Avg={javaStats["avg"]}"
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem CppDemoNotebook() => new()
+    {
+        Title = "C++20 Interactive Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # C++20 Interactive Notebook
+                    Interactive C++ cell execution with Clang/GCC/MSVC, `<fry/display.hpp>` visual dumps, and STL algorithms.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Cpp,
+                Source = """
+                    #include <iostream>
+                    #include <vector>
+                    #include <numeric>
+
+                    std::vector<int> numbers = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+                    int total = std::accumulate(numbers.begin(), numbers.end(), 0);
+                    std::cout << "Sum of numbers: " << total << std::endl;
+                    fry::dump(numbers, "Initial Vector");
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Cpp,
+                Source = """
+                    #include <algorithm>
+
+                    std::vector<int> squares;
+                    for (int n : numbers) {
+                        squares.push_back(n * n);
+                    }
+                    std::cout << "Computed " << squares.size() << " squares." << std::endl;
+                    Display::table(squares, "Squares of Numbers");
                     """
             }
         }

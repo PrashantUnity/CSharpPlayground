@@ -86,4 +86,37 @@ public class PolyglotDisplayRuntimeTests
         Assert.Contains("function dump(", fryContent);
         Assert.Contains("function display(", fryContent);
     }
+
+    [Fact]
+    public async Task CppDisplayRuntime_EnsureIncludeDirectoryAsync_CreatesHeaders()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "FryStudioTests", "cpp_inc_" + Guid.NewGuid().ToString("n"));
+        try
+        {
+            var includeDir = await PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp.CppDisplayRuntime.EnsureIncludeDirectoryAsync(temp);
+            Assert.True(Directory.Exists(includeDir));
+
+            var fryHeader = Path.Combine(includeDir, "fry", "display.hpp");
+            var directHeader = Path.Combine(includeDir, "display.hpp");
+
+            Assert.True(File.Exists(fryHeader));
+            Assert.True(File.Exists(directHeader));
+
+            var content = await File.ReadAllTextAsync(fryHeader);
+            Assert.Contains("namespace fry", content);
+            Assert.Contains("namespace display", content);
+            Assert.Contains("class Display", content);
+            Assert.Contains("void table(", content);
+            Assert.Contains("void html(", content);
+            Assert.Contains("void image(", content);
+            Assert.Contains("__FRY_DISPLAY__", content);
+        }
+        finally
+        {
+            if (Directory.Exists(temp))
+            {
+                try { Directory.Delete(temp, true); } catch { }
+            }
+        }
+    }
 }

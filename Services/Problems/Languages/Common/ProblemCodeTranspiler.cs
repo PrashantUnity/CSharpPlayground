@@ -155,6 +155,29 @@ public static partial class ProblemCodeTranspiler
         return res;
     }
 
+    /// <summary>
+    /// Transpiles a C# test call into C++ syntax.
+    /// </summary>
+    public static string TranspileCallToCpp(string csharpCall)
+    {
+        if (string.IsNullOrWhiteSpace(csharpCall)) return "nullptr";
+
+        string res = csharpCall.Trim();
+        res = FixMethodInvocation(res, isPython: false);
+
+        // Convert untyped new[] { ... } or new int[] { ... } to C++ initializer lists { ... }
+        res = Regex.Replace(res, @"new\s*(?:[a-zA-Z0-9_<>[\]]+)?\s*\[\s*\]\s*\[\s*\]\s*\{", "{");
+        res = Regex.Replace(res, @"new\s*(?:[a-zA-Z0-9_<>[\]]+)?\s*\[\s*\]\s*\{", "{");
+
+        // Helpers
+        res = res.Replace("BuildList(", "ListNode::buildList(");
+        res = res.Replace("BuildTree(", "TreeNode::buildTree(");
+        res = res.Replace("LcaValue(", "TreeNode::lcaValue(");
+        res = Regex.Replace(res, @"\bnull\b", "nullptr");
+
+        return res;
+    }
+
     private static string FixMethodInvocation(string call, bool isPython)
     {
         // sol.TwoSum(...) -> sol.twoSum(...)

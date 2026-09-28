@@ -103,6 +103,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.Python => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguagePython,
         Services.Languages.LanguageIds.Java => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJava,
         Services.Languages.LanguageIds.JavaScript => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJavascript,
+        Services.Languages.LanguageIds.Cpp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageCpp,
         _ => Kind switch
         {
             WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
@@ -120,12 +121,14 @@ public class WorkspaceItemSummary : ObservableObject
     private const string PythonAccentHex   = "#3AC97E";   // green  — Python
     private const string JavaAccentHex     = "#F89820";   // orange — Java
     private const string JsAccentHex       = "#F1D04B";   // yellow — JavaScript
+    private const string CppAccentHex      = "#659AD2";   // blue   — C++
 
     private string AccentHex => LanguageId switch
     {
         Services.Languages.LanguageIds.Python     => IsNotebook ? NotebookAccentHex : PythonAccentHex,
         Services.Languages.LanguageIds.Java       => IsNotebook ? NotebookAccentHex : JavaAccentHex,
         Services.Languages.LanguageIds.JavaScript => IsNotebook ? NotebookAccentHex : JsAccentHex,
+        Services.Languages.LanguageIds.Cpp        => IsNotebook ? NotebookAccentHex : CppAccentHex,
         _ => IsNotebook ? NotebookAccentHex : CSharpAccentHex
     };
 

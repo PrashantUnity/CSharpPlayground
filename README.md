@@ -26,11 +26,11 @@ It operates both as:
   - NuGet package resolution directly in scripts (`#r "nuget: ..."`).
   - Rich output display: text, images, charts, and custom Avalonia controls (`Display.Image(...)`, `Display.Control(...)`).
   - Cell input/output collapsing, folding, and export.
-- **Python & Polyglot Notebooks**:
-  - `.py` files open, run (F5 / Ctrl+F5) and take `input()` in Code Studio, with your installed Python, so numpy, pandas, matplotlib and every other package work. Tracebacks land in Problems with an "Install <package>" fix.
-  - Notebooks mix C# and Python cells, as in Polyglot Notebooks. Each language has its own kernel, and `#!share --from csharp nums` copies values between them. `%pip install` works in cells.
-  - The studio finds Python as your terminal would (a project `.venv` first) and says what's missing when it can't. See the App Guide's "Languages & Python".
-  - Extensible language module architecture with roadmap support for JavaScript, Java, C++, and C: [docs/adding-a-language.md](docs/adding-a-language.md), [docs/kernel-protocol.md](docs/kernel-protocol.md).
+- **Polyglot Notebooks & Multi-Language Support**:
+  - **Five First-Class Languages**: Full multi-language execution and editing for **C#** (.NET 10 Roslyn), **Python** (3.9+), **JavaScript** (Node.js), **Java** (JDK 17+ / JShell), and **C++** (C++20 via Clang, GCC, MSVC).
+  - **Native C++ & Zero-Config Display Runtime**: `.cpp` files compile with `-std=c++20`, include `<fry/display.hpp>` out of the box for interactive table and image dumps, and support native DAP debugging via `lldb-dap`.
+  - **Polyglot Interactive Notebooks**: Mix cells in C#, Python, JS, Java, and C++ in a single notebook document. Cross-language data sharing via `#!share --from <lang> <var>` converts primitives, vectors, and tables across kernel boundaries as JSON.
+  - **Intelligent Toolchain Discovery**: Automatic detection of project virtual environments, Homebrew, Xcode, MSVC, JDKs, and system PATH with actionable missing-toolchain guidance. See [docs/adding-a-language.md](docs/adding-a-language.md) and [docs/kernel-protocol.md](docs/kernel-protocol.md).
 - **Tabular Data Analytics**:
   - Native display and profiling for `DataTable`, `DataView`, and Microsoft.Data.Analysis `DataFrame`.
   - Column summaries, data types, row counts, and inline search.
