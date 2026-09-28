@@ -1,5 +1,6 @@
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.Highlighting;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using Xunit;
@@ -78,5 +79,47 @@ public class JavaScriptEditorTests
         strategy.IndentLine(doc, doc.GetLineByNumber(2));
 
         Assert.Equal("}", doc.GetText(doc.GetLineByNumber(2)).Trim());
+    }
+
+    // ── Folding ────────────────────────────────────────────────────────────────
+
+    private static List<NewFolding> GetFoldings(string code)
+    {
+        var doc = new TextDocument(code);
+        return new JavaScriptFoldingStrategy().CreateFoldings(doc, out _).ToList();
+    }
+
+    [Fact]
+    public void Folding_MultilineBraceBlock_IsCollapsible()
+    {
+        const string code = "function compute(x) {\n    return x * 2;\n}\n";
+        var foldings = GetFoldings(code);
+        Assert.Single(foldings);
+        Assert.Equal("{...}", foldings[0].Name);
+    }
+
+    [Fact]
+    public void Folding_SingleLineBraceBlock_NotCollapsed()
+    {
+        const string code = "const obj = { x: 1 };\n";
+        var foldings = GetFoldings(code);
+        Assert.Empty(foldings);
+    }
+
+    [Fact]
+    public void Folding_MultilineBlockComment_IsCollapsible()
+    {
+        const string code = "/* first\n * second\n */\nlet x = 1;\n";
+        var foldings = GetFoldings(code);
+        Assert.Contains(foldings, f => f.Name == "/* ... */");
+    }
+
+    [Fact]
+    public void Folding_TemplateLiteralWithBrace_NotFolded()
+    {
+        // The ${...} inside a template literal must not be treated as a block
+        const string code = "const msg = `Hello ${name}!`;\n";
+        var foldings = GetFoldings(code);
+        Assert.Empty(foldings);
     }
 }

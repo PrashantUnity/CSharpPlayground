@@ -64,6 +64,8 @@ public sealed class JavaLanguage : LanguageDefinition
 
     public override IIndentationStrategy CreateIndentationStrategy(TextEditorOptions options) => new JavaIndentationStrategy(options);
 
+    public override ILanguageFolding Folding { get; } = new JavaFoldingStrategy();
+
     public override IToolchainProvider Toolchain => JavaToolchain;
     public override IScriptRunner ScriptRunner { get; }
     public override IDebuggerProvider? Debugger { get; }

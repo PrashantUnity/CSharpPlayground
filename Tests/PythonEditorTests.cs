@@ -1,5 +1,6 @@
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.Highlighting;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using Xunit;
@@ -97,4 +98,53 @@ public class PythonEditorTests
     [InlineData("x = {'a': 1}", "")]
     public void Enter_IndentsLikePython(string previousLine, string expectedIndentation) =>
         Assert.Equal(expectedIndentation, Enter(previousLine));
+
+    // ── Folding ────────────────────────────────────────────────────────────────
+
+    private static List<NewFolding> GetFoldings(string code)
+    {
+        var doc = new TextDocument(code);
+        return new PythonFoldingStrategy().CreateFoldings(doc, out _).ToList();
+    }
+
+    [Fact]
+    public void Folding_DefBlock_IsCollapsible()
+    {
+        const string code = "def add(a, b):\n    return a + b\n\nx = 1\n";
+        var foldings = GetFoldings(code);
+        Assert.Contains(foldings, f => f.Name == "...");
+    }
+
+    [Fact]
+    public void Folding_ClassWithMethods_IsCollapsible()
+    {
+        const string code = "class Point:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def distance(self):\n        return (self.x**2 + self.y**2) ** 0.5\n";
+        var foldings = GetFoldings(code);
+        // At least the class body and the two method bodies
+        Assert.True(foldings.Count >= 3, $"Expected at least 3 foldings, got {foldings.Count}");
+    }
+
+    [Fact]
+    public void Folding_FlatCode_ProducesNoFoldings()
+    {
+        const string code = "x = 1\ny = 2\nz = x + y\n";
+        var foldings = GetFoldings(code);
+        Assert.Empty(foldings);
+    }
+
+    [Fact]
+    public void Folding_TripleQuotedDocstring_IsCollapsible()
+    {
+        const string code = "def greet():\n    \"\"\"\n    Return greeting.\n    \"\"\"\n    return 'hi'\n";
+        var foldings = GetFoldings(code);
+        Assert.Contains(foldings, f => f.Name == "\"\"\"...\"\"\"");
+    }
+
+    [Fact]
+    public void Folding_IfElifElse_EachCollapsible()
+    {
+        const string code = "if x > 0:\n    print('pos')\nelif x < 0:\n    print('neg')\nelse:\n    print('zero')\n";
+        var foldings = GetFoldings(code);
+        Assert.True(foldings.Count >= 3, $"Expected at least 3 foldings (if/elif/else), got {foldings.Count}");
+    }
 }

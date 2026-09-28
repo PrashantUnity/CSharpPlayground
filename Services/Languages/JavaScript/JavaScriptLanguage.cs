@@ -63,6 +63,8 @@ public sealed class JavaScriptLanguage : LanguageDefinition
 
     public override IIndentationStrategy CreateIndentationStrategy(TextEditorOptions options) => new JavaScriptIndentationStrategy(options);
 
+    public override ILanguageFolding Folding { get; } = new JavaScriptFoldingStrategy();
+
     public override IToolchainProvider Toolchain => JavaScriptToolchain;
     public override IScriptRunner ScriptRunner { get; }
     public override IDiagnosticParser RunDiagnostics { get; } = new JavaScriptTracebackParser();

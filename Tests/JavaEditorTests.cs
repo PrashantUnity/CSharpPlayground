@@ -1,5 +1,6 @@
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.Highlighting;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using Xunit;
@@ -67,5 +68,46 @@ public class JavaEditorTests
         strategy.IndentLine(doc, doc.GetLineByNumber(2));
 
         Assert.Equal("}", doc.GetText(doc.GetLineByNumber(2)).Trim());
+    }
+
+    // ── Folding ────────────────────────────────────────────────────────────────
+
+    private static List<NewFolding> GetFoldings(string code)
+    {
+        var doc = new TextDocument(code);
+        return new JavaFoldingStrategy().CreateFoldings(doc, out _).ToList();
+    }
+
+    [Fact]
+    public void Folding_MultilineBraceBlock_IsCollapsible()
+    {
+        const string code = "public class Main {\n    public static void main(String[] args) {\n        System.out.println(42);\n    }\n}\n";
+        var foldings = GetFoldings(code);
+        Assert.True(foldings.Count >= 2, $"Expected at least 2 foldings, got {foldings.Count}");
+        Assert.Contains(foldings, f => f.Name == "{...}");
+    }
+
+    [Fact]
+    public void Folding_SingleLineBraceBlock_NotCollapsed()
+    {
+        const string code = "int x = 0;\n";
+        var foldings = GetFoldings(code);
+        Assert.Empty(foldings);
+    }
+
+    [Fact]
+    public void Folding_MultilineBlockComment_IsCollapsible()
+    {
+        const string code = "/* first line\n * second line\n */\npublic class A {}\n";
+        var foldings = GetFoldings(code);
+        Assert.Contains(foldings, f => f.Name == "/* ... */");
+    }
+
+    [Fact]
+    public void Folding_BracesInsideStrings_NotFolded()
+    {
+        const string code = "String s = \"{not a block}\";\n";
+        var foldings = GetFoldings(code);
+        Assert.Empty(foldings);
     }
 }

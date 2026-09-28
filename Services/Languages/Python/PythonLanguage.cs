@@ -3,6 +3,7 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
@@ -64,6 +65,8 @@ public sealed class PythonLanguage : LanguageDefinition
     public override IHighlightingDefinition GetHighlighting(bool isDark) => PythonSyntaxHighlighting.Get(isDark);
 
     public override IIndentationStrategy CreateIndentationStrategy(TextEditorOptions options) => new PythonIndentationStrategy(options);
+
+    public override ILanguageFolding Folding { get; } = new PythonFoldingStrategy();
 
     public override IToolchainProvider Toolchain => PythonToolchain;
     public override IScriptRunner ScriptRunner { get; }
