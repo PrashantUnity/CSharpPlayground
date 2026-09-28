@@ -37,6 +37,10 @@ public partial class CSharpCodeStudioViewModel
         {
             currentTab.Document.Code = Code;
             currentTab.Document.Notes = Notes;
+            currentTab.ConsoleHeader = ConsoleHeader;
+            currentTab.ConsoleBody = ConsoleBody;
+            currentTab.ConsoleFooter = ConsoleFooter;
+            currentTab.ConsoleExitCode = ConsoleExitCode;
             currentTab.ConsoleOutput = ConsoleOutput;
             currentTab.ExecutionTimeText = ExecutionTimeText;
             currentTab.CompilerStatusText = CompilerStatusText;
@@ -80,6 +84,10 @@ public partial class CSharpCodeStudioViewModel
             _ => 0
         };
 
+        ConsoleHeader = tab.ConsoleHeader;
+        ConsoleBody = tab.ConsoleBody;
+        ConsoleFooter = tab.ConsoleFooter;
+        ConsoleExitCode = tab.ConsoleExitCode;
         ConsoleOutput = tab.ConsoleOutput;
         ExecutionTimeText = tab.ExecutionTimeText;
         CompilerStatusText = tab.CompilerStatusText;

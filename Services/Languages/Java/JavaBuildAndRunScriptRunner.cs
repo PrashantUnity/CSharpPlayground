@@ -147,7 +147,7 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             new ProcessStep("Run", new ProcessStartSpec
             {
                 FileName = context.Toolchain.ExecutablePath,
-                Arguments = ["-cp", classpath, fqn],
+                Arguments = ["-Dfile.encoding=UTF-8", "-cp", classpath, fqn],
                 WorkingDirectory = context.WorkingDirectory,
                 Environment = environment
             }, IsBuildStep: false)
@@ -172,8 +172,7 @@ public static class JavaProcessEnvironment
     {
         var environment = new Dictionary<string, string?>
         {
-            ["NO_COLOR"] = "1",
-            ["JAVA_TOOL_OPTIONS"] = "-Dfile.encoding=UTF-8"
+            ["NO_COLOR"] = "1"
         };
 
         var path = await host.GetLoginShellPathAsync(ct) ?? host.GetEnvironmentVariable("PATH") ?? string.Empty;

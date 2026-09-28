@@ -168,10 +168,49 @@
                 <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" Padding="12,8">
                     <Grid RowDefinitions="*,Auto">
                         <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                            <TextBox Text="{Binding ConsoleOutput, Mode=OneWay}"
-                                     FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
-                                     Background="Transparent" Foreground="{DynamicResource M3PrimaryBrush}"
-                                     BorderThickness="0" IsReadOnly="True" TextWrapping="Wrap" />
+                            <StackPanel Spacing="4">
+                                <!-- 1. Runner Execution Header: Muted secondary styling -->
+                                <Border IsVisible="{Binding ConsoleHeader, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                        Padding="0,2,0,2">
+                                    <TextBlock Text="{Binding ConsoleHeader}"
+                                               FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                               FontSize="{Binding EditorFontSize}"
+                                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                               Opacity="0.65"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <!-- 2. Program Output: Crisp, high-contrast hero typography -->
+                                <TextBox Text="{Binding ConsoleBody, Mode=OneWay}"
+                                         FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                         FontSize="{Binding EditorFontSize}"
+                                         Background="Transparent"
+                                         Foreground="{DynamicResource M3OnSurfaceBrush}"
+                                         BorderThickness="0"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         Padding="0" Margin="0" />
+
+                                <!-- 3. Process Exit Footer: Subtle status indicator with status icon -->
+                                <Border IsVisible="{Binding ConsoleFooter, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                        Margin="0,4,0,2" Padding="0,6,0,0"
+                                        BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="13" Height="13"
+                                                                    Foreground="{DynamicResource M3SuccessBrush}"
+                                                                    IsVisible="{Binding IsConsoleExitSuccess}" />
+                                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13"
+                                                                    Foreground="{DynamicResource M3ErrorBrush}"
+                                                                    IsVisible="{Binding IsConsoleExitError}" />
+                                        <TextBlock Text="{Binding ConsoleFooter}"
+                                                   FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                                   FontSize="{Binding EditorFontSize}"
+                                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                   Opacity="0.75"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </ScrollViewer>
                         <Border Grid.Row="1" IsVisible="{Binding IsAcceptingProgramInput}"
                                 BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,4,0,0">

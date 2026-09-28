@@ -117,5 +117,23 @@ public class ExternalOutputProcessorTests
         Assert.Single(consoleLines);
         Assert.Equal("Name? ", consoleLines[0]);
     }
+
+    [Theory]
+    [InlineData("Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8")]
+    [InlineData("Picked up _JAVA_OPTIONS: -Duser.home=/tmp")]
+    [InlineData("Picked up JAVA_OPTIONS: -Xmx512m")]
+    public void ProcessChunk_JvmLauncherNoise_IsSuppressedFromConsole(string noiseLine)
+    {
+        var consoleLines = new List<string>();
+        var richOutputs = new List<RichCellOutput>();
+        var processor = new ExternalOutputProcessor(consoleLines.Add, richOutputs.Add);
+
+        processor.ProcessChunk($"{noiseLine}\nActual Program Output\n");
+        processor.Flush();
+
+        Assert.Single(consoleLines);
+        Assert.Equal("Actual Program Output\n", consoleLines[0]);
+        Assert.Empty(richOutputs);
+    }
 }
 
