@@ -371,9 +371,78 @@
     <!-- ============================================================ -->
     <!-- 8. DOCUMENTATION & LEARNING CENTER STYLES                    -->
     <!-- ============================================================ -->
+    <Style Selector="Button.doc-category-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-category-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-category-btn.selected">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-category-btn:pointerover Border.nav-icon-box">
+        <Setter Property="RenderTransform" Value="scale(1.06)" />
+    </Style>
+
+    <Style Selector="Button.doc-article-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-article-item:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-article-item.active">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.doc-article-item.active materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
     <Style Selector="Button.doc-nav-item">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -381,12 +450,13 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.doc-nav-item:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.doc-nav-item.active">
-        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
 
     <Style Selector="Button.snippet-action-btn">
