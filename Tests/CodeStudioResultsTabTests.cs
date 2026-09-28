@@ -124,4 +124,42 @@ public class CodeStudioResultsTabTests : IDisposable
         Assert.Empty(studio.DumpResults);
         Assert.False(studio.HasNoResults);
     }
+
+    [Fact]
+    public void ExternalOutputProcessor_VisualDump_PopulatesStudioResultsAndSelectsTab()
+    {
+        var studio = Studio();
+        studio.SelectedBottomTabIndex = 1; // Console tab
+        Assert.True(studio.HasNoResults);
+
+        var processor = new PdfEditorApp.Plugins.CSharpEditor.Services.Processes.ExternalOutputProcessor(
+            text => studio.ConsoleOutput += text,
+            rich =>
+            {
+                studio.RichOutputs.Add(rich);
+                if (rich.TableResult != null)
+                {
+                    studio.DumpResults.Add(rich.TableResult);
+                    studio.SelectedBottomTabIndex = 0;
+                }
+            });
+
+        const string dumpPayload = """
+            __FRY_DISPLAY__ {"type":"display","data":{"application/vnd.fry.table+json":{"title":"Sorted Array","columns":["Index","Value"],"numeric":[true,true],"rows":[[0,7],[1,11],[2,12]],"totalRows":3,"totalColumns":2}},"metadata":{}}
+            """;
+
+        processor.ProcessChunk("Sorting completed.\n" + dumpPayload + "\nAll done.\n");
+        processor.Flush();
+
+        Assert.Contains("Sorting completed.", studio.ConsoleOutput);
+        Assert.Contains("All done.", studio.ConsoleOutput);
+        Assert.DoesNotContain("__FRY_DISPLAY__", studio.ConsoleOutput);
+
+        Assert.False(studio.HasNoResults);
+        Assert.Single(studio.DumpResults);
+        Assert.Equal("Sorted Array", studio.DumpResults[0].Title);
+        Assert.Equal(3, studio.DumpResults[0].Rows.Count);
+        Assert.Equal(0, studio.SelectedBottomTabIndex);
+    }
 }
+

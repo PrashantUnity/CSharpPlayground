@@ -32,8 +32,16 @@ public class FryKernel {
             public static final List<Object> pending = new ArrayList<>();
             public static void show(Object obj) { pending.add(obj); }
         }
+        class Display {
+            public static <T> T dump(T obj) { FryDisplay.show(obj); return obj; }
+            public static <T> T dump(String title, T obj) { FryDisplay.show(obj); return obj; }
+            public static void table(Object obj) { FryDisplay.show(obj); }
+            public static void table(String title, Object obj) { FryDisplay.show(obj); }
+            public static void show(Object obj) { FryDisplay.show(obj); }
+        }
         """);
         evalSnippet("void display(Object obj) { FryDisplay.show(obj); }");
+        evalSnippet("void dump(Object obj) { FryDisplay.show(obj); }");
 
         // JSON serializer helper
         evalSnippet("""
@@ -224,6 +232,20 @@ public class FryKernel {
                                 "rows", rows,
                                 "totalRows", rows.size(),
                                 "totalColumns", cols.size()
+                            ));
+                        } else if (parsed instanceof List<?> list && !list.isEmpty()) {
+                            List<List<Object>> rows = new ArrayList<>();
+                            int idx = 0;
+                            for (Object item : list) {
+                                rows.add(List.of(idx++, item != null ? item : "null"));
+                            }
+                            bundle.put("application/vnd.fry.table+json", Map.of(
+                                "title", "List[" + list.size() + "]",
+                                "columns", List.of("Index", "Value"),
+                                "numeric", List.of(true, false),
+                                "rows", rows,
+                                "totalRows", rows.size(),
+                                "totalColumns", 2
                             ));
                         }
                         bundle.put("text/plain", raw);

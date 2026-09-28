@@ -74,11 +74,12 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
         string compileFile = context.SourceFilePath;
         var fileBaseName = Path.GetFileNameWithoutExtension(context.SourceFilePath);
 
+        var srcDir = Path.Combine(outDir, "src");
+
         // If the declared class does not match the file name (e.g. script_HHmmss.java containing public class Quicksort),
         // stage it under outDir/src/<declaredClass>.java so javac compiles it cleanly without JLS §7.6 filename mismatch error.
         if (!string.Equals(declaredClass, fileBaseName, StringComparison.Ordinal))
         {
-            var srcDir = Path.Combine(outDir, "src");
             try
             {
                 Directory.CreateDirectory(srcDir);
@@ -91,6 +92,13 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             }
         }
 
+        var compileArgs = new List<string> { "-d", outDir, "-encoding", "UTF-8", compileFile };
+        if (!sourceCode.Contains("class Display"))
+        {
+            var displayFiles = await JavaDisplayRuntime.EnsureSourceFilesAsync(srcDir, package, ct).ConfigureAwait(false);
+            compileArgs.AddRange(displayFiles);
+        }
+
         var environment = await JavaProcessEnvironment.ForAsync(host, context.Toolchain, ct);
 
         return new ScriptRunPlan(
@@ -98,7 +106,7 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             new ProcessStep("Compile", new ProcessStartSpec
             {
                 FileName = javacPath,
-                Arguments = ["-d", outDir, "-encoding", "UTF-8", compileFile],
+                Arguments = compileArgs,
                 WorkingDirectory = context.WorkingDirectory,
                 Environment = environment
             }, IsBuildStep: true),

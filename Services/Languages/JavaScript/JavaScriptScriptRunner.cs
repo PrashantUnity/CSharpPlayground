@@ -12,12 +12,18 @@ public sealed class JavaScriptScriptRunner(IHostEnvironment host) : IScriptRunne
     public async Task<ScriptRunPlan> PlanAsync(ScriptRunContext context, CancellationToken ct = default)
     {
         var environment = await JavaScriptProcessEnvironment.ForAsync(host, context.Toolchain, ct);
+        var jsRuntimeDir = await JavaScriptDisplayRuntime.EnsureRuntimeFilesAsync(host, ct).ConfigureAwait(false);
+        var preloadFile = Path.Combine(jsRuntimeDir, "preload.js");
+        var args = File.Exists(preloadFile)
+            ? new[] { "-r", preloadFile, context.SourceFilePath }
+            : new[] { context.SourceFilePath };
+
         return new ScriptRunPlan(
         [
             new ProcessStep("Run", new ProcessStartSpec
             {
                 FileName = context.Toolchain.ExecutablePath,
-                Arguments = [context.SourceFilePath],
+                Arguments = args,
                 WorkingDirectory = context.WorkingDirectory,
                 Environment = environment
             })
@@ -45,6 +51,13 @@ public static class JavaScriptProcessEnvironment
         }
 
         if (path.Length > 0) environment["PATH"] = path;
+
+        var jsRuntimeDir = await JavaScriptDisplayRuntime.EnsureRuntimeFilesAsync(host, ct).ConfigureAwait(false);
+        var existingNodePath = host.GetEnvironmentVariable("NODE_PATH");
+        environment["NODE_PATH"] = string.IsNullOrEmpty(existingNodePath)
+            ? jsRuntimeDir
+            : jsRuntimeDir + (host.IsWindows ? ";" : ":") + existingNodePath;
+
         return environment;
     }
 }

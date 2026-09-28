@@ -19,6 +19,7 @@ public partial class DocumentationService
             Articles = new List<DocArticle>
             {
                 CreateDumpApiArticle(),
+                CreateMultiLanguageDisplayArticle(),
                 CreateTableAndInspectorArticle(),
                 CreateHtmlAndMarkdownArticle(),
                 CreateImageDisplayArticle(),
@@ -262,6 +263,103 @@ Display.Table(inventory, label: ""Warehouse Stock Inventory"");"
     var target = center + new Avalonia.Vector(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
     ctx.DrawLine(new Avalonia.Media.Pen(Avalonia.Media.Brushes.Aquamarine, 2), center, target);
 }, width: 400, height: 300);"
+                }
+            }
+        };
+    }
+
+    private DocArticle CreateMultiLanguageDisplayArticle()
+    {
+        return new DocArticle
+        {
+            Id = "multilang_display_api",
+            Title = "Visual Displays in Java, Python, and JavaScript",
+            Subtitle = "Use Display.table(), Display.show(), Display.html(), and Display.image() across all languages.",
+            ReadingTime = "3 min read",
+            Summary = "C# Code Studio provides zero-configuration visual output for Java, Python, and JavaScript. Call Display.dump() or dump() to inspect arrays, collections, matrices, dataframes, and objects in rich interactive tables.",
+            Keywords = new List<string> { "java", "python", "javascript", "display", "polyglot", "results", "table", "html", "image" },
+            Sections = new List<DocSection>
+            {
+                new()
+                {
+                    Heading = "Polyglot Visual Displays",
+                    Content = "Just like C#'s .Dump() method, Java, Python, and JavaScript scripts running in Code Studio can emit interactive tables, formatted HTML, and images directly into the Results (.Dump) dock tab.",
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "In Java and Python, Display and dump() are automatically available with zero imports required in your scripts!"
+                }
+            },
+            ApiSignatures = new List<DocApiSignature>
+            {
+                new()
+                {
+                    MethodName = "Display.table(obj)",
+                    ReturnType = "Object",
+                    Parameters = "Object obj, String? title = null",
+                    Description = "Emits an interactive visual table for any array, collection, matrix, or object into the Results tab (Java, JS, Python)."
+                },
+                new()
+                {
+                    MethodName = "Display.show(obj, title)",
+                    ReturnType = "Object",
+                    Parameters = "obj, title = None",
+                    Description = "Emits an interactive visual inspection of any data structure into the Results tab."
+                },
+                new()
+                {
+                    MethodName = "Display.html(htmlContent)",
+                    ReturnType = "void",
+                    Parameters = "String htmlContent",
+                    Description = "Renders rich interactive HTML directly in the Results bottom dock tab."
+                },
+                new()
+                {
+                    MethodName = "Display.image(bytesOrPath)",
+                    ReturnType = "void",
+                    Parameters = "byte[] / String bytesOrPath",
+                    Description = "Renders PNG/JPEG image data or matplotlib figures directly in the Results bottom dock tab."
+                }
+            },
+            CodeSnippets = new List<DocCodeSnippet>
+            {
+                new()
+                {
+                    Id = "snip_java_display",
+                    Title = "Java: Array & Object Inspection",
+                    Description = "Call Display.dump() on arrays, collections, or records without any imports.",
+                    Language = "java",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"int[] data = { 64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7 };
+Display.dump(""Original Array"", data);
+
+Arrays.sort(data);
+Display.dump(""Sorted Array"", data);"
+                },
+                new()
+                {
+                    Id = "snip_python_display",
+                    Title = "Python: Global display() & DataFrames",
+                    Description = "Inspect lists, dictionaries, pandas DataFrames, and matplotlib plots.",
+                    Language = "python",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"data = [64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7]
+data.sort()
+dump(data, ""Sorted Numbers"")
+
+# Or using pandas
+import pandas as pd
+df = pd.DataFrame({""Name"": [""Alice"", ""Bob""], ""Score"": [98, 85]})
+dump(df)"
+                },
+                new()
+                {
+                    Id = "snip_js_display",
+                    Title = "JavaScript: Global display() & Objects",
+                    Description = "Inspect arrays and objects in Node.js scripts.",
+                    Language = "javascript",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = @"const data = [64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7];
+data.sort((a, b) => a - b);
+Display.dump(data, ""Sorted Data"");"
                 }
             }
         };

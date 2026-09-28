@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
@@ -70,11 +71,44 @@ public partial class CSharpCodeStudioViewModel
                 ShowNow();
             });
         }
-        void Receive(string text)
+        void ReceiveConsole(string text)
         {
             lock (buffer) buffer.Append(text);
             Show();
         }
+
+        var richDumpCount = 0;
+        void ReceiveRich(RichCellOutput rich)
+        {
+            if (rich.TableResult != null) Interlocked.Increment(ref richDumpCount);
+            _postToUiThread(() =>
+            {
+                if (runningTab != null)
+                {
+                    runningTab.RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
+                    {
+                        runningTab.DumpResults.Add(rich.TableResult);
+                    }
+                }
+                if (runningTab == null || runningTab.IsActive)
+                {
+                    RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
+                    {
+                        DumpResults.Add(rich.TableResult);
+                        SelectedBottomTabIndex = 0;
+                    }
+                    else
+                    {
+                        SelectedBottomTabIndex = 0;
+                    }
+                    OnPropertyChanged(nameof(HasNoResults));
+                }
+            });
+        }
+
+        var outputProcessor = new ExternalOutputProcessor(ReceiveConsole, ReceiveRich);
 
         if (runningTab != null)
         {
@@ -83,7 +117,7 @@ public partial class CSharpCodeStudioViewModel
             runningTab.DumpResults.Clear();
             runningTab.RichOutputs.Clear();
             runningTab.Diagnostics.Clear();
-            runningTab.AppendToConsole = Receive;
+            runningTab.AppendToConsole = outputProcessor.ProcessChunk;
         }
 
         DisposeRichOutputControls();
@@ -124,11 +158,12 @@ public partial class CSharpCodeStudioViewModel
             CompilerStatusText = "Running…";
             ShowNow();
 
-            var session = new ScriptRunExecutor(_languages.Processes).Start(plan, sourceFile, language.RunDiagnostics, Receive, token);
+            var session = new ScriptRunExecutor(_languages.Processes).Start(plan, sourceFile, language.RunDiagnostics, outputProcessor.ProcessChunk, token);
             if (runningTab != null) runningTab.ActiveRun = session;
             if (language.Has(LanguageCapabilities.StandardInput) && (runningTab == null || runningTab.IsActive)) IsAcceptingProgramInput = true;
 
             var result = await session.Completion;
+            outputProcessor.Flush();
             elapsed = result.Elapsed;
             if (runningTab != null) runningTab.ActiveRun = null;
 
@@ -152,7 +187,18 @@ public partial class CSharpCodeStudioViewModel
             else
             {
                 footer = $"\n— exited with code {result.ExitCode} in {seconds}\n";
-                status = result.ExitCode == 0 ? "Completed" : $"Exited with code {result.ExitCode}";
+                var dumpCount = Math.Max(richDumpCount, runningTab?.DumpResults.Count ?? DumpResults.Count);
+                status = result.ExitCode == 0
+                    ? (dumpCount > 0 ? $"Completed • {dumpCount} visual dump{(dumpCount == 1 ? "" : "s")}" : "Completed")
+                    : $"Exited with code {result.ExitCode}";
+
+                if (result.ExitCode == 0 && (dumpCount > 0 || (runningTab?.RichOutputs ?? RichOutputs).Any(IsDrawnInResults)))
+                {
+                    _postToUiThread(() =>
+                    {
+                        if (runningTab == null || runningTab.IsActive) SelectedBottomTabIndex = 0;
+                    });
+                }
             }
 
             ShowProblems(runningTab, language, toolchain, result.Diagnostics);

@@ -56,6 +56,13 @@ public static class PythonProcessEnvironment
         }
 
         if (path.Length > 0) environment["PATH"] = path;
+
+        var runtimeDir = await PythonDisplayRuntime.EnsureRuntimeFilesAsync(host, ct).ConfigureAwait(false);
+        var existingPyPath = host.GetEnvironmentVariable("PYTHONPATH");
+        environment["PYTHONPATH"] = string.IsNullOrEmpty(existingPyPath)
+            ? runtimeDir
+            : runtimeDir + (host.IsWindows ? ";" : ":") + existingPyPath;
+
         return environment;
     }
 }
