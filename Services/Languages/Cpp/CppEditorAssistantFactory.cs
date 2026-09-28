@@ -30,8 +30,22 @@ public sealed class CppEditorAssistantFactory : IEditorAssistantFactory
     /// <summary>Singleton — the factory holds no mutable state.</summary>
     public static readonly CppEditorAssistantFactory Instance = new();
 
-    public IDisposable Attach(TextEditor editor, EditorAssistantContext context) =>
-        new CppQuickInfoController(editor, context);
+    private readonly CppCompletionService _completionService = new();
+
+    public IDisposable Attach(TextEditor editor, EditorAssistantContext context)
+    {
+        var quickInfo = new CppQuickInfoController(editor, context);
+        var completion = new LanguageCompletionController(
+            editor,
+            context,
+            _completionService,
+            isImmediateTrigger: (ch, text, offset) =>
+                ch == '.' ||
+                (ch == '>' && offset > 1 && text[offset - 2] == '-') ||
+                (ch == ':' && offset > 1 && text[offset - 2] == ':'));
+
+        return new CompositeEditorAssistant(quickInfo, completion);
+    }
 }
 
 /// <summary>

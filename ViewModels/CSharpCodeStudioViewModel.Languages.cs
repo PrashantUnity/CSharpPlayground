@@ -90,6 +90,8 @@ public partial class CSharpCodeStudioViewModel
         OnPropertyChanged(nameof(LanguageStatusText));
         OnPropertyChanged(nameof(ImmediatePromptWatermark));
 
+        InitializeNuGetPackages();
+
         ToolchainLabel = null;
         IsToolchainMissing = false;
         if (HasToolchain) _ = ResolveToolchainLabelAsync();

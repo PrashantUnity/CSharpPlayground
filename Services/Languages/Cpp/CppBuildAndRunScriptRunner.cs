@@ -37,6 +37,7 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
         var sourceDir = Path.GetDirectoryName(context.SourceFilePath) ?? context.WorkingDirectory;
 
         var includeDir = await CppDisplayRuntime.EnsureIncludeDirectoryAsync(outDir, ct).ConfigureAwait(false);
+        var vcpkgInclude = FindVcpkgIncludeDirectory(context.WorkingDirectory, host);
 
         var compileArgs = new List<string>();
         if (isCl)
@@ -52,6 +53,10 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
                 compileArgs.Add($"/I{sourceDir}");
             }
             compileArgs.Add($"/I{includeDir}");
+            if (!string.IsNullOrEmpty(vcpkgInclude))
+            {
+                compileArgs.Add($"/I{vcpkgInclude}");
+            }
             compileArgs.Add(context.SourceFilePath);
         }
         else
@@ -65,6 +70,10 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
                 compileArgs.Add($"-I{sourceDir}");
             }
             compileArgs.Add($"-I{includeDir}");
+            if (!string.IsNullOrEmpty(vcpkgInclude))
+            {
+                compileArgs.Add($"-I{vcpkgInclude}");
+            }
             compileArgs.Add("-o");
             compileArgs.Add(binPath);
             compileArgs.Add(context.SourceFilePath);
@@ -90,6 +99,42 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
                 Environment = environment
             }, IsBuildStep: false)
         ]);
+    }
+
+    public static string? FindVcpkgIncludeDirectory(string workingDirectory, IHostEnvironment host)
+    {
+        var candidates = new List<string>();
+
+        if (!string.IsNullOrEmpty(workingDirectory))
+        {
+            candidates.Add(Path.Combine(workingDirectory, "vcpkg_installed"));
+        }
+
+        var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        candidates.Add(Path.Combine(userHome, ".vcpkg", "installed"));
+        candidates.Add(Path.Combine(userHome, "vcpkg", "installed"));
+
+        foreach (var candidate in candidates)
+        {
+            if (host.DirectoryExists(candidate))
+            {
+                try
+                {
+                    var subdirs = Directory.GetDirectories(candidate);
+                    foreach (var sub in subdirs)
+                    {
+                        var inc = Path.Combine(sub, "include");
+                        if (host.DirectoryExists(inc)) return inc;
+                    }
+                }
+                catch
+                {
+                    // Ignore filesystem enumeration errors
+                }
+            }
+        }
+
+        return null;
     }
 }
 

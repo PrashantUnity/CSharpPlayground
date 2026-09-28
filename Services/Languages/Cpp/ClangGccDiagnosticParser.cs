@@ -28,16 +28,25 @@ public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
     [GeneratedRegex(@"terminate called after throwing an instance of '(?<type>[^']+)'(?:\s+what\(\):\s*(?<msg>.*))?", RegexOptions.IgnoreCase)]
     private static partial Regex CppTerminateRegex();
 
+    [GeneratedRegex(@"(?:fatal error:\s*)?'(?<header>[^']+)'\s*file not found", RegexOptions.IgnoreCase)]
+    private static partial Regex ClangMissingHeaderRegex();
+
+    [GeneratedRegex(@"(?:fatal error:\s*)?(?<header>[^:]+):\s*No such file or directory", RegexOptions.IgnoreCase)]
+    private static partial Regex GccMissingHeaderRegex();
+
+    [GeneratedRegex(@"Cannot open include file:\s*'(?<header>[^']+)'", RegexOptions.IgnoreCase)]
+    private static partial Regex MsvcMissingHeaderRegex();
+
     public DiagnosticParseResult Parse(string output, string sourceFilePath)
     {
         if (string.IsNullOrWhiteSpace(output)) return DiagnosticParseResult.Empty;
 
         var lines = output.Replace("\r\n", "\n").Split('\n');
-        var diagnostics = ParseCompilerDiagnostics(lines, sourceFilePath);
+        var diagnostics = ParseCompilerDiagnostics(lines, sourceFilePath, out var missingDep);
 
         if (diagnostics.Count > 0)
         {
-            return new DiagnosticParseResult(diagnostics);
+            return new DiagnosticParseResult(diagnostics, missingDep);
         }
 
         // If no compiler errors matched, parse runtime crash / assertion messages
@@ -45,9 +54,10 @@ public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
         return new DiagnosticParseResult(runtimeDiagnostics);
     }
 
-    private static List<DiagnosticItem> ParseCompilerDiagnostics(string[] lines, string sourceFilePath)
+    private static List<DiagnosticItem> ParseCompilerDiagnostics(string[] lines, string sourceFilePath, out string? missingDependency)
     {
         var diagnostics = new List<DiagnosticItem>();
+        missingDependency = null;
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -83,6 +93,31 @@ public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
             }
 
             if (!SamePath(file, sourceFilePath)) continue;
+
+            if (missingDependency == null)
+            {
+                var clangHeaderMatch = ClangMissingHeaderRegex().Match(message);
+                if (clangHeaderMatch.Success)
+                {
+                    missingDependency = clangHeaderMatch.Groups["header"].Value;
+                }
+                else
+                {
+                    var gccMatch = GccMissingHeaderRegex().Match(message);
+                    if (gccMatch.Success)
+                    {
+                        missingDependency = gccMatch.Groups["header"].Value.Trim();
+                    }
+                    else
+                    {
+                        var msvcHeaderMatch = MsvcMissingHeaderRegex().Match(message);
+                        if (msvcHeaderMatch.Success)
+                        {
+                            missingDependency = msvcHeaderMatch.Groups["header"].Value;
+                        }
+                    }
+                }
+            }
 
             lineNumber = Math.Max(1, lineNumber);
             col = Math.Max(1, col);

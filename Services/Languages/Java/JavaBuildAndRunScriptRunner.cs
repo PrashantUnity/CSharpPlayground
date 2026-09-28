@@ -92,7 +92,40 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             }
         }
 
-        var compileArgs = new List<string> { "-d", outDir, "-encoding", "UTF-8", compileFile };
+        var compileArgs = new List<string> { "-d", outDir, "-encoding", "UTF-8" };
+
+        // Parse and resolve dependencies from //DEPS or #r "maven: ..." directives
+        var jars = new List<string>();
+        var resolver = new MavenCentralResolver(host);
+        foreach (Match m in DepsDirectiveMultilineRegex().Matches(sourceCode))
+        {
+            var rawCoord = m.Groups["coord"].Value;
+            if (MavenArtifactCoordinate.TryParse(rawCoord, out var coord))
+            {
+                try
+                {
+                    var jar = await resolver.DownloadArtifactAsync(coord, ct: ct).ConfigureAwait(false);
+                    if (host.FileExists(jar)) jars.Add(jar);
+                }
+                catch
+                {
+                    // If download fails, check if local cached file exists
+                    var local = resolver.GetLocalJarPath(coord);
+                    if (host.FileExists(local)) jars.Add(local);
+                }
+            }
+        }
+
+        var cpSep = host.IsWindows ? ";" : ":";
+        var classpath = jars.Count > 0 ? $"{outDir}{cpSep}{string.Join(cpSep, jars)}" : outDir;
+
+        if (jars.Count > 0)
+        {
+            compileArgs.AddRange(["-cp", classpath]);
+        }
+
+        compileArgs.Add(compileFile);
+
         if (!sourceCode.Contains("class Display"))
         {
             var displayFiles = await JavaDisplayRuntime.EnsureSourceFilesAsync(srcDir, package, ct).ConfigureAwait(false);
@@ -114,12 +147,15 @@ public sealed partial class JavaBuildAndRunScriptRunner(IHostEnvironment host) :
             new ProcessStep("Run", new ProcessStartSpec
             {
                 FileName = context.Toolchain.ExecutablePath,
-                Arguments = ["-cp", outDir, fqn],
+                Arguments = ["-cp", classpath, fqn],
                 WorkingDirectory = context.WorkingDirectory,
                 Environment = environment
             }, IsBuildStep: false)
         ]);
     }
+
+    [GeneratedRegex(@"^\s*//\s*DEPS\s+(?<coord>[a-zA-Z0-9_\-\.]+:[a-zA-Z0-9_\-\.]+(:[a-zA-Z0-9_\-\.]+)?)\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+    private static partial Regex DepsDirectiveMultilineRegex();
 
     public static string? ParsePackage(string sourceCode)
     {

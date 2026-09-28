@@ -21,17 +21,17 @@
                     BorderThickness="1" CornerRadius="6" Padding="8">
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="NUGET PACKAGES" FontSize="10.5" FontWeight="Bold"
+                        <TextBlock Grid.Column="0" Text="{Binding ActivePackageManagerTitle, FallbackValue='PACKAGES &amp; DEPENDENCIES'}" FontSize="10.5" FontWeight="Bold"
                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Command="{Binding SearchNuGetPackagesCommand}" Classes="explorer-tool-btn"
-                                Width="20" Height="20" ToolTip.Tip="Search NuGet">
+                                Width="20" Height="20" ToolTip.Tip="Search packages">
                             <materialIcons:MaterialIcon Kind="Magnify" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
                         </Button>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Grid.Column="0" Text="{Binding NuGetSearchQuery, Mode=TwoWay}"
-                                 Classes="sidebar-search-box" PlaceholderText="Search NuGet packages...">
+                                 Classes="sidebar-search-box" PlaceholderText="{Binding ActivePackageSearchPlaceholder, FallbackValue='Search packages...'}">
                             <TextBox.KeyBindings>
                                 <KeyBinding Gesture="Enter" Command="{Binding SearchNuGetPackagesCommand}" />
                             </TextBox.KeyBindings>
@@ -93,7 +93,7 @@
                     IsVisible="{Binding DocumentNuGetPackages.Count}">
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="SCRIPT DIRECTIVES (#r nuget)" FontSize="10.5" FontWeight="Bold"
+                        <TextBlock Grid.Column="0" Text="{Binding ActiveScriptDirectivesTitle, FallbackValue='SCRIPT DIRECTIVES'}" FontSize="10.5" FontWeight="Bold"
                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                 Height="16" MinHeight="16" MinWidth="16" CornerRadius="8" Padding="4,0"
@@ -122,10 +122,11 @@
                 </StackPanel>
             </Border>
 
-            <!-- Assembly References Section -->
+            <!-- Assembly References Section (C# only) -->
             <Border Background="{DynamicResource M3SurfaceContainerBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1" CornerRadius="6" Padding="8">
+                    BorderThickness="1" CornerRadius="6" Padding="8"
+                    IsVisible="{Binding SupportsExecutionModes}">
                 <StackPanel Spacing="6">
                     <TextBlock Text="ASSEMBLY REFERENCES" FontSize="10.5" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,2" />

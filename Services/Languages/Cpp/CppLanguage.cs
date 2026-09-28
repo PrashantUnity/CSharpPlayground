@@ -3,6 +3,7 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
@@ -26,6 +27,7 @@ public sealed class CppLanguage : LanguageDefinition
             Path.Combine(services.BaseDirectory, "cpp"));
         CppToolchain = toolchain;
         ScriptRunner = new CppBuildAndRunScriptRunner(services.Host);
+        Packages = new CppPackageManager(toolchain, services.Processes, services.Host);
         Debugger = new CppDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
         NotebookKernels = new DelegateKernelFactory(context =>
             new CppNotebookKernel(toolchain, services.Processes, services.Host, context));
@@ -45,10 +47,12 @@ public sealed class CppLanguage : LanguageDefinition
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.StandardInput |
         LanguageCapabilities.QuickInfo |
+        LanguageCapabilities.Completion |
         LanguageCapabilities.Debugging |
         LanguageCapabilities.Breakpoints |
         LanguageCapabilities.NotebookCells |
-        LanguageCapabilities.ValueSharing;
+        LanguageCapabilities.ValueSharing |
+        LanguageCapabilities.Packages;
 
     public override string IconKind => "LanguageCpp";
     public override string AccentHex => "#00599C";
@@ -75,5 +79,6 @@ public sealed class CppLanguage : LanguageDefinition
     public override IScriptRunner ScriptRunner { get; }
     public override IDebuggerProvider? Debugger { get; }
     public override IDiagnosticParser RunDiagnostics { get; } = new ClangGccDiagnosticParser();
+    public override IPackageManager Packages { get; }
     public override INotebookKernelFactory? NotebookKernels { get; }
 }
