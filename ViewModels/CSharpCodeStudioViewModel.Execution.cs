@@ -35,7 +35,7 @@ public partial class CSharpCodeStudioViewModel
     public bool ShowRightDeckSplitter => IsDeckDockedToRight && IsBottomDeckExpanded;
     public string DeckPositionTooltip => IsDeckDockedToRight ? "Dock Panel to Bottom" : "Dock Panel to Right";
 
-    private bool _userExplicitlySetDeckPosition;
+    private bool _userExplicitlySetDeckPosition = true; // bottom is the default; user can toggle to right
 
     public void UpdateAdaptiveDeckWidth(double viewWidth)
     {
