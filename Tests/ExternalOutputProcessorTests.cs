@@ -73,8 +73,13 @@ public class ExternalOutputProcessorTests
         var richOutputs = new List<RichCellOutput>();
         var processor = new ExternalOutputProcessor(consoleLines.Add, richOutputs.Add);
 
-        var part1 = "__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"text/html\":";
-        var part2 = "\"<h1>Title</h1>\"},\"metadata\":{}}\n";
+        var payload = """
+            __FRY_DISPLAY__ {"type":"display","data":{"text/html":"<h1>Title</h1>"},"metadata":{}}
+
+            """;
+        var splitIndex = 40;
+        var part1 = payload[..splitIndex];
+        var part2 = payload[splitIndex..];
 
         processor.ProcessChunk(part1);
         processor.ProcessChunk(part2);
