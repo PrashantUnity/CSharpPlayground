@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -99,6 +101,27 @@ public partial class CSharpManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isStatusBannerError;
 
+    [ObservableProperty]
+    private bool _isSystemStatusRailVisible = true;
+
+    private bool _userExplicitlyToggledRail;
+
+    [RelayCommand]
+    private void ToggleSystemStatusRail()
+    {
+        _userExplicitlyToggledRail = true;
+        IsSystemStatusRailVisible = !IsSystemStatusRailVisible;
+    }
+
+    public void UpdateAdaptiveRail(double width)
+    {
+        if (width <= 0) return;
+        if (!_userExplicitlyToggledRail)
+        {
+            IsSystemStatusRailVisible = width >= 1100;
+        }
+    }
+
     private string? _pendingTemplateId;
 
     public bool IsCreatePromptOpen => PendingCreateKind.HasValue;
@@ -115,8 +138,8 @@ public partial class CSharpManagerViewModel : ObservableObject
     public ObservableCollection<object> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
 
-    public IEnumerable<CodeTemplate> ScriptTemplates => StarterTemplates.Where(t => !t.IsNotebook);
-    public IEnumerable<CodeTemplate> NotebookTemplates => StarterTemplates.Where(t => t.IsNotebook);
+    public IEnumerable<CodeTemplate> ScriptTemplates => FilterTemplates(StarterTemplates.Where(t => !t.IsNotebook));
+    public IEnumerable<CodeTemplate> NotebookTemplates => FilterTemplates(StarterTemplates.Where(t => t.IsNotebook));
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
@@ -131,6 +154,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     private readonly Action? _navigateToHomeAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToBlindProblemsAction;
+    private readonly Action<string?>? _navigateToSettingsAction;
 
     [RelayCommand]
     public void NavigateToDocs()
@@ -142,6 +166,12 @@ public partial class CSharpManagerViewModel : ObservableObject
     public void NavigateToBlindProblems()
     {
         _navigateToBlindProblemsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings(string? category = null)
+    {
+        _navigateToSettingsAction?.Invoke(category);
     }
 
     public bool IsAllFilterActive => SelectedTypeFilter == "All";
@@ -201,6 +231,51 @@ public partial class CSharpManagerViewModel : ObservableObject
     public string RoslynEngineTitle => "Local Roslyn Engine";
     public string RoslynEngineStatus => "Ready • Roslyn 4.12 & C# 13";
     public bool IsRoslynEngineActive => true;
+
+    /// <summary>A STUDIO ENVIRONMENT row per language that runs with an installed toolchain (Python): found, or how to install it.</summary>
+    public ObservableCollection<ToolchainStatusItem> ToolchainStatuses { get; } = new();
+
+    private Task? _toolchainCheck;
+
+    /// <summary>
+    /// Looks for each language's toolchain in the background (the Hub calls this when it's shown). <paramref name="lookAgain"/>
+    /// forgets what was found before, e.g. after installing Python.
+    /// </summary>
+    public Task RefreshToolchainStatusesAsync(bool lookAgain = false)
+    {
+        if (_toolchainCheck is { IsCompleted: false } running) return running;
+        return _toolchainCheck = CheckToolchainsAsync(lookAgain);
+    }
+
+    [RelayCommand]
+    private Task LookAgainForToolchainsAsync() => RefreshToolchainStatusesAsync(lookAgain: true);
+
+    private async Task CheckToolchainsAsync(bool lookAgain)
+    {
+        var workspace = _storageService.ActiveWorkspaceRootPath;
+        foreach (var item in ToolchainStatuses)
+        {
+            if (lookAgain) item.ShowChecking();
+            ToolchainResolution resolution;
+            try
+            {
+                resolution = await Task.Run(async () =>
+                {
+                    if (lookAgain) item.Provider.Refresh();
+                    return await item.Provider.ResolveAsync(new ToolchainQuery(workspace, workspace)).ConfigureAwait(false);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Couldn't look for {item.Provider.ToolName}: {ex.Message}");
+                resolution = ToolchainResolution.NotFound(new MissingToolchainGuidance($"Couldn't look for {item.Provider.ToolName}", ex.Message, Array.Empty<string>()));
+            }
+
+            void Show() => item.Show(resolution);
+            if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Show();
+            else Dispatcher.UIThread.Post(Show);
+        }
+    }
 
     public string StorageEngineTitle => "Document Storage";
     public string StorageEngineStatus => Directory.Exists(LibraryRootPath)
@@ -504,14 +579,22 @@ public partial class CSharpManagerViewModel : ObservableObject
         Action<NotebookDocumentItem> openNotebookAction,
         Action? navigateToHomeAction = null,
         Action? navigateToDocsAction = null,
-        Action? navigateToBlindProblemsAction = null)
+        Action? navigateToBlindProblemsAction = null,
+        StudioLanguageServices? languages = null,
+        Action<string?>? navigateToSettingsAction = null)
     {
         _storageService = storageService;
+        var registry = (languages ?? StudioLanguageServices.Default).Registry;
+        foreach (var language in registry.All)
+        {
+            if (language.Toolchain is { } provider) ToolchainStatuses.Add(new ToolchainStatusItem(language, provider));
+        }
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
         _navigateToHomeAction = navigateToHomeAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToBlindProblemsAction = navigateToBlindProblemsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
 
         foreach (var t in CodeTemplateLibrary.GetTemplates())
         {
@@ -645,9 +728,14 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
     }
 
-    partial void OnSelectedTemplateChanged(CodeTemplate? value)
+    partial void OnSelectedTemplateChanged(CodeTemplate? oldValue, CodeTemplate? newValue)
     {
-        if (value != null) SelectedWorkspaceItem = null;
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null)
+        {
+            newValue.IsSelected = true;
+            SelectedWorkspaceItem = null;
+        }
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(IsShowingTemplate));
     }
@@ -698,8 +786,14 @@ public partial class CSharpManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SelectTemplate(CodeTemplate template)
+    private async Task SelectTemplateAsync(CodeTemplate template)
     {
+        if (template == null) return;
+        if (ReferenceEquals(SelectedTemplate, template))
+        {
+            await LaunchTemplateAsync(template);
+            return;
+        }
         SelectedTemplate = template;
     }
 
@@ -728,6 +822,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
         var query = SearchQuery.Trim().ToLowerInvariant();
         HasSearchQuery = !string.IsNullOrEmpty(query);
+        RefreshFilteredTemplates();
         var typeFilter = SelectedTypeFilter;
 
         var matches = AllItems.Where(item =>

@@ -44,7 +44,7 @@
                         Classes.selected="{Binding IsSelected}"
                         HorizontalAlignment="Stretch">
                     <Button.ContextFlyout>
-                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnItemMenuOpening">
                             <MenuItem Header="Open" Command="{Binding SelectCommand}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="FileEyeOutline" Width="14" Height="14" />
@@ -166,6 +166,27 @@
                     </Grid>
                 </Button>
 
+                <!-- Deleting a source file removes the user's own file from disk, so it's confirmed first. -->
+                <Border IsVisible="{Binding IsConfirmingDelete}"
+                        Background="{DynamicResource M3ErrorContainerBrush}"
+                        CornerRadius="{StaticResource M3ShapeCornerExtraSmall}"
+                        Margin="{Binding IndentPadding}"
+                        Padding="8,4">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding DeleteConfirmationText}"
+                                   FontSize="11" Foreground="{DynamicResource M3OnErrorContainerBrush}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Command="{Binding ConfirmDeleteCommand}" Classes="explorer-tool-btn"
+                                Width="NaN" Padding="6,0" Margin="6,0,2,0" ToolTip.Tip="Delete the file">
+                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3ErrorBrush}" />
+                        </Button>
+                        <Button Grid.Column="2" Command="{Binding CancelDeleteCommand}" Classes="explorer-tool-btn"
+                                Width="NaN" Padding="6,0" ToolTip.Tip="Keep the file">
+                            <TextBlock Text="Cancel" FontSize="11" Foreground="{DynamicResource M3OnErrorContainerBrush}" />
+                        </Button>
+                    </Grid>
+                </Border>
+
                 <!-- Recursive Nested Children -->
                 <ItemsControl ItemsSource="{Binding Children}"
                               IsVisible="{Binding IsExpanded}" />
@@ -175,7 +196,7 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <ScrollViewer.ContextFlyout>
-            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+            <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnRootMenuOpening">
                 <MenuItem Header="New Script" Command="{Binding NewScriptCommand}">
                     <MenuItem.Icon>
                         <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />

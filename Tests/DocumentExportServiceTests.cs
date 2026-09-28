@@ -147,4 +147,56 @@ public class DocumentExportServiceTests
         Assert.Contains("var engine = new Engine();", md);
         Assert.Contains("```", md);
     }
+
+    private static NotebookDocumentItem Mixed() => new()
+    {
+        Title = "Mixed",
+        Cells = new()
+        {
+            new NotebookCellItem { Type = CellType.Code, Source = "var nums = new[] { 1, 2 };" },
+            new NotebookCellItem { Type = CellType.Code, Source = "print(sum(nums))", Language = "python" },
+            new NotebookCellItem { Type = CellType.Code, Source = "#!python\nx = 1" }
+        }
+    };
+
+    [Fact]
+    public void AMixedNotebook_IsExportedAsPolyglotNotebooksWritesIt_WithEachCellsLanguage()
+    {
+        using var json = JsonDocument.Parse(DocumentExportService.ExportNotebookToIpynb(Mixed()));
+        var root = json.RootElement;
+        var kernels = root.GetProperty("cells").EnumerateArray()
+            .Select(c => c.GetProperty("metadata").GetProperty("polyglot_notebook").GetProperty("kernelName").GetString()).ToList();
+        var info = root.GetProperty("metadata").GetProperty("polyglot_notebook").GetProperty("kernelInfo");
+
+        Assert.Equal(new[] { "csharp", "python", "python" }, kernels);
+        Assert.Equal("csharp", info.GetProperty("defaultKernelName").GetString());
+        Assert.Equal(".net-csharp", root.GetProperty("metadata").GetProperty("kernelspec").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public void APythonNotebook_IsExportedWithThePythonKernel_AndCSharpNotebooksAsBefore()
+    {
+        var python = new NotebookDocumentItem { Title = "Py", Kernel = "python", Cells = { new NotebookCellItem { Type = CellType.Code, Source = "x = 1" } } };
+        var csharp = new NotebookDocumentItem { Title = "Cs", Cells = { new NotebookCellItem { Type = CellType.Code, Source = "var x = 1;" } } };
+
+        using var py = JsonDocument.Parse(DocumentExportService.ExportNotebookToIpynb(python));
+        using var cs = JsonDocument.Parse(DocumentExportService.ExportNotebookToIpynb(csharp));
+
+        Assert.Equal("python3", py.RootElement.GetProperty("metadata").GetProperty("kernelspec").GetProperty("name").GetString());
+        Assert.Equal("python", py.RootElement.GetProperty("metadata").GetProperty("language_info").GetProperty("name").GetString());
+        var csMetadata = cs.RootElement.GetProperty("metadata");
+        Assert.Equal(".net-csharp", csMetadata.GetProperty("kernelspec").GetProperty("name").GetString());
+        Assert.Equal("13.0", csMetadata.GetProperty("language_info").GetProperty("version").GetString());
+        Assert.False(csMetadata.TryGetProperty("polyglot_notebook", out _));
+        Assert.Empty(cs.RootElement.GetProperty("cells")[0].GetProperty("metadata").EnumerateObject());
+    }
+
+    [Fact]
+    public void MarkdownExport_FencesEachCellInItsLanguage()
+    {
+        var md = DocumentExportService.ExportNotebookToMarkdown(Mixed());
+
+        Assert.Contains("(C#)\n```csharp\nvar nums", md.Replace("\r\n", "\n"));
+        Assert.Contains("(Python)\n```python\nprint(sum(nums))", md.Replace("\r\n", "\n"));
+    }
 }

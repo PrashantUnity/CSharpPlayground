@@ -92,6 +92,13 @@
                     <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="18" Height="18" />
                 </Button>
 
+                <!-- Settings & Environment Setup -->
+                <Button Command="{Binding NavigateToSettingsCommand}"
+                        Classes="activity-bar-btn"
+                        ToolTip.Tip="Settings &amp; Environment Setup (Ctrl+, / ⌘,)">
+                    <materialIcons:MaterialIcon Kind="CogOutline" Width="18" Height="18" />
+                </Button>
+
                 <!-- Return to Scripts Hub -->
                 <Button Command="{Binding BackToHubCommand}"
                         Classes="activity-bar-btn"

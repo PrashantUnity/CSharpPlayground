@@ -23,6 +23,20 @@ public class WorkspaceItemSummary : ObservableObject
     public int CellCount { get; set; }
     public string ExecutionMode { get; set; } = "Statements";
 
+    /// <summary>The script's language id; C# unless it's a plain source file of another language.</summary>
+    public string LanguageId { get; set; } = Services.Languages.LanguageIds.CSharp;
+
+    /// <summary>E.g. "Python", shown on badges; empty for C#.</summary>
+    public string LanguageName { get; set; } = string.Empty;
+
+    /// <summary>The file's extension with the dot. Set by storage; the .frycs/.frynb default fits documents.</summary>
+    public string? FileExtension { get; set; }
+
+    /// <summary>True for a plain source file (main.py) rather than a .frycs/.frynb document.</summary>
+    public bool IsSourceFile { get; set; }
+
+    public string DisplayExtension => FileExtension ?? (IsNotebook ? ".frynb" : ".frycs");
+
     private bool _isPinned;
     public bool IsPinned
     {
@@ -44,9 +58,17 @@ public class WorkspaceItemSummary : ObservableObject
     public bool IsNotebook => Kind == WorkspaceItemKind.Notebook;
     public bool IsScript => Kind == WorkspaceItemKind.Script;
     public string KindLabel => IsNotebook ? "Notebook" : "Script";
-    public string KindBadgeText => IsNotebook ? "Notebook" : "Script";
+
+    /// <summary>
+    /// Language-qualified badge text shown in the TYPE column.
+    /// e.g. "Python Script", "Java Script", "JavaScript Script", "Notebook", "C# Script".
+    /// </summary>
+    public string KindBadgeText => IsNotebook
+        ? (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Notebook" : "Notebook")
+        : (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Script" : "C# Script");
+
     public string KindBadgeColor => KindBadgeForeground;
-    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : "Roslyn C# 13";
+    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : IsSourceFile ? LanguageName : "Roslyn C# 13";
     public bool HasRuntimeDot => IsScript;
 
     public bool IsExternal => IsExternalRoot;
@@ -75,19 +97,37 @@ public class WorkspaceItemSummary : ObservableObject
         Title.Contains("SkiaSharp", StringComparison.OrdinalIgnoreCase) ||
         Title.Contains("Image", StringComparison.OrdinalIgnoreCase);
 
-    public MaterialIconKind IconKind => Kind switch
+    /// <summary>Language-specific icon. Non-C# source files use their own language icon; C# uses category heuristics.</summary>
+    public MaterialIconKind IconKind => LanguageId switch
     {
-        WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
-        _ => IsAlgorithms ? MaterialIconKind.CodeBraces
-            : IsScratchpad ? MaterialIconKind.LightningBoltOutline
-            : IsAutomation ? MaterialIconKind.FilePdfBox
-            : IsGraphics ? MaterialIconKind.ImageOutline
-            : MaterialIconKind.FileCodeOutline
+        Services.Languages.LanguageIds.Python => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguagePython,
+        Services.Languages.LanguageIds.Java => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJava,
+        Services.Languages.LanguageIds.JavaScript => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJavascript,
+        _ => Kind switch
+        {
+            WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
+            _ => IsAlgorithms ? MaterialIconKind.CodeBraces
+                : IsScratchpad ? MaterialIconKind.LightningBoltOutline
+                : IsAutomation ? MaterialIconKind.FilePdfBox
+                : IsGraphics ? MaterialIconKind.ImageOutline
+                : MaterialIconKind.CodeBraces
+        }
     };
 
-    private const string NotebookAccentHex = "#D97706";
-    private const string ScriptAccentHex = "#58A6FF";
-    private string AccentHex => IsNotebook ? NotebookAccentHex : ScriptAccentHex;
+    // Language-specific accent palettes
+    private const string NotebookAccentHex = "#D97706";   // amber  — notebooks
+    private const string CSharpAccentHex   = "#58A6FF";   // blue   — C#
+    private const string PythonAccentHex   = "#3AC97E";   // green  — Python
+    private const string JavaAccentHex     = "#F89820";   // orange — Java
+    private const string JsAccentHex       = "#F1D04B";   // yellow — JavaScript
+
+    private string AccentHex => LanguageId switch
+    {
+        Services.Languages.LanguageIds.Python     => IsNotebook ? NotebookAccentHex : PythonAccentHex,
+        Services.Languages.LanguageIds.Java       => IsNotebook ? NotebookAccentHex : JavaAccentHex,
+        Services.Languages.LanguageIds.JavaScript => IsNotebook ? NotebookAccentHex : JsAccentHex,
+        _ => IsNotebook ? NotebookAccentHex : CSharpAccentHex
+    };
 
     public string IconForeground => AccentHex;
     public string IconBackground => "#33" + AccentHex.TrimStart('#');
@@ -118,9 +158,9 @@ public class WorkspaceItemSummary : ObservableObject
 
     public string DetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")} • Interactive C#"
-        : $"{ExecutionMode} mode • Roslyn C# 13";
+        : IsSourceFile ? $"{LanguageName} script" : $"{ExecutionMode} mode • Roslyn C# 13";
 
     public string ShortDetailsSnippet => IsNotebook
         ? $"{CellCount} cell{(CellCount == 1 ? "" : "s")}"
-        : ExecutionMode;
+        : IsSourceFile ? LanguageName : ExecutionMode;
 }

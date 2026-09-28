@@ -2,10 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Material.Icons;
 
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
-public class CodeTemplate
+public partial class CodeTemplate : ObservableObject
 {
+    [ObservableProperty]
+    private bool _isSelected;
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Category { get; set; } = "General";

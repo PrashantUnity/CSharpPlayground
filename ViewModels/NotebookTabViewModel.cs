@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -103,7 +105,9 @@ public partial class NotebookTabViewModel : ObservableObject
         string filePath = "",
         Action<NotebookTabViewModel>? onSelectTab = null,
         Action<NotebookTabViewModel>? onCloseTab = null,
-        Func<int>? getTimeoutSeconds = null)
+        Func<int>? getTimeoutSeconds = null,
+        StudioLanguageServices? languages = null,
+        Func<string?>? workspaceRoot = null)
     {
         _notebook = notebook;
         _folderName = folderName;
@@ -116,9 +120,13 @@ public partial class NotebookTabViewModel : ObservableObject
         _onCloseTab = onCloseTab;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
 
+        _languages = languages ?? StudioLanguageServices.Default;
+        _workspaceRoot = workspaceRoot;
         Kernel = new NotebookExecutionKernel();
+        _router = new NotebookKernelRouter(_languages.Registry, new KernelCreationContext(() => WorkingFolder, workspaceRoot), Kernel);
 
         PopulateCells();
+        RefreshKernelName();
     }
 
     partial void OnActiveCellChanged(NotebookCellViewModel? value)
@@ -227,7 +235,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public NotebookCellViewModel CreateCellViewModel(NotebookCellItem item)
     {
-        return new NotebookCellViewModel(
+        var cell = new NotebookCellViewModel(
             item,
             runAction: RunSingleCellAsync,
             deleteAction: DeleteCell,
@@ -237,23 +245,13 @@ public partial class NotebookTabViewModel : ObservableObject
             runCellsAboveAction: RunCellsAboveAsync,
             precedingContextProvider: GetPrecedingCodeContext,
             onModified: () => IsModified = true);
-    }
-
-    // Best-effort static approximation of the kernel's real chained ScriptState: cells are assumed
-    // to run top-to-bottom, so completion sees every code cell above the active one regardless of
-    // whether it has actually been run yet. That matches the common "write several cells, then run"
-    // workflow; if cells are run out of order, completion may suggest a variable that isn't in scope
-    // yet at runtime — the same static-analysis tradeoff every notebook IDE completion makes.
-    private string GetPrecedingCodeContext(NotebookCellViewModel cell)
-    {
-        var idx = Cells.IndexOf(cell);
-        if (idx <= 0) return string.Empty;
-
-        return string.Join(
-            "\n",
-            Cells.Take(idx)
-                .Where(c => c.Type == CellType.Code && !string.IsNullOrWhiteSpace(c.Source))
-                .Select(c => c.Source));
+        cell.UseLanguages(_languages.Registry, () => DefaultLanguage);
+        cell.InstallMissingDependencyAction = InstallMissingDependencyAsync;
+        cell.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NotebookCellViewModel.EffectiveLanguage)) RefreshKernelName();
+        };
+        return cell;
     }
 
     [RelayCommand]
@@ -310,156 +308,70 @@ public partial class NotebookTabViewModel : ObservableObject
         // on (see below) can never write stale output/status into a cell that's moved on.
         var myRunId = ++_executionRunId;
 
+        // The cell runs in its language's kernel: the one its #!python (or other) line picks, its own, or the notebook's.
+        var ownLanguage = cell.Language ?? DefaultLanguage;
+        var directives = NotebookCellDirectives.Parse(cell.Source, _languages.Registry, ownLanguage);
+        var language = _languages.Registry.Get(directives.LanguageId ?? ownLanguage);
+        var kernel = _router.GetOrCreate(language?.Id);
+        var console = new CellConsole(cell, () => myRunId == _executionRunId, rich => ApplyRichOutput(cell, rich, myRunId), terminal: kernel != null && !ReferenceEquals(kernel, Kernel));
+
         try
         {
-            // Roslyn script execution must never run inline on the UI thread: if the user's code
-            // does something like `httpClient.GetStringAsync(url).Result`, its continuation needs
-            // to resume on the same UI thread that's blocked waiting for it — an unrecoverable
-            // deadlock that freezes the whole app (and makes Stop unclickable). Task.Run keeps it on
-            // a thread-pool thread with no captured SynchronizationContext, matching the same
-            // pattern ScriptExecutionEngine.ExecuteAsync already uses safely for compiled programs.
-            var executionTask = Task.Run(() => Kernel.ExecuteCellAsync(
-                cell.Source,
-                ct: linkedCts.Token,
-                sourceId: cell.Id,
-                onLiveConsole: text =>
-                {
-                    void Apply()
-                    {
-                        if (myRunId != _executionRunId) return;
-                        cell.OutputText += text;
-                    }
-
-                    if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
-                    {
-                        Apply();
-                    }
-                    else
-                    {
-                        Dispatcher.UIThread.Post(Apply);
-                    }
-                },
-                onRichOutput: rich =>
-                {
-                    void ApplyRich()
-                    {
-                        if (myRunId != _executionRunId) return;
-                        switch (rich.Kind)
-                        {
-                            case CellOutputKind.Image:
-                                if (rich.ImageBytes != null)
-                                {
-                                    cell.SetImageOutput(rich.ImageBytes, rich.ImageFormat ?? "PNG", rich.ImageWidth, rich.ImageHeight);
-                                }
-                                break;
-                            case CellOutputKind.Control:
-                                if (rich.InteractiveControl != null)
-                                {
-                                    cell.SetInteractiveControl(rich.InteractiveControl);
-                                }
-                                break;
-                            case CellOutputKind.Html:
-                                if (!string.IsNullOrEmpty(rich.HtmlContent))
-                                {
-                                    cell.SetHtmlContent(rich.HtmlContent);
-                                }
-                                break;
-                            case CellOutputKind.Table:
-                                if (rich.TableResult != null)
-                                {
-                                    cell.SetTableOutput(rich.TableResult);
-                                }
-                                break;
-                            case CellOutputKind.ObjectInspector:
-                                if (rich.InspectorNode != null)
-                                {
-                                    cell.SetInspectorOutput(rich.InspectorNode);
-                                }
-                                break;
-                            case CellOutputKind.Chart:
-                                if (rich.InteractiveControl != null)
-                                {
-                                    cell.SetInteractiveControl(rich.InteractiveControl);
-                                }
-                                if (rich.ChartOptions != null)
-                                {
-                                    cell.SetChartOutput(rich.ChartOptions);
-                                }
-                                break;
-                            case CellOutputKind.Visualizer:
-                                if (rich.InteractiveControl != null)
-                                {
-                                    cell.SetInteractiveControl(rich.InteractiveControl);
-                                }
-                                if (rich.VisualizerOptions != null)
-                                {
-                                    cell.SetVisualizerOutput(rich.VisualizerOptions);
-                                }
-                                break;
-                        }
-                    }
-
-                    if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
-                    {
-                        ApplyRich();
-                    }
-                    else
-                    {
-                        Dispatcher.UIThread.Post(ApplyRich);
-                    }
-                }));
-
             KernelExecutionResult result;
-            if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, linkedCts.Token))
+            if (language == null || kernel == null)
             {
-                result = await executionTask;
+                console.Write(language == null
+                    ? $"❌ This cell is written in \"{ownLanguage}\", which the studio can't run. Pick its language from the cell's language menu.\n"
+                    : $"❌ {language.DisplayName} code can't run in notebook cells.\n");
+                result = new KernelExecutionResult { ErrorMessage = "The cell's language can't run here." };
+            }
+            else if (directives.Errors.Count > 0)
+            {
+                foreach (var error in directives.Errors) console.Write($"❌ {error}\n");
+                result = new KernelExecutionResult { ErrorMessage = directives.Errors[0] };
+            }
+            else if (!await RunDirectivesAsync(directives, language, kernel, console, linkedCts.Token))
+            {
+                result = new KernelExecutionResult { WasCancelled = linkedCts.IsCancellationRequested, ErrorMessage = "A directive at the top of the cell failed." };
+            }
+            else if (kernel.CanForceStop)
+            {
+                // A kernel in its own program always stops when asked (it's ended if it has to be), so it's simply awaited.
+                result = await kernel.ExecuteAsync(new KernelExecutionRequest
+                {
+                    Code = directives.Code,
+                    SourceId = cell.Id,
+                    Label = $"[{cell.ExecutionCount}]",
+                    OnConsole = console.Write,
+                    OnRichOutput = console.Show,
+                    OnInputRequest = cell.AskAsync
+                }, linkedCts.Token);
             }
             else
             {
-                // Stop/timeout fired and the cell didn't respond within the grace period — almost
-                // always because it's synchronously blocked mid-statement (e.g. a hung HttpClient
-                // call), which Roslyn's cancellation can never preempt. Give up waiting rather than
-                // hang this command (and the cell's "running" UI) forever; the thread-pool thread
-                // keeps running in the background until it naturally returns or the process exits.
-                result = new KernelExecutionResult
-                {
-                    WasCancelled = true,
-                    ErrorMessage = "Execution did not respond to Stop and was abandoned."
-                };
-
-                _ = executionTask.ContinueWith(t =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        if (myRunId != _executionRunId) return; // a newer run already took over
-                        KernelStatusText = t.IsFaulted
-                            ? "Background cell task (previously abandoned) finished with an error"
-                            : "Background cell task (previously abandoned) finished";
-                        UpdateVariables();
-                    });
-                }, TaskScheduler.Default);
+                result = await RunInCSharpKernelAsync(cell, directives.Code, console, myRunId, linkedCts.Token);
             }
 
+            console.Flush();
             if (!result.Success)
             {
                 cell.HasError = true;
-                var missingVarDiag = result.Diagnostics.FirstOrDefault(d => d.Id == "CS0103");
-                if (missingVarDiag != null)
+                if ((result.MissingName ?? MissingNameFromDiagnostics(result)) is { } missingName)
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(
-                        missingVarDiag.Message,
-                        @"The name '(.+?)' does not exist in the current context");
-                    if (match.Success)
-                    {
-                        cell.MissingVariableName = match.Groups[1].Value;
-                        cell.HasMissingVariableError = true;
-                    }
+                    cell.MissingVariableName = missingName;
+                    cell.HasMissingVariableError = true;
+                }
+
+                if (result.MissingDependency is { Length: > 0 } dependency && language?.Packages is { } packages)
+                {
+                    cell.MissingDependency = packages.PackageForMissingDependency(dependency);
                 }
             }
 
             cell.ExecutionTimeText = $"{result.Elapsed.TotalMilliseconds:N0} ms";
 
-            UpdateVariables();
+            await UpdateVariablesAsync();
+            RefreshKernelName();
 
             if (result.WasCancelled)
             {
@@ -478,6 +390,131 @@ public partial class NotebookTabViewModel : ObservableObject
         {
             cell.IsExecuting = false;
             if (ownsTabExecutingFlag) IsExecuting = false;
+        }
+    }
+
+    private async Task<KernelExecutionResult> RunInCSharpKernelAsync(NotebookCellViewModel cell, string code, CellConsole console, int myRunId, CancellationToken ct)
+    {
+        // Roslyn script execution must never run inline on the UI thread: if the user's code
+        // does something like `httpClient.GetStringAsync(url).Result`, its continuation needs
+        // to resume on the same UI thread that's blocked waiting for it — an unrecoverable
+        // deadlock that freezes the whole app (and makes Stop unclickable). Task.Run keeps it on
+        // a thread-pool thread with no captured SynchronizationContext, matching the same
+        // pattern ScriptExecutionEngine.ExecuteAsync already uses safely for compiled programs.
+        var executionTask = Task.Run(() => Kernel.ExecuteCellAsync(
+            code,
+            ct: ct,
+            sourceId: cell.Id,
+            onLiveConsole: console.Write,
+            onRichOutput: console.Show));
+
+        if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, ct))
+        {
+            return await executionTask;
+        }
+
+        // Stop/timeout fired and the cell didn't respond within the grace period — almost
+        // always because it's synchronously blocked mid-statement (e.g. a hung HttpClient
+        // call), which Roslyn's cancellation can never preempt. Give up waiting rather than
+        // hang this command (and the cell's "running" UI) forever; the thread-pool thread
+        // keeps running in the background until it naturally returns or the process exits.
+        _ = executionTask.ContinueWith(t =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (myRunId != _executionRunId) return; // a newer run already took over
+                KernelStatusText = t.IsFaulted
+                    ? "Background cell task (previously abandoned) finished with an error"
+                    : "Background cell task (previously abandoned) finished";
+                UpdateVariables();
+            });
+        }, TaskScheduler.Default);
+
+        return new KernelExecutionResult
+        {
+            WasCancelled = true,
+            ErrorMessage = "Execution did not respond to Stop and was abandoned."
+        };
+    }
+
+    // The C# kernel reports an undefined name as CS0103.
+    private static string? MissingNameFromDiagnostics(KernelExecutionResult result)
+    {
+        var missingVarDiag = result.Diagnostics.FirstOrDefault(d => d.Id == "CS0103");
+        if (missingVarDiag == null) return null;
+        var match = System.Text.RegularExpressions.Regex.Match(
+            missingVarDiag.Message,
+            @"The name '(.+?)' does not exist in the current context");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private void ApplyRichOutput(NotebookCellViewModel cell, RichCellOutput rich, int myRunId)
+    {
+        if (myRunId != _executionRunId) return;
+        switch (rich.Kind)
+        {
+            case CellOutputKind.Image:
+                if (rich.ImageBytes != null)
+                {
+                    cell.SetImageOutput(rich.ImageBytes, rich.ImageFormat ?? "PNG", rich.ImageWidth, rich.ImageHeight);
+                }
+                break;
+            case CellOutputKind.Control:
+                if (rich.InteractiveControl != null)
+                {
+                    cell.SetInteractiveControl(rich.InteractiveControl);
+                }
+                break;
+            case CellOutputKind.Html:
+                if (!string.IsNullOrEmpty(rich.HtmlContent))
+                {
+                    cell.SetHtmlContent(rich.HtmlContent);
+                }
+                break;
+            case CellOutputKind.Table:
+                if (rich.TableResult != null)
+                {
+                    cell.SetTableOutput(rich.TableResult);
+                }
+                break;
+            case CellOutputKind.ObjectInspector:
+                if (rich.InspectorNode != null)
+                {
+                    cell.SetInspectorOutput(rich.InspectorNode);
+                }
+                break;
+            case CellOutputKind.Chart:
+                if (rich.InteractiveControl != null)
+                {
+                    cell.SetInteractiveControl(rich.InteractiveControl);
+                }
+                if (rich.ChartOptions != null)
+                {
+                    cell.SetChartOutput(rich.ChartOptions);
+                }
+                break;
+            case CellOutputKind.Visualizer:
+                if (rich.InteractiveControl != null)
+                {
+                    cell.SetInteractiveControl(rich.InteractiveControl);
+                }
+                if (rich.VisualizerOptions != null)
+                {
+                    cell.SetVisualizerOutput(rich.VisualizerOptions);
+                }
+                break;
+        }
+    }
+
+    private static void OnUiThread(Action action)
+    {
+        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(action);
         }
     }
 
@@ -529,7 +566,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
         try
         {
-            Kernel.HardReset();
+            _router.ResetAll();
             Variables.Clear();
 
             // The whole notebook is being run, so show all of its notes rendered rather than as markdown source.
@@ -563,33 +600,13 @@ public partial class NotebookTabViewModel : ObservableObject
     public void RestartKernel()
     {
         _executionCts?.Cancel();
-        Kernel.HardReset();
+        _router.ResetAll();
         Variables.Clear();
+        RefreshKernelName();
         KernelStatusText = "Kernel Restarted • Session Fresh";
     }
 
-    public void UpdateVariables()
-    {
-        var active = Kernel.GetActiveVariables();
-        void ApplyVars()
-        {
-            Variables.Clear();
-            foreach (var v in active)
-            {
-                Variables.Add(v);
-            }
-            OnPropertyChanged(nameof(Variables));
-        }
-
-        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess())
-        {
-            ApplyVars();
-        }
-        else
-        {
-            Dispatcher.UIThread.Post(ApplyVars);
-        }
-    }
+    public void UpdateVariables() => _ = UpdateVariablesAsync();
 
     [RelayCommand]
     public void SelectCell(NotebookCellViewModel? cell)
@@ -617,11 +634,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public void AddCellAbove(NotebookCellViewModel? targetCell, CellType type)
     {
-        var newCellItem = new NotebookCellItem
-        {
-            Type = type,
-            Source = type == CellType.Code ? "// C# Code Block\n" : "### Markdown Notes\nWrite documentation here."
-        };
+        var newCellItem = NewCellItem(targetCell ?? ActiveCell, type);
         var newVm = CreateCellViewModel(newCellItem);
 
         if (targetCell == null || Cells.Count == 0)
@@ -669,11 +682,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public void AddCellBelow(NotebookCellViewModel? targetCell, CellType type)
     {
-        var newCellItem = new NotebookCellItem
-        {
-            Type = type,
-            Source = type == CellType.Code ? "// C# Code Block\n" : "### Markdown Notes\nWrite documentation here."
-        };
+        var newCellItem = NewCellItem(targetCell ?? ActiveCell, type);
 
         var newVm = CreateCellViewModel(newCellItem);
 

@@ -12,8 +12,8 @@
             <SolidColorBrush x:Key="DsSurfaceBrush" Color="#161B22" />
             <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#21262D" />
             <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#1C2128" />
-            <SolidColorBrush x:Key="DsBorderBrush" Color="#30363D" />
-            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#171B22" />
             <SolidColorBrush x:Key="DsTextBrush" Color="#C9D1D9" />
             <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="DsMutedBrush" Color="#8B949E" />
@@ -34,8 +34,8 @@
             <SolidColorBrush x:Key="DsSurfaceBrush" Color="#F6F8FA" />
             <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#EAEEF2" />
             <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#ECEFF2" />
-            <SolidColorBrush x:Key="DsBorderBrush" Color="#D0D7DE" />
-            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#E1E4E8" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#E1E4E8" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#EEF1F5" />
             <SolidColorBrush x:Key="DsTextBrush" Color="#24292F" />
             <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#1F2328" />
             <SolidColorBrush x:Key="DsMutedBrush" Color="#656D76" />

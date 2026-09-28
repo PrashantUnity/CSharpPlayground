@@ -27,7 +27,7 @@ public class TreeRenderer : VisualizerRendererBase
 
         var activeNodeIds = GetActiveNodeIds(options);
         var changedNodeIds = StepChanges.TreeNodes(PreviousSnapshot<TreeNodeData>(options), root);
-        var branchPen = GetPen("#475569", Math.Max(1.0, 1.5 * options.Zoom));
+        var branchPen = GetPen(IsDarkTheme ? "#475569" : "#cbd5e1", Math.Max(1.0, 1.5 * options.Zoom));
 
         // 1. Draw branch connectors
         DrawBranches(context, root, offsetX, offsetY, branchPen);
@@ -138,7 +138,7 @@ public class TreeRenderer : VisualizerRendererBase
         }
         else
         {
-            styling = ("#1e293b", "#64748b", "#ffffff");
+            styling = IsDarkTheme ? ("#1e293b", "#64748b", "#ffffff") : ("#f1f5f9", "#cbd5e1", "#0f172a");
         }
 
         var fillBrush = GetBrush(styling.fillHex);
@@ -182,7 +182,7 @@ public class TreeRenderer : VisualizerRendererBase
         if (!string.IsNullOrEmpty(node.SubLabel))
         {
             double subFontSize = Math.Max(8.5, 9.5 * zoom);
-            var subFt = CreateFormattedText(node.SubLabel, subFontSize, GetBrush("#94a3b8"), FontWeight.Medium);
+            var subFt = CreateFormattedText(node.SubLabel, subFontSize, MutedTextBrush, FontWeight.Medium);
             double subX = center.X - subFt.Width / 2.0;
             double subY = center.Y + radius + 3.0;
             context.DrawText(subFt, new Point(subX, subY));

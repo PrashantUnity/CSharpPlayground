@@ -25,6 +25,34 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
     private bool _isDetailFlyoutOpen;
 
     [ObservableProperty]
+    private double _detailFlyoutWidth = 420;
+
+    public void UpdateAdaptiveFlyoutWidth(double viewWidth)
+    {
+        if (viewWidth <= 0) return;
+        if (viewWidth < 1300)
+        {
+            DetailFlyoutWidth = 360;
+        }
+        else if (viewWidth < 1600)
+        {
+            DetailFlyoutWidth = 440;
+        }
+        else if (viewWidth < 2000)
+        {
+            DetailFlyoutWidth = 520;
+        }
+        else if (viewWidth < 2800)
+        {
+            DetailFlyoutWidth = 760;
+        }
+        else
+        {
+            DetailFlyoutWidth = 1100;
+        }
+    }
+
+    [ObservableProperty]
     private bool _isLoading = true;
 
     public ObservableCollection<BlindProblemItem> AllProblems { get; } = new();

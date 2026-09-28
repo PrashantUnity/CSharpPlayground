@@ -26,6 +26,14 @@ public partial class CSharpManagerView : UserControl
                 _ = HubFilePickerActions.OpenProjectFileAsync(this, vm);
             }
         }
+        else if ((e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)) && (e.Key == Key.OemComma || e.Key == Key.Oem1))
+        {
+            e.Handled = true;
+            if (DataContext is CSharpManagerViewModel vm)
+            {
+                vm.NavigateToSettings();
+            }
+        }
     }
 
     private void OnDragOver(object? sender, DragEventArgs e)
@@ -54,6 +62,15 @@ public partial class CSharpManagerView : UserControl
                 await vm.OpenExistingProjectAsync(path);
                 break;
             }
+        }
+    }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (DataContext is CSharpManagerViewModel vm && e.NewSize.Width > 0)
+        {
+            vm.UpdateAdaptiveRail(e.NewSize.Width);
         }
     }
 }

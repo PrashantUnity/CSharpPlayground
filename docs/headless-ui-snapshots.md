@@ -36,8 +36,11 @@ compiling, and `tools/UiSnapshots/out/` is git-ignored.
 | `details <n>` | Problem n's details panel at full height | 410×2600 |
 | `markdown <n>` | Problem n's statement and "How to think" through `MarkdownView` | 440×1600 |
 | `studio <n>` | Code Studio with problem n's script open | 1400×900 |
-| `studio --file <path>` | Code Studio with any script file open | 1400×900 |
+| `studio --file <path>` | Code Studio with any script file open; a source file (`main.py`) opens as one, from a throwaway workspace | 1400×900 |
 | `notebook <n>` | Notebook Studio with problem n's notebook | 1400×900 |
+| `notebook --python-demo` | A notebook of C# and Python cells: numpy, a pandas table, a matplotlib figure, `#!share` both ways, `input()` | 1400×900 |
+| `hub` | The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned), with the STUDIO ENVIRONMENT card | 1400×900 |
+| `docs` | The Docs learning center | 1400×900 |
 | `visualizer [n ...]` | Runs each script and saves steps of every visualizer it shows as `p{n}_v{k}_s{step}.png`; prints the test output and every step's description. With no numbers: all 76 problems | 900×640 |
 | `script <n>` | Prints the generated script and notebook code (no image) | |
 
@@ -58,8 +61,20 @@ Command options:
 | | `--panel-height <px>` | Bottom panel height (default 280, whatever the window height) |
 | | `--generate-tests` / `--run-tests` / `--add-test` | Click Generate, Run All or Add Test Case in the Test Cases panel |
 | | `--quick-info <text>` | Rest the mouse on the first `<text>` in the script and wait for its hover (Quick Info) card; with `--debug`, the debugger's data tip |
+| | `--python <path>` | The Python `.py` files run with (default: the one the studio finds) |
+| | `--stdin <text>` | With `--run`: typed into the Terminal once the program waits for input |
+| | `--while-running` | With `--run`: take the picture while the program runs (waiting for input, say), then stop it |
+| | `--menu toolchain` | Also save `<name>_menu.png` with the status bar's toolchain menu open (for a `.py` file: the Pythons found) |
 | `notebook` | `--run` | Run all cells first |
+| | `--python-demo` / `--python <path>` | The C# and Python demo notebook instead of a problem's / the Python its cells run with |
+| | `--stdin <text>` | With `--run`: what a cell's `input()` gets, typed into the cell's input box with Enter (default: end of input) |
+| | `--while-running` | With `--run`: take the picture while a cell waits for input, then stop |
+| | `--cell <n>` | Select the n-th cell (from 1), so its toolbar and language chip show |
+| | `--menu language\|kernel` | Also save `<name>_menu.png` with the selected cell's language menu, or the kernel pill's menu, open |
 | | `--quick-info <text>` | Rest the mouse on the first `<text>` in any cell and wait for its hover card |
+| `hub` | `--empty` / `--templates` / `--create script\|notebook` | A first run / the template gallery / the New Script or New Notebook dialog |
+| | `--python <path>` / `--nothing-installed` | The Python the STUDIO ENVIRONMENT card shows / what it says on a machine without Python |
+| `docs` | `--article <words>` / `--list` | Open the first article whose title contains the words / print every article (no image) |
 | `visualizer` | `--steps <s,s,...>` | Steps to save; negative counts from the end (default: first, 1/3, 2/3, last) |
 | | `--quiet` | Don't print each step's description |
 
@@ -193,6 +208,10 @@ Read this before extending the tool.
 - **Fonts are the machine's.** Text can differ a little from the app on another OS. Compare renders made on the same
   machine.
 - **The studios start slowly.** `studio` and `notebook` create a `RoslynCompilerService`, which takes a few seconds.
+- **Python runs for real.** `studio --file x.py --run` and `notebook --python-demo --run` start the machine's Python (or
+  `--python`'s), over throwaway folders: nothing chosen or created reaches your settings, and the kernel ends when the
+  picture is saved. The demo needs numpy, pandas and matplotlib; without them its cells show the "Install" offer, which
+  is worth a picture too (`--python /opt/homebrew/bin/python3`, say).
 - **"The process cannot access the file ... .pdb".** Something else (usually a `dotnet watch`) is building the plugin at
   the same time. Wait a moment and build again.
 

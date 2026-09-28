@@ -4,10 +4,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -19,9 +20,49 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
     private readonly Action? _navigateToDocsAction;
+    private readonly Action? _navigateToSettingsAction;
+    private readonly StudioLanguageServices _languages;
+
+    /// <summary>The languages this studio opens, runs and creates files of.</summary>
+    public StudioLanguageServices Languages => _languages;
+
+    /// <summary>The active document's language; C# for .frycs documents.</summary>
+    public ILanguageDefinition ActiveLanguage => _languages.LanguageOf(Script);
 
     public QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
+    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+
+    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+
+    [RelayCommand]
+    public void ZoomIn()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ZoomOut()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ResetZoom()
+    {
+        EditorFontSize = Controls.EditorZoomController.Reset();
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    public void ApplyFontSize(double fontSize)
+    {
+        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+    }
 
     [ObservableProperty]
     private int _indentationSize = 4;
@@ -41,12 +82,14 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         IsDarkTheme = ThemeService.ToggleTheme();
     }
 
-    public string LanguageModeStatusText => SelectedLanguageModeIndex switch
-    {
-        1 => "C# Program",
-        2 => "C# Expression",
-        _ => "C# Statements"
-    };
+    public string LanguageModeStatusText => UseExternalDotNetRunner
+        ? "C# (.NET CLI)"
+        : SelectedLanguageModeIndex switch
+        {
+            1 => "C# Program",
+            2 => "C# Expression",
+            _ => "C# Statements"
+        };
 
     [RelayCommand]
     public void ToggleIndentation()
@@ -58,7 +101,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [RelayCommand]
     public void SetLanguageMode(string? modeIndexStr)
     {
-        if (int.TryParse(modeIndexStr, out var idx) && idx >= 0 && idx <= 2)
+        if (SupportsExecutionModes && int.TryParse(modeIndexStr, out var idx) && idx >= 0 && idx <= 2)
         {
             SelectedLanguageModeIndex = idx;
         }
@@ -115,15 +158,15 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     private bool _isSideBarVisible = true;
 
     [ObservableProperty]
-    private Avalonia.Controls.GridLength _sideBarGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
+    private Avalonia.Controls.GridLength _sideBarGridLength = new(290, Avalonia.Controls.GridUnitType.Pixel);
 
-    private double _savedSideBarWidth = 280;
+    private double _savedSideBarWidth = 290;
 
     partial void OnIsSideBarVisibleChanged(bool value)
     {
         if (value)
         {
-            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 280, Avalonia.Controls.GridUnitType.Pixel);
+            SideBarGridLength = new Avalonia.Controls.GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 290, Avalonia.Controls.GridUnitType.Pixel);
         }
         else
         {
@@ -225,9 +268,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         Action<NotebookDocumentItem>? openNotebookAction = null,
         Action? navigateToDocsAction = null,
         Action<Action>? postToUiThread = null,
-        IBlindProgressService? blindProgress = null)
+        IBlindProgressService? blindProgress = null,
+        StudioLanguageServices? languages = null,
+        Action? navigateToSettingsAction = null)
     {
         _script = script;
+        _languages = languages ?? StudioLanguageServices.Default;
         _storageService = storageService;
         _compilerService = compilerService;
         _executionEngine = executionEngine;
@@ -236,6 +282,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
         _navigateToDocsAction = navigateToDocsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
         _postToUiThread = postToUiThread ?? RunOnUiThread;
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
@@ -281,10 +328,29 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
 
+        var initialSettings = _languages.StudioSettings.GetSettings();
+        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _useExternalDotNetRunner = string.Equals(initialSettings.CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);
+        _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
+
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        OnActiveLanguageChanged();
+        InitializeNuGetPackages();
+    }
+
+    private void OnStudioSettingsChanged(StudioSettings s)
+    {
+        _postToUiThread(() =>
+        {
+            if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
+            {
+                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+            }
+            SetCSharpRunner(s.CSharpExecutionEngine);
+        });
     }
 
     partial void OnCodeChanged(string value)
@@ -298,6 +364,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             activeTab.Document.Code = value;
         }
         TriggerDiagnosticsCheck();
+        RefreshDocumentNuGetPackages();
     }
 
     partial void OnNotesChanged(string value)
@@ -315,6 +382,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
             _ => "Statements"
         };
         OnPropertyChanged(nameof(LanguageModeStatusText));
+        OnPropertyChanged(nameof(LanguageStatusText));
         TriggerDiagnosticsCheck();
     }
 
@@ -325,14 +393,35 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveAsync()
+    private Task SaveAsync() => SaveDocumentAsync(userAsked: true);
+
+    /// <summary>
+    /// Saves the active document. <paramref name="userAsked"/> is false for the saves the studio makes on its own
+    /// (switching files, leaving the studio): those never write over a source file another program changed meanwhile.
+    /// </summary>
+    private async Task SaveDocumentAsync(bool userAsked)
     {
         Script.Code = Code;
         Script.Notes = Notes;
         Script.TestCases = TestCases.ToList();
         Script.LastModified = DateTime.UtcNow;
-        var saved = await _storageService.SaveScriptAsync(Script);
-        CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
+        bool saved;
+        if (Script.SourceFilePath != null)
+        {
+            saved = await _storageService.SaveSourceFileAsync(Script, overwriteChangesOnDisk: userAsked);
+            CompilerStatusText = saved
+                ? "Saved"
+                : userAsked
+                    ? $"⚠️ Couldn't save {Script.Title}: check the folder's permissions"
+                    : $"⚠️ {Script.Title} changed on disk, so it wasn't saved over. Ctrl+S saves your version.";
+        }
+        else
+        {
+            saved = await _storageService.SaveScriptAsync(Script);
+            CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
+        }
+
+        if (!saved) return;
 
         var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         if (activeTab != null)
@@ -345,22 +434,29 @@ public partial class CSharpCodeStudioViewModel : ObservableObject
     [RelayCommand]
     private void BackToHub()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _backToHubAction.Invoke();
     }
 
     [RelayCommand]
     private void BackToHome()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _backToHomeAction?.Invoke();
     }
 
     [RelayCommand]
     private void NavigateToDocs()
     {
-        _ = SaveAsync();
+        _ = SaveDocumentAsync(userAsked: false);
         _navigateToDocsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings()
+    {
+        _ = SaveDocumentAsync(userAsked: false);
+        _navigateToSettingsAction?.Invoke();
     }
 
     [RelayCommand]

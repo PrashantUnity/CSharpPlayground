@@ -17,74 +17,6 @@
                 <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
-        <!-- Template Card in Nexus Style -->
-        <DataTemplate x:Key="TemplateCardTemplate" x:DataType="models:CodeTemplate">
-            <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).SelectTemplateCommand}"
-                    CommandParameter="{Binding}"
-                    Classes="nexus-card-btn"
-                    Margin="0,0,16,16">
-                <Border Width="240" Height="148" Classes="nexus-glass-card">
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <!-- Top: Icon badge + Kind label -->
-                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
-                            <Border Grid.Column="0" Width="36" Height="36"
-                                    CornerRadius="8"
-                                    Background="{Binding AccentBackground}"
-                                    BorderBrush="{Binding AccentBorder}"
-                                    BorderThickness="1">
-                                <materialIcons:MaterialIcon Kind="{Binding IconKind}"
-                                                            Width="18" Height="18"
-                                                            Foreground="{Binding AccentColor}"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-
-                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                    CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding KindBadgeText}" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource DsMutedBrush}" />
-                            </Border>
-                        </Grid>
-
-                        <!-- Body: Title & Description -->
-                        <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
-                            <TextBlock Text="{Binding Title}"
-                                       FontWeight="SemiBold" FontSize="13"
-                                       Foreground="{DynamicResource DsTextWhiteBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       ToolTip.Tip="{Binding Title}" />
-                            <TextBlock Text="{Binding Description}"
-                                       FontSize="11.5"
-                                       Foreground="{DynamicResource DsMutedBrush}"
-                                       TextWrapping="Wrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="2"
-                                       ToolTip.Tip="{Binding Description}" />
-                        </StackPanel>
-
-                        <!-- Footer: Tags -->
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,8,0,0" ClipToBounds="True">
-                            <ItemsControl ItemsSource="{Binding VisibleTags}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Classes="nexus-tag-pill">
-                                            <TextBlock Text="{Binding}" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Border Classes="nexus-tag-pill overflow" IsVisible="{Binding HasOverflowTags}">
-                                <TextBlock Text="{Binding OverflowTagLabel}" />
-                            </Border>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </Button>
-        </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -96,7 +28,10 @@
         <!-- ============================================================ -->
         <!-- ROOT 2-COLUMN LAYOUT: SIDEBAR + MAIN CONTENT                -->
         <!-- ============================================================ -->
-        <Grid ColumnDefinitions="256,*">
+        <!-- ============================================================ -->
+        <!-- ROOT 3-COLUMN LAYOUT: SIDEBAR + MAIN CANVAS + STICKY RIGHT RAIL -->
+        <!-- ============================================================ -->
+        <Grid ColumnDefinitions="256,*,Auto">
 
             <!-- ============================================================ -->
             <!-- 1. LEFT SIDEBAR (w-64 bg-ds-surface border-r border-ds-border) -->
@@ -104,81 +39,171 @@
             <controls:HubSidebarControl Grid.Column="0" />
 
             <!-- ============================================================ -->
-            <!-- 2. MAIN CONTENT (main.flex-1 flex flex-col h-full bg-ds-bg)   -->
+            <!-- 2. MAIN CONTENT (Center canvas, dynamic width)               -->
             <!-- ============================================================ -->
             <Grid Grid.Column="1" RowDefinitions="64,*">
 
                 <!-- Top Header: Search & Sync Bar -->
                 <controls:HubTopHeaderControl Grid.Row="0" />
 
-                <!-- Dashboard Scrollable Area -->
-                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <Panel>
-                        <!-- Top-Right Ambient Glow Effect -->
-                        <Border HorizontalAlignment="Right" VerticalAlignment="Top"
-                                Width="500" Height="380"
-                                IsHitTestVisible="False">
-                            <Border.Background>
-                                <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
-                                    <GradientStop Offset="0" Color="#1A2F81F7" />
-                                    <GradientStop Offset="1" Color="#000D1117" />
-                                </RadialGradientBrush>
-                            </Border.Background>
-                        </Border>
-
-                        <!-- Dashboard Content Max-Width 1120px -->
-                        <StackPanel MaxWidth="1120" Margin="32,28,32,48" Spacing="28">
-
-                            <!-- Status Notification Toast Banner -->
-                            <Border CornerRadius="8" BorderThickness="1" Padding="14,10" Margin="0,0,0,4"
-                                    Background="{DynamicResource DsSurfaceBrush}"
-                                    BorderBrush="{DynamicResource DsBorderBrush}"
-                                    IsVisible="{Binding HasStatusBannerMessage}">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CheckCircleOutline" Width="18" Height="18"
-                                                                Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                                IsVisible="{Binding !IsStatusBannerError}" />
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18"
-                                                                Foreground="#F85149" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                                IsVisible="{Binding IsStatusBannerError}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="2" Command="{Binding DismissStatusBannerCommand}" Classes="nexus-btn-ghost" Width="26" Height="26" Padding="0" VerticalAlignment="Center">
-                                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
-                                    </Button>
-                                </Grid>
+                <!-- Dashboard Content Area (ScrollViewer + Floating Overlay) -->
+                <Panel Grid.Row="1">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <Panel>
+                            <!-- Top-Right Ambient Glow Effect -->
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Width="500" Height="380"
+                                    IsHitTestVisible="False">
+                                <Border.Background>
+                                    <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                                        <GradientStop Offset="0" Color="#1A2F81F7" />
+                                        <GradientStop Offset="1" Color="#000D1117" />
+                                    </RadialGradientBrush>
+                                </Border.Background>
                             </Border>
 
-                            <controls:HubWelcomeSectionControl />
+                            <!-- Dashboard Content (Fills 100% of available canvas across all displays) -->
+                            <StackPanel Margin="32,28,32,48" Spacing="28" HorizontalAlignment="Stretch">
 
-                            <!-- ============================================================ -->
-                            <!-- SECTION 2: PINNED WORKSPACES                                 -->
-                            <!-- ============================================================ -->
-                            <controls:HubPinnedWorkspacesControl />
+                                <!-- Status Notification Toast Banner -->
+                                <Border CornerRadius="8" BorderThickness="1" Padding="14,10" Margin="0,0,0,4"
+                                        Background="{DynamicResource DsSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                        IsVisible="{Binding HasStatusBannerMessage}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <materialIcons:MaterialIcon Grid.Column="0" Kind="CheckCircleOutline" Width="18" Height="18"
+                                                                    Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                                    IsVisible="{Binding !IsStatusBannerError}" />
+                                        <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18"
+                                                                    Foreground="#F85149" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                                    IsVisible="{Binding IsStatusBannerError}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" Command="{Binding DismissStatusBannerCommand}" Classes="nexus-btn-ghost" Width="26" Height="26" Padding="0" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
 
-                            <!-- ============================================================ -->
-                            <!-- SECTION 3: 2-COLUMN SPLIT (RECENT ACTIVITY + SYSTEM STATUS)  -->
-                            <!-- ============================================================ -->
-                            <Grid ColumnDefinitions="*,28,340">
+                                <!-- SECTION 1: WELCOME & HERO BANNER -->
+                                <controls:HubWelcomeSectionControl />
 
-                                <!-- LEFT COLUMN: RECENT ACTIVITY / TEMPLATES -->
-                                <controls:HubWorkspacesPanelControl Grid.Column="0" />
+                                <!-- SECTION 2: PINNED WORKSPACES -->
+                                <controls:HubPinnedWorkspacesControl IsVisible="{Binding IsWorkspacesTabActive}" />
 
-                                <!-- RIGHT COLUMN: SYSTEM STATUS, RESOURCE USAGE & SHORTCUTS -->
-                                <controls:HubSystemStatusPanelControl Grid.Column="2" />
+                                <!-- SECTION 3: RECENT WORKSPACES / STARTER TEMPLATES GALLERY -->
+                                <controls:HubWorkspacesPanelControl />
 
-                            </Grid>
+                            </StackPanel>
+                        </Panel>
+                    </ScrollViewer>
 
-                        </StackPanel>
-                    </Panel>
-                </ScrollViewer>
+                    <!-- Sticky Floating Template Action Deck -->
+                    <Border HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                            Margin="0,0,0,24"
+                            IsVisible="{Binding IsShowingTemplate}"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsPrimaryBrush}"
+                            BorderThickness="1.5"
+                            CornerRadius="12"
+                            Padding="16,10"
+                            BoxShadow="0 10 32 0 #77000000">
+                        <Border.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                            </Transitions>
+                        </Border.Transitions>
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" VerticalAlignment="Center">
+                            <!-- Template Icon Badge -->
+                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
+                                    Background="{Binding SelectedTemplate.AccentBackground}"
+                                    BorderBrush="{Binding SelectedTemplate.AccentBorder}"
+                                    BorderThickness="1"
+                                    Margin="0,0,12,0" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="{Binding SelectedTemplate.IconKind}"
+                                                            Width="18" Height="18"
+                                                            Foreground="{Binding SelectedTemplate.AccentColor}"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Template Title & Details -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,32,0" Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding SelectedTemplate.Title}" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1.5" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SelectedTemplate.KindBadgeText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedTemplate.Description}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" MaxWidth="480" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <Panel Grid.Column="2" MinWidth="16" />
+
+                            <!-- Dismiss Selection Button -->
+                            <Button Grid.Column="3" Command="{Binding ClearSelectedTemplateCommand}"
+                                    Classes="nexus-btn-ghost"
+                                    Margin="0,0,10,0"
+                                    Padding="12,8"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="Dismiss" FontSize="12.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+
+                            <!-- Launch Template Primary Button -->
+                            <Button Grid.Column="4" Command="{Binding LaunchTemplateCommand}"
+                                    CommandParameter="{Binding SelectedTemplate}"
+                                    Classes="nexus-btn-primary"
+                                    Padding="18,9"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="RocketLaunchOutline" Width="16" Height="16" />
+                                    <TextBlock Text="Launch Template" FontWeight="SemiBold" FontSize="13" />
+                                    <materialIcons:MaterialIcon Kind="ArrowRight" Width="14" Height="14" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Panel>
 
             </Grid>
 
+            <!-- ============================================================ -->
+            <!-- 3. STICKY RIGHT RAIL: SYSTEM STATUS & ENVIRONMENT (340px)    -->
+            <!-- ============================================================ -->
+            <Border Grid.Column="2"
+                    Width="340"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="1,0,0,0"
+                    IsVisible="{Binding IsSystemStatusRailVisible}">
+                <Grid RowDefinitions="64,*">
+                    <!-- Sticky Rail Header matching Top Header height (64px) -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="20,0">
+                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="TuneVertical" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="SYSTEM &amp; RUNTIME" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Command="{Binding ToggleSystemStatusRailCommand}"
+                                    Classes="nexus-btn-ghost"
+                                    Width="26" Height="26" Padding="0"
+                                    ToolTip.Tip="Collapse System Rail">
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Sticky Rail Body (Independent Scroll) -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,20,20,32">
+                        <controls:HubSystemStatusPanelControl />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
         </Grid>
 
-        <!-- ================================================================ -->
-        <!-- "New Script" / "New Notebook" location dialog                    -->
-        <!-- ================================================================ -->
         <!-- ================================================================ -->
         <!-- "New Script" / "New Notebook" location dialog                    -->
         <!-- ================================================================ -->

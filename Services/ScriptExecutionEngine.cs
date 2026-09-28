@@ -22,12 +22,13 @@ public class ScriptExecutionEngine
     public async Task<ExecutionResult> ExecuteAsync(
         byte[] assemblyBytes,
         Action<string>? onLiveOutput = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        TextReader? stdinReader = null)
     {
         var result = new ExecutionResult();
         var sw = Stopwatch.StartNew();
 
-        // ConsoleRoutingContext routes Console.Out/Error to this execution's writer via an
+        // ConsoleRoutingContext routes Console.Out/Error/In to this execution's sink/source via an
         // AsyncLocal scope — concurrent executions elsewhere (another notebook tab, or this same
         // engine running again) stay correctly isolated with no lock needed, unlike the old
         // ConsoleRedirectionGate this replaced (which held a process-wide semaphore for the whole run).
@@ -36,7 +37,7 @@ public class ScriptExecutionEngine
             onLiveOutput?.Invoke(text);
         });
 
-        using (ConsoleRoutingContext.EnterScope(liveWriter))
+        using (ConsoleRoutingContext.EnterScope(liveWriter, stdinReader))
         {
             var context = new CollectibleAssemblyLoadContext();
 

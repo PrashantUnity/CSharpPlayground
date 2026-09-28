@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -23,6 +24,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     // One progress store for the whole studio: the Blind 75 page and Code Studio (which marks a problem solved when
     // every case passes) must see each other's changes, and two stores on one file would overwrite each other.
     private readonly IBlindProgressService _blindProgress;
+
+    // One set of languages for every page: the same registry lists the workspace's files, and the same saved toolchain
+    // choices, studio environments and processes serve the Code Studio, the notebooks and the Hub.
+    private readonly StudioLanguageServices _languages;
+    public StudioLanguageServices Languages => _languages;
     private RoslynCompilerService? _compilerService;
     private ScriptExecutionEngine? _executionEngine;
 
@@ -51,6 +57,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpManagerViewModel ManagerViewModel { get; }
     public CSharpDocsViewModel DocsViewModel { get; }
     public CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
+    public CSharpSettingsViewModel SettingsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
 
@@ -60,9 +67,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpStudioHostViewModel(
         IServiceProvider? serviceProvider = null,
         IPluginSettingsStore? settingsStore = null,
-        IBlindProgressService? blindProgress = null)
+        IBlindProgressService? blindProgress = null,
+        StudioLanguageServices? languages = null)
     {
-        _storageService = new LocalScriptStorageService();
+        _languages = languages ?? StudioLanguageServices.Default;
+        _storageService = new LocalScriptStorageService(languages: _languages.Registry);
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -84,6 +93,13 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
 
+        // ── Initialize Settings & Environment Setup page ──
+        SettingsViewModel = new CSharpSettingsViewModel(
+            _languages,
+            _languages.StudioSettings,
+            backToHubAction: NavigateToManager,
+            backToPreviousAction: NavigateToPreviousPage);
+
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new CSharpManagerViewModel(
             _storageService,
@@ -91,7 +107,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             openNotebookAction: NavigateToNotebookStudio,
             navigateToHomeAction: NavigateToHome,
             navigateToDocsAction: () => NavigateToDocs(),
-            navigateToBlindProblemsAction: () => NavigateToBlindProblems());
+            navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
+            languages: _languages,
+            navigateToSettingsAction: cat => NavigateToSettings(cat));
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -158,7 +176,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openNotebookAction: NavigateToNotebookStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
-                blindProgress: _blindProgress);
+                blindProgress: _blindProgress,
+                languages: _languages,
+                navigateToSettingsAction: () => NavigateToSettings());
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -174,7 +194,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 backToHomeAction: NavigateToHome,
                 getTimeoutSeconds: GetExecutionTimeoutSeconds,
                 openScriptAction: NavigateToCodeStudio,
-                navigateToDocsAction: () => NavigateToDocs());
+                navigateToDocsAction: () => NavigateToDocs(),
+                languages: _languages,
+                navigateToSettingsAction: () => NavigateToSettings());
         });
 
         void Publish()
@@ -280,6 +302,36 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         CurrentPage = BlindProblemsViewModel;
         IsOnManagerPage = false;
         ActiveDocumentTitle = "Blind 75";
+    }
+
+    private object? _previousPageBeforeSettings;
+
+    [RelayCommand]
+    public void NavigateToSettings(string? category = null)
+    {
+        _previousPageBeforeSettings = CurrentPage;
+        if (!string.IsNullOrEmpty(category))
+        {
+            SettingsViewModel.SelectCategory(category);
+        }
+        CurrentPage = SettingsViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = "Settings";
+    }
+
+    [RelayCommand]
+    public void NavigateToPreviousPage()
+    {
+        if (_previousPageBeforeSettings != null)
+        {
+            CurrentPage = _previousPageBeforeSettings;
+            IsOnManagerPage = ReferenceEquals(CurrentPage, ManagerViewModel);
+            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : "Editor")));
+        }
+        else
+        {
+            NavigateToManager();
+        }
     }
 
     [RelayCommand]

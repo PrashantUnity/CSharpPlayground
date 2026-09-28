@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -19,11 +20,31 @@ public partial class CSharpNotebookStudioView : UserControl
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         Unloaded += OnViewUnloaded;
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (DataContext is not CSharpNotebookStudioViewModel vm) return;
+
+        var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (!isModifier) return;
+
+        if (e.Delta.Y > 0)
+        {
+            vm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Delta.Y < 0)
+        {
+            vm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     // Each cell compiles under its id, so a step's source file names the cell whose code recorded it.
@@ -104,6 +125,28 @@ public partial class CSharpNotebookStudioView : UserControl
 
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
+        // ── Typography & Font Zoom (Ctrl+= / Ctrl+- / Ctrl+0) ──
+        if (isCmdOrCtrl && (e.Key == Key.OemPlus || e.Key == Key.Add || e.PhysicalKey == PhysicalKey.Equal || e.PhysicalKey == PhysicalKey.NumPadAdd))
+        {
+            vm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemMinus || e.Key == Key.Subtract || e.PhysicalKey == PhysicalKey.Minus || e.PhysicalKey == PhysicalKey.NumPadSubtract))
+        {
+            vm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.D0 || e.Key == Key.NumPad0 || e.PhysicalKey == PhysicalKey.Digit0 || e.PhysicalKey == PhysicalKey.NumPad0))
+        {
+            vm.ResetZoomCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         // VS Code Quick Open (Ctrl+P / Cmd+P)
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.P)
         {
@@ -127,6 +170,14 @@ public partial class CSharpNotebookStudioView : UserControl
             {
                 vm.CloseTab(vm.ActiveTab);
             }
+            e.Handled = true;
+            return;
+        }
+
+        // VS Code & JetBrains Open Settings (Ctrl+, / Cmd+,)
+        if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemComma || e.Key == Key.Oem1))
+        {
+            vm.NavigateToSettings();
             e.Handled = true;
             return;
         }
@@ -248,7 +299,11 @@ public partial class CSharpNotebookStudioView : UserControl
                 new("C# Files (*.cs, *.csx, *.frycs)")
                 {
                     Patterns = new[] { "*.cs", "*.csx", "*.frycs" }
-                },
+                }
+            }
+            .Concat(LanguageFileTypes.PerLanguage(StudioLanguageServices.Default.Registry))
+            .Concat(new List<FilePickerFileType>
+            {
                 new("Project Archives (*.zip)")
                 {
                     Patterns = new[] { "*.zip" }
@@ -257,7 +312,7 @@ public partial class CSharpNotebookStudioView : UserControl
                 {
                     Patterns = new[] { "*.*" }
                 }
-            }
+            }).ToList()
         });
 
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)

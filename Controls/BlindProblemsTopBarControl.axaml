@@ -37,12 +37,12 @@
 
             <!-- 2. Page Title & Badge -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
-                <Border Width="28" Height="28" CornerRadius="6" Background="#1A2F81F7" BorderBrush="#2F81F7" BorderThickness="1">
-                    <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="#58A6FF" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Border Width="28" Height="28" CornerRadius="6" Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1">
+                    <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="Blind 75" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}"
-                        BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                <Border Background="{DynamicResource M3PrimaryContainerBrush}"
+                        BorderThickness="0" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
                     <TextBlock Text="C# .NET 10" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"
                                Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
                 </Border>
@@ -88,16 +88,16 @@
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyEasy}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Easy">
-                        <TextBlock Text="Easy" Foreground="#00B8A3" />
+                        <TextBlock Text="Easy" Foreground="{DynamicResource BadgeEasyFgBrush}" />
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyMedium}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Med"
                             ToolTip.Tip="Medium">
-                        <TextBlock Text="Med" Foreground="#FFC01E" />
+                        <TextBlock Text="Med" Foreground="{DynamicResource BadgeMediumFgBrush}" />
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyHard}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Hard">
-                        <TextBlock Text="Hard" Foreground="#EF4444" />
+                        <TextBlock Text="Hard" Foreground="{DynamicResource BadgeHardFgBrush}" />
                     </Button>
                 </StackPanel>
             </Border>
@@ -107,7 +107,7 @@
                     Classes="snippet-action-btn" VerticalAlignment="Center"
                     ToolTip.Tip="Open a random unsolved problem">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="16" Height="16" Foreground="#E3B341" />
+                    <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="16" Height="16" Foreground="{DynamicResource BadgeAmberFgBrush}" />
                     <TextBlock Text="Pick One" VerticalAlignment="Center" FontWeight="SemiBold" />
                 </StackPanel>
             </Button>

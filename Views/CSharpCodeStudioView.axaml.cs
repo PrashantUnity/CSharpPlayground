@@ -16,6 +16,7 @@ using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -36,12 +37,23 @@ public partial class CSharpCodeStudioView : UserControl
     private readonly BreakpointMargin _breakpointMargin = new();
     private readonly DebugLineRenderer _debugLineRenderer = new();
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
+    private readonly InlineDebugValuesRenderer _inlineDebugRenderer = new();
     private DebugHoverDataTipControl? _debugHoverTip;
     private DebugHoverDataTipController? _debugHoverController;
+    private CollectionViewControl? _collectionViewOverlay;
+    private ValueViewerControl? _valueViewerOverlay;
+
+    private readonly StudioBottomDeckControl _deckControl = new();
+
+    // The language of the document in the editor: its colors, indentation, folding and comment prefix, and whether the
+    // C# completion and hover apply. A language with editor help of its own attaches it here.
+    private ILanguageDefinition? _editorLanguage;
+    private IDisposable? _languageAssistant;
 
     public CSharpCodeStudioView()
     {
         InitializeComponent();
+        UpdateDeckPlacement();
 
         _foldingTimer = new DispatcherTimer
         {
@@ -67,10 +79,21 @@ public partial class CSharpCodeStudioView : UserControl
             _editor.TextArea.LeftMargins.Insert(0, _breakpointMargin);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_stepLineRenderer);
             _editor.TextArea.TextView.BackgroundRenderers.Add(_debugLineRenderer);
+            _editor.TextArea.TextView.BackgroundRenderers.Add(_inlineDebugRenderer);
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
             _searchPanel = SearchPanel.Install(_editor);
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
+            _collectionViewOverlay = this.FindControl<CollectionViewControl>("CollectionViewOverlay");
+            if (_collectionViewOverlay != null)
+            {
+                _collectionViewOverlay.CloseRequested += () => _collectionViewOverlay.IsVisible = false;
+            }
+            _valueViewerOverlay = this.FindControl<ValueViewerControl>("ValueViewerOverlay");
+            if (_valueViewerOverlay != null)
+            {
+                _valueViewerOverlay.CloseRequested += () => _valueViewerOverlay.IsVisible = false;
+            }
 
             _editor.TextChanged += OnEditorTextChanged;
             _editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
@@ -88,11 +111,32 @@ public partial class CSharpCodeStudioView : UserControl
         }
 
         DataContextChanged += OnDataContextChanged;
+        SizeChanged += OnViewSizeChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (_currentVm == null) return;
+
+        var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (!isModifier) return;
+
+        if (e.Delta.Y > 0)
+        {
+            _currentVm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Delta.Y < 0)
+        {
+            _currentVm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
@@ -117,6 +161,28 @@ public partial class CSharpCodeStudioView : UserControl
 
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
+        // ── Typography & Font Zoom (Ctrl+= / Ctrl+- / Ctrl+0) ──
+        if (isModifier && (e.Key == Key.OemPlus || e.Key == Key.Add || e.PhysicalKey == PhysicalKey.Equal || e.PhysicalKey == PhysicalKey.NumPadAdd))
+        {
+            _currentVm.ZoomInCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemMinus || e.Key == Key.Subtract || e.PhysicalKey == PhysicalKey.Minus || e.PhysicalKey == PhysicalKey.NumPadSubtract))
+        {
+            _currentVm.ZoomOutCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.D0 || e.Key == Key.NumPad0 || e.PhysicalKey == PhysicalKey.Digit0 || e.PhysicalKey == PhysicalKey.NumPad0))
+        {
+            _currentVm.ResetZoomCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.O)
         {
             _ = OpenProjectOrFileDialogAsync();
@@ -127,6 +193,14 @@ public partial class CSharpCodeStudioView : UserControl
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
         {
             _ = _currentVm.SaveCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F5 && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)) &&
+            !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !_currentVm.IsExecuting && !_currentVm.IsDebugging)
+        {
+            _ = _currentVm.RunCodeCommand.ExecuteAsync(null);
             e.Handled = true;
             return;
         }
@@ -250,6 +324,14 @@ public partial class CSharpCodeStudioView : UserControl
             return;
         }
 
+        // ── VS Code & JetBrains Open Settings (Ctrl+, / Cmd+,) ──
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemComma || e.Key == Key.Oem1))
+        {
+            _currentVm.NavigateToSettings();
+            e.Handled = true;
+            return;
+        }
+
         // ── VS Code Toggle Line Comment (Ctrl+/ / Cmd+/) ──
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && (e.Key == Key.OemQuestion || e.Key == Key.Oem2 || e.Key == Key.Divide))
         {
@@ -290,16 +372,19 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    private bool IsDarkTheme() =>
+        ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
+        (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+
     public void ApplyThemeVariant()
     {
         if (_editor == null) return;
 
-        bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
-                      (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
+        bool isDark = IsDarkTheme();
 
         if (isDark)
         {
-            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
             _editor.Background = new SolidColorBrush(Color.Parse("#14171F"));
             _editor.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
@@ -310,11 +395,11 @@ public partial class CSharpCodeStudioView : UserControl
         }
         else
         {
-            _editor.SyntaxHighlighting = CSharpSyntaxHighlightingTheme.GetLightTheme();
+            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
             _editor.Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
             _editor.Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
-            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#94A3B8"));
-            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#BFDBFE"));
+            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#64748B"));
+            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#ADD6FF"));
             _editor.TextArea.SelectionForeground = null;
             _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
             _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
@@ -336,7 +421,10 @@ public partial class CSharpCodeStudioView : UserControl
                 () => _currentVm?.IsPaused == true,
                 () => _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : Array.Empty<DebugVariableItem>(),
                 expr => _currentVm != null ? _currentVm.EvaluateExpressionAsync(expr) : Task.FromResult((false, "", "")),
-                expr => _ = _currentVm?.AddWatchExpressionAsync(expr));
+                expr => _ = _currentVm?.AddWatchExpressionAsync(expr),
+                exploreAction: item => OpenCollectionView(item),
+                viewAction: item => OpenValueViewer(item),
+                getChildrenFunc: item => _currentVm != null ? _currentVm.GetVariableChildrenAsync(item) : Task.FromResult<IReadOnlyList<DebugVariableItem>>(item.Children));
         }
     }
 
@@ -384,7 +472,19 @@ public partial class CSharpCodeStudioView : UserControl
         {
             try
             {
-                _foldingStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                if (_editorLanguage == null)
+                {
+                    _foldingStrategy.UpdateFoldings(_foldingManager, _editor.Document);
+                }
+                else if (_editorLanguage.Folding is { } folding)
+                {
+                    var foldings = folding.CreateFoldings(_editor.Document, out var firstErrorOffset);
+                    _foldingManager.UpdateFoldings(foldings, firstErrorOffset);
+                }
+                else
+                {
+                    _foldingManager.Clear();
+                }
             }
             catch
             {
@@ -440,14 +540,24 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestReloadEditorText -= OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
             _currentVm.RequestFocusNotes -= OnFocusNotes;
+            _currentVm.RequestExploreVariable -= OpenCollectionView;
+            _currentVm.RequestViewVariable -= OpenValueViewer;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
             _completionController?.Dispose();
             _completionController = null;
             _quickInfoController?.Dispose();
             _quickInfoController = null;
+            _languageAssistant?.Dispose();
+            _languageAssistant = null;
+            _editorLanguage = null;
         }
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
+        UpdateDeckPlacement();
+        if (_currentVm != null && Bounds.Width > 0)
+        {
+            _currentVm.UpdateAdaptiveDeckWidth(Bounds.Width);
+        }
 
         if (_currentVm != null && _editor != null)
         {
@@ -461,21 +571,26 @@ public partial class CSharpCodeStudioView : UserControl
             _currentVm.RequestReloadEditorText += OnReloadEditorText;
             _currentVm.RequestSwitchTabDocument += OnSwitchTabDocument;
             _currentVm.RequestFocusNotes += OnFocusNotes;
+            _currentVm.RequestExploreVariable += OpenCollectionView;
+            _currentVm.RequestViewVariable += OpenValueViewer;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
 
-            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
 
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
-                LanguageMode = _currentVm.CurrentLanguageMode
+                LanguageMode = _currentVm.CurrentLanguageMode,
+                IsSuppressed = () => _editorLanguage?.Has(LanguageCapabilities.Completion) == false
             };
 
             // While the debugger is paused, hovering shows the debug data tip instead.
             var compiler = _currentVm.CompilerService;
             _quickInfoController = new CSharpQuickInfoController(_editor, () => new CSharpQuickInfoService(compiler))
             {
-                IsSuppressed = () => _currentVm?.IsPaused == true
+                IsSuppressed = () => _currentVm?.IsPaused == true || _editorLanguage?.Has(LanguageCapabilities.QuickInfo) == false
             };
+
+            ApplyEditorLanguage(_currentVm.ActiveLanguage);
 
             _editor.WordWrap = _currentVm.IsWordWrap;
             if (_editor.Options != null)
@@ -511,6 +626,13 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSwitchTabDocument(StudioTabItemViewModel tab)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSwitchTabDocument(tab));
+            return;
+        }
+
+        if (_currentVm != null) ApplyEditorLanguage(_currentVm.Languages.LanguageOf(tab.Document));
         SetStepLine(-1);
 
         _isUpdatingText = true;
@@ -541,6 +663,11 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnReloadEditorText()
     {
         if (_editor == null || _currentVm == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(OnReloadEditorText);
+            return;
+        }
 
         _isUpdatingText = true;
         try
@@ -591,6 +718,66 @@ public partial class CSharpCodeStudioView : UserControl
         {
             SetStepLine(-1);
         }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.ActiveLanguage))
+        {
+            ApplyEditorLanguage(_currentVm.ActiveLanguage);
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsDeckDockedToRight))
+        {
+            UpdateDeckPlacement();
+        }
+    }
+
+    private void OnViewSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width > 0 && _currentVm != null)
+        {
+            _currentVm.UpdateAdaptiveDeckWidth(e.NewSize.Width);
+        }
+    }
+
+    private void UpdateDeckPlacement()
+    {
+        var bottomContainer = this.FindControl<ContentControl>("BottomDeckContainer");
+        var rightContainer = this.FindControl<ContentControl>("RightDeckContainer");
+        if (bottomContainer == null || rightContainer == null) return;
+
+        bool isRight = _currentVm?.IsDeckDockedToRight ?? false;
+        if (isRight)
+        {
+            bottomContainer.Content = null;
+            rightContainer.Content = _deckControl;
+        }
+        else
+        {
+            rightContainer.Content = null;
+            bottomContainer.Content = _deckControl;
+        }
+    }
+
+    /// <summary>Makes the editor fit <paramref name="language"/>. Runs before a document of it is shown.</summary>
+    private void ApplyEditorLanguage(ILanguageDefinition language)
+    {
+        if (_editor == null) return;
+
+        var changed = !ReferenceEquals(_editorLanguage, language);
+        _editorLanguage = language;
+        _editor.SyntaxHighlighting = language.GetHighlighting(IsDarkTheme());
+        _breakpointMargin.IsVisible = language.Has(LanguageCapabilities.Breakpoints);
+        if (!changed) return;
+
+        _editor.TextArea.IndentationStrategy = language.CreateIndentationStrategy(_editor.Options);
+        _completionController?.Close();
+        _quickInfoController?.Hide();
+        _languageAssistant?.Dispose();
+        _languageAssistant = null;
+        if (language.EditorAssistants is { } assistants)
+        {
+            var vm = _currentVm;
+            _languageAssistant = assistants.Attach(_editor, new EditorAssistantContext(IsSuppressed: () => vm?.IsPaused == true));
+        }
+
+        UpdateCodeFolding();
     }
 
     private void OnEditorTextChanged(object? sender, EventArgs e)
@@ -712,18 +899,72 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnSetPausedLine(int line)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSetPausedLine(line));
+            return;
+        }
+
         if (line == -1)
         {
             _debugHoverController?.HideTip();
+            _inlineDebugRenderer.PausedLine = -1;
+            _inlineDebugRenderer.Variables = null;
+        }
+        else
+        {
+            _inlineDebugRenderer.PausedLine = line;
+            _inlineDebugRenderer.Document = _editor.Document;
+            _inlineDebugRenderer.Variables = _currentVm?.Locals != null ? (IReadOnlyList<DebugVariableItem>)_currentVm.Locals : null;
         }
         _breakpointMargin.CurrentPausedLine = line;
         _debugLineRenderer.HighlightedLine = line;
         _editor.TextArea.TextView.InvalidateVisual();
     }
 
+    private async void OpenCollectionView(DebugVariableItem item)
+    {
+        if (_collectionViewOverlay == null || item == null) return;
+
+        if (item.CanExpand && !item.ChildrenLoaded && _currentVm != null)
+        {
+            try
+            {
+                await _currentVm.GetVariableChildrenAsync(item);
+            }
+            catch
+            {
+                // Ignore child load failure
+            }
+        }
+
+        _collectionViewOverlay.SetData(item);
+        _collectionViewOverlay.IsVisible = true;
+    }
+
+    private void OpenValueViewer(DebugVariableItem item)
+    {
+        if (_valueViewerOverlay == null || item == null) return;
+        _valueViewerOverlay.SetValue(item);
+        _valueViewerOverlay.IsVisible = true;
+    }
+
     private void OnSyncBreakpoints(IEnumerable<int> lines)
     {
-        _breakpointMargin.SetBreakpoints(lines);
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnSyncBreakpoints(lines));
+            return;
+        }
+
+        if (_currentVm != null)
+        {
+            _breakpointMargin.SetBreakpoints(_currentVm.Breakpoints);
+        }
+        else
+        {
+            _breakpointMargin.SetBreakpoints(lines);
+        }
     }
 
     private void ToggleFoldAtCaret(bool? fold = null)
@@ -764,6 +1005,11 @@ public partial class CSharpCodeStudioView : UserControl
     private void OnNavigateToCaret(int line, int col)
     {
         if (_editor == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnNavigateToCaret(line, col));
+            return;
+        }
 
         try
         {
@@ -790,20 +1036,25 @@ public partial class CSharpCodeStudioView : UserControl
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.StorageProvider is not { } storageProvider) return;
 
+        var registry = _currentVm.Languages.Registry;
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open Project or Script File",
             AllowMultiple = false,
             FileTypeFilter = new List<FilePickerFileType>
             {
-                new("FryPDF Project / Document (*.frycsproj, *.frynbproj, *.frycs, *.frynb, *.csproj, *.cs, *.csx, *.zip)")
+                new("FryPDF Project / Document / Source File")
                 {
-                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.csproj", "*.cs", "*.csx", "*.zip" }
+                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.csproj", "*.cs", "*.csx", "*.zip" }.Concat(LanguageFileTypes.Patterns(registry)).ToArray()
                 },
                 new("C# Files (*.cs, *.csx, *.frycs)")
                 {
                     Patterns = new[] { "*.cs", "*.csx", "*.frycs" }
-                },
+                }
+            }
+            .Concat(LanguageFileTypes.PerLanguage(registry))
+            .Concat(new List<FilePickerFileType>
+            {
                 new("C# Notebooks (*.frynb, *.frynbproj)")
                 {
                     Patterns = new[] { "*.frynb", "*.frynbproj" }
@@ -816,7 +1067,7 @@ public partial class CSharpCodeStudioView : UserControl
                 {
                     Patterns = new[] { "*.*" }
                 }
-            }
+            }).ToList()
         });
 
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)
@@ -878,6 +1129,12 @@ public partial class CSharpCodeStudioView : UserControl
     public void ScrollToAndSelectLine(int lineNumber)
     {
         if (_editor?.Document == null) return;
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ScrollToAndSelectLine(lineNumber));
+            return;
+        }
+
         if (lineNumber < 1) lineNumber = 1;
         if (lineNumber > _editor.Document.LineCount) lineNumber = _editor.Document.LineCount;
 
@@ -891,6 +1148,7 @@ public partial class CSharpCodeStudioView : UserControl
     {
         if (_editor?.Document == null) return;
         var document = _editor.Document;
+        var prefix = _editorLanguage?.LineCommentPrefix ?? "//";
         var selection = _editor.TextArea.Selection;
         int startLine;
         int endLine;
@@ -913,7 +1171,7 @@ public partial class CSharpCodeStudioView : UserControl
             {
                 var line = document.GetLineByNumber(i);
                 var lineText = document.GetText(line.Offset, line.Length).TrimStart();
-                if (!string.IsNullOrEmpty(lineText) && !lineText.StartsWith("//"))
+                if (!string.IsNullOrEmpty(lineText) && !lineText.StartsWith(prefix, StringComparison.Ordinal))
                 {
                     allCommented = false;
                     break;
@@ -926,10 +1184,10 @@ public partial class CSharpCodeStudioView : UserControl
                 var lineText = document.GetText(line.Offset, line.Length);
                 if (allCommented)
                 {
-                    int slashIdx = lineText.IndexOf("//");
+                    int slashIdx = lineText.IndexOf(prefix, StringComparison.Ordinal);
                     if (slashIdx >= 0)
                     {
-                        int removeLen = (slashIdx + 2 < lineText.Length && lineText[slashIdx + 2] == ' ') ? 3 : 2;
+                        int removeLen = (slashIdx + prefix.Length < lineText.Length && lineText[slashIdx + prefix.Length] == ' ') ? prefix.Length + 1 : prefix.Length;
                         document.Remove(line.Offset + slashIdx, removeLen);
                     }
                 }
@@ -937,7 +1195,7 @@ public partial class CSharpCodeStudioView : UserControl
                 {
                     int indent = 0;
                     while (indent < lineText.Length && char.IsWhiteSpace(lineText[indent])) indent++;
-                    document.Insert(line.Offset + indent, "// ");
+                    document.Insert(line.Offset + indent, prefix + " ");
                 }
             }
         }

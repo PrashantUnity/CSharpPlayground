@@ -10,8 +10,11 @@ public partial class CSharpCodeStudioViewModel
 {
     private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
+        var sourceLanguage = document.SourceFilePath != null ? _languages.LanguageOf(document) : null;
         return new StudioTabItemViewModel(document, isActive)
         {
+            LanguageIconKind = sourceLanguage?.IconKind,
+            LanguageIconColor = sourceLanguage?.AccentHex,
             OnSelect = t => { _ = SwitchToTabAsync(t); },
             OnClose = t => { _ = CloseTabAsync(t); },
             OnCloseOthers = t => { _ = CloseOtherTabsAsync(t); },
@@ -83,6 +86,7 @@ public partial class CSharpCodeStudioViewModel
         IsDebugging = tab.IsDebugging;
         IsPaused = tab.IsPaused;
         SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
+        IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
 
         Diagnostics.Clear();
         foreach (var d in tab.Diagnostics) Diagnostics.Add(d);
@@ -145,6 +149,7 @@ public partial class CSharpCodeStudioViewModel
         int index = OpenTabs.IndexOf(tab);
         if (index >= 0)
         {
+            StopTabRun(tab);
             OpenTabs.Remove(tab);
             if (tab.IsActive && OpenTabs.Count > 0)
             {
@@ -161,6 +166,7 @@ public partial class CSharpCodeStudioViewModel
         var toRemove = OpenTabs.Where(t => t.Id != tab.Id).ToList();
         foreach (var t in toRemove)
         {
+            StopTabRun(t);
             OpenTabs.Remove(t);
         }
         if (!tab.IsActive)
@@ -178,6 +184,7 @@ public partial class CSharpCodeStudioViewModel
         var toRemove = OpenTabs.Skip(index + 1).ToList();
         foreach (var t in toRemove)
         {
+            StopTabRun(t);
             OpenTabs.Remove(t);
         }
         if (!tab.IsActive && !OpenTabs.Any(t => t.IsActive))
@@ -196,6 +203,7 @@ public partial class CSharpCodeStudioViewModel
             Notes = string.Empty
         };
         var freshTab = CreateTab(freshScript, isActive: true);
+        foreach (var t in OpenTabs) StopTabRun(t);
         OpenTabs.Clear();
         OpenTabs.Add(freshTab);
         await SwitchToTabAsync(freshTab);
@@ -243,7 +251,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public async Task ExportScriptToCsAsync()
     {
-        if (Script == null) return;
+        if (Script == null || Script.SourceFilePath != null) return;
         var content = DocumentExportService.ExportScriptToCs(Script);
         await CopyTextToClipboardAsync(content);
         ConsoleOutput += $"\n[Export] Script '{Script.Title}' exported to standalone C# source (.cs) and copied to clipboard!\n";
@@ -252,7 +260,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public async Task ExportScriptToCsxAsync()
     {
-        if (Script == null) return;
+        if (Script == null || Script.SourceFilePath != null) return;
         var content = DocumentExportService.ExportScriptToCsx(Script);
         await CopyTextToClipboardAsync(content);
         ConsoleOutput += $"\n[Export] Script '{Script.Title}' exported to C# Script (.csx) and copied to clipboard!\n";
@@ -294,6 +302,9 @@ public partial class CSharpCodeStudioViewModel
             new() { Title = "File: Close All Tabs", Subtitle = "Close all open script tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => _ = CloseAllTabsAsync() },
             new() { Title = "Format: Format Document", Subtitle = "Format C# code using Roslyn syntax normalizer", Category = "Editor", IconKind = "FormatPaint", IconColorHex = "#75D59A", ShortcutHint = "Shift+Alt+F", ExecuteAction = FormatCode },
             new() { Title = "Editor: Toggle Word Wrap", Subtitle = "Toggle soft line wrapping in editor canvas", Category = "View", IconKind = "Wrap", IconColorHex = "#58A6FF", ShortcutHint = "Alt+Z", ExecuteAction = ToggleWordWrap },
+            new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase editor and terminal font size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
+            new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease editor and terminal font size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
+            new() { Title = "View: Reset Font Zoom", Subtitle = "Reset typography to default 100% (13px)", Category = "View", IconKind = "MagnifyScan", IconColorHex = "#D97706", ShortcutHint = "Ctrl+0", ExecuteAction = ResetZoom },
             new() { Title = "View: Toggle Primary Side Bar", Subtitle = "Expand or collapse the primary activity sidebar", Category = "View", IconKind = "DockLeft", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+B", ExecuteAction = ToggleSideBar },
             new() { Title = "View: Toggle Bottom Panel", Subtitle = "Expand or collapse problems & output deck", Category = "View", IconKind = "DockBottom", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+J", ExecuteAction = ToggleBottomDeck },
             new() { Title = "View: Go to Line...", Subtitle = "Jump to specific line number in the active editor", Category = "Navigation", IconKind = "RayStartArrow", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+G", ExecuteAction = ShowGoToLine },

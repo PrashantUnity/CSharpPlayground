@@ -70,7 +70,7 @@
                     <Border Grid.Row="0" Height="36"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                             BorderThickness="0,0,0,1"
-                            Padding="12,0,8,0">
+                            Padding="10,0,6,0">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding SideBarTitle}"
                                        FontSize="11" FontWeight="SemiBold"
@@ -78,11 +78,26 @@
                                        VerticalAlignment="Center" />
 
                             <!-- Explorer Tools (View 0) -->
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center"
                                         IsVisible="{Binding IsExplorerActive}">
                                 <Button Command="{Binding NewScriptCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Script">
                                     <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
+                                <!-- "New Python File" and one button per other source-file language. -->
+                                <ItemsControl ItemsSource="{Binding NewFileOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="1" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:NewFileOption">
+                                            <Button Command="{Binding Command}" Classes="explorer-tool-btn" ToolTip.Tip="{Binding Label}">
+                                                <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{Binding AccentHex}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <Button Command="{Binding NewFolderCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Folder">
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                 </Button>
@@ -281,29 +296,7 @@
                         </ScrollViewer>
 
                         <!-- Page 3: Dependencies & NuGet -->
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Margin="10,8" Spacing="8">
-                                <TextBlock Text="Referenced .NET Runtime &amp; Studio Assemblies"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,0,0,2" />
-
-                                <ItemsControl ItemsSource="{Binding References}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:AssemblyReferenceViewModel">
-                                            <Border Padding="8,6" Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="{StaticResource M3ShapeCornerSmall}" Margin="0,0,0,4">
-                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariant" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                                        <TextBlock Text="{Binding AssemblyPath}" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextTrimming="CharacterEllipsis" />
-                                                    </StackPanel>
-                                                    <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled}" IsEnabled="{Binding !IsSystem}" VerticalAlignment="Center" />
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <controls:StudioDependenciesPanelControl />
 
                         <!-- Page 4: Scratchpad & Documentation Notes: rendered markdown, or the markdown source while editing -->
                         <Grid RowDefinitions="Auto,*">
@@ -461,7 +454,7 @@
                             <!-- Start Debugging Button -->
                             <Button Command="{Binding DebugCodeCommand}"
                                     Classes="cs-toolbar-tonal"
-                                    IsVisible="{Binding !IsExecuting}"
+                                    IsVisible="{Binding ShowDebugButton}"
                                     ToolTip.Tip="Start Debugging (F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
@@ -472,7 +465,7 @@
                             <Rectangle Width="1" Height="16" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="2,0" />
 
                             <!-- Format Document -->
-                            <Button Command="{Binding FormatCodeCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Format Document (Shift+Alt+F)">
+                            <Button Command="{Binding FormatCodeCommand}" Classes="cs-toolbar-icon" IsVisible="{Binding SupportsFormatting}" ToolTip.Tip="Format Document (Shift+Alt+F)">
                                 <materialIcons:MaterialIcon Kind="FormatAlignLeft" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 
@@ -491,6 +484,14 @@
                                 <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </Button>
 
+                            <!-- Side-by-Side Right Dock / Bottom Dock Toggle -->
+                            <Button Command="{Binding ToggleDeckPositionCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="{Binding DeckPositionTooltip}">
+                                <Panel>
+                                    <materialIcons:MaterialIcon Kind="DockRight" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsDeckDockedToRight}" />
+                                    <materialIcons:MaterialIcon Kind="DockBottom" Width="15" Height="15" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding IsDeckDockedToRight}" />
+                                </Panel>
+                            </Button>
+
                             <!-- Save Script -->
                             <Button Command="{Binding SaveCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Save Script (Ctrl+S)">
                                 <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -502,25 +503,58 @@
                 <!-- Row 1: VS Code Breadcrumbs Bar -->
                 <controls:StudioBreadcrumbsControl Grid.Row="1" />
 
-                <!-- Row 2: AvaloniaEdit Code Canvas -->
-                <Grid Grid.Row="2" Name="EditorHostGrid">
-                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
-                        <avaloniaEdit:TextEditor Name="Editor"
-                                                 FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
-                                                 FontSize="13"
-                                                 ShowLineNumbers="True"
-                                                 WordWrap="False"
-                                                 HorizontalScrollBarVisibility="Auto"
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                                 Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                    </Border>
+                <!-- Row 2: AvaloniaEdit Code Canvas + Right Dock Host -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="300" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="{Binding RightDeckGridLength, Mode=TwoWay}" MinWidth="0" />
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Live Debug Hover Data Tip Card -->
-                    <controls:DebugHoverDataTipControl Name="DebugHoverTip"
-                                                       HorizontalAlignment="Left"
-                                                       VerticalAlignment="Top"
-                                                       IsVisible="False" />
+                    <Grid Grid.Column="0" Name="EditorHostGrid">
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+                            <avaloniaEdit:TextEditor Name="Editor"
+                                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
+                                                     FontSize="{Binding EditorFontSize}"
+                                                     ShowLineNumbers="True"
+                                                     WordWrap="False"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                                     Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                        </Border>
+
+                        <!-- Live Debug Hover Data Tip Card -->
+                        <controls:DebugHoverDataTipControl Name="DebugHoverTip"
+                                                           HorizontalAlignment="Left"
+                                                           VerticalAlignment="Top"
+                                                           IsVisible="False" />
+
+                        <!-- Interactive Collection View Overlay (Data Explorer) -->
+                        <controls:CollectionViewControl Name="CollectionViewOverlay"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        IsVisible="False" />
+
+                        <!-- Text / JSON Value Viewer Overlay -->
+                        <controls:ValueViewerControl Name="ValueViewerOverlay"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center"
+                                                     IsVisible="False" />
+                    </Grid>
+
+                    <!-- Vertical Splitter (Editor vs Right Dock) -->
+                    <GridSplitter Grid.Column="1"
+                                  Classes="studio-sash"
+                                  Width="4"
+                                  ResizeDirection="Columns"
+                                  Cursor="SizeWestEast"
+                                  IsVisible="{Binding ShowRightDeckSplitter}" />
+
+                    <!-- Collapsible Right Tool Deck Host -->
+                    <ContentControl Grid.Column="2"
+                                    Name="RightDeckContainer"
+                                    IsVisible="{Binding ShowRightDeck}" />
                 </Grid>
 
                 <!-- Row 3: Horizontal Splitter (Editor vs Bottom Dock) -->
@@ -529,11 +563,12 @@
                               Height="4"
                               ResizeDirection="Rows"
                               Cursor="SizeNorthSouth"
-                              IsVisible="{Binding IsBottomDeckExpanded}" />
+                              IsVisible="{Binding ShowBottomDeckSplitter}" />
 
-                <!-- Row 4: Collapsible Bottom Tool Deck -->
-                <controls:StudioBottomDeckControl Grid.Row="4"
-                                                  IsVisible="{Binding IsBottomDeckExpanded}" />
+                <!-- Row 4: Collapsible Bottom Tool Deck Host -->
+                <ContentControl Grid.Row="4"
+                                Name="BottomDeckContainer"
+                                IsVisible="{Binding ShowBottomDeck}" />
             </Grid>
 
         </Grid>

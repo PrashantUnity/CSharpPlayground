@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.KeymapSettingsSectionControl"
+             x:DataType="vm:CSharpSettingsViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,20,28,28" Spacing="16">
+
+            <!-- 1. HERO HEADER CARD WITH FILTER BAR -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16">
+                <Grid RowDefinitions="Auto,16,Auto">
+                    <!-- Title & Badge -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8"
+                                Background="{DynamicResource M3SurfaceContainerHighestBrush}"
+                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="26" Height="26"
+                                                        Foreground="{DynamicResource M3PrimaryBrush}"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="Keyboard Shortcuts &amp; Keymap" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            <TextBlock Text="Standard Visual Studio Code keyboard bindings registered across editor, side bar, and bottom tool deck" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource M3PrimaryBrush}" />
+                                <TextBlock Text="VS Code Standard" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Filter Controls: Search & Category Chips -->
+                    <Grid Grid.Row="2" ColumnDefinitions="280,16,*">
+                        <!-- Keymap Search Input -->
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding KeymapSearchQuery, Mode=TwoWay}"
+                                 PlaceholderText="Filter shortcuts (e.g. F5, debug, side bar)…"
+                                 FontSize="12" Height="32">
+                            <TextBox.InnerLeftContent>
+                                <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="6,0,0,0" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </TextBox.InnerLeftContent>
+                        </TextBox>
+
+                        <!-- Category Filter Chips -->
+                        <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding KeymapCategoryChips}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KeymapCategoryChip">
+                                        <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectKeymapCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
+                                                CommandParameter="{Binding}"
+                                                Classes="snippet-action-btn"
+                                                Classes.active="{Binding IsSelected}"
+                                                Height="30" Padding="12,0" VerticalContentAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="11.5" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- 2. SHORTCUTS TABLE CARD -->
+            <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="18,16">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="180,240,*">
+                        <TextBlock Grid.Column="0" Text="COMMAND / ACTION" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
+                        <TextBlock Grid.Column="1" Text="KEYBINDING" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
+                        <TextBlock Grid.Column="2" Text="DESCRIPTION &amp; SCOPE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
+                    </Grid>
+
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <ItemsControl ItemsSource="{Binding FilteredShortcuts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:KeymapShortcutItem">
+                                    <Border BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="14,10">
+                                        <Grid ColumnDefinitions="180,240,*">
+                                            <!-- Action Name & Category Badge -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4">
+                                                <TextBlock Text="{Binding Action}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="5,1" HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding Category}" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Formatted Keycap Pill -->
+                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                                                    BorderThickness="1" CornerRadius="5"
+                                                    Padding="9,4" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Shortcut}" FontSize="11.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            </Border>
+
+                                            <!-- Description -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

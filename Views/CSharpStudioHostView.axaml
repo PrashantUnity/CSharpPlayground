@@ -33,6 +33,9 @@
         <DataTemplate DataType="vm:CSharpBlindProblemsViewModel">
             <views:CSharpBlindProblemsView />
         </DataTemplate>
+        <DataTemplate DataType="vm:CSharpSettingsViewModel">
+            <views:CSharpSettingsView />
+        </DataTemplate>
     </UserControl.DataTemplates>
 
     <!-- Studio Host Active Page -->

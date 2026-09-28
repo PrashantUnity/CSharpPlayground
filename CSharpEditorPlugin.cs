@@ -8,6 +8,7 @@ using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using PdfEditorApp.Core.Plugins.Manifests;
 using PdfEditorApp.Core.Plugins.Settings;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -391,11 +392,71 @@ public class CSharpEditorPlugin : IFryPlugin
                         nbVm.DeleteActiveCellCommand.Execute(null);
                     }
                 }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.zoom_in",
+                Title = "Zoom In",
+                Description = "Increase code canvas and terminal font size.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+=",
+                MacGesture = "Cmd+=",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ZoomInCommand.Execute(null);
+                    else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ZoomInCommand.Execute(null);
+                }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.zoom_out",
+                Title = "Zoom Out",
+                Description = "Decrease code canvas and terminal font size.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+-",
+                MacGesture = "Cmd+-",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ZoomOutCommand.Execute(null);
+                    else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ZoomOutCommand.Execute(null);
+                }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.editor.zoom_reset",
+                Title = "Reset Zoom",
+                Description = "Reset typography to default 100% (13px).",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+0",
+                MacGesture = "Cmd+0",
+                Scope = ShortcutScope.Context,
+                ContextId = "CSharpStudio",
+                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
+                Action = _ =>
+                {
+                    if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ResetZoomCommand.Execute(null);
+                    else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ResetZoomCommand.Execute(null);
+                }
             })
         };
 
+        // Programs the studio starts (Python runs and notebook kernels) end with it: when the app exits, and when the plugin
+        // is unloaded.
+        var killProcessesOnExit = ProcessRegistry.KillAllOnExit();
+
         ctx.RegisterEffect(() =>
         {
+            killProcessesOnExit.Dispose();
+            ProcessRegistry.KillAll();
             navReg.Dispose();
             cmdReg.Dispose();
             statusReg.Dispose();

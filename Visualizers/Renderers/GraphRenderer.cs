@@ -98,7 +98,9 @@ public class GraphRenderer : VisualizerRendererBase
             }
             else
             {
-                styling = ("#1e293b", "#475569", "#ffffff");
+                styling = IsDarkTheme
+                    ? ("#1e293b", "#475569", "#ffffff")
+                    : ("#f1f5f9", "#cbd5e1", "#0f172a");
             }
 
             var fillBrush = GetBrush(styling.fillHex);
@@ -140,7 +142,7 @@ public class GraphRenderer : VisualizerRendererBase
             if (!string.IsNullOrEmpty(node.SubLabel))
             {
                 double subFontSize = Math.Max(8.0, 9.0 * options.Zoom);
-                var subFt = CreateFormattedText(node.SubLabel, subFontSize, GetBrush("#94a3b8"), FontWeight.Medium);
+                var subFt = CreateFormattedText(node.SubLabel, subFontSize, MutedTextBrush, FontWeight.Medium);
                 double subX = center.X - subFt.Width / 2.0;
                 double subY = center.Y + radius + 3.0;
                 context.DrawText(subFt, new Point(subX, subY));

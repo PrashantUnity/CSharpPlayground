@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
     <!-- ===================================================================== -->
     <!-- Nexus Dashboard Styles — consumed by CSharpManagerView (the Hub).      -->
@@ -49,6 +50,46 @@
         <Setter Property="RenderTransform" Value="translateY(-2px)" />
     </Style>
 
+    <!-- Selected Glass Card State -->
+    <Style Selector="Border.nexus-glass-card.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BoxShadow" Value="0 4 20 0 #442F81F7" />
+    </Style>
+    <Style Selector="Button.nexus-card-btn:pointerover Border.nexus-glass-card.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    </Style>
+
+    <!-- Direct Use Button on Template Card -->
+    <Style Selector="Button.nexus-card-use-btn">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-card-use-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Border.nexus-glass-card.selected Button.nexus-card-use-btn">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+
     <!-- Sidebar Nav Button -->
     <Style Selector="Button.nexus-nav-item">
         <Setter Property="Background" Value="Transparent" />
@@ -81,7 +122,7 @@
     <!-- Primary Action Button (New Notebook) -->
     <Style Selector="Button.nexus-btn-primary">
         <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
@@ -99,6 +140,17 @@
     </Style>
     <Style Selector="Button.nexus-btn-primary:pointerover">
         <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.nexus-btn-primary:pressed">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.nexus-btn-primary materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.nexus-btn-primary TextBlock">
+        <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
 
     <!-- Surface Action Button (New Script) -->
@@ -126,11 +178,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
     </Style>
 
-    <!-- Ghost Icon Button -->
-    <Style Selector="Button.nexus-btn-ghost">
+    <!-- Ghost Icon Button & ToggleButton -->
+    <Style Selector="Button.nexus-btn-ghost, ToggleButton.nexus-btn-ghost">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -138,11 +191,39 @@
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
             </Transitions>
         </Setter>
     </Style>
-    <Style Selector="Button.nexus-btn-ghost:pointerover">
-        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+    <Style Selector="Button.nexus-btn-ghost:pointerover, ToggleButton.nexus-btn-ghost:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+    <Style Selector="Button.nexus-btn-ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nexus-btn-ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:checked">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:checked:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:not(:checked) materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.nexus-btn-ghost:checked materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
     <!-- Nexus Input TextBox -->

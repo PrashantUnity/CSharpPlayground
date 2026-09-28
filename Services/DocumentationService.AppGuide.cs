@@ -22,7 +22,8 @@ public partial class DocumentationService
                 CreateVsCodeLayoutArticle(),
                 CreateScriptsVsNotebooksArticle(),
                 CreateDebuggingGuideArticle(),
-                CreateNuGetGuideArticle()
+                CreateNuGetGuideArticle(),
+                CreateLanguagesGuideArticle()
             }
         };
     }
@@ -284,6 +285,150 @@ var payload = new { Project = ""FryPDF"", Version = 10.0, Features = new[] { ""R
 string json = JsonConvert.SerializeObject(payload, Formatting.Indented);
 
 Console.WriteLine(json);"
+                }
+            }
+        };
+    }
+
+    private DocArticle CreateLanguagesGuideArticle()
+    {
+        return new DocArticle
+        {
+            Id = "languages_python",
+            Title = "Languages & Python",
+            Subtitle = "Run .py files, mix Python and C# cells in one notebook, share values between them, and install packages.",
+            ReadingTime = "5 min read",
+            Summary = "The studio runs your installed Python, so numpy, pandas, matplotlib and every other package work. Notebooks are polyglot: each cell runs in its language's kernel.",
+            Keywords = new List<string> { "python", "py", "numpy", "pandas", "matplotlib", "pip", "venv", "polyglot", "share", "kernel", "language", "toolchain", "input" },
+            Sections = new List<DocSection>
+            {
+                new()
+                {
+                    Heading = "Python files in Code Studio",
+                    Content = "Create one with New File → Python in the Explorer (or open any .py file in your workspace). The file is edited and saved as plain Python, in place:",
+                    BulletPoints = new List<string>
+                    {
+                        "F5 or Ctrl+F5 runs it with Python (there's no Python debugger yet, so F5 runs too); Stop ends it.",
+                        "Output appears in the Terminal as it's printed. When the program calls input(), type in the Terminal's input row and press Enter.",
+                        "A traceback puts the failing line in Problems, with the column. A missing module (ModuleNotFoundError) gets an \"Install <package>\" fix.",
+                        "The status bar shows which Python runs the file; click it to pick another or to create the studio environment."
+                    }
+                },
+                new()
+                {
+                    Heading = "Which Python runs",
+                    Content = "The studio uses the first of these it finds (Python 3.9 or newer):",
+                    BulletPoints = new List<string>
+                    {
+                        "The one you picked in the status bar.",
+                        "The project's virtual environment: a .venv, venv or env folder (with pyvenv.cfg) next to the file or above it, up to the workspace root.",
+                        "The studio environment, once it exists (see Packages below).",
+                        "What your terminal would run (python3 on your login shell's PATH), then the usual install places: Homebrew, python.org, pyenv, Conda, uv, the Windows launcher."
+                    },
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "The Hub's STUDIO ENVIRONMENT card shows the Python the studio found, or what's missing and how to install it."
+                },
+                new()
+                {
+                    Heading = "Python cells in notebooks",
+                    Content = "A notebook can mix languages, as in Polyglot Notebooks. Each cell runs in its language's kernel, and each kernel keeps its own variables:",
+                    BulletPoints = new List<string>
+                    {
+                        "Pick a cell's language from the chip in its toolbar (C# / PY), or start the cell with a line such as #!python or #!csharp.",
+                        "New cells are written in the language of the cell they're added next to; the kernel pill in the header sets the notebook's default.",
+                        "Python cells show pandas DataFrames as tables, matplotlib figures inline (plt.show()), and objects with _repr_html_ or _repr_png_ as HTML and images.",
+                        "input() asks in the cell; Stop interrupts the cell and the kernel keeps its variables. Restart kernels (on the kernel pill) starts every kernel afresh."
+                    }
+                },
+                new()
+                {
+                    Heading = "Sharing values between languages (#!share)",
+                    Content = "Put #!share --from <language> <name> [--as <new name>] at the top of a cell to copy a variable in from another language's kernel. Values travel as JSON:",
+                    BulletPoints = new List<string>
+                    {
+                        "C# arrays and lists arrive in Python as lists; Python lists arrive in C# as the array that fits (int[], double[], string[], double[][]…).",
+                        "Dictionaries and objects become dicts in Python and Dictionary<string, object> in C#; numbers, text, true/false and null map as you'd expect.",
+                        "numpy arrays and pandas Series share their values; a DataFrame shares its rows as records.",
+                        "A C# variable that already exists keeps its type and gets the value; otherwise it's declared with the type that fits."
+                    },
+                    CalloutType = DocCalloutType.Warning,
+                    CalloutText = "Only data can be shared: functions, controls, images and streams can't, and the cell says so."
+                },
+                new()
+                {
+                    Heading = "Packages (%pip)",
+                    Content = "Start a Python cell with %pip install <package> (or click Install on a missing-module error) to install into the Python the notebook runs:",
+                    BulletPoints = new List<string>
+                    {
+                        "A Python that won't take packages (Homebrew's or Debian's, marked \"externally managed\") gets a studio environment instead: a virtual environment the studio creates once, which still sees that Python's own packages.",
+                        "The running kernel sees the new package straight away; its variables are kept.",
+                        "A project .venv takes precedence, so a project's own environment is always the one used."
+                    }
+                },
+                new()
+                {
+                    Heading = "When Python isn't installed",
+                    Content = "The Terminal, the notebook cell and the Hub say what's missing and how to get it:",
+                    BulletPoints = new List<string>
+                    {
+                        "macOS: brew install python, or the installer from python.org.",
+                        "Windows: winget install Python.Python.3.13 (the Microsoft Store shortcut named python.exe isn't a real Python).",
+                        "Linux: sudo apt install python3 python3-venv (or your distribution's equivalent).",
+                        "Then click Look again (the Hub, or the status bar's Python menu): no restart needed."
+                    }
+                },
+                new()
+                {
+                    Heading = "Not there yet",
+                    Content = "Python support runs real Python, but the editor's C# helpers don't cover it yet:",
+                    BulletPoints = new List<string>
+                    {
+                        "No completion, hover or live error squiggles for Python, and no Python debugger or breakpoints.",
+                        "A cell keeps one output of each kind, so of several figures the last one shows.",
+                        "Values cross between languages as JSON only."
+                    }
+                }
+            },
+            CodeSnippets = new List<DocCodeSnippet>
+            {
+                new()
+                {
+                    Id = "snip_python_dataframe",
+                    Title = "A Python cell with numpy and pandas",
+                    Description = "Opens as a notebook with one Python cell. The DataFrame shows as a table; a missing package gets an Install button.",
+                    Language = "python",
+                    TargetKind = WorkspaceItemKind.Notebook,
+                    Code = @"import numpy as np
+import pandas as pd
+
+values = np.array([3, 1, 4, 1, 5, 9, 2, 6])
+frame = pd.DataFrame({""n"": values, ""square"": values ** 2})
+frame"
+                },
+                new()
+                {
+                    Id = "snip_python_figure",
+                    Title = "A matplotlib figure in a cell",
+                    Description = "plt.show() draws the figure inline, under the cell.",
+                    Language = "python",
+                    TargetKind = WorkspaceItemKind.Notebook,
+                    Code = @"import matplotlib.pyplot as plt
+
+plt.figure(figsize=(6, 2.5))
+plt.plot([3, 1, 4, 1, 5, 9, 2, 6], marker=""o"")
+plt.title(""A figure from Python"")
+plt.show()"
+                },
+                new()
+                {
+                    Id = "snip_share_values",
+                    Title = "Sharing a C# value with Python",
+                    Description = "Run a C# cell with var nums = new[] { 3, 1, 4 }; first, then this Python cell reads it and makes squares, which a C# cell can take back with #!share --from python squares.",
+                    Language = "python",
+                    TargetKind = WorkspaceItemKind.Notebook,
+                    Code = @"#!share --from csharp nums
+squares = [n * n for n in nums]
+print(sum(squares))"
                 }
             }
         };

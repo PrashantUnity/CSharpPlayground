@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
@@ -28,9 +29,10 @@ internal static class HubFilePickerActions
             AllowMultiple = false,
             FileTypeFilter = new List<FilePickerFileType>
             {
-                new("All Supported FryPDF & C# Files")
+                new("All Supported Files")
                 {
                     Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.cs", "*.csx", "*.csproj", "*.zip" }
+                        .Concat(LanguageFileTypes.Patterns(StudioLanguageServices.Default.Registry)).ToArray()
                 },
                 new("FryPDF Projects (*.frycsproj, *.frynbproj)")
                 {
@@ -43,7 +45,11 @@ internal static class HubFilePickerActions
                 new("C# Code & Projects (*.cs, *.csx, *.csproj)")
                 {
                     Patterns = new[] { "*.cs", "*.csx", "*.csproj" }
-                },
+                }
+            }
+            .Concat(LanguageFileTypes.PerLanguage(StudioLanguageServices.Default.Registry))
+            .Concat(new List<FilePickerFileType>
+            {
                 new("Project Archives (*.zip)")
                 {
                     Patterns = new[] { "*.zip" }
@@ -52,7 +58,7 @@ internal static class HubFilePickerActions
                 {
                     Patterns = new[] { "*.*" }
                 }
-            }
+            }).ToList()
         });
 
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } filePath)

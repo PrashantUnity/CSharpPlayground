@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -65,6 +66,12 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public void FormatCode()
     {
+        if (!SupportsFormatting)
+        {
+            CompilerStatusText = $"Formatting isn't available for {ActiveLanguage.DisplayName} yet";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Code)) return;
         try
         {
@@ -181,7 +188,9 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public void InsertTemplate(CodeTemplate? template)
     {
+        // The templates are C#: pasting one into another language's file would only break it.
         if (template == null) return;
+        if (!ActiveLanguage.Has(LanguageCapabilities.Templates)) return;
         // Notes that are all template (none typed yet) read better rendered.
         if (string.IsNullOrWhiteSpace(Notes) && !string.IsNullOrWhiteSpace(template.Notes)) IsNotesPreviewMode = true;
         if (string.IsNullOrWhiteSpace(Code))

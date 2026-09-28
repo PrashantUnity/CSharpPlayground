@@ -32,6 +32,9 @@ public class CSharpEditorShortcutRegistrationTests
         Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_below" && s.DefaultGesture == "Ctrl+Shift+B");
         Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_above" && s.DefaultGesture == "Ctrl+Shift+A");
         Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.delete_cell" && s.DefaultGesture == "Ctrl+Shift+D");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_in" && s.DefaultGesture == "Ctrl+=" && s.MacGesture == "Cmd+=");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_out" && s.DefaultGesture == "Ctrl+-" && s.MacGesture == "Cmd+-");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_reset" && s.DefaultGesture == "Ctrl+0" && s.MacGesture == "Cmd+0");
 
         var saveShortcut = shortcuts.First(s => s.Id == "csharp.editor.save");
         Assert.Equal("Cmd+S", saveShortcut.MacGesture);

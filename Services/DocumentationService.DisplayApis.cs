@@ -19,6 +19,7 @@ public partial class DocumentationService
             Articles = new List<DocArticle>
             {
                 CreateDumpApiArticle(),
+                CreateMultiLanguageDisplayArticle(),
                 CreateTableAndInspectorArticle(),
                 CreateHtmlAndMarkdownArticle(),
                 CreateImageDisplayArticle(),
@@ -83,16 +84,18 @@ public partial class DocumentationService
                     Description = "Inspect intermediate and final query results with inline labels.",
                     Language = "csharp",
                     TargetKind = WorkspaceItemKind.Script,
-                    Code = @"var topUsers = new[]
-{
-    new { Id = 1, Name = ""Alice Smith"", Role = ""Admin"", Score = 98 },
-    new { Id = 2, Name = ""Bob Jones"", Role = ""User"", Score = 84 },
-    new { Id = 3, Name = ""Carol White"", Role = ""Manager"", Score = 92 },
-    new { Id = 4, Name = ""David Brown"", Role = ""User"", Score = 76 }
-}
-.Where(u => u.Score >= 80).Dump(""Filtered High Scorers"")
-.OrderByDescending(u => u.Score)
-.ToList().Dump(""Sorted Final Ranking"");"
+                    Code = """
+                        var topUsers = new[]
+                        {
+                            new { Id = 1, Name = "Alice Smith", Role = "Admin", Score = 98 },
+                            new { Id = 2, Name = "Bob Jones", Role = "User", Score = 84 },
+                            new { Id = 3, Name = "Carol White", Role = "Manager", Score = 92 },
+                            new { Id = 4, Name = "David Brown", Role = "User", Score = 76 }
+                        }
+                        .Where(u => u.Score >= 80).Dump("Filtered High Scorers")
+                        .OrderByDescending(u => u.Score)
+                        .ToList().Dump("Sorted Final Ranking");
+                        """
                 }
             }
         };
@@ -130,14 +133,16 @@ public partial class DocumentationService
                     Description = "Generate an interactive data table with custom columns.",
                     Language = "csharp",
                     TargetKind = WorkspaceItemKind.Script,
-                    Code = @"var inventory = new[]
-{
-    new { SKU = ""PROD-101"", Name = ""Wireless Mouse"", Price = 29.99, Stock = 145 },
-    new { SKU = ""PROD-102"", Name = ""Mechanical Keyboard"", Price = 89.99, Stock = 42 },
-    new { SKU = ""PROD-103"", Name = ""USB-C Dock"", Price = 119.50, Stock = 18 }
-};
+                    Code = """
+                        var inventory = new[]
+                        {
+                            new { SKU = "PROD-101", Name = "Wireless Mouse", Price = 29.99, Stock = 145 },
+                            new { SKU = "PROD-102", Name = "Mechanical Keyboard", Price = 89.99, Stock = 42 },
+                            new { SKU = "PROD-103", Name = "USB-C Dock", Price = 119.50, Stock = 18 }
+                        };
 
-Display.Table(inventory, label: ""Warehouse Stock Inventory"");"
+                        Display.Table(inventory, label: "Warehouse Stock Inventory");
+                        """
                 }
             }
         };
@@ -172,13 +177,15 @@ Display.Table(inventory, label: ""Warehouse Stock Inventory"");"
                     Description = "Create a modern visual status banner with HTML and inline CSS.",
                     Language = "csharp",
                     TargetKind = WorkspaceItemKind.Script,
-                    Code = @"Display.Html(@""
-<div style='background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; color: #c9d1d9; font-family: sans-serif;'>
-    <h3 style='margin: 0 0 8px 0; color: #58a6ff;'>🚀 Migration Job Succeeded</h3>
-    <p style='margin: 0;'>Processed <b>1,420</b> PDF document pages in <b>214 ms</b>.</p>
-    <div style='margin-top: 10px; font-size: 12px; color: #8b949e;'>Engine: Roslyn .NET 10 • Status: OK</div>
-</div>
-"");"
+                    Code = """"
+                        Display.Html("""
+                        <div style='background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; color: #c9d1d9; font-family: sans-serif;'>
+                            <h3 style='margin: 0 0 8px 0; color: #58a6ff;'>🚀 Migration Job Succeeded</h3>
+                            <p style='margin: 0;'>Processed <b>1,420</b> PDF document pages in <b>214 ms</b>.</p>
+                            <div style='margin-top: 10px; font-size: 12px; color: #8b949e;'>Engine: Roslyn .NET 10 • Status: OK</div>
+                        </div>
+                        """);
+                        """"
                 }
             }
         };
@@ -247,21 +254,126 @@ Display.Table(inventory, label: ""Warehouse Stock Inventory"");"
                     Description = "Smooth 60 FPS immediate-mode animation using Display.Animate.",
                     Language = "csharp",
                     TargetKind = WorkspaceItemKind.Script,
-                    Code = @"Display.Animate((ctx, elapsed) =>
-{
-    var center = new Avalonia.Point(200, 150);
-    double seconds = elapsed.TotalSeconds;
-    double radius = 60 + Math.Sin(seconds * 3) * 15;
+                    Code = """
+                        Display.Animate((ctx, elapsed) =>
+                        {
+                            var center = new Avalonia.Point(200, 150);
+                            double seconds = elapsed.TotalSeconds;
+                            double radius = 60 + Math.Sin(seconds * 3) * 15;
 
-    // Draw pulsating ring
-    var pen = new Avalonia.Media.Pen(Avalonia.Media.Brushes.DeepSkyBlue, 2.5);
-    ctx.DrawEllipse(null, pen, center, radius, radius);
+                            // Draw pulsating ring
+                            var pen = new Avalonia.Media.Pen(Avalonia.Media.Brushes.DeepSkyBlue, 2.5);
+                            ctx.DrawEllipse(null, pen, center, radius, radius);
 
-    // Draw sweep line
-    double angle = seconds * 2;
-    var target = center + new Avalonia.Vector(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
-    ctx.DrawLine(new Avalonia.Media.Pen(Avalonia.Media.Brushes.Aquamarine, 2), center, target);
-}, width: 400, height: 300);"
+                            // Draw sweep line
+                            double angle = seconds * 2;
+                            var target = center + new Avalonia.Vector(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
+                            ctx.DrawLine(new Avalonia.Media.Pen(Avalonia.Media.Brushes.Aquamarine, 2), center, target);
+                        }, width: 400, height: 300);
+                        """
+                }
+            }
+        };
+    }
+
+    private DocArticle CreateMultiLanguageDisplayArticle()
+    {
+        return new DocArticle
+        {
+            Id = "multilang_display_api",
+            Title = "Visual Displays in Java, Python, and JavaScript",
+            Subtitle = "Use Display.table(), Display.show(), Display.html(), and Display.image() across all languages.",
+            ReadingTime = "3 min read",
+            Summary = "C# Code Studio provides zero-configuration visual output for Java, Python, and JavaScript. Call Display.dump() or dump() to inspect arrays, collections, matrices, dataframes, and objects in rich interactive tables.",
+            Keywords = new List<string> { "java", "python", "javascript", "display", "polyglot", "results", "table", "html", "image" },
+            Sections = new List<DocSection>
+            {
+                new()
+                {
+                    Heading = "Polyglot Visual Displays",
+                    Content = "Just like C#'s .Dump() method, Java, Python, and JavaScript scripts running in Code Studio can emit interactive tables, formatted HTML, and images directly into the Results (.Dump) dock tab.",
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "In Java and Python, Display and dump() are automatically available with zero imports required in your scripts!"
+                }
+            },
+            ApiSignatures = new List<DocApiSignature>
+            {
+                new()
+                {
+                    MethodName = "Display.table(obj)",
+                    ReturnType = "Object",
+                    Parameters = "Object obj, String? title = null",
+                    Description = "Emits an interactive visual table for any array, collection, matrix, or object into the Results tab (Java, JS, Python)."
+                },
+                new()
+                {
+                    MethodName = "Display.show(obj, title)",
+                    ReturnType = "Object",
+                    Parameters = "obj, title = None",
+                    Description = "Emits an interactive visual inspection of any data structure into the Results tab."
+                },
+                new()
+                {
+                    MethodName = "Display.html(htmlContent)",
+                    ReturnType = "void",
+                    Parameters = "String htmlContent",
+                    Description = "Renders rich interactive HTML directly in the Results bottom dock tab."
+                },
+                new()
+                {
+                    MethodName = "Display.image(bytesOrPath)",
+                    ReturnType = "void",
+                    Parameters = "byte[] / String bytesOrPath",
+                    Description = "Renders PNG/JPEG image data or matplotlib figures directly in the Results bottom dock tab."
+                }
+            },
+            CodeSnippets = new List<DocCodeSnippet>
+            {
+                new()
+                {
+                    Id = "snip_java_display",
+                    Title = "Java: Array & Object Inspection",
+                    Description = "Call Display.dump() on arrays, collections, or records without any imports.",
+                    Language = "java",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        int[] data = { 64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7 };
+                        Display.dump("Original Array", data);
+
+                        Arrays.sort(data);
+                        Display.dump("Sorted Array", data);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_python_display",
+                    Title = "Python: Global display() & DataFrames",
+                    Description = "Inspect lists, dictionaries, pandas DataFrames, and matplotlib plots.",
+                    Language = "python",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        data = [64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7]
+                        data.sort()
+                        dump(data, "Sorted Numbers")
+
+                        # Or using pandas
+                        import pandas as pd
+                        df = pd.DataFrame({"Name": ["Alice", "Bob"], "Score": [98, 85]})
+                        dump(df)
+                        """
+                },
+                new()
+                {
+                    Id = "snip_js_display",
+                    Title = "JavaScript: Global display() & Objects",
+                    Description = "Inspect arrays and objects in Node.js scripts.",
+                    Language = "javascript",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        const data = [64, 34, 25, 12, 22, 11, 90, 88, 45, 50, 7];
+                        data.sort((a, b) => a - b);
+                        Display.dump(data, "Sorted Data");
+                        """
                 }
             }
         };

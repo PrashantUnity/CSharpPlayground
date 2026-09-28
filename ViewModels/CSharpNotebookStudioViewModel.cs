@@ -7,18 +7,21 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 public partial class CSharpNotebookStudioViewModel : ObservableObject
 {
     private readonly IScriptStorageService _storageService;
+    private readonly StudioLanguageServices _languages;
     private readonly RoslynCompilerService _compilerService;
     private readonly ScriptExecutionEngine _executionEngine;
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
     private readonly Action? _navigateToDocsAction;
+    private readonly Action? _navigateToSettingsAction;
     private readonly Func<int> _getTimeoutSeconds;
 
     public QuickOpenViewModel QuickOpen { get; } = new();
@@ -171,6 +174,38 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
+    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+
+    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+
+    [RelayCommand]
+    public void ZoomIn()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ZoomOut()
+    {
+        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    [RelayCommand]
+    public void ResetZoom()
+    {
+        EditorFontSize = Controls.EditorZoomController.Reset();
+        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+    }
+
+    public void ApplyFontSize(double fontSize)
+    {
+        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+    }
+
+    [ObservableProperty]
     private bool _isVariableInspectorOpen = false;
 
     [ObservableProperty]
@@ -203,6 +238,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public NotebookCellViewModel? ActiveCell => ActiveTab?.ActiveCell;
     public bool IsExecuting => ActiveTab?.IsExecuting ?? false;
     public string KernelName => ActiveTab?.KernelName ?? ".NET (C#)";
+    public IReadOnlyList<NotebookKernelStatusItem> ActiveKernels => ActiveTab?.ActiveKernels ?? Array.Empty<NotebookKernelStatusItem>();
     public string CompilerStatusText
     {
         get => ActiveTab?.KernelStatusText ?? "Kernel Ready";
@@ -267,6 +303,14 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(CompilerStatusText));
         }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.KernelName))
+        {
+            OnPropertyChanged(nameof(KernelName));
+        }
+        else if (e.PropertyName == nameof(NotebookTabViewModel.ActiveKernels))
+        {
+            OnPropertyChanged(nameof(ActiveKernels));
+        }
         else if (e.PropertyName == nameof(NotebookTabViewModel.IsExecuting))
         {
             OnPropertyChanged(nameof(IsExecuting));
@@ -297,6 +341,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         OnPropertyChanged(nameof(ActiveCell));
         OnPropertyChanged(nameof(IsExecuting));
         OnPropertyChanged(nameof(KernelName));
+        OnPropertyChanged(nameof(ActiveKernels));
         OnPropertyChanged(nameof(CompilerStatusText));
         OnPropertyChanged(nameof(BreadcrumbFolder));
         OnPropertyChanged(nameof(BreadcrumbDocument));
@@ -316,8 +361,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         Action? backToHomeAction = null,
         Func<int>? getTimeoutSeconds = null,
         Action<ScriptDocumentItem>? openScriptAction = null,
-        Action? navigateToDocsAction = null)
+        Action? navigateToDocsAction = null,
+        StudioLanguageServices? languages = null,
+        Action? navigateToSettingsAction = null)
     {
+        _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
         _storageService = storageService;
         _compilerService = compilerService;
@@ -326,25 +374,35 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHomeAction = backToHomeAction;
         _openScriptAction = openScriptAction;
         _navigateToDocsAction = navigateToDocsAction;
+        _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
 
-        var initialTab = new NotebookTabViewModel(
-            _notebook,
-            folderName: "Library",
-            filePath: $"{notebook.Title}.frynb",
-            onSelectTab: SelectTab,
-            onCloseTab: CloseTab,
-            getTimeoutSeconds: _getTimeoutSeconds);
+        var initialTab = CreateTab(_notebook, "Library", $"{notebook.Title}.frynb");
 
         ConfigureNotebookTab(initialTab);
         Tabs.Add(initialTab);
         SelectTab(initialTab);
+
+        var initialSettings = _languages.StudioSettings.GetSettings();
+        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
 
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
+    }
+
+    private void OnStudioSettingsChanged(StudioSettings s)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
+            {
+                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+            }
+        });
     }
 
     public void UpdateActiveNotebook(NotebookDocumentItem notebook)
@@ -366,13 +424,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         else
         {
             var folder = expItem?.Parent?.Name ?? "Library";
-            var newTab = new NotebookTabViewModel(
-                notebook,
-                folderName: folder,
-                filePath: expItem?.FullPath ?? $"{notebook.Title}.frynb",
-                onSelectTab: SelectTab,
-                onCloseTab: CloseTab,
-                getTimeoutSeconds: _getTimeoutSeconds);
+            var newTab = CreateTab(notebook, folder, expItem?.FullPath ?? $"{notebook.Title}.frynb");
 
             ConfigureNotebookTab(newTab);
             Tabs.Add(newTab);
@@ -417,7 +469,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         if (tab == null) return;
 
-        tab.DisposeAllCellResources();
+        ReleaseTab(tab);
 
         var idx = Tabs.IndexOf(tab);
         Tabs.Remove(tab);
@@ -453,13 +505,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
         }
 
-        var newTab = new NotebookTabViewModel(
-            newDoc,
-            folderName: "Library",
-            filePath: $"{newDoc.Title}.frynb",
-            onSelectTab: SelectTab,
-            onCloseTab: CloseTab,
-            getTimeoutSeconds: _getTimeoutSeconds);
+        var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
 
         ConfigureNotebookTab(newTab);
         Tabs.Add(newTab);
@@ -469,6 +515,24 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         var newExpItem = EnsureDocumentInExplorer(newDoc);
         HighlightExplorerItem(newExpItem.Name);
         newExpItem.StartRename();
+    }
+
+    // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
+    private NotebookTabViewModel CreateTab(NotebookDocumentItem notebook, string folderName, string filePath) =>
+        new(notebook,
+            folderName: folderName,
+            filePath: filePath,
+            onSelectTab: SelectTab,
+            onCloseTab: CloseTab,
+            getTimeoutSeconds: _getTimeoutSeconds,
+            languages: _languages,
+            workspaceRoot: () => _storageService.ActiveWorkspaceRootPath);
+
+    /// <summary>A closed tab's cells let go of their live outputs, and its kernels in other programs end.</summary>
+    private static void ReleaseTab(NotebookTabViewModel tab)
+    {
+        tab.DisposeAllCellResources();
+        tab.ShutdownKernels();
     }
 
     private void ConfigureNotebookTab(NotebookTabViewModel tab)
@@ -487,7 +551,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         var toRemove = Tabs.Where(t => t != tab).ToList();
         foreach (var t in toRemove)
         {
-            t.DisposeAllCellResources();
+            ReleaseTab(t);
             Tabs.Remove(t);
         }
         if (ActiveTab != tab)
@@ -506,7 +570,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         var toRemove = Tabs.Skip(idx + 1).ToList();
         foreach (var t in toRemove)
         {
-            t.DisposeAllCellResources();
+            ReleaseTab(t);
             Tabs.Remove(t);
         }
         if (ActiveTab != null && !Tabs.Contains(ActiveTab))
@@ -521,7 +585,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         foreach (var t in Tabs)
         {
-            t.DisposeAllCellResources();
+            ReleaseTab(t);
         }
         Tabs.Clear();
         _ = NewNotebookTab();
@@ -569,7 +633,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public async Task ExportActiveNotebookAsIpynbAsync()
     {
         if (ActiveTab == null) return;
-        var content = DocumentExportService.ExportNotebookToIpynb(ActiveTab.Notebook);
+        var content = DocumentExportService.ExportNotebookToIpynb(ActiveTab.Notebook, _languages.Registry);
         await CopyTextToClipboardAsync(content);
         Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Jupyter .ipynb and copied to clipboard!");
     }
@@ -578,7 +642,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public async Task ExportActiveNotebookAsMarkdownAsync()
     {
         if (ActiveTab == null) return;
-        var content = DocumentExportService.ExportNotebookToMarkdown(ActiveTab.Notebook);
+        var content = DocumentExportService.ExportNotebookToMarkdown(ActiveTab.Notebook, _languages.Registry);
         await CopyTextToClipboardAsync(content);
         Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Markdown .md and copied to clipboard!");
     }
@@ -620,6 +684,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             new() { Title = "File: Close Active Tab", Subtitle = "Close the current notebook tab", Category = "Tabs", IconKind = "Close", IconColorHex = "#E5534B", ShortcutHint = "Ctrl+W", ExecuteAction = () => CloseTab(ActiveTab) },
             new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except active", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => CloseOtherTabs(ActiveTab) },
             new() { Title = "File: Close All Tabs", Subtitle = "Close all open notebook tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = CloseAllTabs },
+            new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase notebook cell typography size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
+            new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease notebook cell typography size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
+            new() { Title = "View: Reset Font Zoom", Subtitle = "Reset typography to default 100% (13px)", Category = "View", IconKind = "MagnifyScan", IconColorHex = "#D97706", ShortcutHint = "Ctrl+0", ExecuteAction = ResetZoom },
             new() { Title = "View: Toggle Primary Side Bar", Subtitle = "Expand or collapse activity sidebar", Category = "View", IconKind = "DockLeft", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+B", ExecuteAction = ToggleSideBar },
             new() { Title = "View: Show Explorer", Subtitle = "Browse workspace notebooks and scripts", Category = "Navigation", IconKind = "FolderMultipleOutline", IconColorHex = "#D97706", ShortcutHint = "Ctrl+Shift+E", ExecuteAction = () => SelectActivityBarItem(0) },
             new() { Title = "View: Show Outline", Subtitle = "Navigate cells in table of contents", Category = "Navigation", IconKind = "FormatListBulleted", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+Shift+O", ExecuteAction = () => SelectActivityBarItem(1) },
@@ -665,8 +732,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
 
+        // Scripts, and source files of any language (main.py), open in the Code Studio.
         if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
-            item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase))
+            item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
+            _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
         {
             if (_openScriptAction != null && !string.IsNullOrEmpty(item.DocumentId))
             {
@@ -746,13 +815,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             item.DocumentId = loadedDoc.Id;
         }
 
-        var newTab = new NotebookTabViewModel(
-            loadedDoc,
-            folderName: folderName,
-            filePath: filePath,
-            onSelectTab: SelectTab,
-            onCloseTab: CloseTab,
-            getTimeoutSeconds: _getTimeoutSeconds);
+        var newTab = CreateTab(loadedDoc, folderName, filePath);
 
         Tabs.Add(newTab);
         SelectTab(newTab);
@@ -933,6 +996,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         _ = SaveAsync();
         _navigateToDocsAction?.Invoke();
+    }
+
+    [RelayCommand]
+    public void NavigateToSettings()
+    {
+        _ = SaveAsync();
+        _navigateToSettingsAction?.Invoke();
     }
 
     [RelayCommand]
@@ -1338,7 +1408,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
         {
-            var ext = s.IsNotebook ? ".frynb" : ".frycs";
+            var ext = s.DisplayExtension;
             var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
 
             var parent = GetOrCreateFolder(s.FolderPath);
@@ -1351,6 +1421,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             }
 
             var docItem = CreateFileItem(name, s.Id, parent, fullPath);
+            if (s.IsSourceFile && _storageService.Languages.Get(s.LanguageId) is { } language)
+            {
+                docItem.IsSourceFile = true;
+                docItem.LanguageIconKind = language.IconKind;
+                docItem.LanguageIconColor = language.AccentHex;
+            }
             AddToTree(parent, docItem);
         }
 

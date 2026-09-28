@@ -48,6 +48,20 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public bool IsManageableDirectory => IsDirectory && !IsExternalGroup;
 
+    /// <summary>True for a plain source file (main.py): deleting it removes a file of the user's, so it asks first.</summary>
+    [ObservableProperty]
+    private bool _isSourceFile;
+
+    /// <summary>The icon and color of the file's language, when it has one (else they follow the extension).</summary>
+    public string? LanguageIconKind { get; set; }
+    public string? LanguageIconColor { get; set; }
+
+    /// <summary>True between the first and second Delete of a source file, while the row asks to confirm.</summary>
+    [ObservableProperty]
+    private bool _isConfirmingDelete;
+
+    public string DeleteConfirmationText => $"Delete {Name} from disk?";
+
     public ExplorerItemViewModel? Parent { get; set; }
 
     public ObservableCollection<ExplorerItemViewModel> Children { get; } = new();
@@ -62,6 +76,8 @@ public partial class ExplorerItemViewModel : ObservableObject
             {
                 return IsExpanded ? "FolderOpenOutline" : "FolderOutline";
             }
+
+            if (LanguageIconKind != null) return LanguageIconKind;
 
             return FileExtension.ToLowerInvariant() switch
             {
@@ -80,6 +96,7 @@ public partial class ExplorerItemViewModel : ObservableObject
         get
         {
             if (IsDirectory) return NotebookAmberHex;
+            if (LanguageIconColor != null) return LanguageIconColor;
 
             return FileExtension.ToLowerInvariant() switch
             {
@@ -179,8 +196,27 @@ public partial class ExplorerItemViewModel : ObservableObject
     [RelayCommand]
     public void RequestDelete()
     {
+        // A .frycs/.frynb document lives in the studio's workspace; a source file may be the user's own project file.
+        if (IsSourceFile && !IsConfirmingDelete)
+        {
+            OnPropertyChanged(nameof(DeleteConfirmationText));
+            IsConfirmingDelete = true;
+            return;
+        }
+
+        IsConfirmingDelete = false;
         OnDeleteRequested?.Invoke(this);
     }
+
+    [RelayCommand]
+    public void ConfirmDelete()
+    {
+        IsConfirmingDelete = true;
+        RequestDelete();
+    }
+
+    [RelayCommand]
+    public void CancelDelete() => IsConfirmingDelete = false;
 
     [RelayCommand]
     public void RequestNewFile()

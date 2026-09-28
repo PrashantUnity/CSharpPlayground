@@ -6,6 +6,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -108,9 +110,14 @@ public static class DocumentExportService
     /// Exports an interactive notebook into standard Jupyter Notebook (.ipynb) v4 schema format.
     /// Compatible with VS Code, JupyterLab, and GitHub notebook renderers.
     /// </summary>
-    public static string ExportNotebookToIpynb(NotebookDocumentItem notebook)
+    public static string ExportNotebookToIpynb(NotebookDocumentItem notebook, LanguageRegistry? languages = null)
     {
         ArgumentNullException.ThrowIfNull(notebook);
+        var registry = languages ?? StudioLanguageServices.Default.Registry;
+        var defaultLanguage = DefaultLanguage(notebook, registry);
+        var used = notebook.Cells.Where(c => c.Type == CellType.Code).Select(c => CellLanguage(c, defaultLanguage, registry)).Distinct().ToList();
+        // A notebook of several languages is written as Polyglot Notebooks does: the kernel of each cell in its metadata.
+        var polyglot = used.Count > 1;
 
         var cells = new List<object>();
 
@@ -140,36 +147,45 @@ public static class DocumentExportService
                     });
                 }
 
+                var metadata = new Dictionary<string, object>();
+                if (polyglot) metadata["polyglot_notebook"] = new { kernelName = CellLanguage(cell, defaultLanguage, registry).Id };
                 cells.Add(new
                 {
                     cell_type = "code",
                     execution_count = cell.ExecutionCount,
-                    metadata = new Dictionary<string, object>(),
+                    metadata,
                     outputs = outputs,
                     source = sourceLines
                 });
             }
         }
 
+        // The notebook's kernel: its default language's, or the one language all its cells are in.
+        var main = (used.Count == 1 ? used[0] : defaultLanguage).Jupyter ?? registry.Get(LanguageIds.CSharp)?.Jupyter
+                   ?? new JupyterLanguageInfo(".net-csharp", ".NET (C#)", "C#", "csharp", ".cs", "text/x-csharp", "13.0");
+        var notebookMetadata = new Dictionary<string, object>
+        {
+            ["language_info"] = main.Version != null
+                ? new { name = main.LanguageName, version = main.Version, file_extension = main.FileExtension, mimetype = main.MimeType }
+                : new { name = main.LanguageName, file_extension = main.FileExtension, mimetype = main.MimeType },
+            ["kernelspec"] = new { name = main.KernelName, display_name = main.KernelDisplayName, language = main.KernelLanguage }
+        };
+        if (polyglot)
+        {
+            notebookMetadata["polyglot_notebook"] = new
+            {
+                kernelInfo = new
+                {
+                    defaultKernelName = defaultLanguage.Id,
+                    items = used.Select(l => new { name = l.Id, languageName = l.Jupyter?.LanguageName ?? l.Id, aliases = l.Aliases }).ToList()
+                }
+            };
+        }
+
         var ipynbObj = new
         {
             cells = cells,
-            metadata = new
-            {
-                language_info = new
-                {
-                    name = "csharp",
-                    version = "13.0",
-                    file_extension = ".cs",
-                    mimetype = "text/x-csharp"
-                },
-                kernelspec = new
-                {
-                    name = ".net-csharp",
-                    display_name = ".NET (C#)",
-                    language = "C#"
-                }
-            },
+            metadata = notebookMetadata,
             nbformat = 4,
             nbformat_minor = 5
         };
@@ -180,9 +196,11 @@ public static class DocumentExportService
     /// <summary>
     /// Exports an interactive notebook into clean GitHub-Flavored Markdown (.md).
     /// </summary>
-    public static string ExportNotebookToMarkdown(NotebookDocumentItem notebook)
+    public static string ExportNotebookToMarkdown(NotebookDocumentItem notebook, LanguageRegistry? languages = null)
     {
         ArgumentNullException.ThrowIfNull(notebook);
+        var registry = languages ?? StudioLanguageServices.Default.Registry;
+        var defaultLanguage = DefaultLanguage(notebook, registry);
 
         var sb = new StringBuilder();
         sb.AppendLine($"# {notebook.Title}");
@@ -208,8 +226,9 @@ public static class DocumentExportService
             else
             {
                 var countBadge = cell.ExecutionCount.HasValue ? $"[{cell.ExecutionCount.Value}]" : $"[{cellNum}]";
-                sb.AppendLine($"### Cell {countBadge} (C#)");
-                sb.AppendLine("```csharp");
+                var language = CellLanguage(cell, defaultLanguage, registry);
+                sb.AppendLine($"### Cell {countBadge} ({language.DisplayName})");
+                sb.AppendLine($"```{language.Id}");
                 sb.AppendLine(cell.Source ?? string.Empty);
                 sb.AppendLine("```");
 
@@ -231,6 +250,17 @@ public static class DocumentExportService
         }
 
         return sb.ToString();
+    }
+
+    // The notebook's default language (NotebookDocumentItem.Kernel), C# when it names none the studio knows.
+    private static ILanguageDefinition DefaultLanguage(NotebookDocumentItem notebook, LanguageRegistry registry) =>
+        registry.Get(notebook.Kernel) ?? registry.Get(LanguageIds.CSharp) ?? registry.All.First();
+
+    // A code cell's language: its #!python (or other) directive, its own, or the notebook's.
+    private static ILanguageDefinition CellLanguage(NotebookCellItem cell, ILanguageDefinition defaultLanguage, LanguageRegistry registry)
+    {
+        var own = registry.Get(cell.Language) ?? defaultLanguage;
+        return registry.Get(NotebookCellDirectives.LanguageOf(cell.Source, registry, own.Id)) ?? own;
     }
 
     private static string[] SplitToLinesWithNewlines(string? text)

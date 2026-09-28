@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Media;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
@@ -12,12 +13,35 @@ public abstract class VisualizerRendererBase : IVisualizerRenderer
     private static readonly Dictionary<string, IBrush> BrushCache = new();
     private static readonly Dictionary<string, IPen> PenCache = new();
 
+    protected static bool IsDarkTheme => ThemeService.IsDark;
+
     protected static readonly Typeface DefaultTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
     protected static readonly Typeface BoldTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Bold);
 
     protected static readonly IBrush WhiteBrush = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    protected static readonly IBrush MutedTextBrush = new SolidColorBrush(Color.FromArgb(160, 255, 255, 255));
+    protected static readonly IBrush DarkMutedTextBrush = new SolidColorBrush(Color.FromArgb(160, 255, 255, 255));
+    protected static readonly IBrush LightMutedTextBrush = new SolidColorBrush(Color.FromRgb(100, 116, 139));
+    protected static IBrush MutedTextBrush => IsDarkTheme ? DarkMutedTextBrush : LightMutedTextBrush;
+
     protected static readonly IBrush DarkTextBrush = new SolidColorBrush(Color.FromRgb(24, 24, 27));
+    protected static readonly IBrush LightTextBrush = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+    protected static IBrush PrimaryTextBrush => IsDarkTheme ? WhiteBrush : LightTextBrush;
+
+    protected static readonly IBrush LightCellBgBrush = new SolidColorBrush(Color.FromRgb(241, 245, 249));
+    protected static readonly IBrush DarkCellBgBrush = new SolidColorBrush(Color.FromRgb(30, 41, 59));
+    protected static IBrush DefaultCellBgBrush => IsDarkTheme ? DarkCellBgBrush : LightCellBgBrush;
+
+    protected static readonly IPen LightCellBorderPen = new Pen(new SolidColorBrush(Color.FromRgb(203, 213, 225)), 1.0);
+    protected static readonly IPen DarkCellBorderPen = new Pen(new SolidColorBrush(Color.FromRgb(71, 85, 105)), 1.0);
+    protected static IPen DefaultCellBorderPen => IsDarkTheme ? DarkCellBorderPen : LightCellBorderPen;
+
+    protected static readonly IBrush LightActiveCellBgBrush = new SolidColorBrush(Color.FromRgb(219, 234, 254));
+    protected static readonly IBrush DarkActiveCellBgBrush = new SolidColorBrush(Color.FromRgb(30, 58, 138));
+    protected static IBrush ActiveCellBgBrush => IsDarkTheme ? DarkActiveCellBgBrush : LightActiveCellBgBrush;
+
+    protected static readonly IPen LightActiveBorderPen = new Pen(new SolidColorBrush(Color.FromRgb(37, 99, 235)), 1.8);
+    protected static readonly IPen DarkActiveBorderPen = new Pen(new SolidColorBrush(Color.FromRgb(96, 165, 250)), 1.8);
+    protected static IPen ActiveBorderPen => IsDarkTheme ? DarkActiveBorderPen : LightActiveBorderPen;
 
     // Lime is unused by every node/cell state colour, so "changed this step" never reads as a state.
     private static readonly IPen ChangedPen = new Pen(new SolidColorBrush(Color.FromRgb(163, 230, 53)), 2.0);

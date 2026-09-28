@@ -113,13 +113,23 @@
             <Color x:Key="M3SurfaceContainerLowColor">#F1F5F9</Color>
             <Color x:Key="M3SurfaceContainerColor">#E9EEF6</Color>
             <Color x:Key="M3SurfaceContainerHighColor">#E1E8F2</Color>
-            <Color x:Key="M3SurfaceContainerHighestColor">#D7E1EE</Color>
+            <Color x:Key="M3SurfaceContainerHighestColor">#DEE4EE</Color>
+
+            <!-- Visualizer Semantic Colors (Light) -->
+            <Color x:Key="VisCanvasBgColor">#FFFFFF</Color>
+            <Color x:Key="VisNodeBgColor">#F1F5F9</Color>
+            <Color x:Key="VisNodeBorderColor">#CBD5E1</Color>
+            <Color x:Key="VisNodeTextColor">#0F172A</Color>
+            <Color x:Key="VisMutedTextColor">#64748B</Color>
+            <Color x:Key="VisActiveBgColor">#DBEAFE</Color>
+            <Color x:Key="VisActiveBorderColor">#2563EB</Color>
+            <Color x:Key="VisActiveTextColor">#1E40AF</Color>
 
             <!-- 6. M3 Text & Outlines -->
             <Color x:Key="M3OnSurfaceColor">#191C20</Color>
             <Color x:Key="M3OnSurfaceVariantColor">#44474E</Color>
-            <Color x:Key="M3OutlineColor">#74777F</Color>
-            <Color x:Key="M3OutlineVariantColor">#C4C7D0</Color>
+            <Color x:Key="M3OutlineColor">#94A3B8</Color>
+            <Color x:Key="M3OutlineVariantColor">#E0E4EB</Color>
             <Color x:Key="M3InverseSurfaceColor">#2E3135</Color>
             <Color x:Key="M3InverseOnSurfaceColor">#F0F1F5</Color>
             <Color x:Key="M3InversePrimaryColor">#A8C7FA</Color>
@@ -164,6 +174,37 @@
             <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="{StaticResource M3SurfaceContainerColor}" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="{StaticResource M3SurfaceContainerHighColor}" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+
+            <!-- Visualizer Brushes (Light) -->
+            <SolidColorBrush x:Key="VisCanvasBgBrush" Color="{StaticResource VisCanvasBgColor}" />
+            <SolidColorBrush x:Key="VisNodeBgBrush" Color="{StaticResource VisNodeBgColor}" />
+            <SolidColorBrush x:Key="VisNodeBorderBrush" Color="{StaticResource VisNodeBorderColor}" />
+            <SolidColorBrush x:Key="VisNodeTextBrush" Color="{StaticResource VisNodeTextColor}" />
+            <SolidColorBrush x:Key="VisMutedTextBrush" Color="{StaticResource VisMutedTextColor}" />
+            <SolidColorBrush x:Key="VisActiveBgBrush" Color="{StaticResource VisActiveBgColor}" />
+            <SolidColorBrush x:Key="VisActiveBorderBrush" Color="{StaticResource VisActiveBorderColor}" />
+            <SolidColorBrush x:Key="VisActiveTextBrush" Color="{StaticResource VisActiveTextColor}" />
+
+            <!-- LeetCode / Algorithm Badges (Light) -->
+            <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A0D9488" />
+            <SolidColorBrush x:Key="BadgeEasyBorderBrush" Color="#4D0D9488" />
+            <SolidColorBrush x:Key="BadgeEasyFgBrush" Color="#0D9488" />
+
+            <SolidColorBrush x:Key="BadgeMediumBgBrush" Color="#1AD97706" />
+            <SolidColorBrush x:Key="BadgeMediumBorderBrush" Color="#4DD97706" />
+            <SolidColorBrush x:Key="BadgeMediumFgBrush" Color="#B45309" />
+
+            <SolidColorBrush x:Key="BadgeHardBgBrush" Color="#1ADC2626" />
+            <SolidColorBrush x:Key="BadgeHardBorderBrush" Color="#4DDC2626" />
+            <SolidColorBrush x:Key="BadgeHardFgBrush" Color="#DC2626" />
+
+            <SolidColorBrush x:Key="BadgeAmberBgBrush" Color="#1AB45309" />
+            <SolidColorBrush x:Key="BadgeAmberBorderBrush" Color="#B45309" />
+            <SolidColorBrush x:Key="BadgeAmberFgBrush" Color="#B45309" />
+
+            <SolidColorBrush x:Key="ComplexityTimeBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="ComplexitySpaceBrush" Color="#16A34A" />
+            <SolidColorBrush x:Key="BrainPurpleBrush" Color="#7E22CE" />
 
             <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="{StaticResource M3OnSurfaceColor}" />
             <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="{StaticResource M3OnSurfaceVariantColor}" />
@@ -284,8 +325,8 @@
             <!-- 6. M3 Text & Outlines -->
             <Color x:Key="M3OnSurfaceColor">#E2E2E6</Color>
             <Color x:Key="M3OnSurfaceVariantColor">#9BA1AD</Color>
-            <Color x:Key="M3OutlineColor">#8E919A</Color>
-            <Color x:Key="M3OutlineVariantColor">#3D4450</Color>
+            <Color x:Key="M3OutlineColor">#5A6270</Color>
+            <Color x:Key="M3OutlineVariantColor">#262C36</Color>
             <Color x:Key="M3InverseSurfaceColor">#E2E2E6</Color>
             <Color x:Key="M3InverseOnSurfaceColor">#191C20</Color>
             <Color x:Key="M3InversePrimaryColor">#1E5EEB</Color>
@@ -330,6 +371,47 @@
             <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="{StaticResource M3SurfaceContainerColor}" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="{StaticResource M3SurfaceContainerHighColor}" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="{StaticResource M3SurfaceContainerHighestColor}" />
+
+            <!-- Visualizer Semantic Colors (Dark) -->
+            <Color x:Key="VisCanvasBgColor">#0B0E11</Color>
+            <Color x:Key="VisNodeBgColor">#1E293B</Color>
+            <Color x:Key="VisNodeBorderColor">#475569</Color>
+            <Color x:Key="VisNodeTextColor">#FFFFFF</Color>
+            <Color x:Key="VisMutedTextColor">#94A3B8</Color>
+            <Color x:Key="VisActiveBgColor">#1E3A8A</Color>
+            <Color x:Key="VisActiveBorderColor">#60A5FA</Color>
+            <Color x:Key="VisActiveTextColor">#FFFFFF</Color>
+
+            <!-- Visualizer Brushes (Dark) -->
+            <SolidColorBrush x:Key="VisCanvasBgBrush" Color="{StaticResource VisCanvasBgColor}" />
+            <SolidColorBrush x:Key="VisNodeBgBrush" Color="{StaticResource VisNodeBgColor}" />
+            <SolidColorBrush x:Key="VisNodeBorderBrush" Color="{StaticResource VisNodeBorderColor}" />
+            <SolidColorBrush x:Key="VisNodeTextBrush" Color="{StaticResource VisNodeTextColor}" />
+            <SolidColorBrush x:Key="VisMutedTextBrush" Color="{StaticResource VisMutedTextColor}" />
+            <SolidColorBrush x:Key="VisActiveBgBrush" Color="{StaticResource VisActiveBgColor}" />
+            <SolidColorBrush x:Key="VisActiveBorderBrush" Color="{StaticResource VisActiveBorderColor}" />
+            <SolidColorBrush x:Key="VisActiveTextBrush" Color="{StaticResource VisActiveTextColor}" />
+
+            <!-- LeetCode / Algorithm Badges (Dark) -->
+            <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A00B8A3" />
+            <SolidColorBrush x:Key="BadgeEasyBorderBrush" Color="#3300B8A3" />
+            <SolidColorBrush x:Key="BadgeEasyFgBrush" Color="#00B8A3" />
+
+            <SolidColorBrush x:Key="BadgeMediumBgBrush" Color="#1AFFC01E" />
+            <SolidColorBrush x:Key="BadgeMediumBorderBrush" Color="#33FFC01E" />
+            <SolidColorBrush x:Key="BadgeMediumFgBrush" Color="#FFC01E" />
+
+            <SolidColorBrush x:Key="BadgeHardBgBrush" Color="#1AEF4444" />
+            <SolidColorBrush x:Key="BadgeHardBorderBrush" Color="#33EF4444" />
+            <SolidColorBrush x:Key="BadgeHardFgBrush" Color="#EF4444" />
+
+            <SolidColorBrush x:Key="BadgeAmberBgBrush" Color="#1AE3B341" />
+            <SolidColorBrush x:Key="BadgeAmberBorderBrush" Color="#E3B341" />
+            <SolidColorBrush x:Key="BadgeAmberFgBrush" Color="#E3B341" />
+
+            <SolidColorBrush x:Key="ComplexityTimeBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="ComplexitySpaceBrush" Color="#22C55E" />
+            <SolidColorBrush x:Key="BrainPurpleBrush" Color="#A855F7" />
 
             <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="{StaticResource M3OnSurfaceColor}" />
             <SolidColorBrush x:Key="M3OnSurfaceVariantBrush" Color="{StaticResource M3OnSurfaceVariantColor}" />

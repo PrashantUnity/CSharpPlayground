@@ -25,26 +25,26 @@
             <!-- 2. Breakdown Badges -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="24,0,0,0">
                 <!-- Easy -->
-                <Border Background="#1A00B8A3" BorderBrush="#00B8A3" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                <Border Background="{DynamicResource BadgeEasyBgBrush}" BorderBrush="{DynamicResource BadgeEasyBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="#00B8A3" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="#00B8A3" />
+                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="{DynamicResource BadgeEasyFgBrush}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeEasyFgBrush}" />
                     </StackPanel>
                 </Border>
 
                 <!-- Medium -->
-                <Border Background="#1AFFC01E" BorderBrush="#FFC01E" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                <Border Background="{DynamicResource BadgeMediumBgBrush}" BorderBrush="{DynamicResource BadgeMediumBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="Med:" FontSize="10.5" Foreground="#FFC01E" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="#FFC01E" />
+                        <TextBlock Text="Med:" FontSize="10.5" Foreground="{DynamicResource BadgeMediumFgBrush}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeMediumFgBrush}" />
                     </StackPanel>
                 </Border>
 
                 <!-- Hard -->
-                <Border Background="#1AEF4444" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="10" Padding="8,2">
+                <Border Background="{DynamicResource BadgeHardBgBrush}" BorderBrush="{DynamicResource BadgeHardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="#EF4444" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="#EF4444" />
+                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="{DynamicResource BadgeHardFgBrush}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeHardFgBrush}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

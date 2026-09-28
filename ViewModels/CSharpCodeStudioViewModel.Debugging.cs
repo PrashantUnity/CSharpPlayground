@@ -1,14 +1,39 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
 public partial class CSharpCodeStudioViewModel
 {
+    private IDebugSession? _activeDebugSession;
+    private readonly DebugVariableChangeTracker _variableChangeTracker = new();
+
+    public IDebugSession? ActiveDebugSession => _activeDebugSession;
+
+    public async Task<IReadOnlyList<DebugVariableItem>> GetVariableChildrenAsync(DebugVariableItem item)
+    {
+        if (_activeDebugSession != null)
+        {
+            return await _activeDebugSession.GetVariableChildrenAsync(item);
+        }
+        return item.Children;
+    }
+
     [ObservableProperty]
     private bool _isDebugging;
 
@@ -18,20 +43,10 @@ public partial class CSharpCodeStudioViewModel
     [ObservableProperty]
     private int _currentPausedLine = -1;
 
-    [ObservableProperty]
-    private string _immediateInputText = string.Empty;
-
-    [ObservableProperty]
-    private string _watchInputText = string.Empty;
-
-    public ObservableCollection<BreakpointItem> Breakpoints { get; } = new();
     public ObservableCollection<DebugVariableItem> Locals { get; } = new();
-    public ObservableCollection<WatchExpressionItem> WatchExpressions { get; } = new();
     public ObservableCollection<CallStackFrameItem> CallStack { get; } = new();
-    public ObservableCollection<string> ImmediateOutput { get; } = new();
 
     public event Action<int>? RequestSetPausedLine;
-    public event Action<IEnumerable<int>>? RequestSyncBreakpoints;
 
     partial void OnIsDebuggingChanged(bool value)
     {
@@ -44,6 +59,16 @@ public partial class CSharpCodeStudioViewModel
         if (IsExecuting || IsDebugging) return;
 
         var debuggingTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+
+        if (!ActiveLanguage.Has(LanguageCapabilities.Debugging) || ActiveLanguage.Debugger == null)
+        {
+            if (ActiveLanguage.ScriptRunner != null)
+            {
+                await RunWithScriptRunnerAsync(debuggingTab, ActiveLanguage,
+                    $"ℹ️ There's no {ActiveLanguage.DisplayName} debugger yet, so F5 runs the file without one.");
+            }
+            return;
+        }
 
         DisposeRichOutputControls();
         DumpResults.Clear();
@@ -62,14 +87,14 @@ public partial class CSharpCodeStudioViewModel
             debuggingTab.IsDebugging = true;
             debuggingTab.IsPaused = false;
             debuggingTab.PausedLine = -1;
-            debuggingTab.ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
-            debuggingTab.CompilerStatusText = "Compiling for Debug...";
+            debuggingTab.ConsoleOutput = $"🐞 Starting interactive {ActiveLanguage.DisplayName} debugging session...\n";
+            debuggingTab.CompilerStatusText = "Preparing debugger...";
         }
 
         SelectedBottomTabIndex = 4;
         IsBottomDeckExpanded = true;
-        ConsoleOutput = "🐞 Starting interactive C# debugging session with active breakpoints...\n";
-        CompilerStatusText = "Compiling for Debug...";
+        ConsoleOutput = $"🐞 Starting interactive {ActiveLanguage.DisplayName} debugging session...\n";
+        CompilerStatusText = "Preparing debugger...";
         IsExecuting = true;
         IsDebugging = true;
         IsPaused = false;
@@ -81,263 +106,231 @@ public partial class CSharpCodeStudioViewModel
         if (debuggingTab != null) debuggingTab.ExecutionCts = _executionCts;
         var token = _executionCts.Token;
 
-        var (compileOk, bytes, diagnostics) = await Task.Run(() =>
-            _debuggerService.CompileForDebugging(Code, CurrentLanguageMode));
+        var sourcePath = debuggingTab?.Document.SourceFilePath
+            ?? (Script.Title.Contains('.') ? Script.Title : $"{Script.Title}{ActiveLanguage.FileExtensions.FirstOrDefault() ?? ".cs"}");
 
-        if (!compileOk || bytes == null)
-        {
-            var failMsg = "❌ Debug compilation failed. Check the Problems tab for details.\n";
-            if (debuggingTab != null)
-            {
-                debuggingTab.ConsoleOutput += failMsg;
-                debuggingTab.Diagnostics.Clear();
-                foreach (var d in diagnostics)
-                {
-                    debuggingTab.Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
-                }
-                debuggingTab.CompilerStatusText = "Build Failed";
-                debuggingTab.IsExecuting = false;
-                debuggingTab.IsDebugging = false;
-            }
+        var launchContext = new DebugLaunchContext(
+            Script.Id,
+            sourcePath,
+            Code,
+            Breakpoints.ToList(),
+            Toolchain: null,
+            liveText => Dispatcher.UIThread.Post(() => AppendLiveDebugOutput(liveText, debuggingTab)),
+            token);
 
-            if (debuggingTab == null || debuggingTab.IsActive)
-            {
-                ConsoleOutput += failMsg;
-                Diagnostics.Clear();
-                foreach (var d in diagnostics)
-                {
-                    Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
-                }
-                ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
-                WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
-                SelectedBottomTabIndex = 2;
-                CompilerStatusText = "Build Failed";
-                IsExecuting = false;
-                IsDebugging = false;
-            }
-            return;
-        }
-
-        var readyMsg = "[Debug] Instrumentation ready. Executing in-memory...\n--------------------------------------------------\n";
-        if (debuggingTab != null)
-        {
-            debuggingTab.ConsoleOutput += readyMsg;
-            debuggingTab.CompilerStatusText = "Debugging...";
-        }
-        if (debuggingTab == null || debuggingTab.IsActive)
-        {
-            ConsoleOutput += readyMsg;
-            CompilerStatusText = "Debugging...";
-        }
-
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
         try
         {
-            var session = ScriptDebugSession.BeginSession(Breakpoints, _executionCts, Script.Id);
+            var session = await Task.Run(() => ActiveLanguage.Debugger.LaunchAsync(launchContext, token), token);
+            _activeDebugSession = session;
 
-            session.Paused += (line, locals) =>
+            session.Paused += args => Dispatcher.UIThread.Post(() => HandleSessionPaused(args, debuggingTab));
+            session.Resumed += () => Dispatcher.UIThread.Post(() => HandleSessionResumed(debuggingTab));
+            session.OutputReceived += text => Dispatcher.UIThread.Post(() => AppendLiveDebugOutput(text, debuggingTab));
+            session.Terminated += args => Dispatcher.UIThread.Post(() => HandleSessionTerminated(args, debuggingTab, sw));
+
+            if (session is DapDebugSession dapSession)
             {
-                var frames = session.CallStack;
-                var fileName = Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs";
-                foreach (var frame in frames) frame.FileName = fileName;
-
-                if (debuggingTab != null)
+                dapSession.BreakpointVerifiedChanged += (line, verified) => Dispatcher.UIThread.Post(() =>
                 {
-                    debuggingTab.IsPaused = true;
-                    debuggingTab.PausedLine = line;
-                    debuggingTab.CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
-                    debuggingTab.Locals.Clear();
-                    foreach (var l in locals) debuggingTab.Locals.Add(l);
-                    debuggingTab.CallStack.Clear();
-                    foreach (var frame in frames) debuggingTab.CallStack.Add(frame);
-                }
-
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    IsPaused = true;
-                    CurrentPausedLine = line;
-                    CompilerStatusText = $"⏸️ Paused at Line {line} (Breakpoint)";
-
-                    Locals.Clear();
-                    foreach (var l in locals)
+                    var bp = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
+                    if (bp != null)
                     {
-                        Locals.Add(l);
+                        bp.IsVerified = verified;
+                        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
                     }
-
-                    CallStack.Clear();
-                    foreach (var frame in frames) CallStack.Add(frame);
-
-                    _ = UpdateWatchExpressionsAsync();
-
-                    SelectedBottomTabIndex = 4;
-                    IsBottomDeckExpanded = true;
-
-                    RequestSetPausedLine?.Invoke(line);
-                    RequestNavigateToCaret?.Invoke(line, 1);
-                }
-            };
-
-            session.Resumed += () =>
-            {
-                if (debuggingTab != null)
-                {
-                    debuggingTab.IsPaused = false;
-                    debuggingTab.PausedLine = -1;
-                    debuggingTab.CompilerStatusText = "Debugging...";
-                }
-
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    IsPaused = false;
-                    CurrentPausedLine = -1;
-                    CompilerStatusText = "Debugging...";
-                    RequestSetPausedLine?.Invoke(-1);
-                }
-            };
-
-            session.Stopped += () =>
-            {
-                if (debuggingTab != null)
-                {
-                    debuggingTab.IsPaused = false;
-                    debuggingTab.PausedLine = -1;
-                }
-
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    IsPaused = false;
-                    CurrentPausedLine = -1;
-                    RequestSetPausedLine?.Invoke(-1);
-                }
-            };
-
-            var result = await _executionEngine.ExecuteAsync(
-                bytes,
-                liveText =>
-                {
-                    Action appendDebugOutput = () =>
-                    {
-                        if (debuggingTab != null)
-                        {
-                            debuggingTab.ConsoleOutput += liveText;
-                            if (debuggingTab.IsActive)
-                            {
-                                ConsoleOutput = debuggingTab.ConsoleOutput;
-                            }
-                        }
-                        else
-                        {
-                            ConsoleOutput += liveText;
-                        }
-                    };
-
-                    if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-                    {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(appendDebugOutput);
-                    }
-                    else
-                    {
-                        appendDebugOutput();
-                    }
-                },
-                token);
-
-            sw.Stop();
-            var timeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
-            var endBorder = "\n--------------------------------------------------\n";
-
-            if (result.Success)
-            {
-                var successMsg = $"{endBorder}🏁 Debugging finished in {sw.Elapsed.TotalMilliseconds:N0} ms\n";
-                var statusText = DumpResults.Count > 0
-                    ? $"Completed • {DumpResults.Count} visual dump{(DumpResults.Count == 1 ? "" : "s")}"
-                    : "Completed";
-                Script.ExecutionCount++;
-                _ = _storageService.SaveScriptAsync(Script);
-
-                if (debuggingTab != null)
-                {
-                    debuggingTab.ConsoleOutput += successMsg;
-                    debuggingTab.ExecutionTimeText = timeText;
-                    debuggingTab.CompilerStatusText = statusText;
-                }
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    ConsoleOutput += successMsg;
-                    ExecutionTimeText = timeText;
-                    CompilerStatusText = statusText;
-                }
+                });
             }
-            else if (result.WasCancelled)
-            {
-                var cancelMsg = $"{endBorder}🛑 Debug session stopped by user.\n";
-                if (debuggingTab != null)
-                {
-                    debuggingTab.ConsoleOutput += cancelMsg;
-                    debuggingTab.CompilerStatusText = "Stopped";
-                }
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    ConsoleOutput += cancelMsg;
-                    CompilerStatusText = "Stopped";
-                }
-            }
-            else
-            {
-                var errorMsg = $"{endBorder}❌ Runtime Error: {result.Error}\n";
-                if (debuggingTab != null)
-                {
-                    debuggingTab.ConsoleOutput += errorMsg;
-                    debuggingTab.CompilerStatusText = "Runtime Error";
-                }
-                if (debuggingTab == null || debuggingTab.IsActive)
-                {
-                    ConsoleOutput += errorMsg;
-                    CompilerStatusText = "Runtime Error";
-                }
-            }
+
+            var readyMsg = $"[Debug] {ActiveLanguage.DisplayName} debug session attached.\n--------------------------------------------------\n";
+            AppendLiveDebugOutput(readyMsg, debuggingTab);
+            CompilerStatusText = "Debugging...";
+            if (debuggingTab != null) debuggingTab.CompilerStatusText = "Debugging...";
         }
-        finally
+        catch (DebugCompilationException ex)
         {
-            ScriptDebugSession.EndSession();
-            GlobalVariableCache.Clear();
-
+            HandleCompilationFailure(ex.Diagnostics, debuggingTab);
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = $"\n❌ Failed to launch debugger: {ex.Message}\n";
+            AppendLiveDebugOutput(errorMsg, debuggingTab);
+            CompilerStatusText = "Debug Launch Failed";
+            IsExecuting = false;
+            IsDebugging = false;
             if (debuggingTab != null)
             {
+                debuggingTab.CompilerStatusText = "Debug Launch Failed";
                 debuggingTab.IsExecuting = false;
                 debuggingTab.IsDebugging = false;
-                debuggingTab.IsPaused = false;
-                debuggingTab.PausedLine = -1;
-            }
-
-            if (debuggingTab == null || debuggingTab.IsActive)
-            {
-                IsExecuting = false;
-                IsDebugging = false;
-                IsPaused = false;
-                CurrentPausedLine = -1;
-                RequestSetPausedLine?.Invoke(-1);
             }
         }
+    }
+
+    private void HandleCompilationFailure(IReadOnlyList<DiagnosticItem> diagnostics, StudioTabItemViewModel? debuggingTab)
+    {
+        var failMsg = "❌ Debug compilation failed. Check the Problems tab for details.\n";
+        if (debuggingTab != null)
+        {
+            debuggingTab.ConsoleOutput += failMsg;
+            debuggingTab.Diagnostics.Clear();
+            foreach (var d in diagnostics)
+            {
+                debuggingTab.Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+            }
+            debuggingTab.CompilerStatusText = "Build Failed";
+            debuggingTab.IsExecuting = false;
+            debuggingTab.IsDebugging = false;
+        }
+
+        if (debuggingTab == null || debuggingTab.IsActive)
+        {
+            ConsoleOutput += failMsg;
+            Diagnostics.Clear();
+            foreach (var d in diagnostics)
+            {
+                Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+            }
+            ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
+            WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
+            SelectedBottomTabIndex = 2;
+            CompilerStatusText = "Build Failed";
+            IsExecuting = false;
+            IsDebugging = false;
+        }
+    }
+
+    private void AppendLiveDebugOutput(string text, StudioTabItemViewModel? tab)
+    {
+        if (tab != null)
+        {
+            tab.ConsoleOutput += text;
+            if (tab.IsActive) ConsoleOutput = tab.ConsoleOutput;
+        }
+        else
+        {
+            ConsoleOutput += text;
+        }
+    }
+
+    private void HandleSessionPaused(DebugPausedEventArgs args, StudioTabItemViewModel? tab)
+    {
+        int line = args.LineNumber;
+        _variableChangeTracker.TrackAndMarkChanges(args.Locals);
+
+        if (tab != null)
+        {
+            tab.IsPaused = true;
+            tab.PausedLine = line;
+            tab.CompilerStatusText = $"⏸️ Paused at Line {line} ({args.Reason})";
+            tab.Locals.Clear();
+            foreach (var l in args.Locals) tab.Locals.Add(l);
+            tab.CallStack.Clear();
+            foreach (var f in args.CallStack) tab.CallStack.Add(f);
+        }
+
+        if (tab == null || tab.IsActive)
+        {
+            IsPaused = true;
+            CurrentPausedLine = line;
+            CompilerStatusText = $"⏸️ Paused at Line {line} ({args.Reason})";
+
+            Locals.Clear();
+            foreach (var l in args.Locals) Locals.Add(l);
+
+            CallStack.Clear();
+            foreach (var f in args.CallStack) CallStack.Add(f);
+
+            _ = UpdateWatchExpressionsAsync();
+
+            SelectedBottomTabIndex = 4;
+            IsBottomDeckExpanded = true;
+
+            RequestSetPausedLine?.Invoke(line);
+            RequestNavigateToCaret?.Invoke(line, 1);
+        }
+    }
+
+    private void HandleSessionResumed(StudioTabItemViewModel? tab)
+    {
+        if (tab != null)
+        {
+            tab.IsPaused = false;
+            tab.PausedLine = -1;
+            tab.CompilerStatusText = "Debugging...";
+        }
+
+        if (tab == null || tab.IsActive)
+        {
+            IsPaused = false;
+            CurrentPausedLine = -1;
+            CompilerStatusText = "Debugging...";
+            RequestSetPausedLine?.Invoke(-1);
+        }
+    }
+
+    private void HandleSessionTerminated(DebugTerminatedEventArgs args, StudioTabItemViewModel? tab, Stopwatch sw)
+    {
+        sw.Stop();
+        var timeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
+        var border = "\n--------------------------------------------------\n";
+
+        string endMsg = args.WasCancelled
+            ? $"{border}🛑 Debug session stopped.\n"
+            : $"{border}🏁 Debugging finished in {timeText}\n";
+
+        AppendLiveDebugOutput(endMsg, tab);
+
+        if (tab != null)
+        {
+            tab.IsExecuting = false;
+            tab.IsDebugging = false;
+            tab.IsPaused = false;
+            tab.PausedLine = -1;
+            tab.ExecutionTimeText = timeText;
+            tab.CompilerStatusText = args.WasCancelled ? "Stopped" : "Completed";
+        }
+
+        if (tab == null || tab.IsActive)
+        {
+            IsExecuting = false;
+            IsDebugging = false;
+            IsPaused = false;
+            CurrentPausedLine = -1;
+            ExecutionTimeText = timeText;
+            CompilerStatusText = args.WasCancelled ? "Stopped" : "Completed";
+            RequestSetPausedLine?.Invoke(-1);
+        }
+
+        foreach (var bp in Breakpoints) bp.IsVerified = true;
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+
+        _activeDebugSession = null;
     }
 
     [RelayCommand]
     public void ContinueDebug()
     {
-        ScriptDebugSession.Current?.Continue();
+        _ = _activeDebugSession?.ContinueAsync() ?? Task.CompletedTask;
     }
 
     [RelayCommand]
     public void StepOver()
     {
-        ScriptDebugSession.Current?.StepOver();
+        _ = _activeDebugSession?.StepOverAsync() ?? Task.CompletedTask;
     }
 
     [RelayCommand]
     public void StepInto()
     {
-        ScriptDebugSession.Current?.StepInto();
+        _ = _activeDebugSession?.StepIntoAsync() ?? Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    public void StepOut()
+    {
+        _ = _activeDebugSession?.StepOutAsync() ?? Task.CompletedTask;
     }
 
     [RelayCommand]
@@ -345,28 +338,15 @@ public partial class CSharpCodeStudioViewModel
     {
         var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         targetTab?.ExecutionCts?.Cancel();
-        ScriptDebugSession.Current?.Stop();
         _executionCts?.Cancel();
 
-        if (targetTab != null)
+        if (_activeDebugSession != null)
         {
-            targetTab.IsDebugging = false;
-            targetTab.IsExecuting = false;
-            targetTab.IsPaused = false;
-            targetTab.PausedLine = -1;
-            targetTab.ConsoleOutput += "\n🛑 Debug session stopped by user.\n";
-            targetTab.CompilerStatusText = "Stopped";
+            _ = _activeDebugSession.StopAsync();
         }
-
-        if (targetTab == null || targetTab.IsActive)
+        else
         {
-            IsDebugging = false;
-            IsExecuting = false;
-            IsPaused = false;
-            CurrentPausedLine = -1;
-            RequestSetPausedLine?.Invoke(-1);
-            ConsoleOutput += "\n🛑 Debug session stopped by user.\n";
-            CompilerStatusText = "Stopped";
+            ScriptDebugSession.Current?.Stop();
         }
     }
 
@@ -378,154 +358,43 @@ public partial class CSharpCodeStudioViewModel
         await DebugCodeAsync();
     }
 
+    public event Action<DebugVariableItem>? RequestExploreVariable;
+    public event Action<DebugVariableItem>? RequestViewVariable;
+
     [RelayCommand]
-    public void ToggleBreakpoint(int line)
+    public void ExploreVariable(DebugVariableItem? item)
     {
-        var existing = Breakpoints.FirstOrDefault(b => b.LineNumber == line);
-        if (existing != null)
+        if (item != null)
         {
-            Breakpoints.Remove(existing);
-            Script.Breakpoints.Remove(line);
+            RequestExploreVariable?.Invoke(item);
         }
-        else
+    }
+
+    [RelayCommand]
+    public void ViewVariable(DebugVariableItem? item)
+    {
+        if (item != null)
         {
-            var bp = new BreakpointItem { LineNumber = line, IsEnabled = true };
-            Breakpoints.Add(bp);
-            if (!Script.Breakpoints.Contains(line))
+            RequestViewVariable?.Invoke(item);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ExpandVariableAsync(DebugVariableItem? item)
+    {
+        if (item == null) return;
+        item.IsExpanded = !item.IsExpanded;
+        if (item.IsExpanded && !item.ChildrenLoaded && item.HasChildren)
+        {
+            item.IsLoadingChildren = true;
+            try
             {
-                Script.Breakpoints.Add(line);
+                await GetVariableChildrenAsync(item);
+            }
+            finally
+            {
+                item.IsLoadingChildren = false;
             }
         }
-
-        var sorted = Breakpoints.OrderBy(b => b.LineNumber).ToList();
-        Breakpoints.Clear();
-        foreach (var b in sorted)
-        {
-            Breakpoints.Add(b);
-        }
-
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        _ = _storageService.SaveScriptAsync(Script);
-    }
-
-    [RelayCommand]
-    public void RemoveBreakpoint(BreakpointItem? item)
-    {
-        if (item == null) return;
-        Breakpoints.Remove(item);
-        Script.Breakpoints.Remove(item.LineNumber);
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        _ = _storageService.SaveScriptAsync(Script);
-    }
-
-    [RelayCommand]
-    public void ClearAllBreakpoints()
-    {
-        Breakpoints.Clear();
-        Script.Breakpoints.Clear();
-        RequestSyncBreakpoints?.Invoke(Array.Empty<int>());
-        _ = _storageService.SaveScriptAsync(Script);
-    }
-
-    [RelayCommand]
-    public void ToggleBreakpointEnabled(BreakpointItem? item)
-    {
-        if (item == null) return;
-        item.IsEnabled = !item.IsEnabled;
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-    }
-
-    [RelayCommand]
-    public async Task AddWatchAsync()
-    {
-        if (string.IsNullOrWhiteSpace(WatchInputText)) return;
-        var expr = WatchInputText.Trim();
-        WatchInputText = string.Empty;
-
-        var watchItem = new WatchExpressionItem
-        {
-            Expression = expr,
-            Result = "Evaluating...",
-            TypeName = ""
-        };
-        WatchExpressions.Add(watchItem);
-
-        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
-        watchItem.Result = res;
-        watchItem.TypeName = type;
-        watchItem.HasError = !ok;
-    }
-
-    [RelayCommand]
-    public async Task AddWatchExpressionAsync(string? expr)
-    {
-        if (string.IsNullOrWhiteSpace(expr)) return;
-        expr = expr.Trim();
-        if (WatchExpressions.Any(w => w.Expression == expr)) return;
-
-        var watchItem = new WatchExpressionItem
-        {
-            Expression = expr,
-            Result = "Evaluating...",
-            TypeName = ""
-        };
-        WatchExpressions.Add(watchItem);
-
-        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
-        watchItem.Result = res;
-        watchItem.TypeName = type;
-        watchItem.HasError = !ok;
-
-        SelectedBottomTabIndex = 4;
-        IsBottomDeckExpanded = true;
-    }
-
-    public Task<(bool Success, string Result, string TypeName)> EvaluateExpressionAsync(string expr)
-    {
-        return _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
-    }
-
-    [RelayCommand]
-    public void RemoveWatch(WatchExpressionItem? item)
-    {
-        if (item == null) return;
-        WatchExpressions.Remove(item);
-    }
-
-    private async Task UpdateWatchExpressionsAsync()
-    {
-        var localsSnapshot = Locals.ToList();
-        foreach (var w in WatchExpressions)
-        {
-            var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(w.Expression, localsSnapshot);
-            w.Result = res;
-            w.TypeName = type;
-            w.HasError = !ok;
-        }
-    }
-
-    [RelayCommand]
-    public async Task EvaluateImmediateAsync()
-    {
-        if (string.IsNullOrWhiteSpace(ImmediateInputText)) return;
-        var expr = ImmediateInputText.Trim();
-        ImmediateInputText = string.Empty;
-
-        ImmediateOutput.Add($"> {expr}");
-        var (ok, res, type) = await _debuggerService.EvaluateExpressionAsync(expr, Locals.ToList());
-        if (ok)
-        {
-            ImmediateOutput.Add($"  {res} ({type})");
-        }
-        else
-        {
-            ImmediateOutput.Add($"  ❌ Error: {res}");
-        }
-    }
-
-    [RelayCommand]
-    public void ClearImmediate()
-    {
-        ImmediateOutput.Clear();
     }
 }

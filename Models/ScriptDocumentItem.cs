@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -20,4 +22,15 @@ public class ScriptDocumentItem
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public int ExecutionCount { get; set; }
+
+    /// <summary>
+    /// The document's language (<see cref="LanguageIds"/>). Set by storage from the file it was read from, never saved:
+    /// a .frycs document is always C#, a source file's extension says what it is.
+    /// </summary>
+    [JsonIgnore]
+    public string LanguageId { get; set; } = LanguageIds.CSharp;
+
+    /// <summary>The plain source file this document is (e.g. /work/main.py), or null for a .frycs document.</summary>
+    [JsonIgnore]
+    public string? SourceFilePath { get; set; }
 }

@@ -11,6 +11,9 @@ public partial class BreakpointItem : ObservableObject
     private bool _isEnabled = true;
 
     [ObservableProperty]
+    private bool _isVerified = true;
+
+    [ObservableProperty]
     private string? _condition;
 
     [ObservableProperty]

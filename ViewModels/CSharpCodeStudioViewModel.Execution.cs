@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -17,15 +18,131 @@ public partial class CSharpCodeStudioViewModel
     private bool _isBottomDeckExpanded = true;
 
     [ObservableProperty]
+    private bool _isDeckDockedToRight;
+
+    [ObservableProperty]
     private Avalonia.Controls.GridLength _bottomDeckGridLength = new(280, Avalonia.Controls.GridUnitType.Pixel);
 
+    [ObservableProperty]
+    private Avalonia.Controls.GridLength _rightDeckGridLength = new(0, Avalonia.Controls.GridUnitType.Pixel);
+
     private double _savedBottomDeckHeight = 280;
+    private double _savedRightDeckWidth = 520;
+
+    public bool ShowBottomDeck => !IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowRightDeck => IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowBottomDeckSplitter => !IsDeckDockedToRight && IsBottomDeckExpanded;
+    public bool ShowRightDeckSplitter => IsDeckDockedToRight && IsBottomDeckExpanded;
+    public string DeckPositionTooltip => IsDeckDockedToRight ? "Dock Panel to Bottom" : "Dock Panel to Right";
+
+    private bool _userExplicitlySetDeckPosition = true; // bottom is the default; user can toggle to right
+
+    public void UpdateAdaptiveDeckWidth(double viewWidth)
+    {
+        if (viewWidth <= 0) return;
+
+        // Auto-adapt deck position on widescreen displays (>= 1350px) unless user explicitly toggled it
+        if (!_userExplicitlySetDeckPosition)
+        {
+            bool shouldDockRight = viewWidth >= 1350;
+            if (IsDeckDockedToRight != shouldDockRight)
+            {
+                IsDeckDockedToRight = shouldDockRight;
+            }
+        }
+
+        double targetWidth;
+        if (viewWidth < 1400)
+        {
+            targetWidth = Math.Min(480, viewWidth * 0.45);
+        }
+        else if (viewWidth < 2000)
+        {
+            targetWidth = Math.Min(680, viewWidth * 0.42);
+        }
+        else if (viewWidth < 3000)
+        {
+            targetWidth = Math.Min(1100, viewWidth * 0.45);
+        }
+        else
+        {
+            targetWidth = Math.Min(1750, viewWidth * 0.48);
+        }
+
+        _savedRightDeckWidth = targetWidth;
+        if (IsDeckDockedToRight && IsBottomDeckExpanded)
+        {
+            RightDeckGridLength = new Avalonia.Controls.GridLength(targetWidth, Avalonia.Controls.GridUnitType.Pixel);
+        }
+        else
+        {
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleDeckPosition()
+    {
+        _userExplicitlySetDeckPosition = true;
+        IsDeckDockedToRight = !IsDeckDockedToRight;
+    }
+
+    partial void OnIsDeckDockedToRightChanged(bool value)
+    {
+        if (value)
+        {
+            if (BottomDeckGridLength.IsAbsolute && BottomDeckGridLength.Value > 60)
+            {
+                _savedBottomDeckHeight = BottomDeckGridLength.Value;
+            }
+            BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsBottomDeckExpanded)
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(_savedRightDeckWidth > 60 ? _savedRightDeckWidth : 520, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+        }
+        else
+        {
+            if (RightDeckGridLength.IsAbsolute && RightDeckGridLength.Value > 60)
+            {
+                _savedRightDeckWidth = RightDeckGridLength.Value;
+            }
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsBottomDeckExpanded)
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+        }
+
+        OnPropertyChanged(nameof(ShowBottomDeck));
+        OnPropertyChanged(nameof(ShowRightDeck));
+        OnPropertyChanged(nameof(ShowBottomDeckSplitter));
+        OnPropertyChanged(nameof(ShowRightDeckSplitter));
+        OnPropertyChanged(nameof(DeckPositionTooltip));
+    }
 
     partial void OnIsBottomDeckExpandedChanged(bool value)
     {
         if (value)
         {
-            BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+            if (IsDeckDockedToRight)
+            {
+                RightDeckGridLength = new Avalonia.Controls.GridLength(_savedRightDeckWidth > 60 ? _savedRightDeckWidth : 520, Avalonia.Controls.GridUnitType.Pixel);
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
+            else
+            {
+                BottomDeckGridLength = new Avalonia.Controls.GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 280, Avalonia.Controls.GridUnitType.Pixel);
+                RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            }
         }
         else
         {
@@ -33,8 +150,18 @@ public partial class CSharpCodeStudioViewModel
             {
                 _savedBottomDeckHeight = BottomDeckGridLength.Value;
             }
+            if (RightDeckGridLength.IsAbsolute && RightDeckGridLength.Value > 60)
+            {
+                _savedRightDeckWidth = RightDeckGridLength.Value;
+            }
             BottomDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
+            RightDeckGridLength = new Avalonia.Controls.GridLength(0, Avalonia.Controls.GridUnitType.Pixel);
         }
+
+        OnPropertyChanged(nameof(ShowBottomDeck));
+        OnPropertyChanged(nameof(ShowRightDeck));
+        OnPropertyChanged(nameof(ShowBottomDeckSplitter));
+        OnPropertyChanged(nameof(ShowRightDeckSplitter));
     }
 
     [ObservableProperty]
@@ -43,6 +170,7 @@ public partial class CSharpCodeStudioViewModel
     partial void OnIsExecutingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsNormalExecuting));
+        OnPropertyChanged(nameof(ShowDebugButton));
     }
 
     public bool IsNormalExecuting => IsExecuting && !IsDebugging;
@@ -80,6 +208,13 @@ public partial class CSharpCodeStudioViewModel
 
     private void TriggerDiagnosticsCheck()
     {
+        if (!ActiveLanguage.Has(LanguageCapabilities.LiveDiagnostics))
+        {
+            // Problems of such a document come from its runs; they stay until the next one.
+            _diagnosticsCts?.Cancel();
+            return;
+        }
+
         _diagnosticsCts?.Cancel();
         _diagnosticsCts = new CancellationTokenSource();
         var token = _diagnosticsCts.Token;
@@ -223,6 +358,20 @@ public partial class CSharpCodeStudioViewModel
     {
         if (IsExecuting) return;
 
+        if (ActiveLanguage.ScriptRunner != null)
+        {
+            await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage);
+            return;
+        }
+
+        if (UseExternalDotNetRunner)
+        {
+            var externalRunner = new Services.Languages.CSharp.CSharpBuildAndRunScriptRunner(_languages.Host);
+            var externalToolchains = new Services.Languages.CSharp.CSharpToolchainProvider(_languages.Host, _languages.Processes, _languages.ToolchainSettings);
+            await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage, "⚡ Running with External .NET SDK (dotnet CLI)...", externalRunner, externalToolchains);
+            return;
+        }
+
         var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         // Every run checks the script's test cases; their results land on them even if another tab is active by the end.
         var runningCases = TestCases.ToList();
@@ -308,6 +457,13 @@ public partial class CSharpCodeStudioViewModel
         });
         using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
+        var stdin = new Services.Processes.InteractiveStdinReader(token);
+        if (runningTab != null) runningTab.InProcessStdin = stdin;
+        if (ActiveLanguage.Has(Services.Languages.LanguageCapabilities.StandardInput))
+        {
+            IsAcceptingProgramInput = true;
+        }
+
         try
         {
             if (CurrentLanguageMode == ExecutionLanguageMode.Statements || CurrentLanguageMode == ExecutionLanguageMode.Expression)
@@ -331,6 +487,7 @@ public partial class CSharpCodeStudioViewModel
                     codeToRun,
                     ct: token,
                     onLiveConsole: terminal.Write,
+                    stdin: stdin,
                     onRichOutput: rich =>
                     {
                         Action appendRich = () =>
@@ -483,7 +640,7 @@ public partial class CSharpCodeStudioViewModel
                     CompilerStatusText = "Running...";
                 }
 
-                var executionTask = _executionEngine.ExecuteAsync(bytes, terminal.Write, token);
+                var executionTask = _executionEngine.ExecuteAsync(bytes, terminal.Write, token, stdin);
 
                 ExecutionResult result;
                 if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, token))
@@ -580,8 +737,10 @@ public partial class CSharpCodeStudioViewModel
         }
         finally
         {
+            stdin.Complete();
             if (runningTab != null)
             {
+                runningTab.InProcessStdin = null;
                 runningTab.IsExecuting = false;
                 runningTab.ExecutionTimeText = ExecutionTimeText;
                 runningTab.CompilerStatusText = CompilerStatusText;
@@ -589,6 +748,7 @@ public partial class CSharpCodeStudioViewModel
             if (runningTab == null || runningTab.IsActive)
             {
                 IsExecuting = false;
+                IsAcceptingProgramInput = false;
             }
             UpdateTestCaseResults(runningCases, runningCode, runningTab?.ConsoleOutput ?? ConsoleOutput, completed);
         }
@@ -613,8 +773,17 @@ public partial class CSharpCodeStudioViewModel
     {
         if (!IsExecuting) return;
         var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        targetTab?.ExecutionCts?.Cancel();
-        _executionCts?.Cancel();
+        targetTab?.InProcessStdin?.Complete();
+        if (targetTab?.ActiveRun != null)
+        {
+            // A program of this tab (a Python run): end it and what it started, and leave other tabs' runs alone.
+            targetTab.ActiveRun.Stop();
+        }
+        else
+        {
+            targetTab?.ExecutionCts?.Cancel();
+            _executionCts?.Cancel();
+        }
         if (targetTab != null)
         {
             targetTab.ConsoleOutput += "\n🛑 Cancellation requested by user...\n";

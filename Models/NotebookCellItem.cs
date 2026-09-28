@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -12,6 +13,10 @@ public class NotebookCellItem
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public CellType Type { get; set; } = CellType.Code;
+
+    /// <summary>The code cell's language id (e.g. "python"), or null for the notebook's default language.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Language { get; set; }
     public string Source { get; set; } = string.Empty;
     public string OutputText { get; set; } = string.Empty;
     public int? ExecutionCount { get; set; }

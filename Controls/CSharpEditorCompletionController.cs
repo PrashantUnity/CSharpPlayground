@@ -32,6 +32,17 @@ public class CSharpEditorCompletionController : IDisposable
     /// </summary>
     public Func<string>? PrecedingContextProvider { get; set; }
 
+    /// <summary>True while completion should stay off, e.g. when the editor shows a language other than C#.</summary>
+    public Func<bool>? IsSuppressed { get; set; }
+
+    /// <summary>Closes the completion list if it's open (the editor switched to another document or language).</summary>
+    public void Close()
+    {
+        _debounceTimer.Stop();
+        _queryCts?.Cancel();
+        _completionWindow?.Close();
+    }
+
     public CSharpEditorCompletionController(TextEditor editor, RoslynCompilerService compilerService)
         : this(editor, () => compilerService)
     {
@@ -70,7 +81,7 @@ public class CSharpEditorCompletionController : IDisposable
 
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
-        if (string.IsNullOrEmpty(e.Text)) return;
+        if (string.IsNullOrEmpty(e.Text) || IsSuppressed?.Invoke() == true) return;
 
         var ch = e.Text[0];
 
@@ -108,6 +119,7 @@ public class CSharpEditorCompletionController : IDisposable
         var isModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
         if (isModifier && e.Key == Key.Space)
         {
+            if (IsSuppressed?.Invoke() == true) return;
             _debounceTimer.Stop();
             TriggerCompletion(explicitTrigger: true);
             e.Handled = true;
@@ -124,6 +136,7 @@ public class CSharpEditorCompletionController : IDisposable
 
     public void TriggerCompletion(bool explicitTrigger = false)
     {
+        if (IsSuppressed?.Invoke() == true) return;
         _queryCts?.Cancel();
         _queryCts = new CancellationTokenSource();
         var token = _queryCts.Token;

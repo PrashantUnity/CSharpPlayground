@@ -194,7 +194,8 @@
 
             <!-- RIGHT ARTICLE CONTENT VIEWER -->
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel MaxWidth="880" HorizontalAlignment="Left" Spacing="20" Margin="36,24,36,40">
+                <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Stretch" Margin="36,24,36,40">
+                    <StackPanel Grid.Column="0" Spacing="20">
                     <!-- Breadcrumbs Strip -->
                     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" CornerRadius="6" Padding="12,6" HorizontalAlignment="Left">
                         <TextBlock Text="{Binding ActiveBreadcrumb}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -308,7 +309,7 @@
 
                                             <!-- Code Block Canvas -->
                                             <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="4">
-                                                <controls:CodeViewer Code="{Binding Code}" />
+                                                <controls:CodeViewer Code="{Binding Code}" Language="{Binding Language}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
@@ -364,6 +365,8 @@
                         </Button>
                     </Grid>
                 </StackPanel>
+                <controls:DocsOutlinePanelControl Grid.Column="1" IsVisible="{Binding IsOutlineVisible}" />
+            </Grid>
             </ScrollViewer>
         </Grid>
     </Grid>

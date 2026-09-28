@@ -80,7 +80,7 @@ public class BoardVisualizerRenderer : VisualizerRendererBase
                 {
                     var textBrush = !string.IsNullOrEmpty(cell.TextColor)
                         ? GetBrush(cell.TextColor)
-                        : (cell.IsConflict ? GetBrush("#ef4444") : WhiteBrush);
+                        : (cell.IsConflict ? (IsDarkTheme ? GetBrush("#ef4444") : GetBrush("#dc2626")) : PrimaryTextBrush);
 
                     double fontSize = Math.Max(10, cellSize * 0.44);
                     var ft = CreateFormattedText(cell.Value, fontSize, textBrush, FontWeight.Bold);
@@ -183,7 +183,7 @@ public class BoardVisualizerRenderer : VisualizerRendererBase
         return options.BoardData;
     }
 
-    private static (IBrush Fill, IPen Border) ResolveBoardCellStyling(BoardCell cell, bool isCheckerboard)
+    private (IBrush Fill, IPen Border) ResolveBoardCellStyling(BoardCell cell, bool isCheckerboard)
     {
         if (!string.IsNullOrEmpty(cell.FillColor))
         {
@@ -192,21 +192,34 @@ public class BoardVisualizerRenderer : VisualizerRendererBase
 
         if (cell.IsConflict)
         {
-            return (GetBrush("#450a0a"), GetPen("#ef4444", 1.5));
+            return IsDarkTheme
+                ? (GetBrush("#450a0a"), GetPen("#ef4444", 1.5))
+                : (GetBrush("#fee2e2"), GetPen("#ef4444", 1.5));
         }
         if (cell.IsTarget)
         {
-            return (GetBrush("#064e3b"), GetPen("#10b981", 1.5));
+            return IsDarkTheme
+                ? (GetBrush("#064e3b"), GetPen("#10b981", 1.5))
+                : (GetBrush("#d1fae5"), GetPen("#10b981", 1.5));
         }
 
         if (isCheckerboard)
         {
             bool isDark = (cell.Row + cell.Col) % 2 == 1;
-            return isDark
-                ? (GetBrush("#1e293b"), GetPen("#334155", 1.0))
-                : (GetBrush("#334155"), GetPen("#475569", 1.0));
+            if (IsDarkTheme)
+            {
+                return isDark
+                    ? (GetBrush("#1e293b"), GetPen("#334155", 1.0))
+                    : (GetBrush("#334155"), GetPen("#475569", 1.0));
+            }
+            else
+            {
+                return isDark
+                    ? (GetBrush("#e2e8f0"), GetPen("#cbd5e1", 1.0))
+                    : (GetBrush("#f8fafc"), GetPen("#e2e8f0", 1.0));
+            }
         }
 
-        return (GetBrush("#111827"), GetPen("#1f2937", 1.0));
+        return (DefaultCellBgBrush, DefaultCellBorderPen);
     }
 }

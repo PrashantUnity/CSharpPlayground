@@ -58,12 +58,12 @@
                             </Grid>
                         </Border>
 
-                        <!-- Right Actions: Bell & Sync Button -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                        <!-- Right Actions: Bell, Sync Button & System Status Rail Toggle -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                             <!-- Bell Button -->
-                            <Button Background="Transparent" BorderThickness="0" Padding="6" Cursor="Hand" ToolTip.Tip="Notifications">
-                                <Panel>
-                                    <materialIcons:MaterialIcon Kind="BellOutline" Width="20" Height="20" Foreground="{DynamicResource DsMutedBrush}" />
+                            <Button Classes="nexus-btn-ghost" Width="36" Height="36" Padding="0" Cursor="Hand" ToolTip.Tip="Notifications">
+                                <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="BellOutline" Width="18" Height="18" Foreground="{DynamicResource DsMutedBrush}" />
                                     <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsPrimaryBrush}"
                                             BorderBrush="{DynamicResource DsBgBrush}" BorderThickness="1"
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
@@ -80,6 +80,14 @@
                                     <TextBlock Text="Sync" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+
+                            <!-- Toggle System Status Rail -->
+                            <ToggleButton IsChecked="{Binding IsSystemStatusRailVisible, Mode=TwoWay}"
+                                          Classes="nexus-btn-ghost"
+                                          Width="36" Height="36" Padding="0"
+                                          ToolTip.Tip="Toggle System Status &amp; Environment Rail">
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </ToggleButton>
                         </StackPanel>
 
                     </Grid>

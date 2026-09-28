@@ -11,6 +11,24 @@ public partial class CSharpDocsView : UserControl
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        SizeChanged += OnSizeChanged;
+    }
+
+    private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is CSharpDocsViewModel vm && e.NewSize.Width > 0)
+        {
+            vm.IsOutlineVisible = e.NewSize.Width >= 1400;
+        }
+    }
+
+    protected override void OnDataContextChanged(System.EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is CSharpDocsViewModel vm && Bounds.Width > 0)
+        {
+            vm.IsOutlineVisible = Bounds.Width >= 1400;
+        }
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)

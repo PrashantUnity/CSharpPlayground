@@ -9,6 +9,22 @@ dist/
 *.app/
 .venv-dmg/
 
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 ## Visual Studio / JetBrains Rider / VS Code cache
 .vs/
 .idea/

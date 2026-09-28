@@ -52,7 +52,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     /// <summary>The Blind 75 problem this script was opened from, if any: it can generate verified cases.</summary>
-    public BlindProblemItem? TestCaseProblem => Blind75CatalogService.FindForScript(Script);
+    public BlindProblemItem? TestCaseProblem => SupportsTestCases ? Blind75CatalogService.FindForScript(Script) : null;
 
     public bool CanGenerateTestCases => TestCaseProblem != null;
 
@@ -82,11 +82,13 @@ public partial class CSharpCodeStudioViewModel
     {
         OnPropertyChanged(nameof(TestCaseProblem));
         OnPropertyChanged(nameof(CanGenerateTestCases));
+        OnActiveLanguageChanged();
     }
 
     [RelayCommand]
     private void AddTestCase()
     {
+        if (!SupportsTestCases) return;
         int next = TestCases.Count + 1;
         while (TestCases.Any(t => t.Name == $"Case {next}")) next++;
         NewTestCaseName = $"Case {next}";
@@ -109,6 +111,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     private void ConfirmAddTestCase()
     {
+        if (!SupportsTestCases) return;
         string name = NewTestCaseName.Trim();
         string call = NewTestCaseCall.Trim().TrimEnd(';');
         string expected = NewTestCaseExpected.Trim();
@@ -179,7 +182,7 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     private async Task RunAllTestCasesAsync()
     {
-        if (IsExecuting) return;
+        if (IsExecuting || !SupportsTestCases) return;
         var script = Script;
         var problem = TestCaseProblem;
         var cases = TestCases.ToList();

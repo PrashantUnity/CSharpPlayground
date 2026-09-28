@@ -63,9 +63,9 @@ public class ArrayPointerRenderer : VisualizerRendererBase
 
             var fillBrush = !string.IsNullOrEmpty(item.Color)
                 ? GetBrush(item.Color)
-                : (isActive ? GetBrush("#1e3a8a") : GetBrush("#1e293b"));
+                : (isActive ? ActiveCellBgBrush : DefaultCellBgBrush);
 
-            var borderPen = isActive ? GetPen("#60a5fa", 1.8) : GetPen("#475569", 1.0);
+            var borderPen = isActive ? ActiveBorderPen : DefaultCellBorderPen;
             context.DrawRectangle(fillBrush, borderPen, new RoundedRect(cellRect, 5));
             if (changed.Contains(i))
             {
@@ -75,7 +75,10 @@ public class ArrayPointerRenderer : VisualizerRendererBase
             // 3. Draw value
             if (!string.IsNullOrEmpty(item.DisplayValue))
             {
-                var ftVal = CreateFormattedText(item.DisplayValue, Math.Max(8, 13 * scale), WhiteBrush, FontWeight.Bold);
+                var valBrush = !string.IsNullOrEmpty(item.Color)
+                    ? WhiteBrush
+                    : (isActive && !IsDarkTheme ? GetBrush("#1E40AF") : PrimaryTextBrush);
+                var ftVal = CreateFormattedText(item.DisplayValue, Math.Max(8, 13 * scale), valBrush, FontWeight.Bold);
                 context.DrawText(ftVal, new Point(x + (w - ftVal.Width) / 2.0, y + (h - ftVal.Height) / 2.0));
             }
 

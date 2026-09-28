@@ -25,6 +25,13 @@ public partial class DiagnosticItemViewModel : ObservableObject
         _onNavigate = onNavigate;
     }
 
+    /// <summary>What the fix button says, e.g. "Install numpy", or null when there's no fix.</summary>
+    public string? QuickFixLabel { get; init; }
+
+    public IAsyncRelayCommand? QuickFixCommand { get; init; }
+
+    public bool HasQuickFix => QuickFixCommand != null;
+
     [RelayCommand]
     private void Navigate()
     {
