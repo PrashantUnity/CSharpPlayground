@@ -10,7 +10,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 /// </summary>
 public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
 {
-    [GeneratedRegex(@"^(?<file>[^:\r\n]+):(?<line>\d+):(?<col>\d+):\s*(?<severity>error|fatal error|warning|note):\s*(?<message>.+)$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?<file>(?:[a-zA-Z]:)?[^:\r\n]+):(?<line>\d+):(?<col>\d+):\s*(?<severity>error|fatal error|warning|note):\s*(?<message>.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex ClangGccDiagnosticHeaderRegex();
 
     [GeneratedRegex(@"^(?<file>[^(\r\n]+)\((?<line>\d+)(?:,(?<col>\d+))?\):\s*(?<severity>error|fatal error|warning)\s*(?<code>[A-Z0-9]+)?:\s*(?<message>.+)$", RegexOptions.IgnoreCase)]
@@ -36,6 +36,25 @@ public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
 
     [GeneratedRegex(@"Cannot open include file:\s*'(?<header>[^']+)'", RegexOptions.IgnoreCase)]
     private static partial Regex MsvcMissingHeaderRegex();
+
+    private static readonly HashSet<string> StandardCppHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "iostream", "fstream", "sstream", "iomanip", "ios", "streambuf", "istream", "ostream",
+        "vector", "string", "string_view", "array", "deque", "list", "forward_list",
+        "map", "set", "unordered_map", "unordered_set", "queue", "stack", "span",
+        "algorithm", "numeric", "memory", "utility", "tuple", "optional", "variant", "any",
+        "functional", "iterator", "ranges", "concepts", "format", "bit", "compare",
+        "chrono", "thread", "mutex", "shared_mutex", "condition_variable", "future", "barrier", "latch", "semaphore", "stop_token",
+        "cmath", "cstdlib", "cstdio", "cstring", "cassert", "cstdint", "cstddef", "ctime", "cctype", "cwchar", "climits", "cfloat",
+        "exception", "stdexcept", "system_error", "type_traits", "typeinfo", "limits", "valarray", "complex", "random", "ratio",
+        "filesystem", "regex", "atomic", "source_location", "version", "numbers", "syncstream", "expected", "generator", "print"
+    };
+
+    public static bool IsStandardHeader(string header)
+    {
+        var clean = header.Trim().Trim('<', '>', '"');
+        return StandardCppHeaders.Contains(clean);
+    }
 
     public DiagnosticParseResult Parse(string output, string sourceFilePath)
     {
@@ -94,28 +113,41 @@ public sealed partial class ClangGccDiagnosticParser : IDiagnosticParser
 
             if (!SamePath(file, sourceFilePath)) continue;
 
-            if (missingDependency == null)
+            string? missingHeaderCandidate = null;
+            var clangHeaderMatch = ClangMissingHeaderRegex().Match(message);
+            if (clangHeaderMatch.Success)
             {
-                var clangHeaderMatch = ClangMissingHeaderRegex().Match(message);
-                if (clangHeaderMatch.Success)
+                missingHeaderCandidate = clangHeaderMatch.Groups["header"].Value.Trim().Trim('<', '>', '"');
+            }
+            else
+            {
+                var gccMatch = GccMissingHeaderRegex().Match(message);
+                if (gccMatch.Success)
                 {
-                    missingDependency = clangHeaderMatch.Groups["header"].Value;
+                    missingHeaderCandidate = gccMatch.Groups["header"].Value.Trim().Trim('<', '>', '"');
                 }
                 else
                 {
-                    var gccMatch = GccMissingHeaderRegex().Match(message);
-                    if (gccMatch.Success)
+                    var msvcHeaderMatch = MsvcMissingHeaderRegex().Match(message);
+                    if (msvcHeaderMatch.Success)
                     {
-                        missingDependency = gccMatch.Groups["header"].Value.Trim();
+                        missingHeaderCandidate = msvcHeaderMatch.Groups["header"].Value.Trim().Trim('<', '>', '"');
                     }
-                    else
+                }
+            }
+
+            if (missingHeaderCandidate != null)
+            {
+                if (IsStandardHeader(missingHeaderCandidate))
+                {
+                    if (OperatingSystem.IsWindows())
                     {
-                        var msvcHeaderMatch = MsvcMissingHeaderRegex().Match(message);
-                        if (msvcHeaderMatch.Success)
-                        {
-                            missingDependency = msvcHeaderMatch.Groups["header"].Value;
-                        }
+                        message += " (C++ standard library headers missing; on Windows, LLVM Clang requires Visual Studio C++ Build Tools or MinGW-w64/WinLibs)";
                     }
+                }
+                else if (missingDependency == null)
+                {
+                    missingDependency = missingHeaderCandidate;
                 }
             }
 

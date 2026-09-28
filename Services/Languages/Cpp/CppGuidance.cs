@@ -23,9 +23,10 @@ public static class CppGuidance
                 "C++ compiler isn't installed",
                 summary,
                 [
-                    "Install LLVM Clang via winget: winget install LLVM.LLVM",
+                    "Install WinLibs (GCC & Clang with full C++ STL): winget install BrechtSanders.WinLibs.POSIX.UCRT",
                     "or Visual Studio C++ Build Tools: winget install Microsoft.VisualStudio.2022.BuildTools",
-                    "or MinGW-w64 via MSYS2: winget install MSYS2.MSYS2"
+                    "or MinGW-w64 via MSYS2: winget install MSYS2.MSYS2",
+                    "or LLVM Clang: winget install LLVM.LLVM"
                 ],
                 "https://visualstudio.microsoft.com/visual-cpp-build-tools/");
         }

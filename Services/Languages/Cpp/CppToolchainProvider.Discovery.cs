@@ -103,11 +103,21 @@ public sealed partial class CppToolchainProvider
             yield return Path.Combine(programFiles, "LLVM", "bin");
             yield return Path.Combine(programFilesX86, "LLVM", "bin");
 
-            // MSYS2 / MinGW
+            // MSYS2 / MinGW / WinLibs
             yield return @"C:\msys64\ucrt64\bin";
             yield return @"C:\msys64\mingw64\bin";
+            yield return @"C:\msys64\clang64\bin";
             yield return @"C:\msys64\usr\bin";
             yield return @"C:\MinGW\bin";
+            yield return @"C:\mingw64\bin";
+            yield return @"C:\winlibs\bin";
+
+            var localAppData = _host.GetEnvironmentVariable("LocalAppData");
+            if (!string.IsNullOrEmpty(localAppData))
+            {
+                yield return Path.Combine(localAppData, "Programs", "winlibs", "bin");
+            }
+            yield return Path.Combine(programFiles, "winlibs", "bin");
         }
         else if (_host.IsMacOS)
         {

@@ -50,8 +50,9 @@ public sealed partial class CppToolchainProvider : IToolchainProvider
             var actions = new List<ToolchainAction>();
             if (_host.IsWindows)
             {
-                actions.Add(new ToolchainAction("winget-install-llvm", "Install LLVM Clang via winget", "Runs 'winget install LLVM.LLVM' to install modern Clang compiler."));
-                actions.Add(new ToolchainAction("winget-install-vs", "Install Visual Studio C++ Build Tools", "Runs 'winget install Microsoft.VisualStudio.2022.BuildTools'."));
+                actions.Add(new ToolchainAction("winget-install-winlibs", "Install WinLibs (GCC & Clang with C++ STL)", "Runs 'winget install BrechtSanders.WinLibs.POSIX.UCRT' for standalone C++ compiler with full standard library."));
+                actions.Add(new ToolchainAction("winget-install-vs", "Install Visual Studio C++ Build Tools", "Runs 'winget install Microsoft.VisualStudio.2022.BuildTools' (with C++ workload)."));
+                actions.Add(new ToolchainAction("winget-install-llvm", "Install LLVM Clang via winget", "Runs 'winget install LLVM.LLVM' (requires Visual Studio or MinGW for C++ standard library)."));
                 actions.Add(new ToolchainAction("open-download", "Download Visual C++ Build Tools", "Opens Microsoft Visual C++ Build Tools download page in browser."));
             }
             else if (_host.IsMacOS)
@@ -137,14 +138,19 @@ public sealed partial class CppToolchainProvider : IToolchainProvider
                 var brewOk = await ToolchainSetupRunner.ExecuteAsync("brew install llvm", _host, _launcher, output, ct);
                 return new ToolchainActionResult(brewOk, brewOk ? "LLVM Clang installation completed." : "Homebrew installation failed or was cancelled.");
 
+            case "winget-install-winlibs":
+                output("Installing WinLibs (GCC & Clang with full C++ STL) via winget…\n");
+                var winlibsOk = await ToolchainSetupRunner.ExecuteAsync("winget install BrechtSanders.WinLibs.POSIX.UCRT --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
+                return new ToolchainActionResult(winlibsOk, winlibsOk ? "WinLibs installation completed." : "winget installation failed or was cancelled.");
+
             case "winget-install-llvm":
                 output("Installing LLVM Clang via winget (winget install LLVM.LLVM)…\n");
                 var wingetOk = await ToolchainSetupRunner.ExecuteAsync("winget install LLVM.LLVM --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
                 return new ToolchainActionResult(wingetOk, wingetOk ? "LLVM Clang installation completed." : "winget installation failed or was cancelled.");
 
             case "winget-install-vs":
-                output("Installing Visual Studio C++ Build Tools via winget…\n");
-                var vsOk = await ToolchainSetupRunner.ExecuteAsync("winget install Microsoft.VisualStudio.2022.BuildTools --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
+                output("Installing Visual Studio C++ Build Tools (with C++ Workload) via winget…\n");
+                var vsOk = await ToolchainSetupRunner.ExecuteAsync("winget install Microsoft.VisualStudio.2022.BuildTools --override \"--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\" --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
                 return new ToolchainActionResult(vsOk, vsOk ? "Visual Studio Build Tools installation completed." : "winget installation failed or was cancelled.");
 
             default:
