@@ -42,6 +42,8 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.True(vm.ConvertTabsToSpaces);
         Assert.False(vm.WordWrap);
         Assert.True(vm.ShowLineNumbers);
+        Assert.True(vm.EnableSyntaxHighlighting);
+        Assert.True(vm.EnableAutoCompletion);
         Assert.Equal(13.0, vm.FontSize);
         Assert.Equal(0, vm.ExecutionTimeoutSeconds);
         Assert.False(vm.AutoClearConsoleOnRun);
@@ -92,6 +94,37 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.Equal(4, vm.TabSize);
         Assert.False(vm.WordWrap);
         Assert.Equal(0, vm.ExecutionTimeoutSeconds);
+        Assert.True(vm.HasPendingChanges);
+    }
+
+    [Fact]
+    public void EditorFeatureToggles_CanBeDisabledPersistedAndReset()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        // Defaults are both ON
+        Assert.True(vm.EnableSyntaxHighlighting);
+        Assert.True(vm.EnableAutoCompletion);
+
+        // User disables both
+        vm.EnableSyntaxHighlighting = false;
+        vm.EnableAutoCompletion = false;
+        Assert.True(vm.HasPendingChanges);
+
+        // Persist
+        vm.Apply();
+        Assert.False(vm.HasPendingChanges);
+
+        // Reload fresh from disk
+        var freshStore = new StudioSettingsStore(Path.Combine(_tempFolder, "studio_settings.json"));
+        var loaded = freshStore.GetSettings();
+        Assert.False(loaded.EnableSyntaxHighlighting);
+        Assert.False(loaded.EnableAutoCompletion);
+
+        // ResetDefaults brings them back ON
+        vm.ResetDefaults();
+        Assert.True(vm.EnableSyntaxHighlighting);
+        Assert.True(vm.EnableAutoCompletion);
         Assert.True(vm.HasPendingChanges);
     }
 

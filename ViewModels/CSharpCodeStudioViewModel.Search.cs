@@ -47,6 +47,12 @@ public partial class CSharpCodeStudioViewModel
     [ObservableProperty]
     private bool _isWordWrap;
 
+    [ObservableProperty]
+    private bool _isSyntaxHighlightingEnabled = true;
+
+    [ObservableProperty]
+    private bool _isAutoCompletionEnabled = true;
+
     public event Action? RequestFoldAll;
     public event Action? RequestUnfoldAll;
     public event Action? RequestToggleSearch;

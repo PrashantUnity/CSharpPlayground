@@ -408,6 +408,26 @@ public partial class CSharpCodeStudioView : UserControl
         PolishLeftMargins(isDark);
     }
 
+    /// <summary>
+    /// Enables or disables syntax highlighting without altering other editor state.
+    /// When disabled the highlighting definition is set to null (plain text).
+    /// When re-enabled the correct language theme is restored.
+    /// </summary>
+    private void ApplySyntaxHighlighting(bool enable)
+    {
+        if (_editor == null) return;
+        if (!enable)
+        {
+            _editor.SyntaxHighlighting = null;
+        }
+        else
+        {
+            _editor.SyntaxHighlighting = _editorLanguage != null
+                ? _editorLanguage.GetHighlighting(IsDarkTheme())
+                : CSharpSyntaxHighlightingTheme.GetDarkTheme();
+        }
+    }
+
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -598,6 +618,11 @@ public partial class CSharpCodeStudioView : UserControl
                 _editor.Options.IndentationSize = _currentVm.IndentationSize;
             }
 
+            // Apply persisted feature-toggle settings
+            ApplySyntaxHighlighting(_currentVm.IsSyntaxHighlightingEnabled);
+            if (_completionController != null)
+                _completionController.IsFeatureEnabled = _currentVm.IsAutoCompletionEnabled;
+
             _isUpdatingText = true;
             try
             {
@@ -628,7 +653,9 @@ public partial class CSharpCodeStudioView : UserControl
         if (_editor == null) return;
         if (!Dispatcher.UIThread.CheckAccess())
         {
-            Dispatcher.UIThread.Post(() => OnSwitchTabDocument(tab));
+            // Awaiting InvokeAsync makes the Task observable to the caller so any exception
+            // propagates instead of becoming an UnobservedTaskException on the finalizer thread.
+            _ = Dispatcher.UIThread.InvokeAsync(() => OnSwitchTabDocument(tab));
             return;
         }
 
@@ -726,6 +753,15 @@ public partial class CSharpCodeStudioView : UserControl
         {
             UpdateDeckPlacement();
         }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsSyntaxHighlightingEnabled))
+        {
+            ApplySyntaxHighlighting(_currentVm.IsSyntaxHighlightingEnabled);
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsAutoCompletionEnabled))
+        {
+            if (_completionController != null)
+                _completionController.IsFeatureEnabled = _currentVm.IsAutoCompletionEnabled;
+        }
     }
 
     private void OnViewSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -762,7 +798,7 @@ public partial class CSharpCodeStudioView : UserControl
 
         var changed = !ReferenceEquals(_editorLanguage, language);
         _editorLanguage = language;
-        _editor.SyntaxHighlighting = language.GetHighlighting(IsDarkTheme());
+        ApplySyntaxHighlighting(_currentVm?.IsSyntaxHighlightingEnabled ?? true);
         _breakpointMargin.IsVisible = language.Has(LanguageCapabilities.Breakpoints);
         if (!changed) return;
 

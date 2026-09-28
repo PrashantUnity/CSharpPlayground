@@ -96,6 +96,28 @@
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding WordWrap, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
                         </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                        <!-- Syntax Highlighting -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Syntax Highlighting" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <TextBlock Text="Apply language-aware colour themes to keywords, strings, and identifiers. Disable for a plain-text experience." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableSyntaxHighlighting, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
+
+                        <!-- Auto Completion -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Auto Completion" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <TextBlock Text="Show IntelliSense completion suggestions while typing. Disable to get more screen space and fewer interruptions." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAutoCompletion, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

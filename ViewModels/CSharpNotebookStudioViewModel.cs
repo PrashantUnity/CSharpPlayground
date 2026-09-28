@@ -177,6 +177,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
     private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
 
+    [ObservableProperty]
+    private bool _isSyntaxHighlightingEnabled = true;
+
+    [ObservableProperty]
+    private bool _isAutoCompletionEnabled = true;
+
     public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
 
     [RelayCommand]
@@ -385,6 +391,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         var initialSettings = _languages.StudioSettings.GetSettings();
         _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
+        _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
 
         InitializeQuickOpenCommands();
@@ -402,6 +410,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             {
                 EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
             }
+            IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;
+            IsAutoCompletionEnabled = s.EnableAutoCompletion;
         });
     }
 

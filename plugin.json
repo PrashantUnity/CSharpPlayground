@@ -43,6 +43,18 @@
       "label": "Execution Timeout (seconds, 0 = no limit)",
       "description": "Maximum allowed run time before script execution is automatically stopped. 0 disables the automatic limit — Stop is always available regardless.",
       "default": 0
+    },
+    "EnableSyntaxHighlighting": {
+      "type": "boolean",
+      "label": "Syntax Highlighting",
+      "description": "Apply language-aware colour themes to keywords, strings, and identifiers. Disable for a plain-text experience.",
+      "default": true
+    },
+    "EnableAutoCompletion": {
+      "type": "boolean",
+      "label": "Auto Completion",
+      "description": "Show IntelliSense completion suggestions while typing. Disable to get more screen space and fewer interruptions.",
+      "default": true
     }
   },
   "isCollectible": false

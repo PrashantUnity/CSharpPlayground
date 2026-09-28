@@ -331,6 +331,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         var initialSettings = _languages.StudioSettings.GetSettings();
         _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
         _useExternalDotNetRunner = string.Equals(initialSettings.CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);
+        _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
+        _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
 
         TriggerDiagnosticsCheck();
@@ -350,6 +352,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
                 EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
             }
             SetCSharpRunner(s.CSharpExecutionEngine);
+            IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;
+            IsAutoCompletionEnabled = s.EnableAutoCompletion;
         });
     }
 
