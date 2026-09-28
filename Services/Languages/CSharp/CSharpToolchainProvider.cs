@@ -33,7 +33,28 @@ public sealed partial class CSharpToolchainProvider : IToolchainProvider
 
     public string? SelectedPath => _settings.GetSelectedPath(LanguageIds.CSharp);
 
-    public IReadOnlyList<ToolchainAction> Actions => Array.Empty<ToolchainAction>();
+    public IReadOnlyList<ToolchainAction> Actions
+    {
+        get
+        {
+            var actions = new List<ToolchainAction>();
+            if (_host.IsWindows)
+            {
+                actions.Add(new ToolchainAction("winget-install-dotnet", "Install .NET SDK via winget", "Runs 'winget install Microsoft.DotNet.SDK.10'."));
+                actions.Add(new ToolchainAction("open-download", "Download .NET SDK Installer", "Opens dotnet.microsoft.com download page in browser."));
+            }
+            else if (_host.IsMacOS)
+            {
+                actions.Add(new ToolchainAction("brew-install-dotnet", "Install .NET SDK via Homebrew", "Runs 'brew install dotnet-sdk' via Homebrew."));
+                actions.Add(new ToolchainAction("open-download", "Download .NET SDK Installer", "Opens dotnet.microsoft.com download page in browser."));
+            }
+            else
+            {
+                actions.Add(new ToolchainAction("open-download", "Download .NET SDK", "Opens dotnet.microsoft.com in browser."));
+            }
+            return actions;
+        }
+    }
 
     public void Select(string? executablePath) => _settings.SetSelectedPath(LanguageIds.CSharp, executablePath);
 
@@ -84,9 +105,27 @@ public sealed partial class CSharpToolchainProvider : IToolchainProvider
         return list;
     }
 
-    public Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default)
+    public async Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default)
     {
-        return Task.FromResult(new ToolchainActionResult(false, "No actions available."));
+        switch (actionId)
+        {
+            case "open-download":
+                BrowserLauncher.Open("https://dotnet.microsoft.com/download");
+                return new ToolchainActionResult(true, "Opened https://dotnet.microsoft.com/download in browser.");
+
+            case "brew-install-dotnet":
+                output("Installing .NET SDK via Homebrew (brew install dotnet-sdk)…\n");
+                var brewOk = await ToolchainSetupRunner.ExecuteAsync("brew install dotnet-sdk", _host, _launcher, output, ct);
+                return new ToolchainActionResult(brewOk, brewOk ? ".NET SDK installation completed." : "Homebrew installation failed or was cancelled.");
+
+            case "winget-install-dotnet":
+                output("Installing .NET SDK via winget…\n");
+                var wingetOk = await ToolchainSetupRunner.ExecuteAsync("winget install Microsoft.DotNet.SDK.10 --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
+                return new ToolchainActionResult(wingetOk, wingetOk ? ".NET SDK installation completed." : "winget installation failed or was cancelled.");
+
+            default:
+                return new ToolchainActionResult(false, $"Unknown action '{actionId}'.");
+        }
     }
 
     private async IAsyncEnumerable<Candidate> CandidatesAsync(ToolchainQuery query, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)

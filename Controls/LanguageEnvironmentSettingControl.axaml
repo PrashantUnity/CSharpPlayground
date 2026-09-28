@@ -23,48 +23,29 @@
             <StackPanel Grid.Column="0" Spacing="16">
 
                 <!-- 1. HERO HEADER CARD -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
+                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Language Icon -->
-                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8"
-                                Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                BorderThickness="1"
-                                VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="26" Height="26"
-                                                        Foreground="{Binding AccentHex}"
-                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="26" Height="26" Foreground="{Binding AccentHex}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
 
                         <!-- Title, Version & Storage Pill -->
                         <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" Spacing="4">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                <Border Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                        Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding ActiveVersion}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
+                                <Border Background="{DynamicResource M3SurfaceContainerHighestBrush}" Height="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ActiveVersion}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                                 </Border>
-                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                        Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding StorageBadge}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
+                                <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" Height="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StorageBadge}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{Binding RuntimeDescription}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </StackPanel>
 
                         <!-- Status Badge -->
-                        <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                BorderThickness="1"
-                                CornerRadius="16"
-                                Padding="12,5"
-                                VerticalAlignment="Center">
+                        <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                                 <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" />
                                 <TextBlock Text="{Binding StatusBadge}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
@@ -73,20 +54,78 @@
                     </Grid>
                 </Border>
 
-                <!-- 2. MISSING TOOLCHAIN BANNER -->
-                <Border Background="{DynamicResource M3ErrorContainerBrush}" BorderBrush="{DynamicResource M3ErrorBrush}" BorderThickness="1" CornerRadius="8" Padding="16" IsVisible="{Binding IsMissing}">
-                    <StackPanel Spacing="10">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="{DynamicResource M3OnErrorContainerBrush}" />
-                            <TextBlock Text="{Binding MissingTitle}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnErrorContainerBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
+                <!-- 2. MISSING TOOLCHAIN BANNER (ONE-CLICK DOWNLOAD & SETUP) -->
+                <Border Background="{DynamicResource M3ErrorContainerBrush}" BorderBrush="{DynamicResource M3ErrorBrush}" BorderThickness="1" CornerRadius="10" Padding="16" IsVisible="{Binding IsMissing}">
+                    <StackPanel Spacing="12">
+                        <!-- Header with Status and Action Buttons -->
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="{DynamicResource M3OnErrorContainerBrush}" />
+                                <TextBlock Text="{Binding MissingTitle}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource M3OnErrorContainerBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <!-- One-Click Download Installer -->
+                                <Button Click="OnDownloadInstallerClick" Classes="snippet-action-btn" IsVisible="{Binding HasDownloadUrl}"
+                                        ToolTip.Tip="Open official download website in default browser">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
+                                        <TextBlock Text="Download Installer ↗" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- One-Click Quick Setup -->
+                                <Button Click="OnPrimaryQuickSetupClick" Classes="cs-toolbar-filled" IsVisible="{Binding HasQuickSetup}"
+                                        ToolTip.Tip="Run automated installation command">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="LightningBolt" Width="14" Height="14" />
+                                        <TextBlock Text="One-Click Setup" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Scan Again -->
+                                <Button Click="OnCheckAgainClick" Classes="snippet-action-btn" ToolTip.Tip="Scan again for installed compiler/runtime">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                                        <TextBlock Text="Check Again" FontSize="11" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
                         <TextBlock Text="{Binding MissingSummary}" FontSize="12.5" Foreground="{DynamicResource M3OnErrorContainerBrush}" TextWrapping="Wrap" />
 
-                        <ItemsControl ItemsSource="{Binding MissingSteps}">
+                        <!-- Interactive Setup Step Cards with Copy and Run buttons -->
+                        <ItemsControl ItemsSource="{Binding SetupSteps}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
-                                        <SelectableTextBlock Text="{Binding}" FontFamily="Consolas,Menlo,monospace" FontSize="11.5" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                <DataTemplate x:DataType="vm:ToolchainSetupStepItem">
+                                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,3">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                <SelectableTextBlock Text="{Binding Subtitle}" FontFamily="Consolas,Menlo,monospace" FontSize="11" Foreground="{DynamicResource M3PrimaryBrush}" IsVisible="{Binding HasSubtitle}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Button Click="OnCopyStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding CanCopy}" ToolTip.Tip="Copy to clipboard">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
+                                                        <TextBlock Text="{Binding CopyButtonLabel}" FontSize="10.5" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="OnRunStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding IsRunnable}" ToolTip.Tip="Execute setup command">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="12" Height="12" />
+                                                        <TextBlock Text="Install / Run" FontSize="10.5" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="OnOpenStepUrlClick" Classes="snippet-action-btn" IsVisible="{Binding HasUrl}" ToolTip.Tip="Open website link">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
+                                                        <TextBlock Text="Open Link" FontSize="10.5" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -95,12 +134,7 @@
                 </Border>
 
                 <!-- 3. C# ROSLYN COMPILER OPTIONS (WHEN C#) -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16"
-                        IsVisible="{Binding IsCSharp}">
+                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16" IsVisible="{Binding IsCSharp}">
                     <StackPanel Spacing="14">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="Microsoft" Width="18" Height="18" Foreground="#58A6FF" />
@@ -114,14 +148,8 @@
                                 <TextBlock Text="In-Process Roslyn (.NET 10) for instant compilation &amp; debugging; External .NET SDK for CLI projects." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn"
-                                             IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}"
-                                             Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                             CommandParameter="internal" FontSize="12" />
-                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK"
-                                             IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}"
-                                             Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                             CommandParameter="external" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn" IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="internal" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK" IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="external" FontSize="12" />
                             </StackPanel>
                         </Grid>
 
@@ -144,43 +172,26 @@
                                 <TextBlock Text="C# Language Version" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
                                 <TextBlock Text="Target C# compiler language specification (e.g. 13.0, preview)." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             </StackPanel>
-                            <TextBox Grid.Column="1" Text="{Binding ParentSettings.LanguageVersion, FallbackValue='13.0', Mode=TwoWay}"
-                                     FontFamily="Consolas,Menlo,monospace" FontSize="12"
-                                     HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Text="{Binding ParentSettings.LanguageVersion, FallbackValue='13.0', Mode=TwoWay}" FontFamily="Consolas,Menlo,monospace" FontSize="12" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- 4. INTERPRETER / TOOLCHAIN CONFIGURATION (LANGUAGES & .NET SDK) -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16"
-                        IsVisible="{Binding HasToolchainConfiguration}">
+                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16" IsVisible="{Binding HasToolchainConfiguration}">
                     <StackPanel Spacing="14">
                         <TextBlock Text="{Binding ToolchainSectionTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
 
                         <!-- Mode Toggle -->
                         <StackPanel Orientation="Horizontal" Spacing="24">
-                            <RadioButton GroupName="ToolchainMode"
-                                         Content="{Binding ToolchainAutoDetectLabel}"
-                                         IsChecked="{Binding IsAutoDetect, Mode=TwoWay}"
-                                         FontSize="12.5" />
-                            <RadioButton GroupName="ToolchainMode"
-                                         Content="Custom Executable Path"
-                                         IsChecked="{Binding !IsAutoDetect, Mode=OneWay}"
-                                         Click="OnCustomModeRadioClick"
-                                         FontSize="12.5" />
+                            <RadioButton GroupName="ToolchainMode" Content="{Binding ToolchainAutoDetectLabel}" IsChecked="{Binding IsAutoDetect, Mode=TwoWay}" FontSize="12.5" />
+                            <RadioButton GroupName="ToolchainMode" Content="Custom Executable Path" IsChecked="{Binding !IsAutoDetect, Mode=OneWay}" Click="OnCustomModeRadioClick" FontSize="12.5" />
                         </StackPanel>
 
                         <!-- Discovered Toolchains List -->
                         <StackPanel Spacing="8" IsVisible="{Binding IsAutoDetect}">
                             <TextBlock Text="{Binding ToolchainDetectedRuntimesLabel}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6">
+                            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6">
                                 <ItemsControl ItemsSource="{Binding DiscoveredToolchains}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="toolchains:ToolchainInfo">
@@ -194,9 +205,7 @@
                                                     <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,0,8,0">
                                                         <TextBlock Text="{Binding Source}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                     </Border>
-                                                    <Button Grid.Column="3" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center"
-                                                            ToolTip.Tip="Use this runtime">
+                                                    <Button Grid.Column="3" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center" ToolTip.Tip="Use this runtime">
                                                         <TextBlock Text="Select" FontSize="10.5" />
                                                     </Button>
                                                 </Grid>
@@ -211,13 +220,8 @@
                         <StackPanel Spacing="8" IsVisible="{Binding !IsAutoDetect}">
                             <TextBlock Text="{Binding ToolchainExecutablePathLabel}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             <Grid ColumnDefinitions="*,Auto">
-                                <TextBox Grid.Column="0" Text="{Binding CustomPath, Mode=TwoWay}"
-                                         PlaceholderText="{Binding ToolchainPlaceholderText}"
-                                         FontFamily="Consolas,Menlo,monospace" FontSize="12" />
-                                <Button Grid.Column="1" Click="OnBrowseExecutableClick"
-                                        Classes="cs-toolbar-outlined"
-                                        Margin="8,0,0,0"
-                                        ToolTip.Tip="Browse filesystem for executable">
+                                <TextBox Grid.Column="0" Text="{Binding CustomPath, Mode=TwoWay}" PlaceholderText="{Binding ToolchainPlaceholderText}" FontFamily="Consolas,Menlo,monospace" FontSize="12" />
+                                <Button Grid.Column="1" Click="OnBrowseExecutableClick" Classes="cs-toolbar-outlined" Margin="8,0,0,0" ToolTip.Tip="Browse filesystem for executable">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
                                         <TextBlock Text="Browse…" VerticalAlignment="Center" />
@@ -281,10 +285,7 @@
                         Padding="18,16">
                     <StackPanel Spacing="10">
                         <TextBlock Text="ENVIRONMENT INTROSPECTION &amp; RUNTIME PROPERTIES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
-                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                BorderThickness="1"
-                                CornerRadius="6">
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6">
                             <ItemsControl ItemsSource="{Binding EnvironmentDetails}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:EnvironmentPropertyItem">
@@ -308,21 +309,14 @@
             <StackPanel Grid.Column="1" Spacing="16">
 
                 <!-- 1. STUDIO CAPABILITIES MATRIX -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
+                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
                     <StackPanel Spacing="12">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="FeatureSearchOutline" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" />
                             <TextBlock Text="STUDIO CAPABILITIES MATRIX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
                         </StackPanel>
 
-                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
-                                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                BorderThickness="1"
-                                CornerRadius="6">
+                        <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="6">
                             <ItemsControl ItemsSource="{Binding CapabilityItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:CapabilityItem">
@@ -349,11 +343,7 @@
                 </Border>
 
                 <!-- 2. FILE ASSOCIATIONS & STORAGE ARCHITECTURE -->
-                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
+                <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
                     <StackPanel Spacing="12">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="FileTreeOutline" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" />

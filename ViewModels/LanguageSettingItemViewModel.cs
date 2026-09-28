@@ -129,6 +129,7 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     private string _missingSummary = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDownloadUrl))]
     private string? _missingDownloadUrl;
 
     [ObservableProperty]
@@ -226,6 +227,23 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
         DiscoveredToolchains.Clear();
         EnvironmentDetails.Clear();
         MissingSteps.Clear();
+        SetupSteps.Clear();
+
+        AvailableActions.Clear();
+        if (Provider != null)
+        {
+            foreach (var action in Provider.Actions)
+            {
+                AvailableActions.Add(action);
+            }
+        }
+        if (IsCSharp && DotNetProvider != null)
+        {
+            foreach (var action in DotNetProvider.Actions)
+            {
+                AvailableActions.Add(action);
+            }
+        }
 
         foreach (var t in allFound)
         {
@@ -331,15 +349,24 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                 MissingTitle = missing.Title;
                 MissingSummary = missing.Summary;
                 MissingDownloadUrl = missing.DownloadUrl;
+                var host = ParentSettings?.LanguageServices.Host;
                 foreach (var step in missing.Steps)
                 {
                     MissingSteps.Add(step);
+                    SetupSteps.Add(ParseSetupStep(step, host));
                 }
+                OnPropertyChanged(nameof(HasDownloadUrl));
+                OnPropertyChanged(nameof(HasQuickSetup));
+                OnPropertyChanged(nameof(PrimaryQuickSetup));
             }
             else
             {
                 MissingTitle = $"{Provider?.ToolName ?? DisplayName} wasn't found";
                 MissingSummary = "Please install the runtime or specify an existing executable path.";
+                MissingDownloadUrl = null;
+                OnPropertyChanged(nameof(HasDownloadUrl));
+                OnPropertyChanged(nameof(HasQuickSetup));
+                OnPropertyChanged(nameof(PrimaryQuickSetup));
             }
         }
     }

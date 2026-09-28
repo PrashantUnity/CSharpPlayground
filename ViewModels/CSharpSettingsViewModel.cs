@@ -20,6 +20,8 @@ public partial class CSharpSettingsViewModel : ObservableObject
     private readonly Action? _backToHubAction;
     private readonly Action? _backToPreviousAction;
 
+    public StudioLanguageServices LanguageServices => _languageServices;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLanguagesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]

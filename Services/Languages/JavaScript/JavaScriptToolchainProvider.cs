@@ -39,7 +39,28 @@ public sealed partial class JavaScriptToolchainProvider : IToolchainProvider
 
     public string? SelectedPath => _settings.GetSelectedPath(LanguageIds.JavaScript);
 
-    public IReadOnlyList<ToolchainAction> Actions => Array.Empty<ToolchainAction>();
+    public IReadOnlyList<ToolchainAction> Actions
+    {
+        get
+        {
+            var actions = new List<ToolchainAction>();
+            if (_host.IsWindows)
+            {
+                actions.Add(new ToolchainAction("winget-install-node", "Install Node.js LTS via winget", "Runs 'winget install OpenJS.NodeJS.LTS' to install Node.js."));
+                actions.Add(new ToolchainAction("open-download", "Download Node.js Installer", "Opens nodejs.org download page in browser."));
+            }
+            else if (_host.IsMacOS)
+            {
+                actions.Add(new ToolchainAction("brew-install-node", "Install Node.js via Homebrew", "Runs 'brew install node' via Homebrew."));
+                actions.Add(new ToolchainAction("open-download", "Download Node.js Installer", "Opens nodejs.org download page in browser."));
+            }
+            else
+            {
+                actions.Add(new ToolchainAction("open-download", "Download Node.js", "Opens nodejs.org download page in browser."));
+            }
+            return actions;
+        }
+    }
 
     public void Select(string? executablePath) => _settings.SetSelectedPath(LanguageIds.JavaScript, executablePath);
 
@@ -86,8 +107,28 @@ public sealed partial class JavaScriptToolchainProvider : IToolchainProvider
         return found;
     }
 
-    public Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default) =>
-        Task.FromResult(new ToolchainActionResult(false, $"Unknown action '{actionId}'."));
+    public async Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default)
+    {
+        switch (actionId)
+        {
+            case "open-download":
+                BrowserLauncher.Open("https://nodejs.org/en/download/");
+                return new ToolchainActionResult(true, "Opened https://nodejs.org/en/download/ in browser.");
+
+            case "brew-install-node":
+                output("Installing Node.js via Homebrew (brew install node)…\n");
+                var brewOk = await ToolchainSetupRunner.ExecuteAsync("brew install node", _host, _launcher, output, ct);
+                return new ToolchainActionResult(brewOk, brewOk ? "Node.js installation completed." : "Homebrew installation failed or was cancelled.");
+
+            case "winget-install-node":
+                output("Installing Node.js LTS via winget…\n");
+                var wingetOk = await ToolchainSetupRunner.ExecuteAsync("winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
+                return new ToolchainActionResult(wingetOk, wingetOk ? "Node.js LTS installation completed." : "winget installation failed or was cancelled.");
+
+            default:
+                return new ToolchainActionResult(false, $"Unknown action '{actionId}'.");
+        }
+    }
 
     private sealed record ProbeResult(Version Version, string Executable);
 

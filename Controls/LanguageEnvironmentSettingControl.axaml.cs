@@ -70,7 +70,7 @@ public partial class LanguageEnvironmentSettingControl : UserControl
             catch (Exception ex)
             {
                 vm.ActionStatusMessage = $"Action failed: {ex.Message}";
-                vm.ActionOutputLog += $"\n[Error: {ex.Message}]\n";
+                ActionOutputLogAppend(vm, $"\n[Error: {ex.Message}]\n");
             }
             finally
             {
@@ -78,4 +78,62 @@ public partial class LanguageEnvironmentSettingControl : UserControl
             }
         }
     }
+
+    private static void ActionOutputLogAppend(LanguageSettingItemViewModel vm, string text)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            vm.ActionOutputLog += text;
+        });
+    }
+
+    private void OnDownloadInstallerClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LanguageSettingItemViewModel vm && !string.IsNullOrWhiteSpace(vm.MissingDownloadUrl))
+        {
+            PdfEditorApp.Plugins.CSharpEditor.Services.BrowserLauncher.Open(vm.MissingDownloadUrl);
+        }
+    }
+
+    private void OnOpenStepUrlClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: ToolchainSetupStepItem { Url: { Length: > 0 } url } })
+        {
+            PdfEditorApp.Plugins.CSharpEditor.Services.BrowserLauncher.Open(url);
+        }
+    }
+
+    private async void OnCopyStepCommandClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: ToolchainSetupStepItem step } && DataContext is LanguageSettingItemViewModel vm)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            await vm.CopyCommandToClipboardAsync(step, topLevel?.Clipboard);
+        }
+    }
+
+    private async void OnRunStepCommandClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: ToolchainSetupStepItem step } && DataContext is LanguageSettingItemViewModel vm)
+        {
+            await vm.RunSetupStepAsync(step);
+        }
+    }
+
+    private async void OnPrimaryQuickSetupClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LanguageSettingItemViewModel vm)
+        {
+            await vm.RunQuickSetupAsync();
+        }
+    }
+
+    private async void OnCheckAgainClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LanguageSettingItemViewModel vm && vm.ParentSettings != null)
+        {
+            await vm.ParentSettings.RefreshLanguageToolchainAsync(vm);
+        }
+    }
 }
+
