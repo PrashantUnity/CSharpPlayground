@@ -95,9 +95,12 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="SCRIPT DIRECTIVES (#r nuget)" FontSize="10.5" FontWeight="Bold"
                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="4,1">
+                        <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                Height="16" MinHeight="16" MinWidth="16" CornerRadius="8" Padding="4,0"
+                                VerticalAlignment="Center">
                             <TextBlock Text="{Binding DocumentNuGetPackages.Count}" FontSize="9" FontWeight="Bold"
-                                       Foreground="{DynamicResource M3PrimaryBrush}" />
+                                       Foreground="{DynamicResource M3PrimaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                         </Border>
                     </Grid>
 

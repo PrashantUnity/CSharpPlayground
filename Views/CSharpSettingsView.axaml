@@ -41,8 +41,10 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
                     <materialIcons:MaterialIcon Kind="CogOutline" Width="22" Height="22" Foreground="{DynamicResource M3PrimaryBrush}" />
                     <TextBlock Text="Settings &amp; Environment Setup" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
-                        <TextBlock Text="VS Code Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1"
+                            Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                        <TextBlock Text="VS Code Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                     </Border>
                 </StackPanel>
 

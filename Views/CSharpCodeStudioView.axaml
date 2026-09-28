@@ -213,8 +213,11 @@
                                     <StackPanel Spacing="6">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Grid.Column="0" Text="CALL STACK" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="5,1" ToolTip.Tip="Frames on the stack">
-                                                <TextBlock Text="{Binding CallStack.Count}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                    Height="16" MinHeight="16" MinWidth="16" CornerRadius="8" Padding="4,0"
+                                                    VerticalAlignment="Center" ToolTip.Tip="Frames on the stack">
+                                                <TextBlock Text="{Binding CallStack.Count}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                             </Border>
                                         </Grid>
 
@@ -237,8 +240,11 @@
                                     <StackPanel Spacing="6">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Grid.Column="0" Text="BREAKPOINTS" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="5,1" IsVisible="{Binding Breakpoints.Count}">
-                                                <TextBlock Text="{Binding Breakpoints.Count}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3ErrorBrush}" />
+                                            <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                    Height="16" MinHeight="16" MinWidth="16" CornerRadius="8" Padding="4,0"
+                                                    VerticalAlignment="Center" IsVisible="{Binding Breakpoints.Count}">
+                                                <TextBlock Text="{Binding Breakpoints.Count}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3ErrorBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                             </Border>
                                         </Grid>
 

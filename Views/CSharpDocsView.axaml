@@ -45,8 +45,10 @@
                                FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}"
                                VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
-                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1"
+                            Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                        <TextBlock Text=".NET 10 Roslyn" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                     </Border>
                 </StackPanel>
 
@@ -161,9 +163,11 @@
                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="16" Height="16" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="6,0,0,0" />
                                                 <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="8,0,0,0" VerticalAlignment="Center"
                                                            TextWrapping="Wrap" LineHeight="15" MaxLines="2" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
-                                                <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,0"
-                                                        Margin="8,3,0,0" HorizontalAlignment="Left">
-                                                    <TextBlock Text="{Binding Badge}" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                                                        Height="16" MinHeight="16" CornerRadius="4" Padding="6,0"
+                                                        Margin="8,3,0,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Badge}" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                                 </Border>
                                             </Grid>
                                         </Button>
@@ -209,8 +213,10 @@
                         <TextBlock Text="{Binding SelectedArticle.Subtitle}"
                                    FontSize="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
-                            <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                <TextBlock Text="{Binding SelectedCategory.Badge}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}" />
+                            <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1"
+                                    Height="20" MinHeight="20" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SelectedCategory.Badge}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                             </Border>
                             <TextBlock Text="{Binding SelectedArticle.ReadingTime}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                         </StackPanel>
@@ -328,11 +334,15 @@
                                         <Border BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="6,8">
                                             <Grid ColumnDefinitions="180,90,110,*">
                                                 <TextBlock Grid.Column="0" Text="{Binding Action}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                                <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighestBrush}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                                <Border Grid.Column="1" Background="{DynamicResource M3SurfaceContainerHighestBrush}"
+                                                        Height="22" MinHeight="22" CornerRadius="4" Padding="6,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                                 </Border>
-                                                <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3SecondaryBrush}" />
+                                                <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}"
+                                                        Height="22" MinHeight="22" CornerRadius="4" Padding="6,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3SecondaryBrush}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                                 </Border>
                                                 <TextBlock Grid.Column="3" Text="{Binding Description}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                                             </Grid>

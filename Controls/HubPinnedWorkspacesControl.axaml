@@ -14,9 +14,9 @@
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="Pin" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                         <TextBlock Text="PINNED WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                        <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                                CornerRadius="10" Padding="7,1.5" VerticalAlignment="Center" Margin="4,0,0,0">
-                                            <TextBlock Text="{Binding PinnedCount}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                                        <Border Classes="nexus-badge-pill" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                Margin="4,0,0,0">
+                                            <TextBlock Text="{Binding PinnedCount}" Foreground="{DynamicResource DsTextBrush}" />
                                         </Border>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="Quick access shortcuts" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />

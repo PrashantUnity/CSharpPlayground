@@ -72,11 +72,12 @@
                     <Grid>
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" />
                         <Border Background="{DynamicResource M3ErrorBrush}" CornerRadius="7"
-                                Height="14" MinWidth="14" Padding="3,0"
+                                Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                 IsVisible="{Binding ErrorCount}">
                             <TextBlock Text="{Binding ErrorCount}" FontSize="8.5" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                       Margin="0,1,0,0"
                                        Foreground="{DynamicResource M3OnErrorBrush}" />
                         </Border>
                     </Grid>

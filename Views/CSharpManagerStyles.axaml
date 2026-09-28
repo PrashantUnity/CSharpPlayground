@@ -93,30 +93,66 @@
     <!-- Sidebar Nav Button -->
     <Style Selector="Button.nexus-nav-item">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,1" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
                 <BrushTransition Property="Foreground" Duration="0:0:0.15" />
             </Transitions>
         </Setter>
     </Style>
     <Style Selector="Button.nexus-nav-item:pointerover">
         <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.nexus-nav-item.active">
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Sidebar Icon Container with Micro-interaction -->
+    <Style Selector="Border.nav-icon-box">
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.nexus-nav-item:pointerover Border.nav-icon-box">
+        <Setter Property="RenderTransform" Value="scale(1.06)" />
+    </Style>
+
+    <!-- Centered Badge Pill / Circle -->
+    <Style Selector="Border.nexus-badge-pill">
+        <Setter Property="Height" Value="18" />
+        <Setter Property="MinHeight" Value="18" />
+        <Setter Property="MinWidth" Value="18" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="Padding" Value="5.5,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.nexus-badge-pill > TextBlock">
+        <Setter Property="FontSize" Value="9.5" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1.5,0,0" />
     </Style>
 
     <!-- Primary Action Button (New Notebook) -->
@@ -286,13 +322,20 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="MinHeight" Value="18" />
         <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Border.nexus-tag-pill TextBlock">
         <Setter Property="FontSize" Value="10" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Border.nexus-tag-pill.overflow">
         <Setter Property="Background" Value="Transparent" />

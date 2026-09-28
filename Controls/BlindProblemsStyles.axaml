@@ -41,14 +41,22 @@
     </Style>
     <Style Selector="Button.filter-chip Border.chip-count">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="MinHeight" Value="16" />
+        <Setter Property="MinWidth" Value="16" />
         <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="Padding" Value="5,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.filter-chip Border.chip-count > TextBlock">
-        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontSize" Value="9.5" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Button.filter-chip.selected Border.chip-count">
         <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
@@ -236,8 +244,10 @@
 
     <Style Selector="Border.category-pill">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="MinHeight" Value="20" />
         <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Padding" Value="8,0" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -249,5 +259,9 @@
         <Setter Property="FontSize" Value="10.5" />
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
 </Styles>

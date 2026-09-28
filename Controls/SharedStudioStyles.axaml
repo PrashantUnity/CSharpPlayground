@@ -133,6 +133,7 @@
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
 
     <!-- ============================================================ -->
@@ -357,6 +358,8 @@
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Button.cell-output-tab-btn.active Border.cell-output-tab-badge">
         <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />

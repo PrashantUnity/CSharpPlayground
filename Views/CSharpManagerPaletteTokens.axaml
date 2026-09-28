@@ -28,6 +28,36 @@
             <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
             <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6161B22" />
             <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#1AFFFFFF" />
+
+            <!-- Sidebar Navigation Category Brushes (Dark) -->
+            <SolidColorBrush x:Key="NavHomeFgBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="NavHomeBgBrush" Color="#1A38BDF8" />
+            <SolidColorBrush x:Key="NavProjectsFgBrush" Color="#818CF8" />
+            <SolidColorBrush x:Key="NavProjectsBgBrush" Color="#1A818CF8" />
+            <SolidColorBrush x:Key="NavNotebooksFgBrush" Color="#FB923C" />
+            <SolidColorBrush x:Key="NavNotebooksBgBrush" Color="#1AFB923C" />
+            <SolidColorBrush x:Key="NavScriptsFgBrush" Color="#C084FC" />
+            <SolidColorBrush x:Key="NavScriptsBgBrush" Color="#1AC084FC" />
+            <SolidColorBrush x:Key="NavPinnedFgBrush" Color="#FB7185" />
+            <SolidColorBrush x:Key="NavPinnedBgBrush" Color="#1AFB7185" />
+            <SolidColorBrush x:Key="NavTemplatesFgBrush" Color="#FBBF24" />
+            <SolidColorBrush x:Key="NavTemplatesBgBrush" Color="#1AFBBF24" />
+            <SolidColorBrush x:Key="NavOpenFgBrush" Color="#FACC15" />
+            <SolidColorBrush x:Key="NavOpenBgBrush" Color="#1AFACC15" />
+            <SolidColorBrush x:Key="NavBlind75FgBrush" Color="#F59E0B" />
+            <SolidColorBrush x:Key="NavBlind75BgBrush" Color="#1AF59E0B" />
+            <SolidColorBrush x:Key="NavDocsFgBrush" Color="#22D3EE" />
+            <SolidColorBrush x:Key="NavDocsBgBrush" Color="#1A22D3EE" />
+            <SolidColorBrush x:Key="NavThemeFgBrush" Color="#F472B6" />
+            <SolidColorBrush x:Key="NavThemeBgBrush" Color="#1AF472B6" />
+            <SolidColorBrush x:Key="NavToolchainsFgBrush" Color="#34D399" />
+            <SolidColorBrush x:Key="NavToolchainsBgBrush" Color="#1A34D399" />
+            <SolidColorBrush x:Key="NavKernelsFgBrush" Color="#A78BFA" />
+            <SolidColorBrush x:Key="NavKernelsBgBrush" Color="#1AA78BFA" />
+            <SolidColorBrush x:Key="NavSettingsFgBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="NavSettingsBgBrush" Color="#1A94A3B8" />
+            <SolidColorBrush x:Key="NavFrySharpFgBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="NavFrySharpBgBrush" Color="#1A38BDF8" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="DsBgBrush" Color="#FFFFFF" />
@@ -50,6 +80,36 @@
             <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
             <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6F6F8FA" />
             <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#14000000" />
+
+            <!-- Sidebar Navigation Category Brushes (Light) -->
+            <SolidColorBrush x:Key="NavHomeFgBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="NavHomeBgBrush" Color="#140284C7" />
+            <SolidColorBrush x:Key="NavProjectsFgBrush" Color="#4F46E5" />
+            <SolidColorBrush x:Key="NavProjectsBgBrush" Color="#144F46E5" />
+            <SolidColorBrush x:Key="NavNotebooksFgBrush" Color="#EA580C" />
+            <SolidColorBrush x:Key="NavNotebooksBgBrush" Color="#14EA580C" />
+            <SolidColorBrush x:Key="NavScriptsFgBrush" Color="#9333EA" />
+            <SolidColorBrush x:Key="NavScriptsBgBrush" Color="#149333EA" />
+            <SolidColorBrush x:Key="NavPinnedFgBrush" Color="#E11D48" />
+            <SolidColorBrush x:Key="NavPinnedBgBrush" Color="#14E11D48" />
+            <SolidColorBrush x:Key="NavTemplatesFgBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="NavTemplatesBgBrush" Color="#14D97706" />
+            <SolidColorBrush x:Key="NavOpenFgBrush" Color="#CA8A04" />
+            <SolidColorBrush x:Key="NavOpenBgBrush" Color="#14CA8A04" />
+            <SolidColorBrush x:Key="NavBlind75FgBrush" Color="#B45309" />
+            <SolidColorBrush x:Key="NavBlind75BgBrush" Color="#14B45309" />
+            <SolidColorBrush x:Key="NavDocsFgBrush" Color="#0891B2" />
+            <SolidColorBrush x:Key="NavDocsBgBrush" Color="#140891B2" />
+            <SolidColorBrush x:Key="NavThemeFgBrush" Color="#DB2777" />
+            <SolidColorBrush x:Key="NavThemeBgBrush" Color="#14DB2777" />
+            <SolidColorBrush x:Key="NavToolchainsFgBrush" Color="#059669" />
+            <SolidColorBrush x:Key="NavToolchainsBgBrush" Color="#14059669" />
+            <SolidColorBrush x:Key="NavKernelsFgBrush" Color="#7C3AED" />
+            <SolidColorBrush x:Key="NavKernelsBgBrush" Color="#147C3AED" />
+            <SolidColorBrush x:Key="NavSettingsFgBrush" Color="#475569" />
+            <SolidColorBrush x:Key="NavSettingsBgBrush" Color="#14475569" />
+            <SolidColorBrush x:Key="NavFrySharpFgBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="NavFrySharpBgBrush" Color="#140284C7" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

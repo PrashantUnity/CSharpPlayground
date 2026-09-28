@@ -856,13 +856,35 @@
     <!-- M3 Expressive Badges -->
     <Style Selector="Border.m3-badge">
         <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="MinHeight" Value="20" />
         <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
-        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.m3-badge > TextBlock">
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Border.m3-badge-tertiary">
         <Setter Property="Background" Value="{DynamicResource M3TertiaryContainerBrush}" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="MinHeight" Value="20" />
         <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
-        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.m3-badge-tertiary > TextBlock">
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
 
     <!-- Modern IDE Flyout Presenter -->
