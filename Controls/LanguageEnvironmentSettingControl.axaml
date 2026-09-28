@@ -100,8 +100,28 @@
                     <StackPanel Spacing="14">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="Microsoft" Width="18" Height="18" Foreground="#58A6FF" />
-                            <TextBlock Text="ROSLYN C# IN-PROCESS COMPILER OPTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                            <TextBlock Text="C# EXECUTION ENGINE &amp; COMPILER OPTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
                         </StackPanel>
+
+                        <!-- Execution Engine Selection -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2" Margin="0,0,16,0">
+                                <TextBlock Text="Default Execution Engine" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                <TextBlock Text="In-Process Roslyn (.NET 10) for instant compilation &amp; debugging; External .NET SDK for CLI projects." FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn"
+                                             IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}"
+                                             Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                             CommandParameter="internal" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK"
+                                             IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}"
+                                             Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                             CommandParameter="external" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource M3OutlineVariantBrush}" />
 
                         <!-- Nullable Reference Checks -->
                         <Grid ColumnDefinitions="*,Auto">
@@ -127,20 +147,20 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 4. INTERPRETER / TOOLCHAIN CONFIGURATION (FOR EXTERNAL LANGUAGES) -->
+                <!-- 4. INTERPRETER / TOOLCHAIN CONFIGURATION (LANGUAGES & .NET SDK) -->
                 <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
                         BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                         BorderThickness="1"
                         CornerRadius="10"
                         Padding="18,16"
-                        IsVisible="{Binding IsToolchainLanguage}">
+                        IsVisible="{Binding HasToolchainConfiguration}">
                     <StackPanel Spacing="14">
-                        <TextBlock Text="INTERPRETER CONFIGURATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
+                        <TextBlock Text="{Binding ToolchainSectionTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" LetterSpacing="0.8" />
 
                         <!-- Mode Toggle -->
                         <StackPanel Orientation="Horizontal" Spacing="24">
                             <RadioButton GroupName="ToolchainMode"
-                                         Content="Auto-detect (System, Virtualenv, Homebrew, PATH)"
+                                         Content="{Binding ToolchainAutoDetectLabel}"
                                          IsChecked="{Binding IsAutoDetect, Mode=TwoWay}"
                                          FontSize="12.5" />
                             <RadioButton GroupName="ToolchainMode"
@@ -152,7 +172,7 @@
 
                         <!-- Discovered Toolchains List -->
                         <StackPanel Spacing="8" IsVisible="{Binding IsAutoDetect}">
-                            <TextBlock Text="Detected Runtimes on this Machine:" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <TextBlock Text="{Binding ToolchainDetectedRuntimesLabel}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                                     BorderThickness="1"
@@ -161,15 +181,20 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="toolchains:ToolchainInfo">
                                             <Border BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="12,9">
-                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="CheckCircleOutline" Width="16" Height="16" Foreground="#4EBA6F" Margin="0,0,10,0" VerticalAlignment="Center" />
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                                         <TextBlock Text="{Binding Label}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
                                                         <SelectableTextBlock Text="{Binding ExecutablePath}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" FontFamily="Consolas,Menlo,monospace" />
                                                     </StackPanel>
-                                                    <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,0,8,0">
                                                         <TextBlock Text="{Binding Source}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                     </Border>
+                                                    <Button Grid.Column="3" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center"
+                                                            ToolTip.Tip="Use this runtime">
+                                                        <TextBlock Text="Select" FontSize="10.5" />
+                                                    </Button>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -180,10 +205,10 @@
 
                         <!-- Custom Path Input -->
                         <StackPanel Spacing="8" IsVisible="{Binding !IsAutoDetect}">
-                            <TextBlock Text="Executable / Binary Path:" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <TextBlock Text="{Binding ToolchainExecutablePathLabel}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBox Grid.Column="0" Text="{Binding CustomPath, Mode=TwoWay}"
-                                         PlaceholderText="/path/to/executable"
+                                         PlaceholderText="{Binding ToolchainPlaceholderText}"
                                          FontFamily="Consolas,Menlo,monospace" FontSize="12" />
                                 <Button Grid.Column="1" Click="OnBrowseExecutableClick"
                                         Classes="cs-toolbar-outlined"

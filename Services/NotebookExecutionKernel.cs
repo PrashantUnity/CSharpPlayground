@@ -171,7 +171,8 @@ public class NotebookExecutionKernel : INotebookKernel
         Action<string>? onLiveConsole = null,
         Action<RichCellOutput>? onRichOutput = null,
         CancellationToken ct = default,
-        string? sourceId = null)
+        string? sourceId = null,
+        TextReader? stdin = null)
     {
         var result = new KernelExecutionResult();
         var sw = Stopwatch.StartNew();
@@ -187,7 +188,7 @@ public class NotebookExecutionKernel : INotebookKernel
         // back as a normal WasCancelled result, not an unhandled exception out of this method.
         try
         {
-            await ExecuteCellCoreAsync(code, sourceId, result, sw, onLiveConsole, onRichOutput, ct);
+            await ExecuteCellCoreAsync(code, sourceId, result, sw, onLiveConsole, onRichOutput, stdin, ct);
         }
         catch (OperationCanceledException)
         {
@@ -207,6 +208,7 @@ public class NotebookExecutionKernel : INotebookKernel
         Stopwatch sw,
         Action<string>? onLiveConsole,
         Action<RichCellOutput>? onRichOutput,
+        TextReader? stdin,
         CancellationToken ct)
     {
         // 1. Process #r "nuget: ..." directives
@@ -260,7 +262,7 @@ public class NotebookExecutionKernel : INotebookKernel
                 onLiveConsole?.Invoke(text);
             });
 
-            using (ConsoleRoutingContext.EnterScope(liveWriter))
+            using (ConsoleRoutingContext.EnterScope(liveWriter, stdin))
             using (InteractiveCancellationContext.EnterScope(ct))
             {
                 try

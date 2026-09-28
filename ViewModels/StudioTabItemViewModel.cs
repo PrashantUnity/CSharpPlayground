@@ -55,6 +55,9 @@ public partial class StudioTabItemViewModel : ObservableObject
     /// <summary>The program running this tab's file (a Python run), for typing into it and stopping it.</summary>
     public Services.Processes.ScriptRunSession? ActiveRun { get; set; }
 
+    /// <summary>Interactive standard input reader for an in-process script run.</summary>
+    public Services.Processes.InteractiveStdinReader? InProcessStdin { get; set; }
+
     /// <summary>Adds text to the running program's Terminal output (what's typed into it), while there's a run.</summary>
     public Action<string>? AppendToConsole { get; set; }
 

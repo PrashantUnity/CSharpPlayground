@@ -207,6 +207,10 @@ using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
                 usingLines.Add(trimmed);
                 remainingLines.Add("// " + line); // Preserve line position so mapped lines match 1:1 with user editor
             }
+            else if (trimmed.StartsWith("#r ") || trimmed.StartsWith("#load ") || trimmed.StartsWith("#!"))
+            {
+                remainingLines.Add("// " + line); // Directives handled by NuGet resolver / kernel
+            }
             else
             {
                 remainingLines.Add(line);

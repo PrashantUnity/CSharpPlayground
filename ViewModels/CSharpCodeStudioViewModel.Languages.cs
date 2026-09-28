@@ -41,8 +41,22 @@ public partial class CSharpCodeStudioViewModel
     [ObservableProperty]
     private bool _isToolchainMissing;
 
+    [ObservableProperty]
+    private bool _useExternalDotNetRunner;
+
+    [RelayCommand]
+    public void SetCSharpRunner(string? mode)
+    {
+        UseExternalDotNetRunner = string.Equals(mode, "external", StringComparison.OrdinalIgnoreCase);
+        OnPropertyChanged(nameof(LanguageModeStatusText));
+        OnPropertyChanged(nameof(LanguageStatusText));
+        OnPropertyChanged(nameof(RuntimeLabel));
+    }
+
     /// <summary>The breadcrumbs' runtime: the toolchain in use, or how the language runs (C#: "C# (.NET 10 Roslyn)").</summary>
-    public string RuntimeLabel => HasToolchain ? ToolchainLabel ?? ActiveLanguage.DisplayName : ActiveLanguage.RuntimeDescription;
+    public string RuntimeLabel => HasToolchain
+        ? ToolchainLabel ?? ActiveLanguage.DisplayName
+        : (UseExternalDotNetRunner ? "C# (.NET SDK CLI)" : ActiveLanguage.RuntimeDescription);
 
     /// <summary>The status bar's language item: C#'s execution mode, or the toolchain in use.</summary>
     public string LanguageStatusText => SupportsExecutionModes ? LanguageModeStatusText : ToolchainLabel ?? ActiveLanguage.DisplayName;

@@ -20,6 +20,7 @@ public sealed class ScriptRunSession
     private readonly object _gate = new();
     private readonly CancellationTokenSource _cts;
     private IManagedProcess? _runningProgram;
+    private readonly List<string> _pendingInput = new();
 
     internal ScriptRunSession(CancellationTokenSource cts)
     {
@@ -41,8 +42,16 @@ public sealed class ScriptRunSession
     public Task SendInputAsync(string text)
     {
         IManagedProcess? program;
-        lock (_gate) program = _runningProgram;
-        return program?.WriteInputAsync(text) ?? Task.CompletedTask;
+        lock (_gate)
+        {
+            program = _runningProgram;
+            if (program == null || program.HasExited)
+            {
+                _pendingInput.Add(text);
+                return Task.CompletedTask;
+            }
+        }
+        return program.WriteInputAsync(text);
     }
 
     /// <summary>Kills the current step and everything it started; the run ends as cancelled.</summary>
@@ -60,7 +69,24 @@ public sealed class ScriptRunSession
 
     internal void SetRunningProgram(IManagedProcess? program)
     {
-        lock (_gate) _runningProgram = program;
+        List<string>? toFlush = null;
+        lock (_gate)
+        {
+            _runningProgram = program;
+            if (program != null && _pendingInput.Count > 0)
+            {
+                toFlush = new List<string>(_pendingInput);
+                _pendingInput.Clear();
+            }
+        }
+
+        if (toFlush != null && program != null)
+        {
+            foreach (var input in toFlush)
+            {
+                _ = program.WriteInputAsync(input);
+            }
+        }
     }
 }
 

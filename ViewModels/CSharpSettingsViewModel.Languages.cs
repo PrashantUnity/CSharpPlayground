@@ -21,7 +21,19 @@ public partial class CSharpSettingsViewModel
 
         foreach (var language in _languageServices.Registry.All)
         {
-            var item = new LanguageSettingItemViewModel(language, parent: this);
+            IToolchainProvider? dotNetProvider = null;
+            if (language.Id == LanguageIds.CSharp)
+            {
+                dotNetProvider = new PdfEditorApp.Plugins.CSharpEditor.Services.Languages.CSharp.CSharpToolchainProvider(
+                    _languageServices.Host, _languageServices.Processes, _languageServices.ToolchainSettings);
+            }
+
+            var item = new LanguageSettingItemViewModel(language, provider: language.Toolchain, dotNetProvider: dotNetProvider, parent: this);
+            if (item.IsCSharp)
+            {
+                item.CSharpExecutionEngine = _settingsStore.GetSettings().CSharpExecutionEngine;
+            }
+
             Languages.Add(item);
             FilteredLanguages.Add(item);
         }
@@ -45,11 +57,21 @@ public partial class CSharpSettingsViewModel
     }
 
     [RelayCommand]
+    public void SelectCSharpEngine(string? mode)
+    {
+        if (SelectedLanguage?.IsCSharp == true && !string.IsNullOrWhiteSpace(mode))
+        {
+            SelectedLanguage.SetCSharpEngine(mode);
+            HasPendingChanges = true;
+        }
+    }
+
+    [RelayCommand]
     public async Task RefreshAllLanguagesAsync()
     {
         foreach (var item in Languages)
         {
-            if (item.IsToolchainLanguage)
+            if (item.IsToolchainLanguage || item.IsCSharp)
             {
                 await RefreshLanguageToolchainAsync(item);
             }
@@ -59,7 +81,8 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task RefreshLanguageToolchainAsync(LanguageSettingItemViewModel item)
     {
-        if (item.Provider is not { } provider) return;
+        var provider = item.Provider ?? item.DotNetProvider;
+        if (provider == null) return;
 
         item.IsChecking = true;
         item.StatusBadge = "Scanning…";
@@ -77,7 +100,7 @@ public partial class CSharpSettingsViewModel
         catch (Exception ex)
         {
             item.IsChecking = false;
-            item.IsFound = false;
+            item.IsFound = item.IsCSharp;
             item.StatusBadge = "Scan failed";
             item.StatusColor = "#F85149";
             item.MissingTitle = "Failed to inspect environment";
@@ -90,9 +113,10 @@ public partial class CSharpSettingsViewModel
     {
         item.IsAutoDetect = true;
         item.CustomPath = string.Empty;
-        if (item.Provider != null)
+        var provider = item.Provider ?? item.DotNetProvider;
+        if (provider != null)
         {
-            item.Provider.Select(null);
+            provider.Select(null);
             _languageServices.ToolchainSettings.SetSelectedPath(item.Language.Id, null);
         }
         HasPendingChanges = true;
@@ -113,9 +137,10 @@ public partial class CSharpSettingsViewModel
     {
         item.IsAutoDetect = false;
         item.CustomPath = path.Trim();
-        if (item.Provider != null)
+        var provider = item.Provider ?? item.DotNetProvider;
+        if (provider != null)
         {
-            item.Provider.Select(item.CustomPath);
+            provider.Select(item.CustomPath);
             _languageServices.ToolchainSettings.SetSelectedPath(item.Language.Id, item.CustomPath);
         }
         HasPendingChanges = true;
@@ -167,11 +192,18 @@ public partial class CSharpSettingsViewModel
     {
         foreach (var item in Languages)
         {
-            if (item.Provider != null)
+            var provider = item.Provider ?? item.DotNetProvider;
+            if (provider != null)
             {
                 var path = item.IsAutoDetect ? null : item.CustomPath;
-                item.Provider.Select(path);
+                provider.Select(path);
                 _languageServices.ToolchainSettings.SetSelectedPath(item.Language.Id, path);
+            }
+            if (item.IsCSharp)
+            {
+                var settings = _settingsStore.GetSettings();
+                settings.CSharpExecutionEngine = item.CSharpExecutionEngine;
+                _settingsStore.SaveSettings(settings);
             }
         }
     }
@@ -180,13 +212,18 @@ public partial class CSharpSettingsViewModel
     {
         foreach (var item in Languages)
         {
-            if (item.Provider != null)
+            var provider = item.Provider ?? item.DotNetProvider;
+            if (provider != null)
             {
                 item.IsAutoDetect = true;
                 item.CustomPath = string.Empty;
-                item.Provider.Select(null);
+                provider.Select(null);
                 _languageServices.ToolchainSettings.SetSelectedPath(item.Language.Id, null);
                 _ = RefreshLanguageToolchainAsync(item);
+            }
+            if (item.IsCSharp)
+            {
+                item.CSharpExecutionEngine = "internal";
             }
         }
     }

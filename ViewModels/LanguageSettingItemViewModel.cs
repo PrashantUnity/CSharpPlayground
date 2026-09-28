@@ -15,9 +15,18 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
 {
     public ILanguageDefinition Language { get; }
     public IToolchainProvider? Provider { get; }
+    public IToolchainProvider? DotNetProvider { get; }
     public CSharpSettingsViewModel? ParentSettings { get; }
     public bool IsToolchainLanguage => Provider != null;
     public bool IsCSharp => Language.Id == LanguageIds.CSharp;
+    public bool HasDotNetToolchain => DotNetProvider != null;
+    public bool HasToolchainConfiguration => IsToolchainLanguage || (IsCSharp && HasDotNetToolchain);
+
+    public string ToolchainSectionTitle => IsCSharp ? ".NET SDK ENVIRONMENT CONFIGURATION (EXTERNAL CLI)" : "INTERPRETER CONFIGURATION";
+    public string ToolchainAutoDetectLabel => IsCSharp ? "Auto-detect (.NET SDK from DOTNET_ROOT, PATH)" : "Auto-detect (System, Virtualenv, Homebrew, PATH)";
+    public string ToolchainDetectedRuntimesLabel => IsCSharp ? "Detected .NET SDKs on this Machine:" : "Detected Runtimes on this Machine:";
+    public string ToolchainExecutablePathLabel => IsCSharp ? ".NET SDK (dotnet) Executable / Binary Path:" : "Executable / Binary Path:";
+    public string ToolchainPlaceholderText => IsCSharp ? "/usr/local/share/dotnet/dotnet" : "/path/to/executable";
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;
@@ -29,6 +38,23 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
         ? "Stores code, notebook metadata, notes, and breakpoints in structured JSON."
         : "Standard plain-text file compatible with external editors, command-line tools, and git.";
     public string CommentPrefix => Language.LineCommentPrefix;
+
+    [ObservableProperty]
+    private string _cSharpExecutionEngine = "internal";
+
+    public bool IsInProcessRoslynSelected => string.Equals(CSharpExecutionEngine, "internal", StringComparison.OrdinalIgnoreCase);
+    public bool IsExternalDotNetSelected => string.Equals(CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);
+
+    public void SetCSharpEngine(string mode)
+    {
+        CSharpExecutionEngine = mode;
+        OnPropertyChanged(nameof(IsInProcessRoslynSelected));
+        OnPropertyChanged(nameof(IsExternalDotNetSelected));
+        if (ParentSettings != null)
+        {
+            ParentSettings.HasPendingChanges = true;
+        }
+    }
 
     [ObservableProperty]
     private bool _isSelected;
@@ -94,17 +120,21 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public ObservableCollection<EnvironmentPropertyItem> EnvironmentDetails { get; } = new();
     public ObservableCollection<CapabilityItem> CapabilityItems { get; } = new();
 
-    public LanguageSettingItemViewModel(ILanguageDefinition language, IToolchainProvider? provider = null, CSharpSettingsViewModel? parent = null)
+    public LanguageSettingItemViewModel(
+        ILanguageDefinition language,
+        IToolchainProvider? provider = null,
+        IToolchainProvider? dotNetProvider = null,
+        CSharpSettingsViewModel? parent = null)
     {
         Language = language;
         Provider = provider ?? language.Toolchain;
+        DotNetProvider = dotNetProvider;
         ParentSettings = parent;
 
         PopulateCapabilities();
 
-        if (Provider == null)
+        if (IsCSharp)
         {
-            // Built-in compiled/Roslyn language (e.g. C#)
             IsChecking = false;
             IsFound = true;
             StatusBadge = "In-Process Ready";
@@ -119,6 +149,21 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
             EnvironmentDetails.Add(new EnvironmentPropertyItem("Execution Sandbox", "In-Process Interactive Kernel"));
             EnvironmentDetails.Add(new EnvironmentPropertyItem("Host Architecture", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()));
             EnvironmentDetails.Add(new EnvironmentPropertyItem(".NET Runtime", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription));
+
+            if (DotNetProvider != null)
+            {
+                var saved = DotNetProvider.SelectedPath;
+                IsAutoDetect = string.IsNullOrWhiteSpace(saved);
+                CustomPath = saved ?? string.Empty;
+            }
+        }
+        else if (Provider == null)
+        {
+            IsChecking = false;
+            IsFound = true;
+            StatusBadge = "Ready";
+            StatusColor = "#4EBA6F";
+            ActiveToolchainLabel = Language.RuntimeDescription;
         }
         else
         {
@@ -152,7 +197,6 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public void UpdateResolution(ToolchainResolution resolution, IReadOnlyList<ToolchainInfo> allFound)
     {
         IsChecking = false;
-        IsFound = resolution.IsFound;
         DiscoveredToolchains.Clear();
         EnvironmentDetails.Clear();
         MissingSteps.Clear();
@@ -161,6 +205,52 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
         {
             DiscoveredToolchains.Add(t);
         }
+
+        if (IsCSharp)
+        {
+            IsFound = true; // Roslyn in-process is always available
+            if (resolution.Toolchain is { } sdk)
+            {
+                StatusBadge = $"Ready: Roslyn & {sdk.DisplayName}";
+                StatusColor = "#4EBA6F";
+                ActiveToolchainLabel = $"Roslyn + {sdk.DisplayName}";
+                ActiveExecutablePath = sdk.ExecutablePath;
+                ActiveVersion = sdk.Version.ToString();
+                ActiveSource = sdk.Source;
+                SelectedDiscoveredToolchain = DiscoveredToolchains.FirstOrDefault(d =>
+                    string.Equals(d.ExecutablePath, sdk.ExecutablePath, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                StatusBadge = "In-Process Ready (.NET 10)";
+                StatusColor = "#4EBA6F";
+                ActiveToolchainLabel = "In-Process Roslyn Engine";
+                ActiveExecutablePath = "Built-in Roslyn Compiler (.NET 10)";
+                ActiveVersion = ".NET 10.0 (C# 13)";
+                ActiveSource = "Core Runtime";
+                SelectedDiscoveredToolchain = null;
+            }
+
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Default Engine", "Roslyn In-Memory Compiler (.NET 10)"));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Language Standard", "C# 13.0"));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Target Framework", ".NET 10.0"));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Execution Sandbox", "Dual Mode (In-Process Roslyn / External CLI)"));
+            if (resolution.Toolchain is { } dotNetSdk)
+            {
+                EnvironmentDetails.Add(new EnvironmentPropertyItem("Discovered .NET SDK", dotNetSdk.ExecutablePath));
+                EnvironmentDetails.Add(new EnvironmentPropertyItem("SDK Version", dotNetSdk.Version.ToString()));
+                EnvironmentDetails.Add(new EnvironmentPropertyItem("SDK Source", dotNetSdk.Source));
+            }
+            else
+            {
+                EnvironmentDetails.Add(new EnvironmentPropertyItem("Discovered .NET SDK", "None detected (Run with built-in Roslyn)"));
+            }
+            EnvironmentDetails.Add(new EnvironmentPropertyItem("Host Architecture", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()));
+            EnvironmentDetails.Add(new EnvironmentPropertyItem(".NET Host Runtime", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription));
+            return;
+        }
+
+        IsFound = resolution.IsFound;
 
         if (resolution.Toolchain is { } toolchain)
         {

@@ -313,4 +313,52 @@ public class CSharpSettingsViewModelTests : IDisposable
         vm.KeymapSearchQuery = string.Empty;
         Assert.Equal(vm.Shortcuts.Count, vm.FilteredShortcuts.Count);
     }
+
+    [Fact]
+    public void Languages_CSharp_HasToolchainConfigurationAndExecutionEngine()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var csharp = vm.Languages.First(l => l.Language.Id == LanguageIds.CSharp);
+
+        Assert.True(csharp.IsCSharp);
+        Assert.False(csharp.IsToolchainLanguage); // Preserved invariant
+        Assert.True(csharp.HasDotNetToolchain);
+        Assert.True(csharp.HasToolchainConfiguration);
+        Assert.NotNull(csharp.DotNetProvider);
+        Assert.Equal("internal", csharp.CSharpExecutionEngine);
+        Assert.True(csharp.IsInProcessRoslynSelected);
+        Assert.False(csharp.IsExternalDotNetSelected);
+    }
+
+    [Fact]
+    public void Languages_CanSelectCSharpExecutionEngineAndCustomPath()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var csharp = vm.Languages.First(l => l.Language.Id == LanguageIds.CSharp);
+
+        // Switch to external .NET SDK engine
+        vm.SelectCSharpEngine("external");
+        Assert.Equal("external", csharp.CSharpExecutionEngine);
+        Assert.True(csharp.IsExternalDotNetSelected);
+        Assert.False(csharp.IsInProcessRoslynSelected);
+        Assert.True(vm.HasPendingChanges);
+
+        // Set custom dotnet binary path
+        const string customDotNet = "/usr/local/share/dotnet/dotnet";
+        vm.ApplyCustomPath(csharp, customDotNet);
+        Assert.False(csharp.IsAutoDetect);
+        Assert.Equal(customDotNet, csharp.CustomPath);
+        Assert.Equal(customDotNet, _services.ToolchainSettings.GetSelectedPath(LanguageIds.CSharp));
+
+        // Save settings
+        vm.Apply();
+        Assert.False(vm.HasPendingChanges);
+        Assert.Equal("external", _settingsStore.GetSettings().CSharpExecutionEngine);
+
+        // Reset to defaults
+        vm.ResetDefaults();
+        Assert.Equal("internal", csharp.CSharpExecutionEngine);
+        Assert.True(csharp.IsInProcessRoslynSelected);
+        Assert.True(csharp.IsAutoDetect);
+    }
 }

@@ -27,19 +27,42 @@ public partial class CSharpCodeStudioViewModel
     private bool _isAcceptingProgramInput;
 
     /// <param name="note">A line printed before the run, e.g. why F5 ran without the debugger.</param>
-    private async Task RunWithScriptRunnerAsync(StudioTabItemViewModel? runningTab, ILanguageDefinition language, string? note = null)
+    private async Task RunWithScriptRunnerAsync(
+        StudioTabItemViewModel? runningTab,
+        ILanguageDefinition language,
+        string? note = null,
+        IScriptRunner? overrideRunner = null,
+        IToolchainProvider? overrideToolchains = null)
     {
         var document = Script;
-        var runner = language.ScriptRunner!;
-        var toolchains = language.Toolchain;
+        var runner = overrideRunner ?? language.ScriptRunner;
+        var toolchains = overrideToolchains ?? language.Toolchain;
+
+        if (runner == null)
+        {
+            CompilerStatusText = $"⚠️ {language.DisplayName} has no script runner configured.";
+            return;
+        }
 
         // Run always runs what's in the editor, like Ctrl+S then run in a terminal.
         await SaveDocumentAsync(userAsked: true);
         var sourceFile = document.SourceFilePath;
         if (sourceFile == null || !File.Exists(sourceFile))
         {
-            CompilerStatusText = $"⚠️ Save {document.Title} as a file before running it.";
-            return;
+            try
+            {
+                var tempFolder = Path.Combine(Path.GetTempPath(), "FryStudio", "staged_scripts");
+                Directory.CreateDirectory(tempFolder);
+                var safeName = !string.IsNullOrWhiteSpace(document.Title) ? Path.GetFileNameWithoutExtension(document.Title) : "Script";
+                var ext = language.FileExtensions.FirstOrDefault() ?? ".cs";
+                sourceFile = Path.Combine(tempFolder, $"{safeName}{ext}");
+                await File.WriteAllTextAsync(sourceFile, Code);
+            }
+            catch
+            {
+                CompilerStatusText = $"⚠️ Save {document.Title} as a file before running it.";
+                return;
+            }
         }
 
         var folder = Path.GetDirectoryName(sourceFile)!;
@@ -304,12 +327,20 @@ public partial class CSharpCodeStudioViewModel
     public async Task SendProgramInputAsync()
     {
         var tab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        if (tab?.ActiveRun is not { AcceptsInput: true } run) return;
+        if (tab == null) return;
 
         var line = ProgramInputText;
         ProgramInputText = string.Empty;
         tab.AppendToConsole?.Invoke(line + "\n");
-        await run.SendInputAsync(line + "\n");
+
+        if (tab.ActiveRun is { } run)
+        {
+            await run.SendInputAsync(line + "\n");
+        }
+        else if (tab.InProcessStdin != null)
+        {
+            tab.InProcessStdin.PostInput(line);
+        }
     }
 
     // A closed tab's run doesn't go on unseen.

@@ -364,6 +364,14 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
+        if (UseExternalDotNetRunner)
+        {
+            var externalRunner = new Services.Languages.CSharp.CSharpBuildAndRunScriptRunner(_languages.Host);
+            var externalToolchains = new Services.Languages.CSharp.CSharpToolchainProvider(_languages.Host, _languages.Processes, _languages.ToolchainSettings);
+            await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage, "⚡ Running with External .NET SDK (dotnet CLI)...", externalRunner, externalToolchains);
+            return;
+        }
+
         var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         // Every run checks the script's test cases; their results land on them even if another tab is active by the end.
         var runningCases = TestCases.ToList();
@@ -449,6 +457,13 @@ public partial class CSharpCodeStudioViewModel
         });
         using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
+        var stdin = new Services.Processes.InteractiveStdinReader(token);
+        if (runningTab != null) runningTab.InProcessStdin = stdin;
+        if (ActiveLanguage.Has(Services.Languages.LanguageCapabilities.StandardInput))
+        {
+            IsAcceptingProgramInput = true;
+        }
+
         try
         {
             if (CurrentLanguageMode == ExecutionLanguageMode.Statements || CurrentLanguageMode == ExecutionLanguageMode.Expression)
@@ -472,6 +487,7 @@ public partial class CSharpCodeStudioViewModel
                     codeToRun,
                     ct: token,
                     onLiveConsole: terminal.Write,
+                    stdin: stdin,
                     onRichOutput: rich =>
                     {
                         Action appendRich = () =>
@@ -624,7 +640,7 @@ public partial class CSharpCodeStudioViewModel
                     CompilerStatusText = "Running...";
                 }
 
-                var executionTask = _executionEngine.ExecuteAsync(bytes, terminal.Write, token);
+                var executionTask = _executionEngine.ExecuteAsync(bytes, terminal.Write, token, stdin);
 
                 ExecutionResult result;
                 if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, token))
@@ -721,8 +737,10 @@ public partial class CSharpCodeStudioViewModel
         }
         finally
         {
+            stdin.Complete();
             if (runningTab != null)
             {
+                runningTab.InProcessStdin = null;
                 runningTab.IsExecuting = false;
                 runningTab.ExecutionTimeText = ExecutionTimeText;
                 runningTab.CompilerStatusText = CompilerStatusText;
@@ -730,6 +748,7 @@ public partial class CSharpCodeStudioViewModel
             if (runningTab == null || runningTab.IsActive)
             {
                 IsExecuting = false;
+                IsAcceptingProgramInput = false;
             }
             UpdateTestCaseResults(runningCases, runningCode, runningTab?.ConsoleOutput ?? ConsoleOutput, completed);
         }
@@ -754,6 +773,7 @@ public partial class CSharpCodeStudioViewModel
     {
         if (!IsExecuting) return;
         var targetTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        targetTab?.InProcessStdin?.Complete();
         if (targetTab?.ActiveRun != null)
         {
             // A program of this tab (a Python run): end it and what it started, and leave other tabs' runs alone.

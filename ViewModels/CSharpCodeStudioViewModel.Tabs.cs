@@ -86,7 +86,7 @@ public partial class CSharpCodeStudioViewModel
         IsDebugging = tab.IsDebugging;
         IsPaused = tab.IsPaused;
         SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
-        IsAcceptingProgramInput = tab.ActiveRun is { AcceptsInput: true } && SupportsStandardInput;
+        IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
 
         Diagnostics.Clear();
         foreach (var d in tab.Diagnostics) Diagnostics.Add(d);

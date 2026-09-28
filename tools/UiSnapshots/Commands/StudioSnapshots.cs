@@ -35,6 +35,13 @@ internal static class StudioSnapshots
         // here reaches the user's settings. --python picks the interpreter for .py files.
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
+        if (options.Value("dotnet") is { } dotnetPath) languages.ToolchainSettings.SetSelectedPath(LanguageIds.CSharp, dotnetPath);
+        if (options.Value("csharp-engine") is { } csharpEngine)
+        {
+            var settings = languages.StudioSettings.GetSettings();
+            settings.CSharpExecutionEngine = csharpEngine;
+            languages.StudioSettings.SaveSettings(settings);
+        }
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry);
 
         // A source file (main.py) is copied into the throwaway workspace and opened as one; any other file is a C# script.
@@ -373,7 +380,8 @@ internal static class StudioSnapshots
             "language" => "The cell's language",
             "kernel" => "The notebook's kernels",
             "toolchain" => "Choose which installed toolchain",
-            _ => throw new ArgumentException($"--menu is language or kernel (notebook), or toolchain (studio); not '{menu}'.")
+            "mode" => "Select C# Execution Mode",
+            _ => throw new ArgumentException($"--menu is language, kernel (notebook), toolchain or mode (studio); not '{menu}'.")
         };
         // Every cell has a language menu (only the selected cell's toolbar is opaque), so it's the selected cell's.
         var button = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b =>

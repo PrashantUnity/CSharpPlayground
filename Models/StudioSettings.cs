@@ -21,6 +21,7 @@ public sealed class StudioSettings
     // Roslyn C# Options
     public bool NullableChecksEnabled { get; set; } = true;
     public string LanguageVersion { get; set; } = "13.0";
+    public string CSharpExecutionEngine { get; set; } = "internal"; // "internal" (Roslyn) or "external" (dotnet CLI)
 
     public StudioSettings Clone() => new()
     {
@@ -33,6 +34,7 @@ public sealed class StudioSettings
         AutoClearConsoleOnRun = AutoClearConsoleOnRun,
         MaxTerminalOutputLines = MaxTerminalOutputLines,
         NullableChecksEnabled = NullableChecksEnabled,
-        LanguageVersion = LanguageVersion
+        LanguageVersion = LanguageVersion,
+        CSharpExecutionEngine = CSharpExecutionEngine
     };
 }

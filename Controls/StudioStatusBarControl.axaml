@@ -85,6 +85,9 @@
                             <MenuItem Header="C# Top-Level Statements" Command="{Binding SetLanguageModeCommand}" CommandParameter="0" />
                             <MenuItem Header="C# Program with Main()" Command="{Binding SetLanguageModeCommand}" CommandParameter="1" />
                             <MenuItem Header="C# Single Expression" Command="{Binding SetLanguageModeCommand}" CommandParameter="2" />
+                            <Separator />
+                            <MenuItem Header="In-Process Roslyn (.NET 10)" Command="{Binding SetCSharpRunnerCommand}" CommandParameter="internal" />
+                            <MenuItem Header="External .NET SDK (dotnet CLI)" Command="{Binding SetCSharpRunnerCommand}" CommandParameter="external" />
                         </MenuFlyout>
                     </Button.Flyout>
                     <TextBlock Text="{Binding LanguageModeStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />

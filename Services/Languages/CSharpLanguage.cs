@@ -6,6 +6,7 @@ using AvaloniaEdit.Indentation;
 using AvaloniaEdit.Indentation.CSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
@@ -43,11 +44,15 @@ public sealed class CSharpLanguage : LanguageDefinition
     public override IReadOnlyList<string> FileExtensions => CSharpExtensions;
     public override LanguageStorageKind Storage => LanguageStorageKind.FryDocument;
 
+    public override IPackageManager Packages { get; } = new CSharp.NuGetPackageManager();
+    public override IDiagnosticParser RunDiagnostics { get; } = new CSharp.CSharpCompilerDiagnosticParser();
+
     public override LanguageCapabilities Capabilities =>
         LanguageCapabilities.Completion | LanguageCapabilities.QuickInfo | LanguageCapabilities.Formatting |
         LanguageCapabilities.Debugging | LanguageCapabilities.Breakpoints | LanguageCapabilities.LiveDiagnostics |
         LanguageCapabilities.TestCases | LanguageCapabilities.Templates | LanguageCapabilities.ExecutionModes |
-        LanguageCapabilities.NotebookCells | LanguageCapabilities.ValueSharing;
+        LanguageCapabilities.NotebookCells | LanguageCapabilities.ValueSharing |
+        LanguageCapabilities.StandardInput | LanguageCapabilities.Packages;
 
     public override string IconKind => "LanguageCsharp";
     public override string AccentHex => "#58A6FF";
