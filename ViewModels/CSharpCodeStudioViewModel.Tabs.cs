@@ -10,7 +10,9 @@ public partial class CSharpCodeStudioViewModel
 {
     private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
-        var sourceLanguage = document.SourceFilePath != null ? _languages.LanguageOf(document) : null;
+        var sourceLanguage = (document.SourceFilePath != null || !string.Equals(document.LanguageId, PdfEditorApp.Plugins.CSharpEditor.Services.Languages.LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase))
+            ? _languages.LanguageOf(document)
+            : null;
         return new StudioTabItemViewModel(document, isActive)
         {
             LanguageIconKind = sourceLanguage?.IconKind,

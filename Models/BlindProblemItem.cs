@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -14,7 +15,7 @@ public enum ProblemDifficulty
     Hard
 }
 
-public partial class BlindProblemItem : ObservableObject
+public partial class BlindProblemItem : ObservableObject, IProblemItem
 {
     public string Id { get; init; } = string.Empty;
     public int Number { get; init; }
@@ -55,6 +56,33 @@ public partial class BlindProblemItem : ObservableObject
     public string DescriptionMarkdown { get; init; } = string.Empty;
     public string StarterCode { get; init; } = string.Empty;
     public string SolutionCode { get; init; } = string.Empty;
+
+    /// <summary>Language-specific code bundles keyed by lower-case language id (e.g. "csharp", "python", "javascript").</summary>
+    public Dictionary<string, ProblemLanguageBundle> LanguageImplementations { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Gets the solution code for the specified language, falling back to C# SolutionCode if unavailable.</summary>
+    public string GetSolutionCode(string? languageId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(languageId) &&
+            LanguageImplementations.TryGetValue(languageId, out var bundle) &&
+            !string.IsNullOrWhiteSpace(bundle.SolutionCode))
+        {
+            return bundle.SolutionCode;
+        }
+        return SolutionCode;
+    }
+
+    /// <summary>Gets the starter code template for the specified language, falling back to C# StarterCode if unavailable.</summary>
+    public string GetStarterCode(string? languageId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(languageId) &&
+            LanguageImplementations.TryGetValue(languageId, out var bundle) &&
+            !string.IsNullOrWhiteSpace(bundle.StarterCode))
+        {
+            return bundle.StarterCode;
+        }
+        return StarterCode;
+    }
 
     /// <summary>Types and helpers every code cell shares (ListNode, TreeNode, builders), defined once before the rest.</summary>
     public string SupportCode { get; init; } = string.Empty;

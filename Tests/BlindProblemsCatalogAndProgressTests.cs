@@ -87,6 +87,110 @@ public class BlindProblemsCatalogAndProgressTests
     }
 
     [Fact]
+    public void Blind75CatalogService_ConvertToScript_Python_ShouldProducePythonScript()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var script = Blind75CatalogService.ConvertToScript(problem, "python");
+
+        Assert.NotNull(script);
+        Assert.EndsWith(".py", script.Title);
+        Assert.Equal("python", script.LanguageId);
+        Assert.Contains("def twoSum", script.Code);
+        Assert.Contains("def check", script.Code);
+        Assert.Contains("check(\"Example 1\"", script.Code);
+        Assert.NotEmpty(script.TestCases);
+    }
+
+    [Fact]
+    public void Blind75CatalogService_ConvertToNotebook_Python_ShouldProducePythonNotebook()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var notebook = Blind75CatalogService.ConvertToNotebook(problem, "python");
+
+        Assert.NotNull(notebook);
+        Assert.Contains("Python Notebook", notebook.Title);
+        Assert.Contains(notebook.Cells, c => c.Type == CellType.Code && c.Language == "python");
+    }
+
+    [Fact]
+    public void Blind75CatalogService_ConvertToScript_JavaScript_ShouldProduceJavaScriptScript()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var script = Blind75CatalogService.ConvertToScript(problem, "javascript");
+
+        Assert.NotNull(script);
+        Assert.EndsWith(".js", script.Title);
+        Assert.Equal("javascript", script.LanguageId);
+        Assert.Contains("twoSum(nums, target)", script.Code);
+        Assert.Contains("function check", script.Code);
+        Assert.Contains("check(\"Example 1\"", script.Code);
+        Assert.NotEmpty(script.TestCases);
+    }
+
+    [Fact]
+    public void Blind75CatalogService_ConvertToNotebook_JavaScript_ShouldProduceJavaScriptNotebook()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var notebook = Blind75CatalogService.ConvertToNotebook(problem, "javascript");
+
+        Assert.NotNull(notebook);
+        Assert.Contains("JavaScript Notebook", notebook.Title);
+        Assert.Contains(notebook.Cells, c => c.Type == CellType.Code && c.Language == "javascript");
+    }
+
+    [Fact]
+    public void Blind75CatalogService_ConvertToScript_Java_ShouldProduceJavaClass()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var script = Blind75CatalogService.ConvertToScript(problem, "java");
+
+        Assert.NotNull(script);
+        Assert.EndsWith(".java", script.Title);
+        Assert.Equal("java", script.LanguageId);
+        Assert.Contains("public class Solution", script.Code);
+        Assert.Contains("public int[] twoSum", script.Code);
+        Assert.Contains("public static void main", script.Code);
+        Assert.Contains("check(\"Example 1\"", script.Code);
+        Assert.NotEmpty(script.TestCases);
+    }
+
+    [Fact]
+    public void Blind75CatalogService_ConvertToNotebook_Java_ShouldProduceJavaNotebook()
+    {
+        var problem = Blind75CatalogService.GetProblemByNumber(1)!;
+        var notebook = Blind75CatalogService.ConvertToNotebook(problem, "java");
+
+        Assert.NotNull(notebook);
+        Assert.Contains("Java Notebook", notebook.Title);
+        Assert.Contains(notebook.Cells, c => c.Type == CellType.Code && c.Language == "java");
+    }
+
+    [Fact]
+    public void Blind75CatalogService_MultiLanguageSolutions_ShouldProvideRealCode()
+    {
+        var twoSum = Blind75CatalogService.GetProblemByNumber(1)!;
+        Assert.Contains("def twoSum", twoSum.GetSolutionCode("python"));
+        Assert.Contains("twoSum(nums, target)", twoSum.GetSolutionCode("javascript"));
+        Assert.Contains("public int[] twoSum", twoSum.GetSolutionCode("java"));
+        Assert.Contains("public class Solution", twoSum.GetSolutionCode("csharp"));
+
+        var reverseList = Blind75CatalogService.GetProblemByNumber(206)!;
+        Assert.Contains("def reverseList", reverseList.GetSolutionCode("python"));
+        Assert.Contains("reverseList(head)", reverseList.GetSolutionCode("javascript"));
+        Assert.Contains("public ListNode reverseList", reverseList.GetSolutionCode("java"));
+    }
+
+    [Fact]
+    public void ProblemLanguageRegistry_ShouldSupportAllFourCoreLanguages()
+    {
+        var ids = PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core.ProblemLanguageRegistry.SupportedLanguageIds;
+        Assert.Contains("csharp", ids);
+        Assert.Contains("python", ids);
+        Assert.Contains("javascript", ids);
+        Assert.Contains("java", ids);
+    }
+
+    [Fact]
     public async Task LocalBlindProgressService_SetSolvedAndBookmark_ShouldPersistState()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "FrySharpTest_" + Guid.NewGuid().ToString("N"));
