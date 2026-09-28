@@ -120,13 +120,8 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
             throw new InvalidOperationException(resolved.Missing?.Summary ?? "C++ compiler not found.");
         }
 
-        var debugger = await ResolveDebuggerAsync(resolved, ct).ConfigureAwait(false);
-        if (!debugger.IsAvailable || string.IsNullOrEmpty(debugger.ExecutablePath))
-        {
-            throw new InvalidOperationException(debugger.MissingGuidance?.Summary ?? "C++ debugger (lldb-dap) not found.");
-        }
-
         string scriptFile = context.SourceFilePath;
+
         if (string.IsNullOrEmpty(scriptFile) || !File.Exists(scriptFile))
         {
             scriptFile = Path.Combine(Path.GetTempPath(), $"script_{Guid.NewGuid():N}.cpp");
@@ -182,6 +177,13 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
             var parser = new ClangGccDiagnosticParser();
             var parseResult = parser.Parse(compileResult.StandardOutput + "\n" + compileResult.StandardError, scriptFile);
             throw new DebugCompilationException(parseResult.Diagnostics);
+        }
+
+        // Now verify the debugger is available (after compilation succeeds)
+        var debugger = await ResolveDebuggerAsync(resolved, ct).ConfigureAwait(false);
+        if (!debugger.IsAvailable || string.IsNullOrEmpty(debugger.ExecutablePath))
+        {
+            throw new InvalidOperationException(debugger.MissingGuidance?.Summary ?? "C++ debugger (lldb-dap) not found.");
         }
 
         var env = await CppProcessEnvironment.ForAsync(_host, resolved.Toolchain, ct).ConfigureAwait(false);

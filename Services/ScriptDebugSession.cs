@@ -194,7 +194,7 @@ public class ScriptDebugSession
             gate = _stepGate;
         }
 
-        // Notify UI thread
+        // Notify UI thread (or call directly on background threads in headless/test environments)
         var localsSnapshot = CapturedLocals.ToList();
         if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
         {
@@ -205,7 +205,9 @@ public class ScriptDebugSession
         }
         else
         {
-            Task.Run(() => Paused?.Invoke(lineNumber, localsSnapshot));
+            // Already on a background thread (script worker) — invoke directly so
+            // the Paused handler (e.g. session.Continue()) runs before the gate wait.
+            Paused?.Invoke(lineNumber, localsSnapshot);
         }
 
         // Wait asynchronously without blocking the UI thread (execution runs on Task.Run worker)
