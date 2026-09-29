@@ -28,7 +28,7 @@ Every main studio interface (both script code studio and notebook studio) must s
 - **Single Side Bar Rule**: Only ONE primary side bar may exist in the horizontal flow. Never place multiple sidebars side-by-side or insert hardcoded fixed middle columns.
 - Hosts the view corresponding to the active Activity Bar icon.
 - Explorer header features standard action buttons: **New File** (`FilePlusOutline`), **New Folder** (`FolderPlusOutline`), **Open Project** (`FolderOpenOutline`), **Refresh** (`Refresh`), and **Collapse All** (`ArrowCollapseVertical`).
-- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
+- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.go`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
 - Collapsible via `IsSideBarVisible` or keyboard shortcut `Ctrl+B`.
 
 ### Zone 3: Editor Area (Dominant Central Canvas)

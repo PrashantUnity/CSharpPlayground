@@ -51,7 +51,7 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public string ToolchainPlaceholderText => IsCSharp
         ? "/usr/local/share/dotnet/dotnet"
         : IsCompiled
-            ? (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac")
+            ? (Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
             : "/path/to/executable";
 
     public string DisplayName => Language.DisplayName;

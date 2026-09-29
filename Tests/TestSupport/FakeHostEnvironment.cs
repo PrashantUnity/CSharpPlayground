@@ -25,6 +25,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly Dictionary<string, FakeNode> _nodes;
     private readonly Dictionary<string, FakeJava> _javas;
     private readonly Dictionary<string, FakeCpp> _cpps;
+    private readonly Dictionary<string, FakeGo> _gos;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -36,6 +37,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _nodes = new Dictionary<string, FakeNode>(comparer);
         _javas = new Dictionary<string, FakeJava>(comparer);
         _cpps = new Dictionary<string, FakeCpp>(comparer);
+        _gos = new Dictionary<string, FakeGo>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -124,6 +126,15 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return cpp;
     }
 
+    /// <summary>Makes <paramref name="path"/> a Go toolchain runtime that answers the studio's probe.</summary>
+    public FakeGo AddGo(string path, string version, int exitCode = 0)
+    {
+        AddFile(path);
+        var go = new FakeGo(version, path) { ExitCode = exitCode };
+        _gos[Normalize(path)] = go;
+        return go;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -183,6 +194,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && (arguments[0] == "--version" || arguments[0] == "/?") && _cpps.TryGetValue(Normalize(fileName), out var cpp))
         {
             return Task.FromResult(cpp.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && arguments[0] == "version" && _gos.TryGetValue(Normalize(fileName), out var go))
+        {
+            return Task.FromResult(go.ProbeAnswer());
         }
 
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
@@ -263,5 +279,16 @@ public sealed record FakeCpp(string Version, string Executable, string Vendor = 
             _ => $"clang version {Version} (Homebrew LLVM {Version})\nTarget: arm64-apple-darwin25.5.0\nThread model: posix"
         };
         return new CommandResult(0, output, string.Empty, false);
+    }
+}
+
+public sealed record FakeGo(string Version, string Executable)
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working go", false);
+        return new CommandResult(0, $"go version go{Version} darwin/arm64\n", string.Empty, false);
     }
 }

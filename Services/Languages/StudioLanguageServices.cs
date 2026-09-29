@@ -1,5 +1,6 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
@@ -59,6 +60,7 @@ public sealed class StudioLanguageServices
             Registry.Register(new JavaScriptLanguage(this));
             Registry.Register(new JavaLanguage(this));
             Registry.Register(new CppLanguage(this));
+            Registry.Register(new GoLanguage(this));
         }
 
         configure?.Invoke(this, Registry);

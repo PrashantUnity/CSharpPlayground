@@ -8,6 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75.Multi
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.CSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Cpp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Go;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Python;
@@ -23,6 +24,7 @@ public static partial class Blind75CatalogService
         ProblemLanguageRegistry.Register(JavaScriptProblemLanguageAdapter.Instance);
         ProblemLanguageRegistry.Register(JavaProblemLanguageAdapter.Instance);
         ProblemLanguageRegistry.Register(CppProblemLanguageAdapter.Instance);
+        ProblemLanguageRegistry.Register(GoProblemLanguageAdapter.Instance);
     }
 
     private static readonly Lazy<IReadOnlyList<BlindProblemItem>> _problems = new(CreateAllProblems);

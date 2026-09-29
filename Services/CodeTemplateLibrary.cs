@@ -252,6 +252,72 @@ int main() {
         },
         new()
         {
+            Id = "go_algorithms_starter",
+            Title = "Go Concurrency & Channels",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Modern Go workspace with goroutines, channels, sync primitives, and native compiler execution.",
+            IconKind = MaterialIconKind.LanguageGo,
+            AccentColor = "#00ADD8",
+            AccentBackground = "#162832",
+            AccentBorder = "#1E4153",
+            CategoryBadge = "Go • Native",
+            Tags = new List<string> { "Go", "Goroutines", "Channels", "Native" },
+            Notes = @"# Go Concurrency & Pipeline Workspace
+
+This script compiles and executes natively using your system's Go toolchain (`go build`).
+
+### Key Features:
+- **Native Two-Phase Execution**: Compiles via `go build` with structured diagnostic parsing in Problems.
+- **Goroutines & Channels**: High-performance lightweight concurrent pipelines.
+- **Native DAP Debugging**: Set breakpoints and inspect goroutines and variables with Delve (`dlv dap`).",
+            InitialCode = @"// Go Concurrency & Pipeline Workspace
+package main
+
+import (
+	""fmt""
+	""sync""
+	""time""
+)
+
+func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		fmt.Printf(""Worker %d started job %d\n"", id, j)
+		time.Sleep(10 * time.Millisecond)
+		results <- j * 2
+	}
+}
+
+func main() {
+	fmt.Println(""=== Go Concurrent Worker Pool ==="")
+
+	const numJobs = 5
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+	var wg sync.WaitGroup
+
+	for w := 1; w <= 3; w++ {
+		wg.Add(1)
+		go worker(w, jobs, results, &wg)
+	}
+
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	for res := range results {
+		fmt.Printf(""Result: %d\n"", res)
+	}
+	fmt.Println(""All jobs completed successfully!"")
+}"
+        },
+        new()
+        {
             Id = "animation_studio",
             Title = "Live Animation Studio",
             Category = "Animation",

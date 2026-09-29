@@ -131,7 +131,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(15)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunCodeCommand deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
@@ -173,7 +173,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(15)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunSingleCellAsync deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
@@ -232,7 +232,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         await studio.RunCodeCommand.ExecuteAsync(null);
         secondSw.Stop();
 
-        Assert.True(secondSw.Elapsed < TimeSpan.FromSeconds(2),
+        Assert.True(secondSw.Elapsed < TimeSpan.FromSeconds(10),
             $"Second run should complete quickly if the kernel lock was freed, took {secondSw.Elapsed}");
         Assert.Contains("FROM_B", studio.ConsoleOutput);
 

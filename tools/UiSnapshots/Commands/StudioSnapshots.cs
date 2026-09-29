@@ -283,9 +283,10 @@ internal static class StudioSnapshots
         var javaException = options.Flag("java-exception");
         var javaTable = options.Flag("java-table");
         var cppDemo = options.Flag("cpp-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo) ? 0 : options.Problem();
+        var goDemo = options.Flag("go-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -312,7 +313,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -629,6 +630,48 @@ internal static class StudioSnapshots
                     }
                     std::cout << "Computed " << squares.size() << " squares." << std::endl;
                     Display::table(squares, "Squares of Numbers");
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem GoDemoNotebook() => new()
+    {
+        Title = "Go Interactive Polyglot Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # Go Interactive Polyglot Notebook
+                    Interactive Go cell execution with concurrent goroutines, channels, and cross-kernel variable sharing.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Go,
+                Source = """
+                    nums := []int{10, 20, 30, 40, 50}
+                    total := 0
+                    for _, v := range nums {
+                        total += v
+                    }
+                    fmt.Printf("Go computed sum: %d\n", total)
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Go,
+                Source = """
+                    ch := make(chan string)
+                    go func() {
+                        ch <- "🚀 Hello from concurrent Go goroutine in Notebook Studio!"
+                    }()
+                    msg := <-ch
+                    fmt.Println(msg)
                     """
             }
         }

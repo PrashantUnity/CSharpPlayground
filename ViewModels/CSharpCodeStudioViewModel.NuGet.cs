@@ -65,6 +65,18 @@ public partial class CSharpCodeStudioViewModel
         new("opencv4", "4.9.0", "Open Source Computer Vision Library", "OpenCV team", 25000000)
     ];
 
+    private static readonly NuGetPackageItem[] PopularGoPackages =
+    [
+        new("github.com/gin-gonic/gin", "1.10.0", "Gin is a HTTP web framework written in Go", "Gin Authors", 120000000),
+        new("github.com/google/uuid", "1.6.0", "Generates and inspects UUIDs based on RFC 4122", "Google", 200000000),
+        new("github.com/stretchr/testify", "1.9.0", "A toolkit with common assertions and mocks for Go", "Stretchr", 150000000),
+        new("github.com/spf13/cobra", "1.8.1", "A Commander for modern Go CLI interactions", "Steve Francia", 90000000),
+        new("gorm.io/gorm", "1.25.10", "The fantastic ORM library for Golang", "Jinzhu", 80000000),
+        new("go.uber.org/zap", "1.27.0", "Blazing fast, structured, leveled logging in Go", "Uber", 70000000),
+        new("golang.org/x/sync", "0.7.0", "Go concurrency primitives such as errgroup", "Go Authors", 180000000),
+        new("gopkg.in/yaml.v3", "3.0.1", "YAML support for the Go language", "Canonical", 140000000)
+    ];
+
     public string ActivePackageManagerName => ActiveLanguage?.Packages?.ToolName ?? "NuGet";
     public string ActivePackageManagerTitle => $"{ActivePackageManagerName.ToUpperInvariant()} PACKAGES";
     public string ActivePackageSearchPlaceholder => $"Search {ActivePackageManagerName} packages...";
@@ -90,6 +102,8 @@ public partial class CSharpCodeStudioViewModel
             return PopularJavaPackages;
         if (string.Equals(id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
             return PopularCppPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
+            return PopularGoPackages;
         return PopularNuGetPackages;
     }
 
@@ -128,6 +142,16 @@ public partial class CSharpCodeStudioViewModel
         {
             NuGetSearchResults.Clear();
             var filtered = Array.FindAll(PopularCppPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Go package search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularGoPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
             return;
@@ -234,6 +258,7 @@ public partial class CSharpCodeStudioViewModel
         {
             Services.Languages.LanguageIds.Java => $"//DEPS {package.Id}:{package.Version}",
             Services.Languages.LanguageIds.Cpp => $"// #vcpkg: {package.Id}",
+            Services.Languages.LanguageIds.Go => $"// #go: {package.Id}",
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
             Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
             _ => $"#r \"nuget: {package.Id}, {package.Version}\""
