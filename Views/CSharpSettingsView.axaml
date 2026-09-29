@@ -8,19 +8,28 @@
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpSettingsView"
              x:DataType="vm:CSharpSettingsViewModel"
-             Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+             Background="{DynamicResource DsBgBrush}">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
 
     <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
     </UserControl.Styles>
 
-    <Grid RowDefinitions="52,*">
+    <Grid RowDefinitions="54,*">
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <!-- 1. TOP HEADER BAR (52px)                                       -->
+        <!-- 1. TOP HEADER BAR (54px)                                       -->
         <!-- ══════════════════════════════════════════════════════════════ -->
         <Border Grid.Row="0"
-                Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,0">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto">
@@ -29,36 +38,43 @@
                     <Button Command="{Binding BackToPreviousCommand}"
                             Classes="snippet-action-btn"
                             ToolTip.Tip="Return (Esc)">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="16" Height="16" />
-                            <TextBlock Text="Back" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Back" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Rectangle Width="1" Height="20" Fill="{DynamicResource M3OutlineVariantBrush}" Margin="4,0" />
+                    <Rectangle Width="1" Height="20" Fill="{DynamicResource DsBorderBrush}" Margin="4,0" />
                 </StackPanel>
 
                 <!-- Page Title & Badge -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="6,0,16,0">
-                    <materialIcons:MaterialIcon Kind="CogOutline" Width="22" Height="22" Foreground="{DynamicResource M3PrimaryBrush}" />
-                    <TextBlock Text="Settings &amp; Environment Setup" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource M3PrimaryContainerBrush}" BorderBrush="{DynamicResource M3PrimaryBrush}" BorderThickness="1"
-                            Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                        <TextBlock Text="VS Code Ergonomics" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryContainerBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="8,0,16,0">
+                    <Border Width="30" Height="30" CornerRadius="6"
+                            Background="{DynamicResource DsPrimarySubtleBrush}"
+                            BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
+                            BorderThickness="1"
+                            VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="CogOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="Settings &amp; Environment Setup" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1"
+                            Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
+                        <TextBlock Text="VS Code Ergonomics" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" />
                     </Border>
                 </StackPanel>
 
                 <!-- Status / Notification Pill (when saving or error) -->
                 <Border Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        Background="{DynamicResource DsSurfaceHighBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
                         BorderThickness="1" CornerRadius="14" Padding="12,4"
                         IsVisible="{Binding HasStatusMessage}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="15" Height="15" Foreground="#4EBA6F" />
-                        <TextBlock Text="{Binding StatusMessage}" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DsGreenBrush}" />
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                         <Button Command="{Binding DismissNotificationCommand}" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand" Margin="4,0,0,0">
-                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>
@@ -68,17 +84,17 @@
                     <Button Command="{Binding ResetDefaultsCommand}"
                             Classes="cs-toolbar-outlined"
                             ToolTip.Tip="Reset all settings to default values">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="Restore" Width="15" Height="15" />
-                            <TextBlock Text="Reset Defaults" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Restore" Width="14" Height="14" />
+                            <TextBlock Text="Reset Defaults" FontSize="12" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button Command="{Binding ApplyCommand}"
                             Classes="cs-toolbar-filled"
                             ToolTip.Tip="Save and apply configuration">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
-                            <TextBlock Text="Apply" VerticalAlignment="Center" />
+                            <TextBlock Text="Apply" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -91,17 +107,18 @@
         <Grid Grid.Row="1" ColumnDefinitions="250,1,*">
             <!-- LEFT NAVIGATION RAIL -->
             <Border Grid.Column="0"
-                    Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
                     BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*">
                     <!-- Search Input Box -->
                     <Border Grid.Row="0" Padding="12,12,12,8">
                         <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
                                  PlaceholderText="Search settings &amp; runtimes…"
+                                 Classes="nexus-search-input"
                                  FontSize="12" Height="32">
                             <TextBox.InnerLeftContent>
-                                <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="6,0,0,0" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="8,0,0,0" Foreground="{DynamicResource DsMutedBrush}" />
                             </TextBox.InnerLeftContent>
                         </TextBox>
                     </Border>
@@ -114,8 +131,8 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsLanguagesCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                    <TextBlock Grid.Column="1" Text="Languages &amp; Runtimes" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="Languages &amp; Runtimes" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
@@ -145,8 +162,8 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsEditorCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CodeBraces" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="Editor &amp; Formatting" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CodeBraces" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Editor &amp; Formatting" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
@@ -155,8 +172,8 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsExecutionCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Console" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="Execution &amp; Terminal" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Console" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Execution &amp; Terminal" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
@@ -165,8 +182,8 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsKeymapCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="KeyboardOutline" Width="18" Height="18" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="Keymap &amp; Shortcuts" FontSize="12.5" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="KeyboardOutline" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Keymap &amp; Shortcuts" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
                         </StackPanel>
@@ -175,10 +192,10 @@
             </Border>
 
             <!-- SPLITTER BORDER -->
-            <Rectangle Grid.Column="1" Fill="{DynamicResource M3OutlineVariantBrush}" Width="1" />
+            <Rectangle Grid.Column="1" Fill="{DynamicResource DsBorderBrush}" Width="1" />
 
             <!-- RIGHT DETAIL CANVAS -->
-            <Border Grid.Column="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}">
                 <Panel>
                     <!-- Detail for Languages & Runtimes -->
                     <Panel IsVisible="{Binding IsLanguagesCategoryActive}">
