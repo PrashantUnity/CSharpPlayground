@@ -13,6 +13,14 @@ It operates both as:
 
 ---
 
+## 🎬 Product Demo
+
+[![FrySharp Demo: Run C#, Python, Rust, Go, Java, C++, JS, F# & SQL in ONE Unified Notebook & IDE](Assets/frysharp-thumbnail.jpg)](https://www.youtube.com/watch?v=g1Y4RSxxqIc)
+
+▶️ **[Click here to watch the FrySharp Demo on YouTube](https://www.youtube.com/watch?v=g1Y4RSxxqIc)** — *Supports C#, Python, Rust, Go, Java, C++, JavaScript, F# & SQL*
+
+---
+
 ## 🌟 Key Features
 
 - **Authentic VS Code Layout & Ergonomics**:
