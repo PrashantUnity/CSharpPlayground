@@ -285,9 +285,10 @@ internal static class StudioSnapshots
         var cppDemo = options.Flag("cpp-demo");
         var goDemo = options.Flag("go-demo");
         var fsharpDemo = options.Flag("fsharp-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo) ? 0 : options.Problem();
+        var sqlDemo = options.Flag("sql-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            sqlDemo ? SqlDemoNotebook() : fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -314,7 +315,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -726,6 +727,73 @@ internal static class StudioSnapshots
                     }()
                     msg := <-ch
                     fmt.Println(msg)
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem SqlDemoNotebook() => new()
+    {
+        Title = "SQL / SQLite Interactive Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # SQL / SQLite Interactive Notebook
+                    Interactive SQL cells running via `sqlite3` CLI — create tables, query results, and share data with other kernel languages.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Create a products table and populate it
+                    CREATE TABLE IF NOT EXISTS products (
+                        id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name  TEXT    NOT NULL,
+                        price REAL    NOT NULL,
+                        stock INTEGER DEFAULT 0
+                    );
+
+                    INSERT INTO products (name, price, stock) VALUES
+                        ('Avalonia Widget',   29.99, 150),
+                        ('Roslyn Compiler',   0.00,  999),
+                        ('SQLite Extension',  9.99,  42),
+                        ('F# Toolkit',        19.99, 75);
+
+                    SELECT name, price, stock FROM products ORDER BY price DESC;
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Aggregate queries: total value and low-stock items
+                    SELECT
+                        COUNT(*)        AS total_products,
+                        SUM(price)      AS total_price,
+                        AVG(price)      AS avg_price,
+                        MAX(stock)      AS max_stock
+                    FROM products;
+
+                    -- Low-stock items (fewer than 100 units)
+                    SELECT name, stock
+                    FROM   products
+                    WHERE  stock < 100
+                    ORDER  BY stock ASC;
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Share the products table into Python via #!share
+                    #!share products
                     """
             }
         }

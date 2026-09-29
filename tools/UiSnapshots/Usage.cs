@@ -48,6 +48,7 @@ internal static class Usage
               --polyglot-demo        a notebook of C#, Python, JavaScript, Java, and C++ cells sharing data across kernels
               --go-demo              a notebook of Go cells (goroutines, channels, and variables)
               --fsharp-demo          a notebook of F# cells (pipelines, pattern matching, records)
+              --sql-demo             a notebook of SQL cells (CREATE TABLE, SELECT, aggregates, #!share)
               --java-share           a test notebook attempting cross-language sharing with Java
               --cpp-demo             a notebook of C++ cells (standard library, vector, display tables)
               --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,

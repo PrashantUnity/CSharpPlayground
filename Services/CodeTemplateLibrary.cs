@@ -544,6 +544,46 @@ Display.Html(@""<!DOCTYPE html>
 </html>"");
 
 Console.WriteLine(""Live HTML5 canvas rendering in NativeWebView via Display.Html."");"
+        },
+        new()
+        {
+            Id = "sql_database_starter",
+            Title = "SQLite Database & Schema Starter",
+            Category = "Database",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Create SQLite tables, populate sample data, and run structured aggregation and join queries.",
+            IconKind = MaterialIconKind.Database,
+            AccentColor = "#F29111",
+            AccentBackground = "#2A2215",
+            AccentBorder = "#5A4422",
+            CategoryBadge = "SQL • Database",
+            Tags = new List<string> { "SQL", "SQLite", "Schema", "Tables", "Queries" },
+            InitialCode = @"-- SQLite Database Starter (.sql)
+-- :database :memory:
+
+CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    lead TEXT NOT NULL,
+    budget REAL NOT NULL,
+    status TEXT DEFAULT 'Planning'
+);
+
+INSERT INTO projects (title, lead, budget, status) VALUES
+    ('Cloud Migration', 'Alex Chen', 45000.0, 'Active'),
+    ('Security Audit', 'Sarah Connor', 18500.0, 'Completed'),
+    ('AI Assistant Integration', 'Antigravity', 72000.0, 'Active'),
+    ('Mobile UI Refresh', 'Dev Team', 28000.0, 'Planning');
+
+SELECT 
+    id,
+    title,
+    lead,
+    printf('$%,.2f', budget) AS formatted_budget,
+    status
+FROM projects
+ORDER BY budget DESC;
+"
         }
     };
 }

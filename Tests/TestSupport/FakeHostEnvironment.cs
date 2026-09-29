@@ -27,6 +27,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly Dictionary<string, FakeCpp> _cpps;
     private readonly Dictionary<string, FakeGo> _gos;
     private readonly Dictionary<string, FakeFSharp> _fsharps;
+    private readonly Dictionary<string, FakeSql> _sqls;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -40,6 +41,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _cpps = new Dictionary<string, FakeCpp>(comparer);
         _gos = new Dictionary<string, FakeGo>(comparer);
         _fsharps = new Dictionary<string, FakeFSharp>(comparer);
+        _sqls = new Dictionary<string, FakeSql>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -146,6 +148,15 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return fs;
     }
 
+    /// <summary>Makes <paramref name="path"/> a SQLite toolchain runtime that answers the studio's probe.</summary>
+    public FakeSql AddSql(string path, string version = "3.51.0", int exitCode = 0)
+    {
+        AddFile(path);
+        var sql = new FakeSql(version, path) { ExitCode = exitCode };
+        _sqls[Normalize(path)] = sql;
+        return sql;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -215,6 +226,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && ((arguments[0] == "--version") || (arguments[0] == "fsi" && arguments.Count > 1 && arguments[1] == "--version")) && _fsharps.TryGetValue(Normalize(fileName), out var fsharp))
         {
             return Task.FromResult(fsharp.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && arguments[0] == "--version" && _sqls.TryGetValue(Normalize(fileName), out var sql))
+        {
+            return Task.FromResult(sql.ProbeAnswer());
         }
 
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
@@ -317,5 +333,16 @@ public sealed record FakeFSharp(string Version, string Executable)
     {
         if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working F# runtime", false);
         return new CommandResult(0, $"Microsoft (R) F# Interactive version 15.2.400.0 for F# {Version}\n", string.Empty, false);
+    }
+}
+
+public sealed record FakeSql(string Version, string Executable)
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working sqlite3", false);
+        return new CommandResult(0, $"{Version} 2025-06-12 13:14:41 (64-bit)\n", string.Empty, false);
     }
 }

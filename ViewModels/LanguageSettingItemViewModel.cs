@@ -52,7 +52,8 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
         ? "/usr/local/share/dotnet/dotnet"
         : IsCompiled
             ? (Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
-            : (Language.Id == LanguageIds.FSharp ? "/usr/local/share/dotnet/dotnet" : "/path/to/executable");
+            : (Language.Id == LanguageIds.FSharp ? "/usr/local/share/dotnet/dotnet" :
+               Language.Id == LanguageIds.Sql ? "/usr/bin/sqlite3" : "/path/to/executable");
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;
