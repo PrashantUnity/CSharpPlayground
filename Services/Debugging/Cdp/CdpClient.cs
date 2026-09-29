@@ -129,7 +129,20 @@ public sealed class CdpClient : IAsyncDisposable
                 do
                 {
                     received = await _socket.ReceiveAsync(buffer, _cts.Token).ConfigureAwait(false);
-                    if (received.MessageType == WebSocketMessageType.Close) return;
+                    if (received.MessageType == WebSocketMessageType.Close)
+                    {
+                        // The inspector is closing the connection: answering finishes the handshake on its side too.
+                        try
+                        {
+                            using var closing = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                            await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, closing.Token).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (ex is OperationCanceledException or WebSocketException or ObjectDisposedException)
+                        {
+                        }
+
+                        return;
+                    }
                     message.Write(buffer, 0, received.Count);
                 }
                 while (!received.EndOfMessage);

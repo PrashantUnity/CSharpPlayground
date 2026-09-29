@@ -85,11 +85,10 @@ internal static class Blind75Snapshots
     public static void Script(Options options)
     {
         var problem = Blind75CatalogService.GetProblemByNumber(options.Problem())!;
-        string lang = options.Value("lang") ?? "csharp";
-        Console.WriteLine(Blind75CatalogService.ConvertToScript(problem, lang).Code);
-        foreach (var cell in Blind75CatalogService.ConvertToNotebook(problem, lang).Cells.Where(c => c.Type == CellType.Code))
+        Console.WriteLine(Blind75CatalogService.ConvertToScript(problem).Code);
+        foreach (var cell in Blind75CatalogService.ConvertToNotebook(problem).Cells.Where(c => c.Type == CellType.Code))
         {
-            Console.WriteLine($"\n// ───── {cell.Language ?? lang} notebook code cell ─────");
+            Console.WriteLine("\n// ───── notebook code cell ─────");
             Console.WriteLine(cell.Source);
         }
     }

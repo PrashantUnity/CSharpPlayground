@@ -246,6 +246,35 @@ public class DapHandshakeTests
         Assert.Equal(["hello before anyone listened\n"], output);
     }
 
+    [Theory]
+    [InlineData(3, 0, 3)]        // the adapter says 0 for every program; the program's own report wins
+    [InlineData(null, 101, 101)] // nothing reported (a crash): the adapter's code stands
+    public async Task TheProgramsOwnExitCode_WinsOverTheAdaptersWhenThereIsOne(int? reported, int adapterSays, int expected)
+    {
+        await using var server = new MockDapServer
+        {
+            OnRequest = async (s, command, seq, root) =>
+            {
+                await s.RespondAsync(seq, command);
+                if (command == "continue")
+                {
+                    await s.EventAsync("exited", new { exitCode = adapterSays });
+                    await s.EventAsync("terminated");
+                }
+            }
+        };
+        var client = server.CreateClient();
+        await using var session = (DapDebugSession)await DapAdapterManager.StartSessionAsync("csharp", client, process: null, Context(), null, DapHandshake.Legacy, CancellationToken.None)
+            .WaitAsync(Patience);
+        session.ExitCodeOverride = () => reported;
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.Terminated += args => terminated.TrySetResult(args);
+
+        await session.ContinueAsync();
+
+        Assert.Equal(expected, (await terminated.Task.WaitAsync(Patience)).ExitCode);
+    }
+
     [Fact]
     public async Task ASubscriberThatArrivesWhileTheProgramIsPaused_IsToldWhereItStopped()
     {
@@ -315,5 +344,71 @@ public class DapHandshakeTests
 
         Assert.Equal(DebugSessionState.Terminated, session.State);
         Assert.Equal(0, resumed);
+    }
+
+    private static MockDapServer ServerWithScopes(object[] scopes, Func<int, object[]> variablesOf) => new()
+    {
+        OnRequest = async (s, command, seq, root) =>
+        {
+            switch (command)
+            {
+                case "scopes":
+                    await s.RespondAsync(seq, command, body: new { scopes });
+                    break;
+                case "variables":
+                    await s.RespondAsync(seq, command, body: new { variables = variablesOf(root.GetProperty("arguments").GetProperty("variablesReference").GetInt32()) });
+                    break;
+                default:
+                    await s.RespondAsync(seq, command);
+                    break;
+            }
+        }
+    };
+
+    [Theory]
+    [InlineData("Registers", "registers")]
+    [InlineData("Registers", null)]
+    [InlineData("General Purpose Registers", null)]
+    public async Task TheVariablesPanel_ShowsTheProgramsLocals_NotTheCpuRegistersAnAdapterAlsoOffers(string registerScope, string? hint)
+    {
+        // lldb-dap answers a stopped C++ or Rust program with its locals and one scope of register groups: those are for reading
+        // machine code, and listed as variables they bury the program's own.
+        await using var server = ServerWithScopes(
+            [
+                new { name = "Locals", variablesReference = 1, expensive = false },
+                new { name = registerScope, variablesReference = 2, expensive = false, presentationHint = hint }
+            ],
+            reference => reference == 1
+                ? [new { name = "total", value = "6", type = "u32", variablesReference = 0 }]
+                : [new { name = "General Purpose Registers", value = "{0}", type = "", variablesReference = 3 }]);
+        var client = server.CreateClient();
+        client.Start();
+        await using var session = new DapDebugSession("rust", client);
+
+        var variables = await session.GetVariablesAsync(0).WaitAsync(Patience);
+
+        Assert.Equal(["total"], variables.Select(v => v.Name));
+        Assert.Equal(["scopes", "variables"], server.Requests.Where(r => r is "scopes" or "variables").Distinct().ToList());
+        Assert.Equal(1, server.Requests.Count(r => r == "variables"));
+    }
+
+    [Fact]
+    public async Task TheVariablesPanel_StillShowsEveryOtherScope()
+    {
+        await using var server = ServerWithScopes(
+            [
+                new { name = "Arguments", variablesReference = 1, expensive = false },
+                new { name = "Locals", variablesReference = 2, expensive = false }
+            ],
+            reference => reference == 1
+                ? [new { name = "n", value = "21", type = "i32", variablesReference = 0 }]
+                : [new { name = "result", value = "42", type = "i32", variablesReference = 0 }]);
+        var client = server.CreateClient();
+        client.Start();
+        await using var session = new DapDebugSession("go", client);
+
+        var variables = await session.GetVariablesAsync(0).WaitAsync(Patience);
+
+        Assert.Equal(["n", "result"], variables.Select(v => v.Name));
     }
 }

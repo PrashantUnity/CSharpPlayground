@@ -172,10 +172,25 @@ public class CSharpDebuggerTests : IDisposable
         session.OutputReceived += text => { lock (output) output.Append(text); };
         Assert.IsType<DapDebugSession>(session);
 
-        // (netcoredbg reports exit code 0 whatever the program's: 3.2.0-1 was seen to for Environment.Exit(3), so codes aren't asserted.)
         var end = await terminated.Task.WaitAsync(Patience);
         Assert.False(end.WasCancelled);
+        Assert.Equal(0, end.ExitCode);
         Assert.Contains("42", output.ToString());
+    }
+
+    // netcoredbg 3.2.0-1 reports exit code 0 for Environment.Exit(3); the debug build writes the real one as the process ends.
+    [Fact]
+    public async Task AScriptThatExitsWithACode_ReportsThatCode()
+    {
+        var provider = Provider();
+        if (!await NetCoreDbgInstalled(provider)) return;
+        using var cts = new CancellationTokenSource(Patience);
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var session = await provider.LaunchAsync(Context("Console.WriteLine(\"bye\");\nEnvironment.Exit(3);\n"), cts.Token);
+        session.Terminated += args => terminated.TrySetResult(args);
+
+        Assert.Equal(3, (await terminated.Task.WaitAsync(Patience)).ExitCode);
     }
 }
 

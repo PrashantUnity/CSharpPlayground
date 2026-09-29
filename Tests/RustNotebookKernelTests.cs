@@ -99,6 +99,104 @@ public class RustNotebookKernelTests : IDisposable
 
     private static int CountOf(string text, string part) => Regex.Matches(text, Regex.Escape(part)).Count;
 
+    // The pretend program reports what a real one would: it appends a line per variable to the file it is given.
+    private void ProgramKeeps(params (string Name, string Type, string Source)[] variables)
+    {
+        var inner = _launcher.Behavior;
+        _launcher.Behavior = (spec, process) =>
+        {
+            if (spec.FileName != Cargo && spec.Environment != null && spec.Environment.TryGetValue("FRY_VARS_FILE", out var file) && file != null)
+            {
+                File.AppendAllLines(file, variables.Select(v => System.Text.Json.JsonSerializer.Serialize(new { name = v.Name, type = v.Type, source = v.Source })));
+            }
+
+            return inner(spec, process);
+        };
+    }
+
+    [Fact]
+    public async Task TheVariablesACellKept_AreDeclaredAtTheStartOfTheNextCell_AndKeptAgainAtItsEnd()
+    {
+        ProgramKeeps(("count", "i32", "5i32"), ("names", "Vec<String>", "vec![String::from(\"a\")]"));
+        var kernel = Kernel();
+
+        await Run(kernel, "let count = 5;\nlet names = vec![String::from(\"a\")];");
+        await Run(kernel, "println!(\"{}\", count);");
+
+        var second = Generated();
+        Assert.Contains("    let mut count: i32 = 5i32;", second);
+        Assert.Contains("    let mut names: Vec<String> = vec![String::from(\"a\")];", second);
+        Assert.Contains("    fry::__persist!(count);", second);
+        Assert.Contains("    fry::__persist!(names);", second);
+        Assert.True(second.IndexOf("let mut count", StringComparison.Ordinal) < second.IndexOf("println!", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AVariableTheProgramDidNotReport_IsNotDeclaredAgain_AndTheVariablesPanelShowsWhatIsKept()
+    {
+        ProgramKeeps(("kept", "u8", "7u8"));
+        var kernel = Kernel();
+
+        await Run(kernel, "let kept = 7u8;\nlet closure = |x: i32| x + 1;");
+        await Run(kernel, "println!(\"hi\");");
+
+        var generated = Generated();
+        Assert.Contains("let mut kept: u8 = 7u8;", generated);
+        Assert.DoesNotContain("let mut closure", generated);
+        var variables = await kernel.GetVariablesAsync(default);
+        var kept = Assert.Single(variables, v => v.Name == "kept");
+        Assert.Equal("u8", kept.TypeName);
+        Assert.Equal("7u8", kept.ValueDisplay);
+    }
+
+    [Fact]
+    public async Task AVariableTheBuildRejects_IsLeftOut_AndTheCellIsBuiltAgainWithoutIt()
+    {
+        var builds = 0;
+        var inner = _launcher.Behavior;
+        _launcher.Behavior = (spec, process) =>
+        {
+            if (spec.FileName == Cargo)
+            {
+                builds++;
+                var source = Generated();
+                if (source.Contains("__persist!(text)", StringComparison.Ordinal))
+                {
+                    var line = source.Split('\n').ToList().FindIndex(l => l.Contains("__persist!(text)", StringComparison.Ordinal)) + 1;
+                    process.WriteError($"error[E0382]: borrow of moved value: `text`\n --> {CellSourcePath()}:{line}:5\n  |\n");
+                    process.Exit(101);
+                    return Task.CompletedTask;
+                }
+            }
+
+            return inner(spec, process);
+        };
+        var kernel = Kernel();
+
+        var (result, console, _) = await Run(kernel, "let text = String::from(\"x\");\nlet taken = text;");
+
+        Assert.True(result.Success, result.ErrorMessage + result.ConsoleOutput);
+        Assert.Equal(2, builds);
+        Assert.DoesNotContain("__persist!(text)", Generated());
+        Assert.Contains("__persist!(taken)", Generated());
+        Assert.Contains("text isn't kept", console);
+    }
+
+    [Fact]
+    public async Task AVariableThatANewCellMakesAgain_ReplacesTheOldOne_AndAFailedCellChangesNothing()
+    {
+        ProgramKeeps(("x", "i32", "1i32"));
+        var kernel = Kernel();
+        await Run(kernel, "let x = 1;");
+
+        Cells(buildExit: 1, buildOutput: "error[E0308]: mismatched types\n");
+        await Run(kernel, "let x = \"text\";");
+        Cells();
+        await Run(kernel, "println!(\"{}\", x);");
+
+        Assert.Contains("let mut x: i32 = 1i32;", Generated());
+    }
+
     [Fact]
     public async Task ACell_IsBuiltWithCargoAndThenItsProgramIsRun()
     {

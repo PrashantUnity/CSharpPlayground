@@ -11,7 +11,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.CSharp;
 /// Language adapter that formats algorithm and curriculum problems into runnable C# Roslyn scripts,
 /// interactive notebooks, and Check() assertion test runners.
 /// </summary>
-public class CSharpProblemLanguageAdapter : IProblemLanguageAdapter
+public class CSharpProblemLanguageAdapter
 {
     public static CSharpProblemLanguageAdapter Instance { get; } = new();
 

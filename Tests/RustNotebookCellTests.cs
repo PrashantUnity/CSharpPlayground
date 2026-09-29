@@ -291,8 +291,8 @@ public class RustCellSplitterTests
 /// <summary>A cell laid out as a program: what goes where, and the way back to the cell's own lines.</summary>
 public class RustCellProgramTests
 {
-    private static RustCellProgram Build(string code, IReadOnlyList<RustStoredItem>? earlier = null, IReadOnlyList<string>? shares = null) =>
-        RustCellProgramBuilder.Build(RustCellSplitter.Split(code), earlier ?? [], shares ?? []);
+    private static RustCellProgram Build(string code, IReadOnlyList<RustStoredItem>? earlier = null, IReadOnlyList<string>? shares = null, IReadOnlyList<string>? persist = null) =>
+        RustCellProgramBuilder.Build(RustCellSplitter.Split(code), earlier ?? [], shares ?? [], persist);
 
     private static string[] Lines(RustCellProgram program) => program.Source.Split('\n');
 
@@ -615,5 +615,66 @@ public class RustValueLiteralsTests
         var ex = Assert.Throws<KernelValueException>(() => RustValueLiterals.Declare("v", "{oops"));
 
         Assert.Contains("isn't valid JSON", ex.Message);
+    }
+}
+
+/// <summary>The variables a <c>let</c> makes, when they are plain names.</summary>
+public class RustLetNamesTests
+{
+    [Theory]
+    [InlineData("let x = 5;", "x")]
+    [InlineData("let mut total: u64 = 0;", "total")]
+    [InlineData("let v: Vec<(i32, i32)> = Vec::new();", "v")]
+    [InlineData("let (a, mut b) = (1, 2);", "a,b")]
+    [InlineData("let ((a, b), c): ((i32, i32), i32) = ((1, 2), 3);", "a,b,c")]
+    [InlineData("let x;", "x")]
+    [InlineData("let x = a == b;", "x")]
+    [InlineData("let r#type = 1;", "r#type")]
+    [InlineData("let ref name = value;", "name")]
+    [InlineData("let _ = compute();", "")]
+    [InlineData("let Point { x, y } = p;", "")]
+    [InlineData("let Some(v) = o else { return Ok(()); };", "")]
+    [InlineData("let [a, b] = arr;", "")]
+    [InlineData("let a::b = c;", "")]
+    [InlineData("let x = 5", "x")]
+    [InlineData("println!(\"let x = 1\");", "")]
+    [InlineData("letter = 5;", "")]
+    public void TheNamesAreThePlainOnes_AndAnyOtherPatternIsLeftAlone(string statement, string expected)
+    {
+        Assert.Equal(expected, string.Join(',', RustLetNames.Of(statement)));
+    }
+}
+
+/// <summary>What a cell hands on to the next: a line per variable at the end of <c>main</c>, and declarations at its start.</summary>
+public class RustCellPersistenceProgramTests
+{
+    [Fact]
+    public void EachVariableToKeep_HasALineAtTheEndOfMain_AndTheLineIsKnown()
+    {
+        var program = RustCellProgramBuilder.Build(RustCellSplitter.Split("let a = 1;\nlet mut b = vec![a];\nb.push(2);"), [], [], ["a", "b"]);
+        var lines = program.Source.Split('\n');
+
+        Assert.Equal(2, program.PersistLines.Count);
+        foreach (var (line, name) in program.PersistLines) Assert.Equal($"    fry::__persist!({name});", lines[line - 1]);
+        var last = lines.Select((l, i) => (l, i)).Where(t => t.l.Contains("__persist!")).Max(t => t.i);
+        Assert.Contains("Ok(())", lines[last + 1]);
+    }
+
+    [Fact]
+    public void ACellThatDefinesMain_KeepsNothing()
+    {
+        var program = RustCellProgramBuilder.Build(RustCellSplitter.Split("fn main() { let a = 1; }"), [], [], ["a"]);
+
+        Assert.Empty(program.PersistLines);
+        Assert.DoesNotContain("__persist", program.Source);
+    }
+
+    [Fact]
+    public void WithNothingToKeep_TheProgramIsAsItWas()
+    {
+        var program = RustCellProgramBuilder.Build(RustCellSplitter.Split("println!(\"hi\");"), [], []);
+
+        Assert.Empty(program.PersistLines);
+        Assert.DoesNotContain("__persist", program.Source);
     }
 }

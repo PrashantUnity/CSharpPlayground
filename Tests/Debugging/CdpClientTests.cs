@@ -11,15 +11,38 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
 /// <summary>An inspector standing in for Node's: <c>/json/list</c> names its WebSocket, and the WebSocket answers as a test says.</summary>
 internal sealed class FakeInspector : IAsyncDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly TaskCompletionSource<WebSocket> _connected = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Task _serving;
 
     public FakeInspector(int? port = null)
     {
-        Port = port ?? FreePort();
-        _listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
-        _listener.Start();
+        // A port that was free a moment ago can be taken by another test's process before this one binds it: take another.
+        for (var attempt = 0; ; attempt++)
+        {
+            var candidate = port ?? FreePort();
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{candidate}/");
+            try
+            {
+                listener.Start();
+                _listener = listener;
+                Port = candidate;
+                break;
+            }
+            catch (HttpListenerException) when (port == null && attempt < 25)
+            {
+                try
+                {
+                    listener.Close();
+                }
+                catch (HttpListenerException)
+                {
+                    // Closing a listener that never started can fail the same way.
+                }
+            }
+        }
+
         _serving = Task.Run(ServeAsync);
     }
 
@@ -225,7 +248,9 @@ public class CdpClientTests
 
         var waiting = client.SendAsync("Debugger.enable");
         await Task.Delay(100);
-        await inspector.CloseAsync();
+
+        // The inspector's close waits for the client's answer to the handshake: a client that never gave one would hang here.
+        await inspector.CloseAsync().WaitAsync(Patience);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WaitAsync(Patience));
         await closed.Task.WaitAsync(Patience);

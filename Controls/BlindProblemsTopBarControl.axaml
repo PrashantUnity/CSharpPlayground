@@ -36,7 +36,7 @@
                 <Rectangle Width="1" Height="20" Fill="{DynamicResource DsBorderBrush}" Margin="4,0,8,0" />
             </StackPanel>
 
-            <!-- 2. Page Title & Language Pill (Matches Manager Category Style) -->
+            <!-- 2. Page Title (Matches Manager Category Style) -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,16,0">
                 <Border Width="30" Height="30" CornerRadius="8"
                         Background="{DynamicResource NavBlind75BgBrush}"
@@ -50,29 +50,6 @@
                     <TextBlock Text="Blind 75" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                     <TextBlock Text="LeetCode Interview Track • 76 Problems" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
                 </StackPanel>
-
-                <!-- Language Selector Pill -->
-                <Button Classes="nexus-badge-pill"
-                        ToolTip.Tip="Select language for Blind 75 solutions, scripts and notebooks"
-                        Padding="8,2" Height="22" MinHeight="22" CornerRadius="6"
-                        Background="{DynamicResource DsPrimarySubtleBrush}"
-                        BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
-                        BorderThickness="1" Margin="6,0,0,0">
-                    <Button.Flyout>
-                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                            <MenuItem Header="C# (.NET 10 Roslyn)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="csharp" />
-                            <MenuItem Header="Python 3.12" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="python" />
-                            <MenuItem Header="JavaScript (Node.js)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="javascript" />
-                            <MenuItem Header="Java (OpenJDK)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="java" />
-                            <MenuItem Header="Rust (Cargo)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="rust" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding SelectedLanguageDisplayName}" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource DsPrimaryBrush}" />
-                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
             </StackPanel>
 
             <!-- 3. Search: number, title, category or tag (Matches Manager Search Bar) -->

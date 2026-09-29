@@ -74,6 +74,9 @@ internal sealed class RustCellProgram
 
     public required IReadOnlyList<RustLineSegment> Segments { get; init; }
 
+    /// <summary>The program's lines that keep a variable for the next cell (<c>fry::__persist!(x);</c>), and the variable each one keeps.</summary>
+    public IReadOnlyDictionary<int, string> PersistLines { get; init; } = new Dictionary<int, string>();
+
     /// <summary>Why the cell can't be made a program (it defines <c>fn main</c> and also has statements); null when it can.</summary>
     public string? Error { get; init; }
 
@@ -106,7 +109,9 @@ internal static class RustCellProgramBuilder
     private const string MainSignature = "fn main() -> ::std::result::Result<(), ::std::boxed::Box<dyn ::std::error::Error>> {";
     private const string MainResult = "    ::std::result::Result::Ok(())";
 
-    public static RustCellProgram Build(RustCell cell, IReadOnlyList<RustStoredItem> earlierItems, IReadOnlyList<string> shareDeclarations)
+    /// <param name="declarations">Statements that start <c>main</c>: the values other cells shared, and the variables earlier cells made with <c>let</c>.</param>
+    /// <param name="persist">The variables this cell makes with <c>let</c> that are handed on to the next cell when it ends.</param>
+    public static RustCellProgram Build(RustCell cell, IReadOnlyList<RustStoredItem> earlierItems, IReadOnlyList<string> declarations, IReadOnlyList<string>? persist = null)
     {
         var program = new Writer();
         program.Line(Header);
@@ -138,7 +143,7 @@ internal static class RustCellProgramBuilder
         }
 
         program.Line(MainSignature);
-        foreach (var declaration in shareDeclarations) program.Line("    " + declaration);
+        foreach (var declaration in declarations) program.Line("    " + declaration);
 
         for (var i = 0; i < statements.Count; i++)
         {
@@ -160,9 +165,16 @@ internal static class RustCellProgramBuilder
             }
         }
 
+        var persistLines = new Dictionary<int, string>();
+        foreach (var name in persist ?? [])
+        {
+            persistLines[program.NextLine] = name;
+            program.Line($"    fry::__persist!({name});");
+        }
+
         program.Line(MainResult);
         program.Line("}");
-        return new RustCellProgram { Source = program.ToString(), Segments = program.Segments };
+        return new RustCellProgram { Source = program.ToString(), Segments = program.Segments, PersistLines = persistLines };
     }
 
     // Line-counting output: it knows which line each thing it writes lands on.
@@ -173,6 +185,9 @@ internal static class RustCellProgramBuilder
         private int _line = 1;
 
         public IReadOnlyList<RustLineSegment> Segments => _segments;
+
+        /// <summary>The line the next thing written lands on.</summary>
+        public int NextLine => _line;
 
         /// <summary>One line of the program's own; with <paramref name="cellLine"/> it stands for that line of the cell.</summary>
         public void Line(string text, int? cellLine = null)

@@ -98,10 +98,13 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
         var runId = Guid.NewGuid().ToString("N")[..8];
         var outDir = Path.Combine(_cacheDirectory, runId);
 
+        // netcoredbg says 0 however the program ended, so the build also writes the exit code to a file as the process exits.
+        var exitCodeFile = Path.Combine(outDir, "exit-code.txt");
         var (success, dllPath, diagnostics) = _coreClrCompiler.CompileToStandaloneBinary(
             context.SourceCode,
             outDir,
-            assemblyName: "script");
+            assemblyName: "script",
+            exitCodeFile: exitCodeFile);
 
         if (!success || string.IsNullOrEmpty(dllPath))
         {
@@ -131,7 +134,21 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
             DapHandshake.Standard).ConfigureAwait(false);
 
         session.SourcePathOverride = ScriptSourceName;
+        session.ExitCodeOverride = () => ReadExitCodeFile(exitCodeFile);
         return session;
+    }
+
+    /// <summary>The exit code the program wrote as it ended, or null when it didn't get to (a crash, or a kill).</summary>
+    internal static int? ReadExitCodeFile(string path)
+    {
+        try
+        {
+            return File.Exists(path) && int.TryParse(File.ReadAllText(path).Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var code) ? code : null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The file name the debug build records for the script, and so the only source name a breakpoint can be matched by.</summary>

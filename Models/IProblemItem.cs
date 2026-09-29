@@ -7,7 +7,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 /// <summary>
 /// General abstraction for any coding interview or curriculum problem
 /// (e.g. Blind 75, Top Interview 150, NeetCode 150, or custom practice sets).
-/// Enables polyglot code generation (C#, Python, JS, Java) across any problem catalog.
+/// Enables C# script and notebook generation across any problem catalog.
 /// </summary>
 public interface IProblemItem
 {
@@ -42,11 +42,6 @@ public interface IProblemItem
     List<BlindTest> Tests { get; }
     List<BlindTest> ExtraTests { get; }
     IList<TestCaseItem> TestCases { get; }
-
-    // Multi-Language Code Bundles
-    Dictionary<string, ProblemLanguageBundle> LanguageImplementations { get; }
-    string GetSolutionCode(string? languageId = null);
-    string GetStarterCode(string? languageId = null);
 
     // Visualizer Metadata
     bool HasVisualizer { get; }

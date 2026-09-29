@@ -210,6 +210,230 @@ macro_rules! __auto {
     }};
 }
 
+/// What a notebook keeps of a `let` for the cells after it: the variable's type and Rust source that builds the same value again.
+/// Numbers, `bool`, `char`, text, lists, arrays, options, tuples, maps and sets of those can be kept; anything else (a struct of
+/// your own, a closure, a reference) is left behind when the cell ends.
+pub trait Persist {
+    /// The type as it is written in a `let`.
+    fn persist_type() -> String;
+    /// An expression that builds this value.
+    fn persist_source(&self) -> String;
+}
+
+macro_rules! persist_integer {
+    ($($t:ty),*) => {$(
+        impl Persist for $t {
+            fn persist_type() -> String {
+                stringify!($t).to_string()
+            }
+            fn persist_source(&self) -> String {
+                format!("{}{}", self, stringify!($t))
+            }
+        }
+    )*};
+}
+persist_integer!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+
+macro_rules! persist_float {
+    ($($t:ident),*) => {$(
+        impl Persist for $t {
+            fn persist_type() -> String {
+                stringify!($t).to_string()
+            }
+            fn persist_source(&self) -> String {
+                if self.is_nan() {
+                    format!("{}::NAN", stringify!($t))
+                } else if self.is_infinite() {
+                    format!("{}::{}", stringify!($t), if *self > 0.0 { "INFINITY" } else { "NEG_INFINITY" })
+                } else {
+                    format!("{:?}{}", self, stringify!($t))
+                }
+            }
+        }
+    )*};
+}
+persist_float!(f32, f64);
+
+impl Persist for bool {
+    fn persist_type() -> String {
+        "bool".to_string()
+    }
+    fn persist_source(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Persist for char {
+    fn persist_type() -> String {
+        "char".to_string()
+    }
+    fn persist_source(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+impl Persist for String {
+    fn persist_type() -> String {
+        "String".to_string()
+    }
+    fn persist_source(&self) -> String {
+        format!("String::from({:?})", self)
+    }
+}
+
+impl Persist for &str {
+    fn persist_type() -> String {
+        "&'static str".to_string()
+    }
+    fn persist_source(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+fn persist_items<'a, T: Persist + 'a>(items: impl Iterator<Item = &'a T>) -> String {
+    items.map(|item| item.persist_source()).collect::<Vec<_>>().join(", ")
+}
+
+impl<T: Persist> Persist for Vec<T> {
+    fn persist_type() -> String {
+        format!("Vec<{}>", T::persist_type())
+    }
+    fn persist_source(&self) -> String {
+        if self.is_empty() {
+            format!("Vec::<{}>::new()", T::persist_type())
+        } else {
+            format!("vec![{}]", persist_items(self.iter()))
+        }
+    }
+}
+
+impl<T: Persist> Persist for Option<T> {
+    fn persist_type() -> String {
+        format!("Option<{}>", T::persist_type())
+    }
+    fn persist_source(&self) -> String {
+        match self {
+            Some(value) => format!("Some({})", value.persist_source()),
+            None => format!("None::<{}>", T::persist_type()),
+        }
+    }
+}
+
+impl<T: Persist, const N: usize> Persist for [T; N] {
+    fn persist_type() -> String {
+        format!("[{}; {}]", T::persist_type(), N)
+    }
+    fn persist_source(&self) -> String {
+        format!("[{}]", persist_items(self.iter()))
+    }
+}
+
+macro_rules! persist_tuple {
+    ($(($($name:ident $index:tt),+))+) => {$(
+        impl<$($name: Persist),+> Persist for ($($name,)+) {
+            fn persist_type() -> String {
+                format!("({})", [$($name::persist_type()),+].join(", "))
+            }
+            fn persist_source(&self) -> String {
+                format!("({})", [$(self.$index.persist_source()),+].join(", "))
+            }
+        }
+    )+};
+}
+persist_tuple! { (A 0, B 1) (A 0, B 1, C 2) (A 0, B 1, C 2, D 3) }
+
+impl<T: Persist> Persist for std::collections::VecDeque<T> {
+    fn persist_type() -> String {
+        format!("std::collections::VecDeque<{}>", T::persist_type())
+    }
+    fn persist_source(&self) -> String {
+        format!("std::collections::VecDeque::<{}>::from(vec![{}])", T::persist_type(), persist_items(self.iter()))
+    }
+}
+
+macro_rules! persist_set {
+    ($($set:ident),*) => {$(
+        impl<T: Persist> Persist for std::collections::$set<T> {
+            fn persist_type() -> String {
+                format!("std::collections::{}<{}>", stringify!($set), T::persist_type())
+            }
+            fn persist_source(&self) -> String {
+                format!("std::collections::{}::<{}>::from([{}])", stringify!($set), T::persist_type(), persist_items(self.iter()))
+            }
+        }
+    )*};
+}
+persist_set!(HashSet, BTreeSet);
+
+macro_rules! persist_map {
+    ($($map:ident),*) => {$(
+        impl<K: Persist, V: Persist> Persist for std::collections::$map<K, V> {
+            fn persist_type() -> String {
+                format!("std::collections::{}<{}, {}>", stringify!($map), K::persist_type(), V::persist_type())
+            }
+            fn persist_source(&self) -> String {
+                let pairs: Vec<String> = self.iter().map(|(key, value)| format!("({}, {})", key.persist_source(), value.persist_source())).collect();
+                format!("std::collections::{}::<{}, {}>::from([{}])", stringify!($map), K::persist_type(), V::persist_type(), pairs.join(", "))
+            }
+        }
+    )*};
+}
+persist_map!(HashMap, BTreeMap);
+
+const MAX_KEPT_BYTES: usize = 200_000;
+
+/// Hands one variable to the notebook (through the file it names in `FRY_VARS_FILE`): what the studio adds at the end of a cell.
+#[doc(hidden)]
+pub fn __keep(name: &str, type_name: String, source: String) {
+    use std::io::Write;
+    let Ok(path) = std::env::var("FRY_VARS_FILE") else {
+        return;
+    };
+    let line = if source.len() > MAX_KEPT_BYTES {
+        format!("{{\"name\":{},\"skipped\":\"too large\"}}\n", json_string(name))
+    } else {
+        format!("{{\"name\":{},\"type\":{},\"source\":{}}}\n", json_string(name), json_string(&type_name), json_string(&source))
+    };
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+        let _ = file.write_all(line.as_bytes());
+    }
+}
+
+/// What the studio adds after a notebook cell for each variable it made with `let`: it keeps the variable for the cells after
+/// it when its type is `Persist`, and does nothing when it isn't, so a variable of a type of your own isn't an error.
+#[doc(hidden)]
+pub mod __persist_probe {
+    pub struct Probe<'a, T: ?Sized>(pub &'a T);
+
+    pub trait ViaPersist {
+        fn __fry_persist(&self, name: &str);
+    }
+
+    impl<'a, T: crate::Persist> ViaPersist for Probe<'a, T> {
+        fn __fry_persist(&self, name: &str) {
+            crate::__keep(name, T::persist_type(), self.0.persist_source());
+        }
+    }
+
+    pub trait ViaNothing {
+        fn __fry_persist(&self, name: &str);
+    }
+
+    impl<'a, T: ?Sized> ViaNothing for &Probe<'a, T> {
+        fn __fry_persist(&self, _name: &str) {}
+    }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __persist {
+    ($value:ident) => {{
+        #[allow(unused_imports)]
+        use $crate::__persist_probe::{ViaNothing as _, ViaPersist as _};
+        (&$crate::__persist_probe::Probe(&$value)).__fry_persist(stringify!($value))
+    }};
+}
+
 /// A JSON value, which is how a notebook cell receives a list or an object another language shared with `#!share`.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Json {

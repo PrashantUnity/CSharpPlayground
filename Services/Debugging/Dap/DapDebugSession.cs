@@ -122,6 +122,12 @@ public sealed class DapDebugSession : IDebugSession
     /// </summary>
     public string? SourcePathOverride { get; set; }
 
+    /// <summary>
+    /// Says how the program really ended, when the adapter's <c>exited</c> event can't be trusted (netcoredbg reports 0 for every program).
+    /// Returns null when it doesn't know, and then the adapter's own code is used.
+    /// </summary>
+    public Func<int?>? ExitCodeOverride { get; set; }
+
     public async Task SetBreakpointsAsync(string filePath, IReadOnlyList<BreakpointItem> breakpoints, CancellationToken ct = default)
     {
         var response = await _client.SendRequestAsync("setBreakpoints", BreakpointsRequest(SourcePathOverride ?? filePath, breakpoints), ct).ConfigureAwait(false);
@@ -291,7 +297,7 @@ public sealed class DapDebugSession : IDebugSession
             foreach (var scopeElem in scopesArray.EnumerateArray())
             {
                 var scope = scopeElem.Deserialize<DapScope>(JsonOptions);
-                if (scope == null || scope.VariablesReference <= 0) continue;
+                if (scope == null || scope.VariablesReference <= 0 || IsRegisterScope(scope)) continue;
 
                 var varsResp = await _client.SendRequestAsync("variables", new { variablesReference = scope.VariablesReference }, ct).ConfigureAwait(false);
                 if (varsResp.Body == null) continue;
@@ -313,6 +319,12 @@ public sealed class DapDebugSession : IDebugSession
 
         return locals;
     }
+
+    // A native adapter (lldb-dap) offers the CPU's register groups as a scope beside the locals. They are for reading machine code;
+    // listed with the program's variables they bury them.
+    private static bool IsRegisterScope(DapScope scope) =>
+        string.Equals(scope.PresentationHint, "registers", StringComparison.OrdinalIgnoreCase) ||
+        scope.Name.Contains("Register", StringComparison.OrdinalIgnoreCase);
 
     public async Task<IReadOnlyList<DebugVariableItem>> GetVariableChildrenAsync(DebugVariableItem parent, CancellationToken ct = default)
     {
@@ -473,7 +485,7 @@ public sealed class DapDebugSession : IDebugSession
                 HandleBreakpointEvent(evt.Body);
                 break;
             case "exited":
-                SetTerminatedState(ReadExitCode(evt.Body) ?? 0, "Process exited.", wasCancelled: false);
+                SetTerminatedState(ExitCodeOverride?.Invoke() ?? ReadExitCode(evt.Body) ?? 0, "Process exited.", wasCancelled: false);
                 break;
             case "terminated":
                 SetTerminatedState(0, "Process terminated.", wasCancelled: false);

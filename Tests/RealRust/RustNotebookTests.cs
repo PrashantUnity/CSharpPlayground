@@ -90,6 +90,82 @@ public class RustNotebookTests : IClassFixture<RustStudioFixture>, IDisposable
     }
 
     [RustFact]
+    public async Task AVariableMadeWithLet_IsThereInTheNextCell_WithItsTypeAndAnyChangesToIt()
+    {
+        var kernel = Kernel();
+
+        var (first, _, _) = await Run(kernel, "let small: u8 = 250;\nlet name = String::from(\"fry\");\nlet mut scores = vec![90, 85];\nscores.push(77);\nlet pair = (1.5, 'x');\nlet maybe: Option<i64> = Some(-3);");
+        var (second, console, _) = await Run(kernel, "let bigger = small + 5;\nscores.push(60);\nprintln!(\"{} {} {} {:?} {:?} {:?}\", name, bigger, scores.len(), pair, maybe, scores);");
+
+        Assert.True(first.Success, first.ErrorMessage + first.ConsoleOutput);
+        Assert.True(second.Success, second.ErrorMessage + second.ConsoleOutput);
+        Assert.Contains("fry 255 4 (1.5, 'x') Some(-3) [90, 85, 77, 60]", console);
+
+        // The change one cell made is still there in the third.
+        var (third, thirdConsole, _) = await Run(kernel, "println!(\"{}\", scores.len());");
+        Assert.True(third.Success, third.ErrorMessage + third.ConsoleOutput);
+        Assert.Contains("4", thirdConsole);
+    }
+
+    [RustFact]
+    public async Task MapsSetsTuplesAndEmptyListsAreKept()
+    {
+        var kernel = Kernel();
+
+        var (first, _, _) = await Run(kernel, "use std::collections::{BTreeMap, HashSet};\nlet mut ages: BTreeMap<String, u32> = BTreeMap::new();\nages.insert(\"ada\".to_string(), 36);\nlet seen: HashSet<char> = \"hello\".chars().collect();\nlet empty: Vec<String> = Vec::new();\nlet (a, mut b) = (1u16, 2u16);");
+        var (second, console, _) = await Run(kernel, "b += a;\nprintln!(\"{:?} {} {} {} {}\", ages, seen.len(), seen.contains(&'l'), empty.len(), b);");
+
+        Assert.True(first.Success, first.ErrorMessage + first.ConsoleOutput);
+        Assert.True(second.Success, second.ErrorMessage + second.ConsoleOutput);
+        Assert.Contains("{\"ada\": 36} 4 true 0 3", console);
+    }
+
+    [RustFact]
+    public async Task AVariableThatWasMovedAway_DoesNotBreakItsCell_AndIsNotKept()
+    {
+        var kernel = Kernel();
+
+        var (first, console, _) = await Run(kernel, "let text = String::from(\"moved\");\nlet taken = text;\nprintln!(\"{}\", taken);");
+        var (second, secondConsole, _) = await Run(kernel, "println!(\"{}\", taken);");
+        var (third, _, _) = await Run(kernel, "println!(\"{}\", text);");
+
+        Assert.True(first.Success, first.ErrorMessage + first.ConsoleOutput);
+        Assert.Contains("moved", console);
+        Assert.Contains("isn't kept", console);
+        Assert.True(second.Success, second.ErrorMessage + second.ConsoleOutput);
+        Assert.Contains("moved", secondConsole);
+        Assert.False(third.Success);
+        Assert.Contains("cannot find value `text`", third.ConsoleOutput);
+    }
+
+    [RustFact]
+    public async Task AVariableOfATypeThatCantBeKept_SaysSoWhenALaterCellNeedsIt()
+    {
+        var kernel = Kernel();
+
+        var (first, _, _) = await Run(kernel, "#[derive(Debug)]\nstruct Point { x: i32 }\nlet p = Point { x: 1 };\nlet n = 5;");
+        var (second, console, _) = await Run(kernel, "println!(\"{} {:?}\", n, p);");
+
+        Assert.True(first.Success, first.ErrorMessage + first.ConsoleOutput);
+        Assert.False(second.Success);
+        Assert.Contains("`p` was made with let in an earlier cell", second.ConsoleOutput);
+    }
+
+    [RustFact]
+    public async Task ALetThatShadowsAnEarlierOne_ReplacesIt_AndACellThatFailsKeepsTheOldValues()
+    {
+        var kernel = Kernel();
+        await Run(kernel, "let x = 1;");
+        await Run(kernel, "let x = \"now text\".to_string();");
+        var (failed, _, _) = await Run(kernel, "let x = 99;\nlet oops: i32 = \"no\";");
+        var (result, console, _) = await Run(kernel, "println!(\"{}\", x);");
+
+        Assert.False(failed.Success);
+        Assert.True(result.Success, result.ErrorMessage + result.ConsoleOutput);
+        Assert.Contains("now text", console);
+    }
+
+    [RustFact]
     public async Task ARedefinedFunction_TakesEffect_AndAStaleImplIsDropped()
     {
         var kernel = Kernel();
@@ -363,5 +439,24 @@ public class RustNotebookTests : IClassFixture<RustStudioFixture>, IDisposable
 
         Assert.True(result.Success, result.ErrorMessage + result.ConsoleOutput);
         Assert.Equal("42", console.Trim());
+    }
+
+    [RustFact]
+    public async Task ACrateAddedWithCargoAdd_IsThereForTheNextCell_WithoutAComment()
+    {
+        // What the notebook does with "%cargo add itoa": the package manager is run first, and the cell's code follows.
+        var language = _studio.Services.Registry.Get(LanguageIds.Rust)!;
+        Assert.True(language.Packages!.TryParseDirective("%cargo add itoa", out var command));
+        var installed = new StringBuilder();
+
+        var added = await language.Packages.RunAsync(command, TestRust.Require(), text => installed.Append(text)).WaitAsync(Patience);
+        if (!added.Success && LooksOffline(installed.ToString() + added.Message)) return;
+        Assert.True(added.Success, added.Message + installed);
+
+        var kernel = Kernel();
+        var (result, console, _) = await Run(kernel, "use itoa::Buffer;\nprintln!(\"{}\", Buffer::new().format(99u32));");
+
+        Assert.True(result.Success, result.ErrorMessage + result.ConsoleOutput);
+        Assert.Contains("99", console);
     }
 }

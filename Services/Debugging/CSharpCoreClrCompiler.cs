@@ -23,7 +23,8 @@ public sealed class CSharpCoreClrCompiler
         string rawSourceCode,
         string outputDirectory,
         string assemblyName = "script",
-        ExecutionLanguageMode mode = ExecutionLanguageMode.Statements)
+        ExecutionLanguageMode mode = ExecutionLanguageMode.Statements,
+        string? exitCodeFile = null)
     {
         if (string.IsNullOrWhiteSpace(rawSourceCode))
         {
@@ -35,10 +36,12 @@ public sealed class CSharpCoreClrCompiler
         var wrappedCode = _compilerService.WrapSourceCode(rawSourceCode, mode);
         var sourceText = Microsoft.CodeAnalysis.Text.SourceText.From(wrappedCode, Encoding.UTF8);
         var syntaxTree = CSharpSyntaxTree.ParseText(sourceText, path: "script.cs");
+        var syntaxTrees = new List<SyntaxTree> { syntaxTree };
+        if (exitCodeFile != null) syntaxTrees.Add(CSharpSyntaxTree.ParseText(Microsoft.CodeAnalysis.Text.SourceText.From(ExitCodeReporter(exitCodeFile), Encoding.UTF8), path: "exit-code-reporter.cs"));
 
         var compilation = CSharpCompilation.Create(
             assemblyName,
-            syntaxTrees: [syntaxTree],
+            syntaxTrees: syntaxTrees,
             references: _compilerService.DefaultReferences,
             options: new CSharpCompilationOptions(
                 OutputKind.ConsoleApplication,
@@ -62,7 +65,7 @@ public sealed class CSharpCoreClrCompiler
                 .Where(d =>
                 {
                     var mapped = d.Location.GetMappedLineSpan();
-                    return !mapped.IsValid || string.IsNullOrEmpty(mapped.Path) || mapped.Path == "script.cs";
+                    return !mapped.IsValid || string.IsNullOrEmpty(mapped.Path) || mapped.Path is "script.cs" or "exit-code-reporter.cs";
                 })
                 .Select(d =>
                 {
@@ -105,4 +108,30 @@ public sealed class CSharpCoreClrCompiler
 
         return (true, dllPath, Array.Empty<DiagnosticItem>());
     }
+
+    /// <summary>
+    /// A second source file for the debug build that writes the program's exit code to <paramref name="exitCodeFile"/> as the process ends:
+    /// netcoredbg reports 0 in its <c>exited</c> event whatever the program returned, so the debugger reads the truth from here.
+    /// </summary>
+    internal static string ExitCodeReporter(string exitCodeFile) => $$"""
+        internal static class FryExitCodeReporter
+        {
+            [System.Runtime.CompilerServices.ModuleInitializer]
+            internal static void Register()
+            {
+                System.AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+                {
+                    try
+                    {
+                        System.IO.File.WriteAllText({{ToLiteral(exitCodeFile)}}, System.Environment.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                    catch (System.Exception)
+                    {
+                    }
+                };
+            }
+        }
+        """;
+
+    private static string ToLiteral(string text) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(text, quote: true);
 }
