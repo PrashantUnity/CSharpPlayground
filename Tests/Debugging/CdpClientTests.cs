@@ -140,8 +140,16 @@ internal sealed class FakeInspector : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        try { _listener.Stop(); } catch (ObjectDisposedException) { }
-        _listener.Close();
+        // Close stops the listener too. Stopping first makes Close look the port up again, and that fails when another
+        // process (another test's node, dlv or java) has taken the port in the meantime.
+        try
+        {
+            _listener.Close();
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or HttpListenerException)
+        {
+        }
+
         await Task.WhenAny(_serving, Task.Delay(1000));
     }
 }

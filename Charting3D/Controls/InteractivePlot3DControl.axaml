@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="360"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DControl">
+
+    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="12,10">
+        <Grid RowDefinitions="Auto,*">
+            <!-- Header Toolbar -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                <!-- Left: Title & 3D Info -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Name="HeaderPlot3DIcon" Kind="CubeOutline" Width="15" Height="15" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Name="Plot3DTitleText" Text="3D Visualization" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+
+                    <!-- Stats Pill -->
+                    <Border Name="StatsPillBorder"
+                            Background="{DynamicResource M3SurfaceContainerHighBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            VerticalAlignment="Center">
+                        <TextBlock Name="StatsSummaryText" Text="3D View" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Camera Presets & Actions Toolbar -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <!-- Camera Presets -->
+                    <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="2"
+                            Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal" Spacing="1">
+                            <Button Name="IsoViewBtn" Classes="cell-tool-btn" Width="24" Height="22" ToolTip.Tip="Isometric 3D View">
+                                <TextBlock Text="ISO" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="TopViewBtn" Classes="cell-tool-btn" Width="24" Height="22" ToolTip.Tip="Top View (XY)">
+                                <TextBlock Text="TOP" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="FrontViewBtn" Classes="cell-tool-btn" Width="24" Height="22" ToolTip.Tip="Front View (XZ)">
+                                <TextBlock Text="FRT" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="SideViewBtn" Classes="cell-tool-btn" Width="24" Height="22" ToolTip.Tip="Side View (YZ)">
+                                <TextBlock Text="SIDE" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Auto-Rotate Turntable Toggle -->
+                    <Button Name="AutoRotateBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle 360° Turntable Auto-Rotate">
+                        <materialIcons:MaterialIcon Name="AutoRotateIcon" Kind="RotateRight" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Perspective / Ortho Toggle -->
+                    <Button Name="ProjectionToggleBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Perspective / Orthographic Camera">
+                        <materialIcons:MaterialIcon Kind="CameraOutline" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Toggle Grid & Bounding Box -->
+                    <Button Name="GridToggleBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Floor Grid &amp; Bounding Box">
+                        <materialIcons:MaterialIcon Kind="Grid" Width="12" Height="12" />
+                    </Button>
+
+                    <!-- Wireframe Toggle -->
+                    <Button Name="WireframeToggleBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Wireframe Mesh">
+                        <materialIcons:MaterialIcon Kind="VectorSquare" Width="12" Height="12" />
+                    </Button>
+
+                    <!-- ColorMap Preset Cycler -->
+                    <Button Name="ColorMapCycleBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Cycle Color Map Preset">
+                        <materialIcons:MaterialIcon Kind="PaletteOutline" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Reset Camera to Default -->
+                    <Button Name="ResetCameraBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Reset Camera View">
+                        <materialIcons:MaterialIcon Kind="HomeOutline" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Standalone HTML Export -->
+                    <Button Name="ExportHtmlBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Export to Standalone WebGL HTML (Three.js)">
+                        <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Fullscreen / Pop-Out Window -->
+                    <Button Name="FullscreenBtn" Classes="cell-tool-btn" Width="22" Height="22" ToolTip.Tip="Open in Fullscreen / Pop-Out Window (F11)">
+                        <materialIcons:MaterialIcon Kind="Fullscreen" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- 3D Canvas Area with Interactive Height Resizer -->
+            <Grid Grid.Row="1" RowDefinitions="*,Auto">
+                <Border Grid.Row="0"
+                        Background="#070B10"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="2"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch">
+                    <charting3d:Plot3DCanvasControl Name="CanvasControl"
+                                                     Height="300"
+                                                     MinHeight="180"
+                                                     HorizontalAlignment="Stretch"
+                                                     VerticalAlignment="Stretch" />
+                </Border>
+
+                <!-- Interactive Height Resize Grip Handle -->
+                <Border Name="ResizeGripBorder"
+                        Grid.Row="1"
+                        Height="10"
+                        Margin="0,2,0,0"
+                        Cursor="SizeNorthSouth"
+                        Background="Transparent"
+                        HorizontalAlignment="Stretch"
+                        ToolTip.Tip="Drag to resize height • Double-click to toggle size">
+                    <Border Width="36" Height="3" CornerRadius="1.5"
+                            Background="{DynamicResource M3OutlineVariantBrush}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

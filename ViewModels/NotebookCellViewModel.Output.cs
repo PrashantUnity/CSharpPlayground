@@ -2,6 +2,7 @@ using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
@@ -16,6 +17,7 @@ public enum CellOutputTab
     Widget,
     Chart,
     Visualizer,
+    Plot3D,
     Html,
     All
 }
@@ -36,6 +38,12 @@ public partial class NotebookCellViewModel
 
     [ObservableProperty]
     private bool _hasVisualizerOutput;
+
+    [ObservableProperty]
+    private Plot3DOptions? _plot3DOptions;
+
+    [ObservableProperty]
+    private bool _hasPlot3DOutput;
 
     [ObservableProperty]
     private string? _missingVariableName;
@@ -61,6 +69,7 @@ public partial class NotebookCellViewModel
             if (HasImageOutput) count++;
             if (HasChartOutput) count++;
             if (HasVisualizerOutput) count++;
+            if (HasPlot3DOutput) count++;
             if (HasInteractiveControl || InteractiveControlPlaceholderVisible) count++;
             if (HasHtmlContent) count++;
             return count;
@@ -77,6 +86,7 @@ public partial class NotebookCellViewModel
     public bool IsWidgetTabActive => (HasInteractiveControl || InteractiveControlPlaceholderVisible) && (SelectedOutputTab == CellOutputTab.Widget || SelectedOutputTab == CellOutputTab.All);
     public bool IsChartTabActive => HasChartOutput && (SelectedOutputTab == CellOutputTab.Chart || SelectedOutputTab == CellOutputTab.All);
     public bool IsVisualizerTabActive => HasVisualizerOutput && (SelectedOutputTab == CellOutputTab.Visualizer || SelectedOutputTab == CellOutputTab.All);
+    public bool IsPlot3DTabActive => HasPlot3DOutput && (SelectedOutputTab == CellOutputTab.Plot3D || SelectedOutputTab == CellOutputTab.All);
     public bool IsHtmlTabActive => HasHtmlContent && (SelectedOutputTab == CellOutputTab.Html || SelectedOutputTab == CellOutputTab.All);
 
     // Selected state for tab buttons
@@ -87,6 +97,7 @@ public partial class NotebookCellViewModel
     public bool IsWidgetTabSelected => SelectedOutputTab == CellOutputTab.Widget;
     public bool IsChartTabSelected => SelectedOutputTab == CellOutputTab.Chart;
     public bool IsVisualizerTabSelected => SelectedOutputTab == CellOutputTab.Visualizer;
+    public bool IsPlot3DTabSelected => SelectedOutputTab == CellOutputTab.Plot3D;
     public bool IsHtmlTabSelected => SelectedOutputTab == CellOutputTab.Html;
     public bool IsAllTabSelected => SelectedOutputTab == CellOutputTab.All;
 
@@ -108,6 +119,7 @@ public partial class NotebookCellViewModel
         get
         {
             if (HasVisualizerOutput) return !string.IsNullOrWhiteSpace(VisualizerOptions?.Title) ? VisualizerOptions.Title : "Visualizer Output";
+            if (HasPlot3DOutput) return !string.IsNullOrWhiteSpace(Plot3DOptions?.Title) ? Plot3DOptions.Title : "3D Visualization";
             if (HasChartOutput) return !string.IsNullOrWhiteSpace(ChartOptions?.Title) ? ChartOptions.Title : "Chart Output";
             if (HasTableOutput) return "Table Output";
             if (HasInspectorOutput) return "Object Inspector";
@@ -123,6 +135,7 @@ public partial class NotebookCellViewModel
         get
         {
             if (HasVisualizerOutput) return "Grid";
+            if (HasPlot3DOutput) return "CubeOutline";
             if (HasChartOutput) return "ChartLine";
             if (HasTableOutput) return "Table";
             if (HasInspectorOutput) return "CodeJson";
@@ -148,6 +161,15 @@ public partial class NotebookCellViewModel
         HasVisualizerOutput = true;
         HasOutput = true;
         SelectedOutputTab = CellOutputTab.Visualizer;
+        NotifyOutputTabStateChanged();
+    }
+
+    public void SetPlot3DOutput(Plot3DOptions plot)
+    {
+        Plot3DOptions = plot;
+        HasPlot3DOutput = true;
+        HasOutput = true;
+        SelectedOutputTab = CellOutputTab.Plot3D;
         NotifyOutputTabStateChanged();
     }
 
@@ -183,6 +205,7 @@ public partial class NotebookCellViewModel
         OnPropertyChanged(nameof(IsWidgetTabActive));
         OnPropertyChanged(nameof(IsChartTabActive));
         OnPropertyChanged(nameof(IsVisualizerTabActive));
+        OnPropertyChanged(nameof(IsPlot3DTabActive));
         OnPropertyChanged(nameof(IsHtmlTabActive));
         OnPropertyChanged(nameof(IsTableTabSelected));
         OnPropertyChanged(nameof(IsConsoleTabSelected));
@@ -191,9 +214,11 @@ public partial class NotebookCellViewModel
         OnPropertyChanged(nameof(IsWidgetTabSelected));
         OnPropertyChanged(nameof(IsChartTabSelected));
         OnPropertyChanged(nameof(IsVisualizerTabSelected));
+        OnPropertyChanged(nameof(IsPlot3DTabSelected));
         OnPropertyChanged(nameof(IsHtmlTabSelected));
         OnPropertyChanged(nameof(IsAllTabSelected));
         OnPropertyChanged(nameof(HasVisualizerOutput));
+        OnPropertyChanged(nameof(HasPlot3DOutput));
         OnPropertyChanged(nameof(TableRowCountText));
         OnPropertyChanged(nameof(ConsoleLineCountText));
         OnPropertyChanged(nameof(SingleOutputTitle));

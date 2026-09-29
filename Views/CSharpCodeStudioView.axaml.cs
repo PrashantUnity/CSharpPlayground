@@ -653,9 +653,14 @@ public partial class CSharpCodeStudioView : UserControl
         if (_editor == null) return;
         if (!Dispatcher.UIThread.CheckAccess())
         {
-            // Awaiting InvokeAsync makes the Task observable to the caller so any exception
-            // propagates instead of becoming an UnobservedTaskException on the finalizer thread.
-            _ = Dispatcher.UIThread.InvokeAsync(() => OnSwitchTabDocument(tab));
+            Dispatcher.UIThread.Post(() =>
+            {
+                try { OnSwitchTabDocument(tab); }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CSharpCodeStudioView] Tab switch error: {ex}");
+                }
+            });
             return;
         }
 
@@ -665,12 +670,23 @@ public partial class CSharpCodeStudioView : UserControl
         _isUpdatingText = true;
         try
         {
-            var doc = tab.DocumentModel;
             var targetCode = tab.Document.Code ?? string.Empty;
-            if (doc.Text != targetCode)
+            TextDocument doc;
+            try
             {
-                doc.Text = targetCode;
+                doc = tab.DocumentModel;
+                if (doc.Text != targetCode)
+                {
+                    doc.Text = targetCode;
+                }
             }
+            catch (InvalidOperationException)
+            {
+                // The TextDocument was instantiated on a different thread; re-create it bound to the UI thread.
+                doc = new TextDocument(targetCode);
+                tab.DocumentModel = doc;
+            }
+
             _editor.Document = doc;
 
             UpdateCodeFolding();

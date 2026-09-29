@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
@@ -13,6 +14,7 @@ public sealed record KernelOutput(string? Text, RichCellOutput? Rich);
 public static class MimeOutputMapper
 {
     public const string TableMime = "application/vnd.fry.table+json";
+    public const string Plot3DMime = "application/vnd.fry.plot3d+json";
 
     public static KernelOutput Map(JsonElement data, JsonElement metadata)
     {
@@ -21,6 +23,11 @@ public static class MimeOutputMapper
         if (data.TryGetProperty(TableMime, out var table) && table.ValueKind == JsonValueKind.Object)
         {
             return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.Table, TableResult = Table(table) });
+        }
+
+        if (data.TryGetProperty(Plot3DMime, out var plot3d) && plot3d.ValueKind == JsonValueKind.Object)
+        {
+            return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.Plot3D, Plot3DOptions = ParsePlot3D(plot3d) });
         }
 
         foreach (var (mime, format) in new[] { ("image/png", "PNG"), ("image/jpeg", "JPEG") })
@@ -133,5 +140,41 @@ public static class MimeOutputMapper
 
         int? Read(string name) => size.TryGetProperty(name, out var v) && v.TryGetDouble(out var d) ? (int)Math.Round(d, MidpointRounding.AwayFromZero) : null;
         return (Read("width"), Read("height"));
+    }
+
+    private static Plot3DOptions ParsePlot3D(JsonElement el)
+    {
+        var opts = new Plot3DOptions();
+        if (el.TryGetProperty("title", out var title) && title.GetString() is { } t) opts.Title = t;
+        if (el.TryGetProperty("type", out var type) && type.GetString() is { } typeStr &&
+            Enum.TryParse<Plot3DType>(typeStr, true, out var pt))
+        {
+            opts.Type = pt;
+        }
+
+        if (el.TryGetProperty("points", out var pts) && pts.ValueKind == JsonValueKind.Array)
+        {
+            var series = new Series3D { Name = opts.Title };
+            foreach (var p in pts.EnumerateArray())
+            {
+                if (p.ValueKind == JsonValueKind.Array)
+                {
+                    var coords = p.EnumerateArray().Select(c => c.GetDouble()).ToList();
+                    if (coords.Count >= 3) series.Points.Add(new Point3D(coords[0], coords[1], coords[2]));
+                }
+                else if (p.ValueKind == JsonValueKind.Object)
+                {
+                    double x = p.TryGetProperty("x", out var px) ? px.GetDouble() : 0;
+                    double y = p.TryGetProperty("y", out var py) ? py.GetDouble() : 0;
+                    double z = p.TryGetProperty("z", out var pz) ? pz.GetDouble() : 0;
+                    string? label = p.TryGetProperty("label", out var pl) ? pl.GetString() : null;
+                    series.Points.Add(new Point3D(x, y, z, label));
+                }
+            }
+            if (series.Points.Count > 0) opts.Series.Add(series);
+        }
+
+        opts.RecalculateBounds();
+        return opts;
     }
 }

@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -27,7 +28,8 @@ public enum CellOutputKind
     Table,
     ObjectInspector,
     Chart,
-    Visualizer
+    Visualizer,
+    Plot3D
 }
 
 public class RichCellOutput
@@ -45,6 +47,7 @@ public class RichCellOutput
     public ChartOptions? ChartOptions { get; set; }
     public VisualizerOptions? VisualizerOptions { get; set; }
     public VisualizerSequence? VisualizerSequence => VisualizerOptions?.Sequence;
+    public Plot3DOptions? Plot3DOptions { get; set; }
 
     // Convenience getters for XAML DataTemplates (e.g. the Code Studio scratchpad's RichOutputs
     // ItemsControl) — this is a plain POCO set once at emission time and never mutated afterward, so
@@ -55,6 +58,7 @@ public class RichCellOutput
     public bool IsInspectorKind => Kind == CellOutputKind.ObjectInspector;
     public bool IsChartKind => Kind == CellOutputKind.Chart;
     public bool IsVisualizerKind => Kind == CellOutputKind.Visualizer;
+    public bool IsPlot3DKind => Kind == CellOutputKind.Plot3D;
 
     private Bitmap? _decodedImage;
     private bool _decodeAttempted;

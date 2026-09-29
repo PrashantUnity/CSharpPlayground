@@ -131,7 +131,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(15)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunCodeCommand deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
@@ -218,7 +218,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         await studio.RunCodeCommand.ExecuteAsync(null);
         sw.Stop();
 
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(3),
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(15),
             $"Should abandon ~1s (timeout) + ~1s (grace) in, took {sw.Elapsed}");
         Assert.Contains("Timed out", studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
 

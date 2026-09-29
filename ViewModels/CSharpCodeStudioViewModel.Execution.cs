@@ -230,7 +230,7 @@ public partial class CSharpCodeStudioViewModel
 
     // The kinds the Results tab's RichOutputs template draws (StudioBottomDeckControl.axaml).
     private static bool IsDrawnInResults(RichCellOutput output) =>
-        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind;
+        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind || output.IsPlot3DKind;
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();

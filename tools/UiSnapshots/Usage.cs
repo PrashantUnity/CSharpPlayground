@@ -83,6 +83,10 @@ internal static class Usage
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)
               --quiet                don't print each step's description
+          plot3d [kind]          Interactive 3D visualization off-screen rendering (surface, scatter, graph, trajectory, voxel).
+              --mode <kind>          surface (default), scatter, graph, trajectory, or voxel
+              --width <px>           window width (default 960)
+              --height <px>          window height (default 640)
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

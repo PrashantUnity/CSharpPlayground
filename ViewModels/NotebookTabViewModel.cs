@@ -503,6 +503,12 @@ public partial class NotebookTabViewModel : ObservableObject
                     cell.SetVisualizerOutput(rich.VisualizerOptions);
                 }
                 break;
+            case CellOutputKind.Plot3D:
+                if (rich.Plot3DOptions != null)
+                {
+                    cell.SetPlot3DOutput(rich.Plot3DOptions);
+                }
+                break;
         }
     }
 

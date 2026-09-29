@@ -65,7 +65,13 @@ public partial class StudioTabItemViewModel : ObservableObject
     [ObservableProperty]
     private string _compilerStatusText = "Ready";
 
-    public TextDocument DocumentModel { get; }
+    private TextDocument? _documentModel;
+
+    public TextDocument DocumentModel
+    {
+        get => _documentModel ??= new TextDocument(Document.Code ?? string.Empty);
+        set => _documentModel = value;
+    }
 
     public int CaretLine { get; set; } = 1;
     public int CaretColumn { get; set; } = 1;
@@ -108,7 +114,6 @@ public partial class StudioTabItemViewModel : ObservableObject
     {
         _document = document;
         _isActive = isActive;
-        DocumentModel = new TextDocument(document.Code ?? string.Empty);
     }
 
     [RelayCommand]

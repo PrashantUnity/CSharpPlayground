@@ -58,6 +58,8 @@ internal sealed class Options
             ? _positional.Select(p => CheckedProblem(ParseInt(p, "a problem number"))).ToList()
             : Blind75CatalogService.GetAllProblems().Select(p => p.Number).ToList();
 
+    public string? Positional(int index = 0) => _positional.Count > index ? _positional[index] : null;
+
     private static int ParseInt(string text, string what) =>
         int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
             ? value

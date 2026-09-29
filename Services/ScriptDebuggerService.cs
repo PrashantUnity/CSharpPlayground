@@ -166,7 +166,9 @@ public class ScriptDebuggerService
                     "System.Text.Json",
                     "System.Text.RegularExpressions",
                     "System.Threading.Tasks",
-                    "PdfEditorApp.Plugins.CSharpEditor.Services");
+                    "PdfEditorApp.Plugins.CSharpEditor.Services",
+                    "PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models",
+                    "PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services");
 
             // Synthesize local variable declarations if any are in scope
             var prefix = new StringBuilder();

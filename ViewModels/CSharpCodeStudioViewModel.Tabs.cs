@@ -17,14 +17,29 @@ public partial class CSharpCodeStudioViewModel
         {
             LanguageIconKind = sourceLanguage?.IconKind,
             LanguageIconColor = sourceLanguage?.AccentHex,
-            OnSelect = t => { _ = SwitchToTabAsync(t); },
-            OnClose = t => { _ = CloseTabAsync(t); },
-            OnCloseOthers = t => { _ = CloseOtherTabsAsync(t); },
-            OnCloseToTheRight = t => { _ = CloseTabsToTheRightAsync(t); },
-            OnCloseAll = tab => { _ = CloseAllTabsAsync(); },
+            OnSelect = t => SafeTabAction(() => SwitchToTabAsync(t), "SwitchTab"),
+            OnClose = t => SafeTabAction(() => CloseTabAsync(t), "CloseTab"),
+            OnCloseOthers = t => SafeTabAction(() => CloseOtherTabsAsync(t), "CloseOtherTabs"),
+            OnCloseToTheRight = t => SafeTabAction(() => CloseTabsToTheRightAsync(t), "CloseTabsToTheRight"),
+            OnCloseAll = _ => SafeTabAction(() => CloseAllTabsAsync(), "CloseAllTabs"),
             OnCopyPath = t => CopyTabPath(t),
             OnRevealInExplorer = t => RevealTabInExplorer(t)
         };
+    }
+
+    private static async void SafeTabAction(Func<Task> action, string actionName)
+    {
+        try { await action(); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CSharpCodeStudioViewModel] {actionName} error: {ex}");
+        }
+    }
+
+    private static void CopyItems<T>(ICollection<T> target, IEnumerable<T> source)
+    {
+        target.Clear();
+        foreach (var item in source) target.Add(item);
     }
 
     public async Task SwitchToTabAsync(StudioTabItemViewModel tab)
@@ -49,21 +64,11 @@ public partial class CSharpCodeStudioViewModel
             currentTab.IsDebugging = IsDebugging;
             currentTab.IsPaused = IsPaused;
             currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
-
-            currentTab.Diagnostics.Clear();
-            foreach (var d in Diagnostics) currentTab.Diagnostics.Add(d);
-
-            currentTab.DumpResults.Clear();
-            foreach (var r in DumpResults) currentTab.DumpResults.Add(r);
-
-            currentTab.RichOutputs.Clear();
-            foreach (var ro in RichOutputs) currentTab.RichOutputs.Add(ro);
-
-            currentTab.Locals.Clear();
-            foreach (var l in Locals) currentTab.Locals.Add(l);
-
-            currentTab.CallStack.Clear();
-            foreach (var cs in CallStack) currentTab.CallStack.Add(cs);
+            CopyItems(currentTab.Diagnostics, Diagnostics);
+            CopyItems(currentTab.DumpResults, DumpResults);
+            CopyItems(currentTab.RichOutputs, RichOutputs);
+            CopyItems(currentTab.Locals, Locals);
+            CopyItems(currentTab.CallStack, CallStack);
         }
 
         // 2. Mark active flags
@@ -98,26 +103,12 @@ public partial class CSharpCodeStudioViewModel
         SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
         IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
 
-        Diagnostics.Clear();
-        foreach (var d in tab.Diagnostics) Diagnostics.Add(d);
-
-        DumpResults.Clear();
-        foreach (var r in tab.DumpResults) DumpResults.Add(r);
-
-        RichOutputs.Clear();
-        foreach (var ro in tab.RichOutputs) RichOutputs.Add(ro);
-
-        Locals.Clear();
-        foreach (var l in tab.Locals) Locals.Add(l);
-
-        CallStack.Clear();
-        foreach (var cs in tab.CallStack) CallStack.Add(cs);
-
-        TestCases.Clear();
-        foreach (var tc in tab.Document.TestCases)
-        {
-            TestCases.Add(tc);
-        }
+        CopyItems(Diagnostics, tab.Diagnostics);
+        CopyItems(DumpResults, tab.DumpResults);
+        CopyItems(RichOutputs, tab.RichOutputs);
+        CopyItems(Locals, tab.Locals);
+        CopyItems(CallStack, tab.CallStack);
+        CopyItems(TestCases, tab.Document.TestCases);
 
         Breakpoints.Clear();
         foreach (var bpLine in tab.Document.Breakpoints)
@@ -347,7 +338,7 @@ public partial class CSharpCodeStudioViewModel
                 IconKind = "FileCodeOutline",
                 IconColorHex = "#58A6FF",
                 Kind = QuickOpenItemKind.Document,
-                ExecuteAction = () => _ = SwitchToTabAsync(tab)
+                ExecuteAction = () => SafeTabAction(() => SwitchToTabAsync(tab), "QuickOpenSwitchTab")
             });
         }
 
