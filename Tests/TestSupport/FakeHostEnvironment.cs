@@ -26,6 +26,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly Dictionary<string, FakeJava> _javas;
     private readonly Dictionary<string, FakeCpp> _cpps;
     private readonly Dictionary<string, FakeGo> _gos;
+    private readonly Dictionary<string, FakeFSharp> _fsharps;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -38,6 +39,7 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _javas = new Dictionary<string, FakeJava>(comparer);
         _cpps = new Dictionary<string, FakeCpp>(comparer);
         _gos = new Dictionary<string, FakeGo>(comparer);
+        _fsharps = new Dictionary<string, FakeFSharp>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -135,6 +137,15 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return go;
     }
 
+    /// <summary>Makes <paramref name="path"/> an F# / .NET toolchain runtime that answers the studio's probe.</summary>
+    public FakeFSharp AddFSharp(string path, string version, int exitCode = 0)
+    {
+        AddFile(path);
+        var fs = new FakeFSharp(version, path) { ExitCode = exitCode };
+        _fsharps[Normalize(path)] = fs;
+        return fs;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -199,6 +210,11 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && arguments[0] == "version" && _gos.TryGetValue(Normalize(fileName), out var go))
         {
             return Task.FromResult(go.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && ((arguments[0] == "--version") || (arguments[0] == "fsi" && arguments.Count > 1 && arguments[1] == "--version")) && _fsharps.TryGetValue(Normalize(fileName), out var fsharp))
+        {
+            return Task.FromResult(fsharp.ProbeAnswer());
         }
 
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));
@@ -290,5 +306,16 @@ public sealed record FakeGo(string Version, string Executable)
     {
         if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working go", false);
         return new CommandResult(0, $"go version go{Version} darwin/arm64\n", string.Empty, false);
+    }
+}
+
+public sealed record FakeFSharp(string Version, string Executable)
+{
+    public int ExitCode { get; init; }
+
+    public CommandResult ProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working F# runtime", false);
+        return new CommandResult(0, $"Microsoft (R) F# Interactive version 15.2.400.0 for F# {Version}\n", string.Empty, false);
     }
 }

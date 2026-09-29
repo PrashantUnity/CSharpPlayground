@@ -105,6 +105,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.JavaScript => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJavascript,
         Services.Languages.LanguageIds.Cpp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageCpp,
         Services.Languages.LanguageIds.Go => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageGo,
+        Services.Languages.LanguageIds.FSharp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.FunctionVariant,
         _ => Kind switch
         {
             WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
@@ -124,6 +125,7 @@ public class WorkspaceItemSummary : ObservableObject
     private const string JsAccentHex       = "#F1D04B";   // yellow — JavaScript
     private const string CppAccentHex      = "#659AD2";   // blue   — C++
     private const string GoAccentHex       = "#00ADD8";   // cyan   — Go
+    private const string FSharpAccentHex   = "#30B9DB";   // cyan/blue — F#
 
     private string AccentHex => LanguageId switch
     {
@@ -132,6 +134,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.JavaScript => IsNotebook ? NotebookAccentHex : JsAccentHex,
         Services.Languages.LanguageIds.Cpp        => IsNotebook ? NotebookAccentHex : CppAccentHex,
         Services.Languages.LanguageIds.Go         => IsNotebook ? NotebookAccentHex : GoAccentHex,
+        Services.Languages.LanguageIds.FSharp     => IsNotebook ? NotebookAccentHex : FSharpAccentHex,
         _ => IsNotebook ? NotebookAccentHex : CSharpAccentHex
     };
 

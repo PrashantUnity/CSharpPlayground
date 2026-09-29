@@ -318,6 +318,58 @@ func main() {
         },
         new()
         {
+            Id = "fsharp_functional_starter",
+            Title = "F# Functional Pipelines",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Idiomatic F# script with pipe forward operators, pattern matching, discriminated unions, and interactive fsi execution.",
+            IconKind = MaterialIconKind.FunctionVariant,
+            AccentColor = "#30B9DB",
+            AccentBackground = "#1A2B35",
+            AccentBorder = "#234354",
+            CategoryBadge = "F# • Functional",
+            Tags = new List<string> { "F#", "Functional", "Pipelines", "Interactive" },
+            Notes = @"# F# Functional Pipelines & Pattern Matching
+
+This script executes interactively using your system's .NET SDK (`dotnet fsi`).
+
+### Key Features:
+- **Interactive Script Execution**: Runs `.fsx` scripts via `dotnet fsi` with instant execution.
+- **Type-Safe Pipelines**: Chain functional transformations with `|>`.
+- **Discriminated Unions & Pattern Matching**: Exhaustive type checking and expressive data modeling.",
+            InitialCode = @"// F# Functional Pipelines & Pattern Matching
+open System
+
+printfn ""=== F# Functional Pipelines ===""
+
+type Shape =
+    | Circle of radius: float
+    | Rectangle of width: float * height: float
+    | Triangle of baseLength: float * height: float
+
+let area shape =
+    match shape with
+    | Circle r -> Math.PI * r * r
+    | Rectangle (w, h) -> w * h
+    | Triangle (b, h) -> 0.5 * b * h
+
+let shapes = [
+    Circle 5.0
+    Rectangle (4.0, 6.0)
+    Triangle (3.0, 8.0)
+]
+
+shapes
+|> List.iter (fun s ->
+    let a = area s
+    printfn ""Area of %A = %.2f"" s a)
+
+let totalArea = shapes |> List.map area |> List.sum
+printfn ""\nTotal combined area: %.2f"" totalArea
+"
+        },
+        new()
+        {
             Id = "animation_studio",
             Title = "Live Animation Studio",
             Category = "Animation",

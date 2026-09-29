@@ -284,9 +284,10 @@ internal static class StudioSnapshots
         var javaTable = options.Flag("java-table");
         var cppDemo = options.Flag("cpp-demo");
         var goDemo = options.Flag("go-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo) ? 0 : options.Problem();
+        var fsharpDemo = options.Flag("fsharp-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -313,7 +314,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -630,6 +631,59 @@ internal static class StudioSnapshots
                     }
                     std::cout << "Computed " << squares.size() << " squares." << std::endl;
                     Display::table(squares, "Squares of Numbers");
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem FSharpDemoNotebook() => new()
+    {
+        Title = "F# Interactive Polyglot Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # F# Interactive Polyglot Notebook
+                    Interactive F# script cells running via F# Interactive (`dotnet fsi`) with type-safe pipelines, pattern matching, and visual dumps.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.FSharp,
+                Source = """
+                    printfn "🚀 Hello from F# in Notebook Studio!"
+
+                    let numbers = [ 1 .. 10 ]
+                    let sumOfSquares =
+                        numbers
+                        |> List.map (fun x -> x * x)
+                        |> List.sum
+
+                    printfn "Sum of squares (1..10): %d" sumOfSquares
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.FSharp,
+                Source = """
+                    type Shape =
+                        | Circle of radius: float
+                        | Rectangle of width: float * height: float
+
+                    let describe shape =
+                        match shape with
+                        | Circle r -> sprintf "Circle with radius %.2f" r
+                        | Rectangle (w, h) -> sprintf "Rectangle %g x %g" w h
+
+                    let c = Circle 4.5
+                    let r = Rectangle (3.0, 7.0)
+
+                    printfn "%s" (describe c)
+                    printfn "%s" (describe r)
                     """
             }
         }
