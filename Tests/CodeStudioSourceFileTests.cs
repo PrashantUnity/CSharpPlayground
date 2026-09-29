@@ -82,7 +82,7 @@ public class CodeStudioSourceFileTests : IDisposable
     {
         var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
 
-        Assert.Equal(7, studio.NewFileOptions.Count);
+        Assert.Equal(8, studio.NewFileOptions.Count);
         var python = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Python);
         var js = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.JavaScript);
         var java = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Java);
@@ -90,6 +90,7 @@ public class CodeStudioSourceFileTests : IDisposable
         var go = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Go);
         var fsharp = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.FSharp);
         var sql = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Sql);
+        var rust = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Rust);
 
         Assert.Equal("New Python File", python.Label);
         Assert.Equal("LanguagePython", python.IconKind);
@@ -105,6 +106,8 @@ public class CodeStudioSourceFileTests : IDisposable
         Assert.Equal("FunctionVariant", fsharp.IconKind);
         Assert.Equal("New SQL File", sql.Label);
         Assert.Equal("Database", sql.IconKind);
+        Assert.Equal("New Rust File", rust.Label);
+        Assert.Equal("LanguageRust", rust.IconKind);
     }
 
     [Fact]

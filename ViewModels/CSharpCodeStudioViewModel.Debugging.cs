@@ -70,6 +70,10 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
+        // A source-file language is built from the file on disk, so what the editor shows has to be saved first, as Run does;
+        // otherwise breakpoints are set on lines of code that isn't what runs.
+        if (ActiveLanguage.Storage == LanguageStorageKind.SourceFile) await SaveDocumentAsync(userAsked: true);
+
         DisposeRichOutputControls();
         DumpResults.Clear();
         RichOutputs.Clear();
@@ -106,8 +110,7 @@ public partial class CSharpCodeStudioViewModel
         if (debuggingTab != null) debuggingTab.ExecutionCts = _executionCts;
         var token = _executionCts.Token;
 
-        var sourcePath = debuggingTab?.Document.SourceFilePath
-            ?? (Script.Title.Contains('.') ? Script.Title : $"{Script.Title}{ActiveLanguage.FileExtensions.FirstOrDefault() ?? ".cs"}");
+        var sourcePath = DebugSourcePath(debuggingTab);
 
         var launchContext = new DebugLaunchContext(
             Script.Id,
@@ -270,15 +273,26 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
+    /// <summary>The file a debug session knows the script as; breakpoints set while it runs must use the same name.</summary>
+    private string DebugSourcePath(StudioTabItemViewModel? tab) =>
+        tab?.Document.SourceFilePath
+        ?? (Script.Title.Contains('.') ? Script.Title : $"{Script.Title}{ActiveLanguage.FileExtensions.FirstOrDefault() ?? ".cs"}");
+
     private void HandleSessionTerminated(DebugTerminatedEventArgs args, StudioTabItemViewModel? tab, Stopwatch sw)
     {
         sw.Stop();
         var timeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";
         var border = "\n--------------------------------------------------\n";
 
+        // -1 is "the adapter went away", not a program's answer.
+        var exitCode = !args.WasCancelled && args.ExitCode is { } code && code != 0 && code != -1 ? code : (int?)null;
+        var statusText = args.WasCancelled ? "Stopped" : exitCode is { } failed ? $"Exited with code {failed}" : "Completed";
+
         string endMsg = args.WasCancelled
             ? $"{border}🛑 Debug session stopped.\n"
-            : $"{border}🏁 Debugging finished in {timeText}\n";
+            : exitCode is { } exited
+                ? $"{border}🏁 Debugging finished in {timeText}: the program exited with code {exited}\n"
+                : $"{border}🏁 Debugging finished in {timeText}\n";
 
         AppendLiveDebugOutput(endMsg, tab);
 
@@ -289,7 +303,7 @@ public partial class CSharpCodeStudioViewModel
             tab.IsPaused = false;
             tab.PausedLine = -1;
             tab.ExecutionTimeText = timeText;
-            tab.CompilerStatusText = args.WasCancelled ? "Stopped" : "Completed";
+            tab.CompilerStatusText = statusText;
         }
 
         if (tab == null || tab.IsActive)
@@ -299,7 +313,7 @@ public partial class CSharpCodeStudioViewModel
             IsPaused = false;
             CurrentPausedLine = -1;
             ExecutionTimeText = timeText;
-            CompilerStatusText = args.WasCancelled ? "Stopped" : "Completed";
+            CompilerStatusText = statusText;
             RequestSetPausedLine?.Invoke(-1);
         }
 

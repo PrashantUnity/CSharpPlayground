@@ -56,6 +56,13 @@ internal static class WorkspaceWalker
         if (SkippedFolders.Contains(name)) return true;
         // Only an actual virtual environment: a folder of the user's own that happens to be called "env" stays visible.
         if (EnvironmentFolderNames.Contains(name) && File.Exists(Path.Combine(folder, "pyvenv.cfg"))) return true;
+        // Cargo's build output: only where a Cargo.toml sits beside it, so a folder of the user's own called "target" stays visible.
+        if (name.Equals("target", StringComparison.OrdinalIgnoreCase) &&
+            Path.GetDirectoryName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) is { Length: > 0 } parent &&
+            File.Exists(Path.Combine(parent, "Cargo.toml")))
+        {
+            return true;
+        }
 
         try
         {

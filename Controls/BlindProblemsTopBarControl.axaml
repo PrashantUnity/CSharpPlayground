@@ -64,6 +64,7 @@
                             <MenuItem Header="Python 3.12" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="python" />
                             <MenuItem Header="JavaScript (Node.js)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="javascript" />
                             <MenuItem Header="Java (OpenJDK)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="java" />
+                            <MenuItem Header="Rust (Cargo)" Command="{Binding SetSelectedLanguageCommand}" CommandParameter="rust" />
                         </MenuFlyout>
                     </Button.Flyout>
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">

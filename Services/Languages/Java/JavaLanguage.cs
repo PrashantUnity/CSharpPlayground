@@ -39,7 +39,7 @@ public sealed class JavaLanguage : LanguageDefinition
 
     public override string Id => LanguageIds.Java;
     public override string DisplayName => "Java";
-    public override JupyterLanguageInfo Jupyter { get; } = new("java", "Java", "java", "text/x-java-source", ".java", "text/x-java-source");
+    public override JupyterLanguageInfo Jupyter { get; } = new("java", "Java", "java", "java", ".java", "text/x-java-source");
     public override string ShortName => "JAVA";
     public override IReadOnlyList<string> Aliases => JavaAliases;
     public override IReadOnlyList<string> FileExtensions => JavaExtensions;

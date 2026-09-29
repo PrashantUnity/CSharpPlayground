@@ -18,6 +18,10 @@ public partial class CodeTemplate : ObservableObject
     public string InitialCode { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
     public WorkspaceItemKind Kind { get; set; } = WorkspaceItemKind.Script;
+
+    /// <summary>The id of a source-file language (<c>rust</c>): the template then makes a plain file of that language instead of a C# document.</summary>
+    public string? LanguageId { get; set; }
+
     public List<TestCaseItem> TestCases { get; set; } = new();
 
     public string AccentColor { get; set; } = "#A8C7FA";

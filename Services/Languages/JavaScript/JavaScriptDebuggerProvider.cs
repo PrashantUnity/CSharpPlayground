@@ -84,13 +84,44 @@ public sealed class JavaScriptDebuggerProvider : IDebuggerProvider, IDapAdapterR
             WorkingDirectory = workingDir
         };
 
-        return await _adapterManager.LaunchSocketAdapterAsync(
-            LanguageIds.JavaScript,
-            spec,
-            port,
-            context,
-            postHandshake: null,
-            ct).ConfigureAwait(false);
+        // --inspect-brk opens V8's inspector, which speaks the Chrome DevTools Protocol over a WebSocket, not the Debug Adapter Protocol:
+        // the adapter is the bridge between them, and its streams are what the session's DapClient talks to.
+        var earlyOutput = new List<string>();
+        NodeInspectorDapAdapter? adapter = null;
+        var gate = new object();
+        void Output(string text)
+        {
+            lock (gate)
+            {
+                if (adapter != null) adapter.OnProcessOutput(text);
+                else earlyOutput.Add(text);
+            }
+        }
+
+        var process = _processes.Start(spec, Output, Output);
+        adapter = new NodeInspectorDapAdapter(process, port, scriptFile, context.OnLiveOutput);
+        lock (gate)
+        {
+            foreach (var text in earlyOutput) adapter.OnProcessOutput(text);
+            earlyOutput.Clear();
+        }
+
+        try
+        {
+            return await _adapterManager.LaunchBridgeAdapterAsync(
+                LanguageIds.JavaScript,
+                adapter.ClientInputStream,
+                adapter.ClientOutputStream,
+                process,
+                context,
+                postHandshake: null,
+                ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            await adapter.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 
     Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>

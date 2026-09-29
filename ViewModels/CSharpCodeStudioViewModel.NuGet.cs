@@ -77,6 +77,26 @@ public partial class CSharpCodeStudioViewModel
         new("gopkg.in/yaml.v3", "3.0.1", "YAML support for the Go language", "Canonical", 140000000)
     ];
 
+    private static readonly NuGetPackageItem[] PopularRustPackages =
+    [
+        new("serde", "1", "A framework for serializing and deserializing Rust data structures", "David Tolnay, Erick Tryzelaar", 400000000),
+        new("serde_json", "1", "A JSON serialization file format", "David Tolnay, Erick Tryzelaar", 300000000),
+        new("rand", "0.9", "Random number generators and other randomness functionality", "The Rand Project Developers", 350000000),
+        new("tokio", "1", "An event-driven, non-blocking I/O platform for asynchronous applications", "Tokio Contributors", 300000000),
+        new("clap", "4", "A simple to use, efficient, and full-featured command line argument parser", "Clap Maintainers", 300000000),
+        new("regex", "1", "An implementation of regular expressions for Rust", "The Rust Project Developers", 350000000),
+        new("chrono", "0.4", "Date and time library for Rust", "Kang Seonghoon, Chrono Contributors", 250000000),
+        new("anyhow", "1", "Flexible concrete Error type built on std::error::Error", "David Tolnay", 350000000),
+        new("thiserror", "2", "derive(Error) for defining error types", "David Tolnay", 350000000),
+        new("itertools", "0.14", "Extra iterator adaptors, iterator methods, free functions, and macros", "bluss", 250000000),
+        new("rayon", "1", "Simple work-stealing parallelism for Rust", "Niko Matsakis, Josh Stone", 150000000),
+        new("reqwest", "0.12", "Higher level HTTP client library", "Sean McArthur", 200000000),
+        new("uuid", "1", "A library to generate and parse UUIDs", "The Rust Project Developers", 250000000),
+        new("once_cell", "1", "Single assignment cells and lazy values", "Aleksey Kladov", 400000000),
+        new("log", "0.4", "A lightweight logging facade for Rust", "The Rust Project Developers", 400000000),
+        new("fastrand", "2", "A simple and fast random number generator", "Stjepan Glavina", 150000000),
+    ];
+
     public string ActivePackageManagerName => ActiveLanguage?.Packages?.ToolName ?? "NuGet";
     public string ActivePackageManagerTitle => $"{ActivePackageManagerName.ToUpperInvariant()} PACKAGES";
     public string ActivePackageSearchPlaceholder => $"Search {ActivePackageManagerName} packages...";
@@ -104,6 +124,8 @@ public partial class CSharpCodeStudioViewModel
             return PopularCppPackages;
         if (string.Equals(id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
             return PopularGoPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Rust, StringComparison.OrdinalIgnoreCase))
+            return PopularRustPackages;
         return PopularNuGetPackages;
     }
 
@@ -154,6 +176,16 @@ public partial class CSharpCodeStudioViewModel
             var filtered = Array.FindAll(PopularGoPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Rust crate search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Rust, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularRustPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching crates" : "No crates found in catalog";
             return;
         }
 
@@ -259,6 +291,7 @@ public partial class CSharpCodeStudioViewModel
             Services.Languages.LanguageIds.Java => $"//DEPS {package.Id}:{package.Version}",
             Services.Languages.LanguageIds.Cpp => $"// #vcpkg: {package.Id}",
             Services.Languages.LanguageIds.Go => $"// #go: {package.Id}",
+            Services.Languages.LanguageIds.Rust => Services.Languages.Rust.RustPackageMap.CrateLine(package.Id, package.Version),
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
             Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
             _ => $"#r \"nuget: {package.Id}, {package.Version}\""
@@ -294,7 +327,7 @@ public partial class CSharpCodeStudioViewModel
         DocumentNuGetPackages.Clear();
         if (string.IsNullOrEmpty(Code)) return;
 
-        var regex = new Regex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        var regex = new Regex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
         var matches = regex.Matches(Code);
         foreach (Match m in matches)
         {

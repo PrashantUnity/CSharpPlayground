@@ -138,6 +138,14 @@ public abstract class LanguageDefinition : ILanguageDefinition
 
 public static class LanguageDefinitionExtensions
 {
+    /// <summary>
+    /// True when the editor's built-in C# helper for <paramref name="capability"/> (Roslyn completion or hover) should run on
+    /// this language's text: it has the capability and doesn't bring its own <see cref="ILanguageDefinition.EditorAssistants"/>.
+    /// A null language is the default, C#.
+    /// </summary>
+    public static bool UsesRoslynHelper(this ILanguageDefinition? language, LanguageCapabilities capability) =>
+        language == null || (language.Has(capability) && language.EditorAssistants == null);
+
     /// <summary>True when the language has every one of <paramref name="capabilities"/>.</summary>
     public static bool Has(this ILanguageDefinition language, LanguageCapabilities capabilities) =>
         (language.Capabilities & capabilities) == capabilities;

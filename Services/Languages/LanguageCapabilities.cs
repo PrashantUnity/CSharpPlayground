@@ -60,4 +60,5 @@ public static class LanguageIds
     public const string Go = "go";
     public const string FSharp = "fsharp";
     public const string Sql = "sql";
+    public const string Rust = "rust";
 }

@@ -107,6 +107,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.Go => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageGo,
         Services.Languages.LanguageIds.FSharp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.FunctionVariant,
         Services.Languages.LanguageIds.Sql => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.Database,
+        Services.Languages.LanguageIds.Rust => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageRust,
         _ => Kind switch
         {
             WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
@@ -128,6 +129,7 @@ public class WorkspaceItemSummary : ObservableObject
     private const string GoAccentHex       = "#00ADD8";   // cyan   — Go
     private const string FSharpAccentHex   = "#30B9DB";   // cyan/blue — F#
     private const string SqlAccentHex      = "#F29111";   // orange/gold — SQL
+    private const string RustAccentHex     = "#DEA584";   // tan — Rust
 
     private string AccentHex => LanguageId switch
     {
@@ -138,6 +140,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.Go         => IsNotebook ? NotebookAccentHex : GoAccentHex,
         Services.Languages.LanguageIds.FSharp     => IsNotebook ? NotebookAccentHex : FSharpAccentHex,
         Services.Languages.LanguageIds.Sql        => IsNotebook ? NotebookAccentHex : SqlAccentHex,
+        Services.Languages.LanguageIds.Rust       => IsNotebook ? NotebookAccentHex : RustAccentHex,
         _ => IsNotebook ? NotebookAccentHex : CSharpAccentHex
     };
 

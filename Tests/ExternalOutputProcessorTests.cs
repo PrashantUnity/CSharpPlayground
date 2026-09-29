@@ -51,6 +51,61 @@ public class ExternalOutputProcessorTests
         Assert.Equal(2, rich.TableResult.Rows.Count);
     }
 
+    [Theory]
+    [InlineData("text/plain", "42\\n", "42\n")]
+    [InlineData("text/plain", "no newline", "no newline\n")]
+    [InlineData("text/markdown", "**bold**", "**bold**\n")]
+    public void ProcessChunk_ATextDisplay_IsShownAsText_NotAsTheProtocolLine(string mime, string value, string expected)
+    {
+        var consoleLines = new List<string>();
+        var richOutputs = new List<RichCellOutput>();
+        var processor = new ExternalOutputProcessor(consoleLines.Add, richOutputs.Add);
+
+        processor.ProcessChunk("before\n__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"" + mime + "\":\"" + value + "\"},\"metadata\":{}}\nafter\n");
+        processor.Flush();
+
+        Assert.Equal(["before\n", expected, "after\n"], consoleLines);
+        Assert.Empty(richOutputs);
+    }
+
+    [Fact]
+    public void ProcessChunk_AShareLine_IsHandedToTheShareCallback_AndNotShown()
+    {
+        var consoleLines = new List<string>();
+        var shared = new List<(string Name, string Json)>();
+        var processor = new ExternalOutputProcessor(consoleLines.Add, _ => { }, (name, json) => shared.Add((name, json)));
+
+        processor.ProcessChunk("a\n__FRY_SHARE__ {\"name\":\"nums\",\"json\":\"[1,2]\"}\nb\n__FRY_SHARE__ not json\n");
+        processor.Flush();
+
+        Assert.Equal([("nums", "[1,2]")], shared);
+        Assert.Equal(["a\n", "b\n", "__FRY_SHARE__ not json\n"], consoleLines);
+    }
+
+    [Fact]
+    public void ProcessChunk_AShareLine_IsOrdinaryOutput_WhenNobodyListens()
+    {
+        var consoleLines = new List<string>();
+        var processor = new ExternalOutputProcessor(consoleLines.Add, _ => { });
+
+        processor.ProcessChunk("__FRY_SHARE__ {\"name\":\"x\",\"json\":\"1\"}\n");
+
+        Assert.Single(consoleLines);
+    }
+
+    [Fact]
+    public void ProcessChunk_AShareLineSplitAcrossChunks_AssemblesAndParses()
+    {
+        var shared = new List<string>();
+        var processor = new ExternalOutputProcessor(_ => { }, _ => { }, (name, _) => shared.Add(name));
+
+        processor.ProcessChunk("__FRY_SHA");
+        processor.ProcessChunk("RE__ {\"name\":\"split\",\"json\":\"1\"}");
+        processor.ProcessChunk("\n");
+
+        Assert.Equal(["split"], shared);
+    }
+
     [Fact]
     public void ProcessChunk_ChunkSplitAcrossNewline_AssemblesProperly()
     {

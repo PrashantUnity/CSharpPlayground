@@ -61,11 +61,9 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
 
         var missingGuidance = new MissingToolchainGuidance(
             "NetCoreDbg isn't installed",
-            "NetCoreDbg provides full CoreCLR process debugging with thread and async frame inspection.",
-            OperatingSystem.IsMacOS()
-                ? ["brew install netcoredbg"]
-                : ["Download binary from https://github.com/Samsung/netcoredbg/releases"],
-            "https://github.com/Samsung/netcoredbg");
+            "NetCoreDbg provides full CoreCLR process debugging with thread and async frame inspection. Without it the built-in debugger is used.",
+            NetCoreDbgInstallSteps(),
+            "https://github.com/Samsung/netcoredbg/releases");
 
         return new DebuggerResolution(
             IsAvailable: true, // In-process Roslyn debugger is always available
@@ -117,22 +115,36 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
             WorkingDirectory = outDir
         };
 
-        return await _adapterManager.LaunchStdioAdapterAsync(
+        // The debug build names its one source file script.cs (the #line the script is wrapped in), whatever the document is
+        // called: a breakpoint the debugger can match to nothing never binds, and the program runs straight through.
+        var session = await _adapterManager.LaunchStdioAdapterAsync(
             LanguageIds.CSharp,
             spec,
-            context,
+            context with { SourceFilePath = ScriptSourceName },
             postHandshake: async dapClient =>
             {
-                await dapClient.SendRequestAsync("launch", new
-                {
-                    program = "dotnet",
-                    args = new[] { dllPath },
-                    cwd = outDir,
-                    stopAtEntry = false
-                }, ct).ConfigureAwait(false);
+                var launched = await dapClient.SendRequestAsync("launch", LaunchArguments(dllPath, outDir), ct).ConfigureAwait(false);
+                if (!launched.Success) throw new DapException(launched.Message ?? "netcoredbg refused to launch the program.", "launch", launched);
             },
-            ct).ConfigureAwait(false);
+            ct,
+            // The order the specification gives (and the one every other adapter is driven in); netcoredbg answers launch at once.
+            DapHandshake.Standard).ConfigureAwait(false);
+
+        session.SourcePathOverride = ScriptSourceName;
+        return session;
     }
+
+    /// <summary>The file name the debug build records for the script, and so the only source name a breakpoint can be matched by.</summary>
+    internal const string ScriptSourceName = "script.cs";
+
+    /// <summary>What netcoredbg is asked to run: the script's assembly, through <c>dotnet</c>.</summary>
+    internal static object LaunchArguments(string dllPath, string workingDirectory) => new
+    {
+        program = "dotnet",
+        args = new[] { dllPath },
+        cwd = workingDirectory,
+        stopAtEntry = false
+    };
 
     Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>
         LaunchAsync(context, ct);
@@ -162,18 +174,33 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
         return debugSession;
     }
 
+    /// <summary>The folder in the user's home a downloaded netcoredbg is unzipped into: no package manager has it (Homebrew has no formula).</summary>
+    internal const string HomeFolderName = ".netcoredbg";
+
+    private IReadOnlyList<string> NetCoreDbgInstallSteps() =>
+    [
+        _host.IsMacOS ? "Download netcoredbg-osx-arm64.zip (Apple Silicon; there is no Intel build) from the latest release on GitHub." :
+        _host.IsWindows ? "Download netcoredbg-win64.zip from the latest release on GitHub." :
+        "Download netcoredbg-linux-amd64.tar.gz (or netcoredbg-linux-arm64.tar.gz) from the latest release on GitHub.",
+        $"Unpack it into {(_host.IsWindows ? @"%USERPROFILE%\" : "~/")}{HomeFolderName} so that the netcoredbg program sits directly in that folder, or put its folder on your PATH.",
+        "Click Refresh in the toolchain picker or restart C# Code Studio."
+    ];
+
     private async Task<string?> FindNetCoreDbgAsync(CancellationToken ct)
     {
+        var fileName = _host.IsWindows ? "netcoredbg.exe" : "netcoredbg";
+
         // 1. Check PATH
         var pathEnv = await _host.GetLoginShellPathAsync(ct).ConfigureAwait(false);
         var folders = ExecutableSearch.SplitPath(pathEnv, _host.IsWindows);
         var foundOnPath = ExecutableSearch.FindAll(_host, folders, ["netcoredbg"]).FirstOrDefault();
         if (!string.IsNullOrEmpty(foundOnPath)) return foundOnPath;
 
-        // 2. Check standard Homebrew / Unix paths
-        string[] candidates = OperatingSystem.IsMacOS()
-            ? ["/opt/homebrew/bin/netcoredbg", "/usr/local/bin/netcoredbg"]
-            : ["/usr/bin/netcoredbg", "/usr/local/bin/netcoredbg"];
+        // 2. The folder a release is unpacked into, then the standard system folders
+        var candidates = new List<string>();
+        if (!string.IsNullOrEmpty(_host.HomeDirectory)) candidates.Add(Path.Combine(_host.HomeDirectory, HomeFolderName, fileName));
+        if (_host.IsMacOS) candidates.AddRange(["/opt/homebrew/bin/netcoredbg", "/usr/local/bin/netcoredbg"]);
+        else if (!_host.IsWindows) candidates.AddRange(["/usr/bin/netcoredbg", "/usr/local/bin/netcoredbg"]);
 
         foreach (var c in candidates)
         {

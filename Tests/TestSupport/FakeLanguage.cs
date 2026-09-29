@@ -154,6 +154,9 @@ public sealed class FakePackageManager : IPackageManager
 {
     public ConcurrentQueue<string> Ran { get; } = new();
 
+    /// <summary>What an install asks to be written into the file (a language whose packages belong to a file), or null.</summary>
+    public string? DirectiveToInsert { get; set; }
+
     public string ToolName => "fakepkg";
 
     public bool TryParseDirective(string line, out PackageCommand command)
@@ -177,7 +180,7 @@ public sealed class FakePackageManager : IPackageManager
     {
         Ran.Enqueue(string.Join(' ', command.Arguments));
         output($"fakepkg {string.Join(' ', command.Arguments)}: done\n");
-        return Task.FromResult(new PackageCommandResult(true, "Installed."));
+        return Task.FromResult(new PackageCommandResult(true, "Installed.", DirectiveToInsert: DirectiveToInsert));
     }
 }
 

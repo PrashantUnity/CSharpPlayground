@@ -120,13 +120,13 @@ public class BindableTextEditor : TextEditor
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
         {
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
-            IsSuppressed = () => !Supports(LanguageCapabilities.Completion)
+            IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.Completion)
                                  || StudioSettings?.GetSettings().EnableAutoCompletion == false
         };
         _quickInfoController = new CSharpQuickInfoController(this, () => SharedQuickInfo.Value)
         {
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
-            IsSuppressed = () => !Supports(LanguageCapabilities.QuickInfo)
+            IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
         };
 
         TextChanged += OnEditorTextChanged;

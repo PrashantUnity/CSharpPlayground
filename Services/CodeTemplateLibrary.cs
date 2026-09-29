@@ -203,6 +203,7 @@ Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
         new()
         {
             Id = "cpp_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Cpp,
             Title = "C++20 Algorithms & Visual Dumps",
             Category = "Algorithms",
             Kind = WorkspaceItemKind.Script,
@@ -253,6 +254,7 @@ int main() {
         new()
         {
             Id = "go_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Go,
             Title = "Go Concurrency & Channels",
             Category = "Algorithms",
             Kind = WorkspaceItemKind.Script,
@@ -319,6 +321,7 @@ func main() {
         new()
         {
             Id = "fsharp_functional_starter",
+            LanguageId = Languages.LanguageIds.FSharp,
             Title = "F# Functional Pipelines",
             Category = "Algorithms",
             Kind = WorkspaceItemKind.Script,
@@ -367,6 +370,68 @@ shapes
 let totalArea = shapes |> List.map area |> List.sum
 printfn ""\nTotal combined area: %.2f"" totalArea
 "
+        },
+        new()
+        {
+            Id = "rust_iterators_starter",
+            Title = "Rust Iterators & Visual Dumps",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            LanguageId = Languages.LanguageIds.Rust,
+            Description = "A Rust starter with structs, iterator adapters, collections and interactive table dumps, built with Cargo.",
+            IconKind = MaterialIconKind.LanguageRust,
+            AccentColor = "#DEA584",
+            AccentBackground = "#2A211C",
+            AccentBorder = "#4A3A2F",
+            CategoryBadge = "Rust • Native",
+            Tags = new List<string> { "Rust", "Iterators", "fry::table", "Native" },
+            Notes = @"# Rust Iterators & Interactive Visual Dumps
+
+This file builds with Cargo (`cargo build`) and runs natively with the Rust toolchain installed on this computer.
+
+### Key Features:
+- **Zero Configuration Display Crate**: `fry` is added to the build automatically; `use fry::prelude::*;` brings it in.
+- **Interactive Tables**: `table(&value, ""Title"")` shows a list of structs with a column per field, a map as key and value, a list of lists as a grid.
+- **Instant Dump**: `dump!(expression)` prints a value titled with its own source text.
+- **Crates**: add one with a comment such as `// #crate: rand = ""0.8""`; it is downloaded once and reused by every script.
+- **Native Debugging**: set breakpoints in the gutter and press F5 to debug with `lldb-dap`.",
+            InitialCode = """
+// Rust: iterators, structs and visual dumps.
+// Add a crate with a comment such as:  // #crate: rand = "0.8"
+use fry::prelude::*;
+use std::collections::BTreeMap;
+
+#[derive(Debug, Clone)]
+struct Planet {
+    name: &'static str,
+    moons: u32,
+    gravity: f64,
+}
+
+fn main() {
+    println!("=== Rust iterators ===");
+
+    // A list of structs becomes a table with a column per field in the Results deck.
+    let planets = vec![
+        Planet { name: "Earth", moons: 1, gravity: 9.81 },
+        Planet { name: "Mars", moons: 2, gravity: 3.72 },
+        Planet { name: "Jupiter", moons: 95, gravity: 24.79 },
+    ];
+    table(&planets, "Planets");
+
+    // Iterator adapters: filter, map, collect.
+    let with_moons: Vec<&str> = planets.iter().filter(|p| p.moons > 1).map(|p| p.name).collect();
+    println!("Planets with more than one moon: {:?}", with_moons);
+
+    // Fold the whole list into one number.
+    let total_moons: u32 = planets.iter().map(|p| p.moons).sum();
+    dump!(total_moons);
+
+    // A map is a two-column table.
+    let gravity: BTreeMap<&str, f64> = planets.iter().map(|p| (p.name, p.gravity)).collect();
+    table(&gravity, "Surface gravity (m/s²)");
+}
+"""
         },
         new()
         {
@@ -548,6 +613,7 @@ Console.WriteLine(""Live HTML5 canvas rendering in NativeWebView via Display.Htm
         new()
         {
             Id = "sql_database_starter",
+            LanguageId = Languages.LanguageIds.Sql,
             Title = "SQLite Database & Schema Starter",
             Category = "Database",
             Kind = WorkspaceItemKind.Script,

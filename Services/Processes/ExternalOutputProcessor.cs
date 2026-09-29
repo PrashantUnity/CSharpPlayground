@@ -15,14 +15,23 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 public sealed class ExternalOutputProcessor
 {
     public const string DisplayMarker = "__FRY_DISPLAY__";
+
+    /// <summary>
+    /// <c>__FRY_SHARE__ {"name":"nums","json":"[1,2,3]"}</c>: a value the program offers to other kernels' cells (<c>#!share</c>),
+    /// as JSON text. It is handed to <c>onShare</c> and isn't shown as output.
+    /// </summary>
+    public const string ShareMarker = "__FRY_SHARE__";
+
     private readonly StringBuilder _partialLine = new();
     private readonly Action<string> _onConsoleText;
     private readonly Action<RichCellOutput> _onRichOutput;
+    private readonly Action<string, string>? _onShare;
 
-    public ExternalOutputProcessor(Action<string> onConsoleText, Action<RichCellOutput> onRichOutput)
+    public ExternalOutputProcessor(Action<string> onConsoleText, Action<RichCellOutput> onRichOutput, Action<string, string>? onShare = null)
     {
         _onConsoleText = onConsoleText ?? throw new ArgumentNullException(nameof(onConsoleText));
         _onRichOutput = onRichOutput ?? throw new ArgumentNullException(nameof(onRichOutput));
+        _onShare = onShare;
     }
 
     /// <summary>Processes a stream chunk, forwarding terminal output in real time and buffering protocol lines.</summary>
@@ -82,15 +91,10 @@ public sealed class ExternalOutputProcessor
         var first = sb[0];
         if (first != '_' && first != '{') return false;
 
-        // Check if prefix of DisplayMarker ("__FRY_DISPLAY__")
+        // Check if prefix of DisplayMarker ("__FRY_DISPLAY__") or ShareMarker ("__FRY_SHARE__")
         if (first == '_')
         {
-            var len = Math.Min(sb.Length, DisplayMarker.Length);
-            for (var i = 0; i < len; i++)
-            {
-                if (sb[i] != DisplayMarker[i]) return false;
-            }
-            return true;
+            return IsPrefixOf(sb, DisplayMarker) || IsPrefixOf(sb, ShareMarker);
         }
 
         // Check if prefix of {"type":"display"
@@ -103,12 +107,29 @@ public sealed class ExternalOutputProcessor
         return true;
     }
 
+    private static bool IsPrefixOf(StringBuilder sb, string marker)
+    {
+        var len = Math.Min(sb.Length, marker.Length);
+        for (var i = 0; i < len; i++)
+        {
+            if (sb[i] != marker[i]) return false;
+        }
+
+        return true;
+    }
+
     private void ProcessLine(string line, bool isTrailing = false)
     {
         var trimmed = line.Trim();
 
         // 0. Filter out launcher runtime diagnostic banners that are not part of user code
         if (IsRuntimeNoise(trimmed))
+        {
+            return;
+        }
+
+        // 0b. A value the program shares with other kernels
+        if (_onShare != null && trimmed.StartsWith(ShareMarker, StringComparison.Ordinal) && TryHandleSharePayload(trimmed[ShareMarker.Length..].Trim()))
         {
             return;
         }
@@ -135,6 +156,29 @@ public sealed class ExternalOutputProcessor
 
         // Regular console text
         _onConsoleText(isTrailing ? line : line + "\n");
+    }
+
+    private bool TryHandleSharePayload(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object &&
+                root.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String &&
+                root.TryGetProperty("json", out var value) && value.ValueKind == JsonValueKind.String &&
+                !string.IsNullOrEmpty(name.GetString()))
+            {
+                _onShare!(name.GetString()!, value.GetString()!);
+                return true;
+            }
+        }
+        catch (JsonException)
+        {
+            // Not a share message: it's ordinary output.
+        }
+
+        return false;
     }
 
     private bool TryHandleDisplayPayload(string json)
@@ -167,6 +211,13 @@ public sealed class ExternalOutputProcessor
             if (mapped.Rich != null)
             {
                 _onRichOutput(mapped.Rich);
+                return true;
+            }
+
+            // A plain-text or Markdown display has no rich form: it is text for the console, not a protocol line to show as it is.
+            if (mapped.Text != null)
+            {
+                _onConsoleText(mapped.Text);
                 return true;
             }
         }

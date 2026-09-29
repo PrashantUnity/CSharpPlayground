@@ -7,7 +7,7 @@ The studio doesn't know languages by name. A language is one module (a class der
 - notebook cells, their kernels, `#!share` and package lines;
 - the Hub's STUDIO ENVIRONMENT row.
 
-Python (`Services/Languages/Python/`) is the example to copy. `Tests/TestSupport/FakeLanguage.cs` is the smallest complete module: a language that exists only in tests, which prove the studio works with a language it has never heard of.
+Python (`Services/Languages/Python/`) is the example to copy for an interpreted language. Rust (`Services/Languages/Rust/`) is the most complete compiled one: a Cargo package per file, crates from comments, static completion and hover, a `lldb-dap` debugger, an in-process notebook kernel and a Blind 75 adapter. `Tests/TestSupport/FakeLanguage.cs` is the smallest complete module: a language that exists only in tests, which prove the studio works with a language it has never heard of.
 
 ## 1. The definition
 
@@ -31,7 +31,7 @@ Capabilities, and what each turns on:
 
 | Flag | Turns on |
 |---|---|
-| `Completion`, `QuickInfo`, `LiveDiagnostics`, `Formatting` | The C# editor helpers. Leave them off unless the language supplies its own through `EditorAssistants` |
+| `Completion`, `QuickInfo`, `LiveDiagnostics`, `Formatting` | Say what the language's editor helpers provide. A language that supplies its own `EditorAssistants` (completion and hover controllers) makes the Roslyn ones stand aside for its files (`LanguageDefinitionExtensions.UsesRoslynHelper`), so a `.rs` file never gets a C# popup on top of Rust's. Without `EditorAssistants` the flags turn on the C# helpers, which is right only for C# |
 | `Debugging`, `Breakpoints` | F5 debugging, the breakpoint gutter and F9. Without them F5 runs the file |
 | `TestCases`, `Templates`, `ExecutionModes` | The Test Cases panel, the template gallery and C#'s run modes |
 | `StandardInput` | The Terminal's input row while a file runs |
@@ -66,7 +66,12 @@ Write a kernel program that speaks the [Fry kernel protocol](kernel-protocol.md)
 - **Embedding:** add the program's files to `CSharpEditorPlugin.csproj` as `EmbeddedResource`s with a `LogicalName` prefix, as `PythonKernel.%(Filename)%(Extension)` does. Your `IKernelLauncher` extracts them with `EmbeddedKernelFiles.Extract` (once per content hash).
 - **Launching:** the launcher resolves the toolchain for `context.WorkingDirectory()` (the notebook's folder) and returns the command. It throws `KernelUnavailableException` with the guidance when the toolchain is missing.
 - **What the notebook does with it:** each notebook tab's `NotebookKernelRouter` creates one kernel per language the first time a cell of it runs, and ends it when the tab closes. A `ProtocolKernel` restarts its program after a crash, with a note that the variables are gone. Cells route to it by their language or a `#!<id>` first line. Output, rich output (MIME bundles), `input()`, Stop and Variables need nothing more.
-- **In-process kernels:** a kernel can live in the studio instead, as C#'s does. Implement `INotebookKernel` directly.
+- **In-process kernels:** a kernel can live in the studio instead, as C#'s does. Implement `INotebookKernel` directly. The compiled languages (Go, C++, F#, SQL, Rust) do it by building each cell into a small program and running it, replaying the items earlier cells defined; Rust's (`RustNotebookKernel`) is the model:
+  - A cell's process is waited for with `IManagedProcess.WaitForExitOrKillAsync(ct)`, which kills it where the wait is cancelled. Don't register `Kill` on the token and then `WaitAsync(ct)`: the cancelled wait's continuation can dispose the registration before it runs, and the process keeps going.
+  - No time limit of the kernel's own: how long a cell may take is the studio's `ExecutionTimeoutSeconds` setting, which arrives as the cancellation token.
+  - Close the program's standard input (`CloseInput()`), so a cell that reads input sees the end of it instead of waiting for good.
+  - Report a build failure once, after the last attempt (a kernel may try a cell two ways); put compiler messages on the cell's own lines, not the generated program's.
+  - Text the program prints as a `text/plain` display (`__FRY_DISPLAY__`) is console text; `ExternalOutputProcessor` also reads `__FRY_SHARE__` lines, a value a cell offers to other kernels.
 
 ## 5. Packages (`IPackageManager`)
 
@@ -75,8 +80,22 @@ Write a kernel program that speaks the [Fry kernel protocol](kernel-protocol.md)
   - `SwitchedToolchain` when it created a new environment to install into (as pip does for an externally managed Python);
   - `AddedSearchPath` when a running kernel should look there (`ISearchPathKernel`).
 - **`InstallCommand(package)` and `PackageForMissingDependency(name)`:** power the "Install …" buttons. Python's `cv2` maps to `opencv-python`, for example.
+- **A dependency that belongs to a file:** when there is no global install (Cargo's crates, Java's `//DEPS`), return `PackageCommandResult.DirectiveToInsert` (e.g. `// #crate: rand = "0.8"`); the studio adds that line to the open file and says so.
 
-## 6. Register it
+## 6. Debugging (`IDebuggerProvider`)
+
+Most debuggers speak the Debug Adapter Protocol; `DapAdapterManager` starts one and drives it (`Services/Debugging/Dap/`). Check the adapter's real behaviour with the real adapter before trusting its documentation or your memory of it; each of these was learned that way:
+
+- **How it is reached.** `LaunchStdioAdapterAsync` for adapters that talk over their standard streams (`lldb-dap`, `netcoredbg`); `LaunchSocketAdapterAsync` for TCP servers (`debugpy`, and Delve, whose `dlv dap` has no stdio mode at all: it prints its port and waits, so start it with `--listen=127.0.0.1:<port>`). `LaunchBridgeAdapterAsync` is for an adapter the studio implements itself (the Java bridge over `jdb`).
+- **The order.** Pass `DapHandshake.Standard` unless the adapter was written for the old order: `initialize`, then `launch` (not awaited: `lldb-dap` and `debugpy` answer it only after `configurationDone`), then the adapter's `initialized` event, `setBreakpoints`, `configurationDone`. Delve refuses `setBreakpoints` and `configurationDone` until it has been asked to launch.
+- **Check every answer.** Throw `DapException` when `launch` or `attach` says `success: false`. The handshake already reports a refused `configurationDone`, a `setBreakpoints` the adapter refused (shown in the Output) and an adapter that never answers `initialize` (a timeout) or dies while the session starts (its exit code).
+- **Requests carry no `null`.** An optional field is left out; `netcoredbg` refuses `"condition": null` and then sets no breakpoint at all, so the program runs straight through.
+- **Name the source as the debug info does.** Breakpoints match the document name in the debug info (`script.cs` for a C# script, from its `#line`), not the editor's title; `DapDebugSession.SourcePathOverride` says so.
+- **Where the program's output goes.** Some adapters send it as `output` events (`netcoredbg`, `lldb-dap`), some through their own standard output (Delve), which arrives as live output. Some report exit code 0 whatever it was (`netcoredbg` 3.2).
+- **Find the adapter for the user.** Search the folders it is installed in (`LldbDapLocator`, `~/.netcoredbg`), and when it is missing say where to get it; don't recommend a package manager that doesn't have it.
+- **See the conversation.** Set `DapClient.Trace` (internal; tests can) to see every message that crosses a connection when a session misbehaves.
+
+## 7. Register it
 
 Add one line to the `StudioLanguageServices` constructor (`Services/Languages/StudioLanguageServices.cs`):
 
@@ -86,10 +105,11 @@ Registry.Register(new PythonLanguage(this));
 
 `LanguageRegistry.Register` refuses an id, alias or extension that's already taken.
 
-## 7. Test it
+## 8. Test it
 
 - **Fakes first:** unit tests with fakes, as `PythonToolchainProviderTests` (fake machine), `PipPackageManagerTests` and `PythonTracebackParserTests` do.
-- **Real toolchain:** tests in the `RealPython` collection style. Write a `[<Name>Fact]` attribute that skips when the toolchain is missing unless a `FRY_REQUIRE_<NAME>=1` variable says it must be there, and set that toolchain up in CI (`.github/workflows/release.yml`, test job).
+- **Real toolchain:** tests in the `RealPython` collection style. Write a `[<Name>Fact]` attribute that skips when the toolchain is missing unless a `FRY_REQUIRE_<NAME>=1` variable says it must be there, and set that toolchain up in CI (`.github/workflows/release.yml`, test job). A debugger test does the same with its adapter (`FRY_REQUIRE_DELVE`, `FRY_REQUIRE_NETCOREDBG`), and a stand-in adapter (`MockDapServer`, `FakeDapAdapter`) pins the order of the requests without one.
+- **Prove a fix with the real tool.** A stand-in only says what you believe the tool does. Run the real one, and keep the test that failed before the fix.
 - **Temp folders only:** every test builds `new StudioLanguageServices(tempFolder)`, so it never reads or changes the user's choices or environments.
 - **Snapshots:** render the UI with `tools/UiSnapshots` (see [headless-ui-snapshots.md](headless-ui-snapshots.md)). `studio --file hello.<ext> --run` shows a run, and `notebook --python-demo` shows how a demo notebook is built.
 

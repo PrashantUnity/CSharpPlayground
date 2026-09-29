@@ -50,7 +50,8 @@ public static class NotebookCellDirectives
             var trimmed = lines[i].Trim();
             if (trimmed.Length == 0) continue;
 
-            if (trimmed.StartsWith("#!", StringComparison.Ordinal))
+            // "#![" is Rust's inner attribute (#![allow(unused)]): code, which ends the directive lines like any other.
+            if (trimmed.StartsWith("#!", StringComparison.Ordinal) && !trimmed.StartsWith("#![", StringComparison.Ordinal))
             {
                 if (trimmed.StartsWith("#!/", StringComparison.Ordinal)) continue; // a shebang line is only a comment
 
@@ -116,7 +117,7 @@ public static class NotebookCellDirectives
             start = end + 1;
             if (trimmed.IsEmpty) continue;
 
-            if (trimmed.StartsWith("#!", StringComparison.Ordinal))
+            if (trimmed.StartsWith("#!", StringComparison.Ordinal) && !trimmed.StartsWith("#![", StringComparison.Ordinal))
             {
                 if (trimmed.StartsWith("#!/", StringComparison.Ordinal)) continue;
                 var word = FirstWord(trimmed[2..].Trim().ToString());

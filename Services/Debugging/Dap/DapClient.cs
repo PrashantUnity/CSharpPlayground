@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
@@ -18,7 +19,10 @@ public sealed class DapClient : IAsyncDisposable
     private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(false);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+
+        // An optional field is left out of a request, never sent as null: the specification has no null, and some adapters refuse it.
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
     private readonly Stream _inputStream;
@@ -27,9 +31,21 @@ public sealed class DapClient : IAsyncDisposable
     private readonly ConcurrentDictionary<int, TaskCompletionSource<DapResponse>> _pendingRequests = new();
     private readonly CancellationTokenSource _cts = new();
 
+    // Events are handled one at a time, in the order the adapter sent them: "exited" before "terminated", output lines in
+    // order. Handling one may wait for a response (stopped asks for the stack), so it can't run on the loop that reads
+    // responses; a queue with its own consumer keeps both true.
+    private readonly Channel<DapEvent> _events = Channel.CreateUnbounded<DapEvent>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+
     private Task? _readLoopTask;
+    private Task? _eventLoopTask;
     private int _sequence;
     private int _isDisposed;
+
+    /// <summary>
+    /// Told every message that crosses a connection, as <c>-&gt; json</c> (sent) or <c>&lt;- json</c> (received): for finding out what an adapter
+    /// really says when a session doesn't behave. Nothing is set in normal use.
+    /// </summary>
+    internal static volatile Action<string>? Trace;
 
     public event Func<DapEvent, Task>? EventReceived;
     public event Action<Exception>? ErrorOccurred;
@@ -44,6 +60,7 @@ public sealed class DapClient : IAsyncDisposable
     public void Start()
     {
         if (_readLoopTask != null) return;
+        _eventLoopTask = Task.Run(EventLoopAsync);
         _readLoopTask = Task.Run(ReadLoopAsync);
     }
 
@@ -74,6 +91,7 @@ public sealed class DapClient : IAsyncDisposable
         try
         {
             var json = JsonSerializer.Serialize(request, JsonOptions);
+            Trace?.Invoke("-> " + json);
             var bodyBytes = Utf8WithoutBom.GetBytes(json);
             var header = $"Content-Length: {bodyBytes.Length}\r\n\r\n";
             var headerBytes = Encoding.ASCII.GetBytes(header);
@@ -187,6 +205,33 @@ public sealed class DapClient : IAsyncDisposable
         finally
         {
             CancelAllPending();
+
+            // The event loop reports the disconnect once it has handled every event that arrived before it.
+            _events.Writer.TryComplete();
+        }
+    }
+
+    private async Task EventLoopAsync()
+    {
+        try
+        {
+            await foreach (var dapEvent in _events.Reader.ReadAllAsync().ConfigureAwait(false))
+            {
+                var handler = EventReceived;
+                if (handler == null) continue;
+
+                try
+                {
+                    await handler.Invoke(dapEvent).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    ErrorOccurred?.Invoke(ex);
+                }
+            }
+        }
+        finally
+        {
             Disconnected?.Invoke();
         }
     }
@@ -195,6 +240,7 @@ public sealed class DapClient : IAsyncDisposable
     {
         try
         {
+            Trace?.Invoke("<- " + Utf8WithoutBom.GetString(jsonBytes));
             using var doc = JsonDocument.Parse(jsonBytes);
             var root = doc.RootElement;
             if (!root.TryGetProperty("type", out var typeProp)) return;
@@ -211,20 +257,7 @@ public sealed class DapClient : IAsyncDisposable
             else if (string.Equals(type, "event", StringComparison.OrdinalIgnoreCase))
             {
                 var dapEvent = JsonSerializer.Deserialize<DapEvent>(jsonBytes, JsonOptions);
-                if (dapEvent != null && EventReceived != null)
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await EventReceived.Invoke(dapEvent).ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            ErrorOccurred?.Invoke(ex);
-                        }
-                    });
-                }
+                if (dapEvent != null) _events.Writer.TryWrite(dapEvent);
             }
         }
         catch (Exception ex)
@@ -292,11 +325,12 @@ public sealed class DapClient : IAsyncDisposable
         _cts.Cancel();
         CancelAllPending();
 
-        if (_readLoopTask != null)
+        foreach (var loop in new[] { _readLoopTask, _eventLoopTask })
         {
+            if (loop == null) continue;
             try
             {
-                await _readLoopTask.ConfigureAwait(false);
+                await loop.ConfigureAwait(false);
             }
             catch
             {

@@ -211,7 +211,8 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         script.Code = "System.Threading.Tasks.Task.Delay(4000).Wait();\nConsole.WriteLine(\"FROM_STUCK_LATE\");";
         await _testStorage.SaveScriptAsync(script);
 
-        var studio = CreateStudio(script, getTimeoutSeconds: () => 1);
+        var timeoutSeconds = 1;
+        var studio = CreateStudio(script, getTimeoutSeconds: () => timeoutSeconds);
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
         await studio.RunCodeCommand.ExecuteAsync(null);
@@ -228,6 +229,9 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         await _testStorage.SaveScriptAsync(second);
         await studio.UpdateActiveScriptAsync(second);
 
+        // Only the first run is meant to time out. The second compiles a script from cold, which on a busy machine can take
+        // longer than a second; it must not be cut short, or "FROM_B" never prints and the test fails for the wrong reason.
+        timeoutSeconds = 60;
         var secondSw = System.Diagnostics.Stopwatch.StartNew();
         await studio.RunCodeCommand.ExecuteAsync(null);
         secondSw.Stop();

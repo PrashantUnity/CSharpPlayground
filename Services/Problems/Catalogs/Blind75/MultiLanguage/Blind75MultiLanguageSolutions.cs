@@ -7,7 +7,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75.MultiLanguage;
 
 /// <summary>
-/// Central registry and enricher of multi-language solution implementations (Python, JavaScript, Java)
+/// Central registry and enricher of multi-language solution implementations (Python, JavaScript, Java, Rust)
 /// for Blind 75 curriculum problems.
 /// </summary>
 public static partial class Blind75MultiLanguageSolutions
@@ -20,11 +20,14 @@ public static partial class Blind75MultiLanguageSolutions
         RegisterTwoPointersAndSlidingWindow();
         RegisterLinkedListsAndTrees();
         RegisterDynamicProgrammingAndIntervals();
+        RegisterRust();
     }
 
+    // A problem can have solutions registered from several files (Python, JavaScript and Java in one, Rust in another): each
+    // registration adds to what the problem already has, and none replaces another.
     private static void Register(int problemNumber, Action<BlindProblemItem> enrichAction)
     {
-        _enrichers[problemNumber] = enrichAction;
+        _enrichers.AddOrUpdate(problemNumber, enrichAction, (_, existing) => existing + enrichAction);
     }
 
     /// <summary>
@@ -43,4 +46,5 @@ public static partial class Blind75MultiLanguageSolutions
     static partial void RegisterTwoPointersAndSlidingWindow();
     static partial void RegisterLinkedListsAndTrees();
     static partial void RegisterDynamicProgrammingAndIntervals();
+    static partial void RegisterRust();
 }

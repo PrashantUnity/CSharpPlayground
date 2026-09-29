@@ -51,6 +51,7 @@ internal static class Usage
               --sql-demo             a notebook of SQL cells (CREATE TABLE, SELECT, aggregates, #!share)
               --java-share           a test notebook attempting cross-language sharing with Java
               --cpp-demo             a notebook of C++ cells (standard library, vector, display tables)
+              --rust-demo            a notebook of Rust cells (items kept between cells, a shown value, a table, #!share)
               --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,
                                      input()) instead of a problem's
               --python <path>        the Python interpreter Python cells run with (default: the one the studio finds)
@@ -75,7 +76,7 @@ internal static class Usage
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
           settings               The Settings and Environment Setup page.
-              --language <id>        select a language setting item (csharp, python, javascript, java, cpp)
+              --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows

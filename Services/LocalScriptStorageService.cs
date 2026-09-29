@@ -369,6 +369,13 @@ public partial class LocalScriptStorageService : IScriptStorageService
         var template = templates.FirstOrDefault(t => t.Id == templateId && t.Kind == WorkspaceItemKind.Script)
                        ?? templates.FirstOrDefault(t => t.Kind == WorkspaceItemKind.Script);
 
+        // A template of another language (Rust) is a plain source file of that language, not a C# document.
+        if (template?.LanguageId is { } languageId &&
+            await CreateNewSourceFileAsync(languageId, template.Id, folderPath, template.InitialCode) is { } sourceFile)
+        {
+            return sourceFile;
+        }
+
         var script = new ScriptDocumentItem
         {
             Id = Guid.NewGuid().ToString("N"),

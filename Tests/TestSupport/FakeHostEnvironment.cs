@@ -28,6 +28,8 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     private readonly Dictionary<string, FakeGo> _gos;
     private readonly Dictionary<string, FakeFSharp> _fsharps;
     private readonly Dictionary<string, FakeSql> _sqls;
+    private readonly Dictionary<string, FakeRust> _rusts;
+    private readonly Dictionary<string, FakeRust> _rustcs;
 
     public FakeHostEnvironment(FakeOs os = FakeOs.MacOS)
     {
@@ -42,6 +44,8 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         _gos = new Dictionary<string, FakeGo>(comparer);
         _fsharps = new Dictionary<string, FakeFSharp>(comparer);
         _sqls = new Dictionary<string, FakeSql>(comparer);
+        _rusts = new Dictionary<string, FakeRust>(comparer);
+        _rustcs = new Dictionary<string, FakeRust>(comparer);
         HomeDirectory = os == FakeOs.Windows ? @"C:\Users\test" : os == FakeOs.MacOS ? "/Users/test" : "/home/test";
     }
 
@@ -157,6 +161,29 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         return sql;
     }
 
+    /// <summary>
+    /// Makes <paramref name="cargoPath"/> a Rust toolchain: cargo answers <c>--version</c>, and a sibling rustc (unless
+    /// <paramref name="hasRustc"/> is false) answers <c>-vV</c>. <paramref name="cargoError"/> makes cargo fail the way a
+    /// rustup proxy does when no toolchain is installed.
+    /// </summary>
+    public FakeRust AddRust(string cargoPath, string version, string channel = "stable", string host = "aarch64-apple-darwin",
+        bool hasRustc = true, int exitCode = 0, string? cargoError = null)
+    {
+        AddFile(cargoPath);
+        var bin = ParentOf(Normalize(cargoPath));
+        var rustcName = IsWindows ? "rustc.exe" : "rustc";
+        var rustcPath = !string.IsNullOrEmpty(bin) ? $"{bin}/{rustcName}" : rustcName;
+        var rust = new FakeRust(version, cargoPath, rustcPath, channel, host) { ExitCode = exitCode, CargoError = cargoError };
+        _rusts[Normalize(cargoPath)] = rust;
+        if (hasRustc)
+        {
+            AddFile(rustcPath);
+            _rustcs[Normalize(rustcPath)] = rust;
+        }
+
+        return rust;
+    }
+
     /// <summary>A path that exists but isn't a working Node.js runtime.</summary>
     public void AddBrokenNode(string path, int exitCode = 1)
     {
@@ -216,6 +243,16 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && (arguments[0] == "--version" || arguments[0] == "/?") && _cpps.TryGetValue(Normalize(fileName), out var cpp))
         {
             return Task.FromResult(cpp.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && arguments[0] == "--version" && _rusts.TryGetValue(Normalize(fileName), out var rust))
+        {
+            return Task.FromResult(rust.CargoProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && arguments[0] == "-vV" && _rustcs.TryGetValue(Normalize(fileName), out var rustc))
+        {
+            return Task.FromResult(rustc.RustcProbeAnswer());
         }
 
         if (arguments.Count > 0 && arguments[0] == "version" && _gos.TryGetValue(Normalize(fileName), out var go))
@@ -344,5 +381,33 @@ public sealed record FakeSql(string Version, string Executable)
     {
         if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working sqlite3", false);
         return new CommandResult(0, $"{Version} 2025-06-12 13:14:41 (64-bit)\n", string.Empty, false);
+    }
+}
+
+public sealed record FakeRust(string Version, string Cargo, string Rustc, string Channel = "stable", string Host = "aarch64-apple-darwin")
+{
+    public int ExitCode { get; init; }
+
+    /// <summary>What cargo prints when it can't run at all (e.g. a rustup proxy with no default toolchain).</summary>
+    public string? CargoError { get; init; }
+
+    private string Full => Channel == "stable" ? Version : $"{Version}-{Channel}";
+
+    // The same compiler always has the same commit, so a rustup proxy and the toolchain folder it forwards to look alike.
+    private string CommitHash => (string.Concat((Version + Channel).Select(c => (c % 16).ToString("x"))) + new string('a', 40))[..40];
+
+    public CommandResult CargoProbeAnswer()
+    {
+        if (CargoError != null) return new CommandResult(1, string.Empty, CargoError, false);
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working cargo", false);
+        return new CommandResult(0, $"cargo {Full} (85eff7c80 2026-01-15)\n", string.Empty, false);
+    }
+
+    public CommandResult RustcProbeAnswer()
+    {
+        if (ExitCode != 0) return new CommandResult(ExitCode, string.Empty, "not a working rustc", false);
+        return new CommandResult(0,
+            $"rustc {Full} (4a4ef493e 2026-03-02)\nbinary: rustc\ncommit-hash: {CommitHash}\ncommit-date: 2026-03-02\nhost: {Host}\nrelease: {Full}\nLLVM version: 21.1.8\n",
+            string.Empty, false);
     }
 }

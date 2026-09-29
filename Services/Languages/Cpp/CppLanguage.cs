@@ -37,7 +37,7 @@ public sealed class CppLanguage : LanguageDefinition
 
     public override string Id => LanguageIds.Cpp;
     public override string DisplayName => "C++";
-    public override JupyterLanguageInfo Jupyter { get; } = new("cpp", "C++", "c++", "text/x-c++src", ".cpp", "text/x-c++src");
+    public override JupyterLanguageInfo Jupyter { get; } = new("cpp", "C++", "c++", "c++", ".cpp", "text/x-c++src");
     public override string ShortName => "CPP";
     public override IReadOnlyList<string> Aliases => CppAliases;
     public override IReadOnlyList<string> FileExtensions => CppExtensions;

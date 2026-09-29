@@ -33,10 +33,77 @@ public sealed class DapDebugSession : IDebugSession
     public int PausedLine { get; private set; } = -1;
     public string? PausedFilePath { get; private set; }
 
-    public event Action<DebugPausedEventArgs>? Paused;
+    // The session starts listening before the program does, so it can pause, print or finish before whoever started it has
+    // subscribed. A new subscriber is told what it missed: where the program is paused, that it ended, and what it printed.
+    private Action<DebugPausedEventArgs>? _paused;
+    private Action<string>? _outputReceived;
+    private Action<DebugTerminatedEventArgs>? _terminated;
+    private DebugPausedEventArgs? _lastPaused;
+    private DebugTerminatedEventArgs? _terminatedArgs;
+    private readonly System.Text.StringBuilder _earlyOutput = new();
+    private const int MaxEarlyOutput = 64 * 1024;
+
+    public event Action<DebugPausedEventArgs>? Paused
+    {
+        add
+        {
+            DebugPausedEventArgs? missed;
+            lock (_stateLock)
+            {
+                _paused += value;
+                missed = State == DebugSessionState.Paused ? _lastPaused : null;
+            }
+
+            if (missed != null) value?.Invoke(missed);
+        }
+        remove
+        {
+            lock (_stateLock) _paused -= value;
+        }
+    }
+
     public event Action? Resumed;
-    public event Action<string>? OutputReceived;
-    public event Action<DebugTerminatedEventArgs>? Terminated;
+
+    public event Action<string>? OutputReceived
+    {
+        add
+        {
+            string? missed;
+            lock (_stateLock)
+            {
+                var first = _outputReceived == null;
+                _outputReceived += value;
+                missed = first && _earlyOutput.Length > 0 ? _earlyOutput.ToString() : null;
+                if (first) _earlyOutput.Clear();
+            }
+
+            if (missed != null) value?.Invoke(missed);
+        }
+        remove
+        {
+            lock (_stateLock) _outputReceived -= value;
+        }
+    }
+
+    public event Action<DebugTerminatedEventArgs>? Terminated
+    {
+        add
+        {
+            DebugTerminatedEventArgs? missed;
+            lock (_stateLock)
+            {
+                _terminated += value;
+                missed = _terminatedArgs;
+            }
+
+            if (missed != null) value?.Invoke(missed);
+        }
+        remove
+        {
+            lock (_stateLock) _terminated -= value;
+        }
+    }
+
     public event Action<int, bool>? BreakpointVerifiedChanged;
 
     public DapDebugSession(string languageId, DapClient client, IManagedProcess? process = null)
@@ -49,9 +116,26 @@ public sealed class DapDebugSession : IDebugSession
         _client.Disconnected += HandleDapDisconnected;
     }
 
+    /// <summary>
+    /// The name the adapter knows the program's one source file by, when the editor calls it something else (a script's debug build
+    /// names its source <c>script.cs</c> whatever the document is titled). Breakpoints set while the session runs are sent under it.
+    /// </summary>
+    public string? SourcePathOverride { get; set; }
+
     public async Task SetBreakpointsAsync(string filePath, IReadOnlyList<BreakpointItem> breakpoints, CancellationToken ct = default)
     {
-        var enabledBreakpoints = breakpoints
+        var response = await _client.SendRequestAsync("setBreakpoints", BreakpointsRequest(SourcePathOverride ?? filePath, breakpoints), ct).ConfigureAwait(false);
+        ApplyBreakpointResults(breakpoints, response, (line, verified) => BreakpointVerifiedChanged?.Invoke(line, verified));
+        if (!response.Success) EmitOutput($"⚠️ The debugger could not set the breakpoints: {response.Message}\n");
+    }
+
+    /// <summary>
+    /// The setBreakpoints request for one file, the same when a session starts and while it runs. A field without a value is left out
+    /// rather than sent as null: netcoredbg refuses a null condition, and then sets no breakpoint at all.
+    /// </summary>
+    internal static object BreakpointsRequest(string filePath, IReadOnlyList<BreakpointItem> breakpoints)
+    {
+        var enabled = breakpoints
             .Where(b => b.IsEnabled)
             .Select(b => new DapSourceBreakpoint
             {
@@ -60,40 +144,43 @@ public sealed class DapDebugSession : IDebugSession
             })
             .ToList();
 
-        var args = new
+        return new
         {
             source = new DapSource
             {
                 Path = filePath,
                 Name = Path.GetFileName(filePath)
             },
-            breakpoints = enabledBreakpoints,
-            lines = enabledBreakpoints.Select(b => b.Line).ToList()
+            breakpoints = enabled,
+            lines = enabled.Select(b => b.Line).ToList()
         };
+    }
 
-        var response = await _client.SendRequestAsync("setBreakpoints", args, ct).ConfigureAwait(false);
-        if (response.Body.HasValue &&
-            response.Body.Value.TryGetProperty("breakpoints", out var bpArray) &&
-            bpArray.ValueKind == JsonValueKind.Array)
+    /// <summary>
+    /// Marks each enabled breakpoint verified or not from the adapter's answer, which lists them in the order they were asked for;
+    /// an adapter that refused the request has bound none. An answer that says nothing about them leaves them as they are.
+    /// </summary>
+    internal static void ApplyBreakpointResults(IReadOnlyList<BreakpointItem> breakpoints, DapResponse response, Action<int, bool>? verifiedChanged = null)
+    {
+        List<DapBreakpoint>? results = null;
+        if (response.Success)
         {
-            var dapBps = bpArray.Deserialize<List<DapBreakpoint>>(JsonOptions);
-            if (dapBps != null)
+            if (!response.Body.HasValue ||
+                !response.Body.Value.TryGetProperty("breakpoints", out var array) ||
+                array.ValueKind != JsonValueKind.Array)
             {
-                var enabledBps = breakpoints.Where(b => b.IsEnabled).ToList();
-                for (int i = 0; i < enabledBps.Count; i++)
-                {
-                    if (i < dapBps.Count)
-                    {
-                        enabledBps[i].IsVerified = dapBps[i].Verified;
-                        BreakpointVerifiedChanged?.Invoke(enabledBps[i].LineNumber, dapBps[i].Verified);
-                    }
-                    else
-                    {
-                        enabledBps[i].IsVerified = false;
-                        BreakpointVerifiedChanged?.Invoke(enabledBps[i].LineNumber, false);
-                    }
-                }
+                return;
             }
+
+            results = array.Deserialize<List<DapBreakpoint>>(JsonOptions);
+        }
+
+        var enabled = breakpoints.Where(b => b.IsEnabled).ToList();
+        for (int i = 0; i < enabled.Count; i++)
+        {
+            var verified = results != null && i < results.Count && results[i].Verified;
+            enabled[i].IsVerified = verified;
+            verifiedChanged?.Invoke(enabled[i].LineNumber, verified);
         }
     }
 
@@ -385,12 +472,20 @@ public sealed class DapDebugSession : IDebugSession
             case "breakpoint":
                 HandleBreakpointEvent(evt.Body);
                 break;
-            case "terminated":
             case "exited":
+                SetTerminatedState(ReadExitCode(evt.Body) ?? 0, "Process exited.", wasCancelled: false);
+                break;
+            case "terminated":
                 SetTerminatedState(0, "Process terminated.", wasCancelled: false);
                 break;
         }
     }
+
+    // The "exited" event says how the program ended; "terminated" only says debugging is over, and usually follows it.
+    private static int? ReadExitCode(JsonElement? body) =>
+        body is { ValueKind: JsonValueKind.Object } element && element.TryGetProperty("exitCode", out var code) && code.TryGetInt32(out var value)
+            ? value
+            : null;
 
     private void HandleBreakpointEvent(JsonElement? body)
     {
@@ -424,6 +519,7 @@ public sealed class DapDebugSession : IDebugSession
         lock (_stateLock)
         {
             State = DebugSessionState.Paused;
+            _lastPaused = null;
         }
 
         var callStack = await GetCallStackAsync().ConfigureAwait(false);
@@ -436,13 +532,24 @@ public sealed class DapDebugSession : IDebugSession
 
         var locals = await GetVariablesAsync(topFrame?.FrameIndex ?? 0).ConfigureAwait(false);
 
-        Paused?.Invoke(new DebugPausedEventArgs(
+        var args = new DebugPausedEventArgs(
             PausedLine,
             PausedFilePath,
             reason,
             threadId,
             callStack,
-            locals));
+            locals);
+
+        Action<DebugPausedEventArgs>? handlers;
+        lock (_stateLock)
+        {
+            // The program may have been resumed or ended while the stack and variables were being read.
+            if (State != DebugSessionState.Paused) return;
+            _lastPaused = args;
+            handlers = _paused;
+        }
+
+        handlers?.Invoke(args);
     }
 
     private void HandleOutputEvent(JsonElement? body)
@@ -450,34 +557,58 @@ public sealed class DapDebugSession : IDebugSession
         if (body.HasValue)
         {
             var output = body.Value.Deserialize<DapOutputEventBody>(JsonOptions);
-            if (output != null && !string.IsNullOrEmpty(output.Output))
+            if (output != null && !string.IsNullOrEmpty(output.Output)) EmitOutput(output.Output);
+        }
+    }
+
+    private void EmitOutput(string text)
+    {
+        Action<string>? handlers;
+        lock (_stateLock)
+        {
+            handlers = _outputReceived;
+            if (handlers == null)
             {
-                OutputReceived?.Invoke(output.Output);
+                // Nobody is listening yet (a program that prints as it starts): keep it for the first listener.
+                if (_earlyOutput.Length < MaxEarlyOutput) _earlyOutput.Append(text);
+                return;
             }
         }
+
+        handlers(text);
     }
 
     private void SetRunningState()
     {
         lock (_stateLock)
         {
+            // "continue" is answered after the program may already have ended: an ended session doesn't run again.
+            if (State == DebugSessionState.Terminated) return;
             State = DebugSessionState.Running;
             PausedLine = -1;
             PausedFilePath = null;
+            _lastPaused = null;
         }
         Resumed?.Invoke();
     }
 
     private void SetTerminatedState(int? exitCode, string? message, bool wasCancelled)
     {
+        DebugTerminatedEventArgs args;
+        Action<DebugTerminatedEventArgs>? handlers;
         lock (_stateLock)
         {
             if (State == DebugSessionState.Terminated) return;
             State = DebugSessionState.Terminated;
             PausedLine = -1;
             PausedFilePath = null;
+            _lastPaused = null;
+            args = new DebugTerminatedEventArgs(exitCode, message, wasCancelled);
+            _terminatedArgs = args;
+            handlers = _terminated;
         }
-        Terminated?.Invoke(new DebugTerminatedEventArgs(exitCode, message, wasCancelled));
+
+        handlers?.Invoke(args);
     }
 
     private void HandleDapDisconnected()

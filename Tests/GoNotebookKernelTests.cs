@@ -83,4 +83,96 @@ public class GoNotebookKernelTests : IDisposable
         kernel.HardReset();
         Assert.False(kernel.IsSessionActive);
     }
+
+    private const string Go = "/opt/homebrew/bin/go";
+
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow + Patience;
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("The condition never became true.");
+            await Task.Delay(10);
+        }
+    }
+
+    [Fact]
+    public async Task StoppingACellWhileGoBuilds_KillsTheBuild_AndReportsACancellation()
+    {
+        FakeProcess? build = null;
+        var launcher = new FakeProcessLauncher
+        {
+            Behavior = async (spec, process) =>
+            {
+                build = process;
+                await Task.Delay(Timeout.Infinite, process.KilledToken);
+            }
+        };
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+        using var cts = new CancellationTokenSource();
+
+        var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "fmt.Println(1)" }, cts.Token);
+        await WaitUntil(() => build != null);
+        cts.Cancel();
+        var result = await running.WaitAsync(Patience);
+
+        Assert.True(result.WasCancelled);
+        Assert.True(build!.WasKilled);
+    }
+
+    [Fact]
+    public async Task StoppingACellWhileTheProgramRuns_KillsTheProgram_AndReportsACancellation()
+    {
+        FakeProcess? program = null;
+        var launcher = new FakeProcessLauncher
+        {
+            Behavior = async (spec, process) =>
+            {
+                if (spec.FileName == Go)
+                {
+                    process.Exit(0);
+                    return;
+                }
+
+                program = process;
+                await Task.Delay(Timeout.Infinite, process.KilledToken);
+            }
+        };
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+        using var cts = new CancellationTokenSource();
+
+        var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "for {}" }, cts.Token);
+        await WaitUntil(() => program != null);
+        cts.Cancel();
+        var result = await running.WaitAsync(Patience);
+
+        Assert.True(result.WasCancelled);
+        Assert.True(program!.WasKilled);
+    }
+
+    [Fact]
+    public async Task ACellThatRunsForALongTime_IsNotEndedByALimitOfTheKernelsOwn()
+    {
+        // The studio's own setting (ExecutionTimeoutSeconds, unlimited unless changed) decides how long a cell may run, through the
+        // cancellation token; a limit fixed inside the kernel would end a long computation with an error nobody asked for.
+        var finish = new TaskCompletionSource();
+        var launcher = new FakeProcessLauncher
+        {
+            Behavior = async (spec, process) =>
+            {
+                if (spec.FileName != Go) await finish.Task;
+                process.Exit(0);
+            }
+        };
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+
+        var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "fmt.Println(1)" }, CancellationToken.None);
+        await Task.Delay(200);
+        Assert.False(running.IsCompleted);
+        finish.SetResult();
+
+        Assert.True((await running.WaitAsync(Patience)).Success);
+    }
 }

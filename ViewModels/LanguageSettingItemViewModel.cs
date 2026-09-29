@@ -51,7 +51,7 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public string ToolchainPlaceholderText => IsCSharp
         ? "/usr/local/share/dotnet/dotnet"
         : IsCompiled
-            ? (Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
+            ? (Language.Id == LanguageIds.Rust ? "~/.cargo/bin/cargo" : Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
             : (Language.Id == LanguageIds.FSharp ? "/usr/local/share/dotnet/dotnet" :
                Language.Id == LanguageIds.Sql ? "/usr/bin/sqlite3" : "/path/to/executable");
 
@@ -329,6 +329,12 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                         "compilerVendor" => "Compiler Vendor",
                         "languageStandard" => "Language Standard",
                         "hostArchitecture" => "Host Architecture",
+                        "rustc" => "Rust Compiler (rustc)",
+                        "hostTriple" => "Host Target",
+                        "channel" => "Release Channel",
+                        "llvmVersion" => "LLVM Version",
+                        "commitHash" => "Compiler Commit",
+                        "edition" => "Default Edition",
                         _ => k
                     };
                     EnvironmentDetails.Add(new EnvironmentPropertyItem(label, v));

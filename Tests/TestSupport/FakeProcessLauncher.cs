@@ -109,6 +109,23 @@ public sealed class FakeProcess : IManagedProcess
         }
     }
 
+    /// <summary>The next text written to the program's input, however long, without waiting for a line end; null at end of input or when killed.</summary>
+    public async Task<string?> ReadChunkAsync()
+    {
+        try
+        {
+            while (await _input.Reader.WaitToReadAsync(_killed.Token))
+            {
+                if (_input.Reader.TryRead(out var chunk)) return chunk;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        return null;
+    }
+
     public void Exit(int code) => _completion.TrySetResult(code);
 
     public Task WriteInputAsync(string text, CancellationToken ct = default)

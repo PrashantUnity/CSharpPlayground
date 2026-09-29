@@ -118,14 +118,16 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             WorkingDirectory = _sessionDir
         };
 
-        var managedProcess = _processes.Start(
+        using var managedProcess = _processes.Start(
             spec,
             onStandardOutput: text => processor.ProcessChunk(text),
             onStandardError: err => processor.ProcessChunk(err));
 
         try
         {
-            var exitCode = await managedProcess.Completion.WaitAsync(TimeSpan.FromSeconds(45), ct).ConfigureAwait(false);
+            // No limit of the kernel's own: how long a cell may take is the studio's ExecutionTimeoutSeconds setting, which
+            // arrives as the cancellation token.
+            var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
             processor.Flush();
 
             var fullConsole = consoleBuilder.ToString();
@@ -144,7 +146,6 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
         }
         catch (OperationCanceledException)
         {
-            managedProcess.Kill();
             return new KernelExecutionResult
             {
                 WasCancelled = true,

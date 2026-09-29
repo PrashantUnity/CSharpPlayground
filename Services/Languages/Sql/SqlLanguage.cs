@@ -35,7 +35,7 @@ public sealed class SqlLanguage : LanguageDefinition
 
     public override string Id => LanguageIds.Sql;
     public override string DisplayName => "SQL";
-    public override JupyterLanguageInfo Jupyter { get; } = new("sql", "SQL", "sql", "application/sql", ".sql", "application/sql");
+    public override JupyterLanguageInfo Jupyter { get; } = new("sql", "SQL", "sql", "sql", ".sql", "application/sql");
     public override string ShortName => "SQL";
     public override IReadOnlyList<string> Aliases => SqlAliases;
     public override IReadOnlyList<string> FileExtensions => SqlExtensions;

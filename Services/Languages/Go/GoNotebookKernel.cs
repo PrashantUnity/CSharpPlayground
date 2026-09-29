@@ -102,18 +102,24 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         };
 
         var buildOutput = new StringBuilder();
-        using var buildProcess = _processes.Start(new ProcessStartSpec
-        {
-            FileName = goExecutable,
-            Arguments = buildArgs,
-            WorkingDirectory = outDir,
-            Environment = buildEnv
-        }, outText => buildOutput.Append(outText), errText => buildOutput.Append(errText));
-
         int buildExitCode;
-        using (ct.Register(buildProcess.Kill))
+        try
         {
-            buildExitCode = await buildProcess.Completion.WaitAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+            using var buildProcess = _processes.Start(new ProcessStartSpec
+            {
+                FileName = goExecutable,
+                Arguments = buildArgs,
+                WorkingDirectory = outDir,
+                Environment = buildEnv
+            }, outText => buildOutput.Append(outText), errText => buildOutput.Append(errText));
+
+            // No limit of the kernel's own: how long a cell may take is the studio's ExecutionTimeoutSeconds setting, which
+            // arrives as the cancellation token.
+            buildExitCode = await buildProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return Cancelled(clock);
         }
 
         if (buildExitCode != 0)
@@ -154,14 +160,17 @@ public sealed partial class GoNotebookKernel : INotebookKernel
                 request.OnRichOutput?.Invoke(bundle);
             });
 
-        var managedProcess = _processes.Start(
+        using var managedProcess = _processes.Start(
             spec,
             onStandardOutput: text => processor.ProcessChunk(text),
             onStandardError: err => processor.ProcessChunk(err));
 
+        // A cell can't be typed into, so a program that reads its input sees the end of it rather than waiting for good.
+        managedProcess.CloseInput();
+
         try
         {
-            var exitCode = await managedProcess.Completion.WaitAsync(TimeSpan.FromSeconds(45), ct).ConfigureAwait(false);
+            var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
             processor.Flush();
 
             return new KernelExecutionResult
@@ -174,15 +183,16 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         }
         catch (OperationCanceledException)
         {
-            managedProcess.Kill();
-            return new KernelExecutionResult
-            {
-                WasCancelled = true,
-                ErrorMessage = "Cell execution was cancelled.",
-                Elapsed = clock.Elapsed
-            };
+            return Cancelled(clock);
         }
     }
+
+    private static KernelExecutionResult Cancelled(Stopwatch clock) => new()
+    {
+        WasCancelled = true,
+        ErrorMessage = "Cell execution was cancelled.",
+        Elapsed = clock.Elapsed
+    };
 
     public Task<IReadOnlyList<NotebookVariableInfo>> GetVariablesAsync(CancellationToken ct)
     {

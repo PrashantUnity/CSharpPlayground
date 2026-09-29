@@ -13,6 +13,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Go;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Python;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Rust;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Sql;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -29,6 +30,7 @@ public static partial class Blind75CatalogService
         ProblemLanguageRegistry.Register(GoProblemLanguageAdapter.Instance);
         ProblemLanguageRegistry.Register(FSharpProblemLanguageAdapter.Instance);
         ProblemLanguageRegistry.Register(SqlProblemLanguageAdapter.Instance);
+        ProblemLanguageRegistry.Register(RustProblemLanguageAdapter.Instance);
     }
 
     private static readonly Lazy<IReadOnlyList<BlindProblemItem>> _problems = new(CreateAllProblems);

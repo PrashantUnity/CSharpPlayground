@@ -36,7 +36,7 @@ public sealed class FSharpLanguage : LanguageDefinition
 
     public override string Id => LanguageIds.FSharp;
     public override string DisplayName => "F#";
-    public override JupyterLanguageInfo Jupyter { get; } = new("fsharp", "F#", "fsharp", "text/x-fsharp", ".fsx", "text/x-fsharp");
+    public override JupyterLanguageInfo Jupyter { get; } = new("fsharp", "F#", "fsharp", "fsharp", ".fsx", "text/x-fsharp");
     public override string ShortName => "FS";
     public override IReadOnlyList<string> Aliases => FSharpAliases;
     public override IReadOnlyList<string> FileExtensions => FSharpExtensions;

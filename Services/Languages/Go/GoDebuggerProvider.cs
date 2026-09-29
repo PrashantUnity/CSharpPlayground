@@ -182,28 +182,51 @@ public sealed class GoDebuggerProvider : IDebuggerProvider, IDapAdapterRegistrat
             throw new InvalidOperationException(debugger.MissingGuidance?.Summary ?? "Go debugger (dlv) not found.");
         }
 
+        // Delve's DAP server is a TCP server and has no stdio mode: started plain it listens on a port of its own choosing and
+        // never reads its input, so the session has to say where to listen and connect there.
+        int port = DapAdapterManager.GetAvailablePort();
         var spec = new ProcessStartSpec
         {
             FileName = debugger.ExecutablePath,
-            Arguments = ["dap"],
+            Arguments = ["dap", $"--listen=127.0.0.1:{port}"],
             WorkingDirectory = workingDir
         };
 
-        return await _adapterManager.LaunchStdioAdapterAsync(
+        return await _adapterManager.LaunchSocketAdapterAsync(
             LanguageIds.Go,
             spec,
-            context,
+            port,
+            context with { OnLiveOutput = WithoutListeningBanner(context.OnLiveOutput) },
             postHandshake: async dapClient =>
             {
-                await dapClient.SendRequestAsync("launch", new
-                {
-                    mode = "exec",
-                    program = binPath,
-                    cwd = workingDir,
-                    stopOnEntry = false
-                }, ct).ConfigureAwait(false);
+                var launched = await dapClient.SendRequestAsync("launch", LaunchArguments(binPath, workingDir), ct).ConfigureAwait(false);
+                if (!launched.Success) throw new DapException(launched.Message ?? "Delve refused to launch the program.", "launch", launched);
             },
-            ct).ConfigureAwait(false);
+            ct,
+            // Delve refuses setBreakpoints and configurationDone until it has been asked to launch ("No debug session started").
+            DapHandshake.Standard).ConfigureAwait(false);
+    }
+
+    /// <summary>What Delve is asked to run: the binary just built, stopping only at the user's breakpoints.</summary>
+    internal static object LaunchArguments(string binaryPath, string workingDirectory) => new
+    {
+        mode = "exec",
+        program = binaryPath,
+        cwd = workingDirectory,
+        stopOnEntry = false
+    };
+
+    private static readonly Regex ListeningBanner = new(@"^DAP server listening at: [^\r\n]*(\r?\n)?", RegexOptions.Multiline | RegexOptions.Compiled);
+
+    /// <summary>Delve announces its port on standard output; the session already knows it, so the line isn't shown as the program's output.</summary>
+    internal static Action<string>? WithoutListeningBanner(Action<string>? sink)
+    {
+        if (sink == null) return null;
+        return text =>
+        {
+            var rest = ListeningBanner.Replace(text, string.Empty);
+            if (rest.Length > 0) sink(rest);
+        };
     }
 
     Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>

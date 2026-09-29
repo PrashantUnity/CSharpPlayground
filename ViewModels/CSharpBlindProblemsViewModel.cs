@@ -31,6 +31,7 @@ public partial class CSharpBlindProblemsViewModel : ObservableObject
         "python" => "Python 3.12",
         "javascript" => "JavaScript (Node.js)",
         "java" => "Java (OpenJDK)",
+        "rust" => "Rust (Cargo)",
         _ => "C# .NET 10"
     };
 

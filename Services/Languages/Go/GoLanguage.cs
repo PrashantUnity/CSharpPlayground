@@ -38,7 +38,7 @@ public sealed class GoLanguage : LanguageDefinition
 
     public override string Id => LanguageIds.Go;
     public override string DisplayName => "Go";
-    public override JupyterLanguageInfo Jupyter { get; } = new("go", "Go", "go", "text/x-gosrc", ".go", "text/x-gosrc");
+    public override JupyterLanguageInfo Jupyter { get; } = new("go", "Go", "go", "go", ".go", "text/x-gosrc");
     public override string ShortName => "GO";
     public override IReadOnlyList<string> Aliases => GoAliases;
     public override IReadOnlyList<string> FileExtensions => GoExtensions;

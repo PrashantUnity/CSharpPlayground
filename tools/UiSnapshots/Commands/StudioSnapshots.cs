@@ -286,9 +286,10 @@ internal static class StudioSnapshots
         var goDemo = options.Flag("go-demo");
         var fsharpDemo = options.Flag("fsharp-demo");
         var sqlDemo = options.Flag("sql-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo) ? 0 : options.Problem();
+        var rustDemo = options.Flag("rust-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            sqlDemo ? SqlDemoNotebook() : fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            rustDemo ? RustDemoNotebook() : sqlDemo ? SqlDemoNotebook() : fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -727,6 +728,64 @@ internal static class StudioSnapshots
                     }()
                     msg := <-ch
                     fmt.Println(msg)
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem RustDemoNotebook() => new()
+    {
+        Title = "Rust Interactive Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # Rust Interactive Notebook
+                    Each cell is built with Cargo and run. Functions, types and imports stay for later cells; the last expression is shown.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    #[derive(Debug)]
+                    struct Planet {
+                        name: &'static str,
+                        moons: u32,
+                    }
+
+                    fn total_moons(planets: &[Planet]) -> u32 {
+                        planets.iter().map(|p| p.moons).sum()
+                    }
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    let planets = vec![
+                        Planet { name: "Earth", moons: 1 },
+                        Planet { name: "Mars", moons: 2 },
+                        Planet { name: "Jupiter", moons: 95 },
+                    ];
+                    let total = total_moons(&planets);
+                    println!("{} moons in total", total);
+                    fry::share!(total);
+                    planets
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    // shared values come back as typed variables
+                    println!("{} moons, doubled: {}", total, total * 2);
+                    (1..=5).map(|n| n * n).collect::<Vec<u32>>()
                     """
             }
         }

@@ -600,14 +600,14 @@ public partial class CSharpCodeStudioView : UserControl
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
                 LanguageMode = _currentVm.CurrentLanguageMode,
-                IsSuppressed = () => _editorLanguage?.Has(LanguageCapabilities.Completion) == false
+                IsSuppressed = () => !_editorLanguage.UsesRoslynHelper(LanguageCapabilities.Completion)
             };
 
             // While the debugger is paused, hovering shows the debug data tip instead.
             var compiler = _currentVm.CompilerService;
             _quickInfoController = new CSharpQuickInfoController(_editor, () => new CSharpQuickInfoService(compiler))
             {
-                IsSuppressed = () => _currentVm?.IsPaused == true || _editorLanguage?.Has(LanguageCapabilities.QuickInfo) == false
+                IsSuppressed = () => _currentVm?.IsPaused == true || !_editorLanguage.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
             };
 
             ApplyEditorLanguage(_currentVm.ActiveLanguage);

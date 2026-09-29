@@ -341,8 +341,23 @@ public partial class CSharpCodeStudioViewModel
         CompilerStatusText = $"Installing {package}…";
         var result = await Task.Run(() => packages.RunAsync(command, toolchain, Append));
         if (result.SwitchedToolchain != null) ToolchainLabel = result.SwitchedToolchain.Label;
+
+        // A package that belongs to the file (a Rust crate) is only installed once the file names it.
+        if (result.Success && result.DirectiveToInsert is { Length: > 0 } directive)
+        {
+            _postToUiThread(() =>
+            {
+                if (!Code.Contains(directive, StringComparison.Ordinal)) Code = directive + Environment.NewLine + Code;
+                RefreshDocumentNuGetPackages();
+            });
+        }
+
         CompilerStatusText = result.Success ? $"Installed {package}: run again (F5)" : $"⚠️ Couldn't install {package}";
-        Append(result.Success ? $"✅ Installed {package}. Run again (F5).\n" : $"❌ {result.Message}\n");
+        Append(result.Success
+            ? (result.DirectiveToInsert is { Length: > 0 } added
+                ? $"✅ Installed {package}. Added `{added}` to the file. Run again (F5).\n"
+                : $"✅ Installed {package}. Run again (F5).\n")
+            : $"❌ {result.Message}\n");
     }
 
     /// <summary>Sends the Terminal's input line to the running program, and shows it as a terminal would.</summary>
