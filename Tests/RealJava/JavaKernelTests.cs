@@ -83,7 +83,7 @@ public class JavaKernelTests : IDisposable
         var run = await Execute(kernel, "System.out.println(\"Streamed from Java\");");
 
         Assert.True(run.Result.Success, run.Console + " Err: " + run.Result.ErrorMessage);
-        Assert.Equal("Streamed from Java\n", run.Console);
+        Assert.Equal("Streamed from Java\n", run.Console.Replace("\r\n", "\n"));
     }
 
     [JavaFact]

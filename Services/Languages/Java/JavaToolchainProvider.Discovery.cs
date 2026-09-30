@@ -19,7 +19,7 @@ public sealed partial class JavaToolchainProvider
         var javaHome = _host.GetEnvironmentVariable("JAVA_HOME");
         if (!string.IsNullOrWhiteSpace(javaHome))
         {
-            var javaHomeBin = Path.Combine(javaHome, "bin", _host.IsWindows ? "java.exe" : "java");
+            var javaHomeBin = ExecutableSearch.Combine(_host, javaHome, "bin", _host.IsWindows ? "java.exe" : "java");
             if (_host.FileExists(javaHomeBin) && yielded.Add(javaHomeBin))
             {
                 yield return new Candidate(javaHomeBin, "JAVA_HOME");
@@ -53,7 +53,7 @@ public sealed partial class JavaToolchainProvider
 
         for (var level = 0; !string.IsNullOrEmpty(folder) && (insideRoot || level < 4); level++)
         {
-            var localJdkBin = Path.Combine(folder, ".jdk", "bin", _host.IsWindows ? "java.exe" : "java");
+            var localJdkBin = ExecutableSearch.Combine(_host, folder, ".jdk", _host.IsWindows ? "bin/java.exe" : "bin/java");
             if (_host.FileExists(localJdkBin))
             {
                 yield return new Candidate(localJdkBin, "Project local");

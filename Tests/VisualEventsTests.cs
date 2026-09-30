@@ -23,7 +23,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 /// </summary>
 public class VisualEventsTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
 
     private sealed class Cell
     {

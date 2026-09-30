@@ -18,6 +18,7 @@ public interface IHostEnvironment
     bool IsWindows { get; }
     bool IsMacOS { get; }
     bool IsLinux { get; }
+    char DirectorySeparatorChar => IsWindows ? '\\' : '/';
     string HomeDirectory { get; }
 
     string? GetEnvironmentVariable(string name);

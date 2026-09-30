@@ -167,9 +167,9 @@ public sealed partial class JavaToolchainProvider : IToolchainProvider
         var version = ParseJavaVersion(combined);
         if (version == null) return null;
 
-        var binDir = Path.GetDirectoryName(path);
+        var binDir = ExecutableSearch.GetDirectoryName(path);
         var javacName = _host.IsWindows ? "javac.exe" : "javac";
-        var compilerPath = !string.IsNullOrEmpty(binDir) ? Path.Combine(binDir, javacName) : javacName;
+        var compilerPath = !string.IsNullOrEmpty(binDir) ? ExecutableSearch.Combine(_host, binDir, javacName) : javacName;
         var hasCompiler = _host.FileExists(compilerPath);
 
         return new ProbeResult(version, path, compilerPath, hasCompiler);

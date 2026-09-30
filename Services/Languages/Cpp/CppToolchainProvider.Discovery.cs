@@ -46,14 +46,14 @@ public sealed partial class CppToolchainProvider
 
         for (var level = 0; !string.IsNullOrEmpty(folder) && (insideRoot || level < 4); level++)
         {
-            var binDirs = new[] { Path.Combine(folder, "bin"), Path.Combine(folder, ".tools", "bin"), Path.Combine(folder, "build") };
+            var binDirs = new[] { ExecutableSearch.Combine(_host, folder, "bin"), ExecutableSearch.Combine(_host, folder, ".tools", "bin"), ExecutableSearch.Combine(_host, folder, "build") };
             foreach (var binDir in binDirs)
             {
                 if (_host.DirectoryExists(binDir))
                 {
                     foreach (var name in _host.IsWindows ? new[] { "clang++.exe", "g++.exe", "cl.exe" } : new[] { "clang++", "g++" })
                     {
-                        var compiler = Path.Combine(binDir, name);
+                        var compiler = ExecutableSearch.Combine(_host, binDir, name);
                         if (_host.FileExists(compiler))
                         {
                             yield return new Candidate(compiler, "Project local");

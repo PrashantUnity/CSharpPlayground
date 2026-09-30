@@ -185,7 +185,7 @@ public class PythonKernelTests : IDisposable
         var run = await Execute(kernel, "name = input('Name? ')\nprint('Hi', name)", ask: (_, _, _) => Task.FromResult<string?>("Ada"));
 
         Assert.True(run.Result.Success, run.Console);
-        Assert.Contains("Name? Ada\n", run.Console);
+        Assert.Contains("Name? Ada\n", run.Console.Replace("\r\n", "\n"));
         Assert.Contains("Hi Ada", run.Console);
     }
 

@@ -223,7 +223,7 @@ public sealed partial class PythonToolchainProvider : IToolchainProvider
     }
 
     public string EnvironmentInterpreter(string environmentFolder) =>
-        _host.IsWindows ? Path.Combine(environmentFolder, "Scripts", "python.exe") : Path.Combine(environmentFolder, "bin", "python");
+        ExecutableSearch.Combine(_host, environmentFolder, _host.IsWindows ? "Scripts/python.exe" : "bin/python");
 
     private async Task<int> RunAsync(ProcessStartSpec spec, Action<string> output, CancellationToken ct)
     {

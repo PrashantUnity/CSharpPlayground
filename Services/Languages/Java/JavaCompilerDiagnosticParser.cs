@@ -12,7 +12,7 @@ public sealed partial class JavaCompilerDiagnosticParser : IDiagnosticParser
 {
     private sealed record Frame(string Method, string File, int LineNumber);
 
-    [GeneratedRegex(@"^(?<file>[^:\r\n]+):(?<line>\d+):\s*(?:(?<col>\d+):\s*)?(?<severity>error|warning):\s*(?<message>.+)$")]
+    [GeneratedRegex(@"^(?<file>(?:[a-zA-Z]:)?[^:\r\n]+):(?<line>\d+):\s*(?:(?<col>\d+):\s*)?(?<severity>error|warning):\s*(?<message>.+)$")]
     private static partial Regex JavacDiagnosticHeaderRegex();
 
     [GeneratedRegex(@"^\s*\^\s*$")]

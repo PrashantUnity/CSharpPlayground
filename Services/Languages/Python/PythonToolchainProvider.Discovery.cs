@@ -67,8 +67,8 @@ public sealed partial class PythonToolchainProvider
         {
             foreach (var name in ProjectEnvironmentFolders)
             {
-                var environment = Path.Combine(folder, name);
-                if (!_host.FileExists(Path.Combine(environment, "pyvenv.cfg"))) continue;
+                var environment = ExecutableSearch.Combine(_host, folder, name);
+                if (!_host.FileExists(ExecutableSearch.Combine(_host, environment, "pyvenv.cfg"))) continue;
                 var executable = EnvironmentInterpreter(environment);
                 if (_host.FileExists(executable)) yield return new Candidate(executable, $"Project {name}");
             }

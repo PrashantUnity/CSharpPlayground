@@ -16,10 +16,10 @@ public sealed partial class JavaScriptTracebackParser : IDiagnosticParser
     [GeneratedRegex(@"^\s*at (?:(?<method>.+?)\s+\()?(?:file:\/\/)?(?<file>.+?):(?<line>\d+):(?<col>\d+)\)?$")]
     private static partial Regex StackFrameRegex();
 
-    [GeneratedRegex(@"^(?:Error\s*\[(?<code>[A-Z0-9_]+)\]|(?<type>[A-Za-z_$][\w.$]*)):(?:\s*(?<message>.*))?$")]
+    [GeneratedRegex(@"^(?![A-Za-z]:[\\/])(?:Error\s*\[(?<code>[A-Z0-9_]+)\]|(?<type>[A-Za-z_$][\w.$]*)):(?:\s*(?<message>.*))?$")]
     private static partial Regex ExceptionLineRegex();
 
-    [GeneratedRegex(@"^(?:file:\/\/)?(?<file>[^:\r\n]+):(?<line>\d+)(?::(?<col>\d+))?$")]
+    [GeneratedRegex(@"^(?:file:\/\/)?(?<file>(?:[a-zA-Z]:)?[^:\r\n]+):(?<line>\d+)(?::(?<col>\d+))?$")]
     private static partial Regex HeaderLocationRegex();
 
     [GeneratedRegex(@"Cannot find (?:module|package) '(?<name>[^']+)'")]

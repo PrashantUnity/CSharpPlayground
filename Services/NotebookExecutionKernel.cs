@@ -573,7 +573,6 @@ public class NotebookExecutionKernel : INotebookKernel
         _events = NewEventLoop();
         _currentState = null;
         _additionalReferences.Clear();
-        try { _assemblyLoader.Dispose(); } catch { }
         _assemblyLoader = new InteractiveAssemblyLoader();
         RegisterCoreDependencies(_assemblyLoader);
         _scriptOptions = CachedDefaultScriptOptions.Value;

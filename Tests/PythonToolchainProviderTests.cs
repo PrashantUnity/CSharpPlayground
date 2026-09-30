@@ -208,8 +208,8 @@ public class PythonToolchainProviderTests : IDisposable
     [Fact]
     public void OnWindows_AStudioEnvironmentsInterpreter_IsInScripts()
     {
-        Assert.EndsWith(Path.Combine("Scripts", "python.exe"), Provider(new FakeHostEnvironment(FakeOs.Windows)).EnvironmentInterpreter(Path.Combine(_baseDir, "env")));
-        Assert.EndsWith(Path.Combine("bin", "python"), Provider(Mac()).EnvironmentInterpreter(Path.Combine(_baseDir, "env")));
+        Assert.EndsWith("Scripts/python.exe", FakeHostEnvironment.Normalize(Provider(new FakeHostEnvironment(FakeOs.Windows)).EnvironmentInterpreter(Path.Combine(_baseDir, "env"))));
+        Assert.EndsWith("bin/python", FakeHostEnvironment.Normalize(Provider(Mac()).EnvironmentInterpreter(Path.Combine(_baseDir, "env"))));
     }
 
     [Fact]
