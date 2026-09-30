@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -11,13 +12,61 @@ public partial class CSharpCodeStudioViewModel
 {
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
+    private ExplorerRowList? _explorerRows;
+
+    /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
+    public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
+
+    /// <summary>True when the workspace folder holds more files than the Explorer lists; the panel then says so rather than looking complete.</summary>
+    [ObservableProperty]
+    private bool _isExplorerTruncated;
+
+    public string ExplorerTruncationText =>
+        $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
+
+    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
+    // workspace scan only when this has moved, not on every tab switch.
+    private long _explorerStructureVersion = -1;
+
+    // The row listing the open document when it isn't part of this workspace (a file opened from elsewhere).
+    private ExplorerItemViewModel? _explorerOrphanItem;
+
+    private LazyExplorerTree? _lazyExplorer;
+
+    // The Explorer of a workspace too big to list at once: one folder at a time (see LazyExplorerTree).
+    private LazyExplorerTree LazyExplorer => _lazyExplorer ??= new LazyExplorerTree(
+        _storageService,
+        ExplorerRootItems,
+        ExplorerRows,
+        (name, path, parent) => CreateFolderItem(name, path, isExpanded: false, parent: parent),
+        (summary, name, fullPath, parent) => CreateFileItem(name, summary.Id, parent, fullPath, summary.IsSourceFile ? _languages.Registry.Get(summary.LanguageId) : null));
+
+    // Draws what the storage listed: the whole workspace, or (when it is too big) its top folder, the rest coming as folders open.
+    private void ShowExplorerListing(WorkspaceListing listing)
+    {
+        if (!listing.IsPartial)
+        {
+            LazyExplorer.Deactivate();
+            RebuildExplorerTree(listing.FolderPaths, listing.Items);
+            return;
+        }
+
+        var openFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
+        _explorerOrphanItem = null;
+        LazyExplorer.Build(listing, openFolders);
+        // Only the top folder itself can be cut off here (a nested one says so in its own rows).
+        IsExplorerTruncated = listing.IsTruncated;
+        EnsureOpenDocumentListed(sort: false);
+        HighlightExplorerItem(Script?.Id);
+    }
+
     public void PopulateExplorerTree()
     {
         try
         {
-            var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
-            var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
-            RebuildExplorerTree(folderPaths, summaries);
+            var version = _storageService.StructureVersion;
+            ShowExplorerListing(_storageService.LoadExplorerListingAsync().GetAwaiter().GetResult());
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -31,9 +80,10 @@ public partial class CSharpCodeStudioViewModel
     {
         try
         {
-            var folderPaths = await _storageService.LoadFolderPathsAsync();
-            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
-            RebuildExplorerTree(folderPaths, summaries);
+            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
+            var version = _storageService.StructureVersion;
+            ShowExplorerListing(await _storageService.LoadExplorerListingAsync());
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -41,10 +91,101 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
+    /// <summary>
+    /// Brings the Explorer up to date without rescanning the workspace when nothing in it has changed: switching a tab
+    /// or coming back to this page only moves the highlight (and lists the open document if it lives outside the workspace).
+    /// </summary>
+    public async Task RefreshExplorerIfStaleAsync()
     {
+        if (_explorerStructureVersion != _storageService.StructureVersion)
+        {
+            await RefreshExplorerAsync();
+            return;
+        }
+
+        EnsureOpenDocumentListed();
+        HighlightExplorerItem(Script?.Id);
+    }
+
+    // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
+    // studio is also used without a host that says so).
+    private bool _isPageActive = true;
+
+    // Shown again after other pages (or other programs) may have added, removed or renamed items: catch up.
+    public void OnActivated()
+    {
+        _isPageActive = true;
+        _ = RefreshExplorerIfStaleAsync();
+
+        // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
+        _ = _storageService.FileIndex;
+    }
+
+    // Go to File: opens any file of the workspace by its path, whether or not the Explorer has drawn it.
+    private async Task OpenWorkspaceFileAsync(string fullPath)
+    {
+        var result = await _storageService.OpenExternalProjectAsync(fullPath);
+        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+        {
+            CompilerStatusText = result.Message;
+            return;
+        }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+        {
+            if (_openNotebookAction != null && await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook)
+            {
+                _openNotebookAction.Invoke(notebook);
+            }
+
+            return;
+        }
+
+        await SaveDocumentAsync(userAsked: false);
+        if (await _storageService.LoadScriptAsync(result.PrimaryDocumentId) is { } loaded)
+        {
+            await UpdateActiveScriptAsync(loaded);
+        }
+    }
+
+    public void OnDeactivated() => _isPageActive = false;
+
+    // The open document isn't part of the workspace when it was opened from elsewhere (a loose file, or a tab left over
+    // from another folder): the tree lists it at the top for as long as it is the open one.
+    private void EnsureOpenDocumentListed(bool sort = true, bool evenIfInWorkspace = false)
+    {
+        if (_explorerOrphanItem != null && !string.Equals(_explorerOrphanItem.DocumentId, Script?.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            ExplorerRootItems.Remove(_explorerOrphanItem);
+            _explorerOrphanItem = null;
+        }
+
+        if (Script == null || string.IsNullOrEmpty(Script.Id) || FindByDocumentId(ExplorerRootItems, Script.Id) != null) return;
+
+        // In a big workspace the document may sit in a folder that has not been listed yet: it is not an outsider.
+        if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(Script.Id) != null) return;
+
+        var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
+        var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
+        _explorerOrphanItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
+        ExplorerRootItems.Add(_explorerOrphanItem);
+        if (sort) SortExplorerTree(ExplorerRootItems);
+    }
+
+    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries)
+    {
+        // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
+        using var rowsScope = ExplorerRows.Suspend();
+
+        // A refresh keeps the folders the user had open open.
+        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
+        _explorerOrphanItem = null;
         var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
+        // file would be quadratic in the size of a folder.
+        var rootKey = new object();
+        var namesByFolder = new Dictionary<object, HashSet<string>>();
 
         ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
@@ -56,7 +197,7 @@ public partial class CSharpCodeStudioViewModel
             var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
             var parent = GetOrCreateFolder(parentPath);
 
-            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            var node = CreateFolderItem(name, relativePath, isExpanded: expandedFolders.Contains(relativePath), parent: parent);
             AddToTree(parent, node);
             folderNodes[relativePath] = node;
             return node;
@@ -75,8 +216,13 @@ public partial class CSharpCodeStudioViewModel
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
-            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
-            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            var folderKey = (object?)parent ?? rootKey;
+            if (!namesByFolder.TryGetValue(folderKey, out var names))
+            {
+                namesByFolder[folderKey] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!names.Add(name))
             {
                 continue;
             }
@@ -85,21 +231,17 @@ public partial class CSharpCodeStudioViewModel
             AddToTree(parent, docItem);
         }
 
-        if (Script != null && !string.IsNullOrEmpty(Script.Id) && FindByDocumentId(ExplorerRootItems, Script.Id) == null)
-        {
-            // The open document isn't in this workspace (a file opened from elsewhere): show it at the top.
-            var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
-            var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
-            var expItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
-            ExplorerRootItems.Add(expItem);
-        }
+        EnsureOpenDocumentListed(sort: false);
 
         SortExplorerTree(ExplorerRootItems);
         HighlightExplorerItem(Script?.Id);
+        IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
     {
+        using var rowsScope = ExplorerRows.Suspend();
+
         var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {
@@ -138,6 +280,36 @@ public partial class CSharpCodeStudioViewModel
                 parent = parent.Parent;
             }
         }
+        else if (LazyExplorer.IsActive)
+        {
+            _ = RevealInLazyExplorerAsync(documentId);
+        }
+    }
+
+    // A big workspace lists a folder when it is opened: open the folders down to the document, then highlight it.
+    private async Task RevealInLazyExplorerAsync(string documentId)
+    {
+        var item = await LazyExplorer.RevealAsync(documentId);
+        if (!string.Equals(Script?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
+
+        if (item == null)
+        {
+            // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
+            EnsureOpenDocumentListed(evenIfInWorkspace: true);
+            return;
+        }
+
+        DeselectAll(ExplorerRootItems);
+        item.IsSelected = true;
+    }
+
+    // The row of a document, opening the folders down to it first when the workspace is listed folder by folder.
+    private async Task<ExplorerItemViewModel?> FindOrRevealExplorerItemAsync(string documentId)
+    {
+        var item = FindByDocumentId(ExplorerRootItems, documentId);
+        if (item != null || !LazyExplorer.IsActive) return item;
+
+        return await LazyExplorer.RevealAsync(documentId);
     }
 
     private ExplorerItemViewModel? FindByDocumentId(IEnumerable<ExplorerItemViewModel> items, string documentId)
@@ -361,7 +533,7 @@ public partial class CSharpCodeStudioViewModel
 
         await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
-        FindByDocumentId(ExplorerRootItems, newDoc.Id)?.StartRename();
+        (await FindOrRevealExplorerItemAsync(newDoc.Id))?.StartRename();
     }
 
     private IReadOnlyList<NewFileOption>? _newFileOptions;
@@ -401,7 +573,7 @@ public partial class CSharpCodeStudioViewModel
 
         await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
-        FindByDocumentId(ExplorerRootItems, newDoc.Id)?.StartRename();
+        (await FindOrRevealExplorerItemAsync(newDoc.Id))?.StartRename();
     }
 
     [RelayCommand]
@@ -436,7 +608,7 @@ public partial class CSharpCodeStudioViewModel
         await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
 
-        var newItem = FindByDocumentId(ExplorerRootItems, newDoc.Id);
+        var newItem = await FindOrRevealExplorerItemAsync(newDoc.Id);
         newItem?.StartRename();
     }
 
@@ -463,6 +635,16 @@ public partial class CSharpCodeStudioViewModel
         }
 
         var name = newRelativePath.Contains('/') ? newRelativePath[(newRelativePath.LastIndexOf('/') + 1)..] : newRelativePath;
+
+        // Under a folder that has not been listed yet, listing it finds the new folder on disk: adding a row too would show it twice.
+        if (parentFolder is { ChildrenLoaded: false })
+        {
+            await LazyExplorer.LoadChildrenAsync(parentFolder);
+            parentFolder.IsExpanded = true;
+            parentFolder.Children.FirstOrDefault(c => c.IsDirectory && string.Equals(c.FullPath, newRelativePath, StringComparison.OrdinalIgnoreCase))?.StartRename();
+            return;
+        }
+
         var newFolder = CreateFolderItem(name, newRelativePath, isExpanded: true, parent: parentFolder);
         AddToTree(parentFolder, newFolder);
         if (parentFolder != null) parentFolder.IsExpanded = true;

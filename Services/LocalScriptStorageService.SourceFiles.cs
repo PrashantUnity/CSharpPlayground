@@ -172,6 +172,7 @@ public partial class LocalScriptStorageService
 
             document.SourceFilePath = path;
             document.LastModified = written;
+            MarkChanged(structural: false);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -206,6 +207,7 @@ public partial class LocalScriptStorageService
 
         var path = Path.Combine(folder, name + extension);
         await File.WriteAllTextAsync(path, initialContent ?? language.NewFileTemplate, new UTF8Encoding(false));
+        MarkChanged();
         return await LoadSourceFileAsync(RegisterSourceFile(path));
     }
 
@@ -255,6 +257,7 @@ public partial class LocalScriptStorageService
             lock (_sourceGate) _sourceFiles[newId] = state;
         }
 
+        MarkChanged();
         return Task.FromResult(new SourceFileRename(newId, _knownFileLocations[newId]));
     }
 

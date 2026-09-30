@@ -35,6 +35,12 @@ public partial class QuickOpenViewModel : ObservableObject
 
     public ObservableCollection<QuickOpenItem> FilteredItems { get; } = new();
 
+    /// <summary>
+    /// Finds files beyond the ones registered (the whole workspace, from its index). Asked for a file search with something
+    /// typed, never for a '>' command or a ':' line jump.
+    /// </summary>
+    public Func<string, IReadOnlyList<QuickOpenItem>>? FileSearch { get; set; }
+
     public event Action<int>? RequestGoToLine;
     public event Action? RequestClose;
 
@@ -213,6 +219,15 @@ public partial class QuickOpenViewModel : ObservableObject
             foreach (var item in matches.Take(30))
             {
                 FilteredItems.Add(item);
+            }
+
+            // Beyond the open tabs: every file of the workspace, from its index.
+            if (FileSearch != null && query.Length > 0)
+            {
+                foreach (var file in FileSearch(query))
+                {
+                    FilteredItems.Add(file);
+                }
             }
         }
 

@@ -321,21 +321,74 @@ public partial class CSharpCodeStudioViewModel
         NuGetStatusMessage = $"Removed package reference from script.";
     }
 
+    // Built once, at compile time. This scan runs every time the code changes (every keystroke) and on every tab switch,
+    // and it used to construct and interpret a fresh Regex each time.
+    [GeneratedRegex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex DocumentDirectiveRegex();
+
+    // Characters. Up to this size the scan is instant and runs on the spot; a bigger document (a megabyte of source takes
+    // tens of milliseconds to scan, on every keystroke) is scanned in the background once typing pauses.
+    private const int DirectiveScanInlineLimit = 100_000;
+
+    private CancellationTokenSource? _directiveScanCts;
+
     [RelayCommand]
     public void RefreshDocumentNuGetPackages()
     {
-        DocumentNuGetPackages.Clear();
-        if (string.IsNullOrEmpty(Code)) return;
+        _directiveScanCts?.Cancel(); // Whatever is still being scanned is for older text.
+        var code = Code;
+        if (code.Length <= DirectiveScanInlineLimit)
+        {
+            ApplyDocumentDirectives(ScanDocumentDirectives(code));
+            return;
+        }
 
-        var regex = new Regex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-        var matches = regex.Matches(Code);
-        foreach (Match m in matches)
+        var scan = _directiveScanCts = new CancellationTokenSource();
+        _ = ScanLargeDocumentAsync(code, scan.Token);
+    }
+
+    private async Task ScanLargeDocumentAsync(string code, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(300, token); // While typing, only the text at the pause is worth scanning.
+            var found = await Task.Run(() => ScanDocumentDirectives(code), token);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (!token.IsCancellationRequested) ApplyDocumentDirectives(found);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer scan.
+        }
+    }
+
+    private static List<string> ScanDocumentDirectives(string code)
+    {
+        var found = new List<string>();
+        foreach (Match m in DocumentDirectiveRegex().Matches(code))
         {
             var line = m.Value.Trim();
-            if (!DocumentNuGetPackages.Contains(line))
+            if (!found.Contains(line))
             {
-                DocumentNuGetPackages.Add(line);
+                found.Add(line);
             }
+        }
+
+        return found;
+    }
+
+    private void ApplyDocumentDirectives(List<string> found)
+    {
+        // Unchanged, which is the usual case while typing: leave the list alone instead of clearing and refilling it
+        // (every change would make the Dependencies panel rebuild).
+        if (DocumentNuGetPackages.SequenceEqual(found)) return;
+
+        DocumentNuGetPackages.Clear();
+        foreach (var line in found)
+        {
+            DocumentNuGetPackages.Add(line);
         }
     }
 

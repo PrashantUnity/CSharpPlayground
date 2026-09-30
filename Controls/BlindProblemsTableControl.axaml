@@ -103,8 +103,21 @@
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- 2. SCROLLABLE PROBLEM LIST                                      -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding FilteredProblems}">
+        <!-- Virtualized: only the rows on screen are built (each row is a heavy control). The ScrollViewer is in the
+             template so that the VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding FilteredProblems}">
+            <ItemsControl.Template>
+                <ControlTemplate>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:BlindProblemItem">
                         <Border Classes="problem-row" Classes.selected="{Binding IsHighlighted}" Height="44" Padding="16,0,20,0">
@@ -204,8 +217,7 @@
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        </ItemsControl>
 
         <!-- Nothing matches: say so, and offer the way back -->
         <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"

@@ -35,6 +35,14 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     [ObservableProperty]
     private object _currentPage;
 
+    // Pages are kept alive once built, so leaving one no longer detaches it; tell the pages that care (timers etc.).
+    partial void OnCurrentPageChanged(object? oldValue, object newValue)
+    {
+        if (ReferenceEquals(oldValue, newValue)) return;
+        (oldValue as IPageLifecycle)?.OnDeactivated();
+        (newValue as IPageLifecycle)?.OnActivated();
+    }
+
     [ObservableProperty]
     private bool _isOnManagerPage = true;
 
@@ -64,14 +72,26 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
     /// <param name="settingsStore">The plugin's settings (execution timeout).</param>
     /// <param name="blindProgress">Where Blind 75 progress lives; the user's progress file when not given.</param>
+    /// <param name="storageService">Where scripts and notebooks live; the user's library when not given.</param>
     public CSharpStudioHostViewModel(
         IServiceProvider? serviceProvider = null,
         IPluginSettingsStore? settingsStore = null,
         IBlindProgressService? blindProgress = null,
-        StudioLanguageServices? languages = null)
+        StudioLanguageServices? languages = null,
+        IScriptStorageService? storageService = null)
     {
         _languages = languages ?? StudioLanguageServices.Default;
-        _storageService = new LocalScriptStorageService(languages: _languages.Registry);
+        if (storageService == null)
+        {
+            // The user's own library: files changed outside the studio (git, another editor) should show up by themselves.
+            var library = new LocalScriptStorageService(languages: _languages.Registry);
+            library.StartWatchingForChanges();
+            _storageService = library;
+        }
+        else
+        {
+            _storageService = storageService;
+        }
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -269,7 +289,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToManager()
     {
-        _ = ManagerViewModel.LoadWorkspaceItemsAsync();
+        _ = ManagerViewModel.ReloadIfStaleAsync();
         CurrentPage = ManagerViewModel;
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";

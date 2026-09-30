@@ -79,8 +79,17 @@ public partial class CSharpCodeStudioViewModel
 
         // 3. Restore target tab state into active studio context
         Script = tab.Document;
-        Code = tab.Document.Code ?? string.Empty;
-        Notes = tab.Document.Notes;
+        _isRestoringTabState = true;
+        try
+        {
+            Code = tab.Document.Code ?? string.Empty;
+            Notes = tab.Document.Notes;
+        }
+        finally
+        {
+            _isRestoringTabState = false;
+        }
+
         IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
         SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
         {
@@ -129,7 +138,8 @@ public partial class CSharpCodeStudioViewModel
             TriggerDiagnosticsCheck();
         }
 
-        await RefreshExplorerAsync();
+        // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
+        await RefreshExplorerIfStaleAsync();
     }
 
     public async Task CloseTabAsync(StudioTabItemViewModel tab)

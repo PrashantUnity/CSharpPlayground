@@ -235,12 +235,35 @@ public partial class CSharpCodeStudioViewModel
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
 
+    /// <summary>
+    /// Characters. Above this a document is a "large file": its foldings are worked out after it is shown, and it is not analysed
+    /// as you type. Each pause in typing would start a multi-second Roslyn compile of the whole file, whose allocations keep the
+    /// garbage collector pausing the editor (with a big workspace open, a keystroke in a 2 MB file waited about 25 ms for it).
+    /// Running the file still reports its problems.
+    /// </summary>
+    public const int LargeDocumentLength = 500_000;
+
+    /// <summary>What the status bar says while the open document is too large to be analysed as you type.</summary>
+    public const string LargeDocumentStatus = "Live diagnostics are off for a very large file; run it to check for problems";
+
     private void TriggerDiagnosticsCheck()
     {
         if (!ActiveLanguage.Has(LanguageCapabilities.LiveDiagnostics))
         {
             // Problems of such a document come from its runs; they stay until the next one.
             _diagnosticsCts?.Cancel();
+            return;
+        }
+
+        if (Code.Length > LargeDocumentLength)
+        {
+            _diagnosticsCts?.Cancel();
+            // What was found before describes text that has changed since.
+            if (Diagnostics.Count > 0) Diagnostics.Clear();
+            OpenTabs.FirstOrDefault(t => t.Id == Script.Id)?.Diagnostics.Clear();
+            ErrorCount = 0;
+            WarningCount = 0;
+            if (!IsExecuting) CompilerStatusText = LargeDocumentStatus;
             return;
         }
 

@@ -478,9 +478,20 @@
                                            Foreground="{DynamicResource DsMutedBrush}"
                                            VerticalAlignment="Center" />
                             </Border>
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding Cells}" Margin="4,6">
-                                    <ItemsControl.ItemTemplate>
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding OutlineCells}">
+                                <ItemsControl.Template>
+                                    <ControlTemplate>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsPresenter Margin="4,6,4,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:NotebookCellViewModel">
                                             <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
                                                     CommandParameter="{Binding}"
@@ -534,7 +545,6 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </ScrollViewer>
                         </Grid>
 
                         <!-- 3. LIVE VARIABLES VIEW (Index 2) -->
@@ -593,9 +603,20 @@
                                            FontSize="10.5"
                                            Foreground="{DynamicResource DsMutedBrush}" />
                             </Border>
-                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding FilteredCells}" Margin="4">
-                                    <ItemsControl.ItemTemplate>
+                            <ItemsControl Grid.Row="2" ItemsSource="{Binding SearchPanelCells}">
+                                <ItemsControl.Template>
+                                    <ControlTemplate>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsPresenter Margin="4,4,4,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:NotebookCellViewModel">
                                             <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
                                                     CommandParameter="{Binding}"
@@ -617,7 +638,6 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </ScrollViewer>
                         </Grid>
                     </Panel>
                 </Grid>
@@ -1092,28 +1112,43 @@
                     <!-- Active Canvas (Visible when HasActiveTab) -->
                     <Grid IsVisible="{Binding HasActiveTab}">
 
-                    <!-- Notebook Canvas ScrollViewer -->
-                    <ScrollViewer x:Name="NotebookCanvasScrollViewer"
-                                  ScrollViewer.BringIntoViewOnFocusChange="False"
-                                  HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollBarVisibility="Auto">
-
-                        <!-- Full-Width Responsive Notebook Cells Container -->
-                        <StackPanel Spacing="0" Margin="24,16,36,48" HorizontalAlignment="Stretch">
+                    <!-- Notebook Canvas: one virtualized list of rows (the header, then a row per cell), so only the cells
+                         on screen are built however long the notebook is. The ScrollViewer is in the template so that the
+                         VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+                    <ItemsControl ItemsSource="{Binding CanvasRows}">
+                        <ItemsControl.Template>
+                            <ControlTemplate>
+                                <ScrollViewer x:Name="NotebookCanvasScrollViewer"
+                                              ScrollViewer.BringIntoViewOnFocusChange="False"
+                                              HorizontalScrollBarVisibility="Disabled"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <!-- Side margins only: the top and bottom gaps are the header and footer rows. A vertical margin
+                                         here would shrink the area the virtualizing panel fills. -->
+                                    <ItemsPresenter Margin="24,0,36,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.DataTemplates>
 
                             <!-- Top Insert Divider (before first cell) -->
-                            <Border Classes="cell-insert-divider" Margin="56,0,0,8">
+                            <DataTemplate DataType="vm:NotebookCanvasHeader" x:DataType="vm:NotebookCanvasHeader">
+                            <Border Classes="cell-insert-divider" Margin="56,16,0,8">
                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                                     <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
                                     <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Button Command="{Binding AddCellAboveCommand}"
+                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).AddCellAboveCommand}"
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Code Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                 <TextBlock Text="Code" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button Command="{Binding AddMarkdownCellCommand}"
+                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).AddMarkdownCellCommand}"
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Markdown Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
@@ -1123,11 +1158,10 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+                            </DataTemplate>
 
-                            <!-- Cells List -->
-                            <ItemsControl ItemsSource="{Binding Cells}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                            <!-- Cells -->
+                                    <DataTemplate DataType="vm:NotebookCellViewModel" x:DataType="vm:NotebookCellViewModel">
                                         <StackPanel Spacing="0">
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
                                             <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
@@ -1589,11 +1623,13 @@
                                             </Border>
                                         </StackPanel>
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
 
-                        </StackPanel>
-                    </ScrollViewer>
+                            <!-- The space at the end of the notebook -->
+                            <DataTemplate DataType="vm:NotebookCanvasFooter" x:DataType="vm:NotebookCanvasFooter">
+                                <Border Height="48" />
+                            </DataTemplate>
+                        </ItemsControl.DataTemplates>
+                    </ItemsControl>
                     </Grid>
 
                 <!-- 2. Empty State (Visible when HasNoTabs) -->

@@ -31,6 +31,9 @@ internal static class Usage
                                      then stop it
               --menu toolchain       also save the picture with the status bar's toolchain menu open (<name>_menu)
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
+              --tree <n>             seed the throwaway workspace with n folders (scripts and a nested folder in each)
+                                     and expand them all, so the Explorer shows a real tree (implies --sidebar explorer)
+              --file-limit <n>       list at most n files (default 20000); with --tree, shows the notice for a cut-off folder
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
               --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
@@ -40,6 +43,9 @@ internal static class Usage
               --run-tests            click Run All in the Test Cases panel
               --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
+              --quick-open-text <t>  type this into the palette (Go to File searches the whole workspace)
+              --search-text <t>      type this into the Search panel (implies --sidebar search)
+              --search-all           with --search-text: search the whole workspace (Find in Files), not just the open script
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
@@ -87,6 +93,15 @@ internal static class Usage
               --mode <kind>          surface (default), scatter, graph, trajectory, or voxel
               --width <px>           window width (default 960)
               --height <px>          window height (default 640)
+          perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
+                                 file opens, workspace re-scans and memory left behind by repeated visits.
+              --files <n>            scripts in the generated workspace (default 200; try 5000 for a big one)
+              --rounds <n>           passes over the six pages (default 6, at least 3)
+              --big-kb <n>           also open a source file of about n KB and time opening, switching to it and typing
+              --typing-experiments   with --big-kb: switch editor features off one by one to see which one a keystroke waits for
+              --shots                also save each page as shown in the studio host (host-<page>.png)
+              --cells <n>            also open a notebook of n cells: open time, memory, scrolling, opening the side panels
+              --external <n>         also open a folder of n source files: Explorer, Hub, the file index and Go to File search
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

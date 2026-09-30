@@ -42,6 +42,7 @@
                 <Button Command="{Binding ToggleExpandCommand}"
                         Classes="explorer-item-btn"
                         Classes.selected="{Binding IsSelected}"
+                        IsHitTestVisible="{Binding !IsPlaceholder}"
                         HorizontalAlignment="Stretch">
                     <Button.ContextFlyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnItemMenuOpening">
@@ -187,39 +188,63 @@
                     </Grid>
                 </Border>
 
-                <!-- Recursive Nested Children -->
-                <ItemsControl ItemsSource="{Binding Children}"
-                              IsVisible="{Binding IsExpanded}" />
             </StackPanel>
         </DataTemplate>
     </UserControl.DataTemplates>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <ScrollViewer.ContextFlyout>
-            <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnRootMenuOpening">
-                <MenuItem Header="New Script" Command="{Binding NewScriptCommand}">
-                    <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="New Folder" Command="{Binding NewFolderCommand}">
-                    <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
-                    </MenuItem.Icon>
-                </MenuItem>
-                <Separator />
-                <MenuItem Header="Open Project or File..." Click="OnOpenProjectMenuClick">
-                    <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Refresh Explorer" Command="{Binding RefreshExplorerCommand}">
-                    <MenuItem.Icon>
-                        <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
-                    </MenuItem.Icon>
-                </MenuItem>
-            </MenuFlyout>
-        </ScrollViewer.ContextFlyout>
-        <ItemsControl ItemsSource="{Binding ExplorerRootItems}" Margin="2,4,2,8" />
-    </ScrollViewer>
+    <Grid RowDefinitions="*,Auto">
+    <!-- One flat list of the visible rows (folders and files, indented by depth), virtualized: only the rows on screen
+         exist as controls, however many files the workspace has. The ScrollViewer is in the template so that the
+         VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+    <ItemsControl ItemsSource="{Binding ExplorerRows.Rows}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.Template>
+            <ControlTemplate>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.ContextFlyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnRootMenuOpening">
+                            <MenuItem Header="New Script" Command="{Binding NewScriptCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="New Folder" Command="{Binding NewFolderCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Open Project or File..." Click="OnOpenProjectMenuClick">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Refresh Explorer" Command="{Binding RefreshExplorerCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </ScrollViewer.ContextFlyout>
+                    <ItemsPresenter Margin="2,4,2,8" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </ScrollViewer>
+            </ControlTemplate>
+        </ItemsControl.Template>
+    </ItemsControl>
+
+    <!-- A folder with more files than the Explorer lists is shown cut off: say so instead of looking complete. -->
+    <Border Grid.Row="1"
+            IsVisible="{Binding IsExplorerTruncated}"
+            Background="{DynamicResource DsSurfaceHighBrush}"
+            Padding="10,6">
+        <TextBlock Text="{Binding ExplorerTruncationText}"
+                   FontSize="11"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DsMutedBrush}" />
+    </Border>
+    </Grid>
 </UserControl>

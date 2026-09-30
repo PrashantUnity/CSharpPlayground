@@ -85,6 +85,18 @@ public partial class CSharpNotebookStudioView : UserControl
         }
     }
 
+    // Unloaded releases the subscription when the studio's root is detached, but a kept-alive page comes back with the
+    // same view (and the same DataContext, so OnDataContextChanged does not run again): subscribe again on attach.
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (_subscribedVm == null && DataContext is CSharpNotebookStudioViewModel vm)
+        {
+            _subscribedVm = vm;
+            vm.RequestScrollToCell += OnRequestScrollToCell;
+        }
+    }
+
     private void OnViewUnloaded(object? sender, RoutedEventArgs e)
     {
         if (_subscribedVm != null)
