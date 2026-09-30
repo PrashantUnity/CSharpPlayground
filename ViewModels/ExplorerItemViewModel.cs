@@ -62,6 +62,23 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public string DeleteConfirmationText => $"Delete {Name} from disk?";
 
+    /// <summary>The paths of the folders that are open in a tree, so a rebuilt tree can open the same ones again.</summary>
+    public static HashSet<string> ExpandedFolderPaths(IEnumerable<ExplorerItemViewModel> roots)
+    {
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Collect(roots);
+        return paths;
+
+        void Collect(IEnumerable<ExplorerItemViewModel> items)
+        {
+            foreach (var item in items.Where(i => i.IsDirectory))
+            {
+                if (item.IsExpanded) paths.Add(item.FullPath);
+                Collect(item.Children);
+            }
+        }
+    }
+
     public ExplorerItemViewModel? Parent { get; set; }
 
     public ObservableCollection<ExplorerItemViewModel> Children { get; } = new();

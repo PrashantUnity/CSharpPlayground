@@ -49,6 +49,23 @@ internal static class WorkspaceWalker
     /// <summary>Every folder under <paramref name="root"/> (not the root itself) the Explorer shows.</summary>
     public static List<string> Folders(string root) => Walk(root).Skip(1).ToList();
 
+    /// <summary>
+    /// True when <paramref name="path"/> is, or lies inside, a folder the walk leaves out (.git, node_modules, ...), judged by
+    /// name alone with no file access, so it is cheap enough to run for every file-system event.
+    /// </summary>
+    public static bool IsInsideSkippedFolder(string path, string root)
+    {
+        var relative = Path.GetRelativePath(root, path);
+        if (relative.StartsWith("..", StringComparison.Ordinal)) return false;
+
+        foreach (var segment in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        {
+            if (SkippedFolders.Contains(segment) || EnvironmentFolderNames.Contains(segment)) return true;
+        }
+
+        return false;
+    }
+
     /// <summary>True for a folder the walk leaves out.</summary>
     public static bool IsSkipped(string folder)
     {

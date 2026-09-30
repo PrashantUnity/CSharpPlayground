@@ -385,6 +385,18 @@
                                                         </DataTemplate>
                                                     </ItemsControl.DataTemplates>
                                                 </ItemsControl>
+
+                                                <!-- Only the first cards are drawn (each is a heavy control); the rest is one click away. -->
+                                                <Button Command="{Binding ShowMoreItemsCommand}"
+                                                        IsVisible="{Binding HasHiddenItems}"
+                                                        HorizontalAlignment="Center"
+                                                        Margin="0,12,0,6"
+                                                        Padding="16,7"
+                                                        CornerRadius="6"
+                                                        Background="{DynamicResource DsSurfaceHighBrush}">
+                                                    <TextBlock Text="{Binding HiddenItemsText}" FontSize="12"
+                                                               Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                </Button>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

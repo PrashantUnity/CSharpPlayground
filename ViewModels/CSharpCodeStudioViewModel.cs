@@ -8,7 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -339,6 +339,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
+        _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+        });
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
     }
@@ -357,14 +362,18 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         });
     }
 
+    // True while a tab's own code and notes are put back into the studio on a switch: that is not an edit, so it must
+    // not mark the tab modified or move its modified time.
+    private bool _isRestoringTabState;
+
     partial void OnCodeChanged(string value)
     {
         Script.Code = value;
-        Script.LastModified = DateTime.UtcNow;
+        if (!_isRestoringTabState) Script.LastModified = DateTime.UtcNow;
         var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         if (activeTab != null)
         {
-            activeTab.IsDirty = true;
+            if (!_isRestoringTabState) activeTab.IsDirty = true;
             activeTab.Document.Code = value;
         }
         TriggerDiagnosticsCheck();
@@ -374,7 +383,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     partial void OnNotesChanged(string value)
     {
         Script.Notes = value;
-        Script.LastModified = DateTime.UtcNow;
+        if (!_isRestoringTabState) Script.LastModified = DateTime.UtcNow;
     }
 
     partial void OnSelectedLanguageModeIndexChanged(int value)

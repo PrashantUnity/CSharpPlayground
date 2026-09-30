@@ -31,6 +31,8 @@ internal static class Usage
                                      then stop it
               --menu toolchain       also save the picture with the status bar's toolchain menu open (<name>_menu)
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
+              --tree <n>             seed the throwaway workspace with n folders (scripts and a nested folder in each)
+                                     and expand them all, so the Explorer shows a real tree (implies --sidebar explorer)
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
               --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
@@ -87,6 +89,13 @@ internal static class Usage
               --mode <kind>          surface (default), scatter, graph, trajectory, or voxel
               --width <px>           window width (default 960)
               --height <px>          window height (default 640)
+          perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
+                                 file opens, workspace re-scans and memory left behind by repeated visits.
+              --files <n>            scripts in the generated workspace (default 200; try 5000 for a big one)
+              --rounds <n>           passes over the six pages (default 6, at least 3)
+              --big-kb <n>           also open a source file of about n KB and time opening, switching to it and typing
+              --typing-experiments   with --big-kb: switch editor features off one by one to see which one a keystroke waits for
+              --shots                also save each page as shown in the studio host (host-<page>.png)
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

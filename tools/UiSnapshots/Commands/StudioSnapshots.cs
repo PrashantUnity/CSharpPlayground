@@ -26,6 +26,28 @@ internal static class StudioSnapshots
     // Notebook Activity Bar order: CSharpNotebookStudioViewModel.SelectedActivityBarIndex.
     private static readonly string[] NotebookSideBarViews = { "explorer", "outline", "variables", "search" };
 
+    private static async Task SeedTree(LocalScriptStorageService storage, int folders)
+    {
+        for (int f = 1; f <= folders; f++)
+        {
+            string folder = await storage.CreateFolderAsync(null, $"Folder {f}");
+            for (int i = 1; i <= 4; i++) await storage.CreateNewScriptAsync($"Script {f}.{i}", folderPath: folder);
+            string nested = await storage.CreateFolderAsync(folder, "Nested");
+            await storage.CreateNewScriptAsync($"Deep {f}", folderPath: nested);
+        }
+
+        for (int i = 1; i <= 3; i++) await storage.CreateNewScriptAsync($"Loose script {i}");
+    }
+
+    private static void ExpandAll(IEnumerable<ExplorerItemViewModel> items)
+    {
+        foreach (var item in items.Where(i => i.IsDirectory))
+        {
+            item.IsExpanded = true;
+            ExpandAll(item.Children);
+        }
+    }
+
     /// <summary><c>studio n</c> or <c>studio --file path</c>: Code Studio with that script open.</summary>
     public static void CodeStudio(Options options)
     {
@@ -43,6 +65,9 @@ internal static class StudioSnapshots
             languages.StudioSettings.SaveSettings(settings);
         }
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry);
+
+        // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
+        if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
 
         // A source file (main.py) is copied into the throwaway workspace and opened as one; any other file is a C# script.
         var sourceLanguage = languages.Registry.FindSourceFileLanguage(file);
@@ -63,8 +88,9 @@ internal static class StudioSnapshots
             blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")),
             languages: languages);
         if (file != null && sourceLanguage != null) OpenSourceFile(vm, storage, file);
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (sourceLanguage != null ? "explorer" : "notes"), "--sidebar");
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (sourceLanguage != null || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
         vm.IsSideBarVisible = true;
+        if (options.Int("tree", 0) > 0) ExpandAll(vm.ExplorerRootItems);
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
 
         if (options.Value("zoom") is { } zoomStr && double.TryParse(zoomStr, System.Globalization.CultureInfo.InvariantCulture, out var zoomSize))

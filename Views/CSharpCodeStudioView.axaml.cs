@@ -22,7 +22,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
-public partial class CSharpCodeStudioView : UserControl
+public partial class CSharpCodeStudioView : UserControl, IDisposable
 {
     private TextEditor? _editor;
     private FoldingManager? _foldingManager;
@@ -31,6 +31,9 @@ public partial class CSharpCodeStudioView : UserControl
     private CSharpQuickInfoController? _quickInfoController;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
+
+    // Characters: above this a document's foldings are worked out shortly after it is shown, not before it appears.
+    private const int LargeDocumentLength = 500_000;
     private CSharpCodeStudioViewModel? _currentVm;
     private bool _isUpdatingText;
 
@@ -538,7 +541,17 @@ public partial class CSharpCodeStudioView : UserControl
                              (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light &&
                               (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
                 PolishLeftMargins(isDark);
-                UpdateCodeFolding();
+
+                // A big document's folding takes a while to work out: show the text first, fold it a moment later.
+                if (newDoc.TextLength > LargeDocumentLength)
+                {
+                    _foldingTimer.Stop();
+                    _foldingTimer.Start();
+                }
+                else
+                {
+                    UpdateCodeFolding();
+                }
             }
             catch
             {
@@ -546,31 +559,46 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    /// <summary>Releases the studio for good: the view model stops holding this view, and the editor's helpers are disposed.</summary>
+    public void Dispose()
+    {
+        ReleaseViewModel();
+        _currentVm = null;
+        _debugHoverController?.Dispose();
+        _debugHoverController = null;
+    }
+
+    // The view model outlives its views, so every handler hooked on it keeps this view (and its editor) alive and
+    // reacting until it is unhooked here.
+    private void ReleaseViewModel()
+    {
+        if (_currentVm == null) return;
+
+        _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
+        _currentVm.RequestGoToLine -= ScrollToAndSelectLine;
+        _currentVm.RequestFoldAll -= FoldAll;
+        _currentVm.RequestUnfoldAll -= UnfoldAll;
+        _currentVm.RequestToggleSearch -= ToggleSearch;
+        _currentVm.RequestSetPausedLine -= OnSetPausedLine;
+        _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
+        _currentVm.RequestReloadEditorText -= OnReloadEditorText;
+        _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
+        _currentVm.RequestFocusNotes -= OnFocusNotes;
+        _currentVm.RequestExploreVariable -= OpenCollectionView;
+        _currentVm.RequestViewVariable -= OpenValueViewer;
+        _currentVm.PropertyChanged -= OnVmPropertyChanged;
+        _completionController?.Dispose();
+        _completionController = null;
+        _quickInfoController?.Dispose();
+        _quickInfoController = null;
+        _languageAssistant?.Dispose();
+        _languageAssistant = null;
+        _editorLanguage = null;
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (_currentVm != null)
-        {
-            _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
-            _currentVm.RequestGoToLine -= ScrollToAndSelectLine;
-            _currentVm.RequestFoldAll -= FoldAll;
-            _currentVm.RequestUnfoldAll -= UnfoldAll;
-            _currentVm.RequestToggleSearch -= ToggleSearch;
-            _currentVm.RequestSetPausedLine -= OnSetPausedLine;
-            _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
-            _currentVm.RequestReloadEditorText -= OnReloadEditorText;
-            _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
-            _currentVm.RequestFocusNotes -= OnFocusNotes;
-            _currentVm.RequestExploreVariable -= OpenCollectionView;
-            _currentVm.RequestViewVariable -= OpenValueViewer;
-            _currentVm.PropertyChanged -= OnVmPropertyChanged;
-            _completionController?.Dispose();
-            _completionController = null;
-            _quickInfoController?.Dispose();
-            _quickInfoController = null;
-            _languageAssistant?.Dispose();
-            _languageAssistant = null;
-            _editorLanguage = null;
-        }
+        ReleaseViewModel();
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
         UpdateDeckPlacement();
@@ -672,12 +700,14 @@ public partial class CSharpCodeStudioView : UserControl
         {
             var targetCode = tab.Document.Code ?? string.Empty;
             TextDocument doc;
+            var replacedText = false;
             try
             {
                 doc = tab.DocumentModel;
-                if (doc.Text != targetCode)
+                if (!DocumentEquals(doc, targetCode))
                 {
                     doc.Text = targetCode;
+                    replacedText = true;
                 }
             }
             catch (InvalidOperationException)
@@ -687,9 +717,12 @@ public partial class CSharpCodeStudioView : UserControl
                 tab.DocumentModel = doc;
             }
 
+            var alreadyShown = ReferenceEquals(_editor.Document, doc);
             _editor.Document = doc;
 
-            UpdateCodeFolding();
+            // Showing a different document already installs and updates its foldings (OnEditorDocumentChanged); a pass
+            // here as well would only repeat a full scan of the document.
+            if (alreadyShown && replacedText) UpdateCodeFolding();
 
             var maxLines = Math.Max(1, _editor.Document?.LineCount ?? 1);
             var targetLine = Math.Clamp(tab.CaretLine, 1, maxLines);
@@ -718,21 +751,39 @@ public partial class CSharpCodeStudioView : UserControl
             var targetCode = _currentVm.Code ?? string.Empty;
             if (_editor.Document != null)
             {
-                if (_editor.Document.Text != targetCode)
+                // Only a real change needs the folding scan (and the text is compared without copying it).
+                if (!DocumentEquals(_editor.Document, targetCode))
                 {
                     _editor.Document.Text = targetCode;
+                    UpdateCodeFolding();
                 }
             }
             else
             {
                 _editor.Text = targetCode;
+                UpdateCodeFolding();
             }
-            UpdateCodeFolding();
         }
         finally
         {
             _isUpdatingText = false;
         }
+    }
+
+    // Whether the document holds exactly this text. Document.Text builds a copy of the whole document (megabytes, on the
+    // large object heap, for a big file) just to compare it, and it was done on every tab switch; this compares in chunks.
+    private static bool DocumentEquals(TextDocument document, string text)
+    {
+        if (document.TextLength != text.Length) return false;
+
+        const int chunk = 8192;
+        for (var offset = 0; offset < text.Length; offset += chunk)
+        {
+            var length = Math.Min(chunk, text.Length - offset);
+            if (!document.GetText(offset, length).AsSpan().SequenceEqual(text.AsSpan(offset, length))) return false;
+        }
+
+        return true;
     }
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

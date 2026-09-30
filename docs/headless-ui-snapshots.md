@@ -166,6 +166,20 @@ Read this before extending the tool.
    testing, so hover styles, pointer capture and drag handlers run exactly as with a mouse. To change state, prefer
    calling the view model's commands and properties: it's faster and doesn't depend on where things are drawn.
 
+## Timing instead of pictures: `perf`
+
+The same headless session can time the studio. `perf` builds a throwaway workspace (`--files 200` scripts, a tenth as many
+notebooks), puts the real studio host in an off-screen window and prints milliseconds for the first visit and the warm
+switch of every page, file opens and tab switches, how often the workspace was re-scanned, and how much memory repeated
+visits leave behind. `--big-kb 2048` adds one big source file (open, switch to it, and typing into it), and `--shots` also
+saves each page as the host shows it. Numbers are for comparing runs on one machine (a Debug build). The budgets and the
+rules they protect are in `.agents/rules/performance_and_zero_lag_mandate.md`.
+
+```bash
+dotnet build tools/UiSnapshots
+dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll perf --files 200 --rounds 3 --big-kb 2048
+```
+
 ## Adding a snapshot
 
 1. Add a method to a class in `tools/UiSnapshots/Commands/` (or a new one):

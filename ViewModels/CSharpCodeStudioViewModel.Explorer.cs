@@ -11,13 +11,27 @@ public partial class CSharpCodeStudioViewModel
 {
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
+    private ExplorerRowList? _explorerRows;
+
+    /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
+    public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
+
+    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
+    // workspace scan only when this has moved, not on every tab switch.
+    private long _explorerStructureVersion = -1;
+
+    // The row listing the open document when it isn't part of this workspace (a file opened from elsewhere).
+    private ExplorerItemViewModel? _explorerOrphanItem;
+
     public void PopulateExplorerTree()
     {
         try
         {
+            var version = _storageService.StructureVersion;
             var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
             var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
             RebuildExplorerTree(folderPaths, summaries);
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -31,9 +45,12 @@ public partial class CSharpCodeStudioViewModel
     {
         try
         {
+            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
+            var version = _storageService.StructureVersion;
             var folderPaths = await _storageService.LoadFolderPathsAsync();
             var summaries = await _storageService.LoadWorkspaceSummariesAsync();
             RebuildExplorerTree(folderPaths, summaries);
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -41,10 +58,68 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
+    /// <summary>
+    /// Brings the Explorer up to date without rescanning the workspace when nothing in it has changed: switching a tab
+    /// or coming back to this page only moves the highlight (and lists the open document if it lives outside the workspace).
+    /// </summary>
+    public async Task RefreshExplorerIfStaleAsync()
+    {
+        if (_explorerStructureVersion != _storageService.StructureVersion)
+        {
+            await RefreshExplorerAsync();
+            return;
+        }
+
+        EnsureOpenDocumentListed();
+        HighlightExplorerItem(Script?.Id);
+    }
+
+    // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
+    // studio is also used without a host that says so).
+    private bool _isPageActive = true;
+
+    // Shown again after other pages (or other programs) may have added, removed or renamed items: catch up.
+    public void OnActivated()
+    {
+        _isPageActive = true;
+        _ = RefreshExplorerIfStaleAsync();
+    }
+
+    public void OnDeactivated() => _isPageActive = false;
+
+    // The open document isn't part of the workspace when it was opened from elsewhere (a loose file, or a tab left over
+    // from another folder): the tree lists it at the top for as long as it is the open one.
+    private void EnsureOpenDocumentListed(bool sort = true)
+    {
+        if (_explorerOrphanItem != null && !string.Equals(_explorerOrphanItem.DocumentId, Script?.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            ExplorerRootItems.Remove(_explorerOrphanItem);
+            _explorerOrphanItem = null;
+        }
+
+        if (Script == null || string.IsNullOrEmpty(Script.Id) || FindByDocumentId(ExplorerRootItems, Script.Id) != null) return;
+
+        var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
+        var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
+        _explorerOrphanItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
+        ExplorerRootItems.Add(_explorerOrphanItem);
+        if (sort) SortExplorerTree(ExplorerRootItems);
+    }
+
     private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
     {
+        // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
+        using var rowsScope = ExplorerRows.Suspend();
+
+        // A refresh keeps the folders the user had open open.
+        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
+        _explorerOrphanItem = null;
         var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
+        // file would be quadratic in the size of a folder.
+        var rootKey = new object();
+        var namesByFolder = new Dictionary<object, HashSet<string>>();
 
         ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
@@ -56,7 +131,7 @@ public partial class CSharpCodeStudioViewModel
             var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
             var parent = GetOrCreateFolder(parentPath);
 
-            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            var node = CreateFolderItem(name, relativePath, isExpanded: expandedFolders.Contains(relativePath), parent: parent);
             AddToTree(parent, node);
             folderNodes[relativePath] = node;
             return node;
@@ -75,8 +150,13 @@ public partial class CSharpCodeStudioViewModel
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
-            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
-            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            var folderKey = (object?)parent ?? rootKey;
+            if (!namesByFolder.TryGetValue(folderKey, out var names))
+            {
+                namesByFolder[folderKey] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!names.Add(name))
             {
                 continue;
             }
@@ -85,14 +165,7 @@ public partial class CSharpCodeStudioViewModel
             AddToTree(parent, docItem);
         }
 
-        if (Script != null && !string.IsNullOrEmpty(Script.Id) && FindByDocumentId(ExplorerRootItems, Script.Id) == null)
-        {
-            // The open document isn't in this workspace (a file opened from elsewhere): show it at the top.
-            var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
-            var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
-            var expItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
-            ExplorerRootItems.Add(expItem);
-        }
+        EnsureOpenDocumentListed(sort: false);
 
         SortExplorerTree(ExplorerRootItems);
         HighlightExplorerItem(Script?.Id);
@@ -100,6 +173,8 @@ public partial class CSharpCodeStudioViewModel
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
     {
+        using var rowsScope = ExplorerRows.Suspend();
+
         var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {

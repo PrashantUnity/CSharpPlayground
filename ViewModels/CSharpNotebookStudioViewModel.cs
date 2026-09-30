@@ -11,7 +11,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpNotebookStudioViewModel : ObservableObject
+public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly StudioLanguageServices _languages;
@@ -235,6 +235,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     public ObservableCollection<NotebookTabViewModel> Tabs { get; } = new();
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
+    private ExplorerRowList? _explorerRows;
+
+    /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
+    public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
+
     public bool HasActiveTab => ActiveTab != null;
     public bool HasNoTabs => ActiveTab == null;
 
@@ -400,6 +405,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
+        // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
+        _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+        });
     }
 
     private void OnStudioSettingsChanged(StudioSettings s)
@@ -1339,20 +1349,49 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
+    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
+    // workspace scan only when this has moved.
+    private long _explorerStructureVersion = -1;
+
     [RelayCommand]
     public async Task RefreshExplorer()
     {
         try
         {
+            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
+            var version = _storageService.StructureVersion;
             var folderPaths = await _storageService.LoadFolderPathsAsync();
             var summaries = await _storageService.LoadWorkspaceSummariesAsync();
             RebuildExplorerTree(folderPaths, summaries);
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh explorer tree: {ex.Message}");
         }
     }
+
+    /// <summary>Reloads the Explorer only if the workspace changed since it was built (a script created in the Hub, say).</summary>
+    public async Task RefreshExplorerIfStaleAsync()
+    {
+        if (_explorerStructureVersion != _storageService.StructureVersion)
+        {
+            await RefreshExplorer();
+        }
+    }
+
+    // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
+    // studio is also used without a host that says so).
+    private bool _isPageActive = true;
+
+    // Shown again after other pages (or other programs) may have added, removed or renamed items: catch up.
+    public void OnActivated()
+    {
+        _isPageActive = true;
+        _ = RefreshExplorerIfStaleAsync();
+    }
+
+    public void OnDeactivated() => _isPageActive = false;
 
     [RelayCommand]
     public void CollapseAllExplorer()
@@ -1379,9 +1418,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     {
         try
         {
+            var version = _storageService.StructureVersion;
             var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
             var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
             RebuildExplorerTree(folderPaths, summaries);
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -1392,8 +1433,17 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
     {
+        // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
+        using var rowsScope = ExplorerRows.Suspend();
+
+        // A refresh keeps the folders the user had open open.
+        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
         var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
+        // file would be quadratic in the size of a folder.
+        var rootKey = new object();
+        var namesByFolder = new Dictionary<object, HashSet<string>>();
 
         ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
@@ -1405,7 +1455,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
             var parent = GetOrCreateFolder(parentPath);
 
-            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            var node = CreateFolderItem(name, relativePath, isExpanded: expandedFolders.Contains(relativePath), parent: parent);
             AddToTree(parent, node);
             folderNodes[relativePath] = node;
             return node;
@@ -1424,8 +1474,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
-            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
-            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            var folderKey = (object?)parent ?? rootKey;
+            if (!namesByFolder.TryGetValue(folderKey, out var names))
+            {
+                namesByFolder[folderKey] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!names.Add(name))
             {
                 continue;
             }
@@ -1455,6 +1510,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
     {
+        using var rowsScope = ExplorerRows.Suspend();
+
         var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {

@@ -14,9 +14,10 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 ///
 /// Immediate-mode drawing (a callback receiving the DrawingContext each frame) rather than a
 /// retained scene graph — no per-frame allocation, matching how Avalonia controls already draw
-/// themselves. Disposing stops the timer; it also stops itself automatically when detached from the
-/// visual tree (e.g. the app closes the window it's hosted in) as a safety net, in addition to the
-/// explicit disposal wired into cell/tab teardown (see InteractiveControlLifecycle).
+/// themselves. Disposing stops the timer for good; it also pauses by itself while detached from the
+/// visual tree (e.g. the app closes the window it's hosted in) or hidden (its page is not the one on
+/// screen) as a safety net, in addition to the explicit disposal wired into cell/tab teardown
+/// (see InteractiveControlLifecycle).
 /// </summary>
 public class AnimatedRenderControl : Control, IDisposable
 {
@@ -36,14 +37,43 @@ public class AnimatedRenderControl : Control, IDisposable
         Height = height;
         ClipToBounds = true;
 
-        _timer = new DispatcherTimer(DispatcherPriority.Render)
+        // Background, not Render: a decorative animation must not outrank the host's own input handling.
+        _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = interval ?? TimeSpan.FromMilliseconds(16) // ~60fps
         };
         _timer.Tick += (_, _) => InvalidateVisual();
-        _timer.Start();
+    }
 
-        DetachedFromVisualTree += (_, _) => Dispose();
+    /// <summary>True while the animation is actually ticking (attached, visible and not disposed).</summary>
+    public bool IsTicking => _timer.IsEnabled;
+
+    // Ticks only while on screen. Pages are kept alive when hidden (they stay in the visual tree), so "attached"
+    // alone no longer means "visible": the timer follows IsEffectivelyVisible as well.
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        UpdateTimer();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        // Avalonia keeps IsEffectivelyVisibleProperty internal, but it still reports the change by name.
+        if (change.Property.Name == nameof(IsEffectivelyVisible)) UpdateTimer();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _timer.Stop();
+    }
+
+    private void UpdateTimer()
+    {
+        if (_disposed) return;
+        if (IsEffectivelyVisible) _timer.Start();
+        else _timer.Stop();
     }
 
     public override void Render(DrawingContext context)

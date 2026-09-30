@@ -35,6 +35,71 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public string LibraryRootPath => _libraryRoot;
 
+    // How many times the workspace has been walked to list its files or folders. Diagnostic: it lets a test or the
+    // perf tool prove that switching a tab or returning to the Hub does not re-scan the whole workspace.
+    private int _workspaceScanCount;
+    public int WorkspaceScanCount => Volatile.Read(ref _workspaceScanCount);
+
+    // Change stamps: consumers remember the value they last loaded at and reload only when it has moved, instead of
+    // re-walking the whole workspace every time the user switches a tab or returns to the Hub.
+    private long _structureVersion;
+    private long _contentVersion;
+    public long StructureVersion => Interlocked.Read(ref _structureVersion);
+    public long ContentVersion => Interlocked.Read(ref _contentVersion);
+
+    /// <param name="structural">An item appeared, disappeared, moved or was renamed (the Explorer tree changes); false for a save (titles and times change, the tree does not).</param>
+    private void MarkChanged(bool structural = true)
+    {
+        Volatile.Write(ref _lastOwnChangeTick, Environment.TickCount64);
+        BumpVersions(structural);
+    }
+
+    private void BumpVersions(bool structural)
+    {
+        if (structural) Interlocked.Increment(ref _structureVersion);
+        Interlocked.Increment(ref _contentVersion);
+    }
+
+    // ── Changes made outside the studio ──────────────────────────────────────────────────────────────────────────
+    // The studio's own operations bump the versions themselves; files changed behind its back (git, another editor)
+    // are noticed by watching the active workspace folder, once StartWatchingForChanges has been called.
+
+    /// <summary>Raised (on a background thread) once a burst of changes made outside the studio has settled.</summary>
+    public event Action? ExternalChangeDetected;
+
+    private const long OwnChangeEchoMilliseconds = 1500;
+    private readonly object _watcherGate = new();
+    private WorkspaceWatcher? _watcher;
+    private bool _watchingEnabled;
+    private long _lastOwnChangeTick;
+
+    /// <summary>Starts watching the active workspace folder (and follows it when another folder is opened).</summary>
+    public void StartWatchingForChanges()
+    {
+        _watchingEnabled = true;
+        if (_initialized) RestartWatcher();
+    }
+
+    private void RestartWatcher()
+    {
+        if (!_watchingEnabled) return;
+
+        lock (_watcherGate)
+        {
+            _watcher?.Dispose();
+            _watcher = WorkspaceWatcher.TryStart(EffectiveWorkspaceRoot, OnChangedOnDisk);
+        }
+    }
+
+    private void OnChangedOnDisk(bool structural)
+    {
+        // The file system reports the studio's own writes too, and the studio has already accounted for those.
+        if (Environment.TickCount64 - Volatile.Read(ref _lastOwnChangeTick) < OwnChangeEchoMilliseconds) return;
+
+        BumpVersions(structural);
+        ExternalChangeDetected?.Invoke();
+    }
+
     private string EffectiveWorkspaceRoot => _activeWorkspaceRootPath ?? _libraryRoot;
     public string ActiveWorkspaceRootPath => EffectiveWorkspaceRoot;
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
@@ -74,6 +139,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             // auto-populated with all of them, so a first-run Explorer starts empty until the user
             // creates something.
             _initialized = true;
+            RestartWatcher(); // The active folder is known now (a folder opened last time comes back).
         }
         finally
         {
@@ -159,6 +225,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync()
     {
+        Interlocked.Increment(ref _workspaceScanCount);
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
         var list = new List<WorkspaceItemSummary>();
@@ -270,6 +337,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (existing != null)
             {
                 await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
                 return true;
             }
 
@@ -329,6 +397,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (existing != null)
             {
                 await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
                 return true;
             }
 
@@ -360,6 +429,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         var file = Path.Combine(targetDir, $"{finalName}{extension}");
         await File.WriteAllTextAsync(file, json);
         _knownFileLocations[id] = file;
+        MarkChanged();
     }
 
     public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null)
@@ -454,6 +524,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         if (IsSourceFileId(id))
         {
             DeleteSourceFile(id);
+            MarkChanged();
             return;
         }
 
@@ -470,10 +541,12 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         _knownFileLocations.TryRemove(id, out _);
+        MarkChanged();
     }
 
     public Task<List<string>> LoadFolderPathsAsync()
     {
+        Interlocked.Increment(ref _workspaceScanCount);
         var root = EffectiveWorkspaceRoot;
         return Task.Run(() => WorkspaceWalker.Folders(root)
             .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
@@ -496,6 +569,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         Directory.CreateDirectory(Path.Combine(parentDir, finalName));
+        MarkChanged();
 
         var relativePath = string.IsNullOrEmpty(parentFolderPath) ? finalName : $"{parentFolderPath}/{finalName}";
         return Task.FromResult(relativePath);
@@ -523,6 +597,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             var tempDir = Path.Combine(parentDir, $"{safeName}__rename_{Guid.NewGuid():N}");
             Directory.Move(sourceDir, tempDir);
             Directory.Move(tempDir, destDir);
+            MarkChanged();
             return Task.FromResult(newRelativePath);
         }
 
@@ -532,6 +607,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         Directory.Move(sourceDir, destDir);
+        MarkChanged();
         return Task.FromResult(newRelativePath);
     }
 
@@ -541,6 +617,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         if (Directory.Exists(dir))
         {
             Directory.Delete(dir, recursive: true);
+            MarkChanged();
         }
         return Task.CompletedTask;
     }
@@ -739,6 +816,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
         await SaveWorkspaceStateAsync();
+        MarkChanged();
+        RestartWatcher();
         ActiveWorkspaceChanged?.Invoke();
 
         var summaries = await LoadWorkspaceSummariesAsync();

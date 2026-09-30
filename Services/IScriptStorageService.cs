@@ -15,6 +15,21 @@ public interface IScriptStorageService
     bool IsExternalWorkspaceActive { get; }
     event Action? ActiveWorkspaceChanged;
 
+    /// <summary>
+    /// Moves whenever the set or arrangement of items changes (one created, deleted, renamed or moved, or another folder
+    /// opened). A consumer that remembers the value it loaded at can skip reloading the workspace while it hasn't moved.
+    /// </summary>
+    long StructureVersion { get; }
+
+    /// <summary>Moves on every change <see cref="StructureVersion"/> reports, and on every save (titles and modified times change).</summary>
+    long ContentVersion { get; }
+
+    /// <summary>
+    /// Raised (on a background thread) once files changed outside the studio (git, another editor) have settled; the
+    /// versions above have already moved. Only raised where the storage was told to watch for changes.
+    /// </summary>
+    event Action? ExternalChangeDetected;
+
     Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync();
     Task<ScriptDocumentItem?> LoadScriptAsync(string id);
     Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null);
