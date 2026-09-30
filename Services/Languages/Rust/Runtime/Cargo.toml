@@ -1,0 +1,8 @@
+[package]
+name = "fry"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Display helpers for C# Code Studio scripts"
+
+[workspace]

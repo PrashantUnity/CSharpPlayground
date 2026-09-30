@@ -1,0 +1,14 @@
+{
+  "title": "Monthly revenue",
+  "subtitle": "2026",
+  "kind": "line",
+  "xAxis": { "title": "Month" },
+  "yAxis": { "title": "USD", "min": 0 },
+  "legend": { "show": true },
+  "showPoints": true,
+  "color": "#4ec9b0",
+  "series": [
+    { "id": "a", "name": "Store A", "y": [120, 132.5, null, 160], "labels": ["Jan", "Feb", "Mar", "Apr"] },
+    { "name": "Store B", "x": [0, 1, 2, 3], "y": [90, 95, 101, 99], "colors": [null, null, "#ff0000", null], "ids": ["b0", "b1", "b2", "b3"] }
+  ]
+}

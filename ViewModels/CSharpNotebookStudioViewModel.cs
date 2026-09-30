@@ -21,6 +21,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToSettingsAction;
     private readonly Func<int> _getTimeoutSeconds;
@@ -34,7 +35,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private NotebookTabViewModel? _activeTab;
 
     [ObservableProperty]
-    private NotebookDocumentItem _notebook;
+    private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
 
     [ObservableProperty]
     private int _selectedActivityBarIndex = 0;
@@ -401,7 +402,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         Action<ScriptDocumentItem>? openScriptAction = null,
         Action? navigateToDocsAction = null,
         StudioLanguageServices? languages = null,
-        Action? navigateToSettingsAction = null)
+        Action? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
@@ -411,6 +413,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _openScriptAction = openScriptAction;
+        _openServerAction = openServerAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
@@ -789,6 +792,20 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
+
+        // API server documents open in the Server Studio.
+        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
+            {
+                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
+                if (server != null)
+                {
+                    _openServerAction.Invoke(server);
+                    return;
+                }
+            }
+        }
 
         // Scripts, and source files of any language (main.py), open in the Code Studio.
         if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
@@ -1828,9 +1845,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         if (!string.Equals(ActiveTab?.Notebook?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
 
         // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
-        item ??= EnsureDocumentInExplorer(ActiveTab!.Notebook, evenIfInWorkspace: true);
-        DeselectAll(ExplorerRootItems);
-        item.IsSelected = true;
+        // ActiveTab?.Notebook is confirmed non-null by line 1845 (we returned early if their Id didn't match), but
+        // capture it in a local so the nullable flow analysis doesn't have to track the chained dereference.
+        var activeNotebook = ActiveTab?.Notebook;
+        if (item == null && activeNotebook != null)
+            item = EnsureDocumentInExplorer(activeNotebook, evenIfInWorkspace: true);
+        if (item != null)
+        {
+            DeselectAll(ExplorerRootItems);
+            item.IsSelected = true;
+        }
     }
 
     private ExplorerItemViewModel? FindItemByIdOrName(IEnumerable<ExplorerItemViewModel> items, string? docId, string name)

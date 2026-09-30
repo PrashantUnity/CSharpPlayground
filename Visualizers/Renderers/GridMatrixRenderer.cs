@@ -29,7 +29,7 @@ public class GridMatrixRenderer : VisualizerRendererBase
         double startX = Math.Max(12, (bounds.Width - totalGridWidth) / 2.0) + options.PanOffsetX;
         double startY = Math.Max(12, (bounds.Height - totalGridHeight) / 2.0) + options.PanOffsetY;
 
-        var activeCells = GetActiveCells(options);
+        var activeCells = GetActiveCells(options, grid);
         var changed = StepChanges.MatrixCells(PreviousSnapshot<GridMatrixData>(options), grid);
         bool showValues = grid.ShowValues && options.ShowValues;
 
@@ -246,7 +246,8 @@ public class GridMatrixRenderer : VisualizerRendererBase
         return options.MatrixData;
     }
 
-    private static HashSet<(int R, int C)> GetActiveCells(VisualizerOptions options)
+    // The step's highlighted cells, and cells the grid itself marks active (as the other visualizers' items can be).
+    private static HashSet<(int R, int C)> GetActiveCells(VisualizerOptions options, GridMatrixData grid)
     {
         var set = new HashSet<(int, int)>();
         var currentStep = options.Sequence?.CurrentStep;
@@ -255,6 +256,14 @@ public class GridMatrixRenderer : VisualizerRendererBase
             foreach (var cell in currentStep.ActiveCells)
             {
                 set.Add(cell);
+            }
+        }
+
+        for (int r = 0; r < grid.Rows; r++)
+        {
+            for (int c = 0; c < grid.Columns; c++)
+            {
+                if (grid[r, c].IsActive) set.Add((r, c));
             }
         }
         return set;

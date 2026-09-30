@@ -1,0 +1,20 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "histogram",
+    "bins": 3,
+    "series": [
+      {
+        "values": [
+          1,
+          2,
+          2,
+          3,
+          3,
+          3
+        ]
+      }
+    ],
+    "title": "Samples"
+  }
+}

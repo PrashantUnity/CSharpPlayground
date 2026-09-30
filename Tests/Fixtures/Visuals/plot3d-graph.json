@@ -1,0 +1,9 @@
+{
+  "title": "Network",
+  "kind": "graph",
+  "graph": {
+    "directed": false,
+    "nodes": [ { "id": "a", "label": "Alpha", "z": 1 }, { "id": "b" }, { "id": "c", "color": "#22c55e", "size": 12 } ],
+    "edges": [ { "from": "a", "to": "b", "weight": 2.5 }, { "from": "b", "to": "c", "directed": true } ]
+  }
+}

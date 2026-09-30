@@ -5,8 +5,12 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 
 public class Camera3D
 {
+    // Far enough that the whole box, its axes and their labels fit the view (at a 45° field of view the box's bounding
+    // sphere alone needs 18), with room to spare.
+    public const double DefaultDistance = 21.0;
+
     private double _pitch = 30.0;
-    private double _distance = 18.0;
+    private double _distance = DefaultDistance;
 
     public double Yaw { get; set; } = 45.0;
 
@@ -94,10 +98,21 @@ public class Camera3D
         Target = Vector3D.Zero;
     }
 
+    public void CopyFrom(Camera3D other)
+    {
+        Yaw = other.Yaw;
+        Pitch = other.Pitch;
+        Distance = other.Distance;
+        Target = other.Target;
+        FieldOfView = other.FieldOfView;
+        IsOrthographic = other.IsOrthographic;
+        OrthographicSize = other.OrthographicSize;
+    }
+
     public void Reset()
     {
         SetIsometric();
-        Distance = 18.0;
+        Distance = DefaultDistance;
         IsOrthographic = false;
     }
 

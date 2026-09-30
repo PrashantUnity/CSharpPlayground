@@ -78,6 +78,10 @@ internal static class Usage
               --nothing-installed    as on a machine without Python: the card says what's missing
               --templates            the template gallery instead of recent workspaces
               --create <kind>        the "New Script" / "New Notebook" dialog: script or notebook
+          server                 API Server Studio (.fryserver) off-screen rendering.
+              --run                  start the server and execute an in-cell test request
+              --port <port>          configure listening port (default 5000)
+              --conflict             simulate port conflict with automatic suggestion
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
@@ -93,6 +97,13 @@ internal static class Usage
               --mode <kind>          surface (default), scatter, graph, trajectory, or voxel
               --width <px>           window width (default 960)
               --height <px>          window height (default 640)
+          visuals [word ...]     Draw visual specs through the view every chart, 3D plot and visualizer output uses, as a
+                                 program's display reaches it: every spec fixture in Tests/Fixtures/Visuals, or those whose
+                                 names contain one of the words (e.g. visuals chart tree).
+              --file <path>          a spec file (chart-*.json, plot3d-*.json, visualizer-*.json) or a display bundle
+                                 ({"application/vnd.fry.chart.v1+json": {...}}) instead; a mistake in it is printed
+              --width <px>           window width (default 900)
+              --height <px>          window height (default 600)
           perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
                                  file opens, workspace re-scans and memory left behind by repeated visits.
               --files <n>            scripts in the generated workspace (default 200; try 5000 for a big one)
@@ -102,6 +113,9 @@ internal static class Usage
               --shots                also save each page as shown in the studio host (host-<page>.png)
               --cells <n>            also open a notebook of n cells: open time, memory, scrolling, opening the side panels
               --external <n>         also open a folder of n source files: Explorer, Hub, the file index and Go to File search
+              --visuals              also time big visuals against their budgets: a chart of 100,000 values and a 30 × 30
+                                 grid visualizer of 500 steps (the display call, the UI work before the first frame,
+                                 stepping through every step and the memory it leaves)
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

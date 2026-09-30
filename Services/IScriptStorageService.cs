@@ -59,8 +59,11 @@ public interface IScriptStorageService
     Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null);
     Task<NotebookDocumentItem?> LoadNotebookAsync(string id);
     Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook, string? folderPath = null);
+    Task<FryServerDocumentItem?> LoadServerDocumentAsync(string id);
+    Task<bool> SaveServerDocumentAsync(FryServerDocumentItem serverDoc, string? folderPath = null);
     Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null);
     Task<NotebookDocumentItem> CreateNewNotebookAsync(string title = "New Notebook", string? templateId = null, string? folderPath = null);
+    Task<FryServerDocumentItem> CreateNewServerDocumentAsync(string title = "New Server", string? folderPath = null);
     Task DeleteItemAsync(string id);
 
     Task<List<string>> LoadFolderPathsAsync();

@@ -9,8 +9,11 @@ using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
+using PdfEditorApp.Plugins.CSharpEditor.Views.Server;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 
@@ -1010,6 +1013,112 @@ internal static class StudioSnapshots
         // --quick-open-text <text>: typed into the palette, e.g. to see Go to File's results.
         if (options.Value("quick-open-text") is { } text) quickOpen.SearchText = text;
         Snapshot.Settle();
+    }
+
+    public static void ServerStudio(Options options)
+    {
+        var doc = new FryServerDocumentItem
+        {
+            Title = "Order Processing Microservice",
+            ServerConfig = new FryServerConfiguration
+            {
+                Port = 5000,
+                ApiPrefix = "/api",
+                EnableCors = true,
+                AllowPrivateNetwork = true
+            },
+            Cells =
+            {
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Startup,
+                    Title = "Database Seed & State Init",
+                    Source = "State[\"orders\"] = new List<Dictionary<string, object>>\n{\n    new() { [\"id\"] = 101, [\"customer\"] = \"Alice Smith\", [\"total\"] = 149.99, [\"status\"] = \"Shipped\" },\n    new() { [\"id\"] = 102, [\"customer\"] = \"Bob Jones\", [\"total\"] = 89.50, [\"status\"] = \"Processing\" }\n};\nConsole.WriteLine(\"Server seed initialized with 2 mock orders.\");"
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "GET",
+                    Route = "/orders",
+                    Title = "List Orders",
+                    Source = "var orders = State[\"orders\"] as List<Dictionary<string, object>>;\nreturn Results.Ok(orders);"
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "GET",
+                    Route = "/orders/{id}",
+                    Title = "Get Order by ID",
+                    Source = "var id = PathParams.GetInt(\"id\");\nvar orders = State[\"orders\"] as List<Dictionary<string, object>>;\nvar found = orders?.FirstOrDefault(o => (int)o[\"id\"] == id);\nif (found == null) return Results.NotFound(new { error = $\"Order {id} not found\" });\nreturn Results.Ok(found);",
+                    TestHarness = new FryServerTestHarnessItem
+                    {
+                        PathParams = new Dictionary<string, string> { ["id"] = "101" }
+                    }
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "POST",
+                    Route = "/orders",
+                    Title = "Create New Order",
+                    Source = "var body = await Body.AsJsonAsync<Dictionary<string, object>>();\nvar orders = State[\"orders\"] as List<Dictionary<string, object>>;\nvar newOrder = new Dictionary<string, object> { [\"id\"] = 103, [\"customer\"] = body?[\"customer\"]?.ToString() ?? \"New Customer\", [\"total\"] = 99.0, [\"status\"] = \"Pending\" };\norders?.Add(newOrder);\nreturn Results.Created($\"/api/orders/{newOrder[\"id\"]}\", newOrder);"
+                }
+            }
+        };
+
+        int port = options.Int("port", 5000);
+        doc.ServerConfig.Port = port;
+
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("server_scripts"), languages.Registry);
+        var compiler = new RoslynServerCompilationService();
+        var portService = new PortAvailabilityService();
+        var engine = new FryHttpListenerServerEngine(portService, compiler);
+
+        var vm = new FryServerStudioViewModel(
+            document: doc,
+            filePath: null,
+            engine: engine,
+            portService: portService,
+            storageService: storage,
+            backToHubAction: () => { });
+
+        if (options.Flag("conflict"))
+        {
+            vm.HasPortConflict = true;
+            vm.SuggestedPort = port + 1;
+        }
+
+        if (options.Flag("traffic"))
+        {
+            vm.SelectActivityBarItem(1);
+        }
+        else if (options.Flag("explorer"))
+        {
+            vm.SelectActivityBarItem(2);
+        }
+
+        if (options.Flag("run") || options.Flag("running"))
+        {
+            Snapshot.Wait(vm.StartServerAsync());
+            Snapshot.Settle();
+
+            if (vm.Cells.Count > 2)
+            {
+                Snapshot.Wait(vm.Cells[2].SendTestRequestAsync());
+                Snapshot.Settle();
+            }
+        }
+
+        var window = Snapshot.Show(new FryServerStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 1100));
+        Snapshot.Settle();
+        var name = options.Value("name") ?? (options.Flag("run") ? "server_studio_running" : "server_studio_demo");
+        Snapshot.Save(window, options, name);
+
+        if (vm.IsServerRunning)
+        {
+            Snapshot.Wait(vm.StopServerAsync());
+        }
     }
 
     private static int IndexOf(string[] names, string name, string option)

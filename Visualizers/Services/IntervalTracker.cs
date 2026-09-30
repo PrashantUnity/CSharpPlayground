@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
@@ -12,8 +13,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 /// Draws intervals on one shared timeline, a row each, with the answer building up in a lane underneath. Rows are
 /// read from the live list at every step, so sorting that list in place reorders them.
 /// </summary>
-public sealed class IntervalTracker
+public sealed class IntervalTracker : IVisualSource
 {
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
     public const int MaxRows = 40;
 
     private const double Padding = 16;

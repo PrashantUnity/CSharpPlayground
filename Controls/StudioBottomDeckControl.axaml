@@ -8,7 +8,6 @@
              xmlns:services="using:PdfEditorApp.Plugins.CSharpEditor.Services"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
-             xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioBottomDeckControl"
              x:CompileBindings="False">
@@ -128,7 +127,7 @@
                                 <StackPanel Spacing="10" HorizontalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Call .Dump() in C#, Display.dump() in Java/JS, or dump() in Python to inspect results in a rich interactive table." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Call .Dump(), Display.Chart(), Display.Plot3D(), or Display.Visualizer() in any language to inspect results here." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
@@ -151,8 +150,8 @@
                                             <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
                                                 <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
                                             </Border>
-                                            <Border IsVisible="{Binding IsPlot3DKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
-                                                <charting3d:InteractivePlot3DControl Options="{Binding Plot3DOptions}" />
+                                            <Border IsVisible="{Binding IsVisualKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                                <controls:VisualOutputView Output="{Binding Visual}" />
                                             </Border>
                                             <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
                                                 <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />

@@ -1,0 +1,608 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="300"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Server.FryServerEndpointCellControl"
+             x:DataType="vm:FryServerCellViewModel">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+
+        <!-- Gutter Fold Button -->
+        <Style Selector="Button.gutter-fold-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.gutter-fold-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        </Style>
+
+        <!-- Gutter Run Play Button -->
+        <Style Selector="Button.gutter-run-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.75" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.gutter-run-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        </Style>
+
+        <!-- Cell Card Container -->
+        <Style Selector="Border.notebook-cell-card">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.notebook-cell-card:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+        <Style Selector="Border.notebook-cell-card.active">
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        </Style>
+
+        <!-- Cell Tool Button -->
+        <Style Selector="Button.cell-tool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover">
+            <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover materialIcons|MaterialIcon">
+            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
+        </Style>
+
+        <!-- Method Dropdown Button Style -->
+        <Style Selector="Button.method-dropdown-btn">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="46" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.method-dropdown-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}" />
+            <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+        </Style>
+        <Style Selector="Button.method-dropdown-btn:pointerover">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+        <!-- Cell Action Toggle (Test Drawer, etc.) -->
+        <Style Selector="ToggleButton.cell-action-toggle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="7,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="ToggleButton.cell-action-toggle:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.cell-action-toggle:checked">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        </Style>
+
+        <!-- Cell Enable/Disable Power Toggle -->
+        <Style Selector="ToggleButton.cell-enable-toggle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="Opacity" Value="0.45" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="ToggleButton.cell-enable-toggle:checked">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Foreground" Value="{DynamicResource DsGreenBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.cell-enable-toggle:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.cell-enable-toggle /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <!-- Between-Cell Insertion Divider (Notebook Style) -->
+        <Style Selector="Border.cell-insert-divider">
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="56,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.cell-insert-divider StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.cell-insert-divider:pointerover StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="Border.cell-insert-divider Rectangle.divider-line">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.cell-insert-divider:pointerover Rectangle.divider-line">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+
+        <Style Selector="Button.insert-cell-pill">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.insert-cell-pill:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Margin="0,0,0,10">
+        <!-- 2-Column IDE Cell Layout: Col 0 = Gutter (56px), Col 1 = Cell Card -->
+        <Grid ColumnDefinitions="56,*">
+            <!-- COLUMN 0: LEFT GUTTER (Aligned with header) -->
+            <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Right" Margin="0,6,10,0">
+                <!-- Gutter Fold Button -->
+                <Button Command="{Binding ToggleInputCollapseCommand}"
+                        Classes="gutter-fold-btn"
+                        ToolTip.Tip="Fold / Unfold Cell">
+                    <Panel Width="10" Height="10">
+                        <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding !IsInputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
+                        <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding IsInputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
+                    </Panel>
+                </Button>
+
+                <!-- Gutter Run / Send Button (Endpoint Cells) -->
+                <Button Command="{Binding SendTestRequestCommand}"
+                        Classes="gutter-run-btn"
+                        IsVisible="{Binding IsEndpoint}"
+                        ToolTip.Tip="Execute Test Request (Ctrl+Enter)">
+                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
+                </Button>
+
+                <!-- Execution Duration Badge (✓ 1.2ms / ✕ 500) -->
+                <StackPanel Orientation="Vertical" Spacing="1" HorizontalAlignment="Right" IsVisible="{Binding HasOutput}">
+                    <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                        <materialIcons:MaterialIcon Kind="Check" Width="9" Height="9" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" />
+                        <materialIcons:MaterialIcon Kind="Close" Width="9" Height="9" Foreground="{DynamicResource NavPinnedFgBrush}" IsVisible="{Binding HasError}" />
+                        <TextBlock Text="{Binding ExecutionTimeText}" FontSize="8.5" Foreground="{DynamicResource DsMutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- COLUMN 1: UNIFIED CELL CARD -->
+            <Border Grid.Column="1"
+                    Classes="notebook-cell-card"
+                    Classes.active="{Binding IsSelected}">
+                <Grid>
+                    <!-- 3px Left Vertical Accent Focus Line -->
+                    <Border Width="3"
+                            Background="{Binding TypeBadgeBorderBrush}"
+                            CornerRadius="4,0,0,4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Stretch" />
+
+                    <StackPanel Margin="3,0,0,0">
+                        <!-- HEADER BAR (Height 32px) -->
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Height="32"
+                                Padding="10,0">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" VerticalAlignment="Center">
+                                <!-- Endpoint: Method Dropdown Menu -->
+                                <Button Grid.Column="0"
+                                        IsVisible="{Binding IsEndpoint}"
+                                        Classes="method-dropdown-btn"
+                                        Background="{Binding MethodBadgeBgBrush}"
+                                        BorderBrush="{Binding MethodBadgeBorderBrush}"
+                                        BorderThickness="1"
+                                        Margin="0,0,8,0"
+                                        ToolTip.Tip="Change HTTP Method">
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                            <MenuItem Header="GET" Command="{Binding SetMethodCommand}" CommandParameter="GET" />
+                                            <MenuItem Header="POST" Command="{Binding SetMethodCommand}" CommandParameter="POST" />
+                                            <MenuItem Header="PUT" Command="{Binding SetMethodCommand}" CommandParameter="PUT" />
+                                            <MenuItem Header="DELETE" Command="{Binding SetMethodCommand}" CommandParameter="DELETE" />
+                                            <MenuItem Header="PATCH" Command="{Binding SetMethodCommand}" CommandParameter="PATCH" />
+                                            <Separator />
+                                            <MenuItem Header="HEAD" Command="{Binding SetMethodCommand}" CommandParameter="HEAD" />
+                                            <MenuItem Header="OPTIONS" Command="{Binding SetMethodCommand}" CommandParameter="OPTIONS" />
+                                            <MenuItem Header="ANY" Command="{Binding SetMethodCommand}" CommandParameter="ANY" />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Method}" FontSize="10" FontWeight="Bold" Foreground="{Binding MethodBadgeFgBrush}" VerticalAlignment="Center" />
+                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="9" Height="9" Foreground="{Binding MethodBadgeFgBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Non-Endpoint Cell Type Badge -->
+                                <Border Grid.Column="0"
+                                        IsVisible="{Binding !IsEndpoint}"
+                                        Background="{Binding TypeBadgeBgBrush}"
+                                        BorderBrush="{Binding TypeBadgeBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="6,1"
+                                        Height="22"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TypeBadgeText}" FontSize="9.5" FontWeight="Bold" Foreground="{Binding TypeBadgeFgBrush}" VerticalAlignment="Center" />
+                                </Border>
+
+                                <!-- Route Capsule Input (Endpoints) -->
+                                <Border Grid.Column="1"
+                                        IsVisible="{Binding IsEndpoint}"
+                                        Background="{DynamicResource DsBgBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Height="22"
+                                        Padding="6,0"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center">
+                                    <TextBox Text="{Binding Route, Mode=TwoWay}"
+                                             FontFamily="Consolas, Monaco, monospace"
+                                             FontSize="11.5"
+                                             FontWeight="SemiBold"
+                                             Foreground="{DynamicResource DsTextWhiteBrush}"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Padding="0"
+                                             MinWidth="120"
+                                             Height="20"
+                                             MinHeight="0"
+                                             VerticalContentAlignment="Center"
+                                             PlaceholderText="/route"
+                                             VerticalAlignment="Center" />
+                                </Border>
+
+                                <!-- Title Textbox -->
+                                <TextBox Grid.Column="2"
+                                         Text="{Binding Title, Mode=TwoWay}"
+                                         FontSize="11.5"
+                                         Foreground="{DynamicResource DsMutedBrush}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Padding="4,0"
+                                         Height="22"
+                                         MinHeight="0"
+                                         VerticalContentAlignment="Center"
+                                         PlaceholderText="Description / Endpoint summary"
+                                         VerticalAlignment="Center" />
+
+                                <!-- Right: Cell Actions Toolbar (Notebook style) -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                    <!-- Test Drawer Toggle (Endpoint only) -->
+                                    <ToggleButton IsChecked="{Binding IsTestHarnessExpanded, Mode=TwoWay}"
+                                                  IsVisible="{Binding IsEndpoint}"
+                                                  Classes="cell-action-toggle"
+                                                  ToolTip.Tip="Toggle Test Parameters">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Tune" Width="11" Height="11" />
+                                            <TextBlock Text="Test" FontSize="10.5" FontWeight="Medium" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </ToggleButton>
+
+                                    <Rectangle Width="1" Height="12" Fill="{DynamicResource DsBorderBrush}" Margin="2,0" VerticalAlignment="Center" />
+
+                                    <!-- Enable / Disable Cell Power Toggle -->
+                                    <ToggleButton IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                                  Classes="cell-enable-toggle"
+                                                  ToolTip.Tip="{Binding EnableToggleTooltip}">
+                                        <materialIcons:MaterialIcon Kind="Power" Width="13" Height="13" />
+                                    </ToggleButton>
+
+                                    <!-- Move Up -->
+                                    <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).MoveCellUpCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="cell-tool-btn"
+                                            ToolTip.Tip="Move Cell Up">
+                                        <materialIcons:MaterialIcon Kind="ArrowUp" Width="12" Height="12" />
+                                    </Button>
+
+                                    <!-- Move Down -->
+                                    <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).MoveCellDownCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="cell-tool-btn"
+                                            ToolTip.Tip="Move Cell Down">
+                                        <materialIcons:MaterialIcon Kind="ArrowDown" Width="12" Height="12" />
+                                    </Button>
+
+                                    <!-- Delete -->
+                                    <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).RemoveCellCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="cell-tool-btn delete-tool"
+                                            ToolTip.Tip="Delete Cell">
+                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="12" Height="12" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- TEST HARNESS DRAWER (Only when expanded by user!) -->
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,8"
+                                IsVisible="{Binding IsTestHarnessExpanded}">
+                            <Grid ColumnDefinitions="*,*,Auto,Auto">
+                                <!-- Path Params -->
+                                <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,8,0">
+                                    <TextBlock Text="Path Parameters" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBox Text="{Binding TestPathParamsText, Mode=TwoWay}"
+                                             Height="24"
+                                             FontSize="11"
+                                             FontFamily="Consolas, Monaco, monospace"
+                                             Background="{DynamicResource DsBgBrush}"
+                                             BorderBrush="{DynamicResource DsBorderBrush}"
+                                             BorderThickness="1"
+                                             CornerRadius="4"
+                                             Padding="6,2"
+                                             PlaceholderText="id=101" />
+                                </StackPanel>
+
+                                <!-- Query Params -->
+                                <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,8,0">
+                                    <TextBlock Text="Query Parameters" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBox Text="{Binding TestQueryParamsText, Mode=TwoWay}"
+                                             Height="24"
+                                             FontSize="11"
+                                             FontFamily="Consolas, Monaco, monospace"
+                                             Background="{DynamicResource DsBgBrush}"
+                                             BorderBrush="{DynamicResource DsBorderBrush}"
+                                             BorderThickness="1"
+                                             CornerRadius="4"
+                                             Padding="6,2"
+                                             PlaceholderText="includeOrders=true" />
+                                </StackPanel>
+
+                                <!-- Headers -->
+                                <StackPanel Grid.Column="2" Spacing="2" Width="180" Margin="0,0,8,0">
+                                    <TextBlock Text="Headers" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBox Text="{Binding TestHeadersText, Mode=TwoWay}"
+                                             Height="24"
+                                             FontSize="11"
+                                             FontFamily="Consolas, Monaco, monospace"
+                                             Background="{DynamicResource DsBgBrush}"
+                                             BorderBrush="{DynamicResource DsBorderBrush}"
+                                             BorderThickness="1"
+                                             CornerRadius="4"
+                                             Padding="6,2"
+                                             PlaceholderText="Accept=application/json" />
+                                </StackPanel>
+
+                                <!-- Send Test Button -->
+                                <StackPanel Grid.Column="3" VerticalAlignment="Bottom">
+                                    <Button Command="{Binding SendTestRequestCommand}"
+                                            Classes="cs-toolbar-filled"
+                                            Height="24"
+                                            Padding="10,0"
+                                            ToolTip.Tip="Execute loopback test (Ctrl+Enter)">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Play" Width="11" Height="11" />
+                                            <TextBlock Text="Send" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- CODE CANVAS -->
+                        <Border Background="{DynamicResource DsBgBrush}"
+                                Padding="8,4"
+                                MinHeight="60"
+                                IsVisible="{Binding !IsInputCollapsed}">
+                            <Panel>
+                                <!-- C# Syntax Highlighted Editor -->
+                                <controls:BindableTextEditor IsVisible="{Binding !IsMarkdown}"
+                                                             TextContent="{Binding Source, Mode=TwoWay}"
+                                                             ExecuteCommand="{Binding SendTestRequestCommand}"
+                                                             MinHeight="55"
+                                                             FontSize="12.5" />
+
+                                <!-- Markdown documentation cell -->
+                                <controls:MarkdownView IsVisible="{Binding IsMarkdown}"
+                                                       Markdown="{Binding Source}"
+                                                       Margin="8,4"
+                                                       FontSize="12.5"
+                                                       Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            </Panel>
+                        </Border>
+
+                        <!-- RESPONSE / OUTPUT INSPECTOR (When HasOutput) -->
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="12,8"
+                                IsVisible="{Binding HasOutput}">
+                            <StackPanel Spacing="6">
+                                <!-- Output Top Bar -->
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto" VerticalAlignment="Center">
+                                    <!-- Status Badge -->
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource DsSurfaceBrush}"
+                                            BorderBrush="{DynamicResource DsGreenBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="6,1"
+                                            IsVisible="{Binding !HasError}"
+                                            Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} OK'}" FontSize="10" Foreground="{DynamicResource DsGreenBrush}" FontWeight="Bold" />
+                                    </Border>
+
+                                    <Border Grid.Column="0"
+                                            Background="{DynamicResource DsSurfaceBrush}"
+                                            BorderBrush="{DynamicResource NavPinnedFgBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="6,1"
+                                            IsVisible="{Binding HasError}"
+                                            Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} Error'}" FontSize="10" Foreground="{DynamicResource NavPinnedFgBrush}" FontWeight="Bold" />
+                                    </Border>
+
+                                    <!-- Execution Latency -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="ClockOutline" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ExecutionTimeText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Right: Clear Output -->
+                                    <Button Grid.Column="3"
+                                            Command="{Binding ClearOutputCommand}"
+                                            Classes="cell-tool-btn"
+                                            Width="18" Height="18"
+                                            ToolTip.Tip="Clear Response">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                </Grid>
+
+                                <!-- Formatted Response Content -->
+                                <Border Background="{DynamicResource DsBgBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="10,6"
+                                        MaxHeight="240">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                        <SelectableTextBlock Text="{Binding LastResponseText}"
+                                                             FontFamily="Consolas, Monaco, monospace"
+                                                             FontSize="11.5"
+                                                             Foreground="{DynamicResource DsTextBrush}" />
+                                    </ScrollViewer>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Between-Cell Interactive Insertion Divider (Notebook Style) -->
+        <Border Classes="cell-insert-divider">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+                <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).InsertEndpointCellAfterCommand}"
+                            CommandParameter="{Binding}"
+                            Classes="insert-cell-pill" ToolTip.Tip="Insert Endpoint Cell Below">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="Endpoint" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).InsertMiddlewareCellAfterCommand}"
+                            CommandParameter="{Binding}"
+                            Classes="insert-cell-pill" ToolTip.Tip="Insert Middleware Cell Below">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
+                            <TextBlock Text="Middleware" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>

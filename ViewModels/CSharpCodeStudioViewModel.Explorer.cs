@@ -131,6 +131,16 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
+        {
+            if (_openServerAction != null && await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId) is { } server)
+            {
+                _openServerAction.Invoke(server);
+            }
+
+            return;
+        }
+
         if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
         {
             if (_openNotebookAction != null && await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook)
@@ -397,6 +407,19 @@ public partial class CSharpCodeStudioViewModel
         }
 
         if (string.IsNullOrEmpty(item.DocumentId)) return;
+
+        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_openServerAction != null)
+            {
+                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
+                if (server != null)
+                {
+                    _openServerAction.Invoke(server);
+                    return;
+                }
+            }
+        }
 
         if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
             item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))

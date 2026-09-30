@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Kinds;
+using System.ComponentModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
-public class TreeTracker
+public class TreeTracker : IVisualSource
 {
     private readonly WatchList _watches = new();
     private TreeNodeData? _currentActiveNode;
@@ -47,14 +50,14 @@ public class TreeTracker
     /// keeps its state, labels and pointer. Pass <paramref name="root"/> when the root itself changed; a
     /// <paramref name="note"/> also records a step.
     /// </summary>
-    public void Sync(
+    public TreeTracker Sync(
         object? root = null,
         string? note = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
         if (root != null) _source = root;
-        if (TreeDataParser.Parse(_source) is not { } fresh || ReferenceEquals(fresh, Root)) return;
+        if (TreeDataParser.Parse(_source) is not { } fresh || ReferenceEquals(fresh, Root)) return this;
 
         var before = new Dictionary<object, TreeNodeData>(ReferenceEqualityComparer.Instance);
         Walk(Root, node =>
@@ -90,6 +93,8 @@ public class TreeTracker
         {
             Snapshot(note, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
     private static void Walk(TreeNodeData node, Action<TreeNodeData> visit)
@@ -102,8 +107,11 @@ public class TreeTracker
     }
 
     /// <summary>Shows a live queue, stack, set, map or list beneath the tree at every step recorded after this call.</summary>
-    public void Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "") =>
+    public TreeTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
+    {
         _watches.Add(collection, name);
+        return this;
+    }
 
     public TreeNodeData? ResolveNode(object? target)
     {
@@ -153,7 +161,7 @@ public class TreeTracker
         return null;
     }
 
-    public void Visit(
+    public TreeTracker Visit(
         object? nodeOrTarget,
         string? note = null,
         string? subLabel = null,
@@ -162,7 +170,7 @@ public class TreeTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         // The previous node stops glowing; it only turns "visited" if nothing else (swapped, matched...) was marked on it.
         if (_currentActiveNode != null && _currentActiveNode != node)
@@ -188,9 +196,11 @@ public class TreeTracker
 
         string desc = note ?? $"Visit Node [{node.DisplayValue}] (Depth {node.Depth})";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void Highlight(
+    public TreeTracker Highlight(
         object? nodeOrTarget,
         TreeNodeState state,
         string? note = null,
@@ -199,7 +209,7 @@ public class TreeTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.State = state;
         if (!string.IsNullOrEmpty(subLabel))
@@ -209,24 +219,42 @@ public class TreeTracker
 
         string desc = note ?? $"{state} Node [{node.DisplayValue}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
     /// <summary>
     /// Colours a node without recording a step, so several nodes can change at once (comparing two trees in lockstep);
     /// the next recorded step shows them.
     /// </summary>
-    public void Mark(object? nodeOrTarget, TreeNodeState state)
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
+    /// <summary>Sets a node's state from the next recorded step on (the one state vocabulary every visualizer shares).</summary>
+    public TreeTracker Mark(object? nodeOrTarget, ElementState state) => Mark(nodeOrTarget, ElementStates.ToTree(state));
+
+    /// <summary>Fills a node with a colour from the next recorded step on; null clears it.</summary>
+    public TreeTracker Paint(object? nodeOrTarget, string? color)
+    {
+        if (ResolveNode(nodeOrTarget) is { } node) node.CustomColor = color;
+        return this;
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public TreeTracker Mark(object? nodeOrTarget, TreeNodeState state)
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.State = state;
         node.IsActive = state == TreeNodeState.Current;
         if (state == TreeNodeState.Current) _currentActiveNode = node;
+
+        return this;
     }
 
     /// <summary>Ends the current node's glow (it turns visited), e.g. before a closing summary step.</summary>
-    public void ClearCurrent()
+    public TreeTracker ClearCurrent()
     {
         Walk(Root, node =>
         {
@@ -234,10 +262,12 @@ public class TreeTracker
             node.IsActive = false;
         });
         _currentActiveNode = null;
+
+        return this;
     }
 
     /// <summary>Returns every node to its default colour (labels and pointers stay), e.g. before trying the next candidate.</summary>
-    public void ClearMarks()
+    public TreeTracker ClearMarks()
     {
         Walk(Root, node =>
         {
@@ -245,9 +275,11 @@ public class TreeTracker
             node.IsActive = false;
         });
         _currentActiveNode = null;
+
+        return this;
     }
 
-    public void SetPointer(
+    public TreeTracker SetPointer(
         object? nodeOrTarget,
         string pointerLabel,
         string? note = null,
@@ -255,18 +287,22 @@ public class TreeTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.PointerLabel = pointerLabel;
         if (!string.IsNullOrEmpty(note))
         {
             Snapshot(note, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
-    public void ClearPointers()
+    public TreeTracker ClearPointers()
     {
         ClearPointersRecursive(Root);
+
+        return this;
     }
 
     private static void ClearPointersRecursive(TreeNodeData node)
@@ -278,7 +314,7 @@ public class TreeTracker
         }
     }
 
-    public void Annotate(
+    public TreeTracker Annotate(
         object? nodeOrTarget,
         string subLabel,
         string? note = null,
@@ -286,16 +322,18 @@ public class TreeTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.SubLabel = subLabel;
         if (!string.IsNullOrEmpty(note))
         {
             Snapshot(note, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
-    public void MarkPath(
+    public TreeTracker MarkPath(
         IEnumerable<object?> pathNodes,
         string? note = null,
         [CallerLineNumber] int sourceLine = 0,
@@ -314,16 +352,18 @@ public class TreeTracker
 
         string desc = note ?? $"Mark Path ({resolved.Count} nodes)";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void SwapChildren(
+    public TreeTracker SwapChildren(
         object? nodeOrTarget,
         string? note = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.SwapChildren();
         node.State = TreeNodeState.Swapped;
@@ -332,25 +372,29 @@ public class TreeTracker
 
         string desc = note ?? $"Swapped left & right subtrees of Node [{node.DisplayValue}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void Backtrack(
+    public TreeTracker Backtrack(
         object? nodeOrTarget,
         string? note = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrTarget);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.State = TreeNodeState.Backtracked;
         node.IsActive = false;
 
         string desc = note ?? $"Backtrack from Node [{node.DisplayValue}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void Snapshot(
+    public TreeTracker Snapshot(
         string description,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
@@ -365,6 +409,8 @@ public class TreeTracker
 
         CollectActiveIds(Root, step.ActiveNodeIds);
         Sequence.AddStep(step);
+
+        return this;
     }
 
     private static void CollectActiveIds(TreeNodeData node, List<string> activeIds)

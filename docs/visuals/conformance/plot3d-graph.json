@@ -1,0 +1,35 @@
+{
+  "mime": "application/vnd.fry.plot3d.v1\u002Bjson",
+  "spec": {
+    "kind": "graph",
+    "graph": {
+      "directed": true,
+      "nodes": [
+        {
+          "id": "a"
+        },
+        {
+          "id": "b"
+        },
+        {
+          "id": "c"
+        }
+      ],
+      "edges": [
+        {
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "from": "a",
+          "to": "c"
+        },
+        {
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "title": "Links"
+  }
+}

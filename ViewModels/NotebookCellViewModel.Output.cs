@@ -1,10 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -26,24 +23,6 @@ public partial class NotebookCellViewModel
 {
     [ObservableProperty]
     private CellOutputTab _selectedOutputTab = CellOutputTab.Table;
-
-    [ObservableProperty]
-    private ChartOptions? _chartOptions;
-
-    [ObservableProperty]
-    private bool _hasChartOutput;
-
-    [ObservableProperty]
-    private VisualizerOptions? _visualizerOptions;
-
-    [ObservableProperty]
-    private bool _hasVisualizerOutput;
-
-    [ObservableProperty]
-    private Plot3DOptions? _plot3DOptions;
-
-    [ObservableProperty]
-    private bool _hasPlot3DOutput;
 
     [ObservableProperty]
     private string? _missingVariableName;
@@ -118,9 +97,9 @@ public partial class NotebookCellViewModel
     {
         get
         {
-            if (HasVisualizerOutput) return !string.IsNullOrWhiteSpace(VisualizerOptions?.Title) ? VisualizerOptions.Title : "Visualizer Output";
-            if (HasPlot3DOutput) return !string.IsNullOrWhiteSpace(Plot3DOptions?.Title) ? Plot3DOptions.Title : "3D Visualization";
-            if (HasChartOutput) return !string.IsNullOrWhiteSpace(ChartOptions?.Title) ? ChartOptions.Title : "Chart Output";
+            if (HasVisualizerOutput) return FirstTitle(VisualizerVisuals) ?? "Visualizer Output";
+            if (HasPlot3DOutput) return FirstTitle(Plot3DVisuals) ?? "3D Visualization";
+            if (HasChartOutput) return FirstTitle(ChartVisuals) ?? "Chart Output";
             if (HasTableOutput) return "Table Output";
             if (HasInspectorOutput) return "Object Inspector";
             if (HasImageOutput) return "Rendered Graphic";
@@ -144,33 +123,6 @@ public partial class NotebookCellViewModel
             if (HasHtmlContent) return "LanguageHtml5";
             return "Console";
         }
-    }
-
-    public void SetChartOutput(ChartOptions chart)
-    {
-        ChartOptions = chart;
-        HasChartOutput = true;
-        HasOutput = true;
-        SelectedOutputTab = CellOutputTab.Chart;
-        NotifyOutputTabStateChanged();
-    }
-
-    public void SetVisualizerOutput(VisualizerOptions vis)
-    {
-        VisualizerOptions = vis;
-        HasVisualizerOutput = true;
-        HasOutput = true;
-        SelectedOutputTab = CellOutputTab.Visualizer;
-        NotifyOutputTabStateChanged();
-    }
-
-    public void SetPlot3DOutput(Plot3DOptions plot)
-    {
-        Plot3DOptions = plot;
-        HasPlot3DOutput = true;
-        HasOutput = true;
-        SelectedOutputTab = CellOutputTab.Plot3D;
-        NotifyOutputTabStateChanged();
     }
 
     partial void OnSelectedOutputTabChanged(CellOutputTab value)
@@ -217,6 +169,7 @@ public partial class NotebookCellViewModel
         OnPropertyChanged(nameof(IsPlot3DTabSelected));
         OnPropertyChanged(nameof(IsHtmlTabSelected));
         OnPropertyChanged(nameof(IsAllTabSelected));
+        OnPropertyChanged(nameof(HasChartOutput));
         OnPropertyChanged(nameof(HasVisualizerOutput));
         OnPropertyChanged(nameof(HasPlot3DOutput));
         OnPropertyChanged(nameof(TableRowCountText));

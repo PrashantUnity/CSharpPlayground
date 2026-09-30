@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 
@@ -47,8 +49,11 @@ public sealed partial class ProtocolKernel
         public void Show(RichCellOutput output) => Request.OnRichOutput?.Invoke(output);
     }
 
-    /// <summary>One run of the kernel program: its pipes, the requests waiting for replies, and its end.</summary>
-    private sealed class Session(ProtocolKernel owner)
+    /// <summary>
+    /// One run of the kernel program: its pipes, the requests waiting for replies, the visuals it showed (for updates and
+    /// events), and its end.
+    /// </summary>
+    private sealed class Session(ProtocolKernel owner) : IVisualEventSink
     {
         private const int StderrTailLength = 4000;
 
@@ -56,6 +61,13 @@ public sealed partial class ProtocolKernel
         private readonly StringBuilder _stderrTail = new();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
         private readonly TaskCompletionSource<JsonElement> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Recent cells' runs by id, so what a program sends late (from a background thread, or a buffer flushed after
+        // the reply) still reaches the cell that started it, whichever cell runs by then.
+        private const int KeptExecutions = 64;
+        private readonly ConcurrentDictionary<string, Execution> _executions = new();
+        private readonly ConcurrentQueue<string> _executionOrder = new();
+        private readonly ConcurrentDictionary<string, Execution> _displayOwners = new(StringComparer.Ordinal);
+        private ProgramVisuals? _visuals;
         private IManagedProcess? _process;
         private volatile Execution? _current;
         private volatile Execution? _last;
@@ -77,9 +89,17 @@ public sealed partial class ProtocolKernel
 
         public void Begin(Execution execution)
         {
+            Remember(execution, execution.Id);
             _current = execution;
             _last = execution;
         }
+
+        // The cell a message belongs to: the one its id names; without one (or for a cell long gone), the one running,
+        // or else the last to run.
+        private Execution? TargetOf(JsonElement message) =>
+            message.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String && _executions.TryGetValue(id.GetString()!, out var named)
+                ? named
+                : _current ?? _last;
 
         public void End(Execution execution)
         {
@@ -173,7 +193,7 @@ public sealed partial class ProtocolKernel
             {
                 var message = document.RootElement;
                 var type = Text(message, "type");
-                var target = _current ?? _last;
+                var target = TargetOf(message);
                 switch (type)
                 {
                     case "ready":
@@ -183,11 +203,12 @@ public sealed partial class ProtocolKernel
                         target?.Write(Text(message, "text"));
                         break;
                     case "display":
-                        var output = MimeOutputMapper.Map(
-                            message.TryGetProperty("data", out var data) ? data : default,
-                            message.TryGetProperty("metadata", out var metadata) ? metadata : default);
-                        if (output.Text != null) target?.Write(output.Text);
-                        if (output.Rich != null) target?.Show(output.Rich);
+                    case "update_display":
+                        Display(message, target, update: type == "update_display");
+                        break;
+                    case "subscribe":
+                    case "unsubscribe":
+                        Subscription(message, target, subscribe: type == "subscribe");
                         break;
                     case "error":
                         if (target != null)
@@ -208,6 +229,51 @@ public sealed partial class ProtocolKernel
                         break;
                 }
             }
+        }
+
+        // The visuals the program showed, whose events come back to it here (made when first wanted: it needs this session).
+        private ProgramVisuals Visuals => LazyInitializer.EnsureInitialized(ref _visuals, () => new ProgramVisuals(this));
+
+        private void Display(JsonElement message, Execution? target, bool update)
+        {
+            var shown = Visuals.Display(message, update);
+            target?.Write(shown.Text);
+            if (shown.DisplayId != null && target != null) _displayOwners[shown.DisplayId] = target;
+            if (shown.Output != null) target?.Show(shown.Output);
+        }
+
+        private void Subscription(JsonElement message, Execution? target, bool subscribe) =>
+            target?.Write(Visuals.Subscription(message, subscribe));
+
+        // An event on a visual this program listens to: sent as an `event` message whose id is new, and whose output
+        // (what the program's callback prints or shows) goes to the cell that showed the visual.
+        public void Deliver(string displayId, VisualEvent visualEvent)
+        {
+            if (_dead) return;
+            var id = Guid.NewGuid().ToString("N")[..12];
+            if (_displayOwners.TryGetValue(displayId, out var owner)) Remember(owner, id);
+
+            _ = SendLineAsync(Encoding.UTF8.GetString(visualEvent.ToMessageLine(displayId, id)));
+        }
+
+        private async Task SendLineAsync(string line)
+        {
+            try
+            {
+                if (_process != null) await _process.WriteInputAsync(line);
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+            {
+                // The program has gone; its visuals stop listening when it does.
+            }
+        }
+
+        // An id that routes to an existing cell's run (an event's callback belongs to the cell that showed the visual).
+        private void Remember(Execution execution, string id)
+        {
+            _executions[id] = execution;
+            _executionOrder.Enqueue(id);
+            while (_executionOrder.Count > KeptExecutions && _executionOrder.TryDequeue(out var old)) _executions.TryRemove(old, out _);
         }
 
         // input(): the question goes to whoever runs the cell (a notebook shows an input box); no one to ask is end of input.
@@ -238,6 +304,9 @@ public sealed partial class ProtocolKernel
         private void OnExited(int exitCode)
         {
             _dead = true;
+
+            // Its visuals stay, but no longer listen: nothing is left to tell.
+            Visuals.Disconnect();
             string tail;
             lock (_stderrTail) tail = _stderrTail.ToString().Trim();
             if (tail.Length > StderrTailLength) tail = tail[^StderrTailLength..];

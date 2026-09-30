@@ -4,6 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 
@@ -25,7 +26,8 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         "\"strings\"",
         "\"time\"",
         "\"os\"",
-        "\"encoding/json\""
+        "\"encoding/json\"",
+        "\"fry\""
     };
 
     private readonly Dictionary<string, string> _cumulativeTopLevel = new(StringComparer.Ordinal);
@@ -148,6 +150,8 @@ public sealed partial class GoNotebookKernel : INotebookKernel
             WorkingDirectory = workingFolder
         };
 
+        // The cell's visuals, and the events on them its code listens to while it runs (over the event socket).
+        using var visuals = new ExternalVisualSession();
         var consoleBuilder = new StringBuilder();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
@@ -158,10 +162,11 @@ public sealed partial class GoNotebookKernel : INotebookKernel
             onRichOutput: bundle =>
             {
                 request.OnRichOutput?.Invoke(bundle);
-            });
+            },
+            visuals: visuals.Visuals);
 
         using var managedProcess = _processes.Start(
-            spec,
+            visuals.Apply(spec),
             onStandardOutput: text => processor.ProcessChunk(text),
             onStandardError: err => processor.ProcessChunk(err));
 
@@ -244,6 +249,7 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         _cumulativeImports.Add("\"time\"");
         _cumulativeImports.Add("\"os\"");
         _cumulativeImports.Add("\"encoding/json\"");
+        _cumulativeImports.Add("\"fry\"");
         _executionCount = 0;
     }
 

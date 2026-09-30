@@ -1,0 +1,32 @@
+{
+  "mime": "application/vnd.fry.visualizer.v1\u002Bjson",
+  "spec": {
+    "kind": "linkedList",
+    "state": {
+      "linkedList": {
+        "nodes": [
+          {
+            "id": "n0",
+            "value": "1",
+            "next": "n1"
+          },
+          {
+            "id": "n1",
+            "value": "2",
+            "next": "n2"
+          },
+          {
+            "id": "n2",
+            "value": "3"
+          }
+        ],
+        "markCycle": false
+      }
+    },
+    "showCoordinates": true,
+    "showValues": true,
+    "cellSize": 38,
+    "fitOnOpen": true,
+    "title": "List"
+  }
+}

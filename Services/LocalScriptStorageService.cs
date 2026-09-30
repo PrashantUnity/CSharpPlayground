@@ -348,6 +348,37 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
         }
 
+        foreach (var file in files.Where(f => f.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(file);
+                var srv = JsonSerializer.Deserialize<FryServerDocumentItem>(json);
+                if (srv != null)
+                {
+                    _knownFileLocations[srv.Id] = file;
+                    list.Add(new WorkspaceItemSummary
+                    {
+                        Id = srv.Id,
+                        Title = srv.Title,
+                        Description = srv.Description,
+                        Category = "API Server",
+                        Kind = WorkspaceItemKind.Server,
+                        LastModified = srv.LastModified,
+                        CellCount = srv.Cells.Count,
+                        FolderPath = GetFolderPath(file),
+                        IsExternalRoot = IsExternalWorkspaceActive,
+                        WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null,
+                        FileExtension = ".fryserver"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted server file '{file}': {ex.Message}");
+            }
+        }
+
         foreach (var file in files)
         {
             if (_languages.FindSourceFileLanguage(file) is { } language) list.Add(SourceFileSummary(file, language, root));
@@ -535,6 +566,78 @@ public partial class LocalScriptStorageService : IScriptStorageService
             Debug.WriteLine($"[CSharpEditorPlugin] Failed to save notebook '{notebook.Id}': {ex.Message}");
             return false;
         }
+    }
+
+    public async Task<FryServerDocumentItem?> LoadServerDocumentAsync(string id)
+    {
+        await EnsureInitializedAsync();
+        var file = await FindExistingFilePathAsync(id, ".fryserver");
+        if (file == null) return null;
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(file);
+            return JsonSerializer.Deserialize<FryServerDocumentItem>(json, _jsonOptions);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load server doc '{id}': {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<bool> SaveServerDocumentAsync(FryServerDocumentItem serverDoc, string? folderPath = null)
+    {
+        try
+        {
+            serverDoc.LastModified = DateTime.UtcNow;
+            var json = JsonSerializer.Serialize(serverDoc, _jsonOptions);
+
+            var existing = await FindExistingFilePathAsync(serverDoc.Id, ".fryserver");
+            if (existing != null)
+            {
+                await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
+                return true;
+            }
+
+            await WriteNewDocumentAsync(serverDoc.Id, ".fryserver", folderPath, json, serverDoc.Title);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save server doc '{serverDoc.Id}': {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<FryServerDocumentItem> CreateNewServerDocumentAsync(string title = "New Server", string? folderPath = null)
+    {
+        var doc = new FryServerDocumentItem
+        {
+            Title = title,
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = 5000,
+                ApiPrefix = "/api",
+                EnableCors = true
+            },
+            Cells = new()
+            {
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Title = "Get Status",
+                    Method = "GET",
+                    Route = "/status",
+                    Source = "return Ok(new { status = \"healthy\", timestamp = DateTime.UtcNow });"
+                }
+            }
+        };
+
+        await SaveServerDocumentAsync(doc, folderPath);
+        return doc;
     }
 
     private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json, string title)
@@ -903,6 +1006,11 @@ public partial class LocalScriptStorageService : IScriptStorageService
             return await OpenLooseNotebookAsync(path);
         }
 
+        if (ext == ".fryserver")
+        {
+            return await OpenLooseServerAsync(path);
+        }
+
         if (ext == ".frycs")
         {
             return await OpenLooseScriptAsync(path);
@@ -934,7 +1042,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         var sourceExtensions = string.Concat(_languages.SourceFileLanguages.SelectMany(l => l.FileExtensions).Select(e => ", " + e));
-        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .cs, .csx, .csproj, .zip{sourceExtensions}");
+        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .fryserver, .cs, .csx, .csproj, .zip{sourceExtensions}");
     }
 
     private async Task<OpenProjectResult> OpenFolderAsync(string dirPath)
@@ -986,6 +1094,32 @@ public partial class LocalScriptStorageService : IScriptStorageService
         catch (Exception ex)
         {
             return new OpenProjectResult(false, $"Failed to open notebook: {ex.Message}");
+        }
+    }
+
+    private async Task<OpenProjectResult> OpenLooseServerAsync(string filePath)
+    {
+        try
+        {
+            var json = await File.ReadAllTextAsync(filePath);
+            var server = JsonSerializer.Deserialize<FryServerDocumentItem>(json);
+            if (server == null)
+            {
+                return new OpenProjectResult(false, $"Failed to parse API server JSON in '{Path.GetFileName(filePath)}'.");
+            }
+
+            _knownFileLocations[server.Id] = filePath;
+
+            return new OpenProjectResult(
+                Success: true,
+                Message: $"Loaded API server '{server.Title}'",
+                PrimaryDocumentId: server.Id,
+                PrimaryDocumentKind: WorkspaceItemKind.Server,
+                DocumentsLoadedCount: 1);
+        }
+        catch (Exception ex)
+        {
+            return new OpenProjectResult(false, $"Failed to open API server: {ex.Message}");
         }
     }
 

@@ -1,0 +1,486 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Plot3DSpec",
+  "x-mimeType": "application/vnd.fry.plot3d.v1+json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": [
+        "scatter",
+        "surface",
+        "wireframe",
+        "trajectory",
+        "graph",
+        "voxelBar"
+      ]
+    },
+    "xAxis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "yAxis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "zAxis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "The upward axis."
+    },
+    "colorMap": {
+      "enum": [
+        "viridis",
+        "plasma",
+        "coolWarm",
+        "turbo",
+        "rainbow",
+        "ocean",
+        "fire",
+        null
+      ],
+      "description": "The colour scale for heights and values (default: viridis)."
+    },
+    "color": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The colour of the first series (a CSS colour)."
+    },
+    "autoRotate": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Turn the camera slowly around the plot (default: off)."
+    },
+    "showAxes": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "The x, y and z axes (default: on)."
+    },
+    "showGrid": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "The floor grid and the box around the data (default: on)."
+    },
+    "series": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "y": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "z": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "labels": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "sizes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "A size for each point, 1 being the usual size."
+          },
+          "colors": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "Points as columns: Plot3DSeriesSpec.X, Plot3DSeriesSpec.Y and Plot3DSeriesSpec.Z are equally long; a point with a null coordinate is skipped."
+      },
+      "description": "Points for scatter, voxel-bar and trajectory plots."
+    },
+    "surface": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "x": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "y": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "z": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Heights for surface and wireframe plots."
+    },
+    "graph": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "directed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Whether edges have a direction (default: yes); an edge can say otherwise for itself."
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique within the graph; edges, highlights and events name the node by it."
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The text on the node (default: its id)."
+              },
+              "x": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "y": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "z": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Height in a 3D graph."
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "size": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The node's radius in pixels (default: the studio's)."
+              },
+              "state": {
+                "enum": [
+                  "default",
+                  "current",
+                  "visited",
+                  "frontier",
+                  "path",
+                  "target",
+                  "start",
+                  "wall",
+                  "candidate",
+                  "matched",
+                  "backtracked",
+                  "pruned",
+                  "swapped",
+                  "relaxed",
+                  "cycle",
+                  "unreachable",
+                  "rejected",
+                  "crossEdge",
+                  "pivot",
+                  "done",
+                  null
+                ]
+              },
+              "pointer": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A small tag drawn next to the node, like a pointer's name."
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A second, smaller line of text on the node, like a distance."
+              },
+              "notes": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "More facts shown when the pointer rests on the node."
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "weight": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "directed": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Overrides GraphSpec.Directed for this edge."
+              },
+              "state": {
+                "enum": [
+                  "default",
+                  "current",
+                  "visited",
+                  "frontier",
+                  "path",
+                  "target",
+                  "start",
+                  "wall",
+                  "candidate",
+                  "matched",
+                  "backtracked",
+                  "pruned",
+                  "swapped",
+                  "relaxed",
+                  "cycle",
+                  "unreachable",
+                  "rejected",
+                  "crossEdge",
+                  "pivot",
+                  "done",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Nodes and edges for a 3D graph."
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "subtitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "A line under the title."
+    },
+    "width": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The widest the visual is drawn, in pixels; it still fits narrower space. Left out, it takes the width there is."
+    },
+    "height": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The drawing's height in pixels, under the header. Left out, the studio picks one for the kind."
+    }
+  },
+  "additionalProperties": false,
+  "description": "A 3D plot (application/vnd.fry.plot3d.v1+json). Data z points up in every kind, as in matplotlib and Plotly: points and trajectories come in Plot3DSpec.Series, a surface's heights in Plot3DSpec.Surface, a graph in Plot3DSpec.Graph."
+}

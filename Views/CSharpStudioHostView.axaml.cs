@@ -22,6 +22,7 @@ public partial class CSharpStudioHostView : UserControl, IDisposable
         _pages.Register<CSharpDocsViewModel>(() => new CSharpDocsView());
         _pages.Register<CSharpBlindProblemsViewModel>(() => new CSharpBlindProblemsView());
         _pages.Register<CSharpSettingsViewModel>(() => new CSharpSettingsView());
+        _pages.Register<PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel>(() => new PdfEditorApp.Plugins.CSharpEditor.Views.Server.FryServerStudioView());
     }
 
     /// <summary>The page views, built lazily and kept alive (exposed so tests and tooling can count them).</summary>

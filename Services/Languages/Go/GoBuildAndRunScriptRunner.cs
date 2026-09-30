@@ -48,6 +48,20 @@ public sealed class GoBuildAndRunScriptRunner(IHostEnvironment host) : IScriptRu
         var goCache = Path.Combine(outDir, ".gocache");
         buildEnv["GOCACHE"] = goCache;
 
+        if (File.Exists(Path.Combine(sourceDir, "go.mod")))
+        {
+            var gowork = Path.Combine(outDir, "go.work");
+            var fryDir = Path.Combine(outDir, "fry").Replace('\\', '/');
+            var srcDirNormalized = sourceDir.Replace('\\', '/');
+            await File.WriteAllTextAsync(gowork, $"go 1.20\n\nuse (\n\t\"{fryDir}\"\n\t\"{srcDirNormalized}\"\n)\n", ct).ConfigureAwait(false);
+            buildEnv["GOWORK"] = gowork;
+        }
+        else
+        {
+            buildEnv["GOPATH"] = outDir;
+            buildEnv["GO111MODULE"] = "auto";
+        }
+
         var steps = new List<ProcessStep>
         {
             new(

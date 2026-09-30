@@ -74,7 +74,7 @@ public class Surface3DRenderer : Plot3DRendererBase
                 double y = surface.MinY + j * stepY;
                 double z = surface.ZValues[i, j];
 
-                var w = projector.MapDataToWorld(x, z, y);
+                var w = projector.MapDataToWorld(x, y, z);
                 worldGrid[i, j] = w;
                 projGrid[i, j] = projector.ProjectWorld(w);
             }
@@ -87,6 +87,11 @@ public class Surface3DRenderer : Plot3DRendererBase
         {
             for (int j = 0; j < resY - 1; j++)
             {
+                // A missing height is a hole: the four quads around it aren't drawn.
+                if (!double.IsFinite(surface.ZValues[i, j]) || !double.IsFinite(surface.ZValues[i + 1, j]) ||
+                    !double.IsFinite(surface.ZValues[i + 1, j + 1]) || !double.IsFinite(surface.ZValues[i, j + 1]))
+                    continue;
+
                 var pr00 = projGrid[i, j];
                 var pr10 = projGrid[i + 1, j];
                 var pr11 = projGrid[i + 1, j + 1];
@@ -176,8 +181,9 @@ public class Surface3DRenderer : Plot3DRendererBase
             {
                 double y = surface.MinY + j * stepY;
                 double z = surface.ZValues[i, j];
+                if (!double.IsFinite(z)) continue; // a hole has nothing to point at
 
-                var pr = projector.ProjectData(x, z, y);
+                var pr = projector.ProjectData(x, y, z);
                 if (!pr.IsVisible) continue;
 
                 double dx = pr.ScreenPoint.X - pos.X;

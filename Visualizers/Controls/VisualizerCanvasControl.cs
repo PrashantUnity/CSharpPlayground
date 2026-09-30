@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -27,8 +28,8 @@ public class VisualizerCanvasControl : Control
     private double _initialPanX;
     private double _initialPanY;
 
-    // Set by Fit to View; the drawing is refitted as the canvas resizes until the learner zooms or pans.
-    private bool _stayFitted;
+    public VisualizerViewState ViewState { get; set; } = new();
+
     private double _fitCap = VisualizerViewport.MaxFitZoom;
     private bool _openFitPending = true;
 
@@ -39,11 +40,19 @@ public class VisualizerCanvasControl : Control
     /// <summary>Raised whenever zoom or pan changes, whether from the wheel, a drag, the toolbar or a fit.</summary>
     public event EventHandler? ViewportChanged;
 
+    /// <summary>A cell, node or item was clicked (a drag pans instead).</summary>
+    public event EventHandler<ElementClickedEventArgs<VisualizerHitTestResult>>? ElementClicked;
+
+    private readonly ClickGesture _click = new();
+
     public VisualizerOptions? Options
     {
         get => GetValue(OptionsProperty);
         set => SetValue(OptionsProperty, value);
     }
+
+    public VisualizerOptions GetEffectiveOptions() =>
+        Options?.CloneWithViewState(ViewState) ?? new VisualizerOptions();
 
     static VisualizerCanvasControl()
     {
@@ -57,55 +66,53 @@ public class VisualizerCanvasControl : Control
     public VisualizerCanvasControl()
     {
         ClipToBounds = true;
-
-        // Click the drawing, then step through it with the keyboard.
         Focusable = true;
+        DoubleTapped += (_, e) => { ResetView(); e.Handled = true; };
     }
 
     public void ZoomBy(double factor)
     {
         if (Options == null) return;
-        _stayFitted = false;
-        Options.Zoom = VisualizerViewport.ClampZoom(Options.Zoom * factor);
+        ViewState.StayFitted = false;
+        ViewState.Zoom = VisualizerViewport.ClampZoom(ViewState.Zoom * factor);
         OnViewportChanged();
     }
 
     public void ResetView()
     {
         if (Options == null) return;
-        _stayFitted = false;
-        Options.Zoom = 1.0;
-        Options.PanOffsetX = 0;
-        Options.PanOffsetY = 0;
+        ViewState.Reset();
         OnViewportChanged();
     }
 
     /// <summary>Zooms and centres so the whole drawing shows, and keeps it fitted as the canvas resizes.</summary>
     public void FitToView()
     {
-        _stayFitted = true;
+        ViewState.StayFitted = true;
         _fitCap = VisualizerViewport.MaxFitZoom;
         ApplyFit();
     }
 
-    // First real size: if the drawing is cut off but fits at a readable zoom, shrink it (never enlarge).
     private void FitOnOpenIfNeeded()
     {
         if (Options is not { FitOnOpen: true }) return;
-        if (VisualizerViewport.ComputeFit(Options, Bounds.Size, maxZoom: 1.0) is not { } fit) return;
-        if (fit.Zoom >= Options.Zoom - 1e-6 || fit.Zoom < MinOpenFitZoom) return;
+        var eff = GetEffectiveOptions();
+        if (VisualizerViewport.ComputeFit(eff, Bounds.Size, maxZoom: 1.0) is not { } fit) return;
+        if (fit.Zoom >= ViewState.Zoom - 1e-6 || fit.Zoom < MinOpenFitZoom) return;
 
-        _stayFitted = true;
+        ViewState.StayFitted = true;
         _fitCap = 1.0;
         ApplyFit();
     }
 
     private void ApplyFit()
     {
-        if (Options == null || VisualizerViewport.ComputeFit(Options, Bounds.Size, _fitCap) is not { } fit) return;
-        Options.Zoom = fit.Zoom;
-        Options.PanOffsetX = fit.PanX;
-        Options.PanOffsetY = fit.PanY;
+        if (Options == null) return;
+        var eff = GetEffectiveOptions();
+        if (VisualizerViewport.ComputeFit(eff, Bounds.Size, _fitCap) is not { } fit) return;
+        ViewState.Zoom = fit.Zoom;
+        ViewState.PanOffsetX = fit.PanX;
+        ViewState.PanOffsetY = fit.PanY;
         OnViewportChanged();
     }
 
@@ -121,18 +128,14 @@ public class VisualizerCanvasControl : Control
         if (_openFitPending && e.NewSize.Width > 0 && e.NewSize.Height > 0)
         {
             _openFitPending = false;
-
-            // An explicit fit (full screen asks for one before it has a size) wins over the gentle open-time one.
-            if (!_stayFitted)
+            if (!ViewState.StayFitted)
             {
                 FitOnOpenIfNeeded();
                 return;
             }
         }
-        if (!_stayFitted) return;
+        if (!ViewState.StayFitted) return;
 
-        // The first real size is fitted before it is ever drawn; later resizes (a grip drag, a window resize) arrive in
-        // bursts, so they refit once the burst settles instead of measuring a big tree on every pointer move.
         if (e.PreviousSize.Width <= 0 || e.PreviousSize.Height <= 0)
         {
             ApplyFit();
@@ -143,7 +146,7 @@ public class VisualizerCanvasControl : Control
             Dispatcher.UIThread.Post(() =>
             {
                 _refitQueued = false;
-                if (_stayFitted) ApplyFit();
+                if (ViewState.StayFitted) ApplyFit();
             }, DispatcherPriority.Background);
         }
     }
@@ -151,7 +154,11 @@ public class VisualizerCanvasControl : Control
     private void OnOptionsChanged(VisualizerOptions? oldOpt, VisualizerOptions? newOpt)
     {
         _openFitPending = true;
-        _stayFitted = false;
+        if (newOpt != null && ViewState.Zoom == 1.0 && ViewState.PanOffsetX == 0 && ViewState.PanOffsetY == 0)
+        {
+            ViewState = new VisualizerViewState(newOpt);
+        }
+
         if (oldOpt?.Sequence != null)
         {
             oldOpt.Sequence.StepChanged -= OnSequenceStepChanged;
@@ -173,16 +180,14 @@ public class VisualizerCanvasControl : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+        _click.Pressed(e, this);
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             Focus(NavigationMethod.Pointer);
             _isPanning = true;
             _panStartPoint = e.GetPosition(this);
-            if (Options != null)
-            {
-                _initialPanX = Options.PanOffsetX;
-                _initialPanY = Options.PanOffsetY;
-            }
+            _initialPanX = ViewState.PanOffsetX;
+            _initialPanY = ViewState.PanOffsetY;
             e.Pointer.Capture(this);
         }
     }
@@ -194,6 +199,15 @@ public class VisualizerCanvasControl : Control
         {
             _isPanning = false;
             e.Pointer.Capture(null);
+        }
+
+        if (_click.Released(e, this) is { } at && Options != null)
+        {
+            var eff = GetEffectiveOptions();
+            if (VisualizerRendererFactory.GetRenderer(eff.Kind).HitTest(at, new Rect(Bounds.Size), eff) is { } hit)
+            {
+                ElementClicked?.Invoke(this, new ElementClickedEventArgs<VisualizerHitTestResult>(hit, e.KeyModifiers));
+            }
         }
     }
 
@@ -209,15 +223,16 @@ public class VisualizerCanvasControl : Control
             double dx = pos.X - _panStartPoint.X;
             double dy = pos.Y - _panStartPoint.Y;
             if (dx == 0 && dy == 0) return;
-            _stayFitted = false;
-            Options.PanOffsetX = _initialPanX + dx;
-            Options.PanOffsetY = _initialPanY + dy;
+            ViewState.StayFitted = false;
+            ViewState.PanOffsetX = _initialPanX + dx;
+            ViewState.PanOffsetY = _initialPanY + dy;
             OnViewportChanged();
             return;
         }
 
-        var renderer = VisualizerRendererFactory.GetRenderer(Options.Kind);
-        var hit = renderer.HitTest(pos, new Rect(Bounds.Size), Options);
+        var eff = GetEffectiveOptions();
+        var renderer = VisualizerRendererFactory.GetRenderer(eff.Kind);
+        var hit = renderer.HitTest(pos, new Rect(Bounds.Size), eff);
 
         if (hit?.Details != _hoveredHit?.Details || hit?.Row != _hoveredHit?.Row || hit?.Col != _hoveredHit?.Col)
         {
@@ -249,7 +264,6 @@ public class VisualizerCanvasControl : Control
     {
         base.Render(context);
 
-        // Hit testing only sees what is drawn, so without this, dragging from empty space and double-clicks fell through.
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
         if (Options == null)
@@ -258,9 +272,9 @@ public class VisualizerCanvasControl : Control
             return;
         }
 
-        // Renderers draw in the canvas's own coordinates, the same space pointer positions and fit measurements use.
-        var renderer = VisualizerRendererFactory.GetRenderer(Options.Kind);
-        renderer.Render(context, new Rect(Bounds.Size), Options);
+        var eff = GetEffectiveOptions();
+        var renderer = VisualizerRendererFactory.GetRenderer(eff.Kind);
+        renderer.Render(context, new Rect(Bounds.Size), eff);
 
         if (_hoveredHit != null)
         {
@@ -292,7 +306,6 @@ public class VisualizerCanvasControl : Control
         double tx = hit.CanvasPoint.X + 14;
         double ty = hit.CanvasPoint.Y - height - 8;
 
-        // Keep inside bounds
         if (tx + width > Bounds.Width - 10) tx = hit.CanvasPoint.X - width - 14;
         if (ty < 10) ty = hit.CanvasPoint.Y + 14;
 

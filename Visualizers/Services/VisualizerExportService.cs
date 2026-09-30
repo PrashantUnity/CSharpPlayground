@@ -8,6 +8,38 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 public static class VisualizerExportService
 {
+    public static string ToCsv(VisualizerOptions options)
+    {
+        var grid = options.Sequence?.CurrentStep?.Snapshot as GridMatrixData ?? options.MatrixData;
+        if (grid != null) return ToCsv(grid);
+
+        if (options.ArrayData != null)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Index,Value");
+            foreach (var item in options.ArrayData.Items)
+            {
+                var val = item.DisplayValue;
+                sb.Append(item.Index).Append(',').Append(val.Contains(',') || val.Contains('"') ? $"\"{val.Replace("\"", "\"\"")}\"" : val).AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        if (options.BarData != null)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Index,Label,Value");
+            foreach (var item in options.BarData.Items)
+            {
+                var lbl = item.Label ?? string.Empty;
+                sb.Append(item.Index).Append(',').Append(lbl.Contains(',') || lbl.Contains('"') ? $"\"{lbl.Replace("\"", "\"\"")}\"" : lbl).Append(',').Append(item.Value).AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        return string.Empty;
+    }
+
     public static string ToCsv(GridMatrixData grid)
     {
         var sb = new StringBuilder();

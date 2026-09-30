@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json.Serialization;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -37,6 +38,10 @@ public class NotebookCellItem
     public DumpTableSnapshot? TableSnapshot { get; set; }
     public ObjectInspectorSnapshot? InspectorSnapshot { get; set; }
 
+    /// <summary>The cell's charts, 3D plots and visualizers, each saved as its MIME type and spec (as a Jupyter output).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<VisualOutputSnapshot>? Visuals { get; set; }
+
     /// <summary>True if this cell last displayed a live Control (e.g. via Display.Animate/Display.
     /// Control) — the control itself can't be serialized, so this only records the fact that one was
     /// there, letting the UI show a "re-run to restore" placeholder instead of silently showing nothing.</summary>
@@ -44,7 +49,7 @@ public class NotebookCellItem
 
     public bool HasImage => ImageBytes != null && ImageBytes.Length > 0;
     public bool HasHtml => !string.IsNullOrEmpty(HtmlContent);
-    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null || HadInteractiveControl;
+    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null || HadInteractiveControl || Visuals is { Count: > 0 };
     public bool IsCodeCell => Type == CellType.Code;
     public bool IsMarkdownCell => Type == CellType.Markdown;
 }

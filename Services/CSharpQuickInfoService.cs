@@ -17,7 +17,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 public sealed class CSharpQuickInfoService
 {
     // The analysed text is this prefix followed by the script, so script offsets shift by its length only.
-    private const string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
+    private static readonly string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
 
     private static readonly CSharpParseOptions ParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp13);
 
@@ -129,7 +129,7 @@ public sealed class CSharpQuickInfoService
         {
             // An identifier owned directly by a declaration is the name being declared: a variable, method, type,
             // parameter, foreach or pattern variable, range variable, label...
-            return model.GetDeclaredSymbol(node, ct);
+            return ModelExtensions.GetDeclaredSymbol(model, node, ct);
         }
 
         // `new Point(1, 2)`: like Visual Studio, show the constructor it calls rather than the type.

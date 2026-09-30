@@ -1,107 +1,70 @@
+using System.Reflection;
+using System.Text;
+
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 
 /// <summary>
 /// Provides display and inspection runtime support for Go scripts and notebooks in C# Code Studio,
-/// emitting rich display MIME bundles for interactive HTML, image, JSON, and table rendering in Results (.DUMP).
+/// emitting rich display MIME bundles for interactive visuals, charts, HTML, images, and tables.
 /// </summary>
 public static class GoDisplayRuntime
 {
-    public static async Task<string> EnsureDisplayPackageAsync(string buildDir, CancellationToken ct = default)
+    private static string GetFryGoContent()
     {
-        var displayDir = Path.Combine(buildDir, "fry", "display");
-        try
+        var asm = typeof(GoDisplayRuntime).Assembly;
+        using var stream = asm.GetManifestResourceStream("GoRuntime.fry.go");
+        if (stream != null)
         {
-            Directory.CreateDirectory(displayDir);
-            var file = Path.Combine(displayDir, "display.go");
-            await File.WriteAllTextAsync(file, DisplayGoContent, ct).ConfigureAwait(false);
-        }
-        catch
-        {
-            // Gracefully ignore directory creation issues
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            return reader.ReadToEnd();
         }
 
-        return displayDir;
+        // Fallback to local source file if not yet compiled into assembly
+        var localSource = Path.Combine(AppContext.BaseDirectory, "Services", "Languages", "Go", "Runtime", "fry.go");
+        if (File.Exists(localSource)) return File.ReadAllText(localSource);
+        return "";
     }
 
-    public const string DisplayGoContent = """
-        package display
+    public static async Task<string> EnsureDisplayPackageAsync(string buildDir, CancellationToken ct = default)
+    {
+        var content = GetFryGoContent();
 
-        import (
-        	"encoding/base64"
-        	"encoding/json"
-        	"fmt"
-        	"os"
-        	"strings"
-        )
-
-        func emitProtocol(jsonBundle string) {
-        	fmt.Println("__FRY_DISPLAY__ " + jsonBundle)
+        // 1. Module package: buildDir/fry/fry.go + go.mod
+        var fryDir = Path.Combine(buildDir, "fry");
+        Directory.CreateDirectory(fryDir);
+        await File.WriteAllTextAsync(Path.Combine(fryDir, "fry.go"), content, ct).ConfigureAwait(false);
+        var fryMod = Path.Combine(fryDir, "go.mod");
+        if (!File.Exists(fryMod))
+        {
+            await File.WriteAllTextAsync(fryMod, "module fry\n\ngo 1.20\n", ct).ConfigureAwait(false);
         }
 
-        // Html renders raw HTML in the C# Code Studio Results (.DUMP) deck.
-        func Html(htmlContent string) {
-        	data := map[string]interface{}{
-        		"type": "display",
-        		"data": map[string]string{
-        			"text/html": htmlContent,
-        		},
-        		"metadata": map[string]interface{}{},
-        	}
-        	bytes, _ := json.Marshal(data)
-        	emitProtocol(string(bytes))
+        // 2. GOPATH package: buildDir/src/fry/fry.go
+        var gopathDir = Path.Combine(buildDir, "src", "fry");
+        Directory.CreateDirectory(gopathDir);
+        await File.WriteAllTextAsync(Path.Combine(gopathDir, "fry.go"), content, ct).ConfigureAwait(false);
+
+        // 3. Local root go.mod: if cell.go or main.go runs directly in buildDir
+        var rootMod = Path.Combine(buildDir, "go.mod");
+        if (!File.Exists(rootMod))
+        {
+            await File.WriteAllTextAsync(rootMod, "module cell\n\ngo 1.20\n\nrequire fry v0.0.0\nreplace fry => ./fry\n", ct).ConfigureAwait(false);
         }
 
-        // Image displays a local image file path or Base64-encoded image data in the Results deck.
-        func Image(pathOrBase64 string) {
-        	b64 := pathOrBase64
-        	mime := "image/png"
+        // 4. Backwards compatibility: buildDir/fry/display/display.go
+        var displayDir = Path.Combine(buildDir, "fry", "display");
+        Directory.CreateDirectory(displayDir);
+        await File.WriteAllTextAsync(Path.Combine(displayDir, "display.go"), """
+            package display
 
-        	if strings.HasPrefix(b64, "data:image/") {
-        		idx := strings.Index(b64, ",")
-        		if idx != -1 {
-        			b64 = b64[idx+1:]
-        		}
-        	} else if fileBytes, err := os.ReadFile(pathOrBase64); err == nil {
-        		b64 = base64.StdEncoding.EncodeToString(fileBytes)
-        		if strings.HasSuffix(strings.ToLower(pathOrBase64), ".jpg") || strings.HasSuffix(strings.ToLower(pathOrBase64), ".jpeg") {
-        			mime = "image/jpeg"
-        		} else if strings.HasSuffix(strings.ToLower(pathOrBase64), ".svg") {
-        			mime = "image/svg+xml"
-        		}
-        	}
+            import "fry"
 
-        	data := map[string]interface{}{
-        		"type": "display",
-        		"data": map[string]string{
-        			mime: b64,
-        		},
-        		"metadata": map[string]interface{}{},
-        	}
-        	bytes, _ := json.Marshal(data)
-        	emitProtocol(string(bytes))
-        }
+            func Html(c string) { fry.Html(c) }
+            func Image(p any) { fry.Image(p) }
+            func Json(j string) { fry.Json(j) }
+            func Dump(v any) { fry.Dump(v) }
+            """, ct).ConfigureAwait(false);
 
-        // Json displays structured JSON in the Results deck.
-        func Json(jsonString string) {
-        	data := map[string]interface{}{
-        		"type": "display",
-        		"data": map[string]string{
-        			"text/plain": jsonString,
-        		},
-        		"metadata": map[string]interface{}{},
-        	}
-        	bytes, _ := json.Marshal(data)
-        	emitProtocol(string(bytes))
-        }
-
-        // Dump serializes any Go variable to JSON and renders it in the Results deck.
-        func Dump(v interface{}) {
-        	bytes, err := json.MarshalIndent(v, "", "  ")
-        	if err != nil {
-        		fmt.Printf("%+v\n", v)
-        		return
-        	}
-        	Json(string(bytes))
-        }
-        """;
+        return fryDir;
+    }
 }

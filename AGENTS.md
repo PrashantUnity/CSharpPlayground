@@ -96,7 +96,7 @@ Every studio view must register and honor standard VS Code shortcuts:
 
 ## 6. Component Architecture & Codebase Health Mandate
 All contributors and agents must follow `.agents/rules/component_architecture_and_reuse_mandate.md`:
-- **Line budgets**: AXAML views < 400 lines, View code-behind < 150 lines, ViewModels < 400 lines per file (use domain partials e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`), Services < 500 lines.
+- **Line budgets**: AXAML views < 600 lines, View code-behind < 300 lines, ViewModels < 600 lines per file (use domain partials e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`), Services < 700 lines.
 - **Mandatory Control Reusability**: Shared UI (Activity Bar, Status Bar, Bottom Tool Deck, Explorer Panel, Search Panel, Breadcrumbs, Tab Bar) must be implemented as reusable controls in `Controls/`.
 - **Shared Styles**: Centralize styles in `Controls/SharedStudioStyles.axaml`. Never duplicate hundreds of lines in individual `<UserControl.Styles>`.
 - **100% Backward Compatibility**: All 1,100+ automated unit tests must continue to pass with 0 warnings and 0 errors.

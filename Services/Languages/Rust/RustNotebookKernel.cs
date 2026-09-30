@@ -6,6 +6,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 
@@ -258,6 +259,8 @@ public sealed class RustNotebookKernel : INotebookKernel
     {
         var console = new StringBuilder();
         var sharedNow = new HashSet<string>(StringComparer.Ordinal);
+        // The cell's visuals, and the events on them its code listens to while it runs (over the event socket).
+        using var visuals = new ExternalVisualSession();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
             {
@@ -280,7 +283,8 @@ public sealed class RustNotebookKernel : INotebookKernel
                     lock (console) console.Append(warning);
                     request.OnConsole?.Invoke(warning);
                 }
-            });
+            },
+            visuals: visuals.Visuals);
 
         // The program says what it made with let by appending to this file as it ends.
         var varsFile = Path.Combine(Path.GetDirectoryName(build.SourcePath)!, "variables.jsonl");
@@ -297,13 +301,13 @@ public sealed class RustNotebookKernel : INotebookKernel
         IManagedProcess? running = null;
         try
         {
-            running = _processes.Start(new ProcessStartSpec
+            running = _processes.Start(visuals.Apply(new ProcessStartSpec
             {
                 FileName = build.Stage.BinPath,
                 Arguments = Array.Empty<string>(),
                 WorkingDirectory = build.WorkingFolder,
                 Environment = environment
-            }, processor.ProcessChunk, processor.ProcessChunk);
+            }), processor.ProcessChunk, processor.ProcessChunk);
 
             // A cell can't be typed into, so a program that reads its input sees the end of it rather than waiting for good.
             running.CloseInput();

@@ -3,6 +3,7 @@ using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 
@@ -11,6 +12,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 /// Parses visual dump protocol lines (<c>__FRY_DISPLAY__ {json}</c> or Fry protocol display messages)
 /// and dispatches them to <see cref="RichCellOutput"/> handlers, while forwarding clean stdout/stderr
 /// text to the terminal console buffer in real-time (including interactive prompts like <c>input()</c>).
+/// A display message may name its output (<c>transient.display_id</c>), so that a later <c>update_display</c> redraws it and
+/// <c>subscribe</c> asks for its events (see <see cref="ProgramVisuals"/>).
 /// </summary>
 public sealed class ExternalOutputProcessor
 {
@@ -26,12 +29,16 @@ public sealed class ExternalOutputProcessor
     private readonly Action<string> _onConsoleText;
     private readonly Action<RichCellOutput> _onRichOutput;
     private readonly Action<string, string>? _onShare;
+    private readonly ProgramVisuals _visuals;
 
-    public ExternalOutputProcessor(Action<string> onConsoleText, Action<RichCellOutput> onRichOutput, Action<string, string>? onShare = null)
+    /// <param name="visuals">The program's visuals, whose events reach it (<see cref="ExternalVisualSession.Visuals"/>); without
+    /// them, its visuals still update in place, but it can't listen to them.</param>
+    public ExternalOutputProcessor(Action<string> onConsoleText, Action<RichCellOutput> onRichOutput, Action<string, string>? onShare = null, ProgramVisuals? visuals = null)
     {
         _onConsoleText = onConsoleText ?? throw new ArgumentNullException(nameof(onConsoleText));
         _onRichOutput = onRichOutput ?? throw new ArgumentNullException(nameof(onRichOutput));
         _onShare = onShare;
+        _visuals = visuals ?? new ProgramVisuals(sink: null);
     }
 
     /// <summary>Processes a stream chunk, forwarding terminal output in real time and buffering protocol lines.</summary>
@@ -144,14 +151,17 @@ public sealed class ExternalOutputProcessor
             }
         }
 
-        // 2. Direct JSON display protocol: {"type":"display", ...}
-        if (trimmed.StartsWith("{\"type\":", StringComparison.Ordinal) &&
-            (trimmed.Contains("\"display\"") || trimmed.Contains("'display'")))
+        // 2. Direct JSON display protocol: {"type":"display", ...}, and the other visual messages
+        if (trimmed.StartsWith("{\"type\":", StringComparison.Ordinal) && TryHandleDisplayPayload(trimmed, typed: true))
         {
-            if (TryHandleDisplayPayload(trimmed))
-            {
-                return;
-            }
+            return;
+        }
+
+        var at = line.IndexOf(DisplayMarker, StringComparison.Ordinal);
+        if (at > 0 && TryHandleDisplayPayload(line[(at + DisplayMarker.Length)..].Trim()))
+        {
+            _onConsoleText(line[..at]);
+            return;
         }
 
         // Regular console text
@@ -181,7 +191,9 @@ public sealed class ExternalOutputProcessor
         return false;
     }
 
-    private bool TryHandleDisplayPayload(string json)
+    // A visual message ({"type": "display" | "update_display" | "subscribe" | "unsubscribe", ...}), or after the marker a
+    // message without a type (a display) or a bare MIME bundle. Unless the whole line is typed, anything else is text.
+    private bool TryHandleDisplayPayload(string json, bool typed = false)
     {
         if (string.IsNullOrWhiteSpace(json)) return false;
 
@@ -191,47 +203,40 @@ public sealed class ExternalOutputProcessor
             var root = doc.RootElement;
             if (root.ValueKind != JsonValueKind.Object) return false;
 
-            JsonElement data = default;
-            JsonElement metadata = default;
-
-            if (root.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object)
+            var type = root.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+            switch (type)
             {
-                data = d;
-                if (root.TryGetProperty("metadata", out var m) && m.ValueKind == JsonValueKind.Object)
-                {
-                    metadata = m;
-                }
-            }
-            else
-            {
-                data = root;
-            }
-
-            var mapped = MimeOutputMapper.Map(data, metadata);
-            if (mapped.Rich != null)
-            {
-                _onRichOutput(mapped.Rich);
-                return true;
-            }
-
-            // A plain-text or Markdown display has no rich form: it is text for the console, not a protocol line to show as it is.
-            if (mapped.Text != null)
-            {
-                _onConsoleText(mapped.Text);
-                return true;
+                case "subscribe":
+                case "unsubscribe":
+                    if (_visuals.Subscription(root, subscribe: type == "subscribe") is { } notice) _onConsoleText(notice);
+                    return true;
+                case "display" or "update_display" or null when root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object:
+                    if (type == null && typed) return false;
+                    return Show(_visuals.Display(root, update: type == "update_display"), update: type == "update_display");
+                case null when !typed:
+                    return Show(MimeOutputMapper.Map(root, default), update: false);
+                default:
+                    return false;
             }
         }
         catch (JsonException)
         {
             // Not valid json; leave to standard console
         }
-        catch
-        {
-            // Defensive ignore
-        }
 
         return false;
     }
+
+    private bool Show(ProgramVisuals.Shown shown, bool update)
+    {
+        if (shown.Output != null) _onRichOutput(shown.Output);
+
+        // A plain-text or Markdown display has no rich form: it is text for the console, not a protocol line to show as it is.
+        if (shown.Text != null) _onConsoleText(shown.Text);
+        return update || shown.Output != null || shown.Text != null;
+    }
+
+    private bool Show(KernelOutput mapped, bool update) => Show(new ProgramVisuals.Shown(mapped.Text, mapped.Rich, null), update);
 
     /// <summary>Checks whether a line is a runtime launcher diagnostic banner (e.g. JVM Picked up JAVA_TOOL_OPTIONS).</summary>
     public static bool IsRuntimeNoise(string trimmed)

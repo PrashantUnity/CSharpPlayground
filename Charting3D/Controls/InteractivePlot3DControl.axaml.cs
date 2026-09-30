@@ -3,8 +3,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
+using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 
@@ -19,16 +22,18 @@ public partial class InteractivePlot3DControl : UserControl
         set => SetValue(OptionsProperty, value);
     }
 
+    public Plot3DViewState ViewState { get; set; } = new();
     private DispatcherTimer? _autoRotateTimer;
-    private bool _isDraggingGrip;
-    private double _gripStartY, _gripStartHeight;
+
+    private T? Find<T>(string name) where T : Control { try { return this.FindControl<T>(name); } catch { return null; } }
+    private Plot3DCanvasControl? Canvas => Find<Plot3DCanvasControl>("CanvasControl");
 
     static InteractivePlot3DControl() =>
         OptionsProperty.Changed.AddClassHandler<InteractivePlot3DControl>((x, _) => x.ApplyOptions());
 
     public InteractivePlot3DControl()
     {
-        try { InitializeComponent(); AttachEventHandlers(); }
+        try { InitializeComponent(); SetupChrome(); WireEvents(); }
         catch { /* Headless runner */ }
     }
 
@@ -38,110 +43,97 @@ public partial class InteractivePlot3DControl : UserControl
         ApplyOptions();
     }
 
-    private void ApplyOptions()
+    public event EventHandler<ElementClickedEventArgs<Plot3DHitTestResult>>? PointClicked;
+
+    private void SetupChrome()
     {
-        if (CanvasControl != null) CanvasControl.Options = Options;
-        UpdateUi();
+        if (Find<VisualChromeControl>("Chrome") is not { } chrome) return;
+        if (Find<StackPanel>("KindToolsPanel") is { } tools) { tools.IsVisible = true; chrome.SetKindTools(tools); }
+        if (Find<Border>("CanvasContainer") is { } cont) { cont.IsVisible = true; chrome.SetCanvasContent(cont); }
+        chrome.SpecGetter = () => Options != null ? Plot3DOptionsConverter.ToSpec(Canvas?.GetEffectiveOptions() ?? Options) : null;
+        chrome.DataCsvGetter = () => Options != null ? Plot3DExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
+        chrome.ResetFitRequested += (_, _) => { ViewState.Reset(Options); Repaint(); };
+        chrome.FullscreenRequested += (_, _) => OpenFullscreenWindow();
     }
 
-    private void AttachEventHandlers()
+    private void WireEvents()
     {
+        if (Canvas != null) Canvas.PointClicked += (_, e) => PointClicked?.Invoke(this, e);
         Bind("IsoViewBtn", () => SetCam(c => c.SetIsometric()));
         Bind("TopViewBtn", () => SetCam(c => c.SetTop()));
         Bind("FrontViewBtn", () => SetCam(c => c.SetFront()));
         Bind("SideViewBtn", () => SetCam(c => c.SetSide()));
-        Bind("ResetCameraBtn", () => SetCam(c => c.Reset()));
         Bind("AutoRotateBtn", ToggleAutoRotate);
         Bind("ExportHtmlBtn", ExportStandaloneHtml);
         Bind("ProjectionToggleBtn", () => SetCam(c => c.IsOrthographic = !c.IsOrthographic));
-        Bind("GridToggleBtn", () => { if (Options != null) { Options.ShowFloorGrid = !Options.ShowFloorGrid; Options.ShowBoundingBox = Options.ShowFloorGrid; Repaint(); } });
-        Bind("WireframeToggleBtn", () => { if (Options != null) { Options.Wireframe = !Options.Wireframe; Repaint(); } });
+        Bind("GridToggleBtn", () => { if (Options == null) return; bool cur = ViewState.EffectiveShowFloorGrid(Options); ViewState.OverrideShowFloorGrid = !cur; ViewState.OverrideShowBoundingBox = !cur; Repaint(); });
+        Bind("WireframeToggleBtn", () => { if (Options == null) return; ViewState.OverrideWireframe = !ViewState.EffectiveWireframe(Options); Repaint(); });
         Bind("ColorMapCycleBtn", CycleColorMap);
-        Bind("FullscreenBtn", OpenFullscreenWindow);
-        AttachResizeGrip();
     }
 
-    private void SetCam(Action<Camera3D> act) { if (Options != null) { act(Options.Camera); Repaint(); } }
+    private void SetCam(Action<Camera3D> act) { act(ViewState.Camera); Repaint(); }
+    private void Bind(string name, Action act) { if (Find<Button>(name) is { } b) b.Click += (_, _) => act(); }
 
-    private void AttachResizeGrip()
+    public void ApplyOptions()
     {
-        var grip = this.FindControl<Border>("ResizeGripBorder");
-        if (grip == null) return;
-        grip.PointerPressed += (_, e) => { if (CanvasControl == null) return; _isDraggingGrip = true; _gripStartY = e.GetPosition(this).Y; _gripStartHeight = CanvasControl.Height > 0 ? CanvasControl.Height : CanvasControl.Bounds.Height; e.Pointer.Capture(grip); e.Handled = true; };
-        grip.PointerMoved += (_, e) => { if (!_isDraggingGrip || CanvasControl == null) return; CanvasControl.Height = Math.Clamp(_gripStartHeight + (e.GetPosition(this).Y - _gripStartY), 180, 1200); e.Handled = true; };
-        grip.PointerReleased += (_, e) => { _isDraggingGrip = false; e.Pointer.Capture(null); e.Handled = true; };
-        grip.DoubleTapped += (_, e) => { if (CanvasControl != null) CanvasControl.Height = CanvasControl.Height > 400 ? 300 : 580; e.Handled = true; };
-    }
-
-    private void Bind(string name, Action act) { var b = this.FindControl<Button>(name); if (b != null) b.Click += (_, _) => act(); }
-
-    private void OpenFullscreenWindow()
-    {
-        if (Options == null) return;
-        var win = new InteractivePlot3DWindow(Options);
-        if (TopLevel.GetTopLevel(this) is Window top) win.Show(top); else win.Show();
-        win.Closed += (_, _) => Repaint();
+        var opts = Options;
+        if (opts == null) return;
+        if (Canvas != null) { Canvas.Options = opts; Canvas.ViewState = ViewState; if (opts.Height > 100) Canvas.Height = Math.Max(Canvas.MinHeight, opts.Height); }
+        UpdateHeader();
+        if (ViewState.AutoRotate || opts.AutoRotate) StartAutoRotateTimer();
     }
 
     private void CycleColorMap()
     {
         if (Options == null) return;
-        Options.ColorMap = (ColorMapPreset)(((int)Options.ColorMap + 1) % Enum.GetValues<ColorMapPreset>().Length);
+        var cur = ViewState.EffectiveColorMap(Options);
+        ViewState.OverrideColorMap = (ColorMapPreset)(((int)cur + 1) % Enum.GetValues<ColorMapPreset>().Length);
         Repaint();
     }
 
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    private void ToggleAutoRotate()
     {
-        base.OnAttachedToVisualTree(e);
-        if (Options?.AutoRotate == true) StartAutoRotateTimer();
+        ViewState.AutoRotate = !ViewState.AutoRotate;
+        if (ViewState.AutoRotate) StartAutoRotateTimer(); else StopAutoRotateTimer();
     }
-
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); StopAutoRotateTimer(); }
-
-    private void ToggleAutoRotate() { if (Options == null) return; Options.AutoRotate = !Options.AutoRotate; if (Options.AutoRotate) StartAutoRotateTimer(); else StopAutoRotateTimer(); }
 
     private void StartAutoRotateTimer()
     {
         if (_autoRotateTimer != null) return;
         _autoRotateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
-        _autoRotateTimer.Tick += (_, _) => {
-            if (Options == null || !Options.AutoRotate) { StopAutoRotateTimer(); return; }
-            if (!IsVisible || Bounds.Width < 10) return;
-            Options.Camera.Orbit(Options.AutoRotateSpeed, 0);
-            CanvasControl?.InvalidateVisual();
-        };
+        _autoRotateTimer.Tick += (_, _) => { if (!ViewState.AutoRotate || !IsVisible || Bounds.Width < 10) return; ViewState.Camera.Orbit(Options?.AutoRotateSpeed ?? 1.0, 0); Canvas?.InvalidateVisual(); };
         _autoRotateTimer.Start();
     }
 
     private void StopAutoRotateTimer() { _autoRotateTimer?.Stop(); _autoRotateTimer = null; }
-    private void Repaint() { CanvasControl?.InvalidateVisual(); UpdateStats(); }
 
-    private void UpdateUi()
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); if (ViewState.AutoRotate) StartAutoRotateTimer(); }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { base.OnDetachedFromVisualTree(e); StopAutoRotateTimer(); }
+    private void Repaint() { Canvas?.InvalidateVisual(); UpdateHeader(); }
+
+    private void UpdateHeader()
     {
-        if (Options == null) return;
-        if (Plot3DTitleText != null) Plot3DTitleText.Text = Options.Title;
-        if (CanvasControl != null && Options.Height > 100) CanvasControl.Height = Options.Height;
-        UpdateStats();
-        if (Options.AutoRotate) StartAutoRotateTimer();
+        var opts = Options;
+        if (opts == null) return;
+        string cam = ViewState.Camera.IsOrthographic ? "Ortho" : "Persp";
+        int n = opts.Series.Count > 0 ? opts.Series[0].Points.Count : (opts.Surface != null ? opts.Surface.ResolutionX * opts.Surface.ResolutionY : (opts.Graph != null ? opts.Graph.Nodes.Count : 0));
+        Find<VisualChromeControl>("Chrome")?.SetHeader(opts.Title, opts.Subtitle, $"{opts.Type} | {ViewState.EffectiveColorMap(opts)} | {cam} | N: {n}", opts.Notice, MaterialIconKind.CubeOutline);
     }
 
-    private void UpdateStats()
+    private void OpenFullscreenWindow()
     {
-        if (Options == null || StatsSummaryText == null) return;
-        string cam = Options.Camera.IsOrthographic ? "Ortho" : "Persp";
-        int n = Options.Series.Count > 0 ? Options.Series[0].Points.Count :
-                (Options.Surface != null ? Options.Surface.ResolutionX * Options.Surface.ResolutionY :
-                (Options.Graph != null ? Options.Graph.Nodes.Count : 0));
-        StatsSummaryText.Text = $"{Options.Type} | {Options.ColorMap} | {cam} | N: {n}";
+        if (Options == null) return;
+        var win = new InteractivePlot3DWindow(Options, ViewState);
+        if (TopLevel.GetTopLevel(this) is Window top) win.Show(top); else win.Show();
+        win.Closed += (_, _) => Repaint();
     }
 
     private async void ExportStandaloneHtml()
     {
-        if (Options == null) return;
         try {
-            string html = Plot3DHtmlExporter.GenerateThreeJsHtml(Options);
-            var top = TopLevel.GetTopLevel(this);
-            if (top?.Clipboard != null) await top.Clipboard.SetTextAsync(html);
+            var effective = Canvas?.GetEffectiveOptions() ?? Options;
+            if (effective != null && TopLevel.GetTopLevel(this) is { Clipboard: { } cb })
+                await cb.SetTextAsync(Plot3DHtmlExporter.GenerateThreeJsHtml(effective));
         } catch { }
     }
 }

@@ -15,6 +15,7 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetLinkedListTemplates());
         list.AddRange(GetRecursionTemplates());
         list.AddRange(GetCharting3DTemplates());
+        list.AddRange(GetPolyglotVisualsTemplates());
         return list;
     }
 

@@ -1,0 +1,17 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "line",
+    "series": [
+      {
+        "y": [
+          3,
+          1,
+          null,
+          4
+        ]
+      }
+    ],
+    "title": "Numbers"
+  }
+}

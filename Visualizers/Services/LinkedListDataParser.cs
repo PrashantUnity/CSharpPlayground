@@ -69,67 +69,97 @@ public static class LinkedListDataParser
         return data;
     }
 
+    private const int MaxCycleSteps = 100;
+
+    /// <summary>Floyd's tortoise and hare over the user's own nodes, step by step (it can follow them past the nodes drawn).</summary>
     public static VisualizerSequence GenerateCycleDetectionSteps(object? head)
     {
         head = NormalizeHead(head);
-        var sequence = new VisualizerSequence();
         var listData = Parse(head);
-        var initialStep = new VisualizerStep(0, $"Linked List Loaded • {listData.Nodes.Count} nodes", VisualizerKind.LinkedList)
-        {
-            Snapshot = WithPointers(listData, 0, 0)
-        };
-        sequence.AddStep(initialStep);
-
+        var sequence = StartCycleDetection(listData, 0);
         if (head == null) return sequence;
 
-        // Floyd's Tortoise and Hare stepping
         object? slow = head;
         object? fast = head;
-        int stepCount = 0;
-        int maxSteps = 100;
-
-        while (fast != null && stepCount < maxSteps)
+        for (int stepCount = 1; fast != null && stepCount <= MaxCycleSteps; stepCount++)
         {
             object? nextFast = GetNextNode(fast);
             if (nextFast == null) break;
             fast = GetNextNode(nextFast);
             slow = GetNextNode(slow!);
-
-            stepCount++;
-            int slowIdx = FindNodeIndex(listData, slow);
-            int fastIdx = FindNodeIndex(listData, fast);
-
-            var step = new VisualizerStep(
-                sequence.TotalSteps,
-                $"Step {stepCount}: Slow -> [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}], Fast -> [{listData.Nodes.Find(n => n.Index == fastIdx)?.DisplayValue}]",
-                VisualizerKind.LinkedList)
+            if (AddCycleStep(sequence, listData, stepCount, FindNodeIndex(listData, slow), FindNodeIndex(listData, fast), slow != null && ReferenceEquals(slow, fast)))
             {
-                Snapshot = WithPointers(listData, slowIdx, fastIdx)
-            };
-
-            if (slowIdx >= 0) step.ActiveNodeIds.Add($"node_{slowIdx}");
-            if (fastIdx >= 0) step.ActiveNodeIds.Add($"node_{fastIdx}");
-            step.AuxiliaryInfo["Slow Index"] = slowIdx.ToString();
-            step.AuxiliaryInfo["Fast Index"] = fastIdx.ToString();
-            sequence.AddStep(step);
-
-            if (slow != null && ReferenceEquals(slow, fast))
-            {
-                // Meeting point!
-                var cycleStep = new VisualizerStep(
-                    sequence.TotalSteps,
-                    $"🎯 Cycle Confirmed! Slow and Fast pointers met at node [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}]",
-                    VisualizerKind.LinkedList)
-                {
-                    Snapshot = WithPointers(listData, slowIdx, fastIdx)
-                };
-                if (slowIdx >= 0) cycleStep.ActiveNodeIds.Add($"node_{slowIdx}");
-                sequence.AddStep(cycleStep);
                 break;
             }
         }
 
         return sequence;
+    }
+
+    /// <summary>Floyd's tortoise and hare over a drawn list's next pointers, from the node at <paramref name="head"/>.</summary>
+    public static VisualizerSequence GenerateCycleDetectionSteps(LinkedListData listData, int head = 0)
+    {
+        var sequence = StartCycleDetection(listData, head);
+        if (head < 0 || head >= listData.Nodes.Count) return sequence;
+
+        int? slow = head;
+        int? fast = head;
+        for (int stepCount = 1; fast != null && stepCount <= MaxCycleSteps; stepCount++)
+        {
+            int? nextFast = Next(listData, fast.Value);
+            if (nextFast == null) break;
+            fast = Next(listData, nextFast.Value);
+            slow = Next(listData, slow!.Value);
+            if (AddCycleStep(sequence, listData, stepCount, slow ?? -1, fast ?? -1, slow != null && slow == fast))
+            {
+                break;
+            }
+        }
+
+        return sequence;
+    }
+
+    private static int? Next(LinkedListData data, int index) =>
+        index >= 0 && index < data.Nodes.Count ? data.Nodes[index].NextIndex : null;
+
+    private static VisualizerSequence StartCycleDetection(LinkedListData listData, int head)
+    {
+        var sequence = new VisualizerSequence();
+        sequence.AddStep(new VisualizerStep(0, $"Linked List Loaded • {listData.Nodes.Count} nodes", VisualizerKind.LinkedList)
+        {
+            Snapshot = WithPointers(listData, head, head)
+        });
+        return sequence;
+    }
+
+    // One move of both pointers; true when they met (the cycle is confirmed and the walk ends).
+    private static bool AddCycleStep(VisualizerSequence sequence, LinkedListData listData, int stepCount, int slowIdx, int fastIdx, bool met)
+    {
+        var step = new VisualizerStep(
+            sequence.TotalSteps,
+            $"Step {stepCount}: Slow -> [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}], Fast -> [{listData.Nodes.Find(n => n.Index == fastIdx)?.DisplayValue}]",
+            VisualizerKind.LinkedList)
+        {
+            Snapshot = WithPointers(listData, slowIdx, fastIdx)
+        };
+
+        if (slowIdx >= 0) step.ActiveNodeIds.Add($"node_{slowIdx}");
+        if (fastIdx >= 0) step.ActiveNodeIds.Add($"node_{fastIdx}");
+        step.AuxiliaryInfo["Slow Index"] = slowIdx.ToString();
+        step.AuxiliaryInfo["Fast Index"] = fastIdx.ToString();
+        sequence.AddStep(step);
+        if (!met) return false;
+
+        var cycleStep = new VisualizerStep(
+            sequence.TotalSteps,
+            $"🎯 Cycle Confirmed! Slow and Fast pointers met at node [{listData.Nodes.Find(n => n.Index == slowIdx)?.DisplayValue}]",
+            VisualizerKind.LinkedList)
+        {
+            Snapshot = WithPointers(listData, slowIdx, fastIdx)
+        };
+        if (slowIdx >= 0) cycleStep.ActiveNodeIds.Add($"node_{slowIdx}");
+        sequence.AddStep(cycleStep);
+        return true;
     }
 
     // Each step carries its own copy so the slow and fast badges sit on the right nodes while scrubbing.

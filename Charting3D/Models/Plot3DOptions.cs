@@ -7,6 +7,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 public class Plot3DOptions
 {
     public string Title { get; set; } = "3D Visualization";
+    public string Subtitle { get; set; } = string.Empty;
     public Plot3DType Type { get; set; } = Plot3DType.Scatter;
     public Camera3D Camera { get; set; } = new();
     public List<Series3D> Series { get; set; } = new();
@@ -26,6 +27,15 @@ public class Plot3DOptions
     public bool AutoRotate { get; set; }
     public double AutoRotateSpeed { get; set; } = 0.6; // degrees per tick
 
+    public string? XAxisTitle { get; set; }
+    public string? YAxisTitle { get; set; }
+
+    /// <summary>The upward axis's title.</summary>
+    public string? ZAxisTitle { get; set; }
+
+    /// <summary>A line for the header when not everything is drawn, e.g. "showing the first 100,000 of 180,000 points".</summary>
+    public string? Notice { get; set; }
+
     public double MinX { get; set; } = -5;
     public double MaxX { get; set; } = 5;
     public double MinY { get; set; } = -5;
@@ -37,9 +47,10 @@ public class Plot3DOptions
     {
         if (Surface != null)
         {
+            // z = f(x, y): the height is z, as for every kind (the projector puts z up).
             MinX = Surface.MinX; MaxX = Surface.MaxX;
-            MinY = Surface.MinZ; MaxY = Surface.MaxZ; // in 3D surface, Z is height (Y in scene)
-            MinZ = Surface.MinY; MaxZ = Surface.MaxY;
+            MinY = Surface.MinY; MaxY = Surface.MaxY;
+            MinZ = Surface.MinZ; MaxZ = Surface.MaxZ;
             EnsureValidBounds();
             return;
         }

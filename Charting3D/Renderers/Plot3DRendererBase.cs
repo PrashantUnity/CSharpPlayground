@@ -111,29 +111,29 @@ public abstract class Plot3DRendererBase : IPlot3DRenderer
         }
     }
 
+    // The data's axes, from the corner where x, y and z are smallest, each named by its title (x, y or z without one).
+    // They follow the projector, so z is the upward one for every kind of plot.
     private void DrawAxes(DrawingContext context, Projector3D projector, double box, Plot3DOptions options)
     {
-        var origin = new Vector3D(-box, -box, -box);
-        var xEnd = new Vector3D(box + 0.6, -box, -box);
-        var yEnd = new Vector3D(-box, box + 0.6, -box);
-        var zEnd = new Vector3D(-box, -box, box + 0.6);
+        const double reach = 0.6; // past the box, so the label clears it
+        var origin = projector.MapDataToWorld(options.MinX, options.MinY, options.MinZ);
+        var span = (x: options.MaxX - options.MinX, y: options.MaxY - options.MinY, z: options.MaxZ - options.MinZ);
+        Vector3D End(double dx, double dy, double dz)
+        {
+            var end = projector.MapDataToWorld(options.MinX + dx * span.x, options.MinY + dy * span.y, options.MinZ + dz * span.z);
+            return end + (end - origin).Normalized * reach;
+        }
 
         var pOrigin = projector.ProjectWorld(origin);
-        var pX = projector.ProjectWorld(xEnd);
-        var pY = projector.ProjectWorld(yEnd);
-        var pZ = projector.ProjectWorld(zEnd);
+        DrawAxis(context, pOrigin, projector.ProjectWorld(End(1, 0, 0)), AxisXPen, options.XAxisTitle, "X", Color.FromRgb(224, 108, 117));
+        DrawAxis(context, pOrigin, projector.ProjectWorld(End(0, 1, 0)), AxisYPen, options.YAxisTitle, "Y", Color.FromRgb(152, 195, 121));
+        DrawAxis(context, pOrigin, projector.ProjectWorld(End(0, 0, 1)), AxisZPen, options.ZAxisTitle, "Z", Color.FromRgb(97, 175, 239));
+    }
 
-        // X Axis
-        context.DrawLine(AxisXPen, pOrigin.ScreenPoint, pX.ScreenPoint);
-        DrawAxisLabel(context, "X", pX.ScreenPoint, Color.FromRgb(224, 108, 117));
-
-        // Y Axis
-        context.DrawLine(AxisYPen, pOrigin.ScreenPoint, pY.ScreenPoint);
-        DrawAxisLabel(context, "Y", pY.ScreenPoint, Color.FromRgb(152, 195, 121));
-
-        // Z Axis
-        context.DrawLine(AxisZPen, pOrigin.ScreenPoint, pZ.ScreenPoint);
-        DrawAxisLabel(context, "Z", pZ.ScreenPoint, Color.FromRgb(97, 175, 239));
+    private static void DrawAxis(DrawingContext context, in ProjectedPoint3D from, in ProjectedPoint3D to, Pen pen, string? title, string name, Color color)
+    {
+        context.DrawLine(pen, from.ScreenPoint, to.ScreenPoint);
+        DrawAxisLabel(context, string.IsNullOrWhiteSpace(title) ? name : title, to.ScreenPoint, color);
     }
 
     protected static void DrawAxisLabel(DrawingContext context, string text, Point pos, Color color)

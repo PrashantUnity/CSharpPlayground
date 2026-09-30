@@ -7,6 +7,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using Xunit;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
@@ -147,15 +148,16 @@ public class Blind75ProblemsTests
 
     private static void AssertAnimates(BlindProblemItem problem, Run run)
     {
-        var visualizers = run.Outputs.Where(o => o.Kind == CellOutputKind.Visualizer && o.VisualizerOptions?.Sequence != null).ToList();
+        // What the visualizer control draws: the render model built from each spec.
+        var visualizers = run.Outputs.Where(o => o.Kind == CellOutputKind.Visualizer).Select(o => o.VisualizerModel()).Where(v => v.Sequence != null).ToList();
         Assert.True(visualizers.Count > 0, $"{problem.FullTitle}: no visualizer was displayed");
 
-        var primary = visualizers.FirstOrDefault(v => v.VisualizerOptions!.Kind.ToString() == problem.VisualizerKind);
-        Assert.True(primary != null, $"{problem.FullTitle}: expected a {problem.VisualizerKind} visualizer, got {string.Join(", ", visualizers.Select(v => v.VisualizerOptions!.Kind))}");
+        var primary = visualizers.FirstOrDefault(v => v.Kind.ToString() == problem.VisualizerKind);
+        Assert.True(primary != null, $"{problem.FullTitle}: expected a {problem.VisualizerKind} visualizer, got {string.Join(", ", visualizers.Select(v => v.Kind))}");
 
-        foreach (var output in visualizers)
+        foreach (var visualizer in visualizers)
         {
-            var sequence = output.VisualizerOptions!.Sequence!;
+            var sequence = visualizer.Sequence!;
             Assert.InRange(sequence.TotalSteps, MinSteps, MaxSteps);
             Assert.All(sequence.Steps, s => Assert.False(string.IsNullOrWhiteSpace(s.Description), $"{problem.FullTitle}: a step has no description"));
 

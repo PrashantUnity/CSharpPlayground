@@ -4,6 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
 
@@ -98,6 +99,8 @@ public sealed partial class FSharpNotebookKernel : INotebookKernel
             ? new List<string> { "--nologo", "--exec", sourcePath }
             : new List<string> { "fsi", "--nologo", "--exec", sourcePath };
 
+        // The cell's visuals, and the events on them its code listens to while it runs (over the event socket).
+        using var visuals = new ExternalVisualSession();
         var consoleBuilder = new StringBuilder();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
@@ -108,14 +111,15 @@ public sealed partial class FSharpNotebookKernel : INotebookKernel
             onRichOutput: bundle =>
             {
                 request.OnRichOutput?.Invoke(bundle);
-            });
+            },
+            visuals: visuals.Visuals);
 
-        var spec = new ProcessStartSpec
+        var spec = visuals.Apply(new ProcessStartSpec
         {
             FileName = executable,
             Arguments = runArgs,
             WorkingDirectory = outDir
-        };
+        });
 
         using var managedProcess = _processes.Start(
             spec,

@@ -1,0 +1,16 @@
+{
+  "title": "Bubble sort",
+  "kind": "bars",
+  "state": {
+    "bars": {
+      "values": [5, 1, 4, 2],
+      "items": [ { "index": 0, "label": "five" } ],
+      "max": 6,
+      "description": "pass 1",
+      "shade": { "from": 1, "to": 2, "level": 3, "floor": 0, "label": "water" }
+    }
+  },
+  "steps": [
+    { "description": "swap", "changes": { "items": [ { "index": 0, "value": 1, "state": "swapped" }, { "index": 1, "value": 5, "state": "swapped" } ] } }
+  ]
+}

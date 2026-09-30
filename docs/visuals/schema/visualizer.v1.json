@@ -1,0 +1,1753 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisualizerSpec",
+  "x-mimeType": "application/vnd.fry.visualizer.v1+json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": [
+        "matrix",
+        "islands",
+        "tree",
+        "graph",
+        "linkedList",
+        "arrayPointers",
+        "bars",
+        "board",
+        "canvas"
+      ]
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The header's summary pill (default: worked out from the data, e.g. \"Nodes: 7\")."
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "grid": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "array"
+              }
+            },
+            "cells": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "row": {
+                    "type": "integer"
+                  },
+                  "col": {
+                    "type": "integer"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "terrain": {
+                    "enum": [
+                      "standard",
+                      "land",
+                      "water",
+                      "wall",
+                      "path",
+                      "start",
+                      "target",
+                      null
+                    ],
+                    "description": "What the cell is: land, water, a wall, the start…"
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  },
+                  "cluster": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "The island the cell belongs to."
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "borderColor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "textColor": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "heat": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "0 to 1, drawn on the grid's colour scale."
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A small second value in the corner, like a cost or a DP entry."
+                  },
+                  "notes": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "More facts shown when the pointer rests on the cell."
+                  },
+                  "arrows": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "to": {
+                          "oneOf": [
+                            {
+                              "type": "integer",
+                              "description": "An item, by its index."
+                            },
+                            {
+                              "type": "string",
+                              "description": "A node, by its id."
+                            },
+                            {
+                              "type": "array",
+                              "description": "A grid cell: [row, column].",
+                              "items": {
+                                "type": "integer"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            {
+                              "type": "object",
+                              "description": "An edge, by its two ends.",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "label": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "color": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "to"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Arrows from this cell to others, like the predecessor a path came from."
+                  }
+                },
+                "required": [
+                  "row",
+                  "col"
+                ],
+                "additionalProperties": false,
+                "description": "One grid cell's look. In a step's changes, only the fields given change."
+              }
+            },
+            "rowHeaders": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "columnHeaders": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "islands": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "cells": {
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Islands to outline (an islands visualizer finds its own)."
+            },
+            "checkerboard": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Shade alternate cells, like a chess board."
+            },
+            "colorMap": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The colour scale for CellSpec.Heat."
+            },
+            "inferTerrain": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Read what a plain value says a cell is (default: yes): 1 is land and 0 water, \"S\" the start, \"T\" or \"E\" the target, \"#\" or \"wall\" a wall. A cell's own CellSpec.Terrain always wins."
+            }
+          },
+          "additionalProperties": false
+        },
+        "tree": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "root": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The root's id (default: the first node)."
+            },
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "left": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "right": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "children": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pointer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A small tag drawn next to the node, like a pointer's name."
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A second, smaller line of text on the node."
+                  },
+                  "notes": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "More facts shown when the pointer rests on the node."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "graph": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "directed": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Whether edges have a direction (default: yes); an edge can say otherwise for itself."
+            },
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Unique within the graph; edges, highlights and events name the node by it."
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The text on the node (default: its id)."
+                  },
+                  "x": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "y": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "z": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Height in a 3D graph."
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "size": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "The node's radius in pixels (default: the studio's)."
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  },
+                  "pointer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A small tag drawn next to the node, like a pointer's name."
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A second, smaller line of text on the node, like a distance."
+                  },
+                  "notes": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "More facts shown when the pointer rests on the node."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "edges": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "directed": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ],
+                    "description": "Overrides GraphSpec.Directed for this edge."
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "linkedList": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "next": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "truncated": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ],
+                    "description": "The list goes on past this node, but no further nodes are drawn."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "head": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The first node's id (default: the first node)."
+            },
+            "chains": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "The heads of other lists drawn with it, e.g. the two lists being merged."
+            },
+            "stackChains": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Draw each chain on its own row instead of one after another."
+            },
+            "markCycle": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Mark the node a cycle closes on (default: yes); the studio finds the cycle from the next pointers. A node in the cycle state is always marked."
+            }
+          },
+          "additionalProperties": false
+        },
+        "array": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "items": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "state": {
+                    "enum": [
+                      "default",
+                      "current",
+                      "visited",
+                      "frontier",
+                      "path",
+                      "target",
+                      "start",
+                      "wall",
+                      "candidate",
+                      "matched",
+                      "backtracked",
+                      "pruned",
+                      "swapped",
+                      "relaxed",
+                      "cycle",
+                      "unreachable",
+                      "rejected",
+                      "crossEdge",
+                      "pivot",
+                      "done",
+                      null
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A name under the item or bar."
+                  },
+                  "pointer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A small tag drawn over the bar, like a pointer's name."
+                  }
+                },
+                "required": [
+                  "index"
+                ],
+                "additionalProperties": false,
+                "description": "One array item's or bar's look. In a step's changes, only the fields given change."
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "bars": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "values": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "items": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/properties/state/properties/array/properties/items/items"
+              }
+            },
+            "min": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "The value axis (default: from zero, or the lowest value, to the highest)."
+            },
+            "max": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "showIndices": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "The index under each bar (default: on)."
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "A line of text under the bars."
+            },
+            "shade": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                },
+                "level": {
+                  "type": "number"
+                },
+                "floor": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "level"
+              ],
+              "additionalProperties": false,
+              "description": "A band drawn across a run of bars, like the water trapped between them."
+            }
+          },
+          "additionalProperties": false
+        },
+        "canvas": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "width": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "height": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "background": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "shapes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "anyOf": [
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "rect"
+                      },
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "cornerRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "label": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "textColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Names the shape in click events."
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeThickness": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "opacity": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "0 (invisible) to 1 (default)."
+                      },
+                      "tooltip": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Shown when the pointer rests on the shape."
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "circle"
+                      },
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "radius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "label": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "textColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Names the shape in click events."
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeThickness": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "opacity": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "0 (invisible) to 1 (default)."
+                      },
+                      "tooltip": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Shown when the pointer rests on the shape."
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A circle around (CircleShapeSpec.X, CircleShapeSpec.Y)."
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "line"
+                      },
+                      "x1": {
+                        "type": "number"
+                      },
+                      "y1": {
+                        "type": "number"
+                      },
+                      "x2": {
+                        "type": "number"
+                      },
+                      "y2": {
+                        "type": "number"
+                      },
+                      "dashed": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Names the shape in click events."
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeThickness": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "opacity": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "0 (invisible) to 1 (default)."
+                      },
+                      "tooltip": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Shown when the pointer rests on the shape."
+                      }
+                    },
+                    "required": [
+                      "x1",
+                      "y1",
+                      "x2",
+                      "y2"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "arrow"
+                      },
+                      "x1": {
+                        "type": "number"
+                      },
+                      "y1": {
+                        "type": "number"
+                      },
+                      "x2": {
+                        "type": "number"
+                      },
+                      "y2": {
+                        "type": "number"
+                      },
+                      "headSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "label": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Names the shape in click events."
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeThickness": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "opacity": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "0 (invisible) to 1 (default)."
+                      },
+                      "tooltip": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Shown when the pointer rests on the shape."
+                      }
+                    },
+                    "required": [
+                      "x1",
+                      "y1",
+                      "x2",
+                      "y2"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "type": {
+                        "const": "text"
+                      },
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "bold": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "centered": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Names the shape in click events."
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeThickness": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "opacity": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "0 (invisible) to 1 (default)."
+                      },
+                      "tooltip": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Shown when the pointer rests on the shape."
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "text"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Text starting at (TextShapeSpec.X, TextShapeSpec.Y), or centred on it; its colour is ShapeSpec.Fill."
+                  }
+                ],
+                "description": "A shape on a canvas. Its type says which: rect, circle, line, arrow or text."
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "What the steps start from, and what is drawn when there are no steps."
+    },
+    "pointers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "at": true,
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional; the studio gives each pointer its own colour otherwise."
+          }
+        },
+        "required": [
+          "name",
+          "at"
+        ],
+        "additionalProperties": false,
+        "description": "A named marker on an element, like i and j over an array or slow on a list node. An array pointer may sit one place before or after the items (-1, or hi = n), as loops leave them."
+      },
+      "description": "Pointers drawn when there are no steps (each step shows its own)."
+    },
+    "highlight": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "Elements lit up when there are no steps (each step lights up its own)."
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "grid": {
+                "$ref": "#/properties/state/properties/grid"
+              },
+              "tree": {
+                "$ref": "#/properties/state/properties/tree"
+              },
+              "graph": {
+                "$ref": "#/properties/state/properties/graph"
+              },
+              "linkedList": {
+                "$ref": "#/properties/state/properties/linkedList"
+              },
+              "array": {
+                "$ref": "#/properties/state/properties/array"
+              },
+              "bars": {
+                "$ref": "#/properties/state/properties/bars"
+              },
+              "canvas": {
+                "$ref": "#/properties/state/properties/canvas"
+              }
+            },
+            "additionalProperties": false
+          },
+          "changes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "cells": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "$ref": "#/properties/state/properties/grid/properties/cells/items"
+                },
+                "description": "Grid cells, by row and column."
+              },
+              "items": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "$ref": "#/properties/state/properties/array/properties/items/items"
+                },
+                "description": "Array items and bars, by index."
+              },
+              "nodes": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "state": {
+                      "enum": [
+                        "default",
+                        "current",
+                        "visited",
+                        "frontier",
+                        "path",
+                        "target",
+                        "start",
+                        "wall",
+                        "candidate",
+                        "matched",
+                        "backtracked",
+                        "pruned",
+                        "swapped",
+                        "relaxed",
+                        "cycle",
+                        "unreachable",
+                        "rejected",
+                        "crossEdge",
+                        "pivot",
+                        "done",
+                        null
+                      ]
+                    },
+                    "color": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "pointer": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Tree, graph and list nodes, by id."
+              },
+              "edges": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "weight": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "state": {
+                      "enum": [
+                        "default",
+                        "current",
+                        "visited",
+                        "frontier",
+                        "path",
+                        "target",
+                        "start",
+                        "wall",
+                        "candidate",
+                        "matched",
+                        "backtracked",
+                        "pruned",
+                        "swapped",
+                        "relaxed",
+                        "cycle",
+                        "unreachable",
+                        "rejected",
+                        "crossEdge",
+                        "pivot",
+                        "done",
+                        null
+                      ]
+                    },
+                    "color": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Graph edges, by their two ends."
+              }
+            },
+            "additionalProperties": false
+          },
+          "highlight": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Elements lit up in this step, e.g. the cell being visited or the current window of an array."
+          },
+          "pointers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/properties/pointers/items"
+            }
+          },
+          "notes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Facts about this step shown beside the drawing, e.g. {\"sum\": \"12\"}."
+          },
+          "watches": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "value",
+                    "list",
+                    "queue",
+                    "stack",
+                    "priorityQueue",
+                    "set",
+                    "map"
+                  ]
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "How many items it held; WatchSpec.Items may show fewer."
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false,
+              "description": "A collection the algorithm keeps, as it was at a step: its first items in the order they come out."
+            },
+            "description": "Collections the algorithm keeps (a queue, a stack, a set), as they were at this step."
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The 1-based line of code that recorded the step, to highlight it in the editor."
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Which code that line is in (a notebook cell), when it isn't the code that showed the visualizer."
+          }
+        },
+        "additionalProperties": false,
+        "description": "One step of an algorithm. It shows a new VisualizerStepSpec.State, or the previous state with VisualizerStepSpec.Changes applied, or (with neither) the previous state as it was. Its highlights, pointers and notes belong to it alone."
+      }
+    },
+    "showCoordinates": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Row and column numbers around a grid (default: on)."
+    },
+    "showValues": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "The values inside cells and bars (default: on)."
+    },
+    "cellSize": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "A grid cell's size in pixels at 100% (default: 38)."
+    },
+    "fitOnOpen": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Shrink the drawing to fit when it first appears, if it would otherwise be cut off (default: on)."
+    },
+    "islands": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "fourDirectional": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Only up, down, left and right count as touching (default: yes; no adds the diagonals)."
+        },
+        "recordSteps": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Record the search step by step (default: yes)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "For VisualizerKind.Islands: how the studio finds the islands and records its search."
+    },
+    "traversal": {
+      "enum": [
+        "preorder",
+        "inorder",
+        "postorder",
+        "levelOrder",
+        null
+      ],
+      "description": "For a tree without steps: have the studio record this traversal."
+    },
+    "detectCycle": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "For a linked list without steps: have the studio record Floyd's cycle detection."
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "subtitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "A line under the title."
+    },
+    "width": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The widest the visual is drawn, in pixels; it still fits narrower space. Left out, it takes the width there is."
+    },
+    "height": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The drawing's height in pixels, under the header. Left out, the studio picks one for the kind."
+    }
+  },
+  "additionalProperties": false,
+  "description": "A data-structure visualizer (application/vnd.fry.visualizer.v1+json): a grid, tree, graph, list, array, bars, board or canvas in VisualizerSpec.State, and optionally the VisualizerSpec.Steps of an algorithm walking over it."
+}

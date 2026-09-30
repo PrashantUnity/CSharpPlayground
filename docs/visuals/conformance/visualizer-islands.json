@@ -1,0 +1,48 @@
+{
+  "mime": "application/vnd.fry.visualizer.v1\u002Bjson",
+  "spec": {
+    "kind": "islands",
+    "state": {
+      "grid": {
+        "values": [
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "cells": [
+          {
+            "row": 0,
+            "col": 0,
+            "terrain": "land"
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "terrain": "water"
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "terrain": "land"
+          },
+          {
+            "row": 1,
+            "col": 1,
+            "terrain": "land"
+          }
+        ],
+        "inferTerrain": false
+      }
+    },
+    "showCoordinates": true,
+    "showValues": true,
+    "cellSize": 38,
+    "fitOnOpen": true,
+    "title": "Islands"
+  }
+}

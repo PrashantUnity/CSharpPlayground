@@ -3,17 +3,6 @@ using System.Collections.Generic;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
-public enum CellKind
-{
-    Standard,
-    Land,
-    Water,
-    Wall,
-    Path,
-    Start,
-    Target
-}
-
 public enum GridCellState
 {
     Default,
@@ -76,6 +65,9 @@ public class GridCell
             };
         }
     }
+
+    /// <summary>What the cell is (land, water, a wall…), while <see cref="Kind"/> can briefly show a start, target or path state.</summary>
+    public CellKind BaseKind => _baseKind;
 
     public GridCellState State
     {

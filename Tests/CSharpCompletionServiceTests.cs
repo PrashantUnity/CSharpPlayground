@@ -43,6 +43,22 @@ public class CSharpCompletionServiceTests
         environment.
         """;
 
+    // The visuals' older extension names (.LineChart(), .Dump3D()…) still compile but are hidden, as in Visual Studio,
+    // so completion offers one name per visual: the Display… one.
+    [Fact]
+    public async Task HiddenMembers_AreNotOffered_TheirNewNamesAre()
+    {
+        const string code = "var values = new[] { 1, 2, 3 };\nvalues.";
+
+        var completions = await Service.GetCompletionsAsync(code, code.Length, ExecutionLanguageMode.Statements);
+        var names = completions.Select(c => c.DisplayText).ToHashSet();
+
+        Assert.Contains("DisplayLineChart", names);
+        Assert.Contains("DisplayScatter3D", names);
+        Assert.DoesNotContain("LineChart", names);
+        Assert.DoesNotContain("Dump3D", names);
+    }
+
     [Fact]
     public async Task DotMemberAccess_ReturnsAnonymousTypeProperties()
     {

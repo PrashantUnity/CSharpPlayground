@@ -1,0 +1,11 @@
+{
+  "title": "Cycle",
+  "kind": "linkedList",
+  "state": {
+    "linkedList": {
+      "head": "n1",
+      "nodes": [ { "id": "n1", "value": 1, "next": "n2" }, { "id": "n2", "value": 2, "next": "n3" }, { "id": "n3", "value": 3, "next": "n2" } ]
+    }
+  },
+  "steps": [ { "description": "slow and fast start at the head", "pointers": [ { "name": "slow", "at": "n1" }, { "name": "fast", "at": "n1" } ] } ]
+}

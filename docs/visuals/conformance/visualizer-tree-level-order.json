@@ -1,0 +1,37 @@
+{
+  "mime": "application/vnd.fry.visualizer.v1\u002Bjson",
+  "spec": {
+    "kind": "tree",
+    "state": {
+      "tree": {
+        "root": "node_1",
+        "nodes": [
+          {
+            "id": "node_1",
+            "value": "1",
+            "left": "node_2",
+            "right": "node_3"
+          },
+          {
+            "id": "node_2",
+            "value": "2",
+            "right": "node_4"
+          },
+          {
+            "id": "node_4",
+            "value": "4"
+          },
+          {
+            "id": "node_3",
+            "value": "3"
+          }
+        ]
+      }
+    },
+    "showCoordinates": true,
+    "showValues": true,
+    "cellSize": 38,
+    "fitOnOpen": true,
+    "title": "Level order"
+  }
+}

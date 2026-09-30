@@ -2,17 +2,6 @@ using System.Collections.Generic;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
-public enum WatchKind
-{
-    Value,
-    List,
-    Queue,
-    Stack,
-    PriorityQueue,
-    Set,
-    Map
-}
-
 /// <summary>A watched collection as it looked when a step was recorded (items in the order they come out).</summary>
 public sealed class StepWatch
 {
