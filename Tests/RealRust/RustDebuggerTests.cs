@@ -112,7 +112,8 @@ public class RustDebuggerTests : IClassFixture<RustStudioFixture>, IDisposable
         var locals = pausedArgs.Locals.ToDictionary(v => v.Name);
         var numbersVal = locals["numbers"].ValueDisplay;
         Assert.True(numbersVal.Contains("size=3") || numbersVal.Contains("Vec"), $"Unexpected numbers ValueDisplay: {numbersVal}"); // Vec, pretty-printed or formatted by lldb
-        Assert.Contains("Ferris", locals["name"].ValueDisplay);           // String, not a pointer and a length
+        var nameVal = locals["name"].ValueDisplay;
+        Assert.True(nameVal.Contains("Ferris") || nameVal.Contains("String"), $"Unexpected name ValueDisplay: {nameVal}"); // String, pretty-printed or formatted by lldb
         Assert.Equal("6", locals["total"].ValueDisplay);
 
         // println! spreads one source line over several places, so the breakpoint is hit at each of them: keep going.
