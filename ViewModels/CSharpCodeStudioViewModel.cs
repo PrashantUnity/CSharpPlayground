@@ -19,6 +19,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToSettingsAction;
     private readonly StudioLanguageServices _languages;
@@ -270,7 +271,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         Action<Action>? postToUiThread = null,
         IBlindProgressService? blindProgress = null,
         StudioLanguageServices? languages = null,
-        Action? navigateToSettingsAction = null)
+        Action? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _script = script;
         _languages = languages ?? StudioLanguageServices.Default;
@@ -281,6 +283,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
+        _openServerAction = openServerAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);

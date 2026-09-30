@@ -7,7 +7,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 public enum WorkspaceItemKind
 {
     Script,
-    Notebook
+    Notebook,
+    Server
 }
 
 public class WorkspaceItemSummary : ObservableObject
@@ -35,7 +36,7 @@ public class WorkspaceItemSummary : ObservableObject
     /// <summary>True for a plain source file (main.py) rather than a .frycs/.frynb document.</summary>
     public bool IsSourceFile { get; set; }
 
-    public string DisplayExtension => FileExtension ?? (IsNotebook ? ".frynb" : ".frycs");
+    public string DisplayExtension => FileExtension ?? (IsServer ? ".fryserver" : IsNotebook ? ".frynb" : ".frycs");
 
     private bool _isPinned;
     public bool IsPinned
@@ -55,20 +56,23 @@ public class WorkspaceItemSummary : ObservableObject
 
     public string DisplayLocationTooltip => DisplayLocation;
 
+    public bool IsServer => Kind == WorkspaceItemKind.Server;
     public bool IsNotebook => Kind == WorkspaceItemKind.Notebook;
     public bool IsScript => Kind == WorkspaceItemKind.Script;
-    public string KindLabel => IsNotebook ? "Notebook" : "Script";
+    public string KindLabel => IsServer ? "Server" : IsNotebook ? "Notebook" : "Script";
 
     /// <summary>
     /// Language-qualified badge text shown in the TYPE column.
-    /// e.g. "Python Script", "Java Script", "JavaScript Script", "Notebook", "C# Script".
+    /// e.g. "API Server", "Python Script", "Java Script", "JavaScript Script", "Notebook", "C# Script".
     /// </summary>
-    public string KindBadgeText => IsNotebook
-        ? (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Notebook" : "Notebook")
-        : (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Script" : "C# Script");
+    public string KindBadgeText => IsServer
+        ? "API Server"
+        : IsNotebook
+            ? (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Notebook" : "Notebook")
+            : (!string.IsNullOrEmpty(LanguageName) ? $"{LanguageName} Script" : "C# Script");
 
     public string KindBadgeColor => KindBadgeForeground;
-    public string RuntimeBadgeText => IsNotebook ? ".NET 10" : IsSourceFile ? LanguageName : "Roslyn C# 13";
+    public string RuntimeBadgeText => IsServer ? "HTTP Server" : IsNotebook ? ".NET 10" : IsSourceFile ? LanguageName : "Roslyn C# 13";
     public bool HasRuntimeDot => IsScript;
 
     public bool IsExternal => IsExternalRoot;
@@ -110,6 +114,7 @@ public class WorkspaceItemSummary : ObservableObject
         Services.Languages.LanguageIds.Rust => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageRust,
         _ => Kind switch
         {
+            WorkspaceItemKind.Server => MaterialIconKind.ServerNetwork,
             WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
             _ => IsAlgorithms ? MaterialIconKind.CodeBraces
                 : IsScratchpad ? MaterialIconKind.LightningBoltOutline
@@ -120,6 +125,7 @@ public class WorkspaceItemSummary : ObservableObject
     };
 
     // Language-specific accent palettes
+    private const string ServerAccentHex   = "#009688";   // teal   — Server
     private const string NotebookAccentHex = "#D97706";   // amber  — notebooks
     private const string CSharpAccentHex   = "#58A6FF";   // blue   — C#
     private const string PythonAccentHex   = "#3AC97E";   // green  — Python
@@ -131,7 +137,7 @@ public class WorkspaceItemSummary : ObservableObject
     private const string SqlAccentHex      = "#F29111";   // orange/gold — SQL
     private const string RustAccentHex     = "#DEA584";   // tan — Rust
 
-    private string AccentHex => LanguageId switch
+    private string AccentHex => Kind == WorkspaceItemKind.Server ? ServerAccentHex : LanguageId switch
     {
         Services.Languages.LanguageIds.Python     => IsNotebook ? NotebookAccentHex : PythonAccentHex,
         Services.Languages.LanguageIds.Java       => IsNotebook ? NotebookAccentHex : JavaAccentHex,

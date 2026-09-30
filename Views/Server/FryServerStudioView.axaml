@@ -1,0 +1,820 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
+             xmlns:serverControls="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Server"
+             xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="900"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.Server.FryServerStudioView"
+             x:DataType="vm:FryServerStudioViewModel"
+             Background="{DynamicResource DsBgBrush}">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
+            <CornerRadius x:Key="ServerTabTopRadius">4,4,0,0</CornerRadius>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+
+        <!-- Activity Bar Active Accent Border -->
+        <Style Selector="Button.activity-bar-btn.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+        </Style>
+
+        <!-- Flat Server Traffic List in Bottom Deck & Sidebar -->
+        <Style Selector="ListBox.server-traffic-list">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="ListBox.server-traffic-list ListBoxItem">
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="ListBox.server-traffic-list ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+        <Style Selector="ListBox.server-traffic-list ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        </Style>
+        <Style Selector="ListBox.server-traffic-list ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        </Style>
+
+        <!-- Top Insert Divider -->
+        <Style Selector="Border.top-insert-divider">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Margin" Value="56,0,0,8" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.top-insert-divider StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.top-insert-divider:pointerover StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="Border.top-insert-divider Rectangle.divider-line">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.top-insert-divider:pointerover Rectangle.divider-line">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+
+        <Style Selector="Button.insert-cell-pill">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.insert-cell-pill:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        </Style>
+
+        <!-- Authentic IDE Tree / Outline Item Row (VS Code & Notebook Standard) -->
+        <Style Selector="Button.server-outline-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.08" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.08" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.server-outline-row /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.server-outline-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        </Style>
+        <Style Selector="Button.server-outline-row.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+        </Style>
+
+        <!-- Cell Tool Button -->
+        <Style Selector="Button.cell-tool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+        <Style Selector="Button.cell-tool-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,22">
+        <!-- ============================================================ -->
+        <!-- ROW 0: MAIN WORKSPACE (Zone 1 - 4)                          -->
+        <!-- ============================================================ -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="48" />
+                <ColumnDefinition Width="{Binding SideBarGridLength, Mode=TwoWay}" MinWidth="180" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ======================================================== -->
+            <!-- ZONE 1: ACTIVITY BAR (Column 0, 48px fixed)              -->
+            <!-- ======================================================== -->
+            <Border Grid.Column="0"
+                    Width="48"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="*,Auto">
+                    <!-- Top Navigation Tool Buttons -->
+                    <StackPanel Grid.Row="0" Spacing="0">
+                        <!-- Outline (Index 0) -->
+                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="0"
+                                Classes="activity-bar-btn"
+                                Classes.active="{Binding IsEndpointsOutlineActive}"
+                                ToolTip.Tip="Endpoints Outline">
+                            <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="20" Height="20" />
+                        </Button>
+
+                        <!-- Traffic Logs (Index 1) -->
+                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="1"
+                                Classes="activity-bar-btn"
+                                Classes.active="{Binding IsTrafficActive}"
+                                ToolTip.Tip="Traffic Logs &amp; Telemetry">
+                            <Grid>
+                                <materialIcons:MaterialIcon Kind="SwapVertical" Width="20" Height="20" />
+                                <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="7"
+                                        Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
+                                        IsVisible="{Binding TrafficLog.Count}">
+                                    <TextBlock Text="{Binding TrafficLog.Count}" FontSize="8.5" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                               Margin="0,1,0,0"
+                                               Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                </Border>
+                            </Grid>
+                        </Button>
+
+                        <!-- Explorer (Index 2) -->
+                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="2"
+                                Classes="activity-bar-btn"
+                                Classes.active="{Binding IsExplorerActive}"
+                                ToolTip.Tip="Server Explorer (Ctrl+Shift+E)">
+                            <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20" />
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Bottom Return to Hub Tool -->
+                    <StackPanel Grid.Row="1" Spacing="0" Margin="0,0,0,4">
+                        <Button Command="{Binding ReturnToHubCommand}"
+                                Classes="activity-bar-btn"
+                                ToolTip.Tip="Return to Scripts &amp; Servers Hub">
+                            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ======================================================== -->
+            <!-- ZONE 2: PRIMARY SIDEBAR (Column 1, Resizable, Collapsible) -->
+            <!-- ======================================================== -->
+            <Border Grid.Column="1"
+                    IsVisible="{Binding IsSideBarVisible}"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- SideBar Header -->
+                    <Border Grid.Row="0" Height="35"
+                            Background="{DynamicResource DsSurfaceBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="12,0,8,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding SideBarTitle}"
+                                       FontSize="11" FontWeight="Bold"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}"
+                                       VerticalAlignment="Center" />
+
+                            <!-- Header Collapse Action -->
+                            <Button Grid.Column="1"
+                                    Command="{Binding ToggleSideBarCommand}"
+                                    Classes="cell-tool-btn" Width="22" Height="22"
+                                    ToolTip.Tip="Hide Side Bar (Ctrl+B)">
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- SideBar Body Panels (Enclosed in single Panel) -->
+                    <Panel Grid.Row="1">
+                        <!-- View 0: Endpoints Outline Tree -->
+                        <Grid IsVisible="{Binding IsEndpointsOutlineActive}" RowDefinitions="Auto,*">
+                            <!-- Section Sub-Header -->
+                            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="26" Padding="12,0"
+                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding Cells.Count, StringFormat='{}CELLS &amp; ROUTES ({0})'}"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource DsMutedBrush}"
+                                               VerticalAlignment="Center" />
+                                    <Button Command="{Binding AddEndpointCellCommand}"
+                                            Classes="cell-tool-btn" Width="18" Height="18"
+                                            ToolTip.Tip="Add Endpoint">
+                                        <materialIcons:MaterialIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Cells}" Margin="0,2">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:FryServerCellViewModel">
+                                            <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).SelectCellCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Classes="server-outline-row"
+                                                    Classes.selected="{Binding IsSelected}"
+                                                    ToolTip.Tip="{Binding OutlineTooltip}">
+                                                <Grid ColumnDefinitions="42,*,Auto" VerticalAlignment="Center">
+                                                    <!-- Method Badge / Icon Chip -->
+                                                    <Border Grid.Column="0"
+                                                            Background="{Binding TypeBadgeBgBrush}"
+                                                            BorderBrush="{Binding TypeBadgeBorderBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="3"
+                                                            Width="38"
+                                                            Height="16"
+                                                            Margin="0,0,4,0"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding TypeBadgeText}"
+                                                                   FontSize="8.5"
+                                                                   FontWeight="Bold"
+                                                                   Foreground="{Binding TypeBadgeFgBrush}"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center" />
+                                                    </Border>
+
+                                                    <!-- Route for Endpoints -->
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Route}"
+                                                               IsVisible="{Binding IsEndpoint}"
+                                                               FontFamily="Consolas, Monaco, monospace"
+                                                               FontSize="11"
+                                                               FontWeight="Medium"
+                                                               Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                               VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Margin="2,0,4,0" />
+
+                                                    <!-- Title for Endpoints -->
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding Title}"
+                                                               IsVisible="{Binding IsEndpoint}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource DsMutedBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"
+                                                               MaxWidth="90" />
+
+                                                    <!-- Title for Non-Endpoints (Startup, Scenario, Markdown) -->
+                                                    <TextBlock Grid.Column="1"
+                                                               Grid.ColumnSpan="2"
+                                                               Text="{Binding Title}"
+                                                               IsVisible="{Binding !IsEndpoint}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"
+                                                               Margin="2,0,0,0" />
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <!-- View 1: Traffic Telemetry Log -->
+                        <Grid IsVisible="{Binding IsTrafficActive}" RowDefinitions="Auto,*">
+                            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="26" Padding="12,0"
+                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding TrafficLog.Count, StringFormat='{}REQUESTS ({0})'}"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource DsMutedBrush}"
+                                               VerticalAlignment="Center" />
+                                    <Button Command="{Binding ClearTrafficLogCommand}" Classes="cell-tool-btn" Width="18" Height="18" ToolTip.Tip="Clear Logs">
+                                        <materialIcons:MaterialIcon Kind="Broom" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <Panel Grid.Row="1">
+                                <!-- Empty State -->
+                                <StackPanel IsVisible="{Binding !TrafficLog.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6" Margin="16">
+                                    <materialIcons:MaterialIcon Kind="SwapVertical" Width="28" Height="28" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.4" HorizontalAlignment="Center" />
+                                    <TextBlock Text="No Traffic Recorded" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Requests to this server will appear here in real time." FontSize="10" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- Flat Streamlined Traffic Log List -->
+                                <ListBox IsVisible="{Binding TrafficLog.Count}"
+                                         ItemsSource="{Binding TrafficLog}"
+                                         Classes="server-traffic-list"
+                                         Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="models:FryServerTrafficLogItem">
+                                            <Border BorderBrush="{DynamicResource DsBorderBrush}"
+                                                    BorderThickness="0,0,0,1"
+                                                    Padding="4,5">
+                                                <Grid RowDefinitions="Auto,Auto">
+                                                    <!-- Row 0: Method, Path, Status -->
+                                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                        <Border Grid.Column="0"
+                                                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="3"
+                                                                Width="34"
+                                                                Height="15"
+                                                                VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Method}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding Path}"
+                                                                   FontFamily="Consolas, Monaco, monospace"
+                                                                   FontSize="11"
+                                                                   Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                                   Margin="6,0,6,0"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <Border Grid.Column="2"
+                                                                Background="{DynamicResource DsSurfaceHoverBrush}"
+                                                                CornerRadius="3"
+                                                                Padding="4,0"
+                                                                Height="15"
+                                                                VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding StatusCode}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                                        </Border>
+                                                    </Grid>
+                                                    <!-- Row 1: Timestamp & Latency -->
+                                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,3,0,0">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" FontSize="9.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding ElapsedMilliseconds, StringFormat='{}{0:F1}ms'}" FontSize="9.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Panel>
+                        </Grid>
+
+                        <!-- View 2: Server Explorer -->
+                        <Grid IsVisible="{Binding IsExplorerActive}" RowDefinitions="Auto,*">
+                            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0"
+                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                <TextBlock Text="SERVER CONFIGURATION" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </Border>
+
+                            <ScrollViewer Grid.Row="1" Padding="12">
+                                <StackPanel Spacing="10">
+                                    <!-- Document Info Card -->
+                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                                        <StackPanel Spacing="6">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                <TextBlock Text="{Binding BreadcrumbDocument}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding FilePath, FallbackValue='In-Memory Active Session'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                            <Border Height="1" Background="{DynamicResource DsBorderBrush}" Margin="0,2" />
+                                            <Grid ColumnDefinitions="*,*">
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Runtime Engine" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text=".NET 10 Roslyn" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="CORS Status" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="Enabled (*)" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsGreenBrush}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Metrics Card -->
+                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="METRICS &amp; STATS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                                            <Grid ColumnDefinitions="*,*">
+                                                <StackPanel Grid.Column="0" Spacing="1">
+                                                    <TextBlock Text="Total Endpoints" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="{Binding EndpointCount}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Spacing="1">
+                                                    <TextBlock Text="Requests Served" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="{Binding TrafficLog.Count}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Quick Export Actions -->
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="QUICK EXPORTS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" Margin="0,4,0,2" />
+                                        <Button Command="{Binding ExportMinimalApiCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="13" Height="13" Foreground="{DynamicResource NavScriptsFgBrush}" />
+                                                <TextBlock Text="Export ASP.NET Program.cs" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding ExportOpenApiCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
+                                                <TextBlock Text="Export OpenAPI 3.0 (Swagger)" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding ExportCurlCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="Console" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                <TextBlock Text="Copy cURL Command Collection" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Panel>
+                </Grid>
+            </Border>
+
+            <!-- Resizable Column Sash Splitter between Sidebar and Editor Canvas -->
+            <GridSplitter Grid.Column="2"
+                          Classes="studio-sash"
+                          Width="4"
+                          IsVisible="{Binding IsSideBarVisible}"
+                          ResizeDirection="Columns" />
+
+            <!-- ======================================================== -->
+            <!-- ZONE 3 & 4: CENTRAL EDITOR CANVAS & BOTTOM TOOL DECK     -->
+            <!-- ======================================================== -->
+            <Grid Grid.Column="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35" />
+                    <RowDefinition Height="26" />
+                    <RowDefinition Height="38" />
+                    <RowDefinition Height="*" MinHeight="100" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="{Binding BottomDeckGridLength, Mode=TwoWay}" MinHeight="60" />
+                </Grid.RowDefinitions>
+
+                <!-- ROW 0: VS CODE DOCUMENT TAB BAR (35px) -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Height="35">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Active Server Tab -->
+                        <Border Grid.Column="0" Classes="vscode-tab active" Padding="12,0,16,0" Height="35">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Classes="tab-title"
+                                           Text="{Binding BreadcrumbDocument}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ROW 1: DEDICATED BREADCRUMB STRIP (26px) -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Height="26"
+                        Padding="16,0">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
+                        <!-- Segment 1: Folder -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{DynamicResource NavHomeFgBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding BreadcrumbFolder}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <!-- Chevron 1 -->
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.6" VerticalAlignment="Center" Margin="5,0" />
+
+                        <!-- Segment 2: Document -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ServerNetwork" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="{Binding BreadcrumbDocument}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" MaxWidth="180" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <!-- Chevron 2 -->
+                        <materialIcons:MaterialIcon Grid.Column="3" Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.6" VerticalAlignment="Center" Margin="5,0" />
+
+                        <!-- Segment 3: Active Cell Badge -->
+                        <Border Grid.Column="4"
+                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="6,1"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="{Binding ActiveCellTypeIcon}" Width="11" Height="11" Foreground="{Binding ActiveCellTypeColor}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveCellBadgeText}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource DsTextWhiteBrush}"
+                                           VerticalAlignment="Center"
+                                           MaxWidth="180"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ROW 2: MASTER SERVER ACTION TOOLBAR (38px) -->
+                <serverControls:FryServerMasterBarControl Grid.Row="2" DataContext="{Binding}" />
+
+                <!-- ROW 3: SCROLLABLE CELLS CANVAS (Notebook Padded Canvas) -->
+                <ScrollViewer Grid.Row="3" Padding="24,16,24,32">
+                    <StackPanel>
+                        <!-- Top Insert Divider (Above first cell) -->
+                        <Border Classes="top-insert-divider">
+                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+                                <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button Command="{Binding AddEndpointCellCommand}" Classes="insert-cell-pill" ToolTip.Tip="Insert Endpoint Cell at Top">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                            <TextBlock Text="Endpoint" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding AddMiddlewareCellCommand}" Classes="insert-cell-pill" ToolTip.Tip="Insert Middleware Cell at Top">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                            <TextBlock Text="Middleware" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Cell Cards -->
+                        <ItemsControl ItemsSource="{Binding Cells}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:FryServerCellViewModel">
+                                    <serverControls:FryServerEndpointCellControl DataContext="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Bottom Canvas Padding -->
+                        <Border Height="48" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ROW 4: RESIZABLE SASH SPLITTER FOR BOTTOM TOOL DECK -->
+                <GridSplitter Grid.Row="4"
+                              Classes="studio-sash"
+                              Height="4"
+                              IsVisible="{Binding IsBottomPanelVisible}"
+                              ResizeDirection="Rows" />
+
+                <!-- ROW 5: BOTTOM PANEL / TOOL DECK (Server Logs & Telemetry, Collapsible) -->
+                <Border Grid.Row="5"
+                        IsVisible="{Binding IsBottomPanelVisible}"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="0,1,0,0">
+                    <Grid RowDefinitions="30,*">
+                        <!-- Bottom Deck Header Tabs -->
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource DsSurfaceHoverBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,0">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <!-- Tabs -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <Button Classes="ide-tab-btn active">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="SERVER TRAFFIC" FontWeight="SemiBold" FontSize="11" />
+                                            <Border Classes="ide-tab-badge" Background="{DynamicResource DsPrimaryBrush}">
+                                                <TextBlock Text="{Binding TrafficLog.Count}" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Panel Actions -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <Button Classes="cell-tool-btn"
+                                            Command="{Binding ClearTrafficLogCommand}"
+                                            ToolTip.Tip="Clear Logs">
+                                        <materialIcons:MaterialIcon Kind="Broom" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                    <Button Classes="cell-tool-btn"
+                                            Command="{Binding ToggleBottomPanelCommand}"
+                                            ToolTip.Tip="Close Panel (Ctrl+J)">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Panel Grid.Row="1">
+                            <!-- Empty State -->
+                            <StackPanel IsVisible="{Binding !TrafficLog.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6" Margin="16">
+                                <materialIcons:MaterialIcon Kind="ServerNetwork" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.4" HorizontalAlignment="Center" />
+                                <TextBlock Text="Server Ready — Waiting for Traffic" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="Execute loopback test requests or consume endpoints via external HTTP clients to view real-time telemetry." FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Structured Telemetry Table -->
+                            <Grid IsVisible="{Binding TrafficLog.Count}" RowDefinitions="24,*">
+                                <!-- Column Headers -->
+                                <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                                    <Grid ColumnDefinitions="75,60,*,70,75,140">
+                                        <TextBlock Grid.Column="0" Text="TIME" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="METHOD" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="ROUTE / PATH" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="STATUS" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="4" Text="LATENCY" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="5" Text="CLIENT IP" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <ListBox Grid.Row="1"
+                                         ItemsSource="{Binding TrafficLog}"
+                                         Classes="server-traffic-list"
+                                         Background="{DynamicResource DsBgBrush}"
+                                         BorderThickness="0"
+                                         Padding="4,2">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="models:FryServerTrafficLogItem">
+                                            <Grid ColumnDefinitions="75,60,*,70,75,140" Margin="4,2">
+                                                <!-- Timestamp -->
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                                           FontSize="10.5"
+                                                           FontFamily="Consolas, monospace"
+                                                           Foreground="{DynamicResource DsMutedBrush}"
+                                                           VerticalAlignment="Center" />
+
+                                                <!-- Method Badge -->
+                                                <Border Grid.Column="1"
+                                                        Background="{DynamicResource DsSurfaceHoverBrush}"
+                                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="3"
+                                                        Padding="4,1"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Method}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                </Border>
+
+                                                <!-- Path -->
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Path}"
+                                                           FontFamily="Consolas, monospace"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" />
+
+                                                <!-- Status Badge -->
+                                                <Border Grid.Column="3"
+                                                        Background="{DynamicResource DsSurfaceHighBrush}"
+                                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="3"
+                                                        Padding="6,1"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StatusCode}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" />
+                                                </Border>
+
+                                                <!-- Latency -->
+                                                <TextBlock Grid.Column="4"
+                                                           Text="{Binding ElapsedMilliseconds, StringFormat='{}{0:F1}ms'}"
+                                                           FontFamily="Consolas, monospace"
+                                                           FontSize="10.5"
+                                                           Foreground="{DynamicResource DsMutedBrush}"
+                                                           VerticalAlignment="Center" />
+
+                                                <!-- Client IP -->
+                                                <TextBlock Grid.Column="5"
+                                                           Text="{Binding ClientIp}"
+                                                           FontFamily="Consolas, monospace"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource DsMutedBrush}"
+                                                           Opacity="0.7"
+                                                           VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Panel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ============================================================ -->
+        <!-- ZONE 5: STATUS BAR (Bottom 22px fixed)                       -->
+        <!-- ============================================================ -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Height="22"
+                Padding="10,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left Status -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="&gt;&lt; FryServer" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Border Width="6" Height="6" CornerRadius="3"
+                                Background="{DynamicResource DsGreenBrush}"
+                                IsVisible="{Binding IsServerRunning}"
+                                VerticalAlignment="Center" />
+                        <Border Width="6" Height="6" CornerRadius="3"
+                                Background="{DynamicResource DsMutedBrush}"
+                                Opacity="0.5"
+                                IsVisible="{Binding !IsServerRunning}"
+                                VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ServerStatusText}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Right Indicators -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TotalRequestsText}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="UTF-8" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="C# Roslyn" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <Button Classes="cell-tool-btn"
+                            Width="18" Height="18"
+                            Command="{Binding ToggleBottomPanelCommand}"
+                            ToolTip.Tip="Toggle Server Logs Panel (Ctrl+J)">
+                        <materialIcons:MaterialIcon Kind="DockBottom" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -78,6 +78,10 @@ internal static class Usage
               --nothing-installed    as on a machine without Python: the card says what's missing
               --templates            the template gallery instead of recent workspaces
               --create <kind>        the "New Script" / "New Notebook" dialog: script or notebook
+          server                 API Server Studio (.fryserver) off-screen rendering.
+              --run                  start the server and execute an in-cell test request
+              --port <port>          configure listening port (default 5000)
+              --conflict             simulate port conflict with automatic suggestion
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)

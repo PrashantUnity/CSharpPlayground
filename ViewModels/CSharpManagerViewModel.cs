@@ -15,6 +15,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     private readonly IScriptStorageService _storageService;
     private readonly Action<ScriptDocumentItem> _openScriptAction;
     private readonly Action<NotebookDocumentItem> _openNotebookAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     [ObservableProperty]
@@ -125,7 +126,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     private string? _pendingTemplateId;
 
     public bool IsCreatePromptOpen => PendingCreateKind.HasValue;
-    public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : "New Script";
+    public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : (PendingCreateKind == WorkspaceItemKind.Server ? "New API Server" : "New Script");
     public bool IsCreatingNotebook => PendingCreateKind == WorkspaceItemKind.Notebook;
     public bool IsCreatingScript => PendingCreateKind == WorkspaceItemKind.Script;
     public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
@@ -144,7 +145,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
-        "All", "Notebooks", "Scripts", "Pinned"
+        "All", "Notebooks", "Scripts", "Servers", "Pinned"
     };
 
     public ObservableCollection<string> SortOptions { get; } = new()
@@ -582,7 +583,8 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         Action? navigateToDocsAction = null,
         Action? navigateToBlindProblemsAction = null,
         StudioLanguageServices? languages = null,
-        Action<string?>? navigateToSettingsAction = null)
+        Action<string?>? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _storageService = storageService;
         var registry = (languages ?? StudioLanguageServices.Default).Registry;
@@ -592,6 +594,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         }
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
+        _openServerAction = openServerAction;
         _navigateToHomeAction = navigateToHomeAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToBlindProblemsAction = navigateToBlindProblemsAction;
@@ -702,18 +705,24 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     {
         TotalScripts = AllItems.Count(i => i.IsScript);
         TotalNotebooks = AllItems.Count(i => i.IsNotebook);
+        OnPropertyChanged(nameof(TotalServers));
         OnPropertyChanged(nameof(IsWorkspaceEmpty));
 
         OnPropertyChanged(nameof(RecentNotebook));
         OnPropertyChanged(nameof(RecentScript));
+        OnPropertyChanged(nameof(RecentServer));
         OnPropertyChanged(nameof(HasRecentNotebook));
         OnPropertyChanged(nameof(HasRecentScript));
+        OnPropertyChanged(nameof(HasRecentServer));
         OnPropertyChanged(nameof(RecentNotebookTitle));
         OnPropertyChanged(nameof(RecentNotebookPath));
         OnPropertyChanged(nameof(RecentNotebookTime));
         OnPropertyChanged(nameof(RecentScriptTitle));
         OnPropertyChanged(nameof(RecentScriptPath));
         OnPropertyChanged(nameof(RecentScriptTime));
+        OnPropertyChanged(nameof(RecentServerTitle));
+        OnPropertyChanged(nameof(RecentServerPath));
+        OnPropertyChanged(nameof(RecentServerTime));
         OnPropertyChanged(nameof(MemoryUsageText));
         OnPropertyChanged(nameof(MemoryUsagePercent));
         OnPropertyChanged(nameof(StorageUsageText));
@@ -741,10 +750,12 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         OnPropertyChanged(nameof(IsAllFilterActive));
         OnPropertyChanged(nameof(IsNotebooksFilterActive));
         OnPropertyChanged(nameof(IsScriptsFilterActive));
+        OnPropertyChanged(nameof(IsServersFilterActive));
         OnPropertyChanged(nameof(IsPinnedFilterActive));
         OnPropertyChanged(nameof(IsWorkspaceAllNavActive));
         OnPropertyChanged(nameof(IsScriptsNavActive));
         OnPropertyChanged(nameof(IsNotebooksNavActive));
+        OnPropertyChanged(nameof(IsServersNavActive));
         ApplyFilter();
     }
     partial void OnSelectedSortOptionChanged(string value)
@@ -815,6 +826,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         OnPropertyChanged(nameof(CreatePromptTitle));
         OnPropertyChanged(nameof(IsCreatingNotebook));
         OnPropertyChanged(nameof(IsCreatingScript));
+        OnPropertyChanged(nameof(IsCreatingServer));
     }
 
     partial void OnSelectedFolderPathChanged(string? value) => OnPropertyChanged(nameof(SelectedFolderDisplay));
@@ -891,6 +903,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         {
             if (typeFilter == "Scripts" && !item.IsScript) return false;
             if (typeFilter == "Notebooks" && !item.IsNotebook) return false;
+            if (typeFilter == "Servers" && !item.IsServer) return false;
             if (typeFilter == "Pinned" && !item.IsPinned) return false;
 
             if (string.IsNullOrEmpty(query)) return true;
@@ -1002,7 +1015,15 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     {
         if (item == null) return;
 
-        if (item.IsNotebook)
+        if (item.IsServer)
+        {
+            var server = await _storageService.LoadServerDocumentAsync(item.Id);
+            if (server != null)
+            {
+                _openServerAction?.Invoke(server);
+            }
+        }
+        else if (item.IsNotebook)
         {
             var nb = await _storageService.LoadNotebookAsync(item.Id);
             if (nb != null)
@@ -1062,12 +1083,16 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         {
             var folderPath = SelectedFolderPath;
             var title = string.IsNullOrWhiteSpace(NewItemName)
-                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : "New Automation Script")
+                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : (kind == WorkspaceItemKind.Server ? "New API Server" : "New Automation Script"))
                 : NewItemName.Trim();
 
             if (kind == WorkspaceItemKind.Notebook)
             {
                 await CreateNewNotebookCoreAsync(_pendingTemplateId, folderPath, title);
+            }
+            else if (kind == WorkspaceItemKind.Server)
+            {
+                await CreateNewServerCoreAsync(_pendingTemplateId, folderPath, title);
             }
             else
             {
@@ -1196,7 +1221,15 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 
                 if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                 {
-                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
+                    {
+                        var server = await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId);
+                        if (server != null)
+                        {
+                            _openServerAction?.Invoke(server);
+                        }
+                    }
+                    else if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
                     {
                         var nb = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
                         if (nb != null)

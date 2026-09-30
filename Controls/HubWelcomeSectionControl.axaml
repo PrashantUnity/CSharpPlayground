@@ -64,6 +64,16 @@
                                         </StackPanel>
                                     </Button>
 
+                                    <!-- New API Server (Teal Accent) -->
+                                    <Button Command="{Binding CreateNewServerCommand}"
+                                            Classes="nexus-btn-surface"
+                                            ToolTip.Tip="Create an executable local API server (.fryserver)">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="#009688" VerticalAlignment="Center" />
+                                            <TextBlock Text="New API Server" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+
                                     <!-- Open Project / Document (Surface Dropdown) -->
                                     <Button Name="OpenProjectButton"
                                             Classes="nexus-btn-surface"

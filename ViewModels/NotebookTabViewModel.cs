@@ -36,7 +36,7 @@ public partial class NotebookTabViewModel : ObservableObject
     private bool _isModified;
 
     [ObservableProperty]
-    private NotebookDocumentItem _notebook;
+    private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
 
     [ObservableProperty]
     private NotebookCellViewModel? _activeCell;

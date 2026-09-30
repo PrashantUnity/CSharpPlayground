@@ -68,6 +68,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpSettingsViewModel SettingsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
+    public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
     /// <param name="settingsStore">The plugin's settings (execution timeout).</param>
@@ -129,7 +130,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             navigateToDocsAction: () => NavigateToDocs(),
             navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
             languages: _languages,
-            navigateToSettingsAction: cat => NavigateToSettings(cat));
+            navigateToSettingsAction: cat => NavigateToSettings(cat),
+            openServerAction: server => NavigateToServerStudio(server));
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -198,7 +200,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 navigateToDocsAction: () => NavigateToDocs(),
                 blindProgress: _blindProgress,
                 languages: _languages,
-                navigateToSettingsAction: () => NavigateToSettings());
+                navigateToSettingsAction: () => NavigateToSettings(),
+                openServerAction: server => NavigateToServerStudio(server));
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -216,7 +219,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 openScriptAction: NavigateToCodeStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
                 languages: _languages,
-                navigateToSettingsAction: () => NavigateToSettings());
+                navigateToSettingsAction: () => NavigateToSettings(),
+                openServerAction: server => NavigateToServerStudio(server));
         });
 
         void Publish()
@@ -286,6 +290,28 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         ActiveDocumentTitle = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
     }
 
+    public void NavigateToServerStudio(FryServerDocumentItem server, string? filePath = null)
+    {
+        if (ServerStudioViewModel == null)
+        {
+            ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
+                document: server,
+                filePath: filePath,
+                portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
+                storageService: _storageService,
+                backToHubAction: NavigateToManager,
+                backToHomeAction: NavigateToHome);
+        }
+        else
+        {
+            ServerStudioViewModel.LoadDocument(server, filePath);
+        }
+
+        CurrentPage = ServerStudioViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = string.IsNullOrWhiteSpace(server.Title) ? "API Server" : server.Title;
+    }
+
     [RelayCommand]
     public void NavigateToManager()
     {
@@ -346,7 +372,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         {
             CurrentPage = _previousPageBeforeSettings;
             IsOnManagerPage = ReferenceEquals(CurrentPage, ManagerViewModel);
-            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : "Editor")));
+            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : (CurrentPage is PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel ? "API Server" : "Editor"))));
         }
         else
         {

@@ -27,6 +27,7 @@ try
         case "plot3d": Plot3DSnapshots.Render(options); break;
         case "visuals": VisualSnapshots.Render(options); break;
         case "perf": PerfSnapshots.Run(options); break;
+        case "server": StudioSnapshots.ServerStudio(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

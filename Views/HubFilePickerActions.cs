@@ -31,16 +31,16 @@ internal static class HubFilePickerActions
             {
                 new("All Supported Files")
                 {
-                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.cs", "*.csx", "*.csproj", "*.zip" }
+                    Patterns = new[] { "*.frycsproj", "*.frynbproj", "*.frycs", "*.frynb", "*.fryserver", "*.cs", "*.csx", "*.csproj", "*.zip" }
                         .Concat(LanguageFileTypes.Patterns(StudioLanguageServices.Default.Registry)).ToArray()
                 },
                 new("FryPDF Projects (*.frycsproj, *.frynbproj)")
                 {
                     Patterns = new[] { "*.frycsproj", "*.frynbproj" }
                 },
-                new("FryPDF Documents (*.frycs, *.frynb)")
+                new("FryPDF Documents (*.frycs, *.frynb, *.fryserver)")
                 {
-                    Patterns = new[] { "*.frycs", "*.frynb" }
+                    Patterns = new[] { "*.frycs", "*.frynb", "*.fryserver" }
                 },
                 new("C# Code & Projects (*.cs, *.csx, *.csproj)")
                 {

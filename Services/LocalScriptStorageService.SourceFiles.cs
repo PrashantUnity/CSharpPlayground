@@ -45,6 +45,7 @@ public partial class LocalScriptStorageService
     private bool IsWorkspaceFile(string path) =>
         path.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+        path.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase) ||
         _languages.FindSourceFileLanguage(path) != null;
 
     private string RegisterSourceFile(string path)

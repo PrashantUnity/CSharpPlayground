@@ -1508,7 +1508,11 @@ impl<T: Persist> Persist for Vec<T> {
         format!("Vec<{}>", T::persist_type())
     }
     fn persist_source(&self) -> String {
-        format!("vec![{}]", persist_items(self.iter()))
+        if self.is_empty() {
+            format!("Vec::<{}>::new()", T::persist_type())
+        } else {
+            format!("vec![{}]", persist_items(self.iter()))
+        }
     }
 }
 
@@ -1533,7 +1537,329 @@ impl<T: Persist> Persist for Option<T> {
     }
 }
 
-pub struct Json(pub String);
+macro_rules! persist_tuple {
+    ($(($($name:ident $index:tt),+))+) => {$(
+        impl<$($name: Persist),+> Persist for ($($name,)+) {
+            fn persist_type() -> String {
+                format!("({})", [$($name::persist_type()),+].join(", "))
+            }
+            fn persist_source(&self) -> String {
+                format!("({})", [$(self.$index.persist_source()),+].join(", "))
+            }
+        }
+    )+};
+}
+persist_tuple! { (A 0, B 1) (A 0, B 1, C 2) (A 0, B 1, C 2, D 3) }
+
+impl<T: Persist> Persist for std::collections::VecDeque<T> {
+    fn persist_type() -> String {
+        format!("std::collections::VecDeque<{}>", T::persist_type())
+    }
+    fn persist_source(&self) -> String {
+        format!("std::collections::VecDeque::<{}>::from(vec![{}])", T::persist_type(), persist_items(self.iter()))
+    }
+}
+
+macro_rules! persist_set {
+    ($($set:ident),*) => {$(
+        impl<T: Persist> Persist for std::collections::$set<T> {
+            fn persist_type() -> String {
+                format!("std::collections::{}<{}>", stringify!($set), T::persist_type())
+            }
+            fn persist_source(&self) -> String {
+                format!("std::collections::{}::<{}>::from([{}])", stringify!($set), T::persist_type(), persist_items(self.iter()))
+            }
+        }
+    )*};
+}
+persist_set!(HashSet, BTreeSet);
+
+macro_rules! persist_map {
+    ($($map:ident),*) => {$(
+        impl<K: Persist, V: Persist> Persist for std::collections::$map<K, V> {
+            fn persist_type() -> String {
+                format!("std::collections::{}<{}, {}>", stringify!($map), K::persist_type(), V::persist_type())
+            }
+            fn persist_source(&self) -> String {
+                let pairs: Vec<String> = self.iter().map(|(key, value)| format!("({}, {})", key.persist_source(), value.persist_source())).collect();
+                format!("std::collections::{}::<{}, {}>::from([{}])", stringify!($map), K::persist_type(), V::persist_type(), pairs.join(", "))
+            }
+        }
+    )*};
+}
+persist_map!(HashMap, BTreeMap);
+
+const MAX_KEPT_BYTES: usize = 200_000;
+
+/// Hands one variable to the notebook (through the file it names in `FRY_VARS_FILE`): what the studio adds at the end of a cell.
+#[doc(hidden)]
+pub fn __keep(name: &str, type_name: String, source: String) {
+    use std::io::Write;
+    let Ok(path) = std::env::var("FRY_VARS_FILE") else {
+        return;
+    };
+    let line = if source.len() > MAX_KEPT_BYTES {
+        format!("{{\"name\":{},\"skipped\":\"too large\"}}\n", json_string(name))
+    } else {
+        format!("{{\"name\":{},\"type\":{},\"source\":{}}}\n", json_string(name), json_string(&type_name), json_string(&source))
+    };
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+        let _ = file.write_all(line.as_bytes());
+    }
+}
+
+/// What the studio adds after a notebook cell for each variable it made with `let`: it keeps the variable for the cells after
+/// it when its type is `Persist`, and does nothing when it isn't, so a variable of a type of your own isn't an error.
+#[doc(hidden)]
+pub mod __persist_probe {
+    pub struct Probe<'a, T: ?Sized>(pub &'a T);
+
+    pub trait ViaPersist {
+        fn __fry_persist(&self, name: &str);
+    }
+
+    impl<'a, T: crate::Persist> ViaPersist for Probe<'a, T> {
+        fn __fry_persist(&self, name: &str) {
+            crate::__keep(name, T::persist_type(), self.0.persist_source());
+        }
+    }
+
+    pub trait ViaNothing {
+        fn __fry_persist(&self, name: &str);
+    }
+
+    impl<'a, T: ?Sized> ViaNothing for &Probe<'a, T> {
+        fn __fry_persist(&self, _name: &str) {}
+    }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __persist {
+    ($value:ident) => {{
+        #[allow(unused_imports)]
+        use $crate::__persist_probe::{ViaNothing as _, ViaPersist as _};
+        (&$crate::__persist_probe::Probe(&$value)).__fry_persist(stringify!($value))
+    }};
+}
+
+/// A JSON value, which is how a notebook cell receives a list or an object another language shared with `#!share`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Json {
+    Null,
+    Bool(bool),
+    Number(f64),
+    Str(String),
+    Array(Vec<Json>),
+    Object(Vec<(String, Json)>),
+}
+
+static JSON_NULL: Json = Json::Null;
+
+impl Json {
+    /// Reads JSON text. The studio only passes valid JSON; anything else panics and says where.
+    pub fn parse(text: &str) -> Json {
+        let mut reader = JsonReader { chars: text.chars().collect(), at: 0 };
+        let value = reader.value();
+        reader.skip();
+        if reader.at != reader.chars.len() {
+            reader.fail("unexpected text after the value");
+        }
+        value
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Json> {
+        match self {
+            Json::Object(fields) => fields.iter().find(|(name, _)| name == key).map(|(_, value)| value),
+            _ => None,
+        }
+    }
+
+    pub fn at(&self, index: usize) -> Option<&Json> {
+        match self {
+            Json::Array(items) => items.get(index),
+            _ => None,
+        }
+    }
+
+    pub fn is_null(&self) -> bool {
+        matches!(self, Json::Null)
+    }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        if let Json::Bool(b) = self { Some(*b) } else { None }
+    }
+
+    pub fn as_f64(&self) -> Option<f64> {
+        if let Json::Number(n) = self { Some(*n) } else { None }
+    }
+
+    pub fn as_i64(&self) -> Option<i64> {
+        match self {
+            Json::Number(n) if n.fract() == 0.0 && n.abs() < 9.0e15 => Some(*n as i64),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        if let Json::Str(s) = self { Some(s) } else { None }
+    }
+
+    pub fn as_array(&self) -> Option<&Vec<Json>> {
+        if let Json::Array(items) = self { Some(items) } else { None }
+    }
+}
+
+impl std::ops::Index<&str> for Json {
+    type Output = Json;
+    fn index(&self, key: &str) -> &Json {
+        self.get(key).unwrap_or(&JSON_NULL)
+    }
+}
+
+impl std::ops::Index<usize> for Json {
+    type Output = Json;
+    fn index(&self, index: usize) -> &Json {
+        self.at(index).unwrap_or(&JSON_NULL)
+    }
+}
+
+struct JsonReader {
+    chars: Vec<char>,
+    at: usize,
+}
+
+impl JsonReader {
+    fn skip(&mut self) {
+        while self.at < self.chars.len() && self.chars[self.at].is_whitespace() {
+            self.at += 1;
+        }
+    }
+
+    fn fail(&self, what: &str) -> ! {
+        panic!("invalid JSON at character {}: {}", self.at, what)
+    }
+
+    fn expect(&mut self, c: char) {
+        self.skip();
+        if self.chars.get(self.at) != Some(&c) {
+            self.fail(&format!("expected '{}'", c));
+        }
+        self.at += 1;
+    }
+
+    fn value(&mut self) -> Json {
+        self.skip();
+        match self.chars.get(self.at).copied() {
+            Some('{') => {
+                self.at += 1;
+                let mut fields = Vec::new();
+                loop {
+                    self.skip();
+                    if self.chars.get(self.at) == Some(&'}') {
+                        self.at += 1;
+                        return Json::Object(fields);
+                    }
+                    if !fields.is_empty() {
+                        self.expect(',');
+                    }
+                    self.skip();
+                    let key = match self.value() {
+                        Json::Str(key) => key,
+                        _ => self.fail("expected a string key"),
+                    };
+                    self.expect(':');
+                    fields.push((key, self.value()));
+                }
+            }
+            Some('[') => {
+                self.at += 1;
+                let mut items = Vec::new();
+                loop {
+                    self.skip();
+                    if self.chars.get(self.at) == Some(&']') {
+                        self.at += 1;
+                        return Json::Array(items);
+                    }
+                    if !items.is_empty() {
+                        self.expect(',');
+                    }
+                    items.push(self.value());
+                }
+            }
+            Some('"') => Json::Str(self.string()),
+            Some('t') => self.word("true", Json::Bool(true)),
+            Some('f') => self.word("false", Json::Bool(false)),
+            Some('n') => self.word("null", Json::Null),
+            Some(c) if c == '-' || c.is_ascii_digit() => {
+                let start = self.at;
+                self.at += 1;
+                while self.at < self.chars.len() && matches!(self.chars[self.at], '0'..='9' | '.' | 'e' | 'E' | '+' | '-') {
+                    self.at += 1;
+                }
+                let text: String = self.chars[start..self.at].iter().collect();
+                Json::Number(text.parse().unwrap_or_else(|_| self.fail("not a number")))
+            }
+            _ => self.fail("unexpected character"),
+        }
+    }
+
+    fn word(&mut self, word: &str, value: Json) -> Json {
+        for expected in word.chars() {
+            if self.chars.get(self.at) != Some(&expected) {
+                self.fail(&format!("expected {}", word));
+            }
+            self.at += 1;
+        }
+        value
+    }
+
+    fn string(&mut self) -> String {
+        self.at += 1;
+        let mut out = String::new();
+        loop {
+            let c = match self.chars.get(self.at).copied() {
+                Some(c) => c,
+                None => self.fail("the string never ends"),
+            };
+            self.at += 1;
+            match c {
+                '"' => return out,
+                '\\' => {
+                    let escape = self.chars.get(self.at).copied().unwrap_or_else(|| self.fail("a backslash ends the text"));
+                    self.at += 1;
+                    match escape {
+                        'n' => out.push('\n'),
+                        'r' => out.push('\r'),
+                        't' => out.push('\t'),
+                        'b' => out.push('\u{8}'),
+                        'f' => out.push('\u{c}'),
+                        'u' => {
+                            let mut code = self.hex4();
+                            if (0xD800..0xDC00).contains(&code) && self.chars.get(self.at) == Some(&'\\') && self.chars.get(self.at + 1) == Some(&'u') {
+                                self.at += 2;
+                                let low = self.hex4();
+                                code = 0x10000 + ((code - 0xD800) << 10) + (low.wrapping_sub(0xDC00) & 0x3FF);
+                            }
+                            out.push(char::from_u32(code).unwrap_or('\u{FFFD}'));
+                        }
+                        other => out.push(other),
+                    }
+                }
+                c => out.push(c),
+            }
+        }
+    }
+
+    fn hex4(&mut self) -> u32 {
+        if self.at + 4 > self.chars.len() {
+            self.fail("a \\u escape needs four digits");
+        }
+        let digits: String = self.chars[self.at..self.at + 4].iter().collect();
+        self.at += 4;
+        u32::from_str_radix(&digits, 16).unwrap_or_else(|_| self.fail("a \\u escape needs four hex digits"))
+    }
+}
 
 fn emit(mime: &str, value_json: &str) {
     println!(

@@ -102,6 +102,16 @@
                                                     </StackPanel>
                                                 </Button>
 
+                                                <!-- Servers Chip -->
+                                                <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Servers"
+                                                        Classes="nexus-filter-chip"
+                                                        Classes.active="{Binding IsServersFilterActive}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                        <TextBlock Text="Servers" />
+                                                        <TextBlock Text="{Binding TotalServers}" FontSize="10" Opacity="0.7" />
+                                                    </StackPanel>
+                                                </Button>
+
                                                 <!-- Pinned Chip -->
                                                 <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Pinned"
                                                         Classes="nexus-filter-chip"

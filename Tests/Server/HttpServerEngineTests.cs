@@ -1,0 +1,252 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
+using Xunit;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Server;
+
+public class HttpServerEngineTests
+{
+    private static int GetFreePort()
+    {
+        using var temp = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        temp.Start();
+        var port = ((IPEndPoint)temp.LocalEndpoint).Port;
+        temp.Stop();
+        return port;
+    }
+
+    [Fact]
+    public async Task ServerEngine_EndToEnd_ServesExternalHttpRequest()
+    {
+        var port = GetFreePort();
+        var doc = new FryServerDocumentItem
+        {
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = port,
+                Scheme = "http",
+                ApiPrefix = "/api",
+                EnableCors = true
+            },
+            Cells = new List<FryServerCellItem>
+            {
+                new()
+                {
+                    Id = "user-endpoint",
+                    Method = "GET",
+                    Route = "/users/{id}",
+                    Type = FryServerCellType.Endpoint,
+                    Source = @"
+                        var inc = Context.QueryValue<bool>(""includeOrders"");
+                        return Ok(new {
+                            userId = id,
+                            hasOrders = inc,
+                            appName = ""FryServer""
+                        });
+                    "
+                }
+            }
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+
+        try
+        {
+            await engine.StartAsync(doc);
+            Assert.Equal(ServerLifecycleState.Running, engine.State);
+
+            using var client = new HttpClient();
+            var response = await client.GetAsync($"http://localhost:{engine.BoundPort}/api/users/123?includeOrders=true");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var json = await response.Content.ReadAsStringAsync();
+
+            using var parsed = JsonDocument.Parse(json);
+            Assert.Equal("123", parsed.RootElement.GetProperty("userId").GetString());
+            Assert.True(parsed.RootElement.GetProperty("hasOrders").GetBoolean());
+            Assert.Equal("FryServer", parsed.RootElement.GetProperty("appName").GetString());
+
+            Assert.True(engine.TotalRequestsServed >= 1);
+            Assert.NotEmpty(engine.TrafficLog);
+        }
+        finally
+        {
+            await engine.StopAsync();
+            Assert.Equal(ServerLifecycleState.Stopped, engine.State);
+        }
+    }
+
+    [Fact]
+    public async Task ServerEngine_CorsPreflight_ReturnsPrivateNetworkAndCorsHeaders()
+    {
+        var port = GetFreePort();
+        var doc = new FryServerDocumentItem
+        {
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = port,
+                Scheme = "http",
+                ApiPrefix = "/api",
+                EnableCors = true,
+                AllowPrivateNetwork = true
+            },
+            Cells = new List<FryServerCellItem>
+            {
+                new()
+                {
+                    Id = "ping",
+                    Method = "GET",
+                    Route = "/ping",
+                    Type = FryServerCellType.Endpoint,
+                    Source = "return Ok(new { message = \"pong\" });"
+                }
+            }
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+
+        try
+        {
+            await engine.StartAsync(doc);
+
+            using var client = new HttpClient();
+            using var req = new HttpRequestMessage(HttpMethod.Options, $"http://localhost:{engine.BoundPort}/api/ping");
+            req.Headers.Add("Origin", "http://localhost:3000");
+            req.Headers.Add("Access-Control-Request-Private-Network", "true");
+
+            var response = await client.SendAsync(req);
+
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.True(response.Headers.Contains("Access-Control-Allow-Origin"));
+            Assert.True(response.Headers.Contains("Access-Control-Allow-Private-Network"));
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ServerEngine_SharedState_PersistsAcrossRequests()
+    {
+        var port = GetFreePort();
+        var doc = new FryServerDocumentItem
+        {
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = port,
+                Scheme = "http",
+                ApiPrefix = "/api"
+            },
+            Cells = new List<FryServerCellItem>
+            {
+                new()
+                {
+                    Id = "startup-seed",
+                    Type = FryServerCellType.Startup,
+                    Source = "State[\"counter\"] = 100;"
+                },
+                new()
+                {
+                    Id = "counter-endpoint",
+                    Method = "GET",
+                    Route = "/counter/increment",
+                    Type = FryServerCellType.Endpoint,
+                    Source = @"
+                        var val = (int)State[""counter""] + 1;
+                        State[""counter""] = val;
+                        return Ok(new { current = val });
+                    "
+                }
+            }
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+
+        try
+        {
+            await engine.StartAsync(doc);
+
+            using var client = new HttpClient();
+            var res1 = await client.GetStringAsync($"http://localhost:{engine.BoundPort}/api/counter/increment");
+            using var doc1 = JsonDocument.Parse(res1);
+            Assert.Equal(101, doc1.RootElement.GetProperty("current").GetInt32());
+
+            var res2 = await client.GetStringAsync($"http://localhost:{engine.BoundPort}/api/counter/increment");
+            using var doc2 = JsonDocument.Parse(res2);
+            Assert.Equal(102, doc2.RootElement.GetProperty("current").GetInt32());
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ServerEngine_UnmappedRoute_Returns404()
+    {
+        var port = GetFreePort();
+        var doc = new FryServerDocumentItem
+        {
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = port,
+                Scheme = "http",
+                ApiPrefix = "/api"
+            }
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+
+        try
+        {
+            await engine.StartAsync(doc);
+
+            using var client = new HttpClient();
+            var response = await client.GetAsync($"http://localhost:{engine.BoundPort}/api/nonexistent");
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ServerEngine_ExecuteLoopbackTest_RunsDirectlyWithoutSocket()
+    {
+        var cell = new FryServerCellItem
+        {
+            Id = "loopback-cell",
+            Method = "GET",
+            Route = "/greet/{name}",
+            Type = FryServerCellType.Endpoint,
+            Source = @"
+                var name = Context.ParamValue<string>(""name"");
+                return Ok(new { greeting = ""Hello, "" + name });
+            "
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+        var harness = new FryServerTestHarnessItem
+        {
+            PathParams = new() { ["name"] = "World" }
+        };
+
+        var result = await engine.ExecuteLoopbackTestAsync(cell, harness);
+
+        Assert.Equal(200, result.StatusCode);
+        var jsonRes = Assert.IsType<JsonResult>(result);
+        Assert.NotNull(jsonRes.Value);
+    }
+}
