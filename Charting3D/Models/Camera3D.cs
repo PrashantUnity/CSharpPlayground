@@ -98,6 +98,17 @@ public class Camera3D
         Target = Vector3D.Zero;
     }
 
+    public void CopyFrom(Camera3D other)
+    {
+        Yaw = other.Yaw;
+        Pitch = other.Pitch;
+        Distance = other.Distance;
+        Target = other.Target;
+        FieldOfView = other.FieldOfView;
+        IsOrthographic = other.IsOrthographic;
+        OrthographicSize = other.OrthographicSize;
+    }
+
     public void Reset()
     {
         SetIsometric();

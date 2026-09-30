@@ -157,6 +157,13 @@ public sealed class ExternalOutputProcessor
             return;
         }
 
+        var at = line.IndexOf(DisplayMarker, StringComparison.Ordinal);
+        if (at > 0 && TryHandleDisplayPayload(line[(at + DisplayMarker.Length)..].Trim()))
+        {
+            _onConsoleText(line[..at]);
+            return;
+        }
+
         // Regular console text
         _onConsoleText(isTrailing ? line : line + "\n");
     }

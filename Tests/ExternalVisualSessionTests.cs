@@ -77,6 +77,17 @@ public class ExternalVisualSessionTests
         Assert.Empty(console);
     }
 
+    [Fact]
+    public void AMidLineDisplayMarker_EmitsPrecedingConsoleTextAndHandlesVisual()
+    {
+        var (processor, console, outputs) = Reader(null);
+
+        processor.ProcessChunk("hello" + Line(Chart("Inline", [1, 2], "fig")));
+
+        Assert.Single(outputs);
+        Assert.Equal("hello", Assert.Single(console));
+    }
+
     // A program printing its own JSON must not have it taken for a message.
     [Fact]
     public void AMessageLineWithoutTheMarker_IsReadOnlyForAVisualType()

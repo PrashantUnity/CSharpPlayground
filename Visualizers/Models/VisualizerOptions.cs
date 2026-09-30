@@ -40,6 +40,17 @@ public class VisualizerOptions
     public double? Width { get; set; }
     public double? Height { get; set; }
 
+    public VisualizerOptions CloneWithViewState(VisualizerViewState state)
+    {
+        var clone = (VisualizerOptions)MemberwiseClone();
+        clone.Zoom = state.Zoom;
+        clone.PanOffsetX = state.PanOffsetX;
+        clone.PanOffsetY = state.PanOffsetY;
+        clone.ShowValues = state.EffectiveShowValues(this);
+        clone.ShowCoordinates = state.EffectiveShowCoordinates(this);
+        return clone;
+    }
+
     /// <summary>A second view of the same visualization: it shares the data and the playback, but zooms and pans on its own.</summary>
     public VisualizerOptions CloneView() => (VisualizerOptions)MemberwiseClone();
 

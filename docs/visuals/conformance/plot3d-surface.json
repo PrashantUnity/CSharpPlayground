@@ -1,0 +1,27 @@
+{
+  "mime": "application/vnd.fry.plot3d.v1\u002Bjson",
+  "spec": {
+    "kind": "surface",
+    "surface": {
+      "x": {
+        "min": 0,
+        "max": 1
+      },
+      "y": {
+        "min": 0,
+        "max": 1
+      },
+      "z": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    "title": "Heights"
+  }
+}

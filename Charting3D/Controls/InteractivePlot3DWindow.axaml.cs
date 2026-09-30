@@ -12,35 +12,51 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 public partial class InteractivePlot3DWindow : Window
 {
     private readonly Plot3DOptions _options;
+    public Plot3DViewState ViewState { get; }
     private DispatcherTimer? _autoRotateTimer;
 
     public InteractivePlot3DWindow() : this(new Plot3DOptions()) { }
 
-    public InteractivePlot3DWindow(Plot3DOptions options)
+    public InteractivePlot3DWindow(Plot3DOptions options, Plot3DViewState? viewState = null)
     {
         _options = options ?? new Plot3DOptions();
+        ViewState = viewState != null ? new Plot3DViewState(viewState) : new Plot3DViewState(_options);
         InitializeComponent();
         Title = $"3D Visualizer — {_options.Title}";
         if (WindowTitleText != null) WindowTitleText.Text = _options.Title;
-        if (CanvasControl != null) CanvasControl.Options = _options;
+        if (CanvasControl != null)
+        {
+            CanvasControl.Options = _options;
+            CanvasControl.ViewState = ViewState;
+        }
         AttachHandlers();
         UpdateStats();
-        if (_options.AutoRotate) StartAutoRotateTimer();
+        if (ViewState.AutoRotate) StartAutoRotateTimer();
     }
 
     private void AttachHandlers()
     {
         KeyDown += OnWindowKeyDown;
         Closing += (_, _) => StopAutoRotateTimer();
-        Bind("WinIsoViewBtn", () => { _options.Camera.SetIsometric(); Repaint(); });
-        Bind("WinTopViewBtn", () => { _options.Camera.SetTop(); Repaint(); });
-        Bind("WinFrontViewBtn", () => { _options.Camera.SetFront(); Repaint(); });
-        Bind("WinSideViewBtn", () => { _options.Camera.SetSide(); Repaint(); });
-        Bind("WinResetCameraBtn", () => { _options.Camera.Reset(); Repaint(); });
+        Bind("WinIsoViewBtn", () => { ViewState.Camera.SetIsometric(); Repaint(); });
+        Bind("WinTopViewBtn", () => { ViewState.Camera.SetTop(); Repaint(); });
+        Bind("WinFrontViewBtn", () => { ViewState.Camera.SetFront(); Repaint(); });
+        Bind("WinSideViewBtn", () => { ViewState.Camera.SetSide(); Repaint(); });
+        Bind("WinResetCameraBtn", () => { ViewState.Reset(_options); Repaint(); });
         Bind("WinAutoRotateBtn", ToggleAutoRotate);
-        Bind("WinProjectionToggleBtn", () => { _options.Camera.IsOrthographic = !_options.Camera.IsOrthographic; Repaint(); });
-        Bind("WinGridToggleBtn", () => { _options.ShowFloorGrid = !_options.ShowFloorGrid; _options.ShowBoundingBox = _options.ShowFloorGrid; Repaint(); });
-        Bind("WinWireframeToggleBtn", () => { _options.Wireframe = !_options.Wireframe; Repaint(); });
+        Bind("WinProjectionToggleBtn", () => { ViewState.Camera.IsOrthographic = !ViewState.Camera.IsOrthographic; Repaint(); });
+        Bind("WinGridToggleBtn", () =>
+        {
+            bool cur = ViewState.EffectiveShowFloorGrid(_options);
+            ViewState.OverrideShowFloorGrid = !cur;
+            ViewState.OverrideShowBoundingBox = !cur;
+            Repaint();
+        });
+        Bind("WinWireframeToggleBtn", () =>
+        {
+            ViewState.OverrideWireframe = !ViewState.EffectiveWireframe(_options);
+            Repaint();
+        });
         Bind("WinColorMapCycleBtn", CycleColorMap);
         Bind("WinExportHtmlBtn", ExportStandaloneHtml);
         Bind("WinFullscreenToggleBtn", ToggleFullscreen);
@@ -56,14 +72,20 @@ public partial class InteractivePlot3DWindow : Window
             case Key.Escape: Close(); e.Handled = true; break;
             case Key.F11: ToggleFullscreen(); e.Handled = true; break;
             case Key.Space: ToggleAutoRotate(); e.Handled = true; break;
-            case Key.R: _options.Camera.Reset(); Repaint(); e.Handled = true; break;
-            case Key.G: _options.ShowFloorGrid = !_options.ShowFloorGrid; _options.ShowBoundingBox = _options.ShowFloorGrid; Repaint(); e.Handled = true; break;
-            case Key.P: _options.Camera.IsOrthographic = !_options.Camera.IsOrthographic; Repaint(); e.Handled = true; break;
-            case Key.W: _options.Wireframe = !_options.Wireframe; Repaint(); e.Handled = true; break;
-            case Key.D1 or Key.NumPad1: _options.Camera.SetIsometric(); Repaint(); e.Handled = true; break;
-            case Key.D2 or Key.NumPad2: _options.Camera.SetTop(); Repaint(); e.Handled = true; break;
-            case Key.D3 or Key.NumPad3: _options.Camera.SetFront(); Repaint(); e.Handled = true; break;
-            case Key.D4 or Key.NumPad4: _options.Camera.SetSide(); Repaint(); e.Handled = true; break;
+            case Key.R: ViewState.Reset(_options); Repaint(); e.Handled = true; break;
+            case Key.G:
+                bool cur = ViewState.EffectiveShowFloorGrid(_options);
+                ViewState.OverrideShowFloorGrid = !cur;
+                ViewState.OverrideShowBoundingBox = !cur;
+                Repaint();
+                e.Handled = true;
+                break;
+            case Key.P: ViewState.Camera.IsOrthographic = !ViewState.Camera.IsOrthographic; Repaint(); e.Handled = true; break;
+            case Key.W: ViewState.OverrideWireframe = !ViewState.EffectiveWireframe(_options); Repaint(); e.Handled = true; break;
+            case Key.D1 or Key.NumPad1: ViewState.Camera.SetIsometric(); Repaint(); e.Handled = true; break;
+            case Key.D2 or Key.NumPad2: ViewState.Camera.SetTop(); Repaint(); e.Handled = true; break;
+            case Key.D3 or Key.NumPad3: ViewState.Camera.SetFront(); Repaint(); e.Handled = true; break;
+            case Key.D4 or Key.NumPad4: ViewState.Camera.SetSide(); Repaint(); e.Handled = true; break;
         }
     }
 
@@ -77,13 +99,14 @@ public partial class InteractivePlot3DWindow : Window
 
     private void ToggleAutoRotate()
     {
-        _options.AutoRotate = !_options.AutoRotate;
-        if (_options.AutoRotate) StartAutoRotateTimer(); else StopAutoRotateTimer();
+        ViewState.AutoRotate = !ViewState.AutoRotate;
+        if (ViewState.AutoRotate) StartAutoRotateTimer(); else StopAutoRotateTimer();
     }
 
     private void CycleColorMap()
     {
-        _options.ColorMap = (ColorMapPreset)(((int)_options.ColorMap + 1) % Enum.GetValues<ColorMapPreset>().Length);
+        var cur = ViewState.EffectiveColorMap(_options);
+        ViewState.OverrideColorMap = (ColorMapPreset)(((int)cur + 1) % Enum.GetValues<ColorMapPreset>().Length);
         Repaint();
     }
 
@@ -92,14 +115,14 @@ public partial class InteractivePlot3DWindow : Window
     private void UpdateStats()
     {
         if (WindowStatsText != null) {
-            string camStr = _options.Camera.IsOrthographic ? "Ortho" : "Persp";
+            string camStr = ViewState.Camera.IsOrthographic ? "Ortho" : "Persp";
             int ptCount = _options.Series.Count > 0 ? _options.Series[0].Points.Count :
                          (_options.Surface != null ? _options.Surface.ResolutionX * _options.Surface.ResolutionY :
                          (_options.Graph != null ? _options.Graph.Nodes.Count : 0));
-            WindowStatsText.Text = $"{_options.Type} • {_options.ColorMap} • {camStr} • N={ptCount}";
+            WindowStatsText.Text = $"{_options.Type} • {ViewState.EffectiveColorMap(_options)} • {camStr} • N={ptCount}";
         }
         if (WinCameraInfoText != null)
-            WinCameraInfoText.Text = $"Pitch: {_options.Camera.Pitch:F1}°  Yaw: {_options.Camera.Yaw:F1}°  Dist: {_options.Camera.Distance:F1}";
+            WinCameraInfoText.Text = $"Pitch: {ViewState.Camera.Pitch:F1}°  Yaw: {ViewState.Camera.Yaw:F1}°  Dist: {ViewState.Camera.Distance:F1}";
     }
 
     private void StartAutoRotateTimer()
@@ -107,8 +130,8 @@ public partial class InteractivePlot3DWindow : Window
         if (_autoRotateTimer != null) return;
         _autoRotateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
         _autoRotateTimer.Tick += (_, _) => {
-            if (!_options.AutoRotate) { StopAutoRotateTimer(); return; }
-            _options.Camera.Orbit(_options.AutoRotateSpeed, 0);
+            if (!ViewState.AutoRotate) { StopAutoRotateTimer(); return; }
+            ViewState.Camera.Orbit(_options.AutoRotateSpeed, 0);
             Repaint();
         };
         _autoRotateTimer.Start();
@@ -119,7 +142,8 @@ public partial class InteractivePlot3DWindow : Window
     private async void ExportStandaloneHtml()
     {
         try {
-            string html = Plot3DHtmlExporter.GenerateThreeJsHtml(_options);
+            var effective = CanvasControl?.GetEffectiveOptions() ?? _options;
+            string html = Plot3DHtmlExporter.GenerateThreeJsHtml(effective);
             if (Clipboard != null) await Clipboard.SetTextAsync(html);
         } catch { }
     }

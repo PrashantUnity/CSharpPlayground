@@ -19,6 +19,8 @@ public class Plot3DCanvasControl : Control
     private static readonly IBrush TooltipTextBrush = new SolidColorBrush(Color.FromArgb(240, 255, 255, 255));
     private static readonly IBrush EmptyTextBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
 
+    public Plot3DViewState ViewState { get; set; } = new();
+
     private Point? _lastPointerPos;
     private bool _isOrbiting;
     private bool _isPanning;
@@ -84,26 +86,25 @@ public class Plot3DCanvasControl : Control
 
             if (_isOrbiting)
             {
-                // Dragging right rotates azimuth (Yaw), dragging up rotates elevation (Pitch)
-                Options.Camera.Orbit(-dx * 0.45, -dy * 0.45);
+                ViewState.Camera.Orbit(-dx * 0.45, -dy * 0.45);
                 InvalidateVisual();
                 e.Handled = true;
                 return;
             }
             else if (_isPanning)
             {
-                Options.Camera.Pan(dx, dy, Bounds.Width, Bounds.Height);
+                ViewState.Camera.Pan(dx, dy, Bounds.Width, Bounds.Height);
                 InvalidateVisual();
                 e.Handled = true;
                 return;
             }
         }
 
-        // Only hit-test when not in active drag
         if (!_isOrbiting && !_isPanning)
         {
-            var renderer = Plot3DRendererFactory.GetRenderer(Options.Type);
-            var hit = renderer.HitTest(curPos, new Rect(Bounds.Size), Options);
+            var eff = GetEffectiveOptions();
+            var renderer = Plot3DRendererFactory.GetRenderer(eff.Type);
+            var hit = renderer.HitTest(curPos, new Rect(Bounds.Size), eff);
 
             if (hit?.DisplayText != _hoveredHit?.DisplayText)
             {
@@ -120,11 +121,22 @@ public class Plot3DCanvasControl : Control
         _isPanning = false;
         _lastPointerPos = null;
         e.Pointer.Capture(null);
-        if (_click.Released(e, this) is { } at && Options != null &&
-            Plot3DRendererFactory.GetRenderer(Options.Type).HitTest(at, new Rect(Bounds.Size), Options) is { } hit)
+        if (_click.Released(e, this) is { } at && Options != null)
         {
-            PointClicked?.Invoke(this, new ElementClickedEventArgs<Plot3DHitTestResult>(hit, e.KeyModifiers));
+            var eff = GetEffectiveOptions();
+            if (Plot3DRendererFactory.GetRenderer(eff.Type).HitTest(at, new Rect(Bounds.Size), eff) is { } hit)
+            {
+                PointClicked?.Invoke(this, new ElementClickedEventArgs<Plot3DHitTestResult>(hit, e.KeyModifiers));
+            }
         }
+    }
+
+    protected override void OnDoubleTapped(TappedEventArgs e)
+    {
+        base.OnDoubleTapped(e);
+        ViewState.Reset(Options);
+        InvalidateVisual();
+        e.Handled = true;
     }
 
     protected override void OnPointerExited(PointerEventArgs e)
@@ -144,7 +156,7 @@ public class Plot3DCanvasControl : Control
         if (Bounds.Width < 10 || Bounds.Height < 10) return;
 
         double factor = e.Delta.Y > 0 ? 0.88 : 1.14;
-        Options.Camera.Zoom(factor);
+        ViewState.Camera.Zoom(factor);
         InvalidateVisual();
         e.Handled = true;
     }
@@ -168,15 +180,44 @@ public class Plot3DCanvasControl : Control
             return;
         }
 
-        var renderer = Plot3DRendererFactory.GetRenderer(Options.Type);
-        // Its own area: Bounds is where it sits in its parent, which shifted the scene down and cut its floor off.
-        renderer.Render(context, new Rect(Bounds.Size), Options);
+        var eff = GetEffectiveOptions();
+        var renderer = Plot3DRendererFactory.GetRenderer(eff.Type);
+        renderer.Render(context, new Rect(Bounds.Size), eff);
 
-        // Render hover tooltip and halo
         if (_hoveredHit != null && !_isOrbiting && !_isPanning)
         {
             RenderHoverTooltip(context, _hoveredHit);
         }
+    }
+
+    public Plot3DOptions GetEffectiveOptions()
+    {
+        if (Options == null) return new Plot3DOptions();
+        return new Plot3DOptions
+        {
+            Title = Options.Title,
+            Subtitle = Options.Subtitle,
+            Type = Options.Type,
+            Camera = ViewState.Camera,
+            Series = Options.Series,
+            Surface = Options.Surface,
+            Graph = Options.Graph,
+            ColorMap = ViewState.EffectiveColorMap(Options),
+            PrimaryColor = Options.PrimaryColor,
+            Width = Options.Width,
+            Height = Options.Height,
+            ShowAxes = Options.ShowAxes,
+            ShowFloorGrid = ViewState.EffectiveShowFloorGrid(Options),
+            ShowBoundingBox = ViewState.EffectiveShowBoundingBox(Options),
+            ShowLabels = Options.ShowLabels,
+            Wireframe = ViewState.EffectiveWireframe(Options),
+            AutoRotate = ViewState.AutoRotate,
+            AutoRotateSpeed = Options.AutoRotateSpeed,
+            MinX = Options.MinX, MaxX = Options.MaxX,
+            MinY = Options.MinY, MaxY = Options.MaxY,
+            MinZ = Options.MinZ, MaxZ = Options.MaxZ,
+            Notice = Options.Notice
+        };
     }
 
     private void RenderHoverTooltip(DrawingContext context, Plot3DHitTestResult hit)
@@ -191,7 +232,6 @@ public class Plot3DCanvasControl : Control
         context.DrawEllipse(haloBrush, null, pos, 9, 9);
         context.DrawEllipse(dotBrush, dotPen, pos, 4.5, 4.5);
 
-        // Tooltip text
         var text = hit.DisplayText;
         var ft = new FormattedText(
             text,
@@ -203,14 +243,8 @@ public class Plot3DCanvasControl : Control
 
         double tipWidth = ft.Width + 16;
         double tipHeight = ft.Height + 10;
-
-        double tipX = pos.X - (tipWidth / 2);
-        double tipY = pos.Y - tipHeight - 12;
-
-        // Clamp inside bounds
-        if (tipX < 5) tipX = 5;
-        if (tipX + tipWidth > Bounds.Width - 5) tipX = Bounds.Width - tipWidth - 5;
-        if (tipY < 5) tipY = pos.Y + 14;
+        double tipX = Math.Clamp(pos.X - (tipWidth / 2), 5, Math.Max(5, Bounds.Width - tipWidth - 5));
+        double tipY = pos.Y - tipHeight - 12 < 5 ? pos.Y + 14 : pos.Y - tipHeight - 12;
 
         var tipRect = new Rect(tipX, tipY, tipWidth, tipHeight);
         var tipBg = new SolidColorBrush(Color.FromArgb(238, 16, 22, 30));

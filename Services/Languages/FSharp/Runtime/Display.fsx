@@ -1,0 +1,1111 @@
+namespace Fry
+
+open System
+open System.IO
+open System.Text
+open System.Text.Json
+open System.Collections.Generic
+
+// ── TreeNode & ListNode ───────────────────────────────────────────────────
+
+type TreeNode<'T>(value: 'T, ?left: TreeNode<'T>, ?right: TreeNode<'T>) =
+    member _.``val`` = value
+    member _.left = left
+    member _.right = right
+    member _.Val = value
+    member _.Left = left
+    member _.Right = right
+
+type ListNode<'T>(value: 'T, ?next: ListNode<'T>) =
+    member _.``val`` = value
+    member _.next = next
+    member _.Val = value
+    member _.Next = next
+
+// ── Events & Handles ──────────────────────────────────────────────────────
+
+type Event =
+    { Kind: string
+      Target: Map<string, string>
+      Raw: string }
+    member this.Get(key: string) =
+        this.Target.TryFind(key)
+    member this.Item with get(key: string) = this.Target.TryFind(key)
+
+module private Detail =
+    let CHART_MIME = "application/vnd.fry.chart.v1+json"
+    let PLOT3D_MIME = "application/vnd.fry.plot3d.v1+json"
+    let VISUALIZER_MIME = "application/vnd.fry.visualizer.v1+json"
+    let TABLE_MIME = "application/vnd.fry.table+json"
+
+    let private idCounter = ref 1L
+    let newId() =
+        let n = System.Threading.Interlocked.Increment(idCounter)
+        sprintf "fs_%d_%x" n (n * 7919L)
+
+    let listenersLock = obj()
+    let listeners = Dictionary<string, Dictionary<string, List<Event -> unit>>>()
+
+    let dispatchEventLine (line: string) =
+        try
+            using (JsonDocument.Parse(line)) (fun doc ->
+                let root = doc.RootElement
+                let mutable dispIdElem = Unchecked.defaultof<JsonElement>
+                if root.TryGetProperty("display_id", &dispIdElem) then
+                    let dispId = dispIdElem.GetString()
+                    let mutable evKind = "click"
+                    let mutable targetMap = Map.empty
+
+                    let mutable evElem = Unchecked.defaultof<JsonElement>
+                    if root.TryGetProperty("event", &evElem) then
+                        if evElem.ValueKind = JsonValueKind.Object then
+                            let mutable kindElem = Unchecked.defaultof<JsonElement>
+                            if evElem.TryGetProperty("kind", &kindElem) then
+                                evKind <- kindElem.GetString().ToLowerInvariant()
+                            let mutable targetElem = Unchecked.defaultof<JsonElement>
+                            if evElem.TryGetProperty("target", &targetElem) && targetElem.ValueKind = JsonValueKind.Object then
+                                for prop in targetElem.EnumerateObject() do
+                                    let vStr =
+                                        match prop.Value.ValueKind with
+                                        | JsonValueKind.String -> prop.Value.GetString()
+                                        | JsonValueKind.Number -> prop.Value.GetRawText()
+                                        | JsonValueKind.True -> "true"
+                                        | JsonValueKind.False -> "false"
+                                        | _ -> prop.Value.GetRawText()
+                                    targetMap <- targetMap.Add(prop.Name, vStr)
+                        elif evElem.ValueKind = JsonValueKind.String then
+                            evKind <- evElem.GetString().ToLowerInvariant()
+
+                    let event = { Kind = evKind; Target = targetMap; Raw = line }
+
+                    let callbacks =
+                        lock listenersLock (fun () ->
+                            match listeners.TryGetValue(dispId) with
+                            | true, dict ->
+                                let cbs = List<Event -> unit>()
+                                match dict.TryGetValue(evKind) with
+                                | true, l -> cbs.AddRange(l)
+                                | false, _ -> ()
+                                if evKind <> "click" then
+                                    match dict.TryGetValue("click") with
+                                    | true, l -> if cbs.Count = 0 then cbs.AddRange(l)
+                                    | false, _ -> ()
+                                cbs.ToArray()
+                            | false, _ -> Array.empty
+                        )
+                    for cb in callbacks do
+                        try cb event with _ -> ()
+            )
+        with _ -> ()
+
+    let mutable private socketInitialized = 0
+
+    let ensureEventSocket() =
+        if System.Threading.Interlocked.CompareExchange(&socketInitialized, 1, 0) = 0 then
+            let addr = Environment.GetEnvironmentVariable("FRY_EVENTS")
+            if not (String.IsNullOrEmpty(addr)) then
+                let token = Environment.GetEnvironmentVariable("FRY_EVENTS_TOKEN")
+                let tokenStr = if isNull token then "" else token
+                try
+                    let parts = addr.Split(':')
+                    let host = if parts.Length > 0 then parts.[0] else "127.0.0.1"
+                    let port = if parts.Length > 1 then Int32.Parse(parts.[1]) else 0
+                    if port > 0 then
+                        let client = new System.Net.Sockets.TcpClient()
+                        client.Connect(host, port)
+                        let stream = client.GetStream()
+                        let writer = new StreamWriter(stream, new UTF8Encoding(false))
+                        writer.AutoFlush <- true
+                        let reader = new StreamReader(stream, Encoding.UTF8)
+                        let hello = sprintf "{\"type\":\"hello\",\"token\":%s}" (JsonSerializer.Serialize(tokenStr))
+                        writer.WriteLine(hello)
+                        writer.Flush()
+
+                        let rec readLoop() =
+                            async {
+                                try
+                                    let! line = reader.ReadLineAsync() |> Async.AwaitTask
+                                    if not (isNull line) then
+                                        if line.Trim().Length > 0 then
+                                            dispatchEventLine (line.Trim())
+                                        do! readLoop()
+                                with _ -> ()
+                            }
+                        Async.Start(readLoop())
+                with _ -> ()
+
+    let emitProtocol (json: string) =
+        printfn "%s" json
+        stdout.Flush()
+
+    let emitUpdate (mime: string) (specJson: string) (displayId: string) =
+        let fallback = mime + ": visual (updated)"
+        let json = sprintf "__FRY_DISPLAY__ {\"type\":\"update_display\",\"data\":{\"%s\":%s,\"text/plain\":%s},\"metadata\":{},\"transient\":{\"display_id\":%s}}"
+                       mime specJson (JsonSerializer.Serialize(fallback)) (JsonSerializer.Serialize(displayId))
+        emitProtocol json
+
+    let replaceOrInsertTitle (spec: string) (title: string) =
+        let titleIdx = spec.IndexOf("\"title\":")
+        if titleIdx <> -1 then
+            let valStart = spec.IndexOf('"', titleIdx + 8)
+            if valStart <> -1 then
+                let mutable valEnd = spec.IndexOf('"', valStart + 1)
+                while valEnd <> -1 && spec.[valEnd - 1] = '\\' do
+                    valEnd <- spec.IndexOf('"', valEnd + 1)
+                if valEnd <> -1 then
+                    spec.Substring(0, valStart) + JsonSerializer.Serialize(title) + spec.Substring(valEnd + 1)
+                else spec
+            else spec
+        else
+            let lastBrace = spec.LastIndexOf('}')
+            if lastBrace <> -1 then
+                let prefix = spec.Substring(0, lastBrace)
+                let sep = if prefix.Contains(":") then ",\"title\":" else "\"title\":"
+                prefix + sep + JsonSerializer.Serialize(title) + "}"
+            else spec
+
+    let rec toJsonVal (o: obj) : string =
+        match o with
+        | null -> "null"
+        | :? string as s -> JsonSerializer.Serialize(s)
+        | :? bool as b -> if b then "true" else "false"
+        | :? double as d ->
+            if Double.IsNaN(d) || Double.IsInfinity(d) then "null"
+            else d.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        | :? float32 as f ->
+            let d = double f
+            if Double.IsNaN(d) || Double.IsInfinity(d) then "null"
+            else d.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        | :? decimal as dec -> dec.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        | :? int as i -> string i
+        | :? int64 as l -> string l
+        | :? int16 as s -> string s
+        | :? byte as b -> string b
+        | _ ->
+            let t = o.GetType()
+            if t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<option<_>> then
+                let valueProp = t.GetProperty("Value")
+                if isNull o then "null"
+                else
+                    let tagProp = t.GetProperty("Tag")
+                    let isSome = if isNull tagProp then not (isNull o) else (tagProp.GetValue(o) :?> int) = 1
+                    if isSome then toJsonVal (valueProp.GetValue(o)) else "null"
+            elif typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) then
+                let items = (o :?> System.Collections.IEnumerable)
+                let sb = StringBuilder("[")
+                let mutable first = true
+                for item in items do
+                    if not first then sb.Append(",") |> ignore
+                    first <- false
+                    sb.Append(toJsonVal item) |> ignore
+                sb.Append("]").ToString()
+            else
+                JsonSerializer.Serialize(string o)
+
+    let toJsonArray (items: seq<'T>) : string =
+        let sb = StringBuilder("[")
+        let mutable first = true
+        for item in items do
+            if not first then sb.Append(",") |> ignore
+            first <- false
+            sb.Append(toJsonVal (box item)) |> ignore
+        sb.Append("]").ToString()
+
+    let tryGetKeyValue (item: obj) : (string * obj) option =
+        if isNull item then None
+        else
+            let t = item.GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(item)
+                if fields.Length >= 2 then
+                    Some (string fields.[0], fields.[1])
+                else None
+            else
+                let keyProp = t.GetProperty("Key")
+                let valProp = t.GetProperty("Value")
+                if not (isNull keyProp) && not (isNull valProp) then
+                    Some (string (keyProp.GetValue(item)), valProp.GetValue(item))
+                else None
+
+    let tryGetDictionaryEntries (data: obj) : (string * obj) list option =
+        if isNull data then None
+        else
+            let t = data.GetType()
+            if typeof<System.Collections.IDictionary>.IsAssignableFrom(t) then
+                let dict = data :?> System.Collections.IDictionary
+                let list = [ for k in dict.Keys -> (string k, dict.[k]) ]
+                Some list
+            elif typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) && not (data :? string) then
+                let items = (data :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
+                if items.IsEmpty then None
+                else
+                    let kvs = items |> List.choose tryGetKeyValue
+                    if kvs.Length = items.Length then
+                        Some kvs
+                    else None
+            else None
+
+    type InternalTreeNode =
+        { Id: string
+          Value: string
+          Left: string
+          Right: string }
+
+    type BNode =
+        { Value: string
+          mutable Left: BNode option
+          mutable Right: BNode option }
+
+open Detail
+
+type DisplayHandle(mime: string, displayId: string, initialSpec: string) =
+    let specLock = obj()
+    let mutable currentSpec = initialSpec
+    let mutable lastUpdate = DateTime.MinValue
+
+    member _.Mime = mime
+    member _.DisplayId = displayId
+
+    member this.Update(title: string) =
+        let newSpec =
+            lock specLock (fun () ->
+                currentSpec <- replaceOrInsertTitle currentSpec title
+                currentSpec)
+        let now = DateTime.UtcNow
+        let elapsed = (now - lastUpdate).TotalMilliseconds
+        if elapsed >= 33.0 then
+            lastUpdate <- now
+            emitUpdate mime newSpec displayId
+        else
+            let waitMs = int (33.0 - elapsed)
+            Async.Start(async {
+                do! Async.Sleep waitMs
+                lastUpdate <- DateTime.UtcNow
+                emitUpdate mime newSpec displayId
+            })
+        this
+
+    member this.update(title: string) = this.Update(title)
+
+    member this.On(eventName: string, callback: Event -> unit) =
+        ensureEventSocket()
+        let ev = eventName.ToLowerInvariant()
+        lock listenersLock (fun () ->
+            let dict =
+                match listeners.TryGetValue(displayId) with
+                | true, d -> d
+                | false, _ ->
+                    let d = Dictionary<string, List<Event -> unit>>()
+                    listeners.[displayId] <- d
+                    d
+            let list =
+                match dict.TryGetValue(ev) with
+                | true, l -> l
+                | false, _ ->
+                    let l = List<Event -> unit>()
+                    dict.[ev] <- l
+                    l
+            list.Add(callback)
+        )
+        printfn "__FRY_DISPLAY__ {\"type\":\"subscribe\",\"display_id\":\"%s\",\"events\":[\"%s\"]}" displayId ev
+        stdout.Flush()
+        this
+
+    member this.on(eventName: string, callback: Event -> unit) = this.On(eventName, callback)
+    member this.OnClick(callback: Event -> unit) = this.On("click", callback)
+    member this.on_click(callback: Event -> unit) = this.On("click", callback)
+    member this.OnSelect(callback: Event -> unit) = this.On("select", callback)
+    member this.on_select(callback: Event -> unit) = this.On("select", callback)
+    member this.OnStep(callback: Event -> unit) = this.On("step", callback)
+    member this.on_step(callback: Event -> unit) = this.On("step", callback)
+
+    member this.Off(eventName: string) =
+        let ev = eventName.ToLowerInvariant()
+        lock listenersLock (fun () ->
+            match listeners.TryGetValue(displayId) with
+            | true, d -> d.Remove(ev) |> ignore
+            | false, _ -> ()
+        )
+        printfn "__FRY_DISPLAY__ {\"type\":\"unsubscribe\",\"display_id\":\"%s\",\"events\":[\"%s\"]}" displayId ev
+        this
+
+    member this.off(eventName: string) = this.Off(eventName)
+
+    member this.Close() =
+        lock listenersLock (fun () ->
+            listeners.Remove(displayId) |> ignore
+        )
+    member this.close() = this.Close()
+
+    member this.Show() = this
+    member this.show() = this
+
+module private Helpers =
+    let emitDisplay (mime: string) (specJson: string) : DisplayHandle =
+        let id = newId()
+        let fallback = mime + ": visual"
+        let json = sprintf "__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"%s\":%s,\"text/plain\":%s},\"metadata\":{},\"transient\":{\"display_id\":%s}}"
+                       mime specJson (JsonSerializer.Serialize(fallback)) (JsonSerializer.Serialize(id))
+        emitProtocol json
+        DisplayHandle(mime, id, specJson)
+
+type Display private () =
+    // ── Basic Display Primitives ──────────────────────────────────────────
+
+    static member Html(htmlContent: string) =
+        let json = sprintf "__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"text/html\":%s},\"metadata\":{}}"
+                       (JsonSerializer.Serialize(htmlContent))
+        Detail.emitProtocol json
+
+    static member html(content: string) = Display.Html(content)
+
+    static member Image(pathOrBase64: string, ?format: string) =
+        let fmt = defaultArg format "PNG"
+        let mutable b64 = pathOrBase64
+        let mutable mime = if fmt.Equals("JPEG", StringComparison.OrdinalIgnoreCase) || fmt.Equals("JPG", StringComparison.OrdinalIgnoreCase) then "image/jpeg" else "image/png"
+
+        if b64.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) then
+            let idx = b64.IndexOf(',')
+            if idx <> -1 then b64 <- b64.Substring(idx + 1)
+        elif File.Exists(pathOrBase64) then
+            let bytes = File.ReadAllBytes(pathOrBase64)
+            b64 <- Convert.ToBase64String(bytes)
+            let lower = pathOrBase64.ToLowerInvariant()
+            if lower.EndsWith(".jpg") || lower.EndsWith(".jpeg") then mime <- "image/jpeg"
+            elif lower.EndsWith(".svg") then mime <- "image/svg+xml"
+
+        let json = sprintf "__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"%s\":\"%s\"},\"metadata\":{}}" mime b64
+        Detail.emitProtocol json
+
+    static member image(pathOrBase64: string, ?format: string) = Display.Image(pathOrBase64, ?format = format)
+
+    static member Json(jsonString: string, ?title: string) =
+        let json = sprintf "__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"text/plain\":%s},\"metadata\":{}}"
+                       (JsonSerializer.Serialize(jsonString))
+        Detail.emitProtocol json
+
+    static member json(jsonString: string, ?title: string) = Display.Json(jsonString, ?title = title)
+
+    static member Dump(value: obj, ?title: string) =
+        try
+            let t = defaultArg title "Data"
+            let options = JsonSerializerOptions(WriteIndented = true)
+            let j = JsonSerializer.Serialize(value, options)
+            Display.Json(j, t)
+        with _ ->
+            printfn "%A" value
+        value
+
+    static member dump(value: obj, ?title: string) = Display.Dump(value, ?title = title)
+
+    static member Table(value: obj, ?title: string) =
+        Display.Dump(value, ?title = title) |> ignore
+
+    static member table(value: obj, ?title: string) = Display.Table(value, ?title = title)
+
+    // ── Canonical Visual API ──────────────────────────────────────────────
+
+    // 1. Line Chart
+    static member LineChart(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let sb = StringBuilder("{\"kind\":\"line\",\"series\":[{\"y\":")
+        sb.Append(toJsonArray data) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay CHART_MIME (sb.ToString())
+
+    static member line_chart(data: seq<'T>, ?title: string) = Display.LineChart(data, ?title = title)
+    static member lineChart(data: seq<'T>, ?title: string) = Display.LineChart(data, ?title = title)
+
+    // 2. Scatter Chart
+    static member ScatterChart(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let xs = StringBuilder("[")
+        let ys = StringBuilder("[")
+        let mutable first = true
+        for pt in data do
+            if not first then
+                xs.Append(",") |> ignore
+                ys.Append(",") |> ignore
+            first <- false
+            let ptObj = box pt
+            let t = ptObj.GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(ptObj)
+                xs.Append(toJsonVal fields.[0]) |> ignore
+                ys.Append(toJsonVal fields.[1]) |> ignore
+            elif typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) then
+                let enum = (ptObj :?> System.Collections.IEnumerable).GetEnumerator()
+                if enum.MoveNext() then xs.Append(toJsonVal enum.Current) |> ignore
+                if enum.MoveNext() then ys.Append(toJsonVal enum.Current) |> ignore
+        xs.Append("]") |> ignore
+        ys.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"scatter\",\"series\":[{\"x\":")
+        sb.Append(xs.ToString()) |> ignore
+        sb.Append(",\"y\":") |> ignore
+        sb.Append(ys.ToString()) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay CHART_MIME (sb.ToString())
+
+    static member scatter_chart(data: seq<'T>, ?title: string) = Display.ScatterChart(data, ?title = title)
+    static member scatterChart(data: seq<'T>, ?title: string) = Display.ScatterChart(data, ?title = title)
+
+    // 3. Bar Chart
+    static member BarChart(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let ys = StringBuilder("[")
+        let ls = StringBuilder("[")
+        let mutable first = true
+        for item in data do
+            if not first then
+                ys.Append(",") |> ignore
+                ls.Append(",") |> ignore
+            first <- false
+            let itemObj = box item
+            let t = itemObj.GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
+                ls.Append(toJsonVal fields.[0]) |> ignore
+                ys.Append(toJsonVal fields.[1]) |> ignore
+            elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
+                let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
+                let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
+                let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
+                let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
+                let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
+                ls.Append(toJsonVal nVal) |> ignore
+                ys.Append(toJsonVal vVal) |> ignore
+        ys.Append("]") |> ignore
+        ls.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"bar\",\"series\":[{\"y\":")
+        sb.Append(ys.ToString()) |> ignore
+        sb.Append(",\"labels\":") |> ignore
+        sb.Append(ls.ToString()) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay CHART_MIME (sb.ToString())
+
+    static member bar_chart(data: seq<'T>, ?title: string) = Display.BarChart(data, ?title = title)
+    static member barChart(data: seq<'T>, ?title: string) = Display.BarChart(data, ?title = title)
+
+    // 4. Pie Chart
+    static member PieChart(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let ys = StringBuilder("[")
+        let ls = StringBuilder("[")
+        let mutable first = true
+        for item in data do
+            if not first then
+                ys.Append(",") |> ignore
+                ls.Append(",") |> ignore
+            first <- false
+            let itemObj = box item
+            let t = itemObj.GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
+                ls.Append(toJsonVal fields.[0]) |> ignore
+                ys.Append(toJsonVal fields.[1]) |> ignore
+            elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
+                let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
+                let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
+                let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
+                let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
+                let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
+                ls.Append(toJsonVal nVal) |> ignore
+                ys.Append(toJsonVal vVal) |> ignore
+        ys.Append("]") |> ignore
+        ls.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"pie\",\"series\":[{\"y\":")
+        sb.Append(ys.ToString()) |> ignore
+        sb.Append(",\"labels\":") |> ignore
+        sb.Append(ls.ToString()) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay CHART_MIME (sb.ToString())
+
+    static member pie_chart(data: seq<'T>, ?title: string) = Display.PieChart(data, ?title = title)
+    static member pieChart(data: seq<'T>, ?title: string) = Display.PieChart(data, ?title = title)
+
+    // 5. Chart (Multi-series map or records)
+    static member Chart(data: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let dataObj = box data
+        match tryGetDictionaryEntries dataObj with
+        | Some entries when entries |> List.forall (fun (_, v) -> not (isNull v) && typeof<System.Collections.IEnumerable>.IsAssignableFrom(v.GetType()) && not (v :? string)) ->
+            let sb = StringBuilder("{\"kind\":\"line\",\"series\":[")
+            let mutable first = true
+            for (key, valsObj) in entries do
+                if not first then sb.Append(",") |> ignore
+                first <- false
+                let vals = (valsObj :?> System.Collections.IEnumerable) |> Seq.cast<obj>
+                sb.Append("{\"name\":") |> ignore
+                sb.Append(JsonSerializer.Serialize(key)) |> ignore
+                sb.Append(",\"y\":") |> ignore
+                sb.Append(toJsonArray vals) |> ignore
+                sb.Append("}") |> ignore
+            sb.Append("]") |> ignore
+            if not (String.IsNullOrEmpty(titleStr)) then
+                sb.Append(",\"title\":") |> ignore
+                sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+            sb.Append("}") |> ignore
+            Helpers.emitDisplay CHART_MIME (sb.ToString())
+        | _ ->
+            let t = dataObj.GetType()
+            if typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) then
+                let items = (dataObj :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toArray
+                let ys = StringBuilder("[")
+                let ls = StringBuilder("[")
+                let mutable hasLabels = false
+                let mutable first = true
+                for item in items do
+                    if not first then
+                        ys.Append(",") |> ignore
+                        if hasLabels then ls.Append(",") |> ignore
+                    first <- false
+                    match tryGetKeyValue item with
+                    | Some (k, v) ->
+                        hasLabels <- true
+                        ls.Append(toJsonVal k) |> ignore
+                        ys.Append(toJsonVal v) |> ignore
+                    | None ->
+                        let it = item.GetType()
+                        if Microsoft.FSharp.Reflection.FSharpType.IsRecord(it) then
+                            let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(it)
+                            let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(item)
+                            let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
+                            let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
+                            let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
+                            let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
+                            hasLabels <- true
+                            ls.Append(toJsonVal nVal) |> ignore
+                            ys.Append(toJsonVal vVal) |> ignore
+                        else
+                            ys.Append(toJsonVal item) |> ignore
+                ys.Append("]") |> ignore
+                ls.Append("]") |> ignore
+
+                let sb = StringBuilder("{\"kind\":\"line\",\"series\":[{\"y\":")
+                sb.Append(ys.ToString()) |> ignore
+                if hasLabels then
+                    sb.Append(",\"labels\":") |> ignore
+                    sb.Append(ls.ToString()) |> ignore
+                sb.Append("}]") |> ignore
+                if not (String.IsNullOrEmpty(titleStr)) then
+                    sb.Append(",\"title\":") |> ignore
+                    sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+                sb.Append("}") |> ignore
+                Helpers.emitDisplay CHART_MIME (sb.ToString())
+            else
+                Display.LineChart([ data ], ?title = title)
+
+    static member chart(data: obj, ?title: string) = Display.Chart(data, ?title = title)
+
+    // 6. Histogram
+    static member Histogram(data: seq<'T>, ?title: string, ?bins: int) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let bVal = defaultArg bins 0
+        let sb = StringBuilder("{\"kind\":\"histogram\"")
+        if bVal > 0 then
+            sb.Append(sprintf ",\"bins\":%d" bVal) |> ignore
+        sb.Append(",\"series\":[{\"values\":") |> ignore
+        sb.Append(toJsonArray data) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay CHART_MIME (sb.ToString())
+
+    static member histogram(data: seq<'T>, ?title: string, ?bins: int) = Display.Histogram(data, ?title = title, ?bins = bins)
+
+    // 7. Scatter 3D
+    static member Scatter3D(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let xs = StringBuilder("[")
+        let ys = StringBuilder("[")
+        let zs = StringBuilder("[")
+        let mutable first = true
+        for pt in data do
+            if not first then
+                xs.Append(",") |> ignore
+                ys.Append(",") |> ignore
+                zs.Append(",") |> ignore
+            first <- false
+            let ptObj = box pt
+            let t = ptObj.GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(ptObj)
+                xs.Append(toJsonVal fields.[0]) |> ignore
+                ys.Append(toJsonVal fields.[1]) |> ignore
+                zs.Append(toJsonVal fields.[2]) |> ignore
+            elif typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) then
+                let enum = (ptObj :?> System.Collections.IEnumerable).GetEnumerator()
+                if enum.MoveNext() then xs.Append(toJsonVal enum.Current) |> ignore
+                if enum.MoveNext() then ys.Append(toJsonVal enum.Current) |> ignore
+                if enum.MoveNext() then zs.Append(toJsonVal enum.Current) |> ignore
+        xs.Append("]") |> ignore
+        ys.Append("]") |> ignore
+        zs.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"scatter\",\"series\":[{\"x\":")
+        sb.Append(xs.ToString()) |> ignore
+        sb.Append(",\"y\":") |> ignore
+        sb.Append(ys.ToString()) |> ignore
+        sb.Append(",\"z\":") |> ignore
+        sb.Append(zs.ToString()) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
+
+    static member scatter3d(data: seq<'T>, ?title: string) = Display.Scatter3D(data, ?title = title)
+    static member scatter3D(data: seq<'T>, ?title: string) = Display.Scatter3D(data, ?title = title)
+
+    // 8. Surface 3D
+    static member Surface3D(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let rows = data |> Seq.map (fun r -> r |> Seq.toArray) |> Seq.toArray
+        let rowCount = rows.Length
+        let colCount = if rowCount > 0 then rows.[0].Length else 0
+
+        let maxX = if colCount > 1 then float (colCount - 1) else 1.0
+        let maxY = if rowCount > 1 then float (rowCount - 1) else 1.0
+
+        let zs = StringBuilder("[")
+        let mutable firstRow = true
+        for r in rows do
+            if not firstRow then zs.Append(",") |> ignore
+            firstRow <- false
+            zs.Append(toJsonArray r) |> ignore
+        zs.Append("]") |> ignore
+
+        let sb = StringBuilder(sprintf "{\"kind\":\"surface\",\"surface\":{\"x\":{\"min\":0,\"max\":%s},\"y\":{\"min\":0,\"max\":%s},\"z\":%s}"
+                                  (maxX.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (maxY.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (zs.ToString()))
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
+
+    static member surface3d(data: seq<seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
+    static member surface3D(data: seq<seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
+
+    // 9. Graph 3D
+    static member Graph3D(data: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let nodesSet = HashSet<string>()
+        let edgesList = List<string * string>()
+
+        let dataObj = box data
+        match tryGetDictionaryEntries dataObj with
+        | Some entries ->
+            for (src, targetsObj) in entries do
+                nodesSet.Add(src) |> ignore
+                if not (isNull targetsObj) && typeof<System.Collections.IEnumerable>.IsAssignableFrom(targetsObj.GetType()) && not (targetsObj :? string) then
+                    let targets = (targetsObj :?> System.Collections.IEnumerable) |> Seq.cast<obj>
+                    for t in targets do
+                        let dst = string t
+                        nodesSet.Add(dst) |> ignore
+                        edgesList.Add((src, dst))
+                elif not (isNull targetsObj) then
+                    let dst = string targetsObj
+                    nodesSet.Add(dst) |> ignore
+                    edgesList.Add((src, dst))
+        | None -> ()
+
+        let sortedNodes = nodesSet |> Seq.sort |> Seq.toArray
+        let sb = StringBuilder("{\"kind\":\"graph\",\"graph\":{\"directed\":true,\"nodes\":[")
+        for i = 0 to sortedNodes.Length - 1 do
+            if i > 0 then sb.Append(",") |> ignore
+            sb.Append(sprintf "{\"id\":%s}" (JsonSerializer.Serialize(sortedNodes.[i]))) |> ignore
+        sb.Append("],\"edges\":[") |> ignore
+        for i = 0 to edgesList.Count - 1 do
+            if i > 0 then sb.Append(",") |> ignore
+            let (s, d) = edgesList.[i]
+            sb.Append(sprintf "{\"from\":%s,\"to\":%s}" (JsonSerializer.Serialize(s)) (JsonSerializer.Serialize(d))) |> ignore
+        sb.Append("]}") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
+
+    static member graph3d(data: obj, ?title: string) = Display.Graph3D(data, ?title = title)
+    static member graph3D(data: obj, ?title: string) = Display.Graph3D(data, ?title = title)
+
+    // 10. Matrix
+    static member Matrix(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let valSb = StringBuilder("[")
+        let cellSb = StringBuilder("[")
+        let mutable r = 0
+        let mutable cellCount = 0
+        for row in data do
+            if r > 0 then valSb.Append(",") |> ignore
+            valSb.Append("[") |> ignore
+            let mutable c = 0
+            for cell in row do
+                if c > 0 then valSb.Append(",") |> ignore
+                valSb.Append(toJsonVal (box cell)) |> ignore
+                if cellCount > 0 then cellSb.Append(",") |> ignore
+                cellCount <- cellCount + 1
+                let v = try Convert.ToInt32(cell) with _ -> 0
+                let terrain = if v > 0 then "land" else "water"
+                cellSb.Append(sprintf "{\"row\":%d,\"col\":%d,\"terrain\":\"%s\"}" r c terrain) |> ignore
+                c <- c + 1
+            valSb.Append("]") |> ignore
+            r <- r + 1
+        valSb.Append("]") |> ignore
+        cellSb.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"matrix\",\"state\":{\"grid\":{\"values\":")
+        sb.Append(valSb.ToString()) |> ignore
+        sb.Append(",\"cells\":") |> ignore
+        sb.Append(cellSb.ToString()) |> ignore
+        sb.Append(",\"inferTerrain\":false}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member matrix(data: seq<seq<'T>>, ?title: string) = Display.Matrix(data, ?title = title)
+
+    // 11. Islands
+    static member Islands(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let valSb = StringBuilder("[")
+        let cellSb = StringBuilder("[")
+        let mutable r = 0
+        let mutable cellCount = 0
+        for row in data do
+            if r > 0 then valSb.Append(",") |> ignore
+            valSb.Append("[") |> ignore
+            let mutable c = 0
+            for cell in row do
+                if c > 0 then valSb.Append(",") |> ignore
+                valSb.Append(toJsonVal (box cell)) |> ignore
+                if cellCount > 0 then cellSb.Append(",") |> ignore
+                cellCount <- cellCount + 1
+                let v = try Convert.ToInt32(cell) with _ -> 0
+                let terrain = if v > 0 then "land" else "water"
+                cellSb.Append(sprintf "{\"row\":%d,\"col\":%d,\"terrain\":\"%s\"}" r c terrain) |> ignore
+                c <- c + 1
+            valSb.Append("]") |> ignore
+            r <- r + 1
+        valSb.Append("]") |> ignore
+        cellSb.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"islands\",\"state\":{\"grid\":{\"values\":")
+        sb.Append(valSb.ToString()) |> ignore
+        sb.Append(",\"cells\":") |> ignore
+        sb.Append(cellSb.ToString()) |> ignore
+        sb.Append(",\"inferTerrain\":false}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member islands(data: seq<seq<'T>>, ?title: string) = Display.Islands(data, ?title = title)
+
+    // 12. Array with Pointers
+    static member Array(values: seq<'T>, pointers: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let colors = [| "#38bdf8"; "#a855f7"; "#f43f5e"; "#10b981"; "#eab308"; "#06b6d4" |]
+
+        let ptSb = StringBuilder("[")
+        let mutable pi = 0
+        let ptObj = box pointers
+        match tryGetDictionaryEntries ptObj with
+        | Some entries ->
+            for (name, atVal) in entries do
+                if pi > 0 then ptSb.Append(",") |> ignore
+                let at = Convert.ToInt32(atVal)
+                let color = colors.[pi % colors.Length]
+                ptSb.Append(sprintf "{\"name\":%s,\"at\":%d,\"color\":\"%s\"}" (JsonSerializer.Serialize(name)) at color) |> ignore
+                pi <- pi + 1
+        | None -> ()
+        ptSb.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"arrayPointers\",\"state\":{\"array\":{\"values\":")
+        sb.Append(toJsonArray values) |> ignore
+        sb.Append("}},\"pointers\":") |> ignore
+        sb.Append(ptSb.ToString()) |> ignore
+        sb.Append(",\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member array(values: seq<'T>, pointers: obj, ?title: string) = Display.Array(values, pointers, ?title = title)
+
+    // 13. Tree
+    static member Tree(data: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let nodesList = List<Detail.InternalTreeNode>()
+        let mutable counter = 1
+
+        let dataObj = box data
+        let t = dataObj.GetType()
+
+        let isTreeType =
+            t.GetProperty("Left") <> null || t.GetProperty("left") <> null ||
+            t.GetProperty("Val") <> null || t.GetProperty("val") <> null
+
+        if isTreeType then
+            let rec collectPreorder (node: obj) (id: string) =
+                if not (isNull node) then
+                    let nt = node.GetType()
+                    let valProp = match nt.GetProperty("Val") with null -> nt.GetProperty("val") | p -> p
+                    let leftProp = match nt.GetProperty("Left") with null -> nt.GetProperty("left") | p -> p
+                    let rightProp = match nt.GetProperty("Right") with null -> nt.GetProperty("right") | p -> p
+
+                    let vVal = if isNull valProp then "" else string (valProp.GetValue(node))
+                    let leftVal = if isNull leftProp then null else leftProp.GetValue(node)
+                    let rightVal = if isNull rightProp then null else rightProp.GetValue(node)
+
+                    let unwrap (o: obj) =
+                        if isNull o then null
+                        else
+                            let ot = o.GetType()
+                            if ot.IsGenericType && ot.GetGenericTypeDefinition() = typedefof<option<_>> then
+                                let tagProp = ot.GetProperty("Tag")
+                                let isSome = if isNull tagProp then not (isNull o) else (tagProp.GetValue(o) :?> int) = 1
+                                if isSome then ot.GetProperty("Value").GetValue(o) else null
+                            else o
+
+                    let leftUnwrapped = unwrap leftVal
+                    let rightUnwrapped = unwrap rightVal
+
+                    let leftId =
+                        if not (isNull leftUnwrapped) then
+                            counter <- counter + 1
+                            sprintf "node_%d" counter
+                        else ""
+                    let rightId =
+                        if not (isNull rightUnwrapped) then
+                            counter <- counter + 1
+                            sprintf "node_%d" counter
+                        else ""
+
+                    nodesList.Add({ Id = id; Value = vVal; Left = leftId; Right = rightId })
+                    if not (isNull leftUnwrapped) then collectPreorder leftUnwrapped leftId
+                    if not (isNull rightUnwrapped) then collectPreorder rightUnwrapped rightId
+
+            collectPreorder dataObj "node_1"
+        else
+            let items = (dataObj :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toArray
+            let unwrapVal (o: obj) =
+                if isNull o then None
+                else
+                    let ot = o.GetType()
+                    if ot.IsGenericType && ot.GetGenericTypeDefinition() = typedefof<option<_>> then
+                        let tagProp = ot.GetProperty("Tag")
+                        let isSome = if isNull tagProp then not (isNull o) else (tagProp.GetValue(o) :?> int) = 1
+                        if isSome then Some (string (ot.GetProperty("Value").GetValue(o))) else None
+                    else Some (string o)
+
+            let optItems = items |> Array.map unwrapVal
+
+            if optItems.Length > 0 && optItems.[0].IsSome then
+                let root = { Detail.BNode.Value = optItems.[0].Value; Left = None; Right = None }
+                let q = Queue<Detail.BNode>()
+                q.Enqueue(root)
+                let mutable idx = 1
+                while q.Count > 0 && idx < optItems.Length do
+                    let curr = q.Dequeue()
+                    if idx < optItems.Length then
+                        if optItems.[idx].IsSome then
+                            let l = { Detail.BNode.Value = optItems.[idx].Value; Left = None; Right = None }
+                            curr.Left <- Some l
+                            q.Enqueue(l)
+                        idx <- idx + 1
+                    if idx < optItems.Length then
+                        if optItems.[idx].IsSome then
+                            let r = { Detail.BNode.Value = optItems.[idx].Value; Left = None; Right = None }
+                            curr.Right <- Some r
+                            q.Enqueue(r)
+                        idx <- idx + 1
+
+                let rec dfs (n: Detail.BNode) (id: string) =
+                    let leftId =
+                        match n.Left with
+                        | Some _ ->
+                            counter <- counter + 1
+                            sprintf "node_%d" counter
+                        | None -> ""
+                    let rightId =
+                        match n.Right with
+                        | Some _ ->
+                            counter <- counter + 1
+                            sprintf "node_%d" counter
+                        | None -> ""
+                    nodesList.Add({ Id = id; Value = n.Value; Left = leftId; Right = rightId })
+                    match n.Left with Some l -> dfs l leftId | None -> ()
+                    match n.Right with Some r -> dfs r rightId | None -> ()
+
+                dfs root "node_1"
+
+        let sb = StringBuilder("{\"kind\":\"tree\",\"state\":{\"tree\":{\"root\":\"node_1\",\"nodes\":[")
+        for i = 0 to nodesList.Count - 1 do
+            if i > 0 then sb.Append(",") |> ignore
+            let n = nodesList.[i]
+            sb.Append(sprintf "{\"id\":\"%s\",\"value\":%s" n.Id (JsonSerializer.Serialize(n.Value))) |> ignore
+            if not (String.IsNullOrEmpty(n.Left)) then
+                sb.Append(sprintf ",\"left\":\"%s\"" n.Left) |> ignore
+            if not (String.IsNullOrEmpty(n.Right)) then
+                sb.Append(sprintf ",\"right\":\"%s\"" n.Right) |> ignore
+            sb.Append("}") |> ignore
+        sb.Append("]}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member tree(data: obj, ?title: string) = Display.Tree(data, ?title = title)
+
+    // 14. Graph Visualizer
+    static member Graph(data: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let nodesSet = HashSet<string>()
+        let edgesList = List<string * string>()
+
+        let dataObj = box data
+        match tryGetDictionaryEntries dataObj with
+        | Some entries ->
+            for (src, targetsObj) in entries do
+                nodesSet.Add(src) |> ignore
+                if not (isNull targetsObj) && typeof<System.Collections.IEnumerable>.IsAssignableFrom(targetsObj.GetType()) && not (targetsObj :? string) then
+                    let targets = (targetsObj :?> System.Collections.IEnumerable) |> Seq.cast<obj>
+                    for t in targets do
+                        let dst = string t
+                        nodesSet.Add(dst) |> ignore
+                        edgesList.Add((src, dst))
+                elif not (isNull targetsObj) then
+                    let dst = string targetsObj
+                    nodesSet.Add(dst) |> ignore
+                    edgesList.Add((src, dst))
+        | None -> ()
+
+        let sortedNodes = nodesSet |> Seq.sort |> Seq.toArray
+        let sb = StringBuilder("{\"kind\":\"graph\",\"state\":{\"graph\":{\"directed\":true,\"nodes\":[")
+        for i = 0 to sortedNodes.Length - 1 do
+            if i > 0 then sb.Append(",") |> ignore
+            sb.Append(sprintf "{\"id\":%s}" (JsonSerializer.Serialize(sortedNodes.[i]))) |> ignore
+        sb.Append("],\"edges\":[") |> ignore
+        for i = 0 to edgesList.Count - 1 do
+            if i > 0 then sb.Append(",") |> ignore
+            let (s, d) = edgesList.[i]
+            sb.Append(sprintf "{\"from\":%s,\"to\":%s}" (JsonSerializer.Serialize(s)) (JsonSerializer.Serialize(d))) |> ignore
+        sb.Append("]}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member graph(data: obj, ?title: string) = Display.Graph(data, ?title = title)
+
+    // 15. Linked List
+    static member LinkedList(data: obj, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let sb = StringBuilder("{\"kind\":\"linkedList\",\"state\":{\"linkedList\":{\"nodes\":[")
+        let mutable curr = box data
+        let mutable i = 0
+        while not (isNull curr) do
+            if i > 0 then sb.Append(",") |> ignore
+            let ct = curr.GetType()
+            let valProp = match ct.GetProperty("Val") with null -> ct.GetProperty("val") | p -> p
+            let nextProp = match ct.GetProperty("Next") with null -> ct.GetProperty("next") | p -> p
+
+            let vVal = if isNull valProp then "" else string (valProp.GetValue(curr))
+            let nextRaw = if isNull nextProp then null else nextProp.GetValue(curr)
+
+            let nextObj =
+                if isNull nextRaw then null
+                else
+                    let nt = nextRaw.GetType()
+                    if nt.IsGenericType && nt.GetGenericTypeDefinition() = typedefof<option<_>> then
+                        let tagProp = nt.GetProperty("Tag")
+                        let isSome = if isNull tagProp then not (isNull nextRaw) else (tagProp.GetValue(nextRaw) :?> int) = 1
+                        if isSome then nt.GetProperty("Value").GetValue(nextRaw) else null
+                    else nextRaw
+
+            sb.Append(sprintf "{\"id\":\"n%d\",\"value\":%s" i (JsonSerializer.Serialize(vVal))) |> ignore
+            if not (isNull nextObj) then
+                sb.Append(sprintf ",\"next\":\"n%d\"" (i + 1)) |> ignore
+            sb.Append("}") |> ignore
+            curr <- nextObj
+            i <- i + 1
+        sb.Append("],\"markCycle\":false}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member linked_list(data: obj, ?title: string) = Display.LinkedList(data, ?title = title)
+    static member linkedList(data: obj, ?title: string) = Display.LinkedList(data, ?title = title)
+
+    // 16. Bars
+    static member Bars(data: seq<'T>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let items = data |> Seq.map (fun x -> Convert.ToInt32(x)) |> Seq.toArray
+        let minVal = if items.Length > 0 then items |> Array.min else 0
+        let maxVal = if items.Length > 0 then items |> Array.max else 0
+        let effectiveMin = if minVal > 0 then 0 else minVal
+
+        let sb = StringBuilder("{\"kind\":\"bars\",\"state\":{\"bars\":{\"values\":")
+        sb.Append(toJsonArray items) |> ignore
+        sb.Append(sprintf ",\"min\":%d,\"max\":%d" effectiveMin maxVal) |> ignore
+        sb.Append("}},\"showCoordinates\":true,\"showValues\":true,\"cellSize\":38,\"fitOnOpen\":true") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
+
+    static member bars(data: seq<'T>, ?title: string) = Display.Bars(data, ?title = title)
+
+    // ── Timing & Process Events ───────────────────────────────────────────
+
+    static member Wait(seconds: float) =
+        Detail.ensureEventSocket()
+        stdout.Flush()
+        let sw = System.Diagnostics.Stopwatch.StartNew()
+        let limit = seconds * 1000.0
+        while sw.Elapsed.TotalMilliseconds < limit do
+            System.Threading.Thread.Sleep(25)
+
+    static member wait(seconds: float) = Display.Wait(seconds)
+
+    static member ProcessEvents() =
+        Detail.ensureEventSocket()
+        stdout.Flush()
+
+    static member process_events() = Display.ProcessEvents()

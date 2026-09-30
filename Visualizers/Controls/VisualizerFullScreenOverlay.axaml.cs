@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -46,7 +47,8 @@ public partial class VisualizerFullScreenOverlay : UserControl
         _topLevel = TopLevel.GetTopLevel(source);
         _focusToRestore = _topLevel?.FocusManager?.GetFocusedElement();
 
-        View.Options = source.Options!.CloneView();
+        View.Options = source.Options;
+        View.ViewState = new VisualizerViewState(source.ViewState);
         View.FitToView();
         View.ExitFullScreenRequested += (_, _) => Close();
         View.AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnViewStepLine);

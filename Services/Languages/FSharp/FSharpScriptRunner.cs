@@ -28,11 +28,13 @@ public sealed class FSharpScriptRunner : IScriptRunner
         }
 
         await FSharpDisplayRuntime.EnsureDisplayPackageAsync(outDir, ct).ConfigureAwait(false);
+        var displayFsx = Path.Combine(outDir, "Display.fsx");
+        var fryDir = Path.Combine(outDir, "fry");
 
         var isDirectFsi = Path.GetFileNameWithoutExtension(executable).Equals("fsi", StringComparison.OrdinalIgnoreCase);
         var runArgs = isDirectFsi
-            ? new List<string> { "--nologo", "--exec", context.SourceFilePath }
-            : new List<string> { "fsi", "--nologo", "--exec", context.SourceFilePath };
+            ? new List<string> { "--nologo", $"--load:{displayFsx}", $"--lib:{outDir}", $"--lib:{fryDir}", "--exec", context.SourceFilePath }
+            : new List<string> { "fsi", "--nologo", $"--load:{displayFsx}", $"--lib:{outDir}", $"--lib:{fryDir}", "--exec", context.SourceFilePath };
 
         var workingDir = !string.IsNullOrEmpty(sourceDir) ? sourceDir : context.WorkingDirectory;
 

@@ -20,8 +20,13 @@ public class ChartCanvasControl : Control
     private static readonly IBrush TooltipTextBrush = new SolidColorBrush(Color.FromArgb(240, 255, 255, 255));
     private static readonly IBrush EmptyTextBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
 
+    public ChartViewState ViewState { get; set; } = new();
+
     private ChartHitTestResult? _hoveredHit;
     private readonly ClickGesture _click = new();
+    private bool _isPanning;
+    private Point _panStart;
+    private double _startPanX, _startPanY;
 
     /// <summary>A value was clicked (a point, bar or slice).</summary>
     public event EventHandler<ElementClickedEventArgs<ChartHitTestResult>>? ValueClicked;
@@ -46,16 +51,47 @@ public class ChartCanvasControl : Control
     {
         base.OnPointerPressed(e);
         _click.Pressed(e, this);
+        var prop = e.GetCurrentPoint(this).Properties;
+        if (prop.IsLeftButtonPressed || prop.IsMiddleButtonPressed || prop.IsRightButtonPressed)
+        {
+            _isPanning = true;
+            _panStart = e.GetPosition(this);
+            _startPanX = ViewState.PanOffsetX;
+            _startPanY = ViewState.PanOffsetY;
+            e.Pointer.Capture(this);
+        }
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        _isPanning = false;
+        e.Pointer.Capture(null);
         if (_click.Released(e, this) is not { } at || Options == null || Options.Series.Count == 0) return;
-        if (ChartRendererFactory.GetRenderer(Options.Type).HitTest(at, new Rect(Bounds.Size), Options) is { } hit)
+        var hitPos = TransformToModel(at);
+        var eff = GetEffectiveOptions();
+        if (ChartRendererFactory.GetRenderer(eff.Type).HitTest(hitPos, new Rect(Bounds.Size), eff) is { } hit)
         {
             ValueClicked?.Invoke(this, new ElementClickedEventArgs<ChartHitTestResult>(hit, e.KeyModifiers));
         }
+    }
+
+    protected override void OnDoubleTapped(TappedEventArgs e)
+    {
+        base.OnDoubleTapped(e);
+        ViewState.Reset();
+        InvalidateVisual();
+        e.Handled = true;
+    }
+
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+        if (Options == null) return;
+        double factor = e.Delta.Y > 0 ? 1.15 : 0.85;
+        ViewState.Zoom = Math.Clamp(ViewState.Zoom * factor, 0.2, 20.0);
+        InvalidateVisual();
+        e.Handled = true;
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -64,8 +100,23 @@ public class ChartCanvasControl : Control
         if (Options == null || Options.Series.Count == 0) return;
 
         var pos = e.GetPosition(this);
-        var renderer = ChartRendererFactory.GetRenderer(Options.Type);
-        var hit = renderer.HitTest(pos, new Rect(Bounds.Size), Options);
+        if (_isPanning)
+        {
+            double dx = pos.X - _panStart.X;
+            double dy = pos.Y - _panStart.Y;
+            if (Math.Abs(dx) > 3 || Math.Abs(dy) > 3)
+            {
+                ViewState.PanOffsetX = _startPanX + dx;
+                ViewState.PanOffsetY = _startPanY + dy;
+                InvalidateVisual();
+                return;
+            }
+        }
+
+        var hitPos = TransformToModel(pos);
+        var eff = GetEffectiveOptions();
+        var renderer = ChartRendererFactory.GetRenderer(eff.Type);
+        var hit = renderer.HitTest(hitPos, new Rect(Bounds.Size), eff);
 
         if (hit?.Point != _hoveredHit?.Point)
         {
@@ -101,15 +152,51 @@ public class ChartCanvasControl : Control
             return;
         }
 
-        var renderer = ChartRendererFactory.GetRenderer(Options.Type);
-        // Its own area: Bounds is where it sits in its parent, which would shift the drawing by that much.
-        renderer.Render(context, new Rect(Bounds.Size), Options);
-
-        // Render hover tooltip and halo
-        if (_hoveredHit != null)
+        var eff = GetEffectiveOptions();
+        var renderer = ChartRendererFactory.GetRenderer(eff.Type);
+        var center = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        var transform = Matrix.CreateTranslation(-center.X, -center.Y) * Matrix.CreateScale(ViewState.Zoom, ViewState.Zoom) * Matrix.CreateTranslation(center.X + ViewState.PanOffsetX, center.Y + ViewState.PanOffsetY);
+        using (context.PushTransform(transform))
         {
-            RenderHoverTooltip(context, _hoveredHit);
+            renderer.Render(context, new Rect(Bounds.Size), eff);
+            if (_hoveredHit != null)
+            {
+                RenderHoverTooltip(context, _hoveredHit);
+            }
         }
+    }
+
+    public ChartOptions GetEffectiveOptions()
+    {
+        if (Options == null) return new ChartOptions();
+        return new ChartOptions
+        {
+            Title = Options.Title,
+            Subtitle = Options.Subtitle,
+            Type = ViewState.EffectiveType(Options),
+            PrimaryColor = Options.PrimaryColor,
+            ShowGrid = ViewState.EffectiveShowGrid(Options),
+            ShowPoints = Options.ShowPoints,
+            ShowStats = Options.ShowStats,
+            ShowLegend = Options.ShowLegend,
+            Width = Options.Width,
+            Height = Options.Height,
+            Series = Options.Series,
+            XAxisTitle = Options.XAxisTitle,
+            YAxisTitle = Options.YAxisTitle,
+            XMin = Options.XMin,
+            XMax = Options.XMax,
+            YMin = Options.YMin,
+            YMax = Options.YMax,
+            Notice = Options.Notice
+        };
+    }
+
+    private Point TransformToModel(Point pos)
+    {
+        var center = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        var transform = Matrix.CreateTranslation(-center.X, -center.Y) * Matrix.CreateScale(ViewState.Zoom, ViewState.Zoom) * Matrix.CreateTranslation(center.X + ViewState.PanOffsetX, center.Y + ViewState.PanOffsetY);
+        return transform.TryInvert(out var inv) ? inv.Transform(pos) : pos;
     }
 
     private void RenderHoverTooltip(DrawingContext context, ChartHitTestResult hit)
@@ -127,7 +214,6 @@ public class ChartCanvasControl : Control
         context.DrawEllipse(haloBrush, null, pos, 8, 8);
         context.DrawEllipse(dotBrush, dotPen, pos, 4, 4);
 
-        // Tooltip text
         var text = hit.DisplayText;
         var ft = new FormattedText(
             text,
@@ -139,14 +225,8 @@ public class ChartCanvasControl : Control
 
         double tipWidth = ft.Width + 14;
         double tipHeight = ft.Height + 10;
-
-        double tipX = pos.X - (tipWidth / 2);
-        double tipY = pos.Y - tipHeight - 10;
-
-        // Clamp inside bounds
-        if (tipX < 5) tipX = 5;
-        if (tipX + tipWidth > Bounds.Width - 5) tipX = Bounds.Width - tipWidth - 5;
-        if (tipY < 5) tipY = pos.Y + 12;
+        double tipX = Math.Clamp(pos.X - (tipWidth / 2), 5, Math.Max(5, Bounds.Width - tipWidth - 5));
+        double tipY = pos.Y - tipHeight - 10 < 5 ? pos.Y + 12 : pos.Y - tipHeight - 10;
 
         var tipRect = new Rect(tipX, tipY, tipWidth, tipHeight);
         var tipBg = new SolidColorBrush(Color.FromArgb(235, 18, 24, 34));

@@ -39,6 +39,7 @@ def display(*objects, **kwargs):
 
 
 def publish_object(obj):
+    if getattr(obj, "_fry_shown", False): return
     data, metadata = to_mime(obj)
     if data and _publisher is not None:
         _publisher(data, metadata)

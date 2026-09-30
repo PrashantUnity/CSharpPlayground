@@ -1,0 +1,22 @@
+{
+  "mime": "application/vnd.fry.visualizer.v1\u002Bjson",
+  "spec": {
+    "kind": "bars",
+    "state": {
+      "bars": {
+        "values": [
+          3,
+          1,
+          2
+        ],
+        "min": 0,
+        "max": 3
+      }
+    },
+    "showCoordinates": true,
+    "showValues": true,
+    "cellSize": 38,
+    "fitOnOpen": true,
+    "title": "Bars"
+  }
+}

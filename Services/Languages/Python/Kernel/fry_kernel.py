@@ -38,6 +38,8 @@ KERNEL_PID = os.getpid()
 
 # The kernel's own helper, imported before sys.path points at the notebook's folder (a user's display.py can't shadow it).
 import fry_display  # noqa: E402
+import fry  # noqa: E402
+import fry_channel  # noqa: E402
 
 _INTERRUPTED = object()
 _HIDDEN_NAMES = {"display", "__fry__", "In", "Out", "exit", "quit", "get_ipython"}
@@ -142,6 +144,9 @@ def _reader():
                 _input_replies.put(message.get("value"))
             elif kind == "shutdown":
                 _exit_now()
+            elif kind == "event":
+                fry_channel.channel().post(message)
+                _requests.put({"type": "_events"})
             else:
                 _requests.put(message)
     except Exception:
@@ -313,6 +318,21 @@ def _input(prompt=""):
 
 def _getpass(prompt="Password: ", stream=None):
     return _ask(prompt, password=True)
+
+
+def _run_as(event_id, action):
+    _stdout.flush(); _stderr.flush()
+    previous = _state.current_id
+    _state.current_id = event_id
+    try:
+        action()
+    finally:
+        _stdout.flush(); _stderr.flush()
+        _state.current_id = previous
+
+def _send_visual(message):
+    _stdout.flush(); _stderr.flush()
+    send(message)
 
 
 def _publish(data, metadata):
@@ -585,6 +605,9 @@ def _variables():
 
 def _handle_request(message):
     kind = message.get("type")
+    if kind == "_events":
+        fry_channel.channel().run_pending()
+        return
     request_id = message.get("id")
     try:
         if kind == "execute":
@@ -641,7 +664,7 @@ def main():
     main_module.__dict__.update({"__builtins__": builtins, "__spec__": None, "__loader__": None, "__package__": None})
     sys.modules["__main__"] = main_module
     _namespace = main_module.__dict__
-    _namespace["display"] = fry_display.display
+    _namespace["display"] = fry.display
     _namespace["__fry__"] = _FryHelpers()
 
     _loop = asyncio.new_event_loop()
@@ -657,6 +680,9 @@ def main():
     except Exception:
         pass
     fry_display.set_publisher(_publish)
+    fry_channel.use(fry_channel.KernelChannel(_send_visual, lambda: _state.current_id, _run_as))
+    _namespace["Display"] = fry.Display
+    _namespace["display"] = fry.display
 
     # The notebook's folder first, as `python script.py` would have the script's; the kernel's own folder last, for
     # fry_matplotlib.

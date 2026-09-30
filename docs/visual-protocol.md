@@ -115,6 +115,19 @@ A `target` is one of:
 
 Callbacks run when the program is idle (a notebook kernel between cells), or inside running code that asks: `process_events()` runs those whose events have come, and `wait()` runs them as they come, until Stop. A callback's output goes to the cell that showed the visual. How events reach a program is in [kernel-protocol.md](kernel-protocol.md): an `event` message on a kernel's stdin, or over the event socket for a program that is run.
 
+### Python example
+
+```python
+from fry import Display as D
+
+chart = D.line_chart([3, 1, 4, 1, 5], title="Performance", y_title="Latency (ms)")
+chart.on_click(lambda e: print("clicked series", e.target["series"], "index", e.target["index"]))
+chart.update(title="Performance (live)")
+
+# In a standalone script, keep handling events until stopped:
+D.wait()
+```
+
 ## C# scripts written before the spec
 
 C# builds these same specs (`Visuals/Building`: `ChartSpecBuilder`, `Plot3DSpecBuilder`, `VisualizerSpecBuilder`), so a C# chart is drawn exactly like a Python one. What changed for older scripts:

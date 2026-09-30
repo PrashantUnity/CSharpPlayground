@@ -1,0 +1,19 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "pie",
+    "series": [
+      {
+        "y": [
+          1,
+          2
+        ],
+        "labels": [
+          "A",
+          "B"
+        ]
+      }
+    ],
+    "title": "Share"
+  }
+}

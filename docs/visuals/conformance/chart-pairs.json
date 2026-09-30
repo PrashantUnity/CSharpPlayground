@@ -1,0 +1,19 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "scatter",
+    "series": [
+      {
+        "x": [
+          1,
+          2
+        ],
+        "y": [
+          2,
+          4.5
+        ]
+      }
+    ],
+    "title": "Pairs"
+  }
+}

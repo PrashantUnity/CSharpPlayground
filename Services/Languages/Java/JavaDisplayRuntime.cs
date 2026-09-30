@@ -52,10 +52,36 @@ public static class JavaDisplayRuntime
         return files;
     }
 
+    private static string? _cachedDisplaySource;
+
     public static string GenerateDisplayJavaSource(string? package)
     {
         var pkgHeader = !string.IsNullOrWhiteSpace(package) ? $"package {package};\n\n" : string.Empty;
-        return pkgHeader + DisplayJavaTemplate;
+        return pkgHeader + GetBaseDisplaySource();
+    }
+
+    private static string GetBaseDisplaySource()
+    {
+        if (_cachedDisplaySource != null) return _cachedDisplaySource;
+        try
+        {
+            using var stream = typeof(JavaDisplayRuntime).Assembly.GetManifestResourceStream("JavaRuntime.Display.java");
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                _cachedDisplaySource = reader.ReadToEnd();
+                return _cachedDisplaySource;
+            }
+        }
+        catch { }
+
+        var devPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Services", "Languages", "Java", "Runtime", "Display.java");
+        if (File.Exists(devPath))
+        {
+            try { return _cachedDisplaySource = File.ReadAllText(devPath); } catch { }
+        }
+
+        return DisplayJavaTemplate;
     }
 
     private const string DisplayJavaTemplate = """

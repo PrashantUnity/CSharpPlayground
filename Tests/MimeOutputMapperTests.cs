@@ -188,7 +188,7 @@ public class MimeOutputMapperTests
             var again = EmbeddedKernelFiles.Extract(assembly, PythonKernelLauncher.ResourcePrefix, root);
 
             Assert.Equal(folder, again);
-            Assert.Equal(new[] { "fry_display.py", "fry_kernel.py", "fry_matplotlib.py" }, Directory.GetFiles(folder).Select(Path.GetFileName).OrderBy(n => n));
+            Assert.Equal(new[] { "fry_channel.py", "fry_display.py", "fry_kernel.py", "fry_matplotlib.py", "fry_specs.py", "fry.py" }, Directory.GetFiles(folder).Select(Path.GetFileName).OrderBy(n => n));
             Assert.Contains("def main():", File.ReadAllText(Path.Combine(folder, "fry_kernel.py")));
             Assert.Single(Directory.GetDirectories(root)); // no leftover staging folders
         }

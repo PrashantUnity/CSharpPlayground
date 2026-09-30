@@ -26,7 +26,8 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         "\"strings\"",
         "\"time\"",
         "\"os\"",
-        "\"encoding/json\""
+        "\"encoding/json\"",
+        "\"fry\""
     };
 
     private readonly Dictionary<string, string> _cumulativeTopLevel = new(StringComparer.Ordinal);
@@ -248,6 +249,7 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         _cumulativeImports.Add("\"time\"");
         _cumulativeImports.Add("\"os\"");
         _cumulativeImports.Add("\"encoding/json\"");
+        _cumulativeImports.Add("\"fry\"");
         _executionCount = 0;
     }
 

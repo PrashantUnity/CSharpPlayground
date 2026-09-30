@@ -8,6 +8,7 @@ const vm = require("vm");
 const util = require("util");
 const path = require("path");
 const fs = require("fs");
+const fry = require("./fry");
 
 const protocolWrite = process.stdout.write.bind(process.stdout);
 
@@ -136,13 +137,14 @@ const contextObj = {
         error: (...args) => streamOutput("stderr", util.format(...args) + "\n"),
         dir: (obj) => streamOutput("stdout", util.inspect(obj, { depth: null }) + "\n")
     },
-    display: display,
+    display: fry.display,
+    Display: fry.Display,
+    dump: fry.dump,
+    table: fry.table,
+    fry: fry,
+    require: require,
     input: requestInput,
     prompt: requestInput,
-    fry: {
-        display: display,
-        table: (rows, title) => display(formatTable(rows, title))
-    },
     process: process,
     Buffer: Buffer,
     setTimeout: setTimeout,
@@ -152,6 +154,28 @@ const contextObj = {
 };
 contextObj.global = contextObj;
 contextObj.globalThis = contextObj;
+
+fry.setChannel({
+    send(msg) {
+        msg.id = currentRequestId;
+        send(msg);
+    },
+    sendSubscription(displayId, events, subscribe) {
+        send({ type: subscribe ? "subscribe" : "unsubscribe", id: currentRequestId, display_id: displayId, events });
+    },
+    context() {
+        return currentRequestId;
+    },
+    runAs(cellId, action) {
+        const prev = currentRequestId;
+        currentRequestId = cellId;
+        try {
+            action();
+        } finally {
+            currentRequestId = prev;
+        }
+    }
+});
 
 const context = vm.createContext(contextObj);
 
@@ -183,7 +207,7 @@ async function handleExecute(req) {
             result = script.runInContext(context);
         }
 
-        if (result !== undefined) {
+        if (result !== undefined && !(result && result._fry_shown)) {
             streamOutput("stdout", util.inspect(result, { depth: 3 }) + "\n");
         }
 
@@ -193,6 +217,7 @@ async function handleExecute(req) {
             status: "ok",
             executionCount: executionCount
         });
+        fry.runPendingEvents();
     } catch (err) {
         const ename = err && err.name ? err.name : "Error";
         const evalue = err && err.message ? err.message : String(err);
@@ -383,6 +408,10 @@ rl.on("line", (line) => {
                 break;
             case "shutdown":
                 process.exit(0);
+                break;
+            case "event":
+                fry.postEvent(msg);
+                fry.runPendingEvents();
                 break;
         }
     } catch (e) {

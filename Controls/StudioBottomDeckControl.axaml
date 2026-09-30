@@ -127,7 +127,7 @@
                                 <StackPanel Spacing="10" HorizontalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Call .Dump() in C#, Display.dump() in Java/JS, or dump() in Python to inspect results in a rich interactive table." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Call .Dump(), Display.Chart(), Display.Plot3D(), or Display.Visualizer() in any language to inspect results here." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
