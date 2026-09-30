@@ -55,12 +55,16 @@ public partial class VisualChromeControl : UserControl
         if (this.FindControl<Material.Icons.Avalonia.MaterialIcon>("HeaderIcon") is { } hi) hi.Kind = icon;
     }
 
-    public void SetCanvasContent(Control? content) { if (this.FindControl<ContentControl>("CanvasHost") is { } host) host.Content = content; }
-    public void SetKindTools(Control? tools) { if (this.FindControl<ContentControl>("KindToolsHost") is { } host) host.Content = tools; }
-    public void SetFooter(Control? footer)
+    private static void Detach(Control? c)
     {
-        if (this.FindControl<ContentControl>("FooterHost") is { } host) { host.Content = footer; host.IsVisible = footer != null; }
+        if (c?.Parent is Panel p) p.Children.Remove(c);
+        else if (c?.Parent is ContentControl cc) cc.Content = null;
+        else if (c?.Parent is Border b) b.Child = null;
     }
+
+    public void SetCanvasContent(Control? content) { Detach(content); if (this.FindControl<ContentControl>("CanvasHost") is { } host) host.Content = content; }
+    public void SetKindTools(Control? tools) { Detach(tools); if (this.FindControl<ContentControl>("KindToolsHost") is { } host) host.Content = tools; }
+    public void SetFooter(Control? footer) { Detach(footer); if (this.FindControl<ContentControl>("FooterHost") is { } host) { host.Content = footer; host.IsVisible = footer != null; } }
 
     public void SetFullScreenState(bool isFullScreen)
     {
