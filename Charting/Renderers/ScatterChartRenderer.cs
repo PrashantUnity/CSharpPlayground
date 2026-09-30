@@ -9,12 +9,17 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 
 public class ScatterChartRenderer : ChartRendererBase
 {
+    // Past this many points the glow rings only blur the cloud together.
+    private const int MaxGlowingPoints = 2000;
+
     public override void Render(DrawingContext context, Rect bounds, ChartOptions options)
     {
-        var plotArea = GetPlotArea(bounds);
-        GetDataBounds(options, out var minX, out var maxX, out var minY, out var maxY);
+        var plotArea = GetPlotArea(bounds, options);
+        var range = ChartDataRange.Of(options);
+        var (minX, maxX, minY, maxY, _) = range;
 
-        DrawGridAndAxes(context, plotArea, minX, maxX, minY, maxY, options.ShowGrid);
+        DrawGridAndAxes(context, plotArea, range, options.ShowGrid);
+        DrawAxisTitles(context, bounds, plotArea, options);
 
         int seriesIndex = 0;
         foreach (var series in options.Series)
@@ -25,19 +30,24 @@ public class ScatterChartRenderer : ChartRendererBase
                 ? ChartPaletteService.GetSeriesColor(seriesIndex)
                 : series.Color;
 
-            var baseColor = ChartPaletteService.ParseColor(seriesColor);
-            var markerFill = new SolidColorBrush(Color.FromArgb(200, baseColor.R, baseColor.G, baseColor.B));
-            var markerStroke = new Pen(new SolidColorBrush(baseColor), 1.5);
-            var glowStroke = new Pen(new SolidColorBrush(Color.FromArgb(40, baseColor.R, baseColor.G, baseColor.B)), 3);
+            var (markerFill, markerStroke, glowStroke) = Marker(ChartPaletteService.ParseColor(seriesColor));
 
-            foreach (var p in series.Points)
+            using (ClipToPlot(context, plotArea))
             {
-                double px = ToCanvasX(p.X, minX, maxX, plotArea);
-                double py = ToCanvasY(p.Y, minY, maxY, plotArea);
+                // Points on top of each other are drawn once, so a scatter of any size costs at most a marker a cell.
+                var drawn = ChartPoints.ForScatter(series.Points, p => (ToCanvasX(p.X, minX, maxX, plotArea), ToCanvasY(p.Y, minY, maxY, plotArea)));
+                bool glowing = drawn.Count <= MaxGlowingPoints;
+                foreach (var i in drawn)
+                {
+                    var p = series.Points[i];
+                    double px = ToCanvasX(p.X, minX, maxX, plotArea);
+                    double py = ToCanvasY(p.Y, minY, maxY, plotArea);
 
-                // Glow ring + center circle
-                context.DrawEllipse(null, glowStroke, new Point(px, py), 6, 6);
-                context.DrawEllipse(markerFill, markerStroke, new Point(px, py), 4, 4);
+                    // Glow ring + center circle, in the point's own colour when it has one
+                    var (fill, stroke, glow) = string.IsNullOrEmpty(p.CustomColor) ? (markerFill, markerStroke, glowStroke) : Marker(ChartPaletteService.ParseColor(p.CustomColor));
+                    if (glowing) context.DrawEllipse(null, glow, new Point(px, py), 6, 6);
+                    context.DrawEllipse(fill, stroke, new Point(px, py), 4, 4);
+                }
             }
 
             if (seriesIndex == 0)
@@ -49,9 +59,14 @@ public class ScatterChartRenderer : ChartRendererBase
         }
     }
 
+    private static (IBrush Fill, IPen Stroke, IPen Glow) Marker(Color color) => (
+        new SolidColorBrush(Color.FromArgb(200, color.R, color.G, color.B)),
+        new Pen(new SolidColorBrush(color), 1.5),
+        new Pen(new SolidColorBrush(Color.FromArgb(40, color.R, color.G, color.B)), 3));
+
     public override ChartHitTestResult? HitTest(Point pointerPosition, Rect bounds, ChartOptions options)
     {
-        var plotArea = GetPlotArea(bounds);
+        var plotArea = GetPlotArea(bounds, options);
         if (!plotArea.Contains(pointerPosition)) return null;
 
         GetDataBounds(options, out var minX, out var maxX, out var minY, out var maxY);
@@ -63,6 +78,7 @@ public class ScatterChartRenderer : ChartRendererBase
         {
             foreach (var p in series.Points)
             {
+                if (!ChartPoints.IsDrawn(p)) continue;
                 double px = ToCanvasX(p.X, minX, maxX, plotArea);
                 double py = ToCanvasY(p.Y, minY, maxY, plotArea);
 

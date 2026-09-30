@@ -2,10 +2,13 @@ using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 
@@ -37,8 +40,13 @@ public partial class InteractiveChartControl : UserControl
         ApplyOptions();
     }
 
+    /// <summary>A value was clicked (a point, bar or slice).</summary>
+    public event EventHandler<ElementClickedEventArgs<ChartHitTestResult>>? ValueClicked;
+
     private void WireEvents()
     {
+        if (this.FindControl<ChartCanvasControl>("CanvasControl") is { } clickable) clickable.ValueClicked += (_, e) => ValueClicked?.Invoke(this, e);
+
         var lineBtn = this.FindControl<Button>("LineTypeBtn");
         var areaBtn = this.FindControl<Button>("AreaTypeBtn");
         var barBtn = this.FindControl<Button>("BarTypeBtn");
@@ -82,25 +90,63 @@ public partial class InteractiveChartControl : UserControl
         var canvas = this.FindControl<ChartCanvasControl>("CanvasControl");
         if (canvas != null) { canvas.Options = opts; canvas.InvalidateVisual(); }
 
+        // The height the chart asks for is the drawing's; the header and legend come on top of it.
+        if (canvas != null && opts.Height > 0) canvas.Height = Math.Max(canvas.MinHeight, opts.Height);
+
         var titleBlock = this.FindControl<TextBlock>("ChartTitleText");
         if (titleBlock != null)
         {
             titleBlock.Text = string.IsNullOrWhiteSpace(opts.Title) ? $"{opts.Type} Chart" : opts.Title;
         }
 
+        var subtitleBlock = this.FindControl<TextBlock>("ChartSubtitleText");
+        if (subtitleBlock != null)
+        {
+            subtitleBlock.Text = opts.Subtitle;
+            subtitleBlock.IsVisible = !string.IsNullOrWhiteSpace(opts.Subtitle);
+        }
+
         var statsBorder = this.FindControl<Border>("StatsPillBorder");
         var statsBlock = this.FindControl<TextBlock>("StatsSummaryText");
         if (statsBlock != null && statsBorder != null)
         {
-            statsBorder.IsVisible = opts.ShowStats && opts.Series.Count > 0;
-            if (statsBorder.IsVisible)
-            {
-                var total = opts.Series.Sum(s => s.Points.Count);
-                statsBlock.Text = $"Min: {opts.Series.Min(s => s.MinY):0.##} • Max: {opts.Series.Max(s => s.MaxY):0.##} • Avg: {opts.Series.Average(s => s.AvgY):0.##} • N: {total}";
-            }
+            var stats = ChartStatistics.Of(opts);
+            statsBorder.IsVisible = opts.ShowStats && stats != null;
+            if (stats != null) statsBlock.Text = stats.Value.ToString();
         }
 
+        ApplyLegend(opts);
         UpdateIcon();
+    }
+
+    // The series legend under the drawing; a pie or donut lists its slices beside it instead.
+    private void ApplyLegend(ChartOptions opts)
+    {
+        var panel = this.FindControl<ItemsControl>("SeriesLegendPanel");
+        if (panel == null) return;
+
+        panel.Items.Clear();
+        panel.IsVisible = opts.ShowLegend && opts.Type is not (ChartType.Pie or ChartType.Donut);
+        if (!panel.IsVisible) return;
+
+        // Coloured as the renderers colour them: a series without a colour takes the palette's, counting drawn series.
+        var drawn = 0;
+        foreach (var series in opts.Series.Where(s => s.Points.Count > 0))
+        {
+            var color = ChartPaletteService.ParseColor(string.IsNullOrEmpty(series.Color) ? ChartPaletteService.GetSeriesColor(drawn) : series.Color);
+            drawn++;
+            panel.Items.Add(new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 5,
+                Margin = new Thickness(0, 0, 14, 2),
+                Children =
+                {
+                    new Border { Width = 10, Height = 10, CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(color), VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = series.Name, FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center }
+                }
+            });
+        }
     }
 
     private void SwitchType(ChartType newType)
@@ -114,6 +160,7 @@ public partial class InteractiveChartControl : UserControl
             titleBlock.Text = $"{newType} Chart";
         }
 
+        ApplyLegend(Options);
         UpdateIcon();
         this.FindControl<ChartCanvasControl>("CanvasControl")?.InvalidateVisual();
     }

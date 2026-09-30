@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Renderers;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 
@@ -22,6 +23,10 @@ public class Plot3DCanvasControl : Control
     private bool _isOrbiting;
     private bool _isPanning;
     private Plot3DHitTestResult? _hoveredHit;
+    private readonly ClickGesture _click = new();
+
+    /// <summary>A point or node was clicked (a drag orbits or pans instead).</summary>
+    public event EventHandler<ElementClickedEventArgs<Plot3DHitTestResult>>? PointClicked;
 
     public Plot3DOptions? Options
     {
@@ -45,6 +50,7 @@ public class Plot3DCanvasControl : Control
         if (Options == null) return;
 
         var prop = e.GetCurrentPoint(this).Properties;
+        _click.Pressed(e, this);
         _lastPointerPos = e.GetPosition(this);
         _hoveredHit = null;
 
@@ -97,7 +103,7 @@ public class Plot3DCanvasControl : Control
         if (!_isOrbiting && !_isPanning)
         {
             var renderer = Plot3DRendererFactory.GetRenderer(Options.Type);
-            var hit = renderer.HitTest(curPos, Bounds, Options);
+            var hit = renderer.HitTest(curPos, new Rect(Bounds.Size), Options);
 
             if (hit?.DisplayText != _hoveredHit?.DisplayText)
             {
@@ -114,6 +120,11 @@ public class Plot3DCanvasControl : Control
         _isPanning = false;
         _lastPointerPos = null;
         e.Pointer.Capture(null);
+        if (_click.Released(e, this) is { } at && Options != null &&
+            Plot3DRendererFactory.GetRenderer(Options.Type).HitTest(at, new Rect(Bounds.Size), Options) is { } hit)
+        {
+            PointClicked?.Invoke(this, new ElementClickedEventArgs<Plot3DHitTestResult>(hit, e.KeyModifiers));
+        }
     }
 
     protected override void OnPointerExited(PointerEventArgs e)
@@ -158,7 +169,8 @@ public class Plot3DCanvasControl : Control
         }
 
         var renderer = Plot3DRendererFactory.GetRenderer(Options.Type);
-        renderer.Render(context, Bounds, Options);
+        // Its own area: Bounds is where it sits in its parent, which shifted the scene down and cut its floor off.
+        renderer.Render(context, new Rect(Bounds.Size), Options);
 
         // Render hover tooltip and halo
         if (_hoveredHit != null && !_isOrbiting && !_isPanning)

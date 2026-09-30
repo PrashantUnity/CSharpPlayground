@@ -6,9 +6,7 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
-             xmlns:charting="using:PdfEditorApp.Plugins.CSharpEditor.Charting.Controls"
-             xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
-             xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
+             xmlns:output="using:PdfEditorApp.Plugins.CSharpEditor.Visuals.Output"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl"
              x:DataType="vm:NotebookCellViewModel">
@@ -351,7 +349,7 @@
                         </controls:LazyContent>
                     </Border>
 
-                    <!-- 3b. Interactive Native Vector Chart -->
+                    <!-- 3b-3d. Charts, visualizers and 3D plots: every one the cell showed, in order, each drawn from its spec -->
                     <Border IsVisible="{Binding IsChartTabActive}"
                             Background="{DynamicResource DsSurfaceBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -361,13 +359,24 @@
                         <controls:LazyContent IsActive="{Binding IsChartTabActive}">
                             <controls:LazyContent.ContentTemplate>
                                 <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                                    <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <ItemsControl ItemsSource="{Binding ChartVisuals}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="output:VisualOutput">
+                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </controls:LazyContent.ContentTemplate>
                         </controls:LazyContent>
                     </Border>
 
-                    <!-- 3c. Interactive Native Vector Data Structure Visualizer -->
                     <Border IsVisible="{Binding IsVisualizerTabActive}"
                             Background="{DynamicResource DsSurfaceBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -377,13 +386,24 @@
                         <controls:LazyContent IsActive="{Binding IsVisualizerTabActive}">
                             <controls:LazyContent.ContentTemplate>
                                 <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                                    <visControls:InteractiveVisualizerControl Options="{Binding VisualizerOptions}" />
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <ItemsControl ItemsSource="{Binding VisualizerVisuals}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="output:VisualOutput">
+                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </controls:LazyContent.ContentTemplate>
                         </controls:LazyContent>
                     </Border>
 
-                    <!-- 3d. Interactive 3D Visualization -->
                     <Border IsVisible="{Binding IsPlot3DTabActive}"
                             Background="{DynamicResource DsSurfaceBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -393,7 +413,19 @@
                         <controls:LazyContent IsActive="{Binding IsPlot3DTabActive}">
                             <controls:LazyContent.ContentTemplate>
                                 <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                                    <charting3d:InteractivePlot3DControl Options="{Binding Plot3DOptions}" />
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <ItemsControl ItemsSource="{Binding Plot3DVisuals}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="output:VisualOutput">
+                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </controls:LazyContent.ContentTemplate>
                         </controls:LazyContent>

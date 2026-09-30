@@ -33,6 +33,13 @@ public class VisualizerOptions
     /// <summary>Text for the header's stats pill when the data type alone can't describe it (e.g. "Intervals: 4").</summary>
     public string? Summary { get; set; }
 
+    /// <summary>A line for the header when not everything is drawn, e.g. "showing the first 5,000 of 8,200 steps".</summary>
+    public string? Notice { get; set; }
+
+    /// <summary>The drawing area's size in pixels; the control's own when null.</summary>
+    public double? Width { get; set; }
+    public double? Height { get; set; }
+
     /// <summary>A second view of the same visualization: it shares the data and the playback, but zooms and pans on its own.</summary>
     public VisualizerOptions CloneView() => (VisualizerOptions)MemberwiseClone();
 

@@ -104,11 +104,18 @@ public sealed class ScriptRunExecutor
     }
 
     /// <param name="onOutput">Every chunk of output from every step, on background threads.</param>
-    public ScriptRunSession Start(ScriptRunPlan plan, string sourceFilePath, IDiagnosticParser? parser, Action<string> onOutput, CancellationToken ct = default)
+    /// <param name="environment">Variables for the program itself (not its build steps), on top of each step's own.</param>
+    public ScriptRunSession Start(
+        ScriptRunPlan plan,
+        string sourceFilePath,
+        IDiagnosticParser? parser,
+        Action<string> onOutput,
+        CancellationToken ct = default,
+        IReadOnlyDictionary<string, string?>? environment = null)
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var session = new ScriptRunSession(cts);
-        session.Completion = Task.Run(() => RunStepsAsync(plan, sourceFilePath, parser, onOutput, session, cts));
+        session.Completion = Task.Run(() => RunStepsAsync(plan, sourceFilePath, parser, onOutput, environment, session, cts));
         return session;
     }
 
@@ -117,6 +124,7 @@ public sealed class ScriptRunExecutor
         string sourceFilePath,
         IDiagnosticParser? parser,
         Action<string> onOutput,
+        IReadOnlyDictionary<string, string?>? environment,
         ScriptRunSession session,
         CancellationTokenSource cts)
     {
@@ -139,7 +147,7 @@ public sealed class ScriptRunExecutor
                 IManagedProcess process;
                 try
                 {
-                    process = _launcher.Start(step.Spec, Receive, Receive);
+                    process = _launcher.Start(step.IsBuildStep ? step.Spec : WithEnvironment(step.Spec, environment), Receive, Receive);
                 }
                 catch (ProcessStartException ex)
                 {
@@ -178,6 +186,14 @@ public sealed class ScriptRunExecutor
         {
             cts.Dispose();
         }
+    }
+
+    private static ProcessStartSpec WithEnvironment(ProcessStartSpec spec, IReadOnlyDictionary<string, string?>? environment)
+    {
+        if (environment is not { Count: > 0 }) return spec;
+        var merged = new Dictionary<string, string?>(spec.Environment);
+        foreach (var (name, value) in environment) merged[name] = value;
+        return spec with { Environment = merged };
     }
 
     private sealed class OutputTail(int maxLength)

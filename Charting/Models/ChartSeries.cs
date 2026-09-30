@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,11 +11,14 @@ public class ChartSeries
     public double StrokeThickness { get; set; } = 2.0;
     public List<ChartDataPoint> Points { get; set; } = new();
 
-    public double MinY => Points.Count > 0 ? Points.Min(p => p.Y) : 0;
-    public double MaxY => Points.Count > 0 ? Points.Max(p => p.Y) : 0;
-    public double MinX => Points.Count > 0 ? Points.Min(p => p.X) : 0;
-    public double MaxX => Points.Count > 0 ? Points.Max(p => p.X) : 0;
-    public double AverageY => Points.Count > 0 ? Points.Average(p => p.Y) : 0;
+    // A missing value (NaN) is a gap in the series, not a value, so none of these count it.
+    public double MinY => Values(p => p.Y).DefaultIfEmpty(0).Min();
+    public double MaxY => Values(p => p.Y).DefaultIfEmpty(0).Max();
+    public double MinX => Values(p => p.X).DefaultIfEmpty(0).Min();
+    public double MaxX => Values(p => p.X).DefaultIfEmpty(0).Max();
+    public double AverageY => Values(p => p.Y).DefaultIfEmpty(0).Average();
     public double AvgY => AverageY;
-    public double SumY => Points.Count > 0 ? Points.Sum(p => p.Y) : 0;
+    public double SumY => Values(p => p.Y).Sum();
+
+    private IEnumerable<double> Values(Func<ChartDataPoint, double> value) => Points.Select(value).Where(double.IsFinite);
 }

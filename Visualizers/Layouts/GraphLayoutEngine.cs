@@ -13,6 +13,11 @@ public static class GraphLayoutEngine
         double padding = 40.0)
     {
         if (graph.Nodes.Count == 0) return (canvasWidth, canvasHeight);
+        if (graph.Nodes.All(n => n.PinnedX.HasValue && n.PinnedY.HasValue))
+        {
+            FitPinned(graph, canvasWidth, canvasHeight, padding);
+            return (canvasWidth, canvasHeight);
+        }
 
         int count = graph.Nodes.Count;
 
@@ -39,5 +44,23 @@ public static class GraphLayoutEngine
         }
 
         return (canvasWidth, canvasHeight);
+    }
+
+    // Positions the program gave, in any units: scaled evenly into the canvas and centred, so the drawing keeps its shape.
+    private static void FitPinned(GraphData graph, double canvasWidth, double canvasHeight, double padding)
+    {
+        double minX = graph.Nodes.Min(n => n.PinnedX!.Value), maxX = graph.Nodes.Max(n => n.PinnedX!.Value);
+        double minY = graph.Nodes.Min(n => n.PinnedY!.Value), maxY = graph.Nodes.Max(n => n.PinnedY!.Value);
+        double spanX = Math.Max(1e-9, maxX - minX), spanY = Math.Max(1e-9, maxY - minY);
+        double usableW = Math.Max(1, canvasWidth - padding * 2), usableH = Math.Max(1, canvasHeight - padding * 2);
+        double scale = Math.Min(usableW / spanX, usableH / spanY);
+        if (graph.Nodes.Count == 1 || (maxX - minX < 1e-9 && maxY - minY < 1e-9)) scale = 0;
+        double offsetX = (canvasWidth - (maxX - minX) * scale) / 2.0;
+        double offsetY = (canvasHeight - (maxY - minY) * scale) / 2.0;
+        foreach (var node in graph.Nodes)
+        {
+            node.X = offsetX + (node.PinnedX!.Value - minX) * scale;
+            node.Y = offsetY + (node.PinnedY!.Value - minY) * scale;
+        }
     }
 }

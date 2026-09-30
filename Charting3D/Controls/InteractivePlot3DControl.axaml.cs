@@ -5,6 +5,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 
@@ -28,9 +29,17 @@ public partial class InteractivePlot3DControl : UserControl
 
     public InteractivePlot3DControl()
     {
-        try { InitializeComponent(); AttachEventHandlers(); }
+        try
+        {
+            InitializeComponent();
+            AttachEventHandlers();
+            if (CanvasControl != null) CanvasControl.PointClicked += (_, e) => PointClicked?.Invoke(this, e);
+        }
         catch { /* Headless runner */ }
     }
+
+    /// <summary>A point or node was clicked.</summary>
+    public event EventHandler<ElementClickedEventArgs<Plot3DHitTestResult>>? PointClicked;
 
     public InteractivePlot3DControl(Plot3DOptions options) : this()
     {
@@ -120,6 +129,12 @@ public partial class InteractivePlot3DControl : UserControl
     {
         if (Options == null) return;
         if (Plot3DTitleText != null) Plot3DTitleText.Text = Options.Title;
+        if (Plot3DSubtitleText != null)
+        {
+            Plot3DSubtitleText.Text = Options.Subtitle;
+            Plot3DSubtitleText.IsVisible = !string.IsNullOrWhiteSpace(Options.Subtitle);
+        }
+
         if (CanvasControl != null && Options.Height > 100) CanvasControl.Height = Options.Height;
         UpdateStats();
         if (Options.AutoRotate) StartAutoRotateTimer();

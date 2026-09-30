@@ -1,6 +1,7 @@
 using System.Text.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 
@@ -9,14 +10,16 @@ public sealed record KernelOutput(string? Text, RichCellOutput? Rich);
 
 /// <summary>
 /// Turns a kernel's MIME bundle (Jupyter's way of saying "here is this value as PNG, as HTML and as text") into the
-/// studio's outputs, choosing the richest kind it can show: the studio's table, PNG/JPEG, SVG, HTML, then text.
+/// studio's outputs, choosing the richest kind it can show: the studio's table, a chart, 3D plot or visualizer spec,
+/// PNG/JPEG, SVG, HTML, then text.
 /// </summary>
 public static class MimeOutputMapper
 {
-    public const string TableMime = "application/vnd.fry.table+json";
-    public const string Plot3DMime = "application/vnd.fry.plot3d+json";
+    public const string TableMime = VisualMimeTypes.Table;
+    public const string Plot3DMime = VisualMimeTypes.LegacyPlot3D;
 
-    public static KernelOutput Map(JsonElement data, JsonElement metadata)
+    /// <param name="displayId">The id the program gave the display, so a later update can find it.</param>
+    public static KernelOutput Map(JsonElement data, JsonElement metadata, string? displayId = null)
     {
         if (data.ValueKind != JsonValueKind.Object) return new KernelOutput(null, null);
 
@@ -25,9 +28,17 @@ public static class MimeOutputMapper
             return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.Table, TableResult = Table(table) });
         }
 
+        foreach (var mime in VisualMimeTypes.VisualTypes)
+        {
+            if (data.TryGetProperty(mime, out var spec) && VisualMimeTypes.TryGetFamily(mime, out var family))
+            {
+                return new KernelOutput(null, VisualOutputs.FromJson(family, spec, displayId));
+            }
+        }
+
         if (data.TryGetProperty(Plot3DMime, out var plot3d) && plot3d.ValueKind == JsonValueKind.Object)
         {
-            return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.Plot3D, Plot3DOptions = ParsePlot3D(plot3d) });
+            return new KernelOutput(null, LegacyPlot3D(plot3d, displayId));
         }
 
         foreach (var (mime, format) in new[] { ("image/png", "PNG"), ("image/jpeg", "JPEG") })
@@ -142,39 +153,44 @@ public static class MimeOutputMapper
         return (Read("width"), Read("height"));
     }
 
-    private static Plot3DOptions ParsePlot3D(JsonElement el)
+    // The first 3D format, {title, type, points: [[x, y, z] | {x, y, z, label}]}, read into the spec it always meant.
+    private static RichCellOutput LegacyPlot3D(JsonElement plot, string? displayId)
     {
-        var opts = new Plot3DOptions();
-        if (el.TryGetProperty("title", out var title) && title.GetString() is { } t) opts.Title = t;
-        if (el.TryGetProperty("type", out var type) && type.GetString() is { } typeStr &&
-            Enum.TryParse<Plot3DType>(typeStr, true, out var pt))
-        {
-            opts.Type = pt;
-        }
+        var spec = new Plot3DSpec();
+        if (plot.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String) spec.Title = title.GetString();
+        if (plot.TryGetProperty("type", out var type) && type.GetString() is { } kind && Enum.TryParse<Plot3DType>(kind, true, out var parsed)) spec.Kind = parsed;
+        if (!plot.TryGetProperty("points", out var points) || points.ValueKind != JsonValueKind.Array) return VisualOutputs.FromSpec(spec, displayId);
 
-        if (el.TryGetProperty("points", out var pts) && pts.ValueKind == JsonValueKind.Array)
+        var series = new Plot3DSeriesSpec { Name = spec.Title };
+        var labelled = false;
+        var index = 0;
+        foreach (var point in points.EnumerateArray())
         {
-            var series = new Series3D { Name = opts.Title };
-            foreach (var p in pts.EnumerateArray())
+            var (x, y, z, label) = point.ValueKind switch
             {
-                if (p.ValueKind == JsonValueKind.Array)
-                {
-                    var coords = p.EnumerateArray().Select(c => c.GetDouble()).ToList();
-                    if (coords.Count >= 3) series.Points.Add(new Point3D(coords[0], coords[1], coords[2]));
-                }
-                else if (p.ValueKind == JsonValueKind.Object)
-                {
-                    double x = p.TryGetProperty("x", out var px) ? px.GetDouble() : 0;
-                    double y = p.TryGetProperty("y", out var py) ? py.GetDouble() : 0;
-                    double z = p.TryGetProperty("z", out var pz) ? pz.GetDouble() : 0;
-                    string? label = p.TryGetProperty("label", out var pl) ? pl.GetString() : null;
-                    series.Points.Add(new Point3D(x, y, z, label));
-                }
+                JsonValueKind.Array when point.GetArrayLength() >= 3 => (point[0], point[1], point[2], (string?)null),
+                JsonValueKind.Object => (Member(point, "x"), Member(point, "y"), Member(point, "z"),
+                    point.TryGetProperty("label", out var l) && l.ValueKind == JsonValueKind.String ? l.GetString() : null),
+                _ => (default, default, default, null)
+            };
+
+            if (!(x.ValueKind == JsonValueKind.Number && y.ValueKind == JsonValueKind.Number && z.ValueKind == JsonValueKind.Number))
+            {
+                return VisualOutputs.Error($"The 3D plot isn't valid: $.points[{index}] must be [x, y, z] or {{\"x\", \"y\", \"z\"}}, all numbers");
             }
-            if (series.Points.Count > 0) opts.Series.Add(series);
+
+            series.X.Add(x.GetDouble());
+            series.Y.Add(y.GetDouble());
+            series.Z.Add(z.GetDouble());
+            (series.Labels ??= []).Add(label);
+            labelled |= label != null;
+            index++;
         }
 
-        opts.RecalculateBounds();
-        return opts;
+        if (!labelled) series.Labels = null;
+        if (series.X.Count > 0) spec.Series.Add(series);
+        return VisualOutputs.FromSpec(spec, displayId);
     }
+
+    private static JsonElement Member(JsonElement element, string name) => element.TryGetProperty(name, out var value) ? value : default;
 }

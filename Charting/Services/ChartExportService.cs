@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 
 public static class ChartExportService
 {
+    /// <summary>Every value as CSV (RFC 4180): one row per value, numbers as any program reads them, a gap as an empty field.</summary>
     public static string ToCsv(ChartOptions options)
     {
         var sb = new StringBuilder();
@@ -23,13 +25,22 @@ public static class ChartExportService
             for (int i = 0; i < s.Points.Count; i++)
             {
                 var p = s.Points[i];
-                var cleanLabel = (p.Label ?? string.Empty).Replace("\"", "\"\"");
-                sb.AppendLine($"\"{s.Name}\",{i},\"{cleanLabel}\",{p.X},{p.Y}");
+                sb.Append(Quoted(s.Name)).Append(',')
+                  .Append(i.ToString(CultureInfo.InvariantCulture)).Append(',')
+                  .Append(Quoted(p.Label)).Append(',')
+                  .Append(Number(p.X)).Append(',')
+                  .Append(Number(p.Y)).AppendLine();
             }
         }
 
         return sb.ToString();
     }
+
+    // A field in quotes, its own quotes doubled.
+    private static string Quoted(string? text) => $"\"{(text ?? string.Empty).Replace("\"", "\"\"")}\"";
+
+    // With a decimal point whatever the locale (a comma would split the field); a missing value is left empty.
+    private static string Number(double value) => double.IsFinite(value) ? value.ToString("R", CultureInfo.InvariantCulture) : string.Empty;
 
     public static async Task CopyCsvToClipboardAsync(ChartOptions options)
     {

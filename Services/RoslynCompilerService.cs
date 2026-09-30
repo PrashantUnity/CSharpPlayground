@@ -24,29 +24,8 @@ public enum ExecutionLanguageMode
 
 public class RoslynCompilerService
 {
-    /// <summary>The namespaces every script and statement cell runs with (see <see cref="WrapSourceCode"/>).</summary>
-    public const string DefaultScriptUsings = @"using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Layouts;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
-using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
+    /// <summary>The namespaces every script, program and statement cell compiles with (see <see cref="ScriptImports"/>).</summary>
+    public static string DefaultScriptUsings => ScriptImports.GlobalUsingDirectives;
 
     private static readonly Lazy<(List<MetadataReference> References, List<AssemblyReferenceItem> Items)> CachedDefaultReferences =
         new(LoadDefaultReferencesInternal);
@@ -151,7 +130,7 @@ using static PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers;";
 
         if (isExplicitProgram)
         {
-            return $"using PdfEditorApp.Plugins.CSharpEditor.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;\nusing PdfEditorApp.Plugins.CSharpEditor.Charting3D.Layouts;\nusing PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;\nusing PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;\n#line 1 \"script.cs\"\n{rawCode}";
+            return $"{DefaultScriptUsings}\n#line 1 \"script.cs\"\n{rawCode}";
         }
 
         // 2. Parse using directives to hoist them out of statements/expressions

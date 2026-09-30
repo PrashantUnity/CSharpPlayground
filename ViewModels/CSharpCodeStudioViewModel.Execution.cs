@@ -230,7 +230,7 @@ public partial class CSharpCodeStudioViewModel
 
     // The kinds the Results tab's RichOutputs template draws (StudioBottomDeckControl.axaml).
     private static bool IsDrawnInResults(RichCellOutput output) =>
-        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind || output.IsPlot3DKind;
+        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind || output.IsVisualKind;
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
@@ -496,29 +496,41 @@ public partial class CSharpCodeStudioViewModel
             }
         }, _postToUiThread);
 
-        using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
+        // What the run displays, from the script's thread: drawn in the Results of the tab that ran it (and the studio's,
+        // while that tab is shown), or said in the Terminal when it couldn't be drawn (a spec with a mistake in it).
+        void ShowOutput(RichCellOutput rich)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            if (rich.Kind == CellOutputKind.Error)
             {
+                terminal.Write($"⚠️ {rich.Text}\n");
+                return;
+            }
+
+            _postToUiThread(() =>
+            {
+                if (myRunId != _executionRunId) return;
                 if (runningTab != null)
                 {
-                    runningTab.RichOutputs.Add(richOutput);
-                    if (richOutput.TableResult != null)
+                    runningTab.RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
                     {
-                        runningTab.DumpResults.Add(richOutput.TableResult);
+                        runningTab.DumpResults.Add(rich.TableResult);
                     }
                 }
                 if (runningTab == null || runningTab.IsActive)
                 {
-                    RichOutputs.Add(richOutput);
-                    if (richOutput.TableResult != null)
+                    RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
                     {
-                        DumpResults.Add(richOutput.TableResult);
+                        DumpResults.Add(rich.TableResult);
                         SelectedBottomTabIndex = 0;
                     }
                 }
             });
-        });
+        }
+
+        // A compiled program's displays; statements run in the kernel, which hands them to its own callback.
+        using var scope = InteractiveDisplayContext.EnterScope(ShowOutput);
         using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
         var stdin = new Services.Processes.InteractiveStdinReader(token);
@@ -552,39 +564,7 @@ public partial class CSharpCodeStudioViewModel
                     ct: token,
                     onLiveConsole: terminal.Write,
                     stdin: stdin,
-                    onRichOutput: rich =>
-                    {
-                        Action appendRich = () =>
-                        {
-                            if (myRunId != _executionRunId) return;
-                            if (runningTab != null)
-                            {
-                                runningTab.RichOutputs.Add(rich);
-                                if (rich.TableResult != null)
-                                {
-                                    runningTab.DumpResults.Add(rich.TableResult);
-                                }
-                            }
-                            if (runningTab == null || runningTab.IsActive)
-                            {
-                                RichOutputs.Add(rich);
-                                if (rich.TableResult != null)
-                                {
-                                    DumpResults.Add(rich.TableResult);
-                                    SelectedBottomTabIndex = 0;
-                                }
-                            }
-                        };
-
-                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-                        {
-                            Avalonia.Threading.Dispatcher.UIThread.Post(appendRich);
-                        }
-                        else
-                        {
-                            appendRich();
-                        }
-                    }));
+                    onRichOutput: ShowOutput));
 
                 KernelExecutionResult kernelResult;
                 if (await ExecutionAbandonment.WaitWithGraceAsync(kernelExecutionTask, token))
@@ -661,7 +641,7 @@ public partial class CSharpCodeStudioViewModel
                         }
                         ExecutionTimeText = timeText;
                         CompilerStatusText = statusText;
-                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
+                        SelectedBottomTabIndex = HasNoResults ? 1 : 0; // Results when the run drew anything there, as for every language
                     }
                 }
                 else if (kernelResult.WasCancelled)
@@ -776,7 +756,7 @@ public partial class CSharpCodeStudioViewModel
                         ConsoleOutput += endMsg;
                         ExecutionTimeText = timeText;
                         CompilerStatusText = statusText;
-                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
+                        SelectedBottomTabIndex = HasNoResults ? 1 : 0; // Results when the run drew anything there, as for every language
                     }
                 }
                 else if (result.WasCancelled)

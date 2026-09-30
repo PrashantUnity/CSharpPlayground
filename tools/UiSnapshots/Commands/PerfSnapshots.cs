@@ -387,6 +387,7 @@ internal static class PerfSnapshots
         if (options.Int("external", 0) is > 0 and var externalFiles) ExternalWorkspace(window, host, storage, externalFiles);
 
         window.Close();
+        if (options.Flag("visuals")) VisualPerf.Run();
     }
 
     // --cells n: one notebook of n code cells, opened in the Notebook Studio: what a long notebook costs to show.
@@ -654,7 +655,7 @@ internal static class PerfSnapshots
         return code.Append("}\n").ToString();
     }
 
-    private static long SettledMemory()
+    internal static long SettledMemory()
     {
         Snapshot.Settle(3);
         GC.Collect();

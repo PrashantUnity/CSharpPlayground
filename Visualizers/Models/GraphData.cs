@@ -41,6 +41,10 @@ public class GraphNodeData
     public string? Color { get; set; }
     public Dictionary<string, object?> Metadata { get; set; } = new();
 
+    /// <summary>Where the node was placed, in the placer's own units; when every node has one, the layout keeps them (scaled to fit).</summary>
+    public double? PinnedX { get; set; }
+    public double? PinnedY { get; set; }
+
     public GraphNodeData() { }
 
     public GraphNodeData(string id, string? label = null)
@@ -53,6 +57,8 @@ public class GraphNodeData
     {
         X = X,
         Y = Y,
+        PinnedX = PinnedX,
+        PinnedY = PinnedY,
         IsActive = IsActive,
         IsVisited = IsVisited,
         State = State,

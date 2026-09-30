@@ -1,74 +1,51 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
+// 3D plots, z up for every kind.
 public static partial class Display
 {
-    public static Plot3DOptions Plot3D(
+    /// <summary>
+    /// A 3D plot of <paramref name="data"/>: points ((x, y, z) tuples, three-number arrays, records with x, y and z, a name →
+    /// points map), a surface (a function, a grid of heights) or a graph. <paramref name="plotType"/> is scatter,
+    /// trajectory, surface, wireframe, graph3D or voxelBar.
+    /// </summary>
+    public static DisplayHandle<Plot3DSpec> Plot3D(
         object data,
         string? title = null,
         string? color = null,
         string? plotType = null,
         ColorMapPreset? colorMap = null,
-        double width = 640,
-        double height = 340,
-        bool showAxes = true,
-        bool showGrid = true,
-        bool autoRotate = false)
-    {
-        Plot3DOptions options = Plot3DDataParser.Parse(data, title, color, plotType, colorMap);
+        double? width = null,
+        double? height = null,
+        bool? showAxes = null,
+        bool? showGrid = null,
+        bool autoRotate = false,
+        Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, Plot3DKindOf(plotType)), title, color, colorMap, autoRotate, configure, width, height, showAxes, showGrid);
 
-        if (!string.IsNullOrEmpty(title)) options.Title = title;
-        if (!string.IsNullOrEmpty(color)) options.PrimaryColor = color;
-        if (colorMap.HasValue) options.ColorMap = colorMap.Value;
+    public static DisplayHandle<Plot3DSpec> Scatter3D(object data, string? title = null, string? color = null, ColorMapPreset? colorMap = null, bool autoRotate = false, Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, Plot3DType.Scatter), title, color, colorMap, autoRotate, configure);
 
-        options.Width = width;
-        options.Height = height;
-        options.ShowAxes = showAxes;
-        options.ShowFloorGrid = showGrid;
-        options.ShowBoundingBox = showGrid;
-        options.AutoRotate = autoRotate;
+    public static DisplayHandle<Plot3DSpec> Trajectory3D(object data, string? title = null, ColorMapPreset? colorMap = null, bool autoRotate = false, Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, Plot3DType.Trajectory), title, null, colorMap, autoRotate, configure);
 
-        InteractiveDisplayContext.Emit(new RichCellOutput
-        {
-            Kind = CellOutputKind.Plot3D,
-            Plot3DOptions = options
-        });
+    public static DisplayHandle<Plot3DSpec> VoxelBar3D(object data, string? title = null, string? color = null, ColorMapPreset? colorMap = null, bool autoRotate = false, Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, Plot3DType.VoxelBar), title, color, colorMap, autoRotate, configure);
 
-        return options;
-    }
+    /// <summary>A graph in 3D: <see cref="Graph3DData"/>, or an adjacency map (node → the nodes it links to).</summary>
+    public static DisplayHandle<Plot3DSpec> Graph3D(object data, string? title = null, string? color = null, ColorMapPreset? colorMap = null, bool autoRotate = false, Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, Plot3DType.Graph3D), title, color, colorMap, autoRotate, configure);
 
-    public static Plot3DOptions Scatter3D(
-        object data,
-        string? title = null,
-        string? color = null,
-        ColorMapPreset? colorMap = null,
-        bool autoRotate = false)
-    {
-        var opts = Plot3D(data, title, color, "Scatter", colorMap);
-        opts.AutoRotate = autoRotate;
-        return opts;
-    }
+    /// <summary>A surface of heights: a grid (a row per y, a column per x), <see cref="Surface3DData"/> or a function.</summary>
+    public static DisplayHandle<Plot3DSpec> Surface3D(object data, string? title = null, ColorMapPreset? colorMap = null, bool wireframe = false, bool autoRotate = false, Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.From(data, wireframe ? Plot3DType.Wireframe : Plot3DType.Surface), title, null, colorMap, autoRotate, configure);
 
-    public static Plot3DOptions Surface3D(
-        object data,
-        string? title = null,
-        ColorMapPreset? colorMap = null,
-        bool wireframe = false,
-        bool autoRotate = false)
-    {
-        var opts = Plot3D(data, title, null, wireframe ? "Wireframe" : "Surface", colorMap);
-        opts.Wireframe = wireframe;
-        opts.AutoRotate = autoRotate;
-        return opts;
-    }
-
-    public static Plot3DOptions Surface3D(
+    /// <summary>The surface z = <paramref name="func"/>(x, y) over the ranges, sampled <paramref name="resX"/> by <paramref name="resY"/> times.</summary>
+    public static DisplayHandle<Plot3DSpec> Surface3D(
         Func<double, double, double> func,
         double minX = -5.0,
         double maxX = 5.0,
@@ -80,15 +57,12 @@ public static partial class Display
         ColorMapPreset? colorMap = null,
         bool wireframe = false,
         bool autoRotate = false,
-        int? resolution = null)
-    {
-        int rx = resolution ?? resX;
-        int ry = resolution ?? resY;
-        var surface = Surface3DData.FromFunction(func, minX, maxX, minY, maxY, rx, ry);
-        return Surface3D(surface, title, colorMap, wireframe, autoRotate);
-    }
+        int? resolution = null,
+        Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.Surface(func, (minX, maxX), (minY, maxY), resolution ?? resX, resolution ?? resY, wireframe ? Plot3DType.Wireframe : Plot3DType.Surface),
+            title, null, colorMap, autoRotate, configure);
 
-    public static Plot3DOptions Surface3D(
+    public static DisplayHandle<Plot3DSpec> Surface3D(
         Func<double, double, double> func,
         (double min, double max) xRange,
         (double min, double max) yRange,
@@ -96,147 +70,40 @@ public static partial class Display
         string? title = null,
         ColorMapPreset? colorMap = null,
         bool wireframe = false,
-        bool autoRotate = false)
-    {
-        return Surface3D(func, xRange.min, xRange.max, yRange.min, yRange.max, resolution, resolution, title, colorMap, wireframe, autoRotate);
-    }
+        bool autoRotate = false,
+        Action<Plot3DSpec>? configure = null) =>
+        Show3D(Plot3DSpecBuilder.Surface(func, xRange, yRange, resolution, wireframe ? Plot3DType.Wireframe : Plot3DType.Surface), title, null, colorMap, autoRotate, configure);
 
-    public static Plot3DOptions Graph3D(
-        object data,
-        string? title = null,
-        string? color = null,
-        ColorMapPreset? colorMap = null,
-        bool autoRotate = false)
+    private static Plot3DType? Plot3DKindOf(string? plotType)
     {
-        var opts = Plot3D(data, title, color, "Graph3D", colorMap);
-        opts.AutoRotate = autoRotate;
-        return opts;
-    }
-
-    public static Plot3DOptions Trajectory3D(
-        object data,
-        string? title = null,
-        ColorMapPreset? colorMap = null,
-        bool autoRotate = false)
-    {
-        var opts = Plot3D(data, title, null, "Trajectory", colorMap);
-        opts.AutoRotate = autoRotate;
-        return opts;
-    }
-
-    public static Plot3DOptions VoxelBar3D(
-        object data,
-        string? title = null,
-        string? color = null,
-        ColorMapPreset? colorMap = null,
-        bool autoRotate = false)
-    {
-        var opts = Plot3D(data, title, color, "VoxelBar", colorMap);
-        opts.AutoRotate = autoRotate;
-        return opts;
-    }
-}
-
-public static partial class DisplayExtensions
-{
-    public static T Plot3D<T>(
-        this T data,
-        string? title = null,
-        string? color = null,
-        string? plotType = null,
-        ColorMapPreset? colorMap = null)
-    {
-        if (data != null)
+        if (string.IsNullOrWhiteSpace(plotType)) return null;
+        var name = plotType.Replace("3D", string.Empty, StringComparison.OrdinalIgnoreCase).Replace(" ", string.Empty);
+        return name.ToLowerInvariant() switch
         {
-            Display.Plot3D(data, title, color, plotType, colorMap);
-        }
-        return data;
+            "graph" => Plot3DType.Graph3D,
+            "voxel" or "bar" or "bars" => Plot3DType.VoxelBar,
+            _ when Enum.TryParse<Plot3DType>(name, true, out var kind) => kind,
+            _ => throw new ArgumentException($"There is no \"{plotType}\" 3D plot: use scatter, trajectory, surface, wireframe, graph or voxelBar.", nameof(plotType))
+        };
     }
 
-    public static T Scatter3D<T>(
-        this T data,
-        string? title = null,
-        string? color = null)
+    private static DisplayHandle<Plot3DSpec> Show3D(
+        Plot3DSpec spec,
+        string? title,
+        string? color,
+        ColorMapPreset? colorMap,
+        bool autoRotate,
+        Action<Plot3DSpec>? configure,
+        double? width = null,
+        double? height = null,
+        bool? showAxes = null,
+        bool? showGrid = null)
     {
-        if (data != null)
-        {
-            Display.Scatter3D(data, title, color);
-        }
-        return data;
-    }
-
-    public static T Surface3D<T>(
-        this T data,
-        string? title = null,
-        ColorMapPreset? colorMap = null,
-        bool wireframe = false)
-    {
-        if (data != null)
-        {
-            Display.Surface3D(data, title, colorMap, wireframe);
-        }
-        return data;
-    }
-
-    public static T Graph3D<T>(
-        this T data,
-        string? title = null,
-        string? color = null)
-    {
-        if (data != null)
-        {
-            Display.Graph3D(data, title, color);
-        }
-        return data;
-    }
-
-    public static T Trajectory3D<T>(
-        this T data,
-        string? title = null,
-        ColorMapPreset? colorMap = null)
-    {
-        if (data != null)
-        {
-            Display.Trajectory3D(data, title, colorMap);
-        }
-        return data;
-    }
-
-    public static T Dump3D<T>(
-        this T data,
-        string? title = null,
-        string? color = null)
-    {
-        if (data != null)
-        {
-            Display.Plot3D(data, title, color);
-        }
-        return data;
-    }
-
-    public static IEnumerable<T> Dump3D<T>(
-        this IEnumerable<T> source,
-        Func<T, double> xSelector,
-        Func<T, double> ySelector,
-        Func<T, double> zSelector,
-        Func<T, string>? labelSelector = null,
-        string? title = null,
-        string? color = null)
-    {
-        if (source != null)
-        {
-            var points = new List<Point3D>();
-            foreach (var item in source)
-            {
-                if (item == null) continue;
-                double x = xSelector(item);
-                double y = ySelector(item);
-                double z = zSelector(item);
-                string? label = labelSelector?.Invoke(item);
-                points.Add(new Point3D(x, y, z, label));
-            }
-            Display.Scatter3D(points, title, color);
-        }
-        return source!;
+        Set(spec, title, color, width, height);
+        spec.ColorMap = colorMap ?? spec.ColorMap;
+        if (autoRotate) spec.AutoRotate = true;
+        spec.ShowAxes = showAxes ?? spec.ShowAxes;
+        spec.ShowGrid = showGrid ?? spec.ShowGrid;
+        return Show(spec, configure);
     }
 }

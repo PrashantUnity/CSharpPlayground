@@ -483,30 +483,17 @@ public partial class NotebookTabViewModel : ObservableObject
                     cell.SetInspectorOutput(rich.InspectorNode);
                 }
                 break;
-            case CellOutputKind.Chart:
-                if (rich.InteractiveControl != null)
+            case CellOutputKind.Chart or CellOutputKind.Visualizer or CellOutputKind.Plot3D:
+                if (rich.Visual != null)
                 {
-                    cell.SetInteractiveControl(rich.InteractiveControl);
-                }
-                if (rich.ChartOptions != null)
-                {
-                    cell.SetChartOutput(rich.ChartOptions);
+                    cell.AddVisual(rich.Visual);
                 }
                 break;
-            case CellOutputKind.Visualizer:
-                if (rich.InteractiveControl != null)
+            case CellOutputKind.Error:
+                // A display that couldn't be drawn (a spec with a mistake in it) says so in the cell.
+                if (!string.IsNullOrEmpty(rich.Text))
                 {
-                    cell.SetInteractiveControl(rich.InteractiveControl);
-                }
-                if (rich.VisualizerOptions != null)
-                {
-                    cell.SetVisualizerOutput(rich.VisualizerOptions);
-                }
-                break;
-            case CellOutputKind.Plot3D:
-                if (rich.Plot3DOptions != null)
-                {
-                    cell.SetPlot3DOutput(rich.Plot3DOptions);
+                    cell.OutputText += (cell.OutputText.Length > 0 && !cell.OutputText.EndsWith('\n') ? "\n" : string.Empty) + $"⚠️ {rich.Text}\n";
                 }
                 break;
         }

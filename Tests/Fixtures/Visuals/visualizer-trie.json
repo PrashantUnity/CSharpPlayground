@@ -1,0 +1,15 @@
+{
+  "title": "Trie",
+  "kind": "tree",
+  "traversal": "levelOrder",
+  "state": {
+    "tree": {
+      "nodes": [
+        { "id": "root", "value": "*", "children": ["a", "b"] },
+        { "id": "a", "value": "a", "children": ["ab"] },
+        { "id": "b", "value": "b" },
+        { "id": "ab", "value": "b", "state": "matched" }
+      ]
+    }
+  }
+}

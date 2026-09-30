@@ -8,6 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using Xunit;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
@@ -386,6 +387,6 @@ public class LinkedListAndRecursionTrackerTests
         RichCellOutput? output = null;
         var result = await new NotebookExecutionKernel().ExecuteCellAsync(template.InitialCode, onRichOutput: r => output = r);
         Assert.True(result.Success, result.ErrorMessage);
-        return output!.VisualizerOptions!.Sequence!;
+        return output!.VisualizerModel().Sequence!;
     }
 }

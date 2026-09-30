@@ -17,7 +17,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 public sealed class CSharpQuickInfoService
 {
     // The analysed text is this prefix followed by the script, so script offsets shift by its length only.
-    private const string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
+    private static readonly string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
 
     private static readonly CSharpParseOptions ParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp13);
 

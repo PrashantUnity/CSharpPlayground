@@ -7,6 +7,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
@@ -123,6 +124,13 @@ public partial class CSharpCodeStudioViewModel
         var richDumpCount = 0;
         void ReceiveRich(RichCellOutput rich)
         {
+            // A display that couldn't be drawn (a spec with a mistake in it) says so in the Terminal.
+            if (rich.Kind == CellOutputKind.Error)
+            {
+                ReceiveConsole($"⚠️ {rich.Text}\n");
+                return;
+            }
+
             if (rich.TableResult != null) Interlocked.Increment(ref richDumpCount);
             _postToUiThread(() =>
             {
@@ -151,7 +159,9 @@ public partial class CSharpCodeStudioViewModel
             });
         }
 
-        var outputProcessor = new ExternalOutputProcessor(ReceiveConsole, ReceiveRich);
+        // The program's visuals, and the events on them that its code listens to (they reach it over the event socket).
+        var visuals = new ExternalVisualSession();
+        var outputProcessor = new ExternalOutputProcessor(ReceiveConsole, ReceiveRich, visuals: visuals.Visuals);
 
         if (runningTab != null)
         {
@@ -201,7 +211,7 @@ public partial class CSharpCodeStudioViewModel
             CompilerStatusText = "Running…";
             ShowNow();
 
-            var session = new ScriptRunExecutor(_languages.Processes).Start(plan, sourceFile, language.RunDiagnostics, outputProcessor.ProcessChunk, token);
+            var session = new ScriptRunExecutor(_languages.Processes).Start(plan, sourceFile, language.RunDiagnostics, outputProcessor.ProcessChunk, token, visuals.Environment);
             if (runningTab != null) runningTab.ActiveRun = session;
             if (language.Has(LanguageCapabilities.StandardInput) && (runningTab == null || runningTab.IsActive)) IsAcceptingProgramInput = true;
 
@@ -262,6 +272,7 @@ public partial class CSharpCodeStudioViewModel
         }
         finally
         {
+            visuals.Dispose(); // the program has ended: its visuals stay, disconnected
             ShowNow();
             var timeText = elapsed > TimeSpan.Zero ? $"{elapsed.TotalMilliseconds:N0} ms" : string.Empty;
             if (runningTab != null)

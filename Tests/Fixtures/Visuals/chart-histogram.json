@@ -1,0 +1,7 @@
+{
+  "title": "Latency",
+  "kind": "histogram",
+  "bins": 8,
+  "xAxis": { "title": "ms" },
+  "series": [ { "name": "requests", "values": [12, 15, 11, 40, 42, 13, 14, 55, 16, null] } ]
+}

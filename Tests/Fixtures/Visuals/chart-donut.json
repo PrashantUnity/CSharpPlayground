@@ -1,0 +1,9 @@
+{
+  "title": "Browser share",
+  "kind": "donut",
+  "grid": false,
+  "showStats": false,
+  "width": 420,
+  "height": 300,
+  "series": [ { "y": [45, 30, 25], "labels": ["Chrome", "Safari", "Other"], "colors": ["#4285f4", "#34a853", null] } ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Four queens",
+  "kind": "board",
+  "showCoordinates": false,
+  "state": {
+    "grid": {
+      "checkerboard": true,
+      "values": [["Q", "", "", ""], ["", "", "", "Q"], ["", "", "", ""], ["", "", "", ""]],
+      "cells": [ { "row": 0, "col": 0, "state": "current", "textColor": "#ffffff" }, { "row": 1, "col": 3, "state": "rejected", "borderColor": "#ef4444" } ]
+    }
+  }
+}

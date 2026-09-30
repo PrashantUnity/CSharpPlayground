@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Kinds;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
@@ -10,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 /// Fluent tracker for any user-written matrix traversal or grid algorithm (BFS, DFS, Dijkstra, A*, Backtracking, DP).
 /// Empowers developers to record algorithm steps, frontier updates, predecessor arrows, and reconstructed paths with 1-line calls.
 /// </summary>
-public class MatrixTracker
+public class MatrixTracker : IVisualSource
 {
     private readonly MatrixVisualizerRecorder _recorder;
     private readonly bool _linkSourceLines;
@@ -88,6 +90,23 @@ public class MatrixTracker
     public MatrixTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
     {
         _recorder.Watch(collection, name);
+        return this;
+    }
+
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
+    /// <summary>Sets a cell's state from the next recorded step on (the one state vocabulary every visualizer shares).</summary>
+    public MatrixTracker Mark(int row, int col, ElementState state)
+    {
+        if (IsInBounds(row, col)) Grid[row, col].State = ElementStates.ToGrid(state);
+        return this;
+    }
+
+    /// <summary>Fills a cell with a colour from the next recorded step on; null clears it.</summary>
+    public MatrixTracker Paint(int row, int col, string? color)
+    {
+        if (IsInBounds(row, col)) Grid[row, col].CustomColor = color;
         return this;
     }
 

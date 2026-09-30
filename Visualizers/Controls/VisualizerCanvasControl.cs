@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -38,6 +39,11 @@ public class VisualizerCanvasControl : Control
 
     /// <summary>Raised whenever zoom or pan changes, whether from the wheel, a drag, the toolbar or a fit.</summary>
     public event EventHandler? ViewportChanged;
+
+    /// <summary>A cell, node or item was clicked (a drag pans instead).</summary>
+    public event EventHandler<ElementClickedEventArgs<VisualizerHitTestResult>>? ElementClicked;
+
+    private readonly ClickGesture _click = new();
 
     public VisualizerOptions? Options
     {
@@ -173,6 +179,7 @@ public class VisualizerCanvasControl : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+        _click.Pressed(e, this);
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             Focus(NavigationMethod.Pointer);
@@ -194,6 +201,12 @@ public class VisualizerCanvasControl : Control
         {
             _isPanning = false;
             e.Pointer.Capture(null);
+        }
+
+        if (_click.Released(e, this) is { } at && Options != null &&
+            VisualizerRendererFactory.GetRenderer(Options.Kind).HitTest(at, new Rect(Bounds.Size), Options) is { } hit)
+        {
+            ElementClicked?.Invoke(this, new ElementClickedEventArgs<VisualizerHitTestResult>(hit, e.KeyModifiers));
         }
     }
 

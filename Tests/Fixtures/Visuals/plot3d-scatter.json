@@ -1,0 +1,11 @@
+{
+  "title": "Clusters",
+  "kind": "scatter",
+  "xAxis": { "title": "x" },
+  "zAxis": { "title": "height" },
+  "colorMap": "plasma",
+  "autoRotate": true,
+  "series": [
+    { "name": "A", "color": "#ff8800", "x": [1, 2, 3], "y": [4, 5, 6], "z": [7, 8, null], "labels": ["p", "q", "r"], "sizes": [1, 2, 1] }
+  ]
+}

@@ -11,6 +11,8 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Layouts;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
@@ -377,21 +379,22 @@ public class DataStructureVisualizerTests
         Assert.NotNull(emitted);
         Assert.Equal(CellOutputKind.Visualizer, emitted.Kind);
         Assert.True(emitted.IsVisualizerKind);
-        Assert.True(emitted.IsControlKind);
-        Assert.NotNull(emitted.VisualizerOptions);
-        Assert.Equal("Test Islands", emitted.VisualizerOptions.Title);
-        Assert.NotNull(emitted.VisualizerSequence);
-        Assert.True(emitted.VisualizerSequence.TotalSteps >= 3);
+        Assert.True(emitted.IsVisualKind);
+        Assert.False(emitted.IsControlKind); // a visual is data its view draws, not a control built on the script's thread
+        var visualizer = emitted.VisualizerModel();
+        Assert.Equal("Test Islands", visualizer.Title);
+        Assert.NotNull(visualizer.Sequence);
+        Assert.True(visualizer.Sequence.TotalSteps >= 3);
     }
 
     [Fact]
-    public void NotebookCellViewModel_SetVisualizerOutput_ShouldActivateVisualizerTab()
+    public void NotebookCellViewModel_AddVisualizer_ShouldActivateVisualizerTab()
     {
         var model = new NotebookCellItem();
         var cell = new NotebookCellViewModel(model);
-        var opt = new VisualizerOptions { Title = "Array Step", Kind = VisualizerKind.ArrayPointers };
+        var spec = new VisualizerSpec { Title = "Array Step", Kind = VisualizerKind.ArrayPointers, State = { Array = new ArrayState() } };
 
-        cell.SetVisualizerOutput(opt);
+        cell.AddVisual(VisualOutput.Create(spec));
 
         Assert.True(cell.HasVisualizerOutput);
         Assert.True(cell.IsVisualizerTabActive);
@@ -422,10 +425,10 @@ Display.Islands(grid, title: ""Islands in Notebook"", recordSteps: true);
         Assert.True(result.Success, result.ErrorMessage);
         Assert.NotNull(richOut);
         Assert.Equal(CellOutputKind.Visualizer, richOut.Kind);
-        Assert.NotNull(richOut.VisualizerOptions);
-        Assert.Equal("Islands in Notebook", richOut.VisualizerOptions.Title);
-        Assert.NotNull(richOut.VisualizerSequence);
-        Assert.True(richOut.VisualizerSequence.TotalSteps > 0);
+        var visualizer = richOut.VisualizerModel();
+        Assert.Equal("Islands in Notebook", visualizer.Title);
+        Assert.NotNull(visualizer.Sequence);
+        Assert.True(visualizer.Sequence.TotalSteps > 0);
     }
 
     [Fact]
@@ -617,8 +620,9 @@ Display.Visualizer(tracker);
         Assert.True(result.Success, result.ErrorMessage);
         Assert.NotNull(richOut);
         Assert.Equal(CellOutputKind.Visualizer, richOut.Kind);
-        Assert.Equal("Kernel Maze", richOut.VisualizerOptions!.Title);
-        Assert.True(richOut.VisualizerSequence!.TotalSteps >= 5);
+        var visualizer = richOut.VisualizerModel();
+        Assert.Equal("Kernel Maze", visualizer.Title);
+        Assert.True(visualizer.Sequence!.TotalSteps >= 5);
     }
 
     [Fact]
@@ -669,17 +673,18 @@ Display.Visualizer(canvasRec);
         Assert.True(result.Success, result.ErrorMessage);
         Assert.NotNull(richOut);
         Assert.Equal(CellOutputKind.Visualizer, richOut.Kind);
-        Assert.NotNull(richOut.VisualizerSequence);
-        Assert.True(richOut.VisualizerSequence.TotalSteps > 20);
+        var sequence = richOut.VisualizerModel().Sequence;
+        Assert.NotNull(sequence);
+        Assert.True(sequence.TotalSteps > 20);
 
         // Step 0 should be the initial unsorted array
-        var initialStep = richOut.VisualizerSequence.Steps[0];
+        var initialStep = sequence.Steps[0];
         var initialBars = Assert.IsType<BarChartVisualizerData>(initialStep.Snapshot);
         var initialValues = initialBars.Items.Select(i => (int)i.Value).ToArray();
         Assert.Equal(new[] { 45, 12, 85, 32, 89, 39, 67, 23, 91, 54 }, initialValues);
 
         // Final step should be completely sorted in ascending order
-        var finalStep = richOut.VisualizerSequence.Steps[^1];
+        var finalStep = sequence.Steps[^1];
         var finalBars = Assert.IsType<BarChartVisualizerData>(finalStep.Snapshot);
         var finalValues = finalBars.Items.Select(i => (int)i.Value).ToArray();
         Assert.Equal(new[] { 12, 23, 32, 39, 45, 54, 67, 85, 89, 91 }, finalValues);
@@ -791,16 +796,17 @@ Display.Visualizer(canvasRec);
         Assert.True(result.Success, result.ErrorMessage);
         Assert.NotNull(richOut);
         Assert.Equal(CellOutputKind.Visualizer, richOut.Kind);
-        Assert.NotNull(richOut.VisualizerSequence);
-        Assert.True(richOut.VisualizerSequence.TotalSteps >= 5);
+        var sequence = richOut.VisualizerModel().Sequence;
+        Assert.NotNull(sequence);
+        Assert.True(sequence.TotalSteps >= 5);
 
         // Initial step should have root.Left = 2 and root.Right = 7
-        var firstStepTree = Assert.IsType<TreeNodeData>(richOut.VisualizerSequence.Steps[0].Snapshot);
+        var firstStepTree = Assert.IsType<TreeNodeData>(sequence.Steps[0].Snapshot);
         Assert.Equal("2", firstStepTree.Left?.DisplayValue);
         Assert.Equal("7", firstStepTree.Right?.DisplayValue);
 
         // Final step should have root.Left = 7 and root.Right = 2
-        var finalStepTree = Assert.IsType<TreeNodeData>(richOut.VisualizerSequence.Steps[^1].Snapshot);
+        var finalStepTree = Assert.IsType<TreeNodeData>(sequence.Steps[^1].Snapshot);
         Assert.Equal("7", finalStepTree.Left?.DisplayValue);
         Assert.Equal("2", finalStepTree.Right?.DisplayValue);
     }
@@ -907,15 +913,16 @@ Display.Visualizer(canvasRec);
         Assert.True(result.Success, result.ErrorMessage);
         Assert.NotNull(richOut);
         Assert.Equal(CellOutputKind.Visualizer, richOut.Kind);
-        Assert.NotNull(richOut.VisualizerSequence);
-        Assert.True(richOut.VisualizerSequence.TotalSteps >= 5);
+        var sequence = richOut.VisualizerModel().Sequence;
+        Assert.NotNull(sequence);
+        Assert.True(sequence.TotalSteps >= 5);
 
         // Final step should have path marked
-        var finalGraph = Assert.IsType<GraphData>(richOut.VisualizerSequence.Steps[^1].Snapshot);
+        var finalGraph = Assert.IsType<GraphData>(sequence.Steps[^1].Snapshot);
         Assert.Contains(finalGraph.Nodes, n => n.State == GraphNodeState.Path);
 
         // Stale priority-queue entries are skipped, so every vertex is extracted exactly once
-        var extractions = richOut.VisualizerSequence.Steps
+        var extractions = sequence.Steps
             .Select(s => s.Description)
             .Where(d => d.StartsWith("Extracted vertex"))
             .ToList();
@@ -934,13 +941,15 @@ Display.Visualizer(canvasRec);
         var result = await kernel.ExecuteCellAsync(template.InitialCode, onRichOutput: r => richOut = r);
 
         Assert.True(result.Success, result.ErrorMessage);
-        Assert.NotNull(richOut?.VisualizerSequence);
+        Assert.NotNull(richOut);
+        var sequence = richOut.VisualizerModel().Sequence;
+        Assert.NotNull(sequence);
 
         // [1, 0] in LeetCode's input means "take 0 before 1", so the arrow must run 0 -> 1
-        var graph = Assert.IsType<GraphData>(richOut.VisualizerSequence.Steps[^1].Snapshot);
+        var graph = Assert.IsType<GraphData>(sequence.Steps[^1].Snapshot);
         Assert.NotNull(graph.FindEdge("0", "1"));
         Assert.Null(graph.FindEdge("1", "0"));
-        Assert.Contains("Valid order: [0, 1, 2, 3, 4]", richOut.VisualizerSequence.Steps[^1].Description);
+        Assert.Contains("Valid order: [0, 1, 2, 3, 4]", sequence.Steps[^1].Description);
     }
 
     [Fact]
@@ -1028,8 +1037,10 @@ Display.Visualizer(canvasRec);
         RichCellOutput? richOut = null;
         var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => richOut = r, sourceId: sourceId);
         Assert.True(result.Success, result.ErrorMessage);
-        Assert.NotNull(richOut?.VisualizerOptions?.Sequence);
-        return richOut.VisualizerOptions.Sequence;
+        Assert.NotNull(richOut);
+        var sequence = richOut.VisualizerModel().Sequence;
+        Assert.NotNull(sequence);
+        return sequence;
     }
 
     [Fact]
@@ -1073,7 +1084,7 @@ tracker.Highlight(""3"", TreeNodeState.Matched);
 Display.Visualizer(tracker);", onRichOutput: r => richOut = r, sourceId: "cellC");
 
         Assert.True(result.Success, result.ErrorMessage);
-        var steps = richOut!.VisualizerOptions!.Sequence!.Steps;
+        var steps = richOut!.VisualizerModel().Sequence!.Steps;
         Assert.Equal(new[] { 1, 2, 3 }, steps.Select(s => s.SourceLine));
         Assert.All(steps, s => Assert.Equal("cellC", s.SourceFile));
     }
@@ -1173,8 +1184,9 @@ Display.Visualizer(tracker);", onRichOutput: r => richOut = r, sourceId: "cellC"
         var output = await LastOutputOfCellAsync(code);
 
         Assert.Equal(CellOutputKind.Visualizer, output?.Kind);
-        Assert.Equal(expectedKind, output!.VisualizerOptions!.Kind);
-        if (expectedTitle != null) Assert.Equal(expectedTitle, output.VisualizerOptions.Title);
+        var visualizer = output!.VisualizerModel();
+        Assert.Equal(expectedKind, visualizer.Kind);
+        if (expectedTitle != null) Assert.Equal(expectedTitle, visualizer.Title);
     }
 
     [Fact]

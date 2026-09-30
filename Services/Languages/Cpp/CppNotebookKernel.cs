@@ -4,6 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 
@@ -156,6 +157,8 @@ public sealed partial class CppNotebookKernel : INotebookKernel
             Environment = env
         };
 
+        // The cell's visuals, and the events on them its code listens to while it runs (over the event socket).
+        using var visuals = new ExternalVisualSession();
         var consoleBuilder = new StringBuilder();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
@@ -166,10 +169,11 @@ public sealed partial class CppNotebookKernel : INotebookKernel
             onRichOutput: bundle =>
             {
                 request.OnRichOutput?.Invoke(bundle);
-            });
+            },
+            visuals: visuals.Visuals);
 
         using var managedProcess = _processes.Start(
-            spec,
+            visuals.Apply(spec),
             onStandardOutput: text => processor.ProcessChunk(text),
             onStandardError: err => processor.ProcessChunk(err));
 

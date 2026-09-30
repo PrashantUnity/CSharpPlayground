@@ -8,6 +8,7 @@ using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
@@ -61,12 +62,16 @@ public partial class InteractiveVisualizerControl : UserControl
         {
             InitializeComponent();
             WireEvents();
+            if (Canvas is { } clickable) clickable.ElementClicked += (_, e) => ElementClicked?.Invoke(this, e);
         }
         catch
         {
             // Headless test runner
         }
     }
+
+    /// <summary>A cell, node or item was clicked.</summary>
+    public event EventHandler<ElementClickedEventArgs<VisualizerHitTestResult>>? ElementClicked;
 
     public InteractiveVisualizerControl(VisualizerOptions options) : this()
     {
@@ -215,6 +220,10 @@ public partial class InteractiveVisualizerControl : UserControl
         }
     }
 
+    // The drawing's height inline: what the visual asks for, or what suits its kind.
+    private double InlineCanvasHeight() =>
+        Options?.Height is { } height && height > 0 ? Math.Clamp(height, MinCanvasHeight, MaxCanvasHeight) : GetDefaultCanvasHeightForKind();
+
     private double GetDefaultCanvasHeightForKind()
     {
         if (Options == null) return DefaultCanvasHeight;
@@ -240,7 +249,7 @@ public partial class InteractiveVisualizerControl : UserControl
 
         if (this.FindControl<Border>("CanvasHost") is { } host)
         {
-            host.Height = IsFullScreenView ? double.NaN : GetDefaultCanvasHeightForKind();
+            host.Height = IsFullScreenView ? double.NaN : InlineCanvasHeight();
         }
 
         if (this.FindControl<Border>("ResizeGrip") is { } grip) grip.IsVisible = !IsFullScreenView;
@@ -271,7 +280,13 @@ public partial class InteractiveVisualizerControl : UserControl
 
         if (this.FindControl<Border>("CanvasHost") is { } host && !IsFullScreenView)
         {
-            host.Height = GetDefaultCanvasHeightForKind();
+            host.Height = InlineCanvasHeight();
+        }
+
+        if (this.FindControl<TextBlock>("VisualizerSubtitleText") is { } subtitle)
+        {
+            subtitle.Text = Options.Subtitle;
+            subtitle.IsVisible = !string.IsNullOrWhiteSpace(Options.Subtitle);
         }
 
         var titleBlock = this.FindControl<TextBlock>("VisualizerTitleText");

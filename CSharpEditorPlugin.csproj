@@ -27,6 +27,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The words of the visual contract (ChartType, ElementState, ...): charts, 3D plots and visualizers all use them. -->
+    <Using Include="PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" />
   </ItemGroup>
 

@@ -10,6 +10,9 @@ using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
@@ -171,10 +174,60 @@ public class InteractiveChartTests
         var opts = ChartDataParser.Parse(new[] { 10, 20, 30 }, title: "Test");
         var csv = ChartExportService.ToCsv(opts);
 
+        // A plain list's values have no labels, only their places.
         Assert.Contains("Series,Index,Label,X,Y", csv);
-        Assert.Contains("0,\"0\",0,10", csv);
-        Assert.Contains("1,\"1\",1,20", csv);
-        Assert.Contains("2,\"2\",2,30", csv);
+        Assert.Contains("0,\"\",0,10", csv);
+        Assert.Contains("1,\"\",1,20", csv);
+        Assert.Contains("2,\"\",2,30", csv);
+    }
+
+    // In a locale that writes 1,5 the numbers split their field; a gap was written "NaN"; a quote in a name broke the row.
+    [Fact]
+    public void ChartExportService_ToCsv_IsReadableCsvInAnyLocale()
+    {
+        var opts = new ChartOptions
+        {
+            Series = { new ChartSeries { Name = "The \"best\" store", Points = { new ChartDataPoint(0, 1.5, "Jan"), new ChartDataPoint(1, double.NaN, "Feb") } } }
+        };
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        string csv;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            csv = ChartExportService.ToCsv(opts);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+        }
+
+        var rows = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("\"The \"\"best\"\" store\",0,\"Jan\",0,1.5", rows[1]);
+        Assert.Equal("\"The \"\"best\"\" store\",1,\"Feb\",1,", rows[2]);
+    }
+
+    // A gap has nothing drawn, so the pointer never lands on it: it finds the nearest value that is there.
+    [Theory]
+    [InlineData(ChartType.Line)]
+    [InlineData(ChartType.Scatter)]
+    [InlineData(ChartType.Bar)]
+    public void AHitTest_NeverLandsOnAGap(ChartType type)
+    {
+        var opts = new ChartOptions
+        {
+            Type = type,
+            Series = { new ChartSeries { Points = { new ChartDataPoint(0, 1), new ChartDataPoint(1, double.NaN), new ChartDataPoint(2, 3) } } }
+        };
+        var renderer = ChartRendererFactory.GetRenderer(type);
+        var bounds = new Rect(0, 0, 600, 300);
+
+        // Everywhere over the plot.
+        var hits = (from x in Enumerable.Range(0, 120)
+                    from y in Enumerable.Range(0, 30)
+                    select renderer.HitTest(new Point(x * 5, y * 10), bounds, opts)).Where(h => h != null).ToList();
+
+        Assert.NotEmpty(hits); // the values either side of the gap are there to find
+        Assert.All(hits, h => Assert.True(double.IsFinite(h!.Point.Y), $"{type} hit the gap"));
     }
 
     [Fact]
@@ -189,10 +242,10 @@ public class InteractiveChartTests
 
         Assert.NotNull(captured);
         Assert.Equal(CellOutputKind.Chart, captured.Kind);
-        Assert.NotNull(captured.ChartOptions);
-        Assert.Equal("Quadratic Growth", captured.ChartOptions.Title);
-        Assert.Equal("#4ec9b0", captured.ChartOptions.PrimaryColor);
-        Assert.Equal(5, captured.ChartOptions.Series[0].Points.Count);
+        var spec = captured.ChartSpec();
+        Assert.Equal("Quadratic Growth", spec.Title);
+        Assert.Equal("#4ec9b0", spec.Color);
+        Assert.Equal(5, spec.Series[0].Y.Count);
     }
 
     [Fact]
@@ -203,21 +256,21 @@ public class InteractiveChartTests
         {
             Display.LineChart(new[] { 1, 2, 3 });
         }
-        Assert.Equal(ChartType.Line, lineOut?.ChartOptions?.Type);
+        Assert.Equal(ChartType.Line, lineOut!.ChartSpec().Kind);
 
         RichCellOutput? barOut = null;
         using (InteractiveDisplayContext.EnterScope(o => barOut = o))
         {
             Display.BarChart(new[] { 1, 2, 3 });
         }
-        Assert.Equal(ChartType.Bar, barOut?.ChartOptions?.Type);
+        Assert.Equal(ChartType.Bar, barOut!.ChartSpec().Kind);
 
         RichCellOutput? pieOut = null;
         using (InteractiveDisplayContext.EnterScope(o => pieOut = o))
         {
             Display.PieChart(new Dictionary<string, double> { { "A", 10 }, { "B", 20 } });
         }
-        Assert.Equal(ChartType.Pie, pieOut?.ChartOptions?.Type);
+        Assert.Equal(ChartType.Pie, pieOut!.ChartSpec().Kind);
     }
 
     [Fact]
@@ -233,8 +286,8 @@ public class InteractiveChartTests
         }
 
         Assert.NotNull(captured);
-        Assert.Equal("Chained Revenue", captured.ChartOptions?.Title);
-        Assert.Equal("#FF5722", captured.ChartOptions?.PrimaryColor);
+        Assert.Equal("Chained Revenue", captured.ChartSpec().Title);
+        Assert.Equal("#FF5722", captured.ChartSpec().Color);
     }
 
     [Fact]
@@ -244,7 +297,7 @@ public class InteractiveChartTests
         var cell = new NotebookCellViewModel(model);
 
         var opts = ChartDataParser.Parse(new[] { 5, 10, 15 }, title: "Growth Rate");
-        cell.SetChartOutput(opts);
+        cell.AddVisual(VisualOutput.Create(ChartOptionsConverter.ToSpec(opts)));
 
         Assert.True(cell.HasChartOutput);
         Assert.True(cell.HasOutput);
@@ -257,7 +310,7 @@ public class InteractiveChartTests
         // Clear output should reset
         cell.ClearOutput();
         Assert.False(cell.HasChartOutput);
-        Assert.Null(cell.ChartOptions);
+        Assert.Empty(cell.ChartVisuals);
     }
 
     [Fact]
@@ -279,11 +332,11 @@ Display.Chart(squared, title: ""Quadratic Growth"", color: ""#4ec9b0"");
         Assert.Empty(result.ErrorMessage);
         Assert.NotNull(captured);
         Assert.Equal(CellOutputKind.Chart, captured.Kind);
-        Assert.NotNull(captured.ChartOptions);
-        Assert.Equal("Quadratic Growth", captured.ChartOptions.Title);
-        Assert.Equal("#4ec9b0", captured.ChartOptions.PrimaryColor);
-        Assert.Equal(10, captured.ChartOptions.Series[0].Points.Count);
-        Assert.Equal(100, captured.ChartOptions.Series[0].MaxY);
+        var spec = captured.ChartSpec();
+        Assert.Equal("Quadratic Growth", spec.Title);
+        Assert.Equal("#4ec9b0", spec.Color);
+        Assert.Equal(10, spec.Series[0].Y.Count);
+        Assert.Equal(100, captured.ChartModel().Series[0].MaxY);
     }
 
     [Fact]
@@ -313,7 +366,7 @@ Display.Chart(squared, title: ""Quadratic Growth"", color: ""#4ec9b0"");
         Assert.False(cell1.HasError);
         Assert.False(cell2.HasError);
         Assert.True(cell2.HasChartOutput);
-        Assert.Equal("Multiplied", cell2.ChartOptions?.Title);
+        Assert.Equal("Multiplied", Assert.Single(cell2.ChartVisuals).Spec.Title);
     }
 
     [Fact]

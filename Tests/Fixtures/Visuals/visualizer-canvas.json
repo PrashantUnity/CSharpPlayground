@@ -1,0 +1,18 @@
+{
+  "title": "Scene",
+  "kind": "canvas",
+  "state": {
+    "canvas": {
+      "width": 400,
+      "height": 200,
+      "background": "#0b1020",
+      "shapes": [
+        { "type": "rect", "x": 10, "y": 10, "width": 80, "height": 40, "label": "box", "fill": "#1e293b", "stroke": "#475569", "cornerRadius": 6 },
+        { "type": "circle", "x": 150, "y": 40, "radius": 20, "tooltip": "a circle", "opacity": 0.8 },
+        { "type": "line", "x1": 0, "y1": 100, "x2": 400, "y2": 100, "dashed": true, "stroke": "#64748b" },
+        { "type": "arrow", "x1": 90, "y1": 30, "x2": 130, "y2": 40, "headSize": 8, "label": "to" },
+        { "x": 200, "y": 150, "text": "Hello, 世界 \"quoted\"", "bold": true, "centered": true, "fill": "#e2e8f0", "type": "text" }
+      ]
+    }
+  }
+}

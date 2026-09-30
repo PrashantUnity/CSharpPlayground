@@ -39,6 +39,11 @@ public class Projector3D
         ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
     }
 
+    /// <summary>
+    /// Where a data point is in the scene. Data z is up, as in matplotlib and Plotly, for every kind of plot: the scene
+    /// is Y-up (its camera and floor are), so data (x, y, z) is placed at scene (x, z, -y), which keeps the data
+    /// right-handed (x across the front, y going back, z up from the default camera).
+    /// </summary>
     public Vector3D MapDataToWorld(double x, double y, double z)
     {
         double rangeX = System.Math.Max(1e-9, Options.MaxX - Options.MinX);
@@ -49,7 +54,7 @@ public class Projector3D
         double normY = ((y - Options.MinY) / rangeY - 0.5) * WorldBoxSize;
         double normZ = ((z - Options.MinZ) / rangeZ - 0.5) * WorldBoxSize;
 
-        return new Vector3D(normX, normY, normZ);
+        return new Vector3D(normX, normZ, -normY);
     }
 
     public ProjectedPoint3D ProjectWorld(in Vector3D worldPos)

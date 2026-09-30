@@ -10,6 +10,8 @@ using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
 using Vector3D = PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial.Vector3D;
 
@@ -210,9 +212,8 @@ public class InteractivePlot3DTests
 
         Assert.NotNull(emitted);
         Assert.Equal(CellOutputKind.Plot3D, emitted.Kind);
-        Assert.NotNull(emitted.Plot3DOptions);
-        Assert.Equal("Scatter 3D Demo", emitted.Plot3DOptions.Title);
-        Assert.Equal(Plot3DType.Scatter, emitted.Plot3DOptions.Type);
+        Assert.Equal("Scatter 3D Demo", emitted.Plot3DSpec().Title);
+        Assert.Equal(Plot3DType.Scatter, emitted.Plot3DSpec().Kind);
     }
 
     [Fact]
@@ -231,8 +232,8 @@ public class InteractivePlot3DTests
 
         Assert.NotNull(emitted);
         Assert.Equal(CellOutputKind.Plot3D, emitted.Kind);
-        Assert.Equal("Dumped 3D", emitted.Plot3DOptions?.Title);
-        Assert.Equal(2, emitted.Plot3DOptions?.Series[0].Points.Count);
+        Assert.Equal("Dumped 3D", emitted.Plot3DSpec().Title);
+        Assert.Equal(2, emitted.Plot3DSpec().Series[0].X.Count);
     }
 
     [Fact]
@@ -247,9 +248,45 @@ public class InteractivePlot3DTests
 
         Assert.NotNull(html);
         Assert.Contains("<!DOCTYPE html>", html);
-        Assert.Contains("three.min.js", html);
-        Assert.Contains("OrbitControls.js", html);
+        // three.js r160 ships its controls as modules only; the old examples/js path answers 404, so the page broke.
+        Assert.Contains("three@0.160.0/build/three.module.js", html);
+        Assert.Contains("three@0.160.0/examples/jsm/controls/OrbitControls.js", html);
+        Assert.Contains("camera.up.set(0, 0, 1)", html);
         Assert.Contains("Exported 3D View", html);
+    }
+
+    // A title or a node id went into the page as markup and as JavaScript names, so an odd one broke it.
+    [Fact]
+    public void Plot3DHtmlExporter_KeepsTextAsData()
+    {
+        var graph = new Graph3DData();
+        graph.AddNode("a-b c", "</script><b>x</b>", 0, 0, 0);
+        graph.AddNode("d", "d", 1, 1, 1);
+        graph.AddEdge("a-b c", "d");
+        var opts = new Plot3DOptions { Title = "<img src=x onerror=alert(1)>", Type = Plot3DType.Graph3D, Graph = graph };
+        opts.RecalculateBounds();
+
+        string html = Plot3DHtmlExporter.GenerateThreeJsHtml(opts);
+
+        Assert.DoesNotContain("<img", html);
+        Assert.DoesNotContain("</script><b>", html);
+        Assert.Contains("&lt;img src=x onerror=alert(1)&gt;", html);
+    }
+
+    [Fact]
+    public void Plot3DHtmlExporter_DrawsEverySeries_AndLeavesHolesInASurface()
+    {
+        var points = new Plot3DOptions { Series = { new Series3D { Points = { new Point3D(0, 0, 0), new Point3D(double.NaN, 1, 1) } }, new Series3D { Points = { new Point3D(1, 1, 1) } } } };
+        points.RecalculateBounds();
+        var surface = new Plot3DOptions { Type = Plot3DType.Surface, Surface = Surface3DData.FromGrid(new[,] { { 1, 2, 3 }, { 4, double.NaN, 6 }, { 7, 8, 9 } }) };
+        surface.RecalculateBounds();
+
+        var cloud = Plot3DHtmlExporter.Scene(points).Clouds;
+        var mesh = Plot3DHtmlExporter.Scene(surface).Surface!;
+
+        Assert.Equal([3, 3], cloud.Select(c => c.Positions.Count));
+        Assert.Equal(9, mesh.Colors.Count);
+        Assert.Empty(mesh.Triangles); // every quad of a 3 × 3 grid touches its middle
     }
 
     [Fact]
@@ -273,9 +310,9 @@ public class InteractivePlot3DTests
 
         Assert.NotNull(output.Rich);
         Assert.Equal(CellOutputKind.Plot3D, output.Rich.Kind);
-        Assert.Equal("Polyglot 3D", output.Rich.Plot3DOptions?.Title);
-        Assert.Equal(Plot3DType.Scatter, output.Rich.Plot3DOptions?.Type);
-        Assert.Equal(2, output.Rich.Plot3DOptions?.Series[0].Points.Count);
+        Assert.Equal("Polyglot 3D", output.Rich.Plot3DSpec().Title);
+        Assert.Equal(Plot3DType.Scatter, output.Rich.Plot3DSpec().Kind);
+        Assert.Equal(2, output.Rich.Plot3DSpec().Series[0].X.Count);
     }
 
     [Fact]
@@ -283,9 +320,7 @@ public class InteractivePlot3DTests
     {
         var item = new Models.NotebookCellItem { Type = Models.CellType.Code, Source = "Display.Plot3D(...);" };
         var vm = new NotebookCellViewModel(item);
-        var plotOpts = new Plot3DOptions { Title = "Cell 3D Output" };
-
-        vm.SetPlot3DOutput(plotOpts);
+        vm.AddVisual(VisualOutput.Create(new Plot3DSpec { Title = "Cell 3D Output" }));
 
         Assert.True(vm.HasPlot3DOutput);
         Assert.True(vm.IsPlot3DTabActive);
@@ -352,7 +387,7 @@ public class InteractivePlot3DTests
     [Fact]
     public void Display_Surface3D_WithDiscreteMinMaxParameters_ShouldWorkAndCompile()
     {
-        var opts = Display.Surface3D(
+        var handle = Display.Surface3D(
             (x, y) => {
                 double r = Math.Sqrt(x * x + y * y);
                 return r == 0 ? 1.0 : Math.Sin(r * 2.5) / (r * 2.5);
@@ -360,15 +395,15 @@ public class InteractivePlot3DTests
             minX: -3, maxX: 3, minY: -3, maxY: 3, resX: 35, resY: 35,
             colorMap: ColorMapPreset.Viridis, wireframe: true, title: "3D Sinc Surface");
 
-        Assert.NotNull(opts);
-        Assert.Equal("3D Sinc Surface", opts.Title);
-        Assert.True(opts.Wireframe);
-        Assert.Equal(ColorMapPreset.Viridis, opts.ColorMap);
-        Assert.NotNull(opts.Surface);
-        Assert.Equal(35, opts.Surface.ResolutionX);
-        Assert.Equal(35, opts.Surface.ResolutionY);
-        Assert.Equal(-3, opts.Surface.MinX);
-        Assert.Equal(3, opts.Surface.MaxX);
+        var spec = Assert.IsType<Plot3DSpec>(handle.Spec);
+        Assert.Equal("3D Sinc Surface", spec.Title);
+        Assert.Equal(Plot3DType.Wireframe, spec.Kind);
+        Assert.Equal(ColorMapPreset.Viridis, spec.ColorMap);
+        Assert.NotNull(spec.Surface);
+        Assert.Equal(35, spec.Surface.Z.Count);
+        Assert.Equal(35, spec.Surface.Z[0].Count);
+        Assert.Equal(-3, spec.Surface.X.Min);
+        Assert.Equal(3, spec.Surface.X.Max);
 
         // Also verify Roslyn compiles this exact user code snippet
         var compiler = new RoslynCompilerService();
@@ -379,6 +414,35 @@ public class InteractivePlot3DTests
    colorMap: ColorMapPreset.Viridis, wireframe: true, title: ""3D Sinc Surface"");";
         var (success, _, diagnostics) = compiler.CompileToAssembly(code, ExecutionLanguageMode.Statements);
         Assert.True(success, string.Join("; ", diagnostics.Select(d => d.Message)));
+    }
+
+    // Every 3D kind draws data z upward (the matplotlib/Plotly convention), so the same (x, y, z) data looks the same as
+    // points, as a trajectory and as a surface.
+    [Fact]
+    public void Points_DrawDataZUpward()
+    {
+        var options = new Plot3DOptions { MinX = -1, MaxX = 1, MinY = -1, MaxY = 1, MinZ = -1, MaxZ = 1 };
+        var projector = new Projector3D(new Rect(0, 0, 400, 400), options);
+
+        var top = projector.MapDataToWorld(0, 0, 1);
+        var side = projector.MapDataToWorld(0, 1, 0);
+
+        Assert.Equal(Projector3D.WorldBoxSize / 2, top.Y, 6);
+        Assert.Equal(0, side.Y, 6);
+    }
+
+    // A surface z = f(x, y) keeps x, y and z as they are: its height is the plot's z range, not its y range.
+    [Fact]
+    public void ASurface_KeepsItsHeightOnTheZAxis()
+    {
+        var options = new Plot3DOptions { Surface = Surface3DData.FromFunction((x, y) => 100, -2, 2, -3, 3, 5, 5) };
+
+        options.RecalculateBounds();
+
+        Assert.Equal((-2.0, 2.0), (options.MinX, options.MaxX));
+        Assert.Equal((-3.0, 3.0), (options.MinY, options.MaxY));
+        Assert.InRange(options.MinZ, 98.9, 100);
+        Assert.InRange(options.MaxZ, 100, 101.1);
     }
 }
 

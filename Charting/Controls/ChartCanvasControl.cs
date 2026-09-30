@@ -7,6 +7,7 @@ using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 
@@ -20,6 +21,10 @@ public class ChartCanvasControl : Control
     private static readonly IBrush EmptyTextBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
 
     private ChartHitTestResult? _hoveredHit;
+    private readonly ClickGesture _click = new();
+
+    /// <summary>A value was clicked (a point, bar or slice).</summary>
+    public event EventHandler<ElementClickedEventArgs<ChartHitTestResult>>? ValueClicked;
 
     public ChartOptions? Options
     {
@@ -37,6 +42,22 @@ public class ChartCanvasControl : Control
         ClipToBounds = true;
     }
 
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        _click.Pressed(e, this);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if (_click.Released(e, this) is not { } at || Options == null || Options.Series.Count == 0) return;
+        if (ChartRendererFactory.GetRenderer(Options.Type).HitTest(at, new Rect(Bounds.Size), Options) is { } hit)
+        {
+            ValueClicked?.Invoke(this, new ElementClickedEventArgs<ChartHitTestResult>(hit, e.KeyModifiers));
+        }
+    }
+
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
@@ -44,7 +65,7 @@ public class ChartCanvasControl : Control
 
         var pos = e.GetPosition(this);
         var renderer = ChartRendererFactory.GetRenderer(Options.Type);
-        var hit = renderer.HitTest(pos, Bounds, Options);
+        var hit = renderer.HitTest(pos, new Rect(Bounds.Size), Options);
 
         if (hit?.Point != _hoveredHit?.Point)
         {
@@ -81,7 +102,8 @@ public class ChartCanvasControl : Control
         }
 
         var renderer = ChartRendererFactory.GetRenderer(Options.Type);
-        renderer.Render(context, Bounds, Options);
+        // Its own area: Bounds is where it sits in its parent, which would shift the drawing by that much.
+        renderer.Render(context, new Rect(Bounds.Size), Options);
 
         // Render hover tooltip and halo
         if (_hoveredHit != null)
