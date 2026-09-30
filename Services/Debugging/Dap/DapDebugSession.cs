@@ -536,17 +536,14 @@ public sealed class DapDebugSession : IDebugSession
 
         var callStack = await GetCallStackAsync().ConfigureAwait(false);
         var topFrame = callStack.FirstOrDefault();
-        if (topFrame != null)
-        {
-            PausedLine = topFrame.LineNumber;
-            PausedFilePath = topFrame.FileName;
-        }
+        var pausedLine = topFrame?.LineNumber ?? 0;
+        var pausedFile = topFrame?.FileName;
 
         var locals = await GetVariablesAsync(topFrame?.FrameIndex ?? 0).ConfigureAwait(false);
 
         var args = new DebugPausedEventArgs(
-            PausedLine,
-            PausedFilePath,
+            pausedLine,
+            pausedFile,
             reason,
             threadId,
             callStack,
@@ -557,6 +554,8 @@ public sealed class DapDebugSession : IDebugSession
         {
             // The program may have been resumed or ended while the stack and variables were being read.
             if (State != DebugSessionState.Paused) return;
+            PausedLine = pausedLine;
+            PausedFilePath = pausedFile;
             _lastPaused = args;
             handlers = _paused;
         }

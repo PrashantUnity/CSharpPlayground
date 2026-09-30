@@ -310,6 +310,7 @@ public class DapHandshakeTests
 
         DebugPausedEventArgs? paused = null;
         session.Paused += args => paused = args;
+        while (paused == null && DateTime.UtcNow < deadline) await Task.Delay(10);
 
         Assert.NotNull(paused);
         Assert.Equal(5, paused!.LineNumber);

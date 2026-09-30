@@ -177,11 +177,13 @@ public sealed class RustDebuggerProvider : IDebuggerProvider, IDapAdapterRegistr
         var commands = Path.Combine(etc, "lldb_commands");
         if (_host.FileExists(lookup) && _host.FileExists(commands))
         {
-            arguments["initCommands"] = new[]
+            var cmds = new[]
             {
                 $"command script import \"{lookup}\"",
                 $"command source -s 0 \"{commands}\""
             };
+            arguments["initCommands"] = cmds;
+            arguments["preRunCommands"] = cmds;
         }
 
         // std's debug info points at /rustc/<commit>/library/…; rust-src holds those files.
