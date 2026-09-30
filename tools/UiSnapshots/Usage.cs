@@ -33,6 +33,7 @@ internal static class Usage
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
               --tree <n>             seed the throwaway workspace with n folders (scripts and a nested folder in each)
                                      and expand them all, so the Explorer shows a real tree (implies --sidebar explorer)
+              --file-limit <n>       list at most n files (default 20000); with --tree, shows the notice for a cut-off folder
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
               --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
@@ -42,6 +43,7 @@ internal static class Usage
               --run-tests            click Run All in the Test Cases panel
               --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
+              --quick-open-text <t>  type this into the palette (Go to File searches the whole workspace)
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
@@ -96,6 +98,8 @@ internal static class Usage
               --big-kb <n>           also open a source file of about n KB and time opening, switching to it and typing
               --typing-experiments   with --big-kb: switch editor features off one by one to see which one a keystroke waits for
               --shots                also save each page as shown in the studio host (host-<page>.png)
+              --cells <n>            also open a notebook of n cells: open time, memory, scrolling, opening the side panels
+              --external <n>         also open a folder of n source files: Explorer, Hub, the file index and Go to File search
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

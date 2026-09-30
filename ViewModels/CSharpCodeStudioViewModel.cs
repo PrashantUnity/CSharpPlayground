@@ -328,6 +328,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
 
+        // Go to File finds any file of the workspace, not just the open tabs.
+        QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
+
         var initialSettings = _languages.StudioSettings.GetSettings();
         _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
         _useExternalDotNetRunner = string.Equals(initialSettings.CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);

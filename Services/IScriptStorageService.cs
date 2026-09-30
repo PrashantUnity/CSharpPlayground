@@ -21,6 +21,18 @@ public interface IScriptStorageService
     /// </summary>
     long StructureVersion { get; }
 
+    /// <summary>
+    /// The names of every file in the active workspace, held in memory so "Go to File" can search a project of any size. Reading
+    /// this starts (or restarts, after the workspace changed) the background walk that fills it.
+    /// </summary>
+    WorkspaceFileIndex FileIndex { get; }
+
+    /// <summary>How many files (or folders) a listing of the workspace includes before it stops.</summary>
+    int WorkspaceFileLimit { get; }
+
+    /// <summary>True when the last listing of the workspace stopped at <see cref="WorkspaceFileLimit"/>: the folder holds more than is listed, and the UI should say so.</summary>
+    bool IsWorkspaceTruncated { get; }
+
     /// <summary>Moves on every change <see cref="StructureVersion"/> reports, and on every save (titles and modified times change).</summary>
     long ContentVersion { get; }
 

@@ -64,7 +64,8 @@ internal static class StudioSnapshots
             settings.CSharpExecutionEngine = csharpEngine;
             languages.StudioSettings.SaveSettings(settings);
         }
-        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry);
+        // --file-limit n: list at most n files, to see what the Explorer says about a folder that has more.
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry, options.Int("file-limit", 20_000));
 
         // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
         if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
@@ -103,6 +104,8 @@ internal static class StudioSnapshots
         {
             ApplyZoomKeys(window, zoomKeys);
         }
+        // Go to File searches the workspace index: let its walk finish first, so the picture shows the files.
+        if (options.Value("quick-open-text") != null) Snapshot.Wait(storage.FileIndex.RebuildAsync(storage.ActiveWorkspaceRootPath));
         ShowQuickOpen(vm.QuickOpen, options);
         Task? stillRunning = null;
         if (options.Flag("run") && options.Flag("while-running"))
@@ -993,6 +996,9 @@ internal static class StudioSnapshots
     {
         if (options.Value("quick-open") is not { } mode) return;
         quickOpen.Show(mode.Equals("commands", StringComparison.OrdinalIgnoreCase) ? QuickOpenMode.Commands : QuickOpenMode.Files);
+
+        // --quick-open-text <text>: typed into the palette, e.g. to see Go to File's results.
+        if (options.Value("quick-open-text") is { } text) quickOpen.SearchText = text;
         Snapshot.Settle();
     }
 

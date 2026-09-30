@@ -105,10 +105,54 @@ public partial class LocalScriptStorageService : IScriptStorageService
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
     public event Action? ActiveWorkspaceChanged;
 
-    /// <param name="languages">The languages whose plain source files (main.py) the workspace lists; the built-in ones by default.</param>
-    public LocalScriptStorageService(string? customBaseDir = null, LanguageRegistry? languages = null)
+    // Walking a folder stops after this many files (or folders); see IsWorkspaceTruncated.
+    private readonly int _workspaceFileLimit;
+    private volatile bool _filesTruncated;
+    private volatile bool _foldersTruncated;
+
+    public int WorkspaceFileLimit => _workspaceFileLimit;
+
+    private readonly WorkspaceFileIndex _fileIndex;
+    private string? _indexedRoot;
+    private long _indexedStructureVersion = -1;
+
+    /// <summary>
+    /// The names of every file in the active workspace, searchable at once ("Go to File"), however big the project is.
+    /// Asking for it starts the background walk that fills it, and again after the workspace changed (another folder opened, a
+    /// file created, deleted or renamed), so it is usually ready by the time it is searched.
+    /// </summary>
+    public WorkspaceFileIndex FileIndex
     {
+        get
+        {
+            var root = EffectiveWorkspaceRoot;
+            var version = StructureVersion;
+            bool stale;
+            lock (_fileIndex)
+            {
+                stale = !string.Equals(_indexedRoot, root, StringComparison.Ordinal) || _indexedStructureVersion != version;
+                if (stale)
+                {
+                    _indexedRoot = root;
+                    _indexedStructureVersion = version;
+                }
+            }
+
+            if (stale) _ = _fileIndex.RebuildAsync(root);
+            return _fileIndex;
+        }
+    }
+
+    /// <summary>True when the last listing of the workspace stopped at <see cref="WorkspaceFileLimit"/>: the folder holds more than is listed.</summary>
+    public bool IsWorkspaceTruncated => _filesTruncated || _foldersTruncated;
+
+    /// <param name="languages">The languages whose plain source files (main.py) the workspace lists; the built-in ones by default.</param>
+    /// <param name="workspaceFileLimit">How many files (or folders) a listing of the workspace includes before it stops; a folder with more is reported as truncated.</param>
+    public LocalScriptStorageService(string? customBaseDir = null, LanguageRegistry? languages = null, int workspaceFileLimit = WorkspaceWalker.MaxFiles)
+    {
+        _workspaceFileLimit = workspaceFileLimit;
         _languages = languages ?? StudioLanguageServices.Default.Registry;
+        _fileIndex = new WorkspaceFileIndex(IsWorkspaceFile);
         _baseDir = !string.IsNullOrEmpty(customBaseDir)
             ? customBaseDir
             : Path.Combine(
@@ -229,7 +273,12 @@ public partial class LocalScriptStorageService : IScriptStorageService
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
         var list = new List<WorkspaceItemSummary>();
-        var files = await Task.Run(() => WorkspaceWalker.Files(root, IsWorkspaceFile)).ConfigureAwait(false);
+        var (files, filesTruncated) = await Task.Run(() =>
+        {
+            var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var truncated, _workspaceFileLimit);
+            return (found, truncated);
+        }).ConfigureAwait(false);
+        _filesTruncated = filesTruncated;
 
         foreach (var file in files.Where(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)))
         {
@@ -548,9 +597,14 @@ public partial class LocalScriptStorageService : IScriptStorageService
     {
         Interlocked.Increment(ref _workspaceScanCount);
         var root = EffectiveWorkspaceRoot;
-        return Task.Run(() => WorkspaceWalker.Folders(root)
-            .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
-            .ToList());
+        return Task.Run(() =>
+        {
+            var folders = WorkspaceWalker.Folders(root, out var truncated, _workspaceFileLimit);
+            _foldersTruncated = truncated;
+            return folders
+                .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
+                .ToList();
+        });
     }
 
     public Task<string> CreateFolderAsync(string? parentFolderPath, string desiredName)

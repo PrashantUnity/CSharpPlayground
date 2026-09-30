@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
@@ -15,6 +16,13 @@ public partial class CSharpCodeStudioViewModel
 
     /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
     public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
+
+    /// <summary>True when the workspace folder holds more files than the Explorer lists; the panel then says so rather than looking complete.</summary>
+    [ObservableProperty]
+    private bool _isExplorerTruncated;
+
+    public string ExplorerTruncationText =>
+        $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
 
     // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
     // workspace scan only when this has moved, not on every tab switch.
@@ -83,6 +91,36 @@ public partial class CSharpCodeStudioViewModel
     {
         _isPageActive = true;
         _ = RefreshExplorerIfStaleAsync();
+
+        // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
+        _ = _storageService.FileIndex;
+    }
+
+    // Go to File: opens any file of the workspace by its path, whether or not the Explorer has drawn it.
+    private async Task OpenWorkspaceFileAsync(string fullPath)
+    {
+        var result = await _storageService.OpenExternalProjectAsync(fullPath);
+        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+        {
+            CompilerStatusText = result.Message;
+            return;
+        }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+        {
+            if (_openNotebookAction != null && await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook)
+            {
+                _openNotebookAction.Invoke(notebook);
+            }
+
+            return;
+        }
+
+        await SaveDocumentAsync(userAsked: false);
+        if (await _storageService.LoadScriptAsync(result.PrimaryDocumentId) is { } loaded)
+        {
+            await UpdateActiveScriptAsync(loaded);
+        }
     }
 
     public void OnDeactivated() => _isPageActive = false;
@@ -169,6 +207,7 @@ public partial class CSharpCodeStudioViewModel
 
         SortExplorerTree(ExplorerRootItems);
         HighlightExplorerItem(Script?.Id);
+        IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)

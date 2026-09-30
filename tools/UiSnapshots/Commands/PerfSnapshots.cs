@@ -252,8 +252,148 @@ internal static class PerfSnapshots
             Console.WriteLine($"Page views built over the whole run: {built} (one per page)");
         }
 
+        if (options.Int("cells", 0) is > 0 and var cellCount) LongNotebook(window, host, storage, cellCount);
+        if (options.Int("external", 0) is > 0 and var externalFiles) ExternalWorkspace(window, host, storage, externalFiles);
+
         window.Close();
     }
+
+    // --cells n: one notebook of n code cells, opened in the Notebook Studio: what a long notebook costs to show.
+    private static void LongNotebook(Window window, CSharpStudioHostViewModel host, LocalScriptStorageService storage, int cells)
+    {
+        var notebook = Pump(storage.CreateNewNotebookAsync("Long notebook"));
+        notebook.Cells.Clear();
+        for (int i = 0; i < cells; i++)
+        {
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = $"var value{i} = {i} * 2;\nConsole.WriteLine(value{i});",
+                OutputText = $"{i * 2}",
+                ExecutionCount = i + 1
+            });
+        }
+
+        Pump(storage.SaveNotebookAsync(notebook));
+        long before = SettledMemory();
+        var opened = Navigate(window, () => host.NavigateToNotebookStudio(notebook), () => ReferenceEquals(host.CurrentPage, host.NotebookStudioViewModel) && host.NotebookStudioViewModel!.ActiveTab?.Notebook.Id == notebook.Id);
+        long after = SettledMemory();
+        var away = Navigate(window, () => host.NavigateToDocs(), () => ReferenceEquals(host.CurrentPage, host.DocsViewModel));
+        var back = Navigate(window, () => host.NavigateToNotebookStudio(notebook), () => ReferenceEquals(host.CurrentPage, host.NotebookStudioViewModel));
+
+        Console.WriteLine();
+        Console.WriteLine($"Long notebook ({cells} cells): open {opened.ToLayout:F0} ms (+frame {opened.ToFrame:F0}), memory +{(after - before) / 1048576.0:F0} MB, " +
+                          $"back to it {back.ToLayout:F0} ms (+frame {back.ToFrame:F0}); {host.NotebookStudioViewModel!.ActiveTab?.Cells.Count} cell view models");
+        _ = away;
+
+        // Scrolling: the canvas builds cells as they come into view, so a page at a time should stay quick, and the cells
+        // that appear must show the right text.
+        if (window.Content is CSharpStudioHostView hostView && hostView.Pages.ViewFor(host.NotebookStudioViewModel!) is Control notebookView)
+        {
+            Navigate(window, () => host.NavigateToNotebookStudio(notebook), () => ReferenceEquals(host.CurrentPage, host.NotebookStudioViewModel));
+            var scroller = notebookView.GetVisualDescendants().OfType<ScrollViewer>().First(s => s.Name == "NotebookCanvasScrollViewer");
+            int Realized() => notebookView.GetVisualDescendants().OfType<PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor>().Count();
+            var steps = new List<double>();
+            for (int i = 0; i < 25; i++)
+            {
+                steps.Add(Timed(window, () => { scroller.PageDown(); Dispatcher.UIThread.RunJobs(); }).ToFrame);
+            }
+
+            Console.WriteLine($"  scrolling a page at a time: {Median(steps):F0} ms per page (slowest {steps.Max():F0} ms); code editors alive: {Realized()} of {cells}");
+
+            scroller.ScrollToHome();
+            Dispatcher.UIThread.RunJobs();
+            var wheel = new List<double>();
+            for (int i = 0; i < 60; i++)
+            {
+                wheel.Add(Timed(window, () => { scroller.Offset = new Avalonia.Vector(0, scroller.Offset.Y + 120); Dispatcher.UIThread.RunJobs(); }).ToFrame);
+            }
+
+            Console.WriteLine($"  a mouse-wheel notch (120 px) at a time: {Median(wheel):F0} ms median, {wheel.Max():F0} ms slowest, {wheel.Count(w => w > 100)} of {wheel.Count} over 100 ms");
+
+            scroller.ScrollToEnd();
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
+            var lastRealized = notebookView.GetVisualDescendants().OfType<PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor>()
+                .Select(e => e.DataContext as NotebookCellViewModel).Where(c => c != null)
+                .Select(c => host.NotebookStudioViewModel!.Cells.IndexOf(c!)).DefaultIfEmpty(-1).Max();
+            Console.WriteLine($"  after Ctrl+End the bottom-most built cell is #{lastRealized} of {cells - 1}");
+        }
+
+        // The side panels that list every cell: what opening them costs on a long notebook.
+        var notebookVm = host.NotebookStudioViewModel!;
+        var outline = Timed(window, () => { notebookVm.SelectedActivityBarIndex = 1; Dispatcher.UIThread.RunJobs(); });
+        var search = Timed(window, () => { notebookVm.SelectedActivityBarIndex = 3; Dispatcher.UIThread.RunJobs(); });
+        notebookVm.SelectedActivityBarIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        Console.WriteLine($"  opening the Outline panel: {outline.ToFrame:F0} ms; the Search panel: {search.ToFrame:F0} ms ({cells} cells)");
+
+        // What one cell is made of: the two heaviest parts built on their own, 40 of each.
+        Console.WriteLine($"  one code editor:        {Cost(40, () => new PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor())}");
+        Console.WriteLine($"  one cell output control: {Cost(40, () => new PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl())}");
+    }
+
+    // --external n: open a folder of n source files (25 per folder), the way a big project is opened, and see what the
+    // Explorer and the Hub make of it.
+    private static void ExternalWorkspace(Window window, CSharpStudioHostViewModel host, LocalScriptStorageService storage, int files)
+    {
+        var root = Snapshot.TempFolder("perf-external");
+        int folders = files / 25 + 1;
+        for (int f = 0; f < folders; f++)
+        {
+            var folder = Path.Combine(root, "src", $"module{f:D4}");
+            Directory.CreateDirectory(folder);
+            for (int i = 0; i < 25 && f * 25 + i < files; i++)
+            {
+                File.WriteAllText(Path.Combine(folder, $"file{i:D2}.py"), $"print({f * 25 + i})\n");
+            }
+        }
+
+        long before = SettledMemory();
+        var clock = Stopwatch.StartNew();
+        var result = Pump(storage.OpenExternalProjectAsync(root));
+        double openMs = clock.Elapsed.TotalMilliseconds;
+
+        var codeVm = host.CodeStudioViewModel!;
+        var explorer = Timed(window, () => Pump(codeVm.RefreshExplorerAsync()));
+        int inExplorer = CountFiles(codeVm.ExplorerRootItems);
+        var hubReload = Timed(window, () => Pump(host.ManagerViewModel.LoadWorkspaceItemsAsync()));
+        long after = SettledMemory();
+
+        Console.WriteLine();
+        Console.WriteLine($"External folder ({files} files in {folders} folders): open {openMs:F0} ms ({result.Message}); " +
+                          $"Explorer refresh {explorer.ToLayout:F0} ms showing {inExplorer:N0} of {files:N0} files; Hub reload {hubReload.ToLayout:F0} ms; memory +{(after - before) / 1048576.0:F0} MB");
+
+        // The workspace file index behind Go to File: the background walk, then what a search costs.
+        var index = storage.FileIndex;
+        long beforeIndex = SettledMemory();
+        var indexClock = Stopwatch.StartNew();
+        Pump(index.RebuildAsync(storage.ActiveWorkspaceRootPath));
+        double indexMs = indexClock.Elapsed.TotalMilliseconds;
+        long afterIndex = SettledMemory();
+        var queries = new[] { "file0042", "module0007", "f1", "py", "zzzz", "m0007/file" };
+        var searchMs = queries.Select(q => Median(Repeat(15, () => index.Find(q, 30)))).ToList();
+        Console.WriteLine($"  file index: {index.Count:N0} files indexed in {indexMs:F0} ms (in the background), {(afterIndex - beforeIndex) / 1048576.0:F1} MB; " +
+                          $"a Go to File search takes {searchMs.Max():F1} ms at worst, {Median(searchMs):F1} ms typically" +
+                          (index.IsTruncated ? " (workspace bigger than the index limit)" : string.Empty));
+    }
+
+    // Time and memory for building one control, averaged over `count` of them (kept alive while measuring).
+    private static string Cost(int count, Func<object> build)
+    {
+        build(); // Warm-up: the first one pays for loading the XAML.
+        long before = SettledMemory();
+        var clock = Stopwatch.StartNew();
+        var kept = new List<object>();
+        for (int i = 0; i < count; i++) kept.Add(build());
+        double ms = clock.Elapsed.TotalMilliseconds / count;
+        long after = SettledMemory();
+        GC.KeepAlive(kept);
+        return $"{ms:F1} ms and {(after - before) / 1048576.0 / count:F2} MB each";
+    }
+
+    private static int CountFiles(IEnumerable<ExplorerItemViewModel> items) =>
+        items.Sum(i => i.IsDirectory ? CountFiles(i.Children) : 1);
 
     // One page switch: the call, the wait for the page to become current, the layout it triggers, then one rendered frame.
     private static Sample Navigate(Window window, Action go, Func<bool> arrived)

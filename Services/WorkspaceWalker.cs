@@ -9,8 +9,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 /// </summary>
 internal static class WorkspaceWalker
 {
-    /// <summary>Enough for any real workspace; stops a walk of a huge folder (someone's home) from taking forever.</summary>
-    public const int MaxFiles = 5000;
+    /// <summary>
+    /// Enough for a big project; stops a walk of a huge folder (someone's home) from taking forever. A folder bigger than this
+    /// is shown cut off, and the Explorer says so (see the walks' <c>truncated</c> result): it must never be a silent limit.
+    /// </summary>
+    public const int MaxFiles = 20_000;
 
     private static readonly HashSet<string> SkippedFolders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -20,10 +23,15 @@ internal static class WorkspaceWalker
     private static readonly HashSet<string> EnvironmentFolderNames = new(StringComparer.OrdinalIgnoreCase) { ".venv", "venv", "env" };
 
     /// <summary>The files under <paramref name="root"/> that <paramref name="wanted"/> accepts, at most <paramref name="maxFiles"/>.</summary>
-    public static List<string> Files(string root, Func<string, bool> wanted, int maxFiles = MaxFiles)
+    public static List<string> Files(string root, Func<string, bool> wanted, int maxFiles = MaxFiles) =>
+        Files(root, wanted, out _, maxFiles);
+
+    /// <param name="truncated">True when the walk stopped early because the folder holds more than <paramref name="maxFiles"/> files (or folders), so the list is not everything.</param>
+    public static List<string> Files(string root, Func<string, bool> wanted, out bool truncated, int maxFiles = MaxFiles)
     {
         var found = new List<string>();
-        foreach (var folder in Walk(root))
+        var walk = new WalkState(maxFiles);
+        foreach (var folder in Walk(root, walk))
         {
             string[] files;
             try
@@ -39,15 +47,82 @@ internal static class WorkspaceWalker
             {
                 if (!wanted(file)) continue;
                 found.Add(file);
-                if (found.Count >= maxFiles) return found;
+
+                // One more than the limit proves there was more: a folder of exactly the limit is not truncated.
+                if (found.Count > maxFiles)
+                {
+                    found.RemoveAt(found.Count - 1);
+                    truncated = true;
+                    return found;
+                }
             }
         }
 
+        truncated = walk.Truncated;
         return found;
     }
 
+    /// <summary>Whether a streamed walk stopped early; set by <see cref="EnumerateFiles"/> once it has finished.</summary>
+    public sealed class WalkStatus
+    {
+        public bool Truncated { get; set; }
+    }
+
+    /// <summary>
+    /// The files under <paramref name="root"/> that <paramref name="wanted"/> accepts, one at a time as the walk finds them, so a
+    /// caller (the workspace file index) can use the first ones long before a huge folder has been walked to the end.
+    /// Stops at <paramref name="limit"/> files (or folders), setting <see cref="WalkStatus.Truncated"/>.
+    /// </summary>
+    public static IEnumerable<string> EnumerateFiles(string root, Func<string, bool> wanted, int limit, WalkStatus status, CancellationToken cancellationToken = default)
+    {
+        var walk = new WalkState(limit);
+        var count = 0;
+        foreach (var folder in Walk(root, walk))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(folder);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            foreach (var file in files)
+            {
+                if (!wanted(file)) continue;
+                if (++count > limit)
+                {
+                    status.Truncated = true;
+                    yield break;
+                }
+
+                yield return file;
+            }
+        }
+
+        if (walk.Truncated) status.Truncated = true;
+    }
+
     /// <summary>Every folder under <paramref name="root"/> (not the root itself) the Explorer shows.</summary>
-    public static List<string> Folders(string root) => Walk(root).Skip(1).ToList();
+    public static List<string> Folders(string root) => Folders(root, out _);
+
+    /// <param name="truncated">True when the walk stopped early because the folder holds more than <paramref name="maxFolders"/> folders, so the list is not everything.</param>
+    public static List<string> Folders(string root, out bool truncated, int maxFolders = MaxFiles)
+    {
+        var walk = new WalkState(maxFolders);
+        var folders = Walk(root, walk).Skip(1).ToList();
+        truncated = walk.Truncated;
+        return folders;
+    }
+
+    private sealed class WalkState(int maxFolders)
+    {
+        public int MaxFolders { get; } = maxFolders;
+        public bool Truncated { get; set; }
+    }
 
     /// <summary>
     /// True when <paramref name="path"/> is, or lies inside, a folder the walk leaves out (.git, node_modules, ...), judged by
@@ -92,7 +167,7 @@ internal static class WorkspaceWalker
     }
 
     // The root, then every folder below it that isn't skipped, parents before children.
-    private static IEnumerable<string> Walk(string root)
+    private static IEnumerable<string> Walk(string root, WalkState state)
     {
         if (!Directory.Exists(root)) yield break;
 
@@ -103,9 +178,10 @@ internal static class WorkspaceWalker
         {
             var folder = pending.Dequeue();
             yield return folder;
-            if (++visited > MaxFiles)
+            if (++visited > state.MaxFolders)
             {
-                Debug.WriteLine($"[CSharpEditorPlugin] Stopped walking '{root}' after {MaxFiles} folders.");
+                state.Truncated = true;
+                Debug.WriteLine($"[CSharpEditorPlugin] Stopped walking '{root}' after {state.MaxFolders} folders.");
                 yield break;
             }
 

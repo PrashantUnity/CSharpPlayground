@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -91,6 +92,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         OnPropertyChanged(nameof(IsOutlineActive));
         OnPropertyChanged(nameof(IsVariablesActive));
         OnPropertyChanged(nameof(IsSearchActive));
+        OnPropertyChanged(nameof(OutlineCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
 
         if (value == 2 && IsSideBarVisible)
         {
@@ -110,6 +113,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     partial void OnSearchTextChanged(string value)
     {
         OnPropertyChanged(nameof(FilteredCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
         OnPropertyChanged(nameof(SearchResultsCount));
     }
 
@@ -124,6 +128,19 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     }
 
     public int SearchResultsCount => FilteredCells.Count();
+
+    private static readonly IReadOnlyList<NotebookCellViewModel> NoCells = Array.Empty<NotebookCellViewModel>();
+
+    // The Outline and Search panels each list every cell, and a hidden panel still builds its whole list: for a long
+    // notebook that is hundreds of rows nobody sees. They are handed the cells only while they are showing.
+    public IEnumerable<NotebookCellViewModel> OutlineCells => IsOutlineActive ? Cells : NoCells;
+
+    public IEnumerable<NotebookCellViewModel> SearchPanelCells => IsSearchActive ? FilteredCells : NoCells;
+
+    private readonly ConditionalWeakTable<ObservableCollection<NotebookCellViewModel>, NotebookCanvasRows> _canvasRows = new();
+
+    /// <summary>What the canvas draws: a header row, then a row per cell of the active notebook (a virtualized list, see <see cref="NotebookCanvasRows"/>).</summary>
+    public RangeObservableCollection<object> CanvasRows => _canvasRows.GetValue(Cells, cells => new NotebookCanvasRows(cells)).Rows;
 
     [RelayCommand]
     public void SelectActivityBarItem(string? indexStr)
@@ -240,6 +257,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
     public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
 
+    /// <summary>True when the workspace folder holds more files than the Explorer lists; the panel then says so rather than looking complete.</summary>
+    [ObservableProperty]
+    private bool _isExplorerTruncated;
+
+    public string ExplorerTruncationText =>
+        $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
+
     public bool HasActiveTab => ActiveTab != null;
     public bool HasNoTabs => ActiveTab == null;
 
@@ -348,6 +372,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         OnPropertyChanged(nameof(HasActiveTab));
         OnPropertyChanged(nameof(HasNoTabs));
         OnPropertyChanged(nameof(Cells));
+        OnPropertyChanged(nameof(CanvasRows));
+        OnPropertyChanged(nameof(OutlineCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
         OnPropertyChanged(nameof(Variables));
         OnPropertyChanged(nameof(ActiveCell));
         OnPropertyChanged(nameof(IsExecuting));
@@ -402,6 +429,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
+
+        // Go to File finds any file of the workspace, not just the open tabs.
+        QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
@@ -1389,6 +1419,31 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     {
         _isPageActive = true;
         _ = RefreshExplorerIfStaleAsync();
+
+        // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
+        _ = _storageService.FileIndex;
+    }
+
+    // Go to File: opens any file of the workspace by its path. A notebook opens here, anything else in the Code Studio.
+    private async Task OpenWorkspaceFileAsync(string fullPath)
+    {
+        var result = await _storageService.OpenExternalProjectAsync(fullPath);
+        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+        {
+            if (ActiveTab != null) ActiveTab.KernelStatusText = result.Message;
+            return;
+        }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+        {
+            if (await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook) UpdateActiveNotebook(notebook);
+            return;
+        }
+
+        if (_openScriptAction != null && await _storageService.LoadScriptAsync(result.PrimaryDocumentId) is { } script)
+        {
+            _openScriptAction.Invoke(script);
+        }
     }
 
     public void OnDeactivated() => _isPageActive = false;
@@ -1506,6 +1561,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             HighlightExplorerItem(ActiveTab.Title);
         }
+
+        IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)

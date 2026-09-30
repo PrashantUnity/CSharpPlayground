@@ -5,6 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:charting="using:PdfEditorApp.Plugins.CSharpEditor.Charting.Controls"
              xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
              xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
@@ -316,7 +317,13 @@
 
                     <!-- 1. Interactive Object Inspector Tree -->
                     <Border IsVisible="{Binding IsInspectorTabActive}" Margin="0,1,0,3">
-                        <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                        <controls:LazyContent IsActive="{Binding IsInspectorTabActive}">
+                            <controls:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                    <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                                </DataTemplate>
+                            </controls:LazyContent.ContentTemplate>
+                        </controls:LazyContent>
                     </Border>
 
                     <!-- 2. Dark Terminal Card for Console Stdout Output -->
@@ -335,7 +342,13 @@
 
                     <!-- 3. Tabular Output (.Dump()) -->
                     <Border IsVisible="{Binding IsTableTabActive}">
-                        <views:DumpTableView DataContext="{Binding TableResult}" />
+                        <controls:LazyContent IsActive="{Binding IsTableTabActive}">
+                            <controls:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                    <views:DumpTableView DataContext="{Binding TableResult}" />
+                                </DataTemplate>
+                            </controls:LazyContent.ContentTemplate>
+                        </controls:LazyContent>
                     </Border>
 
                     <!-- 3b. Interactive Native Vector Chart -->
@@ -345,7 +358,13 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
+                        <controls:LazyContent IsActive="{Binding IsChartTabActive}">
+                            <controls:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                    <charting:InteractiveChartControl Options="{Binding ChartOptions}" />
+                                </DataTemplate>
+                            </controls:LazyContent.ContentTemplate>
+                        </controls:LazyContent>
                     </Border>
 
                     <!-- 3c. Interactive Native Vector Data Structure Visualizer -->
@@ -355,7 +374,13 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <visControls:InteractiveVisualizerControl Options="{Binding VisualizerOptions}" />
+                        <controls:LazyContent IsActive="{Binding IsVisualizerTabActive}">
+                            <controls:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                    <visControls:InteractiveVisualizerControl Options="{Binding VisualizerOptions}" />
+                                </DataTemplate>
+                            </controls:LazyContent.ContentTemplate>
+                        </controls:LazyContent>
                     </Border>
 
                     <!-- 3d. Interactive 3D Visualization -->
@@ -365,7 +390,13 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <charting3d:InteractivePlot3DControl Options="{Binding Plot3DOptions}" />
+                        <controls:LazyContent IsActive="{Binding IsPlot3DTabActive}">
+                            <controls:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                    <charting3d:InteractivePlot3DControl Options="{Binding Plot3DOptions}" />
+                                </DataTemplate>
+                            </controls:LazyContent.ContentTemplate>
+                        </controls:LazyContent>
                     </Border>
 
                     <!-- 4. Rendered Graphic / Image Output -->
@@ -458,7 +489,13 @@
                                 <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             </StackPanel>
-                            <views:RichHtmlView Grid.Row="1" DataContext="{Binding HtmlContent}" />
+                            <controls:LazyContent Grid.Row="1" IsActive="{Binding IsHtmlTabActive}">
+                                <controls:LazyContent.ContentTemplate>
+                                    <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                                        <views:RichHtmlView DataContext="{Binding HtmlContent}" />
+                                    </DataTemplate>
+                                </controls:LazyContent.ContentTemplate>
+                            </controls:LazyContent>
                         </Grid>
                     </Border>
                 </StackPanel>
