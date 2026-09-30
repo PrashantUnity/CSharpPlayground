@@ -117,7 +117,7 @@ public class DebugAdapterLaunchTests : IDisposable
         await using var session = await provider.LaunchAsync(Context(source, File.ReadAllText(source), output.Add, breakpointLines: 4)).WaitAsync(Patience);
 
         Assert.IsType<DapDebugSession>(session);
-        var dlvStart = launcher.Started.Single(s => s.FileName == "/opt/homebrew/bin/dlv");
+        var dlvStart = launcher.Started.Single(s => s.FileName.Replace('\\', '/') == "/opt/homebrew/bin/dlv");
         Assert.Equal("dap", dlvStart.Arguments[0]);
         Assert.Equal($"--listen=127.0.0.1:{ListenPort(dlvStart)}", dlvStart.Arguments[1]);
         Assert.Equal(["initialize", "launch", "setBreakpoints", "configurationDone"], server!.Requests);

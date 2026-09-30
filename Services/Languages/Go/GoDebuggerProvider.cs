@@ -42,23 +42,23 @@ public sealed class GoDebuggerProvider : IDebuggerProvider, IDapAdapterRegistrat
 
         if (resolved.IsFound && resolved.Toolchain != null)
         {
-            var binDir = Path.GetDirectoryName(resolved.Toolchain.ExecutablePath);
+            var binDir = ExecutableSearch.GetDirectoryName(resolved.Toolchain.ExecutablePath);
             if (!string.IsNullOrEmpty(binDir))
             {
-                candidatePaths.Add(Path.Combine(binDir, _host.IsWindows ? "dlv.exe" : "dlv"));
+                candidatePaths.Add(ExecutableSearch.Combine(_host, binDir, _host.IsWindows ? "dlv.exe" : "dlv"));
             }
         }
 
         var home = _host.HomeDirectory;
         if (!string.IsNullOrEmpty(home))
         {
-            candidatePaths.Add(Path.Combine(home, "go", "bin", _host.IsWindows ? "dlv.exe" : "dlv"));
+            candidatePaths.Add(ExecutableSearch.Combine(_host, home, "go", "bin", _host.IsWindows ? "dlv.exe" : "dlv"));
         }
 
         var gopath = _host.GetEnvironmentVariable("GOPATH");
         if (!string.IsNullOrEmpty(gopath))
         {
-            candidatePaths.Add(Path.Combine(gopath, "bin", _host.IsWindows ? "dlv.exe" : "dlv"));
+            candidatePaths.Add(ExecutableSearch.Combine(_host, gopath, "bin", _host.IsWindows ? "dlv.exe" : "dlv"));
         }
 
         if (_host.IsMacOS)
@@ -79,7 +79,7 @@ public sealed class GoDebuggerProvider : IDebuggerProvider, IDapAdapterRegistrat
             var userProf = _host.GetEnvironmentVariable("USERPROFILE");
             if (!string.IsNullOrEmpty(userProf))
             {
-                candidatePaths.Add(Path.Combine(userProf, "go", "bin", "dlv.exe"));
+                candidatePaths.Add(ExecutableSearch.Combine(_host, userProf, "go", "bin", "dlv.exe"));
             }
         }
 

@@ -289,6 +289,9 @@ public sealed partial class ProtocolKernel
                 value = null;
             }
 
+            // As a terminal shows it: the prompt, then what was typed.
+            target?.Write(prompt + (password ? string.Empty : value ?? string.Empty) + "\n");
+
             try
             {
                 await SendAsync(new { type = "input_reply", value });
@@ -296,9 +299,6 @@ public sealed partial class ProtocolKernel
             catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
             }
-
-            // As a terminal shows it: the prompt, then what was typed.
-            target?.Write(prompt + (password ? string.Empty : value ?? string.Empty) + "\n");
         }
 
         private void OnExited(int exitCode)

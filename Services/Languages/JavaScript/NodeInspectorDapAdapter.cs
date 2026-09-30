@@ -618,19 +618,30 @@ public sealed class NodeInspectorDapAdapter : IAsyncDisposable
 
     // Node reports a script by its real path, so a file under /var on macOS is /private/var to it: the breakpoint is matched by the
     // path, with or without that prefix, rather than by the exact address the editor knows.
+    // On Windows, Node V8 normalizes script URLs with lowercase drive letters (file:///c:/...) while .NET Uri produces uppercase (/C:/...).
+    // Matching by trailing separator and file name ensures breakpoints bind reliably across platforms and path variations.
     private string UrlRegexOf(string path)
     {
-        var address = new Uri(string.IsNullOrEmpty(path) ? _scriptUrl : new Uri(Path.GetFullPath(path)).AbsoluteUri);
-        return "^file://(?:/private)?" + Regex.Escape(address.AbsolutePath) + "$";
+        var fullPath = string.IsNullOrEmpty(path) ? new Uri(_scriptUrl).LocalPath : Path.GetFullPath(path);
+        var fileName = Path.GetFileName(fullPath);
+        return ".*[\\/]" + Regex.Escape(fileName) + "$";
     }
 
-    private static bool SameScript(string a, string b) =>
-        string.Equals(Normalize(a), Normalize(b), StringComparison.OrdinalIgnoreCase);
+    private static bool SameScript(string a, string b)
+    {
+        var normA = Normalize(a);
+        var normB = Normalize(b);
+        if (string.Equals(normA, normB, StringComparison.OrdinalIgnoreCase)) return true;
+        var fileA = Path.GetFileName(normA);
+        var fileB = Path.GetFileName(normB);
+        return !string.IsNullOrEmpty(fileA) && string.Equals(fileA, fileB, StringComparison.OrdinalIgnoreCase);
+    }
 
     private static string Normalize(string url)
     {
         var path = url.StartsWith("file://", StringComparison.Ordinal) ? url["file://".Length..] : url;
-        return path.StartsWith("/private/", StringComparison.Ordinal) ? path["/private".Length..] : path;
+        path = path.StartsWith("/private/", StringComparison.Ordinal) ? path["/private".Length..] : path;
+        return path.TrimStart('/');
     }
 
     private static object SourceOf(string url)

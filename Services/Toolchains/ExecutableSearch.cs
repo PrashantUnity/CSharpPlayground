@@ -52,6 +52,14 @@ public static class ExecutableSearch
         return $"{folder.TrimEnd('/', '\\')}{sep}{sub1.Trim('/', '\\').Replace(alt, sep)}{sep}{sub2.TrimStart('/', '\\').Replace(alt, sep)}";
     }
 
+    /// <summary>Combines directory components respecting the host environment's path convention.</summary>
+    public static string Combine(IHostEnvironment host, string folder, string sub1, string sub2, string sub3)
+    {
+        var sep = host.DirectorySeparatorChar;
+        var alt = sep == '/' ? '\\' : '/';
+        return $"{folder.TrimEnd('/', '\\')}{sep}{sub1.Trim('/', '\\').Replace(alt, sep)}{sep}{sub2.Trim('/', '\\').Replace(alt, sep)}{sep}{sub3.TrimStart('/', '\\').Replace(alt, sep)}";
+    }
+
     /// <summary>Every existing <c>folder/name</c>, folders first then names, without repeats.</summary>
     public static IEnumerable<string> FindAll(IHostEnvironment host, IEnumerable<string> folders, IReadOnlyList<string> names)
     {
