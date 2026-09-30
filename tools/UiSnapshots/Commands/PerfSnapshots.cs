@@ -147,6 +147,9 @@ internal static class PerfSnapshots
             var typing = new List<double>();
             var insertOnly = new List<double>();
             int gen2Before = GC.CollectionCount(2);
+            int gen1Before = GC.CollectionCount(1);
+            int gen0Before = GC.CollectionCount(0);
+            var pauseBefore = GC.GetTotalPauseDuration();
             for (int i = 0; i < 10; i++)
             {
                 var clock2 = Stopwatch.StartNew();
@@ -179,27 +182,155 @@ internal static class PerfSnapshots
                 Console.WriteLine("  experiment: queued jobs after a keystroke, by priority: " +
                                   string.Join(", ", bands.Select(b => $"{b.Name} {Median(bandTimes[b.Name]):F1} ms")));
 
+                // What one keystroke invalidates, and how its queued time splits between the layout pass and everything else.
+                var reflected = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+                var layoutManager = typeof(TopLevel).GetProperty("LayoutManager", reflected)?.GetValue(window)
+                                    ?? typeof(TopLevel).GetField("_layoutManager", reflected)?.GetValue(window);
+                var executeLayoutPass = layoutManager?.GetType().GetMethod("ExecuteLayoutPass", reflected, Type.EmptyTypes);
+                if (layoutManager != null && executeLayoutPass != null)
+                {
+                    var layoutTimes = new List<double>();
+                    var restTimes = new List<double>();
+                    var invalidated = new SortedDictionary<string, int>();
+                    for (int i = 0; i < 10; i++)
+                    {
+                        editor.Document.Insert(editor.Document.TextLength - 2, "x");
+                        foreach (var queueName in new[] { "_toMeasure", "_toArrange" })
+                        {
+                            if (layoutManager.GetType().GetField(queueName, reflected)?.GetValue(layoutManager) is System.Collections.IEnumerable queued)
+                            {
+                                foreach (var control in queued)
+                                {
+                                    var key = $"{queueName.TrimStart('_')}: {control.GetType().Name}#{(control as Control)?.Name}";
+                                    invalidated[key] = invalidated.GetValueOrDefault(key) + 1;
+                                }
+                            }
+                        }
+
+                        var layoutClock = Stopwatch.StartNew();
+                        executeLayoutPass.Invoke(layoutManager, null);
+                        layoutTimes.Add(layoutClock.Elapsed.TotalMilliseconds);
+                        var restClock = Stopwatch.StartNew();
+                        Dispatcher.UIThread.RunJobs();
+                        restTimes.Add(restClock.Elapsed.TotalMilliseconds);
+                    }
+
+                    Console.WriteLine($"  experiment: after a keystroke the layout pass takes {Median(layoutTimes):F1} ms, the remaining jobs {Median(restTimes):F1} ms");
+                    Console.WriteLine("  experiment: queued for layout by 10 keystrokes: " + string.Join(", ", invalidated.Select(kv => $"{kv.Key} x{kv.Value}")));
+                }
+
                 double WithJobs() => Median(Repeat(10, () =>
                 {
                     editor.Document.Insert(editor.Document.TextLength - 2, "x");
                     Dispatcher.UIThread.RunJobs();
                 }));
-                Console.WriteLine($"  experiment: keystroke + jobs, as is                    {WithJobs():F1} ms");
+                Console.WriteLine($"  experiment: keystroke + jobs, as is (sidebar {codeVm.SelectedActivityBarIndex}, visible {codeVm.IsSideBarVisible})  {WithJobs():F1} ms");
                 codeVm.IsSideBarVisible = false;
                 Dispatcher.UIThread.RunJobs();
                 Console.WriteLine($"  experiment: keystroke + jobs, sidebar hidden           {WithJobs():F1} ms");
+                codeVm.IsSideBarVisible = true;
+                foreach (var tool in new[] { 1, 2, 4, 0 })
+                {
+                    codeVm.SelectedActivityBarIndex = tool;
+                    Dispatcher.UIThread.RunJobs();
+                    Console.WriteLine($"  experiment: keystroke + jobs, sidebar tool {tool}            {WithJobs():F1} ms");
+                }
+
                 codeVm.IsBottomDeckExpanded = false;
                 Dispatcher.UIThread.RunJobs();
-                Console.WriteLine($"  experiment: keystroke + jobs, sidebar and deck hidden  {WithJobs():F1} ms");
+                Console.WriteLine($"  experiment: keystroke + jobs, deck collapsed           {WithJobs():F1} ms");
 
-                double Keystrokes() => Median(Repeat(10, () => editor.Document.Insert(editor.Document.TextLength - 2, "x")));
+                // The same keystroke in a small file: is the cost about the big document at all?
+                Pump(codeVm.SwitchToTabAsync(smallTab));
+                Dispatcher.UIThread.RunJobs();
+                Console.WriteLine($"  experiment: keystroke + jobs, in a SMALL file          {Median(Repeat(15, () => { editor.Document.Insert(editor.Document.TextLength, "x"); Dispatcher.UIThread.RunJobs(); })):F1} ms");
+                Console.WriteLine($"  experiment: keystroke alone, in a SMALL file           {Median(Repeat(15, () => editor.Document.Insert(editor.Document.TextLength, "x"))):F1} ms");
+
+                // Typing INSIDE a method of an ordinary file (the enclosing foldings change length, and the editor redraws their whole range).
+                foreach (var kb in new[] { 10, 40 })
+                {
+                    var ordinary = Pump(storage.CreateNewScriptAsync($"Ordinary {kb} KB"));
+                    ordinary.Code = BigCode(kb);
+                    Pump(storage.SaveScriptAsync(ordinary));
+                    Pump(codeVm.UpdateActiveScriptAsync(ordinary));
+                    Dispatcher.UIThread.RunJobs();
+                    var ordinaryFoldings = (editor.TextArea.GetService(typeof(AvaloniaEdit.Folding.FoldingManager)) as AvaloniaEdit.Folding.FoldingManager)?.AllFoldings.Count();
+                    var runs = Repeat(8, () => EditBelowTheScreen(editor, 18));
+                    Console.WriteLine($"  experiment: an ordinary {kb} KB file ({ordinary.Code.Count(c => c == '\n')} lines, {ordinaryFoldings} foldings), one keystroke inside a method: {Median(runs):F1} ms (median of {runs.Count})");
+                    var generatorOfOrdinary = editor.TextArea.TextView.ElementGenerators.OfType<AvaloniaEdit.Folding.FoldingElementGenerator>().FirstOrDefault();
+                    if (generatorOfOrdinary != null)
+                    {
+                        editor.TextArea.TextView.ElementGenerators.Remove(generatorOfOrdinary);
+                        var runsWithout = Repeat(8, () => EditBelowTheScreen(editor, 18));
+                        Console.WriteLine($"  experiment: the same without the folding generator: {Median(runsWithout):F1} ms");
+                        editor.TextArea.TextView.ElementGenerators.Insert(0, generatorOfOrdinary);
+                    }
+                }
+
+                // Back to the big document: the editor is shared by the tabs, so the runs below would otherwise type into the small one.
+                Pump(codeVm.SwitchToTabAsync(bigTab));
+                Dispatcher.UIThread.RunJobs();
+                double Keystrokes() => Median(Repeat(10, () =>
+                {
+                    editor.Document.Insert(editor.Document.TextLength - 2, "x");
+                    Dispatcher.UIThread.RunJobs();
+                }));
                 Console.WriteLine($"  experiment: typing as is                       {Keystrokes():F1} ms");
                 var highlighting = editor.SyntaxHighlighting;
                 editor.SyntaxHighlighting = null;
                 Console.WriteLine($"  experiment: without syntax highlighting        {Keystrokes():F1} ms");
                 if (editor.TextArea.GetService(typeof(AvaloniaEdit.Folding.FoldingManager)) is AvaloniaEdit.Folding.FoldingManager folding)
                 {
+                    Console.WriteLine($"  experiment: foldings in the document: {folding.AllFoldings.Count()}");
+                    var textView = editor.TextArea.TextView;
+                    Console.WriteLine($"  experiment: first visible line {textView.VisualLines.FirstOrDefault()?.FirstDocumentLine.LineNumber}, caret on line {editor.TextArea.Caret.Line}, {textView.VisualLines.Count} visual lines");
+                    foreach (var (where, offset) in new[] { ("at the end of the document", editor.Document.TextLength - 2), ("in the middle", editor.Document.TextLength / 2), ("just below the screen", editor.Document.GetLineByNumber(70).Offset + 2), ("in the last visible line", editor.Document.GetLineByNumber(47).Offset + 2), ("on the first line", 1) })
+                    {
+                        var linesBefore = textView.VisualLines.ToList();
+                        var one = Stopwatch.StartNew();
+                        editor.Document.Insert(offset, "x");
+                        Dispatcher.UIThread.RunJobs();
+                        var cost = one.Elapsed.TotalMilliseconds;
+                        var linesAfter = textView.VisualLines.ToList();
+                        Console.WriteLine($"  experiment: a keystroke {where} costs {cost:F1} ms and keeps {linesAfter.Count(l => linesBefore.Contains(l))} of {linesAfter.Count} visible lines");
+                    }
+
+                    var foldingStrategy = new CSharpFoldingStrategy();
+                    Console.WriteLine($"  experiment: working out the foldings of the whole document takes {Median(Repeat(3, () => foldingStrategy.CreateNewFoldings(editor.Document, out _).Count())):F0} ms, applying them {Median(Repeat(3, () => foldingStrategy.UpdateFoldings(folding, editor.Document))) - Median(Repeat(3, () => foldingStrategy.CreateNewFoldings(editor.Document, out _).Count())):F0} ms more");
+                    Console.WriteLine($"  experiment: GetNextFoldedFoldingStart(0) takes {Median(Repeat(20, () => folding.GetNextFoldedFoldingStart(0))):F3} ms, GetFoldingsContaining(middle) {Median(Repeat(20, () => folding.GetFoldingsContaining(editor.Document.TextLength / 2))):F3} ms, from the middle {Median(Repeat(20, () => folding.GetNextFoldedFoldingStart(editor.Document.TextLength / 2))):F3} ms");
+                    Console.WriteLine($"  experiment: an edit below the screen, as is:      {EditBelowTheScreen(editor)}");
+                    if (editor.TextArea.LeftMargins.OfType<AvaloniaEdit.Folding.FoldingMargin>().FirstOrDefault() is { } foldingMargin)
+                    {
+                        editor.TextArea.LeftMargins.Remove(foldingMargin);
+                        Console.WriteLine($"  experiment: + without the folding margin        {Keystrokes():F1} ms; below the screen {EditBelowTheScreen(editor)}");
+                    }
+
+                    if (editor.TextArea.TextView.ElementGenerators.OfType<AvaloniaEdit.Folding.FoldingElementGenerator>().FirstOrDefault() is { } foldingGenerator)
+                    {
+                        editor.TextArea.TextView.ElementGenerators.Remove(foldingGenerator);
+                        Console.WriteLine($"  experiment: + without the folding generator     {Keystrokes():F1} ms; below the screen {EditBelowTheScreen(editor)}");
+                    }
+
                     AvaloniaEdit.Folding.FoldingManager.Uninstall(folding);
+                    Console.WriteLine($"  experiment: + manager uninstalled: below the screen {EditBelowTheScreen(editor)}");
+
+                    // The same document in a bare editor: is this the studio's doing or the editor's own?
+                    var bareEditor = new AvaloniaEdit.TextEditor { Document = new AvaloniaEdit.Document.TextDocument(big.Code) };
+                    var bareWindow = new Window { Width = 1000, Height = 800, Content = bareEditor };
+                    bareWindow.Show();
+                    Dispatcher.UIThread.RunJobs();
+                    Console.WriteLine($"  experiment: bare editor, no foldings:       {EditBelowTheScreen(bareEditor)}");
+                    var bareFolding = AvaloniaEdit.Folding.FoldingManager.Install(bareEditor.TextArea);
+                    new CSharpFoldingStrategy().UpdateFoldings(bareFolding, bareEditor.Document);
+                    Dispatcher.UIThread.RunJobs();
+                    Console.WriteLine($"  experiment: bare editor, {bareFolding.AllFoldings.Count()} foldings:  {EditBelowTheScreen(bareEditor)}");
+                    if (bareEditor.TextArea.TextView.ElementGenerators.OfType<AvaloniaEdit.Folding.FoldingElementGenerator>().FirstOrDefault() is { } bareGenerator)
+                    {
+                        bareEditor.TextArea.TextView.ElementGenerators.Remove(bareGenerator);
+                        Console.WriteLine($"  experiment: bare editor, generator removed:  {EditBelowTheScreen(bareEditor)}");
+                    }
+
+                    bareWindow.Close();
                     Console.WriteLine($"  experiment: + without foldings                 {Keystrokes():F1} ms");
                 }
 
@@ -220,7 +351,7 @@ internal static class PerfSnapshots
 
             var textCopy = Repeat(10, () => editor.Text.Length);
             Console.WriteLine();
-            Console.WriteLine($"  full garbage collections during those {typing.Count} keystrokes: {GC.CollectionCount(2) - gen2Before}");
+            Console.WriteLine($"  during those {typing.Count} keystrokes the garbage collector ran {GC.CollectionCount(0) - gen0Before} gen-0, {GC.CollectionCount(1) - gen1Before} gen-1 and {GC.CollectionCount(2) - gen2Before} gen-2 collections, pausing the program for {(GC.GetTotalPauseDuration() - pauseBefore).TotalMilliseconds:F0} ms in all");
             Console.WriteLine($"  running the queued UI jobs with nothing typed: {Median(Repeat(10, () => Dispatcher.UIThread.RunJobs())):F1} ms");
             Console.WriteLine($"  one rendered frame with nothing typed: {Median(Repeat(10, () => { using (window.CaptureRenderedFrame()) { } })):F1} ms");
             Console.WriteLine($"Typing into the big file: {Median(typing):F1} ms per keystroke on the UI thread (median of {typing.Count}); " +
@@ -357,12 +488,41 @@ internal static class PerfSnapshots
         var codeVm = host.CodeStudioViewModel!;
         var explorer = Timed(window, () => Pump(codeVm.RefreshExplorerAsync()));
         int inExplorer = CountFiles(codeVm.ExplorerRootItems);
+        bool listedOnDemand = codeVm.ExplorerRootItems.Any(i => i.IsDirectory && !i.ChildrenLoaded);
         var hubReload = Timed(window, () => Pump(host.ManagerViewModel.LoadWorkspaceItemsAsync()));
         long after = SettledMemory();
 
         Console.WriteLine();
         Console.WriteLine($"External folder ({files} files in {folders} folders): open {openMs:F0} ms ({result.Message}); " +
-                          $"Explorer refresh {explorer.ToLayout:F0} ms showing {inExplorer:N0} of {files:N0} files; Hub reload {hubReload.ToLayout:F0} ms; memory +{(after - before) / 1048576.0:F0} MB");
+                          $"Explorer refresh {explorer.ToLayout:F0} ms showing " +
+                          (listedOnDemand ? $"{codeVm.ExplorerRows.Rows.Count} rows at the top (folders are listed as they are opened)" : $"{inExplorer:N0} of {files:N0} files") +
+                          $"; Hub reload {hubReload.ToLayout:F0} ms; memory +{(after - before) / 1048576.0:F0} MB");
+
+        if (listedOnDemand)
+        {
+            // A big workspace lists one folder at a time: what opening a folder costs, whatever the size of the project.
+            var top = codeVm.ExplorerRootItems.First(i => i.IsDirectory);
+            var openTop = Timed(window, () =>
+            {
+                top.IsExpanded = true;
+                Snapshot.WaitFor(() => top.ChildrenLoaded, TimeSpan.FromSeconds(60));
+            });
+            var module = top.Children.First(c => c.IsDirectory);
+            var openModule = Timed(window, () =>
+            {
+                module.IsExpanded = true;
+                Snapshot.WaitFor(() => module.ChildrenLoaded, TimeSpan.FromSeconds(60));
+            });
+            var other = top.Children.Where(c => c.IsDirectory).Skip(1).First();
+            var listClock = Stopwatch.StartNew();
+            Pump(storage.ListFolderAsync(other.FullPath));
+            double listMs = listClock.Elapsed.TotalMilliseconds;
+            var listTopClock = Stopwatch.StartNew();
+            Pump(storage.ListFolderAsync(top.FullPath));
+            double listTopMs = listTopClock.Elapsed.TotalMilliseconds;
+            Console.WriteLine($"  opening '{top.Name}' ({top.Children.Count:N0} folders): {openTop.ToLayout:F0} ms; opening a folder of {module.Children.Count} files: {openModule.ToLayout:F0} ms " +
+                              $"(reading a folder from disk alone: {listMs:F1} ms for {module.Children.Count} files, {listTopMs:F0} ms for {top.Children.Count:N0} folders)");
+        }
 
         // The workspace file index behind Go to File: the background walk, then what a search costs.
         var index = storage.FileIndex;
@@ -376,6 +536,30 @@ internal static class PerfSnapshots
         Console.WriteLine($"  file index: {index.Count:N0} files indexed in {indexMs:F0} ms (in the background), {(afterIndex - beforeIndex) / 1048576.0:F1} MB; " +
                           $"a Go to File search takes {searchMs.Max():F1} ms at worst, {Median(searchMs):F1} ms typically" +
                           (index.IsTruncated ? " (workspace bigger than the index limit)" : string.Empty));
+
+        // Find in Files: every file read on background threads. A word that is nowhere reads them all; a common one stops at the match limit.
+        var paths = index.Paths;
+        foreach (var (label, query) in new[] { ("a word in no file", "zzzz"), ("a word in every file", "print") })
+        {
+            var matcher = new TextMatcher(query, matchCase: false, wholeWord: false, useRegex: false);
+            var searchClock = Stopwatch.StartNew();
+            var summary = Pump(WorkspaceTextSearch.RunAsync(paths, storage.ActiveWorkspaceRootPath, matcher, null, _ => { }, CancellationToken.None));
+            Console.WriteLine($"  find in files ({label}): {summary.FilesSearched:N0} files read, {summary.Matches:N0} matches in {searchClock.Elapsed.TotalMilliseconds:F0} ms" +
+                              (summary.HitLimit ? " (stopped at the limit)" : string.Empty));
+        }
+
+        // Through the panel: the pause before it starts, the search, and the list filling up on the UI thread.
+        codeVm.SearchAllFiles = true;
+        foreach (var query in new[] { "print", "zzzz" })
+        {
+            var panelClock = Stopwatch.StartNew();
+            codeVm.SearchQuery = query;
+            Snapshot.WaitFor(() => !codeVm.IsSearching, TimeSpan.FromSeconds(120));
+            Console.WriteLine($"  find in files through the Search panel for \"{query}\": {panelClock.Elapsed.TotalMilliseconds:F0} ms until done (incl. the 250 ms pause), {codeVm.SearchMatches.Count:N0} rows: {codeVm.SearchStatusText}");
+        }
+
+        codeVm.SearchQuery = string.Empty;
+        codeVm.SearchAllFiles = false;
     }
 
     // Time and memory for building one control, averaged over `count` of them (kept alive while measuring).
@@ -394,6 +578,20 @@ internal static class PerfSnapshots
 
     private static int CountFiles(IEnumerable<ExplorerItemViewModel> items) =>
         items.Sum(i => i.IsDirectory ? CountFiles(i.Children) : 1);
+
+    /// <summary>One character typed just below the visible lines: how long the editor takes to settle and how many visible lines it keeps.</summary>
+    private static string EditBelowTheScreen(AvaloniaEdit.TextEditor editor, int line = 70)
+    {
+        var textView = editor.TextArea.TextView;
+        Dispatcher.UIThread.RunJobs();
+        var linesBefore = textView.VisualLinesValid ? textView.VisualLines.ToList() : new List<AvaloniaEdit.Rendering.VisualLine>();
+        var clock = Stopwatch.StartNew();
+        editor.Document.Insert(editor.Document.GetLineByNumber(line).Offset + 2, "x");
+        Dispatcher.UIThread.RunJobs();
+        var cost = clock.Elapsed.TotalMilliseconds;
+        var linesAfter = textView.VisualLinesValid ? textView.VisualLines.ToList() : new List<AvaloniaEdit.Rendering.VisualLine>();
+        return $"{cost:F1} ms, keeps {linesAfter.Count(l => linesBefore.Contains(l))} of {linesAfter.Count} lines";
+    }
 
     // One page switch: the call, the wait for the page to become current, the layout it triggers, then one rendered frame.
     private static Sample Navigate(Window window, Action go, Func<bool> arrived)

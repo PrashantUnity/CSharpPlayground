@@ -89,7 +89,7 @@ internal static class StudioSnapshots
             blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")),
             languages: languages);
         if (file != null && sourceLanguage != null) OpenSourceFile(vm, storage, file);
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (sourceLanguage != null || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : sourceLanguage != null || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
         vm.IsSideBarVisible = true;
         if (options.Int("tree", 0) > 0) ExpandAll(vm.ExplorerRootItems);
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
@@ -107,6 +107,16 @@ internal static class StudioSnapshots
         // Go to File searches the workspace index: let its walk finish first, so the picture shows the files.
         if (options.Value("quick-open-text") != null) Snapshot.Wait(storage.FileIndex.RebuildAsync(storage.ActiveWorkspaceRootPath));
         ShowQuickOpen(vm.QuickOpen, options);
+        // --search-text <t> [--search-all]: typed into the Search panel (Find in Files with --search-all); waits for the results.
+        if (options.Value("search-text") is { } searchText)
+        {
+            Snapshot.Wait(storage.FileIndex.RebuildAsync(storage.ActiveWorkspaceRootPath));
+            vm.SearchAllFiles = options.Flag("search-all");
+            vm.SearchQuery = searchText;
+            Snapshot.WaitFor(() => !vm.IsSearching, TimeSpan.FromSeconds(60));
+            Snapshot.Settle();
+        }
+
         Task? stillRunning = null;
         if (options.Flag("run") && options.Flag("while-running"))
         {

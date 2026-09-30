@@ -52,6 +52,12 @@ public sealed class WorkspaceFileIndex
     /// <summary>How many files are searchable right now.</summary>
     public int Count => _snapshot.Paths.Length;
 
+    /// <summary>
+    /// Every indexed file as a path from the workspace root (with <c>/</c> separators): the list "Find in Files" reads. It is a
+    /// finished list that never changes; a newer list replaces it, so the one returned stays valid for as long as it is held.
+    /// </summary>
+    public IReadOnlyList<string> Paths => _snapshot.Paths;
+
     /// <summary>True when the workspace holds more files than the index keeps.</summary>
     public bool IsTruncated => _snapshot.Truncated;
 

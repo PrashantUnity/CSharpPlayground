@@ -342,6 +342,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        // What a workspace search listed belongs to the folder that was open: search the new one for the same text.
+        _storageService.ActiveWorkspaceChanged += () => _postToUiThread(() =>
+        {
+            if (SearchAllFiles && !string.IsNullOrEmpty(SearchQuery)) ExecuteSearch();
+        });
         // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
         _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
         {

@@ -33,7 +33,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     private readonly DispatcherTimer _foldingTimer;
 
     // Characters: above this a document's foldings are worked out shortly after it is shown, not before it appears.
-    private const int LargeDocumentLength = 500_000;
+    private const int LargeDocumentLength = CSharpCodeStudioViewModel.LargeDocumentLength;
     private CSharpCodeStudioViewModel? _currentVm;
     private bool _isUpdatingText;
 
@@ -501,7 +501,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
                 }
                 else if (_editorLanguage.Folding is { } folding)
                 {
-                    var foldings = folding.CreateFoldings(_editor.Document, out var firstErrorOffset);
+                    var foldings = FoldingLimits.Cap(folding.CreateFoldings(_editor.Document, out var firstErrorOffset));
                     _foldingManager.UpdateFoldings(foldings, firstErrorOffset);
                 }
                 else

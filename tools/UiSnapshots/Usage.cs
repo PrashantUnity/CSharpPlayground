@@ -44,6 +44,8 @@ internal static class Usage
               --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
               --quick-open-text <t>  type this into the palette (Go to File searches the whole workspace)
+              --search-text <t>      type this into the Search panel (implies --sidebar search)
+              --search-all           with --search-text: search the whole workspace (Find in Files), not just the open script
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)

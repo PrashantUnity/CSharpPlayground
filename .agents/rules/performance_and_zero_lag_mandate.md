@@ -28,11 +28,14 @@ This rule applies strictly to `examples/CSharpEditorPlugin` (`com.frypdf.plugin.
 
 ## 4c. Find files through the index, never by walking
 - `IScriptStorageService.FileIndex` (`WorkspaceFileIndex`) holds the path of every file in the workspace: built by a cancellable background walk, searchable while it is still building, rebuilt when the workspace changes. "Go to File" (Ctrl+P) and any future search over files must take their file list from it, never walk the folder themselves, and never on the UI thread.
-- The Explorer lists at most `WorkspaceFileLimit` files and says so when a folder has more (`IsWorkspaceTruncated`): a limit must never be silent.
+- The Hub's list (`LoadWorkspaceSummariesAsync`) stops at `WorkspaceFileLimit` files and says so (`IsWorkspaceTruncated`): a limit must never be silent.
+- **The Explorer never stops at a limit: it lists a big workspace one folder at a time.** `IScriptStorageService.LoadExplorerListingAsync` lists the whole workspace when it fits `WorkspaceFileLimit`; otherwise it returns only the top folder (`WorkspaceListing.IsPartial`) and `ListFolderAsync(relativeFolder)` lists each folder when it is opened. `LazyExplorerTree` (shared by both studios) draws that: an unlisted folder holds a "Loading..." placeholder row, opening it lists it (`ExplorerItemViewModel.LoadChildrenRequested`), `RevealAsync` opens the folders down to the open document, and a rebuild opens the folders that were open again. Rows of a folder that is opened are patched in with `ExplorerRowList.ChangeChildren`, never by rebuilding the whole list. Code that edits the tree (new file or folder under a folder) must list an unlisted folder first, or the listing that follows adds the new item a second time.
+- **Find in Files** (`WorkspaceTextSearch`, the Search panel's "search the whole workspace" toggle): reads `FileIndex.Paths` on background threads, several files at once, streams matches in file-list order, stops at `MaxMatches` (2,000) and `MaxMatchesPerFile`, skips binary and huge files, searches open documents as the editor holds them, and is cancelled by the next keystroke. Results reach the (virtualized) list in batches. Any other search over the workspace follows these rules.
 
 ## 5. Per-keystroke and per-switch work is independent of document size
 - Do not copy or scan the whole document on the UI thread per keystroke or per tab switch: no `Document.Text` to compare (use a chunked compare), no whole-text regex (see `DirectiveScanInlineLimit`), at most one folding pass, and documents above `LargeDocumentLength` fold shortly after they are shown.
 - Any new feature attached to text changes must be measured on the 2 MB case below.
+- **Large documents give up what grows with size.** Above `CSharpCodeStudioViewModel.LargeDocumentLength` (500,000 chars) live diagnostics are off (a Roslyn compile of the whole file after every pause in typing made the garbage collector stall each keystroke; running the file still reports its problems), and foldings are capped at `FoldingLimits.MaxFoldings` (2,000, deepest blocks dropped first). AvaloniaEdit walks every folding for each visual line it builds and redraws a folding's whole range on every edit inside it (measured on a bare editor too): 18,000 foldings cost about 12 ms per keystroke, none cost 1 ms. Even an ordinary file pays about 3 ms per keystroke for its outermost folding; a replacement folding generator would be the next step.
 
 ## 6. Clean up what you hook up
 - Every `+=` on a longer-lived object needs its `-=`. Views that hook a view model implement `IDisposable` (`CSharpCodeStudioView.Dispose`), and `KeepAlivePageHost.Dispose` calls it.
@@ -60,11 +63,14 @@ Budgets (Debug build, this machine class; compare runs against each other, not a
 | File open, small file | ≤ 50 ms |
 | Workspace scans during tab and page switches | 0 |
 | Explorer refresh at 2,000 files | ≤ 600 ms |
-| Keystroke in a 2 MB file (the plugin's own work) | ≤ 8 ms |
+| Explorer refresh of a 30,000-file workspace (top folder only) | ≤ 200 ms |
+| Keystroke in a 2 MB file, whole editor | ≤ 8 ms |
 | Memory growth per round of page visits | ~0 |
 | Open a notebook of 1,000 cells | ≤ 1.5 s, and the same at 4,000 |
 | Open the notebook Outline or Search panel at 2,000 cells | ≤ 300 ms |
 | Index 200,000 files in the background | ≤ 2 s |
 | A Go to File search over 200,000 files | ≤ 40 ms |
+| Find in Files over 30,000 small files, nothing found | ≤ 2 s |
+| Find in Files, a query that matches everywhere | ≤ 200 ms to the match limit |
 
-Also run the guard tests: `dotnet test Tests --filter "FullyQualifiedName~KeepAlivePageHostTests|FullyQualifiedName~WorkspaceStalenessTests|FullyQualifiedName~ExplorerRowList|FullyQualifiedName~ExternalChangeTests|FullyQualifiedName~TabSwitchStateTests|FullyQualifiedName~NotebookCanvas|FullyQualifiedName~LazyContent|FullyQualifiedName~WorkspaceFileIndex|FullyQualifiedName~GoToFile|FullyQualifiedName~WorkspaceTruncation"`.
+Also run the guard tests: `dotnet test Tests --filter "FullyQualifiedName~KeepAlivePageHostTests|FullyQualifiedName~WorkspaceStalenessTests|FullyQualifiedName~ExplorerRowList|FullyQualifiedName~ExternalChangeTests|FullyQualifiedName~TabSwitchStateTests|FullyQualifiedName~NotebookCanvas|FullyQualifiedName~LazyContent|FullyQualifiedName~WorkspaceFileIndex|FullyQualifiedName~GoToFile|FullyQualifiedName~WorkspaceTruncation|FullyQualifiedName~LazyExplorer|FullyQualifiedName~FindInFiles|FullyQualifiedName~TextMatcher|FullyQualifiedName~WorkspaceTextSearch|FullyQualifiedName~StudioSearchPanel|FullyQualifiedName~LargeDocument"`.

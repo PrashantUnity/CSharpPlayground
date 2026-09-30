@@ -42,6 +42,7 @@
                 <Button Command="{Binding ToggleExpandCommand}"
                         Classes="explorer-item-btn"
                         Classes.selected="{Binding IsSelected}"
+                        IsHitTestVisible="{Binding !IsPlaceholder}"
                         HorizontalAlignment="Stretch">
                     <Button.ContextFlyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnItemMenuOpening">

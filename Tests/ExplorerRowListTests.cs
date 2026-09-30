@@ -158,6 +158,65 @@ public class ExplorerRowListTests
 
         Assert.Equal(1, resets);
     }
+
+    [Fact]
+    public void ChangeChildren_SwapsOnlyTheFoldersRows_AndDoesNotResetTheList()
+    {
+        var (roots, a, _) = Sample();
+        a.IsExpanded = true;
+        var list = new ExplorerRowList(roots);
+        var actions = new List<NotifyCollectionChangedAction>();
+        list.Rows.CollectionChanged += (_, e) => actions.Add(e.Action);
+
+        list.ChangeChildren(a, () =>
+        {
+            a.Children.Clear();
+            a.Children.Add(File("b1", a));
+            a.Children.Add(File("b2", a));
+        });
+
+        Assert.Equal("A,b1,b2,z", Names(list));
+        Assert.DoesNotContain(NotifyCollectionChangedAction.Reset, actions);
+    }
+
+    [Fact]
+    public void ChangeChildren_OfACollapsedFolder_LeavesTheRowsAlone_UntilItOpens()
+    {
+        var (roots, a, _) = Sample();
+        var list = new ExplorerRowList(roots);
+        var changes = 0;
+        list.Rows.CollectionChanged += (_, _) => changes++;
+
+        list.ChangeChildren(a, () =>
+        {
+            a.Children.Clear();
+            a.Children.Add(File("b1", a));
+        });
+
+        Assert.Equal(0, changes);
+        Assert.Equal("A,z", Names(list));
+        a.IsExpanded = true;
+        Assert.Equal("A,b1,z", Names(list));
+    }
+
+    [Fact]
+    public void ChangeChildren_WithAFolderThatIsOpenedAsItIsAdded_ShowsItsRowsToo()
+    {
+        var (roots, a, _) = Sample();
+        a.IsExpanded = true;
+        var list = new ExplorerRowList(roots);
+
+        list.ChangeChildren(a, () =>
+        {
+            a.Children.Clear();
+            var sub = Folder("sub", a);
+            sub.Children.Add(File("s1", sub));
+            a.Children.Add(sub);
+            sub.IsExpanded = true;
+        });
+
+        Assert.Equal("A,sub,s1,z", Names(list));
+    }
 }
 
 public class ExplorerRowListStudioTests : IDisposable

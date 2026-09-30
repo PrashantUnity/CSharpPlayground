@@ -15,6 +15,7 @@ public sealed class ExplorerRowList
 {
     private readonly ObservableCollection<ExplorerItemViewModel> _roots;
     private int _suspended;
+    private int _patching;
     private bool _dirty;
 
     public ExplorerRowList(ObservableCollection<ExplorerItemViewModel> roots)
@@ -37,6 +38,39 @@ public sealed class ExplorerRowList
         return new Resume(this);
     }
 
+    /// <summary>
+    /// Changes what a folder holds (<paramref name="change"/> edits <c>folder.Children</c>) and patches the rows for it: the folder's
+    /// old rows are swapped for its new ones and every other row stays as it is. A rebuild of the whole list would make the
+    /// list control drop and recreate the rows on screen, which is what opening a folder in a big workspace must not do.
+    /// </summary>
+    public void ChangeChildren(ExplorerItemViewModel folder, Action change)
+    {
+        var index = folder.IsExpanded ? Rows.IndexOf(folder) : -1;
+        var oldCount = 0;
+        if (index >= 0)
+        {
+            while (index + 1 + oldCount < Rows.Count && Rows[index + 1 + oldCount].Depth > folder.Depth) oldCount++;
+        }
+
+        _patching++;
+        try
+        {
+            change();
+        }
+        finally
+        {
+            _patching--;
+        }
+
+        // Hidden (collapsed, or under a collapsed folder): its rows appear when it is expanded.
+        if (index < 0) return;
+
+        var rows = new List<ExplorerItemViewModel>();
+        Flatten(folder.Children, rows);
+        if (oldCount > 0) Rows.RemoveRange(index + 1, oldCount);
+        if (rows.Count > 0) Rows.InsertRange(index + 1, rows);
+    }
+
     private sealed class Resume(ExplorerRowList owner) : IDisposable
     {
         private bool _done;
@@ -56,6 +90,7 @@ public sealed class ExplorerRowList
 
     private void Invalidate()
     {
+        if (_patching > 0) return;
         if (_suspended > 0)
         {
             _dirty = true;
@@ -111,6 +146,7 @@ public sealed class ExplorerRowList
     private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ExplorerItemViewModel.IsExpanded) || sender is not ExplorerItemViewModel folder) return;
+        if (_patching > 0) return;
 
         if (_suspended > 0)
         {

@@ -43,6 +43,18 @@ public interface IScriptStorageService
     event Action? ExternalChangeDetected;
 
     Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync();
+
+    /// <summary>
+    /// What the Explorer draws: the whole workspace when it fits <see cref="WorkspaceFileLimit"/>, otherwise only the top folder's
+    /// contents (see <see cref="WorkspaceListing.IsPartial"/>), the rest being listed folder by folder with <see cref="ListFolderAsync"/>.
+    /// </summary>
+    Task<WorkspaceListing> LoadExplorerListingAsync();
+
+    /// <summary>The subfolders and documents directly in one folder of the workspace (a path from the root; empty for the root).</summary>
+    Task<WorkspaceListing> ListFolderAsync(string relativeFolder);
+
+    /// <summary>Where a document known to this session lives, as a path from the workspace root; null when unknown or outside the workspace.</summary>
+    string? GetWorkspaceRelativePath(string documentId);
     Task<ScriptDocumentItem?> LoadScriptAsync(string id);
     Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null);
     Task<NotebookDocumentItem?> LoadNotebookAsync(string id);

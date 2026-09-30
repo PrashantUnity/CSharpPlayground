@@ -272,7 +272,6 @@ public partial class LocalScriptStorageService : IScriptStorageService
         Interlocked.Increment(ref _workspaceScanCount);
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
-        var list = new List<WorkspaceItemSummary>();
         var (files, filesTruncated) = await Task.Run(() =>
         {
             var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var truncated, _workspaceFileLimit);
@@ -280,6 +279,13 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }).ConfigureAwait(false);
         _filesTruncated = filesTruncated;
 
+        return await SummarizeFilesAsync(files, root);
+    }
+
+    // What the workspace lists about each of these files: a document's own title and id (read from the file), a source file's name.
+    private async Task<List<WorkspaceItemSummary>> SummarizeFilesAsync(IReadOnlyList<string> files, string root)
+    {
+        var list = new List<WorkspaceItemSummary>();
         foreach (var file in files.Where(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)))
         {
             try
@@ -348,6 +354,77 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         return list.OrderByDescending(x => x.LastModified).ToList();
+    }
+
+    /// <summary>
+    /// What the Explorer lists. A workspace that fits the limit is listed whole, every folder and document. A bigger one lists only its
+    /// top folder here, and each folder's contents come from <see cref="ListFolderAsync"/> as the folder is opened: nothing is cut
+    /// off, and nothing costs more than the folder being looked at.
+    /// </summary>
+    public async Task<WorkspaceListing> LoadExplorerListingAsync()
+    {
+        Interlocked.Increment(ref _workspaceScanCount);
+        await EnsureInitializedAsync();
+        var root = EffectiveWorkspaceRoot;
+
+        // Names only: cheap enough to ask before deciding how to list (the walk stops as soon as the limit is passed).
+        var (files, truncated) = await Task.Run(() =>
+        {
+            var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var cutOff, _workspaceFileLimit);
+            return (found, cutOff);
+        }).ConfigureAwait(false);
+        if (truncated) return await ListFolderCoreAsync(root, string.Empty).ConfigureAwait(false);
+
+        var folders = await Task.Run(() =>
+            WorkspaceWalker.Folders(root, out _, _workspaceFileLimit)
+                .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
+                .ToList()).ConfigureAwait(false);
+        _filesTruncated = false;
+        _foldersTruncated = false;
+        return new WorkspaceListing(folders, await SummarizeFilesAsync(files, root).ConfigureAwait(false), IsPartial: false);
+    }
+
+    /// <summary>One folder of the workspace, as a path from the root (empty for the root itself): its subfolders and the documents directly in it.</summary>
+    public async Task<WorkspaceListing> ListFolderAsync(string relativeFolder)
+    {
+        await EnsureInitializedAsync();
+        return await ListFolderCoreAsync(EffectiveWorkspaceRoot, relativeFolder ?? string.Empty).ConfigureAwait(false);
+    }
+
+    private async Task<WorkspaceListing> ListFolderCoreAsync(string root, string relativeFolder)
+    {
+        var folder = relativeFolder.Length == 0 ? root : Path.Combine(root, relativeFolder.Replace('/', Path.DirectorySeparatorChar));
+        string[] directories;
+        string[] files;
+        try
+        {
+            (directories, files) = await Task.Run(() => (Directory.GetDirectories(folder), Directory.GetFiles(folder))).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new WorkspaceListing([], [], IsPartial: true);
+        }
+
+        var subfolders = directories
+            .Where(d => !WorkspaceWalker.IsSkipped(d))
+            .Select(d => Path.GetRelativePath(root, d).Replace(Path.DirectorySeparatorChar, '/'))
+            .ToList();
+        var wanted = files.Where(IsWorkspaceFile).ToList();
+        var truncated = wanted.Count > _workspaceFileLimit;
+        if (truncated) wanted.RemoveRange(_workspaceFileLimit, wanted.Count - _workspaceFileLimit);
+        return new WorkspaceListing(subfolders, await SummarizeFilesAsync(wanted, root).ConfigureAwait(false), IsPartial: true, IsTruncated: truncated);
+    }
+
+    /// <summary>
+    /// Where a document lives, as a path from the workspace root (<c>/</c> separators), when it is known to this session and inside
+    /// the active workspace; null otherwise. The Explorer of a big workspace uses it to open the folders down to the open document.
+    /// </summary>
+    public string? GetWorkspaceRelativePath(string documentId)
+    {
+        if (!_knownFileLocations.TryGetValue(documentId, out var path)) return null;
+
+        var relative = Path.GetRelativePath(EffectiveWorkspaceRoot, path);
+        return relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative) ? null : relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 
     public async Task<ScriptDocumentItem?> LoadScriptAsync(string id)
