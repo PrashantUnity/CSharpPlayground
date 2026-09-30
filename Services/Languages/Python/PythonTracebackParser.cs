@@ -120,7 +120,12 @@ public sealed partial class PythonTracebackParser : IDiagnosticParser
             for (var j = i - 1; j >= 0; j--)
             {
                 if (FrameLine().IsMatch(lines[j].Text)) return i;
-                if (lines[j].Indent == 0 && lines[j].Text.Length > 0 && !IsHeading(lines[j].Text)) break;
+                if (lines[j].Indent == 0 && (lines[j].Text.StartsWith("During handling", StringComparison.Ordinal) ||
+                                             lines[j].Text.StartsWith("The above exception", StringComparison.Ordinal) ||
+                                             (ExceptionLine().IsMatch(lines[j].Text) && LooksLikeExceptionName(lines[j].Text))))
+                {
+                    break;
+                }
             }
         }
 
@@ -152,7 +157,9 @@ public sealed partial class PythonTracebackParser : IDiagnosticParser
             {
                 frames.Add(new Frame(frame.Groups["file"].Value, number, i));
             }
-            else if (line.Indent == 0 && line.Text.Length > 0)
+            else if (line.Indent == 0 && (line.Text.StartsWith("During handling", StringComparison.Ordinal) ||
+                                          line.Text.StartsWith("The above exception", StringComparison.Ordinal) ||
+                                          (ExceptionLine().IsMatch(line.Text) && LooksLikeExceptionName(line.Text))))
             {
                 break; // the end of an earlier, chained traceback
             }

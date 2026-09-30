@@ -313,11 +313,6 @@ public class FryHttpListenerServerEngine : IFryHttpServerEngine
             }
             catch { }
         }
-        finally
-        {
-            try { response.Close(); } catch { }
-        }
-
         sw.Stop();
         Interlocked.Increment(ref _totalRequestsServed);
 
@@ -341,6 +336,12 @@ public class FryHttpListenerServerEngine : IFryHttpServerEngine
         }
 
         RecordTraffic(logItem);
+
+        try
+        {
+            response.Close();
+        }
+        catch { }
     }
 
     public async Task<IServerResult> ExecuteLoopbackTestAsync(FryServerCellItem cell, FryServerTestHarnessItem testHarness, CancellationToken cancellationToken = default)

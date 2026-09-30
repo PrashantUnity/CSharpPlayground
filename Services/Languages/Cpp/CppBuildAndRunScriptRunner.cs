@@ -15,6 +15,7 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
         var compilerPath = context.Toolchain.ExecutablePath;
         var fileName = Path.GetFileName(compilerPath.Replace('\\', '/'));
         var isCl = fileName.Equals("cl.exe", StringComparison.OrdinalIgnoreCase) || fileName.Equals("cl", StringComparison.OrdinalIgnoreCase);
+        var isClang = fileName.Contains("clang", StringComparison.OrdinalIgnoreCase);
 
         var normalizedSource = context.SourceFilePath.Replace('\\', '/');
         var fileBaseName = Path.GetFileNameWithoutExtension(normalizedSource);
@@ -77,7 +78,7 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
 
             if (host.IsWindows && windowsSdk != null)
             {
-                if (windowsSdk.HasMsvcHeaders)
+                if (isClang && windowsSdk.HasMsvcHeaders)
                 {
                     foreach (var inc in windowsSdk.IncludeDirectories)
                     {
@@ -85,7 +86,7 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
                         compileArgs.Add(inc);
                     }
                 }
-                else if (windowsSdk.HasMinGw)
+                else if (isClang && windowsSdk.HasMinGw)
                 {
                     compileArgs.Add("--target=x86_64-w64-windows-gnu");
                     compileArgs.Add($"--sysroot={windowsSdk.MinGwSysroot}");
@@ -104,6 +105,10 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
             compileArgs.Add("-o");
             compileArgs.Add(binPath);
             compileArgs.Add(context.SourceFilePath);
+            if (host.IsWindows)
+            {
+                compileArgs.Add("-lws2_32");
+            }
         }
 
         var environment = await CppProcessEnvironment.ForAsync(host, context.Toolchain, ct);

@@ -73,6 +73,12 @@ public class HttpServerEngineTests
             Assert.True(parsed.RootElement.GetProperty("hasOrders").GetBoolean());
             Assert.Equal("FryServer", parsed.RootElement.GetProperty("appName").GetString());
 
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (engine.TrafficLog.Count == 0 && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(20);
+            }
+
             Assert.True(engine.TotalRequestsServed >= 1);
             Assert.NotEmpty(engine.TrafficLog);
         }

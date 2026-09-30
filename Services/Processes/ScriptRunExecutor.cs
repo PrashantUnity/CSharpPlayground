@@ -138,16 +138,23 @@ public sealed class ScriptRunExecutor
 
                 var step = plan.Steps[i];
                 var tail = new OutputTail(OutputTailLength);
+                var errorTail = new OutputTail(OutputTailLength);
                 void Receive(string text)
                 {
                     tail.Append(text);
+                    onOutput(text);
+                }
+                void ReceiveError(string text)
+                {
+                    tail.Append(text);
+                    errorTail.Append(text);
                     onOutput(text);
                 }
 
                 IManagedProcess process;
                 try
                 {
-                    process = _launcher.Start(step.IsBuildStep ? step.Spec : WithEnvironment(step.Spec, environment), Receive, Receive);
+                    process = _launcher.Start(step.IsBuildStep ? step.Spec : WithEnvironment(step.Spec, environment), Receive, ReceiveError);
                 }
                 catch (ProcessStartException ex)
                 {
@@ -168,9 +175,22 @@ public sealed class ScriptRunExecutor
                 if (cts.IsCancellationRequested) return new ScriptRunResult(exitCode, true, clock.Elapsed, DiagnosticParseResult.Empty);
 
                 // Only a failed step is read for errors: a successful run can print text that merely looks like one.
-                var diagnostics = exitCode != 0 && parser != null
-                    ? parser.Parse(tail.ToString(), sourceFilePath)
-                    : DiagnosticParseResult.Empty;
+                // Standard error is prioritized because compilers and interpreters write tracebacks and errors there,
+                // avoiding interleaving with standard output.
+                var diagnostics = DiagnosticParseResult.Empty;
+                if (exitCode != 0 && parser != null)
+                {
+                    var errorOutput = errorTail.ToString();
+                    if (!string.IsNullOrWhiteSpace(errorOutput))
+                    {
+                        diagnostics = parser.Parse(errorOutput, sourceFilePath);
+                    }
+
+                    if (diagnostics.Diagnostics.Count == 0 && diagnostics.MissingDependency == null)
+                    {
+                        diagnostics = parser.Parse(tail.ToString(), sourceFilePath);
+                    }
+                }
 
                 if (step.IsBuildStep && exitCode != 0)
                 {

@@ -121,6 +121,10 @@ public sealed partial class CppNotebookKernel : INotebookKernel
             compileArgs.Add("-o");
             compileArgs.Add(binPath);
             compileArgs.Add(sourcePath);
+            if (_host.IsWindows)
+            {
+                compileArgs.Add("-lws2_32");
+            }
         }
 
         var compileResult = await _host.RunAsync(compilerPath, compileArgs, TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
