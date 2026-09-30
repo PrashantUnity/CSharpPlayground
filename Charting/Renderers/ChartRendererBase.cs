@@ -16,15 +16,25 @@ public abstract class ChartRendererBase : IChartRenderer
     protected static readonly IBrush TextBrush = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255));
     protected static readonly Typeface DefaultTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
 
+    // The height an axis title takes beside its axis.
+    private const double AxisTitleSize = 16;
+
+    // Markers are drawn a little past a fixed range's edge rather than cut in half.
+    private const double MarkerRoom = 6;
+
+    // About this many pixels between numbers along the x axis.
+    private const double XTickSpacing = 90;
+
     public abstract void Render(DrawingContext context, Rect bounds, ChartOptions options);
     public abstract ChartHitTestResult? HitTest(Point pointerPosition, Rect bounds, ChartOptions options);
 
-    protected Rect GetPlotArea(Rect bounds)
+    /// <summary>Where the data is drawn: inside room for the tick labels, and for the axis titles when there are any.</summary>
+    protected Rect GetPlotArea(Rect bounds, ChartOptions options)
     {
-        double leftPadding = 55;
+        double leftPadding = 55 + (HasText(options.YAxisTitle) ? AxisTitleSize : 0);
         double rightPadding = 20;
         double topPadding = 20;
-        double bottomPadding = 30;
+        double bottomPadding = 30 + (HasText(options.XAxisTitle) ? AxisTitleSize : 0);
 
         return new Rect(
             bounds.Left + leftPadding,
@@ -33,61 +43,49 @@ public abstract class ChartRendererBase : IChartRenderer
             Math.Max(10, bounds.Height - topPadding - bottomPadding));
     }
 
+    /// <summary>The range the axes show (<see cref="ChartDataRange"/>); bars pass <paramref name="zeroBaseline"/>.</summary>
     protected void GetDataBounds(
         ChartOptions options,
         out double minX,
         out double maxX,
         out double minY,
-        out double maxY)
+        out double maxY,
+        bool zeroBaseline = false)
     {
-        minX = 0;
-        maxX = 1;
-        minY = 0;
-        maxY = 1;
+        (minX, maxX, minY, maxY, _) = ChartDataRange.Of(options, zeroBaseline);
+    }
 
-        var allPoints = options.Series.SelectMany(s => s.Points).ToList();
-        if (allPoints.Count == 0) return;
+    /// <summary>
+    /// Keeps what is drawn inside the plot (with room for a marker on its edge), so values outside a range the chart
+    /// fixes don't spill over the axes.
+    /// </summary>
+    protected static DrawingContext.PushedState ClipToPlot(DrawingContext context, Rect plotArea) =>
+        context.PushClip(plotArea.Inflate(MarkerRoom));
 
-        minX = allPoints.Min(p => p.X);
-        maxX = allPoints.Max(p => p.X);
-        minY = allPoints.Min(p => p.Y);
-        maxY = allPoints.Max(p => p.Y);
-
-        if (Math.Abs(maxX - minX) < 1e-6)
+    /// <summary>The axis titles: x centred under its labels, y turned up the left side.</summary>
+    protected void DrawAxisTitles(DrawingContext context, Rect bounds, Rect plotArea, ChartOptions options)
+    {
+        if (HasText(options.XAxisTitle))
         {
-            minX -= 1;
-            maxX += 1;
+            var ft = CreateFormattedText(options.XAxisTitle!, 10.5, TextBrush, FontWeight.SemiBold);
+            context.DrawText(ft, new Point(plotArea.Center.X - ft.Width / 2, plotArea.Bottom + 22));
         }
 
-        if (Math.Abs(maxY - minY) < 1e-6)
+        if (HasText(options.YAxisTitle))
         {
-            if (Math.Abs(minY) < 1e-6)
+            var ft = CreateFormattedText(options.YAxisTitle!, 10.5, TextBrush, FontWeight.SemiBold);
+            var center = new Point(bounds.Left + 2 + ft.Height / 2, plotArea.Center.Y);
+            var turn = Matrix.CreateTranslation(-ft.Width / 2, -ft.Height / 2)
+                       * Matrix.CreateRotation(-Math.PI / 2)
+                       * Matrix.CreateTranslation(center.X, center.Y);
+            using (context.PushTransform(turn))
             {
-                minY = 0;
-                maxY = 1;
-            }
-            else
-            {
-                minY *= 0.8;
-                maxY *= 1.2;
-            }
-        }
-        else
-        {
-            // Give 8% margin on top and bottom
-            double range = maxY - minY;
-            if (minY >= 0)
-            {
-                minY = 0; // Baseline at 0 for positive charts
-                maxY += range * 0.08;
-            }
-            else
-            {
-                minY -= range * 0.05;
-                maxY += range * 0.08;
+                context.DrawText(ft, new Point(0, 0));
             }
         }
     }
+
+    private static bool HasText(string? text) => !string.IsNullOrWhiteSpace(text);
 
     protected double ToCanvasX(double dataX, double minX, double maxX, Rect plotArea)
     {
@@ -101,44 +99,43 @@ public abstract class ChartRendererBase : IChartRenderer
         return plotArea.Bottom - normalized * plotArea.Height;
     }
 
-    protected void DrawGridAndAxes(
-        DrawingContext context,
-        Rect plotArea,
-        double minX,
-        double maxX,
-        double minY,
-        double maxY,
-        bool showGrid)
-    {
-        // 1. Draw horizontal grid lines and Y-axis labels
-        int yTicks = 4;
-        for (int i = 0; i <= yTicks; i++)
-        {
-            double val = minY + (maxY - minY) * (i / (double)yTicks);
-            double y = ToCanvasY(val, minY, maxY, plotArea);
+    // Labels on the value axis closer than this are thinned out, so a short chart's labels never overlap.
+    private const double MinLabelGap = 14;
 
+    /// <summary>Grid lines and labels at the value axis's round ticks, the zero line, and the frame.</summary>
+    private protected void DrawGridAndAxes(DrawingContext context, Rect plotArea, ChartDataRange range, bool showGrid)
+    {
+        double lastLabel = double.PositiveInfinity;
+        foreach (var val in ChartTicks.Between(range.MinY, range.MaxY, range.StepY))
+        {
+            double y = ToCanvasY(val, range.MinY, range.MaxY, plotArea);
             if (showGrid)
             {
                 context.DrawLine(GridPen, new Point(plotArea.Left, y), new Point(plotArea.Right, y));
             }
 
-            var label = FormatTickValue(val);
-            var ft = CreateFormattedText(label, 10, TextBrush);
+            if (lastLabel - y < MinLabelGap) continue;
+            var ft = CreateFormattedText(FormatTickValue(val), 10, TextBrush);
             context.DrawText(ft, new Point(plotArea.Left - ft.Width - 8, y - ft.Height / 2));
+            lastLabel = y;
         }
 
-        // 2. Draw zero baseline if data crosses zero
-        if (minY < 0 && maxY > 0)
+        // Zero, when the values cross it
+        if (range.MinY < 0 && range.MaxY > 0)
         {
-            double zeroY = ToCanvasY(0, minY, maxY, plotArea);
+            double zeroY = ToCanvasY(0, range.MinY, range.MaxY, plotArea);
             context.DrawLine(AxisPen, new Point(plotArea.Left, zeroY), new Point(plotArea.Right, zeroY));
         }
 
-        // 3. Draw bounding axis lines
+        // The frame's axis lines
         context.DrawLine(AxisPen, new Point(plotArea.Left, plotArea.Top), new Point(plotArea.Left, plotArea.Bottom));
         context.DrawLine(AxisPen, new Point(plotArea.Left, plotArea.Bottom), new Point(plotArea.Right, plotArea.Bottom));
     }
 
+    /// <summary>
+    /// The x axis: the values' own labels (categories) where they have them, otherwise round numbers, whole ones when x
+    /// counts the values.
+    /// </summary>
     protected void DrawXAxisLabels(
         DrawingContext context,
         Rect plotArea,
@@ -148,10 +145,25 @@ public abstract class ChartRendererBase : IChartRenderer
     {
         if (points.Count == 0) return;
 
+        if (points.All(p => string.IsNullOrEmpty(p.Label)))
+        {
+            var tickStep = ChartTicks.Step(maxX - minX, Math.Max(2, (int)(plotArea.Width / XTickSpacing)));
+            if (points.All(p => !double.IsFinite(p.X) || p.X == Math.Floor(p.X))) tickStep = Math.Max(tickStep, 1);
+            foreach (var tick in ChartTicks.Between(minX, maxX, tickStep))
+            {
+                var ft = CreateFormattedText(FormatTickValue(tick), 9.5, TextBrush);
+                context.DrawText(ft, new Point(ToCanvasX(tick, minX, maxX, plotArea) - ft.Width / 2, plotArea.Bottom + 6));
+            }
+
+            return;
+        }
+
         int step = Math.Max(1, (int)Math.Ceiling(points.Count / 8.0));
         for (int i = 0; i < points.Count; i += step)
         {
+            // A missing value keeps its label (it names the place of the gap); a missing x has no place.
             var p = points[i];
+            if (!double.IsFinite(p.X) || p.X < minX || p.X > maxX) continue;
             double x = ToCanvasX(p.X, minX, maxX, plotArea);
             var label = string.IsNullOrEmpty(p.Label) ? $"{p.X:0.##}" : p.Label;
             if (label.Length > 12) label = label.Substring(0, 10) + "..";

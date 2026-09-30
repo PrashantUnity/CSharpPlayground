@@ -6,6 +6,10 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 public class LinkedListNodeData
 {
     public int Index { get; set; }
+
+    /// <summary>The node's name in the spec it was drawn from (highlights and pointers use it); null for a list the C# side built.</summary>
+    public string? Id { get; set; }
+
     public string DisplayValue { get; set; } = string.Empty;
     public object? RawValue { get; set; }
     public int? NextIndex { get; set; }
@@ -27,6 +31,7 @@ public class LinkedListNodeData
 
     public LinkedListNodeData Clone() => new(Index, DisplayValue, NextIndex)
     {
+        Id = Id,
         RawValue = RawValue,
         IsCycleTarget = IsCycleTarget,
         IsActive = IsActive,

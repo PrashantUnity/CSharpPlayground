@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="360"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DControl">
+
+    <Grid>
+        <controls:VisualChromeControl x:Name="Chrome" />
+
+        <StackPanel x:Name="KindToolsPanel" Orientation="Horizontal" Spacing="4" IsVisible="False">
+            <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="2"
+                    Margin="0,0,4,0">
+                <StackPanel Orientation="Horizontal" Spacing="1">
+                    <Button Name="IsoViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Isometric 3D View">
+                        <TextBlock Text="ISO" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Name="TopViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Top View (XY)">
+                        <TextBlock Text="TOP" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Name="FrontViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Front View (XZ)">
+                        <TextBlock Text="FRT" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Name="SideViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Side View (YZ)">
+                        <TextBlock Text="SIDE" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <Button Name="AutoRotateBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle 360° Turntable Auto-Rotate">
+                <materialIcons:MaterialIcon Name="AutoRotateIcon" Kind="RotateRight" Width="13" Height="13" />
+            </Button>
+            <Button Name="ProjectionToggleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Perspective / Orthographic Camera">
+                <materialIcons:MaterialIcon Kind="CameraOutline" Width="13" Height="13" />
+            </Button>
+            <Button Name="GridToggleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Floor Grid &amp; Bounding Box">
+                <materialIcons:MaterialIcon Kind="Grid" Width="12" Height="12" />
+            </Button>
+            <Button Name="WireframeToggleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Wireframe Mesh">
+                <materialIcons:MaterialIcon Kind="VectorSquare" Width="12" Height="12" />
+            </Button>
+            <Button Name="ColorMapCycleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Cycle Color Map Preset">
+                <materialIcons:MaterialIcon Kind="PaletteOutline" Width="13" Height="13" />
+            </Button>
+            <Button Name="ExportHtmlBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Export to Standalone WebGL HTML (Three.js)">
+                <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="13" Height="13" />
+            </Button>
+        </StackPanel>
+
+        <Border x:Name="CanvasContainer"
+                Background="#070B10"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="2"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                IsVisible="False">
+            <charting3d:Plot3DCanvasControl x:Name="CanvasControl"
+                                             Height="300"
+                                             MinHeight="180"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch" />
+        </Border>
+    </Grid>
+</UserControl>

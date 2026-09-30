@@ -35,6 +35,14 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     [ObservableProperty]
     private object _currentPage;
 
+    // Pages are kept alive once built, so leaving one no longer detaches it; tell the pages that care (timers etc.).
+    partial void OnCurrentPageChanged(object? oldValue, object newValue)
+    {
+        if (ReferenceEquals(oldValue, newValue)) return;
+        (oldValue as IPageLifecycle)?.OnDeactivated();
+        (newValue as IPageLifecycle)?.OnActivated();
+    }
+
     [ObservableProperty]
     private bool _isOnManagerPage = true;
 
@@ -60,18 +68,31 @@ public partial class CSharpStudioHostViewModel : ObservableObject
     public CSharpSettingsViewModel SettingsViewModel { get; }
     public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
     public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
+    public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
     /// <param name="settingsStore">The plugin's settings (execution timeout).</param>
     /// <param name="blindProgress">Where Blind 75 progress lives; the user's progress file when not given.</param>
+    /// <param name="storageService">Where scripts and notebooks live; the user's library when not given.</param>
     public CSharpStudioHostViewModel(
         IServiceProvider? serviceProvider = null,
         IPluginSettingsStore? settingsStore = null,
         IBlindProgressService? blindProgress = null,
-        StudioLanguageServices? languages = null)
+        StudioLanguageServices? languages = null,
+        IScriptStorageService? storageService = null)
     {
         _languages = languages ?? StudioLanguageServices.Default;
-        _storageService = new LocalScriptStorageService(languages: _languages.Registry);
+        if (storageService == null)
+        {
+            // The user's own library: files changed outside the studio (git, another editor) should show up by themselves.
+            var library = new LocalScriptStorageService(languages: _languages.Registry);
+            library.StartWatchingForChanges();
+            _storageService = library;
+        }
+        else
+        {
+            _storageService = storageService;
+        }
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -109,7 +130,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
             navigateToDocsAction: () => NavigateToDocs(),
             navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
             languages: _languages,
-            navigateToSettingsAction: cat => NavigateToSettings(cat));
+            navigateToSettingsAction: cat => NavigateToSettings(cat),
+            openServerAction: server => NavigateToServerStudio(server));
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -178,7 +200,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 navigateToDocsAction: () => NavigateToDocs(),
                 blindProgress: _blindProgress,
                 languages: _languages,
-                navigateToSettingsAction: () => NavigateToSettings());
+                navigateToSettingsAction: () => NavigateToSettings(),
+                openServerAction: server => NavigateToServerStudio(server));
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -196,7 +219,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject
                 openScriptAction: NavigateToCodeStudio,
                 navigateToDocsAction: () => NavigateToDocs(),
                 languages: _languages,
-                navigateToSettingsAction: () => NavigateToSettings());
+                navigateToSettingsAction: () => NavigateToSettings(),
+                openServerAction: server => NavigateToServerStudio(server));
         });
 
         void Publish()
@@ -266,10 +290,32 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         ActiveDocumentTitle = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
     }
 
+    public void NavigateToServerStudio(FryServerDocumentItem server, string? filePath = null)
+    {
+        if (ServerStudioViewModel == null)
+        {
+            ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
+                document: server,
+                filePath: filePath,
+                portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
+                storageService: _storageService,
+                backToHubAction: NavigateToManager,
+                backToHomeAction: NavigateToHome);
+        }
+        else
+        {
+            ServerStudioViewModel.LoadDocument(server, filePath);
+        }
+
+        CurrentPage = ServerStudioViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = string.IsNullOrWhiteSpace(server.Title) ? "API Server" : server.Title;
+    }
+
     [RelayCommand]
     public void NavigateToManager()
     {
-        _ = ManagerViewModel.LoadWorkspaceItemsAsync();
+        _ = ManagerViewModel.ReloadIfStaleAsync();
         CurrentPage = ManagerViewModel;
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";
@@ -326,7 +372,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject
         {
             CurrentPage = _previousPageBeforeSettings;
             IsOnManagerPage = ReferenceEquals(CurrentPage, ManagerViewModel);
-            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : "Editor")));
+            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : (CurrentPage is PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel ? "API Server" : "Editor"))));
         }
         else
         {

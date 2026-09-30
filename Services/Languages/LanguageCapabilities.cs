@@ -57,4 +57,8 @@ public static class LanguageIds
     public const string JavaScript = "javascript";
     public const string Java = "java";
     public const string Cpp = "cpp";
+    public const string Go = "go";
+    public const string FSharp = "fsharp";
+    public const string Sql = "sql";
+    public const string Rust = "rust";
 }

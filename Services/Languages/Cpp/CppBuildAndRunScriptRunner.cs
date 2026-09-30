@@ -39,6 +39,8 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
         var includeDir = await CppDisplayRuntime.EnsureIncludeDirectoryAsync(outDir, ct).ConfigureAwait(false);
         var vcpkgInclude = FindVcpkgIncludeDirectory(context.WorkingDirectory, host);
 
+        var windowsSdk = host.IsWindows ? CppWindowsSdkResolver.Resolve(host) : null;
+
         var compileArgs = new List<string>();
         if (isCl)
         {
@@ -57,6 +59,13 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
             {
                 compileArgs.Add($"/I{vcpkgInclude}");
             }
+            if (windowsSdk?.HasMsvcHeaders == true)
+            {
+                foreach (var inc in windowsSdk.IncludeDirectories)
+                {
+                    compileArgs.Add($"/I{inc}");
+                }
+            }
             compileArgs.Add(context.SourceFilePath);
         }
         else
@@ -65,6 +74,24 @@ public sealed class CppBuildAndRunScriptRunner(IHostEnvironment host) : IScriptR
             compileArgs.Add("-std=c++20");
             compileArgs.Add("-O2");
             compileArgs.Add("-Wall");
+
+            if (host.IsWindows && windowsSdk != null)
+            {
+                if (windowsSdk.HasMsvcHeaders)
+                {
+                    foreach (var inc in windowsSdk.IncludeDirectories)
+                    {
+                        compileArgs.Add("-imsvc");
+                        compileArgs.Add(inc);
+                    }
+                }
+                else if (windowsSdk.HasMinGw)
+                {
+                    compileArgs.Add("--target=x86_64-w64-windows-gnu");
+                    compileArgs.Add($"--sysroot={windowsSdk.MinGwSysroot}");
+                }
+            }
+
             if (!string.IsNullOrEmpty(sourceDir))
             {
                 compileArgs.Add($"-I{sourceDir}");
@@ -153,6 +180,31 @@ public static class CppProcessEnvironment
         if (!string.IsNullOrEmpty(bin))
         {
             path = bin + (host.IsWindows ? ";" : ":") + path;
+        }
+
+        if (host.IsWindows)
+        {
+            var windowsSdk = CppWindowsSdkResolver.Resolve(host);
+            if (windowsSdk.HasMsvcHeaders)
+            {
+                var existingInclude = host.GetEnvironmentVariable("INCLUDE");
+                var msvcIncludes = string.Join(";", windowsSdk.IncludeDirectories);
+                environment["INCLUDE"] = string.IsNullOrEmpty(existingInclude) ? msvcIncludes : msvcIncludes + ";" + existingInclude;
+
+                var existingLib = host.GetEnvironmentVariable("LIB");
+                var msvcLibs = string.Join(";", windowsSdk.LibDirectories);
+                environment["LIB"] = string.IsNullOrEmpty(existingLib) ? msvcLibs : msvcLibs + ";" + existingLib;
+            }
+            else if (windowsSdk.HasMinGw && !string.IsNullOrEmpty(windowsSdk.MinGwSysroot))
+            {
+                var minGwBin = host.IsWindows
+                    ? windowsSdk.MinGwSysroot.TrimEnd('\\', '/') + "\\bin"
+                    : Path.Combine(windowsSdk.MinGwSysroot, "bin");
+                if (host.DirectoryExists(minGwBin))
+                {
+                    path = minGwBin + ";" + path;
+                }
+            }
         }
 
         if (path.Length > 0) environment["PATH"] = path;

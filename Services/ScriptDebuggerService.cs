@@ -156,17 +156,7 @@ public class ScriptDebuggerService
         {
             var options = ScriptOptions.Default
                 .WithReferences(_compilerService.DefaultReferences)
-                .WithImports(
-                    "System",
-                    "System.IO",
-                    "System.Linq",
-                    "System.Collections",
-                    "System.Collections.Generic",
-                    "System.Text",
-                    "System.Text.Json",
-                    "System.Text.RegularExpressions",
-                    "System.Threading.Tasks",
-                    "PdfEditorApp.Plugins.CSharpEditor.Services");
+                .WithImports(ScriptImports.ScriptingImports);
 
             // Synthesize local variable declarations if any are in scope
             var prefix = new StringBuilder();

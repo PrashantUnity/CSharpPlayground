@@ -11,6 +11,8 @@ public sealed class StudioSettings
     public bool ConvertTabsToSpaces { get; set; } = true;
     public bool WordWrap { get; set; } = false;
     public bool ShowLineNumbers { get; set; } = true;
+    public bool EnableSyntaxHighlighting { get; set; } = true;
+    public bool EnableAutoCompletion { get; set; } = true;
     public double FontSize { get; set; } = 13.0;
 
     // Execution & Terminal
@@ -29,6 +31,8 @@ public sealed class StudioSettings
         ConvertTabsToSpaces = ConvertTabsToSpaces,
         WordWrap = WordWrap,
         ShowLineNumbers = ShowLineNumbers,
+        EnableSyntaxHighlighting = EnableSyntaxHighlighting,
+        EnableAutoCompletion = EnableAutoCompletion,
         FontSize = FontSize,
         ExecutionTimeoutSeconds = ExecutionTimeoutSeconds,
         AutoClearConsoleOnRun = AutoClearConsoleOnRun,

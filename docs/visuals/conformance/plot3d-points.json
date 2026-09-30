@@ -1,0 +1,23 @@
+{
+  "mime": "application/vnd.fry.plot3d.v1\u002Bjson",
+  "spec": {
+    "kind": "scatter",
+    "series": [
+      {
+        "x": [
+          1,
+          4
+        ],
+        "y": [
+          2,
+          5
+        ],
+        "z": [
+          3,
+          6
+        ]
+      }
+    ],
+    "title": "Points"
+  }
+}

@@ -168,6 +168,8 @@ public partial class NotebookCellViewModel : ObservableObject
             _hasInspectorOutput = true;
         }
 
+        RestoreVisuals(model);
+
         if (model.HadInteractiveControl)
         {
             _interactiveControlPlaceholderVisible = true;
@@ -643,8 +645,7 @@ public partial class NotebookCellViewModel : ObservableObject
         HasInspectorOutput = false;
         Model.InspectorSnapshot = null;
 
-        ChartOptions = null;
-        HasChartOutput = false;
+        ClearVisuals();
         MissingVariableName = null;
         HasMissingVariableError = false;
         MissingDependency = null;

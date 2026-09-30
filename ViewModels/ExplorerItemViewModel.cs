@@ -62,6 +62,35 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public string DeleteConfirmationText => $"Delete {Name} from disk?";
 
+    /// <summary>The paths of the folders that are open in a tree, so a rebuilt tree can open the same ones again.</summary>
+    public static HashSet<string> ExpandedFolderPaths(IEnumerable<ExplorerItemViewModel> roots)
+    {
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Collect(roots);
+        return paths;
+
+        void Collect(IEnumerable<ExplorerItemViewModel> items)
+        {
+            foreach (var item in items.Where(i => i.IsDirectory))
+            {
+                if (item.IsExpanded) paths.Add(item.FullPath);
+                Collect(item.Children);
+            }
+        }
+    }
+
+    /// <summary>
+    /// False for a folder of a workspace too big to list at once, until it is opened for the first time and its contents are listed:
+    /// until then it holds a single placeholder row, so it can be expanded.
+    /// </summary>
+    public bool ChildrenLoaded { get; set; } = true;
+
+    /// <summary>Asked to list an unlisted folder's contents, when it is opened.</summary>
+    public Action<ExplorerItemViewModel>? LoadChildrenRequested { get; set; }
+
+    /// <summary>A row that stands for something else ("Loading...", files a folder has beyond the listing limit): it can't be opened, renamed or deleted.</summary>
+    public bool IsPlaceholder { get; init; }
+
     public ExplorerItemViewModel? Parent { get; set; }
 
     public ObservableCollection<ExplorerItemViewModel> Children { get; } = new();
@@ -131,6 +160,9 @@ public partial class ExplorerItemViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IconKind));
         OnPropertyChanged(nameof(ChevronKind));
+
+        // Opening a folder that has not been listed yet lists it (its placeholder row shows meanwhile).
+        if (value && IsDirectory && !ChildrenLoaded) LoadChildrenRequested?.Invoke(this);
     }
 
     [RelayCommand]

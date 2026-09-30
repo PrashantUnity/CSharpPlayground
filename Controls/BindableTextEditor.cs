@@ -72,6 +72,12 @@ public class BindableTextEditor : TextEditor
     private readonly DebugLineRenderer _debugLineRenderer = new();
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
 
+    /// <summary>
+    /// Optional settings store; when set the editor honours EnableAutoCompletion and
+    /// EnableSyntaxHighlighting. Injected by the notebook view after the editor is created.
+    /// </summary>
+    public Services.Settings.StudioSettingsStore? StudioSettings { get; set; }
+
     public BreakpointMargin BreakpointMargin => _breakpointMargin;
     public DebugLineRenderer DebugLineRenderer => _debugLineRenderer;
 
@@ -114,12 +120,13 @@ public class BindableTextEditor : TextEditor
         _completionController = new CSharpEditorCompletionController(this, () => SharedCompiler.Value)
         {
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
-            IsSuppressed = () => !Supports(LanguageCapabilities.Completion)
+            IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.Completion)
+                                 || StudioSettings?.GetSettings().EnableAutoCompletion == false
         };
         _quickInfoController = new CSharpQuickInfoController(this, () => SharedQuickInfo.Value)
         {
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
-            IsSuppressed = () => !Supports(LanguageCapabilities.QuickInfo)
+            IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
         };
 
         TextChanged += OnEditorTextChanged;
@@ -153,9 +160,13 @@ public class BindableTextEditor : TextEditor
         bool isDark = ActualThemeVariant == ThemeVariant.Dark ||
                       (ActualThemeVariant != ThemeVariant.Light && (Application.Current?.ActualThemeVariant == ThemeVariant.Dark));
 
+        bool syntaxEnabled = StudioSettings?.GetSettings().EnableSyntaxHighlighting ?? true;
+
         if (isDark)
         {
-            SyntaxHighlighting = _language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            SyntaxHighlighting = syntaxEnabled
+                ? (_language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme())
+                : null;
             Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
@@ -166,7 +177,9 @@ public class BindableTextEditor : TextEditor
         }
         else
         {
-            SyntaxHighlighting = _language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
+            SyntaxHighlighting = syntaxEnabled
+                ? (_language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme())
+                : null;
             Background = Brushes.Transparent;
             Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
             LineNumbersForeground = new SolidColorBrush(Color.Parse("#64748B"));

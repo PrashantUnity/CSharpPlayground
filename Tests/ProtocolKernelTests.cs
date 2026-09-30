@@ -4,6 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
@@ -32,7 +33,8 @@ public class ProtocolKernelTests
     private static string Json(object message) => JsonSerializer.Serialize(message) + "\n";
 
     // A pretend kernel: "print X" streams X, "show" displays HTML, "fail" errors, "ask" asks for input, "crash" exits,
-    // "wait" waits for an interrupt, "stuck" ignores one. Values set with set_value can be read back.
+    // "wait" waits for an interrupt, "stuck" ignores one, "late" prints for its cell once the next cell has started.
+    // Values set with set_value can be read back.
     private static FakeProcessLauncher KernelProgram(ConcurrentQueue<string>? received = null)
     {
         return new FakeProcessLauncher
@@ -40,6 +42,7 @@ public class ProtocolKernelTests
             Behavior = async (_, p) =>
             {
                 var values = new Dictionary<string, string>();
+                string? lateId = null;
                 p.Write(Json(new { type = "ready", language = "fake", version = "1.0" }));
                 while (await p.ReadLineAsync() is { } line)
                 {
@@ -52,7 +55,18 @@ public class ProtocolKernelTests
                     {
                         case "execute":
                             var code = message.GetProperty("code").GetString()!;
-                            if (code.StartsWith("print ", StringComparison.Ordinal))
+                            if (lateId != null)
+                            {
+                                p.Write(Json(new { type = "stream", id = lateId, name = "stdout", text = "late output\n" }));
+                                lateId = null;
+                            }
+
+                            if (code == "late")
+                            {
+                                lateId = id;
+                                p.Write(Json(new { type = "reply", id, status = "ok" }));
+                            }
+                            else if (code.StartsWith("print ", StringComparison.Ordinal))
                             {
                                 p.Write(Json(new { type = "stream", id, name = "stdout", text = code[6..] + "\n" }));
                                 p.WriteError("from C code\n");
@@ -91,6 +105,19 @@ public class ProtocolKernelTests
                             {
                                 await Task.Delay(Timeout.Infinite, p.KilledToken);
                             }
+                            else if (code == "figure")
+                            {
+                                var chart = new Dictionary<string, object> { ["application/vnd.fry.chart.v1+json"] = new { title = "Figure", series = new[] { new { y = new[] { 1, 2, 3 } } } } };
+                                p.Write(Json(new { type = "display", id, data = chart, transient = new { display_id = "fig" } }));
+                                p.Write(Json(new { type = "subscribe", id, display_id = "fig", events = new[] { "click" } }));
+                                p.Write(Json(new { type = "reply", id, status = "ok" }));
+                            }
+                            else if (code == "grow")
+                            {
+                                var chart = new Dictionary<string, object> { ["application/vnd.fry.chart.v1+json"] = new { title = "Grown", series = new[] { new { y = new[] { 1, 2, 3, 4 } } } } };
+                                p.Write(Json(new { type = "update_display", id, data = chart, transient = new { display_id = "fig" } }));
+                                p.Write(Json(new { type = "reply", id, status = "ok" }));
+                            }
                             else if (code == "garbage")
                             {
                                 p.Write("this line isn't JSON\n");
@@ -100,6 +127,12 @@ public class ProtocolKernelTests
                             {
                                 p.Write(Json(new { type = "reply", id, status = "ok" }));
                             }
+                            break;
+                        case "event":
+                            // The program's callback: it prints which value was clicked, as output of the event.
+                            var target = message.GetProperty("event").GetProperty("target");
+                            p.Write(Json(new { type = "stream", id, name = "stdout", text = $"clicked {target.GetProperty("index").GetInt32()}\n" }));
+                            p.Write(Json(new { type = "reply", id, status = "ok" }));
                             break;
                         case "variables":
                             p.Write(Json(new { type = "reply", id, status = "ok", variables = values.Select(kv => new { name = kv.Key, type = "json", value = kv.Value, kind = "Primitive" }) }));
@@ -155,6 +188,92 @@ public class ProtocolKernelTests
         Assert.Contains(sent, line => line.Contains("\"execute\"") && line.Contains("print hello") && line.Contains("cell-1"));
         Assert.Equal("Fake 1.0", kernel.DisplayName);
         Assert.True(kernel.IsSessionActive);
+    }
+
+    // A program can print after its cell's reply (a background thread, a buffer flushed late): the text belongs to the
+    // cell that started it, whichever cell runs by the time it arrives.
+    [Fact]
+    public async Task OutputThatArrivesAfterItsCellEnded_StaysWithThatCell()
+    {
+        using var kernel = Kernel(KernelProgram());
+        var firstConsole = new ConcurrentQueue<string>();
+
+        var first = await kernel.ExecuteAsync(new KernelExecutionRequest
+        {
+            Code = "late",
+            SourceId = "cell-1",
+            OnConsole = firstConsole.Enqueue,
+            OnRichOutput = _ => { }
+        }, CancellationToken.None).WaitAsync(Patience);
+        var (second, secondConsole, _) = await Run(kernel, "print next");
+
+        Assert.True(first.Success);
+        Assert.True(second.Success);
+        Assert.DoesNotContain("late output", secondConsole);
+        Assert.Contains("late output", string.Concat(firstConsole));
+    }
+
+    // update_display redraws the visual the program showed with that display_id, where it is.
+    [Fact]
+    public async Task AnUpdate_RedrawsTheVisualWhereItIs()
+    {
+        using var kernel = Kernel(KernelProgram());
+
+        var (_, _, shown) = await Run(kernel, "figure");
+        var (grown, _, again) = await Run(kernel, "grow");
+
+        var figure = Assert.Single(shown).Visual!;
+        Assert.True(grown.Success);
+        Assert.Empty(again);
+        Assert.Equal("Grown", figure.Spec.Title);
+        Assert.Equal("fig", figure.DisplayId);
+    }
+
+    // A click on a visual the program listens to reaches its callback; what the callback prints goes to the cell that
+    // showed the visual, whichever cell ran since.
+    [Fact]
+    public async Task AClick_ReachesTheProgram_AndItsOutputGoesToTheCellThatShowedTheVisual()
+    {
+        using var kernel = Kernel(KernelProgram());
+        var figureConsole = new ConcurrentQueue<string>();
+        var shown = new ConcurrentQueue<RichCellOutput>();
+        await kernel.ExecuteAsync(new KernelExecutionRequest
+        {
+            Code = "figure",
+            SourceId = "cell-1",
+            OnConsole = figureConsole.Enqueue,
+            OnRichOutput = shown.Enqueue
+        }, CancellationToken.None).WaitAsync(Patience);
+        var (_, laterConsole, _) = await Run(kernel, "print later");
+        var figure = Assert.Single(shown).Visual!;
+
+        Assert.True(figure.IsInteractive);
+        figure.Raise(VisualEvent.Click(new VisualEventTarget { Series = 0, Index = 2, Y = 3 }));
+
+        await WaitUntil(() => string.Concat(figureConsole).Contains("clicked 2"));
+        Assert.DoesNotContain("clicked", laterConsole);
+    }
+
+    [Fact]
+    public async Task AVisual_StopsListening_WhenItsProgramEnds()
+    {
+        using var kernel = Kernel(KernelProgram());
+        var (_, _, shown) = await Run(kernel, "figure");
+        var figure = Assert.Single(shown).Visual!;
+
+        await Run(kernel, "crash");
+
+        await WaitUntil(() => !figure.IsInteractive);
+    }
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        while (!condition())
+        {
+            if (clock.Elapsed > Patience) throw new TimeoutException("It never happened.");
+            await Task.Delay(10);
+        }
     }
 
     [Fact]

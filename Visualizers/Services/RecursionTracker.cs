@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 /// <summary>Draws recursion as a call tree; the path from main to the current call is the call stack.</summary>
-public sealed class RecursionTracker
+public sealed class RecursionTracker : IVisualSource
 {
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
     public const int MaxCalls = 255;
     private const int MaxLabelLength = 12;
 
@@ -44,8 +48,11 @@ public sealed class RecursionTracker
         new(title ?? "Recursion Tree", sourceLine, sourceFile);
 
     /// <summary>Shows a live memo, set or list beneath the tree at every step recorded after this call.</summary>
-    public void Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "") =>
+    public RecursionTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
+    {
         _watches.Add(collection, name);
+        return this;
+    }
 
     /// <summary>Starts a call; use it as <c>using var call = calls.Enter($"fib({n})");</c> so it always ends.</summary>
     public RecursionCall Enter(
@@ -179,32 +186,38 @@ public sealed class RecursionCall : IDisposable
     }
 
     /// <summary>Ends a backtracking branch that reached a solution; it is drawn green with a ✓.</summary>
-    public void Found(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
+    public RecursionCall Found(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
     {
         if (TryComplete())
         {
             string description = note == null ? $"{_node!.DisplayValue} is a solution" : $"{_node!.DisplayValue}: {note}";
             _tracker.Complete(_node!, TreeNodeState.Matched, "✓", description, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
     /// <summary>Ends a call that returns nothing, with a note for the step (the call stays in the tree as visited).</summary>
-    public void Done(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
+    public RecursionCall Done(string? note = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
     {
         if (TryComplete())
         {
             _tracker.Complete(_node!, TreeNodeState.Visited, null, note ?? $"{_node!.DisplayValue} returns", sourceLine, sourceFile);
         }
+
+        return this;
     }
 
     /// <summary>Ends a backtracking branch that cannot lead to a solution.</summary>
-    public void Prune(string? reason = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
+    public RecursionCall Prune(string? reason = null, [CallerLineNumber] int sourceLine = 0, [CallerFilePath] string sourceFile = "")
     {
         if (TryComplete())
         {
             string description = reason == null ? $"Prune {_node!.DisplayValue}" : $"Prune {_node!.DisplayValue}: {reason}";
             _tracker.Complete(_node, TreeNodeState.Pruned, "pruned", description, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
     public void Dispose()

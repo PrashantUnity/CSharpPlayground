@@ -35,6 +35,21 @@ public class CSharpEditorCompletionController : IDisposable
     /// <summary>True while completion should stay off, e.g. when the editor shows a language other than C#.</summary>
     public Func<bool>? IsSuppressed { get; set; }
 
+    /// <summary>
+    /// Master on/off switch controlled by the user's "Auto Completion" setting.
+    /// Defaults to true. Setting to false closes any open completion window immediately.
+    /// </summary>
+    public bool IsFeatureEnabled
+    {
+        get => _isFeatureEnabled;
+        set
+        {
+            _isFeatureEnabled = value;
+            if (!value) Close();
+        }
+    }
+    private bool _isFeatureEnabled = true;
+
     /// <summary>Closes the completion list if it's open (the editor switched to another document or language).</summary>
     public void Close()
     {
@@ -81,7 +96,7 @@ public class CSharpEditorCompletionController : IDisposable
 
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
-        if (string.IsNullOrEmpty(e.Text) || IsSuppressed?.Invoke() == true) return;
+        if (!_isFeatureEnabled || string.IsNullOrEmpty(e.Text) || IsSuppressed?.Invoke() == true) return;
 
         var ch = e.Text[0];
 
@@ -136,7 +151,7 @@ public class CSharpEditorCompletionController : IDisposable
 
     public void TriggerCompletion(bool explicitTrigger = false)
     {
-        if (IsSuppressed?.Invoke() == true) return;
+        if (!_isFeatureEnabled || IsSuppressed?.Invoke() == true) return;
         _queryCts?.Cancel();
         _queryCts = new CancellationTokenSource();
         var token = _queryCts.Token;

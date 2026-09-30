@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 
@@ -20,14 +21,17 @@ internal static class VisualizerSnapshots
             var kernel = new NotebookExecutionKernel();
             string code = Blind75CatalogService.ConvertToScript(problem).Code;
 
-            // The kernel builds the visualizer controls through Dispatcher.UIThread.Invoke, so the script runs on a worker
-            // thread while this thread keeps the UI queue moving; running it here would block on itself.
+            // The script runs on a worker thread, as it does in the studio, while this thread keeps the UI queue moving.
             var result = Snapshot.Wait(Task.Run(() => kernel.ExecuteCellAsync(code, onRichOutput: outputs.Add)));
             Console.WriteLine($"==== {problem.FullTitle}: {(result.Success ? "ran" : "FAILED " + result.ErrorMessage)}");
             Console.WriteLine(result.ConsoleOutput.Trim());
 
+            // Each visualizer is drawn from its spec, as the studio's views draw it.
             int k = 0;
-            foreach (var visualizer in outputs.Where(o => o.Kind == CellOutputKind.Visualizer).Select(o => o.VisualizerOptions).OfType<VisualizerOptions>())
+            var visualizers = outputs
+                .Where(o => o.Visual?.Spec is VisualizerSpec)
+                .Select(o => VisualizerRenderModelBuilder.Build((VisualizerSpec)o.Visual!.Spec));
+            foreach (var visualizer in visualizers)
             {
                 k++;
                 var sequence = visualizer.Sequence;

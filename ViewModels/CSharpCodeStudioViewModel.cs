@@ -8,7 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -19,6 +19,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToSettingsAction;
     private readonly StudioLanguageServices _languages;
@@ -270,7 +271,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         Action<Action>? postToUiThread = null,
         IBlindProgressService? blindProgress = null,
         StudioLanguageServices? languages = null,
-        Action? navigateToSettingsAction = null)
+        Action? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _script = script;
         _languages = languages ?? StudioLanguageServices.Default;
@@ -281,6 +283,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _openNotebookAction = openNotebookAction;
+        _openServerAction = openServerAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
@@ -328,15 +331,30 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
 
+        // Go to File finds any file of the workspace, not just the open tabs.
+        QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
+
         var initialSettings = _languages.StudioSettings.GetSettings();
         _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
         _useExternalDotNetRunner = string.Equals(initialSettings.CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);
+        _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
+        _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
 
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        // What a workspace search listed belongs to the folder that was open: search the new one for the same text.
+        _storageService.ActiveWorkspaceChanged += () => _postToUiThread(() =>
+        {
+            if (SearchAllFiles && !string.IsNullOrEmpty(SearchQuery)) ExecuteSearch();
+        });
+        // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
+        _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+        });
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
     }
@@ -350,17 +368,23 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
                 EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
             }
             SetCSharpRunner(s.CSharpExecutionEngine);
+            IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;
+            IsAutoCompletionEnabled = s.EnableAutoCompletion;
         });
     }
+
+    // True while a tab's own code and notes are put back into the studio on a switch: that is not an edit, so it must
+    // not mark the tab modified or move its modified time.
+    private bool _isRestoringTabState;
 
     partial void OnCodeChanged(string value)
     {
         Script.Code = value;
-        Script.LastModified = DateTime.UtcNow;
+        if (!_isRestoringTabState) Script.LastModified = DateTime.UtcNow;
         var activeTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
         if (activeTab != null)
         {
-            activeTab.IsDirty = true;
+            if (!_isRestoringTabState) activeTab.IsDirty = true;
             activeTab.Document.Code = value;
         }
         TriggerDiagnosticsCheck();
@@ -370,7 +394,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     partial void OnNotesChanged(string value)
     {
         Script.Notes = value;
-        Script.LastModified = DateTime.UtcNow;
+        if (!_isRestoringTabState) Script.LastModified = DateTime.UtcNow;
     }
 
     partial void OnSelectedLanguageModeIndexChanged(int value)

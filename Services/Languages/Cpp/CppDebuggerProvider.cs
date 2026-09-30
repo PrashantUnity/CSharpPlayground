@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
@@ -38,61 +37,10 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
     {
         var resolved = toolchain ?? await _toolchain.ResolveAsync(new ToolchainQuery(), ct).ConfigureAwait(false);
 
-        var candidatePaths = new List<string>();
-
+        var siblingFolders = new List<string?>();
         if (resolved.IsFound && resolved.Toolchain != null)
         {
-            var binDir = Path.GetDirectoryName(resolved.Toolchain.ExecutablePath);
-            if (!string.IsNullOrEmpty(binDir))
-            {
-                var siblingDap = _host.IsWindows ? "lldb-dap.exe" : "lldb-dap";
-                candidatePaths.Add(Path.Combine(binDir, siblingDap));
-                var siblingVscode = _host.IsWindows ? "lldb-vscode.exe" : "lldb-vscode";
-                candidatePaths.Add(Path.Combine(binDir, siblingVscode));
-            }
-        }
-
-        if (_host.IsMacOS)
-        {
-            candidatePaths.Add("/opt/homebrew/opt/llvm/bin/lldb-dap");
-            candidatePaths.Add("/usr/local/opt/llvm/bin/lldb-dap");
-            candidatePaths.Add("/usr/bin/lldb-dap");
-            candidatePaths.Add("/opt/homebrew/bin/lldb-dap");
-        }
-        else if (!_host.IsWindows)
-        {
-            candidatePaths.Add("/usr/bin/lldb-dap");
-            candidatePaths.Add("/usr/bin/lldb-vscode");
-            candidatePaths.Add("/usr/local/bin/lldb-dap");
-        }
-
-        candidatePaths.Add(_host.IsWindows ? "lldb-dap.exe" : "lldb-dap");
-        candidatePaths.Add(_host.IsWindows ? "lldb-vscode.exe" : "lldb-vscode");
-
-        foreach (var path in candidatePaths)
-        {
-            if (string.IsNullOrWhiteSpace(path)) continue;
-            try
-            {
-                var result = await _host.RunAsync(path, ["--version"], TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
-                if (result.ExitCode == 0 || !string.IsNullOrWhiteSpace(result.StandardOutput))
-                {
-                    var versionText = (result.StandardOutput + " " + result.StandardError).Trim();
-                    var match = Regex.Match(versionText, @"(?:version\s+|lldb\s+)(?<ver>\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
-                    var ver = match.Success ? match.Groups["ver"].Value : "1.0.0";
-
-                    return new DebuggerResolution(
-                        IsAvailable: true,
-                        DebuggerName: "lldb-dap",
-                        ExecutablePath: path,
-                        Version: ver,
-                        MissingGuidance: null);
-                }
-            }
-            catch
-            {
-                // Try next candidate
-            }
+            siblingFolders.Add(Path.GetDirectoryName(resolved.Toolchain.ExecutablePath));
         }
 
         var missing = new MissingToolchainGuidance(
@@ -103,12 +51,7 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
             ],
             "https://lldb.llvm.org");
 
-        return new DebuggerResolution(
-            IsAvailable: false,
-            DebuggerName: "lldb-dap",
-            ExecutablePath: null,
-            Version: null,
-            MissingGuidance: missing);
+        return await LldbDapLocator.ResolveAsync(_host, siblingFolders, missing, ct).ConfigureAwait(false);
     }
 
     public async Task<IDebugSession> LaunchAsync(DebugLaunchContext context, CancellationToken ct = default)
@@ -202,14 +145,16 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
             context,
             postHandshake: async dapClient =>
             {
-                await dapClient.SendRequestAsync("launch", new
+                var launched = await dapClient.SendRequestAsync("launch", new
                 {
                     program = binPath,
                     cwd = workingDir,
                     stopOnEntry = false
                 }, ct).ConfigureAwait(false);
+                if (!launched.Success) throw new DapException(launched.Message ?? "lldb-dap couldn't start the program.", "launch", launched);
             },
-            ct).ConfigureAwait(false);
+            ct,
+            DapHandshake.Standard).ConfigureAwait(false);
     }
 
     Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>

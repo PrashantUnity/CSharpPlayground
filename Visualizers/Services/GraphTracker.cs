@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Kinds;
+using System.ComponentModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
-public class GraphTracker
+public class GraphTracker : IVisualSource
 {
     private readonly WatchList _watches = new();
     private GraphNodeData? _currentActiveNode;
@@ -43,8 +46,11 @@ public class GraphTracker
     }
 
     /// <summary>Shows a live queue, stack, set, map or list beneath the graph at every step recorded after this call.</summary>
-    public void Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "") =>
+    public GraphTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
+    {
         _watches.Add(collection, name);
+        return this;
+    }
 
     public GraphNodeData? ResolveNode(object? target)
     {
@@ -63,7 +69,7 @@ public class GraphTracker
         return Graph.FindEdge(u, v);
     }
 
-    public void Visit(
+    public GraphTracker Visit(
         object? nodeOrId,
         string? note = null,
         string? subLabel = null,
@@ -72,7 +78,7 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         // The previous node stops glowing; it only turns "visited" if nothing else was marked on it meanwhile.
         if (_currentActiveNode != null && _currentActiveNode != node)
@@ -98,9 +104,11 @@ public class GraphTracker
 
         string desc = note ?? $"Visiting Vertex [{node.Label}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void Enqueue(
+    public GraphTracker Enqueue(
         object? nodeOrId,
         string? note = null,
         string? subLabel = null,
@@ -108,7 +116,7 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         if (node.State != GraphNodeState.Current && node.State != GraphNodeState.Visited)
         {
@@ -122,9 +130,11 @@ public class GraphTracker
 
         string desc = note ?? $"Enqueued Vertex [{node.Label}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void RelaxEdge(
+    public GraphTracker RelaxEdge(
         object? from,
         object? to,
         double? weight = null,
@@ -155,9 +165,11 @@ public class GraphTracker
         string desc = note ?? $"Relaxed edge ({uStr} -> {vStr})" +
             (newDistance.HasValue ? $" • New distance = {newDistance.Value}" : "");
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void HighlightNode(
+    public GraphTracker HighlightNode(
         object? nodeOrId,
         GraphNodeState state,
         string? note = null,
@@ -166,7 +178,7 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.State = state;
         if (!string.IsNullOrEmpty(subLabel))
@@ -176,9 +188,11 @@ public class GraphTracker
 
         string desc = note ?? $"{state} Vertex [{node.Label}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void HighlightEdge(
+    public GraphTracker HighlightEdge(
         object? from,
         object? to,
         GraphEdgeState state,
@@ -187,18 +201,20 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var edge = ResolveEdge(from, to);
-        if (edge == null) return;
+        if (edge == null) return this;
 
         edge.State = state;
         string desc = note ?? $"{state} Edge ({from} -> {to})";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
     /// <summary>
     /// Adds an edge, and any endpoint that isn't drawn yet, for graphs discovered while the algorithm runs. Nothing is
     /// recorded until the next step; adding an edge that already exists does nothing.
     /// </summary>
-    public void AddEdge(object from, object to, double? weight = null)
+    public GraphTracker AddEdge(object from, object to, double? weight = null)
     {
         string u = from.ToString() ?? string.Empty;
         string v = to.ToString() ?? string.Empty;
@@ -210,38 +226,57 @@ public class GraphTracker
         {
             Graph.Edges.Add(new GraphEdgeData(u, v, weight, Graph.IsDirected));
         }
+
+        return this;
     }
 
     /// <summary>Sets a node's state without recording a step, so several nodes can change in one step.</summary>
-    public void Mark(object? nodeOrId, GraphNodeState state)
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
+    /// <summary>Sets a node's state from the next recorded step on (the one state vocabulary every visualizer shares).</summary>
+    public GraphTracker Mark(object? nodeOrId, ElementState state) => Mark(nodeOrId, ElementStates.ToGraphNode(state));
+
+    /// <summary>Sets an edge's state from the next recorded step on.</summary>
+    public GraphTracker MarkEdge(object? from, object? to, ElementState state) => MarkEdge(from, to, ElementStates.ToGraphEdge(state));
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public GraphTracker Mark(object? nodeOrId, GraphNodeState state)
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.State = state;
         node.IsActive = state == GraphNodeState.Current;
         if (state == GraphNodeState.Current) _currentActiveNode = node;
+
+        return this;
     }
 
     /// <summary>Fills a node with a colour from the next recorded step on (e.g. one colour per component); null clears it.</summary>
-    public void Paint(object? nodeOrId, string? color)
+    public GraphTracker Paint(object? nodeOrId, string? color)
     {
         var node = ResolveNode(nodeOrId);
         if (node != null) node.Color = color;
+
+        return this;
     }
 
     /// <summary>Sets an edge's state without recording a step.</summary>
-    public void MarkEdge(object? from, object? to, GraphEdgeState state)
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public GraphTracker MarkEdge(object? from, object? to, GraphEdgeState state)
     {
         var edge = ResolveEdge(from, to);
-        if (edge == null) return;
+        if (edge == null) return this;
 
         edge.State = state;
         edge.IsActive = state is GraphEdgeState.Active or GraphEdgeState.Path;
+
+        return this;
     }
 
     /// <summary>Ends the current node's glow (it turns visited), e.g. before a closing summary step.</summary>
-    public void ClearCurrent()
+    public GraphTracker ClearCurrent()
     {
         foreach (var node in Graph.Nodes)
         {
@@ -249,9 +284,11 @@ public class GraphTracker
             node.IsActive = false;
         }
         _currentActiveNode = null;
+
+        return this;
     }
 
-    public void SetPointer(
+    public GraphTracker SetPointer(
         object? nodeOrId,
         string pointerLabel,
         string? note = null,
@@ -259,24 +296,28 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.PointerLabel = pointerLabel;
         if (!string.IsNullOrEmpty(note))
         {
             Snapshot(note, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
-    public void ClearPointers()
+    public GraphTracker ClearPointers()
     {
         foreach (var node in Graph.Nodes)
         {
             node.PointerLabel = null;
         }
+
+        return this;
     }
 
-    public void Annotate(
+    public GraphTracker Annotate(
         object? nodeOrId,
         string subLabel,
         string? note = null,
@@ -284,23 +325,25 @@ public class GraphTracker
         [CallerFilePath] string sourceFile = "")
     {
         var node = ResolveNode(nodeOrId);
-        if (node == null) return;
+        if (node == null) return this;
 
         node.SubLabel = subLabel;
         if (!string.IsNullOrEmpty(note))
         {
             Snapshot(note, sourceLine, sourceFile);
         }
+
+        return this;
     }
 
-    public void MarkPath(
+    public GraphTracker MarkPath(
         IEnumerable<object> nodePath,
         string? note = null,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
     {
         var nodeList = nodePath.Select(ResolveNode).Where(n => n != null).Cast<GraphNodeData>().ToList();
-        if (nodeList.Count == 0) return;
+        if (nodeList.Count == 0) return this;
 
         foreach (var node in nodeList)
         {
@@ -320,9 +363,11 @@ public class GraphTracker
         string pathStr = string.Join(" -> ", nodeList.Select(n => n.Label));
         string desc = note ?? $"Shortest Path: [{pathStr}]";
         Snapshot(desc, sourceLine, sourceFile);
+
+        return this;
     }
 
-    public void Snapshot(
+    public GraphTracker Snapshot(
         string description,
         [CallerLineNumber] int sourceLine = 0,
         [CallerFilePath] string sourceFile = "")
@@ -344,5 +389,7 @@ public class GraphTracker
         }
 
         Sequence.AddStep(step);
+
+        return this;
     }
 }

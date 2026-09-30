@@ -34,7 +34,28 @@ public sealed partial class JavaToolchainProvider : IToolchainProvider
 
     public string? SelectedPath => _settings.GetSelectedPath(LanguageIds.Java);
 
-    public IReadOnlyList<ToolchainAction> Actions => Array.Empty<ToolchainAction>();
+    public IReadOnlyList<ToolchainAction> Actions
+    {
+        get
+        {
+            var actions = new List<ToolchainAction>();
+            if (_host.IsWindows)
+            {
+                actions.Add(new ToolchainAction("winget-install-openjdk", "Install Microsoft OpenJDK 21 via winget", "Runs 'winget install Microsoft.OpenJDK.21' to install JDK 21."));
+                actions.Add(new ToolchainAction("open-download", "Download Eclipse Temurin JDK", "Opens adoptium.net in browser."));
+            }
+            else if (_host.IsMacOS)
+            {
+                actions.Add(new ToolchainAction("brew-install-openjdk", "Install OpenJDK via Homebrew", "Runs 'brew install openjdk' via Homebrew."));
+                actions.Add(new ToolchainAction("open-download", "Download Eclipse Temurin JDK", "Opens adoptium.net in browser."));
+            }
+            else
+            {
+                actions.Add(new ToolchainAction("open-download", "Download Eclipse Temurin JDK", "Opens adoptium.net in browser."));
+            }
+            return actions;
+        }
+    }
 
     public void Select(string? executablePath) => _settings.SetSelectedPath(LanguageIds.Java, executablePath);
 
@@ -91,8 +112,28 @@ public sealed partial class JavaToolchainProvider : IToolchainProvider
         return found;
     }
 
-    public Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default) =>
-        Task.FromResult(new ToolchainActionResult(false, $"Unknown action '{actionId}'."));
+    public async Task<ToolchainActionResult> RunActionAsync(string actionId, ToolchainQuery query, Action<string> output, CancellationToken ct = default)
+    {
+        switch (actionId)
+        {
+            case "open-download":
+                BrowserLauncher.Open("https://adoptium.net/");
+                return new ToolchainActionResult(true, "Opened https://adoptium.net/ in browser.");
+
+            case "brew-install-openjdk":
+                output("Installing OpenJDK via Homebrew (brew install openjdk)…\n");
+                var brewOk = await ToolchainSetupRunner.ExecuteAsync("brew install openjdk", _host, _launcher, output, ct);
+                return new ToolchainActionResult(brewOk, brewOk ? "OpenJDK installation completed." : "Homebrew installation failed or was cancelled.");
+
+            case "winget-install-openjdk":
+                output("Installing Microsoft OpenJDK 21 via winget…\n");
+                var wingetOk = await ToolchainSetupRunner.ExecuteAsync("winget install Microsoft.OpenJDK.21 --accept-source-agreements --accept-package-agreements", _host, _launcher, output, ct);
+                return new ToolchainActionResult(wingetOk, wingetOk ? "OpenJDK installation completed." : "winget installation failed or was cancelled.");
+
+            default:
+                return new ToolchainActionResult(false, $"Unknown action '{actionId}'.");
+        }
+    }
 
     private sealed record ProbeResult(Version Version, string Executable, string CompilerPath, bool HasCompiler);
 

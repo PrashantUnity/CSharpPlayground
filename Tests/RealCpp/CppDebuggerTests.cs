@@ -108,7 +108,9 @@ public class CppDebuggerTests : IDisposable
             return;
         }
 
-        if (OperatingSystem.IsMacOS())
+        // FRY_FORCE_DEBUGGER_TESTS=1 runs it anyway: the skip below guards against a password prompt some Macs show, which it
+        // also hides a broken debug session behind.
+        if (OperatingSystem.IsMacOS() && Environment.GetEnvironmentVariable("FRY_FORCE_DEBUGGER_TESTS") != "1")
         {
             try
             {

@@ -19,6 +19,12 @@ public partial class CSharpSettingsViewModel
     private bool _showLineNumbers = true;
 
     [ObservableProperty]
+    private bool _enableSyntaxHighlighting = true;
+
+    [ObservableProperty]
+    private bool _enableAutoCompletion = true;
+
+    [ObservableProperty]
     private double _fontSize = 13.0;
 
     // ── Execution & Terminal ──
@@ -45,6 +51,8 @@ public partial class CSharpSettingsViewModel
         ConvertTabsToSpaces = settings.ConvertTabsToSpaces;
         WordWrap = settings.WordWrap;
         ShowLineNumbers = settings.ShowLineNumbers;
+        EnableSyntaxHighlighting = settings.EnableSyntaxHighlighting;
+        EnableAutoCompletion = settings.EnableAutoCompletion;
         FontSize = settings.FontSize;
         ExecutionTimeoutSeconds = settings.ExecutionTimeoutSeconds;
         AutoClearConsoleOnRun = settings.AutoClearConsoleOnRun;
@@ -62,6 +70,8 @@ public partial class CSharpSettingsViewModel
             ConvertTabsToSpaces = ConvertTabsToSpaces,
             WordWrap = WordWrap,
             ShowLineNumbers = ShowLineNumbers,
+            EnableSyntaxHighlighting = EnableSyntaxHighlighting,
+            EnableAutoCompletion = EnableAutoCompletion,
             FontSize = FontSize,
             ExecutionTimeoutSeconds = ExecutionTimeoutSeconds,
             AutoClearConsoleOnRun = AutoClearConsoleOnRun,
@@ -79,6 +89,8 @@ public partial class CSharpSettingsViewModel
         ConvertTabsToSpaces = def.ConvertTabsToSpaces;
         WordWrap = def.WordWrap;
         ShowLineNumbers = def.ShowLineNumbers;
+        EnableSyntaxHighlighting = def.EnableSyntaxHighlighting;
+        EnableAutoCompletion = def.EnableAutoCompletion;
         FontSize = def.FontSize;
         ExecutionTimeoutSeconds = def.ExecutionTimeoutSeconds;
         AutoClearConsoleOnRun = def.AutoClearConsoleOnRun;
@@ -91,6 +103,8 @@ public partial class CSharpSettingsViewModel
     partial void OnConvertTabsToSpacesChanged(bool value) => HasPendingChanges = true;
     partial void OnWordWrapChanged(bool value) => HasPendingChanges = true;
     partial void OnShowLineNumbersChanged(bool value) => HasPendingChanges = true;
+    partial void OnEnableSyntaxHighlightingChanged(bool value) => HasPendingChanges = true;
+    partial void OnEnableAutoCompletionChanged(bool value) => HasPendingChanges = true;
     partial void OnFontSizeChanged(double value) => HasPendingChanges = true;
     partial void OnExecutionTimeoutSecondsChanged(int value) => HasPendingChanges = true;
     partial void OnAutoClearConsoleOnRunChanged(bool value) => HasPendingChanges = true;

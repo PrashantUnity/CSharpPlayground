@@ -9,8 +9,11 @@ using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
+using PdfEditorApp.Plugins.CSharpEditor.Views.Server;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 
@@ -25,6 +28,28 @@ internal static class StudioSnapshots
 
     // Notebook Activity Bar order: CSharpNotebookStudioViewModel.SelectedActivityBarIndex.
     private static readonly string[] NotebookSideBarViews = { "explorer", "outline", "variables", "search" };
+
+    private static async Task SeedTree(LocalScriptStorageService storage, int folders)
+    {
+        for (int f = 1; f <= folders; f++)
+        {
+            string folder = await storage.CreateFolderAsync(null, $"Folder {f}");
+            for (int i = 1; i <= 4; i++) await storage.CreateNewScriptAsync($"Script {f}.{i}", folderPath: folder);
+            string nested = await storage.CreateFolderAsync(folder, "Nested");
+            await storage.CreateNewScriptAsync($"Deep {f}", folderPath: nested);
+        }
+
+        for (int i = 1; i <= 3; i++) await storage.CreateNewScriptAsync($"Loose script {i}");
+    }
+
+    private static void ExpandAll(IEnumerable<ExplorerItemViewModel> items)
+    {
+        foreach (var item in items.Where(i => i.IsDirectory))
+        {
+            item.IsExpanded = true;
+            ExpandAll(item.Children);
+        }
+    }
 
     /// <summary><c>studio n</c> or <c>studio --file path</c>: Code Studio with that script open.</summary>
     public static void CodeStudio(Options options)
@@ -42,7 +67,11 @@ internal static class StudioSnapshots
             settings.CSharpExecutionEngine = csharpEngine;
             languages.StudioSettings.SaveSettings(settings);
         }
-        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry);
+        // --file-limit n: list at most n files, to see what the Explorer says about a folder that has more.
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry, options.Int("file-limit", 20_000));
+
+        // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
+        if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
 
         // A source file (main.py) is copied into the throwaway workspace and opened as one; any other file is a C# script.
         var sourceLanguage = languages.Registry.FindSourceFileLanguage(file);
@@ -63,8 +92,9 @@ internal static class StudioSnapshots
             blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")),
             languages: languages);
         if (file != null && sourceLanguage != null) OpenSourceFile(vm, storage, file);
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (sourceLanguage != null ? "explorer" : "notes"), "--sidebar");
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : sourceLanguage != null || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
         vm.IsSideBarVisible = true;
+        if (options.Int("tree", 0) > 0) ExpandAll(vm.ExplorerRootItems);
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
 
         if (options.Value("zoom") is { } zoomStr && double.TryParse(zoomStr, System.Globalization.CultureInfo.InvariantCulture, out var zoomSize))
@@ -77,7 +107,19 @@ internal static class StudioSnapshots
         {
             ApplyZoomKeys(window, zoomKeys);
         }
+        // Go to File searches the workspace index: let its walk finish first, so the picture shows the files.
+        if (options.Value("quick-open-text") != null) Snapshot.Wait(storage.FileIndex.RebuildAsync(storage.ActiveWorkspaceRootPath));
         ShowQuickOpen(vm.QuickOpen, options);
+        // --search-text <t> [--search-all]: typed into the Search panel (Find in Files with --search-all); waits for the results.
+        if (options.Value("search-text") is { } searchText)
+        {
+            Snapshot.Wait(storage.FileIndex.RebuildAsync(storage.ActiveWorkspaceRootPath));
+            vm.SearchAllFiles = options.Flag("search-all");
+            vm.SearchQuery = searchText;
+            Snapshot.WaitFor(() => !vm.IsSearching, TimeSpan.FromSeconds(60));
+            Snapshot.Settle();
+        }
+
         Task? stillRunning = null;
         if (options.Flag("run") && options.Flag("while-running"))
         {
@@ -283,9 +325,13 @@ internal static class StudioSnapshots
         var javaException = options.Flag("java-exception");
         var javaTable = options.Flag("java-table");
         var cppDemo = options.Flag("cpp-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo) ? 0 : options.Problem();
+        var goDemo = options.Flag("go-demo");
+        var fsharpDemo = options.Flag("fsharp-demo");
+        var sqlDemo = options.Flag("sql-demo");
+        var rustDemo = options.Flag("rust-demo");
+        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
         var vm = new CSharpNotebookStudioViewModel(
-            cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
+            rustDemo ? RustDemoNotebook() : sqlDemo ? SqlDemoNotebook() : fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
             new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
@@ -312,7 +358,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -634,6 +680,226 @@ internal static class StudioSnapshots
         }
     };
 
+    private static NotebookDocumentItem FSharpDemoNotebook() => new()
+    {
+        Title = "F# Interactive Polyglot Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # F# Interactive Polyglot Notebook
+                    Interactive F# script cells running via F# Interactive (`dotnet fsi`) with type-safe pipelines, pattern matching, and visual dumps.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.FSharp,
+                Source = """
+                    printfn "🚀 Hello from F# in Notebook Studio!"
+
+                    let numbers = [ 1 .. 10 ]
+                    let sumOfSquares =
+                        numbers
+                        |> List.map (fun x -> x * x)
+                        |> List.sum
+
+                    printfn "Sum of squares (1..10): %d" sumOfSquares
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.FSharp,
+                Source = """
+                    type Shape =
+                        | Circle of radius: float
+                        | Rectangle of width: float * height: float
+
+                    let describe shape =
+                        match shape with
+                        | Circle r -> sprintf "Circle with radius %.2f" r
+                        | Rectangle (w, h) -> sprintf "Rectangle %g x %g" w h
+
+                    let c = Circle 4.5
+                    let r = Rectangle (3.0, 7.0)
+
+                    printfn "%s" (describe c)
+                    printfn "%s" (describe r)
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem GoDemoNotebook() => new()
+    {
+        Title = "Go Interactive Polyglot Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # Go Interactive Polyglot Notebook
+                    Interactive Go cell execution with concurrent goroutines, channels, and cross-kernel variable sharing.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Go,
+                Source = """
+                    nums := []int{10, 20, 30, 40, 50}
+                    total := 0
+                    for _, v := range nums {
+                        total += v
+                    }
+                    fmt.Printf("Go computed sum: %d\n", total)
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Go,
+                Source = """
+                    ch := make(chan string)
+                    go func() {
+                        ch <- "🚀 Hello from concurrent Go goroutine in Notebook Studio!"
+                    }()
+                    msg := <-ch
+                    fmt.Println(msg)
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem RustDemoNotebook() => new()
+    {
+        Title = "Rust Interactive Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # Rust Interactive Notebook
+                    Each cell is built with Cargo and run. Functions, types and imports stay for later cells; the last expression is shown.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    #[derive(Debug)]
+                    struct Planet {
+                        name: &'static str,
+                        moons: u32,
+                    }
+
+                    fn total_moons(planets: &[Planet]) -> u32 {
+                        planets.iter().map(|p| p.moons).sum()
+                    }
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    let planets = vec![
+                        Planet { name: "Earth", moons: 1 },
+                        Planet { name: "Mars", moons: 2 },
+                        Planet { name: "Jupiter", moons: 95 },
+                    ];
+                    let total = total_moons(&planets);
+                    println!("{} moons in total", total);
+                    fry::share!(total);
+                    planets
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Rust,
+                Source = """
+                    // shared values come back as typed variables
+                    println!("{} moons, doubled: {}", total, total * 2);
+                    (1..=5).map(|n| n * n).collect::<Vec<u32>>()
+                    """
+            }
+        }
+    };
+
+    private static NotebookDocumentItem SqlDemoNotebook() => new()
+    {
+        Title = "SQL / SQLite Interactive Notebook",
+        Cells =
+        {
+            new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = """
+                    # SQL / SQLite Interactive Notebook
+                    Interactive SQL cells running via `sqlite3` CLI — create tables, query results, and share data with other kernel languages.
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Create a products table and populate it
+                    CREATE TABLE IF NOT EXISTS products (
+                        id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name  TEXT    NOT NULL,
+                        price REAL    NOT NULL,
+                        stock INTEGER DEFAULT 0
+                    );
+
+                    INSERT INTO products (name, price, stock) VALUES
+                        ('Avalonia Widget',   29.99, 150),
+                        ('Roslyn Compiler',   0.00,  999),
+                        ('SQLite Extension',  9.99,  42),
+                        ('F# Toolkit',        19.99, 75);
+
+                    SELECT name, price, stock FROM products ORDER BY price DESC;
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Aggregate queries: total value and low-stock items
+                    SELECT
+                        COUNT(*)        AS total_products,
+                        SUM(price)      AS total_price,
+                        AVG(price)      AS avg_price,
+                        MAX(stock)      AS max_stock
+                    FROM products;
+
+                    -- Low-stock items (fewer than 100 units)
+                    SELECT name, stock
+                    FROM   products
+                    WHERE  stock < 100
+                    ORDER  BY stock ASC;
+                    """
+            },
+            new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Language = LanguageIds.Sql,
+                Source = """
+                    -- Share the products table into Python via #!share
+                    #!share products
+                    """
+            }
+        }
+    };
+
     private static NotebookDocumentItem JavaShareDemoNotebook() => new()
     {
         Title = "Polyglot: Testing #!share with Java",
@@ -743,7 +1009,116 @@ internal static class StudioSnapshots
     {
         if (options.Value("quick-open") is not { } mode) return;
         quickOpen.Show(mode.Equals("commands", StringComparison.OrdinalIgnoreCase) ? QuickOpenMode.Commands : QuickOpenMode.Files);
+
+        // --quick-open-text <text>: typed into the palette, e.g. to see Go to File's results.
+        if (options.Value("quick-open-text") is { } text) quickOpen.SearchText = text;
         Snapshot.Settle();
+    }
+
+    public static void ServerStudio(Options options)
+    {
+        var doc = new FryServerDocumentItem
+        {
+            Title = "Order Processing Microservice",
+            ServerConfig = new FryServerConfiguration
+            {
+                Port = 5000,
+                ApiPrefix = "/api",
+                EnableCors = true,
+                AllowPrivateNetwork = true
+            },
+            Cells =
+            {
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Startup,
+                    Title = "Database Seed & State Init",
+                    Source = "State[\"orders\"] = new List<Dictionary<string, object>>\n{\n    new() { [\"id\"] = 101, [\"customer\"] = \"Alice Smith\", [\"total\"] = 149.99, [\"status\"] = \"Shipped\" },\n    new() { [\"id\"] = 102, [\"customer\"] = \"Bob Jones\", [\"total\"] = 89.50, [\"status\"] = \"Processing\" }\n};\nConsole.WriteLine(\"Server seed initialized with 2 mock orders.\");"
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "GET",
+                    Route = "/orders",
+                    Title = "List Orders",
+                    Source = "var orders = State[\"orders\"] as List<Dictionary<string, object>>;\nreturn Results.Ok(orders);"
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "GET",
+                    Route = "/orders/{id}",
+                    Title = "Get Order by ID",
+                    Source = "var id = PathParams.GetInt(\"id\");\nvar orders = State[\"orders\"] as List<Dictionary<string, object>>;\nvar found = orders?.FirstOrDefault(o => (int)o[\"id\"] == id);\nif (found == null) return Results.NotFound(new { error = $\"Order {id} not found\" });\nreturn Results.Ok(found);",
+                    TestHarness = new FryServerTestHarnessItem
+                    {
+                        PathParams = new Dictionary<string, string> { ["id"] = "101" }
+                    }
+                },
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Method = "POST",
+                    Route = "/orders",
+                    Title = "Create New Order",
+                    Source = "var body = await Body.AsJsonAsync<Dictionary<string, object>>();\nvar orders = State[\"orders\"] as List<Dictionary<string, object>>;\nvar newOrder = new Dictionary<string, object> { [\"id\"] = 103, [\"customer\"] = body?[\"customer\"]?.ToString() ?? \"New Customer\", [\"total\"] = 99.0, [\"status\"] = \"Pending\" };\norders?.Add(newOrder);\nreturn Results.Created($\"/api/orders/{newOrder[\"id\"]}\", newOrder);"
+                }
+            }
+        };
+
+        int port = options.Int("port", 5000);
+        doc.ServerConfig.Port = port;
+
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("server_scripts"), languages.Registry);
+        var compiler = new RoslynServerCompilationService();
+        var portService = new PortAvailabilityService();
+        var engine = new FryHttpListenerServerEngine(portService, compiler);
+
+        var vm = new FryServerStudioViewModel(
+            document: doc,
+            filePath: null,
+            engine: engine,
+            portService: portService,
+            storageService: storage,
+            backToHubAction: () => { });
+
+        if (options.Flag("conflict"))
+        {
+            vm.HasPortConflict = true;
+            vm.SuggestedPort = port + 1;
+        }
+
+        if (options.Flag("traffic"))
+        {
+            vm.SelectActivityBarItem(1);
+        }
+        else if (options.Flag("explorer"))
+        {
+            vm.SelectActivityBarItem(2);
+        }
+
+        if (options.Flag("run") || options.Flag("running"))
+        {
+            Snapshot.Wait(vm.StartServerAsync());
+            Snapshot.Settle();
+
+            if (vm.Cells.Count > 2)
+            {
+                Snapshot.Wait(vm.Cells[2].SendTestRequestAsync());
+                Snapshot.Settle();
+            }
+        }
+
+        var window = Snapshot.Show(new FryServerStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 1100));
+        Snapshot.Settle();
+        var name = options.Value("name") ?? (options.Flag("run") ? "server_studio_running" : "server_studio_demo");
+        Snapshot.Save(window, options, name);
+
+        if (vm.IsServerRunning)
+        {
+            Snapshot.Wait(vm.StopServerAsync());
+        }
     }
 
     private static int IndexOf(string[] names, string name, string option)

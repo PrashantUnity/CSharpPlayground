@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,7 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpNotebookStudioViewModel : ObservableObject
+public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly StudioLanguageServices _languages;
@@ -20,6 +21,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private readonly Action _backToHubAction;
     private readonly Action? _backToHomeAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly Action? _navigateToDocsAction;
     private readonly Action? _navigateToSettingsAction;
     private readonly Func<int> _getTimeoutSeconds;
@@ -33,7 +35,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     private NotebookTabViewModel? _activeTab;
 
     [ObservableProperty]
-    private NotebookDocumentItem _notebook;
+    private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
 
     [ObservableProperty]
     private int _selectedActivityBarIndex = 0;
@@ -91,6 +93,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         OnPropertyChanged(nameof(IsOutlineActive));
         OnPropertyChanged(nameof(IsVariablesActive));
         OnPropertyChanged(nameof(IsSearchActive));
+        OnPropertyChanged(nameof(OutlineCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
 
         if (value == 2 && IsSideBarVisible)
         {
@@ -110,6 +114,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     partial void OnSearchTextChanged(string value)
     {
         OnPropertyChanged(nameof(FilteredCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
         OnPropertyChanged(nameof(SearchResultsCount));
     }
 
@@ -124,6 +129,19 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     }
 
     public int SearchResultsCount => FilteredCells.Count();
+
+    private static readonly IReadOnlyList<NotebookCellViewModel> NoCells = Array.Empty<NotebookCellViewModel>();
+
+    // The Outline and Search panels each list every cell, and a hidden panel still builds its whole list: for a long
+    // notebook that is hundreds of rows nobody sees. They are handed the cells only while they are showing.
+    public IEnumerable<NotebookCellViewModel> OutlineCells => IsOutlineActive ? Cells : NoCells;
+
+    public IEnumerable<NotebookCellViewModel> SearchPanelCells => IsSearchActive ? FilteredCells : NoCells;
+
+    private readonly ConditionalWeakTable<ObservableCollection<NotebookCellViewModel>, NotebookCanvasRows> _canvasRows = new();
+
+    /// <summary>What the canvas draws: a header row, then a row per cell of the active notebook (a virtualized list, see <see cref="NotebookCanvasRows"/>).</summary>
+    public RangeObservableCollection<object> CanvasRows => _canvasRows.GetValue(Cells, cells => new NotebookCanvasRows(cells)).Rows;
 
     [RelayCommand]
     public void SelectActivityBarItem(string? indexStr)
@@ -177,6 +195,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
     private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
 
+    [ObservableProperty]
+    private bool _isSyntaxHighlightingEnabled = true;
+
+    [ObservableProperty]
+    private bool _isAutoCompletionEnabled = true;
+
     public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
 
     [RelayCommand]
@@ -228,6 +252,18 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
     public ObservableCollection<NotebookTabViewModel> Tabs { get; } = new();
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
+
+    private ExplorerRowList? _explorerRows;
+
+    /// <summary>The Explorer's visible rows as one flat list: what the (virtualized) Explorer binds to.</summary>
+    public ExplorerRowList ExplorerRows => _explorerRows ??= new ExplorerRowList(ExplorerRootItems);
+
+    /// <summary>True when the workspace folder holds more files than the Explorer lists; the panel then says so rather than looking complete.</summary>
+    [ObservableProperty]
+    private bool _isExplorerTruncated;
+
+    public string ExplorerTruncationText =>
+        $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
 
     public bool HasActiveTab => ActiveTab != null;
     public bool HasNoTabs => ActiveTab == null;
@@ -337,6 +373,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         OnPropertyChanged(nameof(HasActiveTab));
         OnPropertyChanged(nameof(HasNoTabs));
         OnPropertyChanged(nameof(Cells));
+        OnPropertyChanged(nameof(CanvasRows));
+        OnPropertyChanged(nameof(OutlineCells));
+        OnPropertyChanged(nameof(SearchPanelCells));
         OnPropertyChanged(nameof(Variables));
         OnPropertyChanged(nameof(ActiveCell));
         OnPropertyChanged(nameof(IsExecuting));
@@ -363,7 +402,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         Action<ScriptDocumentItem>? openScriptAction = null,
         Action? navigateToDocsAction = null,
         StudioLanguageServices? languages = null,
-        Action? navigateToSettingsAction = null)
+        Action? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
@@ -373,6 +413,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
         _openScriptAction = openScriptAction;
+        _openServerAction = openServerAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToSettingsAction = navigateToSettingsAction;
         _getTimeoutSeconds = getTimeoutSeconds ?? (() => 0);
@@ -385,13 +426,23 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         var initialSettings = _languages.StudioSettings.GetSettings();
         _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
+        _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
 
         InitializeQuickOpenCommands();
         RefreshQuickOpenDocuments();
+
+        // Go to File finds any file of the workspace, not just the open tabs.
+        QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
         PopulateExplorerTree();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
+        // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
+        _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+        });
     }
 
     private void OnStudioSettingsChanged(StudioSettings s)
@@ -402,6 +453,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             {
                 EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
             }
+            IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;
+            IsAutoCompletionEnabled = s.EnableAutoCompletion;
         });
     }
 
@@ -433,7 +486,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook)
+    public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook, bool evenIfInWorkspace = false)
     {
         var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
             ? notebook.Title
@@ -448,6 +501,14 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 existing.DocumentId = notebook.Id;
             }
             return existing;
+        }
+
+        // In a big workspace the notebook may sit in a folder that has not been listed yet: it is not an outsider, so it gets no row
+        // at the top; its folders are opened down to it instead.
+        if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(notebook.Id) is { } relativePath)
+        {
+            _ = RevealInLazyExplorerAsync(notebook.Id);
+            return CreateFileItem(fileName, notebook.Id, parent: null, fullPath: relativePath);
         }
 
         var expItem = CreateFileItem(fileName, notebook.Id, parent: null, fullPath: fileName);
@@ -731,6 +792,20 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
 
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
+
+        // API server documents open in the Server Studio.
+        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
+            {
+                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
+                if (server != null)
+                {
+                    _openServerAction.Invoke(server);
+                    return;
+                }
+            }
+        }
 
         // Scripts, and source files of any language (main.py), open in the Code Studio.
         if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
@@ -1240,10 +1315,22 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
 
         var fullPath = string.IsNullOrEmpty(folderPath) ? fileName : $"{folderPath}/{fileName}";
-        var newFile = CreateFileItem(fileName, newDoc.Id, folder, fullPath);
+        ExplorerItemViewModel? newFile = null;
 
-        AddToTree(folder, newFile);
-        if (folder != null) folder.IsExpanded = true;
+        // Listing a folder that has not been listed yet finds the new notebook on disk: adding a row too would show it twice.
+        if (folder is { ChildrenLoaded: false })
+        {
+            await LazyExplorer.LoadChildrenAsync(folder);
+            folder.IsExpanded = true;
+            newFile = folder.Children.FirstOrDefault(c => string.Equals(c.DocumentId, newDoc.Id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (newFile == null)
+        {
+            newFile = CreateFileItem(fileName, newDoc.Id, folder, fullPath);
+            AddToTree(folder, newFile);
+            if (folder != null) folder.IsExpanded = true;
+        }
 
         await OpenDocumentAsync(newFile);
         newFile.StartRename();
@@ -1280,6 +1367,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
 
         var name = newRelativePath.Contains('/') ? newRelativePath[(newRelativePath.LastIndexOf('/') + 1)..] : newRelativePath;
+
+        // Under a folder that has not been listed yet, listing it finds the new folder on disk: adding a row too would show it twice.
+        if (parentFolder is { ChildrenLoaded: false })
+        {
+            await LazyExplorer.LoadChildrenAsync(parentFolder);
+            parentFolder.IsExpanded = true;
+            parentFolder.Children.FirstOrDefault(c => c.IsDirectory && string.Equals(c.FullPath, newRelativePath, StringComparison.OrdinalIgnoreCase))?.StartRename();
+            return;
+        }
+
         var newFolder = CreateFolderItem(name, newRelativePath, isExpanded: true, parent: parentFolder);
         AddToTree(parentFolder, newFolder);
         if (parentFolder != null) parentFolder.IsExpanded = true;
@@ -1329,20 +1426,72 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
+    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
+    // workspace scan only when this has moved.
+    private long _explorerStructureVersion = -1;
+
     [RelayCommand]
     public async Task RefreshExplorer()
     {
         try
         {
-            var folderPaths = await _storageService.LoadFolderPathsAsync();
-            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
-            RebuildExplorerTree(folderPaths, summaries);
+            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
+            var version = _storageService.StructureVersion;
+            ShowExplorerListing(await _storageService.LoadExplorerListingAsync());
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh explorer tree: {ex.Message}");
         }
     }
+
+    /// <summary>Reloads the Explorer only if the workspace changed since it was built (a script created in the Hub, say).</summary>
+    public async Task RefreshExplorerIfStaleAsync()
+    {
+        if (_explorerStructureVersion != _storageService.StructureVersion)
+        {
+            await RefreshExplorer();
+        }
+    }
+
+    // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
+    // studio is also used without a host that says so).
+    private bool _isPageActive = true;
+
+    // Shown again after other pages (or other programs) may have added, removed or renamed items: catch up.
+    public void OnActivated()
+    {
+        _isPageActive = true;
+        _ = RefreshExplorerIfStaleAsync();
+
+        // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
+        _ = _storageService.FileIndex;
+    }
+
+    // Go to File: opens any file of the workspace by its path. A notebook opens here, anything else in the Code Studio.
+    private async Task OpenWorkspaceFileAsync(string fullPath)
+    {
+        var result = await _storageService.OpenExternalProjectAsync(fullPath);
+        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+        {
+            if (ActiveTab != null) ActiveTab.KernelStatusText = result.Message;
+            return;
+        }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+        {
+            if (await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook) UpdateActiveNotebook(notebook);
+            return;
+        }
+
+        if (_openScriptAction != null && await _storageService.LoadScriptAsync(result.PrimaryDocumentId) is { } script)
+        {
+            _openScriptAction.Invoke(script);
+        }
+    }
+
+    public void OnDeactivated() => _isPageActive = false;
 
     [RelayCommand]
     public void CollapseAllExplorer()
@@ -1365,13 +1514,58 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
+    private LazyExplorerTree? _lazyExplorer;
+
+    // The Explorer of a workspace too big to list at once: one folder at a time (see LazyExplorerTree).
+    private LazyExplorerTree LazyExplorer => _lazyExplorer ??= new LazyExplorerTree(
+        _storageService,
+        ExplorerRootItems,
+        ExplorerRows,
+        (name, path, parent) => CreateFolderItem(name, path, isExpanded: false, parent: parent),
+        (summary, name, fullPath, parent) =>
+        {
+            var item = CreateFileItem(name, summary.Id, parent, fullPath);
+            if (summary.IsSourceFile && _storageService.Languages.Get(summary.LanguageId) is { } language)
+            {
+                item.IsSourceFile = true;
+                item.LanguageIconKind = language.IconKind;
+                item.LanguageIconColor = language.AccentHex;
+            }
+
+            return item;
+        });
+
+    // Draws what the storage listed: the whole workspace, or (when it is too big) its top folder, the rest coming as folders open.
+    private void ShowExplorerListing(WorkspaceListing listing)
+    {
+        if (!listing.IsPartial)
+        {
+            LazyExplorer.Deactivate();
+            RebuildExplorerTree(listing.FolderPaths, listing.Items);
+            return;
+        }
+
+        LazyExplorer.Build(listing, ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems));
+        foreach (var tab in Tabs.ToList())
+        {
+            EnsureDocumentInExplorer(tab.Notebook);
+        }
+
+        // Only the top folder itself can be cut off here (a nested one says so in its own rows).
+        IsExplorerTruncated = listing.IsTruncated;
+        if (ActiveTab != null)
+        {
+            HighlightExplorerItem(ActiveTab.Title);
+        }
+    }
+
     public void PopulateExplorerTree()
     {
         try
         {
-            var folderPaths = _storageService.LoadFolderPathsAsync().GetAwaiter().GetResult();
-            var summaries = _storageService.LoadWorkspaceSummariesAsync().GetAwaiter().GetResult();
-            RebuildExplorerTree(folderPaths, summaries);
+            var version = _storageService.StructureVersion;
+            ShowExplorerListing(_storageService.LoadExplorerListingAsync().GetAwaiter().GetResult());
+            _explorerStructureVersion = version;
         }
         catch (Exception ex)
         {
@@ -1380,10 +1574,19 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         }
     }
 
-    private void RebuildExplorerTree(List<string> folderPaths, List<WorkspaceItemSummary> summaries)
+    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries)
     {
+        // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
+        using var rowsScope = ExplorerRows.Suspend();
+
+        // A refresh keeps the folders the user had open open.
+        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
         var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
+        // file would be quadratic in the size of a folder.
+        var rootKey = new object();
+        var namesByFolder = new Dictionary<object, HashSet<string>>();
 
         ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
@@ -1395,7 +1598,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
             var parent = GetOrCreateFolder(parentPath);
 
-            var node = CreateFolderItem(name, relativePath, isExpanded: false, parent: parent);
+            var node = CreateFolderItem(name, relativePath, isExpanded: expandedFolders.Contains(relativePath), parent: parent);
             AddToTree(parent, node);
             folderNodes[relativePath] = node;
             return node;
@@ -1414,8 +1617,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
 
-            var siblings = parent?.Children ?? (IEnumerable<ExplorerItemViewModel>)ExplorerRootItems;
-            if (siblings.Any(c => !c.IsDirectory && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            var folderKey = (object?)parent ?? rootKey;
+            if (!namesByFolder.TryGetValue(folderKey, out var names))
+            {
+                namesByFolder[folderKey] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!names.Add(name))
             {
                 continue;
             }
@@ -1441,10 +1649,14 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
         {
             HighlightExplorerItem(ActiveTab.Title);
         }
+
+        IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
     private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
     {
+        using var rowsScope = ExplorerRows.Suspend();
+
         var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {
@@ -1619,6 +1831,29 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject
                 parent.IsExpanded = true;
                 parent = parent.Parent;
             }
+        }
+        else if (LazyExplorer.IsActive && !string.IsNullOrEmpty(docId))
+        {
+            _ = RevealInLazyExplorerAsync(docId);
+        }
+    }
+
+    // A big workspace lists a folder when it is opened: open the folders down to the notebook, then highlight it.
+    private async Task RevealInLazyExplorerAsync(string documentId)
+    {
+        var item = await LazyExplorer.RevealAsync(documentId);
+        if (!string.Equals(ActiveTab?.Notebook?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
+
+        // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
+        // ActiveTab?.Notebook is confirmed non-null by line 1845 (we returned early if their Id didn't match), but
+        // capture it in a local so the nullable flow analysis doesn't have to track the chained dereference.
+        var activeNotebook = ActiveTab?.Notebook;
+        if (item == null && activeNotebook != null)
+            item = EnsureDocumentInExplorer(activeNotebook, evenIfInWorkspace: true);
+        if (item != null)
+        {
+            DeselectAll(ExplorerRootItems);
+            item.IsSelected = true;
         }
     }
 

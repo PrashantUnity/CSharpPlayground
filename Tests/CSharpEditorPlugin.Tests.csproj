@@ -7,6 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Visual specs as every language must write them (the conformance fixtures). -->
+    <None Include="Fixtures\Visuals\*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="Fixtures\Visuals" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">

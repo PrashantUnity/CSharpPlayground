@@ -14,14 +14,13 @@ using Avalonia.Media.Imaging;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
@@ -57,6 +56,12 @@ public class NotebookExecutionKernel : INotebookKernel
     // Not readonly: HardReset() below replaces it outright to recover from an abandoned execution
     // that never released it.
     private SemaphoreSlim _executionLock = new(1, 1);
+
+    // Where callbacks for this kernel's visuals run: between cells, under the same lock, or when a cell asks.
+    private VisualEventLoop _events;
+
+    /// <summary>The loop this kernel's visual event callbacks run on.</summary>
+    public VisualEventLoop Events => _events;
 
     public bool IsSessionActive => _currentState != null;
 
@@ -112,6 +117,7 @@ public class NotebookExecutionKernel : INotebookKernel
 
     public NotebookExecutionKernel()
     {
+        _events = NewEventLoop();
         _nuGetResolver = new NuGetReferenceResolver();
         _assemblyLoader = new InteractiveAssemblyLoader();
         RegisterCoreDependencies(_assemblyLoader);
@@ -130,39 +136,9 @@ public class NotebookExecutionKernel : INotebookKernel
     {
         var references = new List<MetadataReference>(RoslynCompilerService.SharedDefaultReferences);
 
-        var defaultImports = new List<string>
-        {
-            "System",
-            "System.IO",
-            "System.Data",
-            "System.Linq",
-            "System.Collections",
-            "System.Collections.Generic",
-            "System.Net.Http",
-            "System.Text",
-            "System.Text.Json",
-            "System.Text.RegularExpressions",
-            "System.Threading.Tasks",
-            "Avalonia.Controls",
-            "Avalonia.Media",
-            "Avalonia.Media.Imaging",
-            "Avalonia.Threading",
-            "Avalonia.Animation",
-            "PdfEditorApp.Plugins.CSharpEditor.Services",
-            "PdfEditorApp.Plugins.CSharpEditor.Controls",
-            "PdfEditorApp.Plugins.CSharpEditor.Charting.Models",
-            "PdfEditorApp.Plugins.CSharpEditor.Charting.Controls",
-            "PdfEditorApp.Plugins.CSharpEditor.Charting.Services",
-            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models",
-            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls",
-            "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services",
-            // A static import: Check(...), Show(...) and Format(...) can be called without any setup.
-            "PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers"
-        };
-
         return ScriptOptions.Default
             .WithReferences(references)
-            .WithImports(defaultImports);
+            .WithImports(ScriptImports.ScriptingImports);
     }
 
     /// <param name="sourceId">Optional id (a notebook cell id) that [CallerFilePath] reports for code in this submission.</param>
@@ -264,6 +240,7 @@ public class NotebookExecutionKernel : INotebookKernel
 
             using (ConsoleRoutingContext.EnterScope(liveWriter, stdin))
             using (InteractiveCancellationContext.EnterScope(ct))
+            using (_events.Enter())
             {
                 try
                 {
@@ -348,15 +325,16 @@ public class NotebookExecutionKernel : INotebookKernel
         Action<string>? onLiveConsole,
         Action<RichCellOutput>? onRichOutput)
     {
-        if (returnValue is ChartOptions chartOpts)
+        // A handle is a visual the call that returned it has already shown.
+        if (returnValue is DisplayHandle)
         {
-            var chartControl = new InteractiveChartControl(chartOpts);
-            onRichOutput?.Invoke(new RichCellOutput
-            {
-                Kind = CellOutputKind.Chart,
-                InteractiveControl = chartControl,
-                ChartOptions = chartOpts
-            });
+            return;
+        }
+
+        // A spec, or a C# model with a visual form (a chart, 3D plot or visualizer model), is shown as that visual.
+        if (VisualOutputs.TryFromModel(returnValue, out var visual))
+        {
+            onRichOutput?.Invoke(visual);
             return;
         }
 
@@ -502,14 +480,12 @@ public class NotebookExecutionKernel : INotebookKernel
         }
     }
 
-    // Display.* builds controls on the UI thread (this runs on a worker) and emits into the cell's output scope.
+    // Trackers, recorders and plain data structures (a tree node, a list node, a 2D grid): Display.* turns them into a
+    // visualizer's spec and emits it into the cell's output scope.
     private static bool TryEmitVisualizer(object value)
     {
         switch (value)
         {
-            case VisualizerOptions options:
-                Display.Visualizer(options);
-                return true;
             case VisualizerRecorder recorder:
                 Display.Visualizer(recorder);
                 return true;
@@ -592,6 +568,9 @@ public class NotebookExecutionKernel : INotebookKernel
 
     public void ResetSession()
     {
+        // The variables callbacks would read are gone, so the callbacks go too.
+        _events.Stop();
+        _events = NewEventLoop();
         _currentState = null;
         _additionalReferences.Clear();
         try { _assemblyLoader.Dispose(); } catch { }
@@ -608,6 +587,24 @@ public class NotebookExecutionKernel : INotebookKernel
     /// to acquire/reset the old one; the abandoned execution still holds a reference to the old
     /// instance and will Release() it harmlessly into the void whenever/if it ever returns.
     /// </summary>
+    // Callbacks wait for the lock a cell takes (read when they need it: HardReset replaces it).
+    private VisualEventLoop NewEventLoop() => new(async ct =>
+    {
+        var gate = _executionLock;
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        return new LockRelease(gate);
+    });
+
+    private sealed class LockRelease(SemaphoreSlim gate) : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0) gate.Release();
+        }
+    }
+
     public void HardReset()
     {
         ResetSession();

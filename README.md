@@ -5,11 +5,19 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
 
-**CSharpPlayground** (standalone executable: **FrySharp**) is an interactive multi-language code studio, polyglot Jupyter-style notebook environment, and script automation engine for .NET 10, Python, and extensible language toolchains built with Avalonia UI.
+**CSharpPlayground** (standalone executable: **FrySharp**) is an interactive multi-language code studio, polyglot Jupyter-style notebook environment, and script automation engine for .NET 10, Python, Rust, and extensible language toolchains built with Avalonia UI.
 
 It operates both as:
 1. **A Standalone Desktop Application (`FrySharp`)**: Native desktop app for macOS (`.dmg`) and Windows (`.msix` / `.exe` installer) with an authentic VS Code-inspired 5-zone IDE layout.
 2. **A FryPDF Ecosystem Plugin (`com.frypdf.plugin.csharpeditor`)**: Edge-to-edge full-viewport workspace studio and document automation plugin for FryPDF.
+
+---
+
+## 🎬 Product Demo
+
+[![FrySharp Demo: Run C#, Python, Rust, Go, Java, C++, JS, F# & SQL in ONE Unified Notebook & IDE](Assets/frysharp-thumbnail.jpg)](https://www.youtube.com/watch?v=g1Y4RSxxqIc)
+
+▶️ **[Click here to watch the FrySharp Demo on YouTube](https://www.youtube.com/watch?v=g1Y4RSxxqIc)** — *Supports C#, Python, Rust, Go, Java, C++, JavaScript, F# & SQL*
 
 ---
 
@@ -27,9 +35,11 @@ It operates both as:
   - Rich output display: text, images, charts, and custom Avalonia controls (`Display.Image(...)`, `Display.Control(...)`).
   - Cell input/output collapsing, folding, and export.
 - **Polyglot Notebooks & Multi-Language Support**:
-  - **Five First-Class Languages**: Full multi-language execution and editing for **C#** (.NET 10 Roslyn), **Python** (3.9+), **JavaScript** (Node.js), **Java** (JDK 17+ / JShell), and **C++** (C++20 via Clang, GCC, MSVC).
+  - **Nine Languages**: Full multi-language execution and editing for **C#** (.NET 10 Roslyn), **Python** (3.9+), **JavaScript** (Node.js), **Java** (JDK 17+ / JShell), **C++** (C++20 via Clang, GCC, MSVC), **Go**, **F#**, **SQL** (SQLite) and **Rust** (rustc / Cargo 1.70+).
   - **Native C++ & Zero-Config Display Runtime**: `.cpp` files compile with `-std=c++20`, include `<fry/display.hpp>` out of the box for interactive table and image dumps, and support native DAP debugging via `lldb-dap`.
-  - **Polyglot Interactive Notebooks**: Mix cells in C#, Python, JS, Java, and C++ in a single notebook document. Cross-language data sharing via `#!share --from <lang> <var>` converts primitives, vectors, and tables across kernel boundaries as JSON.
+  - **Rust with Cargo**: `.rs` files build as a generated Cargo package that points at the file where it is (so `mod x;` siblings, compiler messages and debug info all name the real file). Crates come from comments such as `// #crate: rand = "0.8"` (also `// #edition: 2024`, `// #profile: release`) and are compiled once into a build folder shared by every script; `fry::table(&rows, "Title")` and `fry::dump!(value)` put tables in the Results deck with no setup; rustc's messages land in Problems at the right line and column, with an "Install crate" quick-fix; debugging runs on `lldb-dap` with Rust's own pretty-printers. Static completion and hover come with the editor; a rust-analyzer client can replace them later through `EditorAssistants`.
+  - **Rust notebooks**: each cell is built and run; functions, types, imports and macros a cell defines stay for the cells after it, the value of a cell's last expression is shown (a list of structs as a table), `?` works, and a variable made with `let` stays for the cells after it, with its type and any changes made to it (numbers, text, lists, options, tuples, maps and sets are kept; a struct of your own, a closure or a reference isn't, and a later cell that needs one is told why it's gone). `fry::share!(x)` keeps a value as data for `#!share --from rust x` in other languages.
+  - **Polyglot Interactive Notebooks**: Mix cells in C#, Python, JS, Java, C++, Go, F#, SQL and Rust in a single notebook document. Cross-language data sharing via `#!share --from <lang> <var>` converts primitives, vectors, and tables across kernel boundaries as JSON.
   - **Intelligent Toolchain Discovery**: Automatic detection of project virtual environments, Homebrew, Xcode, MSVC, JDKs, and system PATH with actionable missing-toolchain guidance. See [docs/adding-a-language.md](docs/adding-a-language.md) and [docs/kernel-protocol.md](docs/kernel-protocol.md).
 - **Tabular Data Analytics**:
   - Native display and profiling for `DataTable`, `DataView`, and Microsoft.Data.Analysis `DataFrame`.
@@ -78,7 +88,7 @@ CSharpPlayground/
 ├── Controls/                       # VS Code activity bar, status bar, tabs, editor
 ├── Models/                         # POCO models for scripts, cells, diagnostics
 ├── Services/                       # Roslyn compiler, kernel, completion, debugger
-│   ├── Languages/                  # Language registry; C# and Python modules (Python/Kernel: the kernel program)
+│   ├── Languages/                  # Language registry and one module per language (Python/Kernel: the kernel program; Rust: Cargo, fry, lldb-dap)
 │   ├── Toolchains/ Processes/      # Finding installed toolchains; running programs (stdin, Stop, cleanup)
 │   └── Kernels/ Packages/          # Notebook kernels per language, #!share, the kernel protocol; pip
 ├── ViewModels/                     # Reactive MVVM view models
@@ -87,7 +97,7 @@ CSharpPlayground/
 │   ├── CSharpEditorPlugin.Runner.csproj
 │   ├── Program.cs / App.axaml
 │   └── MainWindow.axaml
-├── Tests/                          # Comprehensive xUnit test suite (1,100+ tests; RealPython/ needs Python)
+├── Tests/                          # Comprehensive xUnit test suite (2,100+ tests; Real*/ folders need each real toolchain: Python, Rust, Go, Delve, netcoredbg…)
 │   └── CSharpEditorPlugin.Tests.csproj
 ├── tools/UiSnapshots/              # Headless renderer: real views to PNG, for checking UI changes
 ├── docs/                           # Developer guides: headless UI snapshots, adding a language, the kernel protocol

@@ -10,11 +10,12 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpManagerViewModel : ObservableObject
+public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly Action<ScriptDocumentItem> _openScriptAction;
     private readonly Action<NotebookDocumentItem> _openNotebookAction;
+    private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     [ObservableProperty]
@@ -125,7 +126,7 @@ public partial class CSharpManagerViewModel : ObservableObject
     private string? _pendingTemplateId;
 
     public bool IsCreatePromptOpen => PendingCreateKind.HasValue;
-    public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : "New Script";
+    public string CreatePromptTitle => PendingCreateKind == WorkspaceItemKind.Notebook ? "New Notebook" : (PendingCreateKind == WorkspaceItemKind.Server ? "New API Server" : "New Script");
     public bool IsCreatingNotebook => PendingCreateKind == WorkspaceItemKind.Notebook;
     public bool IsCreatingScript => PendingCreateKind == WorkspaceItemKind.Script;
     public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
@@ -135,7 +136,8 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public ObservableCollection<WorkspaceItemSummary> AllItems { get; } = new();
 
-    public ObservableCollection<object> FilteredItems { get; } = new();
+    // What the list draws: at most _visibleItemLimit rows (see ApplyFilter), replaced in one step rather than item by item.
+    public RangeObservableCollection<object> FilteredItems { get; } = new();
     public ObservableCollection<CodeTemplate> StarterTemplates { get; } = new();
 
     public IEnumerable<CodeTemplate> ScriptTemplates => FilterTemplates(StarterTemplates.Where(t => !t.IsNotebook));
@@ -143,7 +145,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
-        "All", "Notebooks", "Scripts", "Pinned"
+        "All", "Notebooks", "Scripts", "Servers", "Pinned"
     };
 
     public ObservableCollection<string> SortOptions { get; } = new()
@@ -581,7 +583,8 @@ public partial class CSharpManagerViewModel : ObservableObject
         Action? navigateToDocsAction = null,
         Action? navigateToBlindProblemsAction = null,
         StudioLanguageServices? languages = null,
-        Action<string?>? navigateToSettingsAction = null)
+        Action<string?>? navigateToSettingsAction = null,
+        Action<FryServerDocumentItem>? openServerAction = null)
     {
         _storageService = storageService;
         var registry = (languages ?? StudioLanguageServices.Default).Registry;
@@ -591,6 +594,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         }
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
+        _openServerAction = openServerAction;
         _navigateToHomeAction = navigateToHomeAction;
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToBlindProblemsAction = navigateToBlindProblemsAction;
@@ -620,6 +624,33 @@ public partial class CSharpManagerViewModel : ObservableObject
         _ = LoadWorkspaceItemsAsync();
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = LoadWorkspaceItemsAsync());
+        // Files changed outside the studio: catch up now if the Hub is on screen, else on the next visit (OnActivated).
+        _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (_isPageActive) _ = ReloadIfStaleAsync();
+        });
+    }
+
+    // The Hub stays alive while another page is shown; its 3 s memory readout has nothing to update then.
+    private bool _isPageActive = true;
+
+    public void OnActivated()
+    {
+        _isPageActive = true;
+
+        // Other pages (or other programs) may have created, saved or deleted items while the Hub was hidden.
+        _ = ReloadIfStaleAsync();
+
+        if (_telemetryTimer is not { IsEnabled: false }) return;
+        OnPropertyChanged(nameof(MemoryUsageText));
+        OnPropertyChanged(nameof(MemoryUsagePercent));
+        _telemetryTimer.Start();
+    }
+
+    public void OnDeactivated()
+    {
+        _isPageActive = false;
+        _telemetryTimer?.Stop();
     }
 
     [RelayCommand]
@@ -628,12 +659,28 @@ public partial class CSharpManagerViewModel : ObservableObject
         _navigateToHomeAction?.Invoke();
     }
 
+    // The storage's ContentVersion the list was last loaded at (-1: never). Returning to the Hub reloads only if it moved.
+    private long _loadedContentVersion = -1;
+    private Task? _pendingReload;
+
+    /// <summary>
+    /// Reloads the workspace list if anything in the workspace changed since the last load (a save, a new script, a
+    /// rename), and does nothing otherwise. A reload already running is joined, not repeated.
+    /// </summary>
+    public Task ReloadIfStaleAsync()
+    {
+        if (_storageService.ContentVersion == _loadedContentVersion) return Task.CompletedTask;
+        return _pendingReload is { IsCompleted: false } running ? running : _pendingReload = LoadWorkspaceItemsAsync();
+    }
+
     public async Task LoadWorkspaceItemsAsync()
     {
         await _loadLock.WaitAsync();
         try
         {
             IsLoading = true;
+            // Taken before the scan: a change that lands while it runs leaves the list stale, so the next check reloads.
+            var version = _storageService.ContentVersion;
             var list = await _storageService.LoadWorkspaceSummariesAsync();
             AllItems.Clear();
             foreach (var item in list)
@@ -645,7 +692,7 @@ public partial class CSharpManagerViewModel : ObservableObject
             await UpdateDiskStorageAsync();
             await LoadPinnedStateAsync();
             ApplyFilter();
-
+            _loadedContentVersion = version;
         }
         finally
         {
@@ -658,18 +705,24 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         TotalScripts = AllItems.Count(i => i.IsScript);
         TotalNotebooks = AllItems.Count(i => i.IsNotebook);
+        OnPropertyChanged(nameof(TotalServers));
         OnPropertyChanged(nameof(IsWorkspaceEmpty));
 
         OnPropertyChanged(nameof(RecentNotebook));
         OnPropertyChanged(nameof(RecentScript));
+        OnPropertyChanged(nameof(RecentServer));
         OnPropertyChanged(nameof(HasRecentNotebook));
         OnPropertyChanged(nameof(HasRecentScript));
+        OnPropertyChanged(nameof(HasRecentServer));
         OnPropertyChanged(nameof(RecentNotebookTitle));
         OnPropertyChanged(nameof(RecentNotebookPath));
         OnPropertyChanged(nameof(RecentNotebookTime));
         OnPropertyChanged(nameof(RecentScriptTitle));
         OnPropertyChanged(nameof(RecentScriptPath));
         OnPropertyChanged(nameof(RecentScriptTime));
+        OnPropertyChanged(nameof(RecentServerTitle));
+        OnPropertyChanged(nameof(RecentServerPath));
+        OnPropertyChanged(nameof(RecentServerTime));
         OnPropertyChanged(nameof(MemoryUsageText));
         OnPropertyChanged(nameof(MemoryUsagePercent));
         OnPropertyChanged(nameof(StorageUsageText));
@@ -677,19 +730,39 @@ public partial class CSharpManagerViewModel : ObservableObject
         OnPropertyChanged(nameof(StorageEngineStatus));
     }
 
-    partial void OnSearchQueryChanged(string value) => ApplyFilter();
+    partial void OnSearchQueryChanged(string value)
+    {
+        _visibleItemLimit = ItemPageSize;
+        _filterPause?.Cancel();
+        if (AllItems.Count <= 300)
+        {
+            ApplyFilter();
+            return;
+        }
+
+        var pause = _filterPause = new CancellationTokenSource();
+        _ = ApplyFilterAfterPauseAsync(pause.Token);
+    }
+
     partial void OnSelectedTypeFilterChanged(string value)
     {
+        _visibleItemLimit = ItemPageSize;
         OnPropertyChanged(nameof(IsAllFilterActive));
         OnPropertyChanged(nameof(IsNotebooksFilterActive));
         OnPropertyChanged(nameof(IsScriptsFilterActive));
+        OnPropertyChanged(nameof(IsServersFilterActive));
         OnPropertyChanged(nameof(IsPinnedFilterActive));
         OnPropertyChanged(nameof(IsWorkspaceAllNavActive));
         OnPropertyChanged(nameof(IsScriptsNavActive));
         OnPropertyChanged(nameof(IsNotebooksNavActive));
+        OnPropertyChanged(nameof(IsServersNavActive));
         ApplyFilter();
     }
-    partial void OnSelectedSortOptionChanged(string value) => ApplyFilter();
+    partial void OnSelectedSortOptionChanged(string value)
+    {
+        _visibleItemLimit = ItemPageSize;
+        ApplyFilter();
+    }
 
     partial void OnActiveDashboardViewChanged(string value)
     {
@@ -753,6 +826,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         OnPropertyChanged(nameof(CreatePromptTitle));
         OnPropertyChanged(nameof(IsCreatingNotebook));
         OnPropertyChanged(nameof(IsCreatingScript));
+        OnPropertyChanged(nameof(IsCreatingServer));
     }
 
     partial void OnSelectedFolderPathChanged(string? value) => OnPropertyChanged(nameof(SelectedFolderDisplay));
@@ -818,7 +892,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
     private void ApplyFilter()
     {
-        FilteredItems.Clear();
+        var rows = new List<object>();
 
         var query = SearchQuery.Trim().ToLowerInvariant();
         HasSearchQuery = !string.IsNullOrEmpty(query);
@@ -829,6 +903,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         {
             if (typeFilter == "Scripts" && !item.IsScript) return false;
             if (typeFilter == "Notebooks" && !item.IsNotebook) return false;
+            if (typeFilter == "Servers" && !item.IsServer) return false;
             if (typeFilter == "Pinned" && !item.IsPinned) return false;
 
             if (string.IsNullOrEmpty(query)) return true;
@@ -858,7 +933,7 @@ public partial class CSharpManagerViewModel : ObservableObject
         {
             if (!match.IsExternal)
             {
-                FilteredItems.Add(match);
+                rows.Add(match);
                 continue;
             }
 
@@ -867,7 +942,7 @@ public partial class CSharpManagerViewModel : ObservableObject
 
             var groupMembers = matchList.Where(m => m.IsExternal).ToList();
 
-            FilteredItems.Add(new WorkspaceGroupHeaderViewModel
+            rows.Add(new WorkspaceGroupHeaderViewModel
             {
                 Title = match.ExternalWorkspaceName,
                 FolderPath = _storageService.ActiveWorkspaceRootPath,
@@ -876,12 +951,63 @@ public partial class CSharpManagerViewModel : ObservableObject
 
             foreach (var member in groupMembers)
             {
-                FilteredItems.Add(member);
+                rows.Add(member);
             }
         }
 
+        // Every card is a heavy control: drawing thousands takes seconds and gigabytes. Draw the first ones (the list is
+        // sorted, so those are the ones wanted most) and offer the rest with "Show more"; searching covers them all.
+        var shown = rows.Count > _visibleItemLimit ? rows.GetRange(0, _visibleItemLimit) : rows;
+        FilteredItems.ReplaceAll(shown);
+        HiddenItemCount = rows.Count - shown.Count;
+
         HasFilteredItems = matchList.Count > 0;
         FilteredItemCount = matchList.Count;
+    }
+
+    private const int ItemPageSize = 100;
+    private int _visibleItemLimit = ItemPageSize;
+
+    /// <summary>How many matching items are not drawn yet.</summary>
+    [ObservableProperty]
+    private int _hiddenItemCount;
+
+    public bool HasHiddenItems => HiddenItemCount > 0;
+
+    public string HiddenItemsText => $"Show {Math.Min(ItemPageSize, HiddenItemCount)} more  ·  {HiddenItemCount:N0} not shown";
+
+    partial void OnHiddenItemCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasHiddenItems));
+        OnPropertyChanged(nameof(HiddenItemsText));
+    }
+
+    [RelayCommand]
+    private void ShowMoreItems()
+    {
+        _visibleItemLimit += ItemPageSize;
+        ApplyFilter();
+    }
+
+    // Re-filtering after every key is instant for a small library but not for thousands of items, so a big library
+    // waits for a short pause in typing.
+    private CancellationTokenSource? _filterPause;
+
+    private async Task ApplyFilterAfterPauseAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(200, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (!token.IsCancellationRequested) ApplyFilter();
+        });
     }
 
     [RelayCommand]
@@ -889,7 +1015,15 @@ public partial class CSharpManagerViewModel : ObservableObject
     {
         if (item == null) return;
 
-        if (item.IsNotebook)
+        if (item.IsServer)
+        {
+            var server = await _storageService.LoadServerDocumentAsync(item.Id);
+            if (server != null)
+            {
+                _openServerAction?.Invoke(server);
+            }
+        }
+        else if (item.IsNotebook)
         {
             var nb = await _storageService.LoadNotebookAsync(item.Id);
             if (nb != null)
@@ -949,12 +1083,16 @@ public partial class CSharpManagerViewModel : ObservableObject
         {
             var folderPath = SelectedFolderPath;
             var title = string.IsNullOrWhiteSpace(NewItemName)
-                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : "New Automation Script")
+                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : (kind == WorkspaceItemKind.Server ? "New API Server" : "New Automation Script"))
                 : NewItemName.Trim();
 
             if (kind == WorkspaceItemKind.Notebook)
             {
                 await CreateNewNotebookCoreAsync(_pendingTemplateId, folderPath, title);
+            }
+            else if (kind == WorkspaceItemKind.Server)
+            {
+                await CreateNewServerCoreAsync(_pendingTemplateId, folderPath, title);
             }
             else
             {
@@ -1083,7 +1221,15 @@ public partial class CSharpManagerViewModel : ObservableObject
 
                 if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                 {
-                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
+                    {
+                        var server = await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId);
+                        if (server != null)
+                        {
+                            _openServerAction?.Invoke(server);
+                        }
+                    }
+                    else if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
                     {
                         var nb = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
                         if (nb != null)

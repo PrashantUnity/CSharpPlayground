@@ -65,6 +65,38 @@ public partial class CSharpCodeStudioViewModel
         new("opencv4", "4.9.0", "Open Source Computer Vision Library", "OpenCV team", 25000000)
     ];
 
+    private static readonly NuGetPackageItem[] PopularGoPackages =
+    [
+        new("github.com/gin-gonic/gin", "1.10.0", "Gin is a HTTP web framework written in Go", "Gin Authors", 120000000),
+        new("github.com/google/uuid", "1.6.0", "Generates and inspects UUIDs based on RFC 4122", "Google", 200000000),
+        new("github.com/stretchr/testify", "1.9.0", "A toolkit with common assertions and mocks for Go", "Stretchr", 150000000),
+        new("github.com/spf13/cobra", "1.8.1", "A Commander for modern Go CLI interactions", "Steve Francia", 90000000),
+        new("gorm.io/gorm", "1.25.10", "The fantastic ORM library for Golang", "Jinzhu", 80000000),
+        new("go.uber.org/zap", "1.27.0", "Blazing fast, structured, leveled logging in Go", "Uber", 70000000),
+        new("golang.org/x/sync", "0.7.0", "Go concurrency primitives such as errgroup", "Go Authors", 180000000),
+        new("gopkg.in/yaml.v3", "3.0.1", "YAML support for the Go language", "Canonical", 140000000)
+    ];
+
+    private static readonly NuGetPackageItem[] PopularRustPackages =
+    [
+        new("serde", "1", "A framework for serializing and deserializing Rust data structures", "David Tolnay, Erick Tryzelaar", 400000000),
+        new("serde_json", "1", "A JSON serialization file format", "David Tolnay, Erick Tryzelaar", 300000000),
+        new("rand", "0.9", "Random number generators and other randomness functionality", "The Rand Project Developers", 350000000),
+        new("tokio", "1", "An event-driven, non-blocking I/O platform for asynchronous applications", "Tokio Contributors", 300000000),
+        new("clap", "4", "A simple to use, efficient, and full-featured command line argument parser", "Clap Maintainers", 300000000),
+        new("regex", "1", "An implementation of regular expressions for Rust", "The Rust Project Developers", 350000000),
+        new("chrono", "0.4", "Date and time library for Rust", "Kang Seonghoon, Chrono Contributors", 250000000),
+        new("anyhow", "1", "Flexible concrete Error type built on std::error::Error", "David Tolnay", 350000000),
+        new("thiserror", "2", "derive(Error) for defining error types", "David Tolnay", 350000000),
+        new("itertools", "0.14", "Extra iterator adaptors, iterator methods, free functions, and macros", "bluss", 250000000),
+        new("rayon", "1", "Simple work-stealing parallelism for Rust", "Niko Matsakis, Josh Stone", 150000000),
+        new("reqwest", "0.12", "Higher level HTTP client library", "Sean McArthur", 200000000),
+        new("uuid", "1", "A library to generate and parse UUIDs", "The Rust Project Developers", 250000000),
+        new("once_cell", "1", "Single assignment cells and lazy values", "Aleksey Kladov", 400000000),
+        new("log", "0.4", "A lightweight logging facade for Rust", "The Rust Project Developers", 400000000),
+        new("fastrand", "2", "A simple and fast random number generator", "Stjepan Glavina", 150000000),
+    ];
+
     public string ActivePackageManagerName => ActiveLanguage?.Packages?.ToolName ?? "NuGet";
     public string ActivePackageManagerTitle => $"{ActivePackageManagerName.ToUpperInvariant()} PACKAGES";
     public string ActivePackageSearchPlaceholder => $"Search {ActivePackageManagerName} packages...";
@@ -90,6 +122,10 @@ public partial class CSharpCodeStudioViewModel
             return PopularJavaPackages;
         if (string.Equals(id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
             return PopularCppPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
+            return PopularGoPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Rust, StringComparison.OrdinalIgnoreCase))
+            return PopularRustPackages;
         return PopularNuGetPackages;
     }
 
@@ -130,6 +166,26 @@ public partial class CSharpCodeStudioViewModel
             var filtered = Array.FindAll(PopularCppPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Go package search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularGoPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Rust crate search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Rust, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularRustPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching crates" : "No crates found in catalog";
             return;
         }
 
@@ -234,6 +290,8 @@ public partial class CSharpCodeStudioViewModel
         {
             Services.Languages.LanguageIds.Java => $"//DEPS {package.Id}:{package.Version}",
             Services.Languages.LanguageIds.Cpp => $"// #vcpkg: {package.Id}",
+            Services.Languages.LanguageIds.Go => $"// #go: {package.Id}",
+            Services.Languages.LanguageIds.Rust => Services.Languages.Rust.RustPackageMap.CrateLine(package.Id, package.Version),
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
             Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
             _ => $"#r \"nuget: {package.Id}, {package.Version}\""
@@ -263,21 +321,74 @@ public partial class CSharpCodeStudioViewModel
         NuGetStatusMessage = $"Removed package reference from script.";
     }
 
+    // Built once, at compile time. This scan runs every time the code changes (every keystroke) and on every tab switch,
+    // and it used to construct and interpret a fresh Regex each time.
+    [GeneratedRegex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex DocumentDirectiveRegex();
+
+    // Characters. Up to this size the scan is instant and runs on the spot; a bigger document (a megabyte of source takes
+    // tens of milliseconds to scan, on every keystroke) is scanned in the background once typing pauses.
+    private const int DirectiveScanInlineLimit = 100_000;
+
+    private CancellationTokenSource? _directiveScanCts;
+
     [RelayCommand]
     public void RefreshDocumentNuGetPackages()
     {
-        DocumentNuGetPackages.Clear();
-        if (string.IsNullOrEmpty(Code)) return;
+        _directiveScanCts?.Cancel(); // Whatever is still being scanned is for older text.
+        var code = Code;
+        if (code.Length <= DirectiveScanInlineLimit)
+        {
+            ApplyDocumentDirectives(ScanDocumentDirectives(code));
+            return;
+        }
 
-        var regex = new Regex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-        var matches = regex.Matches(Code);
-        foreach (Match m in matches)
+        var scan = _directiveScanCts = new CancellationTokenSource();
+        _ = ScanLargeDocumentAsync(code, scan.Token);
+    }
+
+    private async Task ScanLargeDocumentAsync(string code, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(300, token); // While typing, only the text at the pause is worth scanning.
+            var found = await Task.Run(() => ScanDocumentDirectives(code), token);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (!token.IsCancellationRequested) ApplyDocumentDirectives(found);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer scan.
+        }
+    }
+
+    private static List<string> ScanDocumentDirectives(string code)
+    {
+        var found = new List<string>();
+        foreach (Match m in DocumentDirectiveRegex().Matches(code))
         {
             var line = m.Value.Trim();
-            if (!DocumentNuGetPackages.Contains(line))
+            if (!found.Contains(line))
             {
-                DocumentNuGetPackages.Add(line);
+                found.Add(line);
             }
+        }
+
+        return found;
+    }
+
+    private void ApplyDocumentDirectives(List<string> found)
+    {
+        // Unchanged, which is the usual case while typing: leave the list alone instead of clearing and refilling it
+        // (every change would make the Dependencies panel rebuild).
+        if (DocumentNuGetPackages.SequenceEqual(found)) return;
+
+        DocumentNuGetPackages.Clear();
+        foreach (var line in found)
+        {
+            DocumentNuGetPackages.Add(line);
         }
     }
 

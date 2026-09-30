@@ -141,15 +141,17 @@ public sealed class PythonDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
             context,
             postHandshake: async dapClient =>
             {
-                await dapClient.SendRequestAsync("attach", new
+                var attached = await dapClient.SendRequestAsync("attach", new
                 {
                     name = "Python: Attach",
                     type = "python",
                     request = "attach",
                     connect = new { host = "127.0.0.1", port }
                 }, ct).ConfigureAwait(false);
+                if (!attached.Success) throw new DapException(attached.Message ?? "debugpy refused to attach.", "attach", attached);
             },
-            ct).ConfigureAwait(false);
+            ct,
+            DapHandshake.Standard).ConfigureAwait(false);
     }
 
     Task<IDebugSession> IDapAdapterRegistration.LaunchAsync(DapAdapterManager manager, DebugLaunchContext context, CancellationToken ct) =>

@@ -24,9 +24,26 @@ public partial class DocCategory : ObservableObject
 
     [ObservableProperty]
     private bool _isExpanded;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public string AccentBgColor
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(AccentColor)) return "#1A38BDF8";
+            var hex = AccentColor.TrimStart('#');
+            if (hex.Length == 6) return "#1A" + hex;
+            if (hex.Length == 8) return "#1A" + hex.Substring(2);
+            return "#1A38BDF8";
+        }
+    }
+
+    public int ArticleCount => Articles.Count;
 }
 
-public class DocArticle
+public partial class DocArticle : ObservableObject
 {
     public string Id { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;
@@ -43,6 +60,9 @@ public class DocArticle
     public bool HasCodeSnippets => CodeSnippets.Count > 0;
     public bool HasApiSignatures => ApiSignatures.Count > 0;
     public bool HasShortcuts => Shortcuts.Count > 0;
+
+    [ObservableProperty]
+    private bool _isSelected;
 }
 
 public class DocSection

@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -45,14 +46,100 @@ public partial class VisualizerPlaybackControl : UserControl
         catch { /* Headless test runner */ }
     }
 
+    private DispatcherTimer? _playbackTimer;
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SyncPlaybackTimer();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        StopPlaybackTimer();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsVisibleProperty)
+        {
+            SyncPlaybackTimer();
+        }
+    }
+
+    private void SyncPlaybackTimer()
+    {
+        if (Sequence != null && Sequence.IsPlaying && IsVisible && VisualRoot != null)
+        {
+            StartPlaybackTimer();
+        }
+        else
+        {
+            StopPlaybackTimer();
+        }
+    }
+
+    private void StartPlaybackTimer()
+    {
+        StopPlaybackTimer();
+        if (Sequence == null || !Sequence.IsPlaying) return;
+        int intervalMs = Math.Max(50, (int)(600 / Math.Max(0.1, Sequence.PlaybackSpeed)));
+        try
+        {
+            _playbackTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(intervalMs)
+            };
+            _playbackTimer.Tick += OnPlaybackTimerTick;
+            _playbackTimer.Start();
+        }
+        catch { /* Headless runner */ }
+    }
+
+    private void StopPlaybackTimer()
+    {
+        if (_playbackTimer != null)
+        {
+            _playbackTimer.Stop();
+            _playbackTimer.Tick -= OnPlaybackTimerTick;
+            _playbackTimer = null;
+        }
+    }
+
+    private void OnPlaybackTimerTick(object? sender, EventArgs e)
+    {
+        if (Sequence == null || !Sequence.IsPlaying) { StopPlaybackTimer(); return; }
+        if (!IsVisible || VisualRoot == null) return;
+        if (Sequence.CurrentIndex < Sequence.Steps.Count - 1)
+        {
+            Sequence.NextStep();
+        }
+        else
+        {
+            Sequence.Pause();
+            StopPlaybackTimer();
+        }
+    }
+
     private void OnSequenceChanged(VisualizerSequence? oldSeq, VisualizerSequence? newSeq)
     {
-        if (oldSeq != null) { oldSeq.PropertyChanged -= OnSeqChanged; oldSeq.StepChanged -= OnStepChanged; }
+        if (oldSeq != null) { StopPlaybackTimer(); oldSeq.PropertyChanged -= OnSeqChanged; oldSeq.StepChanged -= OnStepChanged; }
         if (newSeq != null) { newSeq.PropertyChanged += OnSeqChanged; newSeq.StepChanged += OnStepChanged; }
+        SyncPlaybackTimer();
         UpdateUi();
     }
 
-    private void OnSeqChanged(object? s, PropertyChangedEventArgs e) => UpdateUi();
+    private void OnSeqChanged(object? s, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(VisualizerSequence.IsPlaying) || e.PropertyName == nameof(VisualizerSequence.PlaybackSpeed))
+        {
+            SyncPlaybackTimer();
+        }
+        UpdateUi();
+    }
+
     private void OnStepChanged(object? s, int idx) => UpdateUi();
 
     private void WireEvents()

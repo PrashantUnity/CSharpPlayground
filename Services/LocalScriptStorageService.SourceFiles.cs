@@ -45,6 +45,7 @@ public partial class LocalScriptStorageService
     private bool IsWorkspaceFile(string path) =>
         path.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+        path.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase) ||
         _languages.FindSourceFileLanguage(path) != null;
 
     private string RegisterSourceFile(string path)
@@ -172,6 +173,7 @@ public partial class LocalScriptStorageService
 
             document.SourceFilePath = path;
             document.LastModified = written;
+            MarkChanged(structural: false);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -182,7 +184,11 @@ public partial class LocalScriptStorageService
     }
 
     /// <summary>Creates <c>script_HHmmss.py</c> (or <paramref name="fileName"/>) with the language's starter text.</summary>
-    public async Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null)
+    public Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null) =>
+        CreateNewSourceFileAsync(languageId, fileName, folderPath, initialContent: null);
+
+    /// <summary>Creates a source file of a language with <paramref name="initialContent"/> in it (null: the language's new-file template).</summary>
+    public async Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName, string? folderPath, string? initialContent)
     {
         await EnsureInitializedAsync();
         var language = _languages.Get(languageId);
@@ -201,7 +207,8 @@ public partial class LocalScriptStorageService
         for (var n = 2; File.Exists(Path.Combine(folder, name + extension)); n++) name = $"{baseName}_{n}";
 
         var path = Path.Combine(folder, name + extension);
-        await File.WriteAllTextAsync(path, language.NewFileTemplate, new UTF8Encoding(false));
+        await File.WriteAllTextAsync(path, initialContent ?? language.NewFileTemplate, new UTF8Encoding(false));
+        MarkChanged();
         return await LoadSourceFileAsync(RegisterSourceFile(path));
     }
 
@@ -251,6 +258,7 @@ public partial class LocalScriptStorageService
             lock (_sourceGate) _sourceFiles[newId] = state;
         }
 
+        MarkChanged();
         return Task.FromResult(new SourceFileRename(newId, _knownFileLocations[newId]));
     }
 

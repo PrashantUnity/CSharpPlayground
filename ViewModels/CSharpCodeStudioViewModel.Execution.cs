@@ -230,10 +230,21 @@ public partial class CSharpCodeStudioViewModel
 
     // The kinds the Results tab's RichOutputs template draws (StudioBottomDeckControl.axaml).
     private static bool IsDrawnInResults(RichCellOutput output) =>
-        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind;
+        output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind || output.IsVisualKind;
     public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
     public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
+
+    /// <summary>
+    /// Characters. Above this a document is a "large file": its foldings are worked out after it is shown, and it is not analysed
+    /// as you type. Each pause in typing would start a multi-second Roslyn compile of the whole file, whose allocations keep the
+    /// garbage collector pausing the editor (with a big workspace open, a keystroke in a 2 MB file waited about 25 ms for it).
+    /// Running the file still reports its problems.
+    /// </summary>
+    public const int LargeDocumentLength = 500_000;
+
+    /// <summary>What the status bar says while the open document is too large to be analysed as you type.</summary>
+    public const string LargeDocumentStatus = "Live diagnostics are off for a very large file; run it to check for problems";
 
     private void TriggerDiagnosticsCheck()
     {
@@ -241,6 +252,18 @@ public partial class CSharpCodeStudioViewModel
         {
             // Problems of such a document come from its runs; they stay until the next one.
             _diagnosticsCts?.Cancel();
+            return;
+        }
+
+        if (Code.Length > LargeDocumentLength)
+        {
+            _diagnosticsCts?.Cancel();
+            // What was found before describes text that has changed since.
+            if (Diagnostics.Count > 0) Diagnostics.Clear();
+            OpenTabs.FirstOrDefault(t => t.Id == Script.Id)?.Diagnostics.Clear();
+            ErrorCount = 0;
+            WarningCount = 0;
+            if (!IsExecuting) CompilerStatusText = LargeDocumentStatus;
             return;
         }
 
@@ -473,29 +496,41 @@ public partial class CSharpCodeStudioViewModel
             }
         }, _postToUiThread);
 
-        using var scope = InteractiveDisplayContext.EnterScope(richOutput =>
+        // What the run displays, from the script's thread: drawn in the Results of the tab that ran it (and the studio's,
+        // while that tab is shown), or said in the Terminal when it couldn't be drawn (a spec with a mistake in it).
+        void ShowOutput(RichCellOutput rich)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            if (rich.Kind == CellOutputKind.Error)
             {
+                terminal.Write($"⚠️ {rich.Text}\n");
+                return;
+            }
+
+            _postToUiThread(() =>
+            {
+                if (myRunId != _executionRunId) return;
                 if (runningTab != null)
                 {
-                    runningTab.RichOutputs.Add(richOutput);
-                    if (richOutput.TableResult != null)
+                    runningTab.RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
                     {
-                        runningTab.DumpResults.Add(richOutput.TableResult);
+                        runningTab.DumpResults.Add(rich.TableResult);
                     }
                 }
                 if (runningTab == null || runningTab.IsActive)
                 {
-                    RichOutputs.Add(richOutput);
-                    if (richOutput.TableResult != null)
+                    RichOutputs.Add(rich);
+                    if (rich.TableResult != null)
                     {
-                        DumpResults.Add(richOutput.TableResult);
+                        DumpResults.Add(rich.TableResult);
                         SelectedBottomTabIndex = 0;
                     }
                 }
             });
-        });
+        }
+
+        // A compiled program's displays; statements run in the kernel, which hands them to its own callback.
+        using var scope = InteractiveDisplayContext.EnterScope(ShowOutput);
         using var cancellationScope = InteractiveCancellationContext.EnterScope(token);
 
         var stdin = new Services.Processes.InteractiveStdinReader(token);
@@ -529,39 +564,7 @@ public partial class CSharpCodeStudioViewModel
                     ct: token,
                     onLiveConsole: terminal.Write,
                     stdin: stdin,
-                    onRichOutput: rich =>
-                    {
-                        Action appendRich = () =>
-                        {
-                            if (myRunId != _executionRunId) return;
-                            if (runningTab != null)
-                            {
-                                runningTab.RichOutputs.Add(rich);
-                                if (rich.TableResult != null)
-                                {
-                                    runningTab.DumpResults.Add(rich.TableResult);
-                                }
-                            }
-                            if (runningTab == null || runningTab.IsActive)
-                            {
-                                RichOutputs.Add(rich);
-                                if (rich.TableResult != null)
-                                {
-                                    DumpResults.Add(rich.TableResult);
-                                    SelectedBottomTabIndex = 0;
-                                }
-                            }
-                        };
-
-                        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-                        {
-                            Avalonia.Threading.Dispatcher.UIThread.Post(appendRich);
-                        }
-                        else
-                        {
-                            appendRich();
-                        }
-                    }));
+                    onRichOutput: ShowOutput));
 
                 KernelExecutionResult kernelResult;
                 if (await ExecutionAbandonment.WaitWithGraceAsync(kernelExecutionTask, token))
@@ -638,7 +641,7 @@ public partial class CSharpCodeStudioViewModel
                         }
                         ExecutionTimeText = timeText;
                         CompilerStatusText = statusText;
-                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
+                        SelectedBottomTabIndex = HasNoResults ? 1 : 0; // Results when the run drew anything there, as for every language
                     }
                 }
                 else if (kernelResult.WasCancelled)
@@ -753,7 +756,7 @@ public partial class CSharpCodeStudioViewModel
                         ConsoleOutput += endMsg;
                         ExecutionTimeText = timeText;
                         CompilerStatusText = statusText;
-                        SelectedBottomTabIndex = DumpResults.Count > 0 ? 0 : 1;
+                        SelectedBottomTabIndex = HasNoResults ? 1 : 0; // Results when the run drew anything there, as for every language
                     }
                 }
                 else if (result.WasCancelled)

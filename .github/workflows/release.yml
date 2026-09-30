@@ -86,6 +86,76 @@ jobs:
           FRY_TEST_PYTHON: ${{ steps.python.outputs.python-path }}
           FRY_REQUIRE_PYTHON: '1'
 
+  # ── 1b. Every language's tests against its real compiler ─────────────────
+  # The gate above skips a language's real-toolchain tests when the machine lacks it. Here each toolchain is installed and
+  # required, so a skip becomes a failure. It is advisory (the release doesn't wait for it) until it has been seen green on all
+  # three systems; then add it to `needs:` of the jobs below.
+  real-toolchains:
+    name: Real toolchains (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Rust
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+          cargo --version
+
+      - name: Restore
+        run: dotnet restore CSharpEditorPlugin.slnx
+
+      - name: Build
+        run: dotnet build CSharpEditorPlugin.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test CSharpEditorPlugin.slnx -c Release --no-build --verbosity normal
+        env:
+          FRY_TEST_PYTHON: ${{ steps.python.outputs.python-path }}
+          FRY_REQUIRE_PYTHON: '1'
+          FRY_REQUIRE_GO: '1'
+          FRY_REQUIRE_JAVASCRIPT: '1'
+          FRY_REQUIRE_JAVA: '1'
+          FRY_REQUIRE_RUST: '1'
+          FRY_REQUIRE_FSHARP: '1'
+          # A C++ compiler and the sqlite3 command are on the Linux and macOS images; Windows would need them set up first.
+          FRY_REQUIRE_CPP: ${{ runner.os != 'Windows' && '1' || '' }}
+          FRY_REQUIRE_SQL: ${{ runner.os != 'Windows' && '1' || '' }}
+
   # ── 2. Pack NuGet + .fryplugin ───────────────────────────────────────────
   build-and-pack:
     name: Build, Pack & Stage Artifacts

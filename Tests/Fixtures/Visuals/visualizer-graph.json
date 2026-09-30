@@ -1,0 +1,21 @@
+{
+  "title": "Dijkstra",
+  "kind": "graph",
+  "state": {
+    "graph": {
+      "directed": true,
+      "nodes": [ { "id": "A", "note": "0" }, { "id": "B", "note": "∞" }, { "id": "C", "label": "City C", "x": 120, "y": 40 } ],
+      "edges": [ { "from": "A", "to": "B", "weight": 4 }, { "from": "A", "to": "C", "weight": 1, "state": "relaxed" }, { "from": "C", "to": "B", "weight": 2 } ]
+    }
+  },
+  "steps": [
+    {
+      "description": "Relax A → C",
+      "highlight": [ { "from": "A", "to": "C" }, "C" ],
+      "changes": {
+        "nodes": [ { "id": "C", "note": "1", "state": "frontier" } ],
+        "edges": [ { "from": "A", "to": "C", "state": "current" } ]
+      }
+    }
+  ]
+}

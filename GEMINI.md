@@ -51,7 +51,7 @@ Every main studio interface (both script code studio and notebook studio) must s
 - Dynamically renders the view corresponding to the active Activity Bar icon.
 - Explorer header features standard action buttons: **New File** (`FilePlusOutline`), **New Folder** (`FolderPlusOutline`), **Open Project** (`FolderOpenOutline`), **Refresh** (`Refresh`), and **Collapse All** (`ArrowCollapseVertical`).
 - Features standard all-caps header with section title and contextual action buttons.
-- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
+- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.go`, `.rs`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
 - Collapsible via `IsSideBarVisible` or keyboard shortcut `Ctrl+B`.
 
 ### Zone 3: Editor Area (Central Canvas)

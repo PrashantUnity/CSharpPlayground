@@ -7,7 +7,8 @@ public sealed record PackageCommand(string Text, IReadOnlyList<string> Arguments
 
 /// <param name="SwitchedToolchain">A different toolchain to use from now on (e.g. a new studio environment).</param>
 /// <param name="AddedSearchPath">A folder a running kernel should add to its import path to see what was installed.</param>
-public sealed record PackageCommandResult(bool Success, string? Message = null, ToolchainInfo? SwitchedToolchain = null, string? AddedSearchPath = null);
+/// <param name="DirectiveToInsert">A line to write at the top of the file the package is for (Rust: <c>// #crate: rand = "0.8"</c>), for a language whose packages belong to a file rather than to the machine.</param>
+public sealed record PackageCommandResult(bool Success, string? Message = null, ToolchainInfo? SwitchedToolchain = null, string? AddedSearchPath = null, string? DirectiveToInsert = null);
 
 /// <summary>Installs a language's packages: pip for Python, npm for JavaScript and so on.</summary>
 public interface IPackageManager

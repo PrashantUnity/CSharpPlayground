@@ -28,7 +28,7 @@ Every main studio interface (both script code studio and notebook studio) must s
 - **Single Side Bar Rule**: Only ONE primary side bar may exist in the horizontal flow. Never place multiple sidebars side-by-side or insert hardcoded fixed middle columns.
 - Hosts the view corresponding to the active Activity Bar icon.
 - Explorer header features standard action buttons: **New File** (`FilePlusOutline`), **New Folder** (`FolderPlusOutline`), **Open Project** (`FolderOpenOutline`), **Refresh** (`Refresh`), and **Collapse All** (`ArrowCollapseVertical`).
-- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
+- Multi-language file tree supporting `.cs`, `.csx`, `.frycs`, `.py`, `.js`, `.java`, `.cpp`, `.cc`, `.c`, `.h`, `.hpp`, `.go`, `.rs`, `.ipynb`, `.csnb`, displaying language-specific file icons and color accents.
 - Collapsible via `IsSideBarVisible` or keyboard shortcut `Ctrl+B`.
 
 ### Zone 3: Editor Area (Dominant Central Canvas)
@@ -96,7 +96,7 @@ Every studio view must register and honor standard VS Code shortcuts:
 
 ## 6. Component Architecture & Codebase Health Mandate
 All contributors and agents must follow `.agents/rules/component_architecture_and_reuse_mandate.md`:
-- **Line budgets**: AXAML views < 400 lines, View code-behind < 150 lines, ViewModels < 400 lines per file (use domain partials e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`), Services < 500 lines.
+- **Line budgets**: AXAML views < 600 lines, View code-behind < 300 lines, ViewModels < 600 lines per file (use domain partials e.g. `.Explorer.cs`, `.Languages.cs`, `.ExternalRun.cs`), Services < 700 lines.
 - **Mandatory Control Reusability**: Shared UI (Activity Bar, Status Bar, Bottom Tool Deck, Explorer Panel, Search Panel, Breadcrumbs, Tab Bar) must be implemented as reusable controls in `Controls/`.
 - **Shared Styles**: Centralize styles in `Controls/SharedStudioStyles.axaml`. Never duplicate hundreds of lines in individual `<UserControl.Styles>`.
 - **100% Backward Compatibility**: All 1,100+ automated unit tests must continue to pass with 0 warnings and 0 errors.

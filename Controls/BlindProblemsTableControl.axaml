@@ -17,8 +17,8 @@
         <!-- 1. STICKY HEADER: click a title to sort, drag a divider to resize -->
         <!-- ══════════════════════════════════════════════════════════════ -->
         <Border Grid.Row="0"
-                Background="{DynamicResource M3SurfaceContainerLowBrush}"
-                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,0,20,0">
             <Grid x:Name="HeaderGrid">
@@ -40,7 +40,7 @@
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
                         <TextBlock Classes="column-label" Text="Title" TextTrimming="CharacterEllipsis" />
                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
-                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
                                                     IsVisible="{Binding IsSortedByTitle}" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
@@ -52,7 +52,7 @@
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
                         <TextBlock Classes="column-label" Text="Category" TextTrimming="CharacterEllipsis" />
                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
-                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
                                                     IsVisible="{Binding IsSortedByCategory}" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
@@ -63,7 +63,7 @@
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
                         <TextBlock Classes="column-label" Text="Acceptance" TextTrimming="CharacterEllipsis" />
                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
-                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
                                                     IsVisible="{Binding IsSortedByAcceptance}" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
@@ -74,7 +74,7 @@
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
                         <TextBlock Classes="column-label" Text="Difficulty" TextTrimming="CharacterEllipsis" />
                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
-                                                    Foreground="{DynamicResource M3PrimaryBrush}"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
                                                     IsVisible="{Binding IsSortedByDifficulty}" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
@@ -103,8 +103,21 @@
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- 2. SCROLLABLE PROBLEM LIST                                      -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding FilteredProblems}">
+        <!-- Virtualized: only the rows on screen are built (each row is a heavy control). The ScrollViewer is in the
+             template so that the VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding FilteredProblems}">
+            <ItemsControl.Template>
+                <ControlTemplate>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:BlindProblemItem">
                         <Border Classes="problem-row" Classes.selected="{Binding IsHighlighted}" Height="44" Padding="16,0,20,0">
@@ -126,11 +139,11 @@
                                             ToolTip.Tip="{Binding SolvedTooltip}">
                                         <Panel>
                                             <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsSolved}" />
-                                            <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource M3OutlineBrush}" IsVisible="{Binding !IsSolved}" />
+                                            <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsSolved}" />
                                         </Panel>
                                     </Button>
                                     <materialIcons:MaterialIcon Kind="LockOutline" Width="13" Height="13"
-                                                                Foreground="#E3B341" VerticalAlignment="Center"
+                                                                Foreground="#F59E0B" VerticalAlignment="Center"
                                                                 IsVisible="{Binding IsPremium}"
                                                                 ToolTip.Tip="LeetCode Premium on leetcode.com; free to solve here" />
                                 </StackPanel>
@@ -149,7 +162,7 @@
                                 </Border>
 
                                 <TextBlock Grid.Column="3" Text="{Binding AcceptanceRateText}" Margin="12,0,8,0"
-                                           FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                           FontSize="12" Foreground="{DynamicResource DsMutedBrush}"
                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
                                 <Border Grid.Column="4" Margin="12,0,8,0"
@@ -170,13 +183,13 @@
                                             Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Open in Script Studio (run with F5)">
-                                        <materialIcons:MaterialIcon Kind="CodeBraces" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
                                             Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Open as a step-by-step notebook">
-                                        <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Foreground="#22C55E" />
+                                        <materialIcons:MaterialIcon Kind="NotebookOutline" Foreground="{DynamicResource NavNotebooksFgBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
                                             Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
@@ -188,15 +201,15 @@
                                             Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Problem, approaches and test cases">
-                                        <materialIcons:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                        <materialIcons:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
                                             Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding BookmarkTooltip}">
                                         <Panel>
-                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="#E3B341" IsVisible="{Binding IsBookmarked}" />
-                                            <materialIcons:MaterialIcon Kind="BookmarkOutline" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" IsVisible="{Binding !IsBookmarked}" />
+                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="#F59E0B" IsVisible="{Binding IsBookmarked}" />
+                                            <materialIcons:MaterialIcon Kind="BookmarkOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsBookmarked}" />
                                         </Panel>
                                     </Button>
                                 </StackPanel>
@@ -204,17 +217,16 @@
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        </ItemsControl>
 
         <!-- Nothing matches: say so, and offer the way back -->
         <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
                     IsVisible="{Binding HasNoResults}">
             <materialIcons:MaterialIcon Kind="FilterRemoveOutline" Width="32" Height="32"
-                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" HorizontalAlignment="Center" />
+                                        Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
             <TextBlock Text="No problems match these filters" FontSize="13" FontWeight="SemiBold"
-                       Foreground="{DynamicResource M3OnSurfaceBrush}" HorizontalAlignment="Center" />
-            <Button Classes="snippet-action-btn" Command="{Binding ClearFiltersCommand}" HorizontalAlignment="Center">
+                       Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+            <Button Classes="nexus-btn-surface" Command="{Binding ClearFiltersCommand}" HorizontalAlignment="Center" Padding="12,6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <materialIcons:MaterialIcon Kind="FilterOffOutline" Width="14" Height="14" />
                     <TextBlock Text="Clear filters" VerticalAlignment="Center" />

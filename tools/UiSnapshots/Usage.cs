@@ -31,6 +31,9 @@ internal static class Usage
                                      then stop it
               --menu toolchain       also save the picture with the status bar's toolchain menu open (<name>_menu)
               --sidebar <view>       explorer, search, debug, nuget, notes (default) or problems
+              --tree <n>             seed the throwaway workspace with n folders (scripts and a nested folder in each)
+                                     and expand them all, so the Explorer shows a real tree (implies --sidebar explorer)
+              --file-limit <n>       list at most n files (default 20000); with --tree, shows the notice for a cut-off folder
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
               --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
@@ -40,14 +43,21 @@ internal static class Usage
               --run-tests            click Run All in the Test Cases panel
               --add-test             open the Add Test Case form
               --quick-open <mode>    show the Quick Open palette: files or commands
+              --quick-open-text <t>  type this into the palette (Go to File searches the whole workspace)
+              --search-text <t>      type this into the Search panel (implies --sidebar search)
+              --search-all           with --search-text: search the whole workspace (Find in Files), not just the open script
               --quick-info <text>    rest the mouse on the first <text> in the editor and show its hover card
                                      (the debugger's data tip when paused with --debug)
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
               --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           notebook <n>           Notebook Studio with problem n's notebook.
               --polyglot-demo        a notebook of C#, Python, JavaScript, Java, and C++ cells sharing data across kernels
+              --go-demo              a notebook of Go cells (goroutines, channels, and variables)
+              --fsharp-demo          a notebook of F# cells (pipelines, pattern matching, records)
+              --sql-demo             a notebook of SQL cells (CREATE TABLE, SELECT, aggregates, #!share)
               --java-share           a test notebook attempting cross-language sharing with Java
               --cpp-demo             a notebook of C++ cells (standard library, vector, display tables)
+              --rust-demo            a notebook of Rust cells (items kept between cells, a shown value, a table, #!share)
               --python-demo          a notebook of C# and Python cells (numpy, a pandas table, a matplotlib figure,
                                      input()) instead of a problem's
               --python <path>        the Python interpreter Python cells run with (default: the one the studio finds)
@@ -68,17 +78,44 @@ internal static class Usage
               --nothing-installed    as on a machine without Python: the card says what's missing
               --templates            the template gallery instead of recent workspaces
               --create <kind>        the "New Script" / "New Notebook" dialog: script or notebook
+          server                 API Server Studio (.fryserver) off-screen rendering.
+              --run                  start the server and execute an in-cell test request
+              --port <port>          configure listening port (default 5000)
+              --conflict             simulate port conflict with automatic suggestion
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
           settings               The Settings and Environment Setup page.
-              --language <id>        select a language setting item (csharp, python, javascript, java, cpp)
+              --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)
               --quiet                don't print each step's description
+          plot3d [kind]          Interactive 3D visualization off-screen rendering (surface, scatter, graph, trajectory, voxel).
+              --mode <kind>          surface (default), scatter, graph, trajectory, or voxel
+              --width <px>           window width (default 960)
+              --height <px>          window height (default 640)
+          visuals [word ...]     Draw visual specs through the view every chart, 3D plot and visualizer output uses, as a
+                                 program's display reaches it: every spec fixture in Tests/Fixtures/Visuals, or those whose
+                                 names contain one of the words (e.g. visuals chart tree).
+              --file <path>          a spec file (chart-*.json, plot3d-*.json, visualizer-*.json) or a display bundle
+                                 ({"application/vnd.fry.chart.v1+json": {...}}) instead; a mistake in it is printed
+              --width <px>           window width (default 900)
+              --height <px>          window height (default 600)
+          perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
+                                 file opens, workspace re-scans and memory left behind by repeated visits.
+              --files <n>            scripts in the generated workspace (default 200; try 5000 for a big one)
+              --rounds <n>           passes over the six pages (default 6, at least 3)
+              --big-kb <n>           also open a source file of about n KB and time opening, switching to it and typing
+              --typing-experiments   with --big-kb: switch editor features off one by one to see which one a keystroke waits for
+              --shots                also save each page as shown in the studio host (host-<page>.png)
+              --cells <n>            also open a notebook of n cells: open time, memory, scrolling, opening the side panels
+              --external <n>         also open a folder of n source files: Explorer, Hub, the file index and Go to File search
+              --visuals              also time big visuals against their budgets: a chart of 100,000 values and a 30 × 30
+                                 grid visualizer of 500 steps (the display call, the UI work before the first frame,
+                                 stepping through every step and the memory it leaves)
 
         Options for every command
           --width <px>  --height <px>   window size, which is the image size

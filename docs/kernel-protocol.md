@@ -24,9 +24,10 @@ It is deliberately small next to Jupyter's: no ZeroMQ and no connection files, j
 | `get_value` | `id`, `name` | A variable's value as JSON, for `#!share`. |
 | `set_value` | `id`, `name`, `json` | Set (or create) a variable from JSON, for `#!share`. |
 | `add_search_path` | `id`, `path` | Add a folder to the import path while running. This lets a package just installed into a new environment work without a restart. Optional: implement it only if the language has one. |
+| `event` | `id`, `display_id`, `event` | The user clicked, selected or stepped in a visual the program listens to (`subscribe`). Run the callbacks registered for it, with their output sent under this `id`: it goes to the cell that showed the visual. `event` is `{"event": "click", "target", "modifiers"}`, `{"event": "select", "targets"}` or `{"event": "step", "index"}` ([visual-protocol.md](visual-protocol.md#updates-and-events)). |
 | `shutdown` | — | Exit now. Optional, because closing stdin means the same. |
 
-The studio sends one request at a time for each notebook, and each `execute` finishes before the next begins. `variables`, `get_value`, `set_value` and `add_search_path` are sent only between cells. So only `interrupt` and `input_reply` arrive while a cell runs.
+The studio sends one request at a time for each notebook, and each `execute` finishes before the next begins. `variables`, `get_value`, `set_value` and `add_search_path` are sent only between cells. So only `interrupt`, `input_reply` and `event` arrive while a cell runs. Run an `event`'s callbacks when the kernel is idle, or when the running cell asks (`process_events()`, `wait()`), never beside the cell's code. A `reply` to an `event` is optional: the studio doesn't wait for one.
 
 ## Kernel → studio
 
@@ -34,7 +35,9 @@ The studio sends one request at a time for each notebook, and each `execute` fin
 |---|---|---|
 | `ready` | `language`, `version`, `executable` | First message, sent once the kernel can take requests. The notebook header then shows e.g. "Python 3.14.6". The studio waits up to 60 s for it. |
 | `stream` | `id`, `name` (`stdout`/`stderr`), `text` | Output of the running cell. Send it as it's produced, batched so a tight `print` loop doesn't send a message per character. `fry_kernel.py` flushes at a newline, at 8 KB or after 50 ms. |
-| `display` | `id`, `data`, `metadata` | A rich output: a MIME bundle, as in Jupyter (see below). |
+| `display` | `id`, `data`, `metadata`, `transient` | A rich output: a MIME bundle, as in Jupyter (see below). `transient.display_id`, when given, names it for `update_display` and `subscribe`. |
+| `update_display` | `id`, `data`, `metadata`, `transient` | Redraw the output named `transient.display_id` where it is, with this bundle. An id never shown is shown as a new output. |
+| `subscribe` / `unsubscribe` | `id`, `display_id`, `events` | Start (or stop) hearing about `click`, `select` and `step` events on that output; every kind when `events` is left out. |
 | `input_request` | `id`, `prompt`, `password` | The cell asks for a line of input. Wait for `input_reply`. The studio echoes the prompt and the answer into the cell's output. |
 | `error` | `id`, `ename`, `evalue`, `traceback`, `line`, `missingModule`, `missingName` | The cell failed. `traceback` is the text to show. `line` is the failing line in the cell, if it's known. `missingModule` (e.g. `"cv2"`) makes the cell offer to install the package. `missingName` makes it offer to run the cells above. |
 | `reply` | `id`, `status`, … | Ends a request. `status` is `ok`, `error` (with `message` for requests other than `execute`) or `interrupted`. An `execute` reply carries `executionCount`, a `variables` reply `variables` (`[{name, type, value, kind}]`), and a `get_value` reply `json`. |
@@ -46,6 +49,7 @@ Send everything that belongs to an execution before its `reply`: flush buffered 
 `data` maps MIME types to values, and the studio shows the richest one it knows:
 
 1. `application/vnd.fry.table+json`: the studio's own table (column sorting, number alignment). The shape is `{"title", "columns": [...], "numeric": [bool...], "rows": [[...]], "totalRows", "totalColumns"}`. Send at most about 1,000 rows. The studio notes "showing the first N of M rows" when `totalRows` is larger.
+   The studio's charts, 3D plots and visualizers come the same way, as `application/vnd.fry.chart.v1+json`, `application/vnd.fry.plot3d.v1+json` and `application/vnd.fry.visualizer.v1+json`: see [visual-protocol.md](visual-protocol.md).
 2. `image/png` or `image/jpeg`, base64. `metadata["image/png"] = {"width", "height"}` gives its size in pixels.
 3. `image/svg+xml`, drawn by the HTML view.
 4. `text/html`.
@@ -61,6 +65,17 @@ Always include a `text/plain` fallback.
 - **The C# kernel:** declares a shared value with the C# type that fits it. `[1,2,3]` becomes `int[]`, `[[1.5]]` becomes `double[][]`, and an object becomes `Dictionary<string, object>`. If a variable of that name already exists, it keeps its type and gets the value. See `Services/Kernels/KernelValueSharing.cs`.
 
 An error `reply` for `get_value` or `set_value` should explain in its `message` what went wrong, e.g. "Python has no variable named 'x'".
+
+## Programs that aren't kernels
+
+A program run from Code Studio, and a Go, Rust, C++ or F# notebook cell, owns its stdin and stdout: its user types into one and reads the other. It sends the same `display`, `update_display`, `subscribe` and `unsubscribe` messages as lines on stdout, each after the marker `__FRY_DISPLAY__ ` (the marker may be left out for a line that starts `{"type":` with one of those types). Its events come another way, over a loopback socket:
+
+- The studio sets two environment variables for the program (not for its build steps): `FRY_EVENTS`, the address (`127.0.0.1:port`), and `FRY_EVENTS_TOKEN`, a token of its own.
+- When its code first listens to a visual, the program connects to that address and sends `{"type": "hello", "token": "…"}` as its first line. A connection without a token the studio gave out is closed.
+- It then reads `event` messages, one per line, the same as a kernel's. Events that come before it connects wait for it (the newest 256).
+- When the program exits, its visuals stay but no longer listen, and say they are disconnected.
+
+The studio side is `Visuals/Interaction/VisualEventHub.cs` and `ExternalVisualSession.cs`.
 
 ## Stopping and crashes
 

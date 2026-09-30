@@ -14,6 +14,8 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetGraphTemplates());
         list.AddRange(GetLinkedListTemplates());
         list.AddRange(GetRecursionTemplates());
+        list.AddRange(GetCharting3DTemplates());
+        list.AddRange(GetPolyglotVisualsTemplates());
         return list;
     }
 
@@ -203,6 +205,7 @@ Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
         new()
         {
             Id = "cpp_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Cpp,
             Title = "C++20 Algorithms & Visual Dumps",
             Category = "Algorithms",
             Kind = WorkspaceItemKind.Script,
@@ -249,6 +252,188 @@ int main() {
 
     return 0;
 }"
+        },
+        new()
+        {
+            Id = "go_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Go,
+            Title = "Go Concurrency & Channels",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Modern Go workspace with goroutines, channels, sync primitives, and native compiler execution.",
+            IconKind = MaterialIconKind.LanguageGo,
+            AccentColor = "#00ADD8",
+            AccentBackground = "#162832",
+            AccentBorder = "#1E4153",
+            CategoryBadge = "Go • Native",
+            Tags = new List<string> { "Go", "Goroutines", "Channels", "Native" },
+            Notes = @"# Go Concurrency & Pipeline Workspace
+
+This script compiles and executes natively using your system's Go toolchain (`go build`).
+
+### Key Features:
+- **Native Two-Phase Execution**: Compiles via `go build` with structured diagnostic parsing in Problems.
+- **Goroutines & Channels**: High-performance lightweight concurrent pipelines.
+- **Native DAP Debugging**: Set breakpoints and inspect goroutines and variables with Delve (`dlv dap`).",
+            InitialCode = @"// Go Concurrency & Pipeline Workspace
+package main
+
+import (
+	""fmt""
+	""sync""
+	""time""
+)
+
+func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		fmt.Printf(""Worker %d started job %d\n"", id, j)
+		time.Sleep(10 * time.Millisecond)
+		results <- j * 2
+	}
+}
+
+func main() {
+	fmt.Println(""=== Go Concurrent Worker Pool ==="")
+
+	const numJobs = 5
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+	var wg sync.WaitGroup
+
+	for w := 1; w <= 3; w++ {
+		wg.Add(1)
+		go worker(w, jobs, results, &wg)
+	}
+
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	for res := range results {
+		fmt.Printf(""Result: %d\n"", res)
+	}
+	fmt.Println(""All jobs completed successfully!"")
+}"
+        },
+        new()
+        {
+            Id = "fsharp_functional_starter",
+            LanguageId = Languages.LanguageIds.FSharp,
+            Title = "F# Functional Pipelines",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Idiomatic F# script with pipe forward operators, pattern matching, discriminated unions, and interactive fsi execution.",
+            IconKind = MaterialIconKind.FunctionVariant,
+            AccentColor = "#30B9DB",
+            AccentBackground = "#1A2B35",
+            AccentBorder = "#234354",
+            CategoryBadge = "F# • Functional",
+            Tags = new List<string> { "F#", "Functional", "Pipelines", "Interactive" },
+            Notes = @"# F# Functional Pipelines & Pattern Matching
+
+This script executes interactively using your system's .NET SDK (`dotnet fsi`).
+
+### Key Features:
+- **Interactive Script Execution**: Runs `.fsx` scripts via `dotnet fsi` with instant execution.
+- **Type-Safe Pipelines**: Chain functional transformations with `|>`.
+- **Discriminated Unions & Pattern Matching**: Exhaustive type checking and expressive data modeling.",
+            InitialCode = @"// F# Functional Pipelines & Pattern Matching
+open System
+
+printfn ""=== F# Functional Pipelines ===""
+
+type Shape =
+    | Circle of radius: float
+    | Rectangle of width: float * height: float
+    | Triangle of baseLength: float * height: float
+
+let area shape =
+    match shape with
+    | Circle r -> Math.PI * r * r
+    | Rectangle (w, h) -> w * h
+    | Triangle (b, h) -> 0.5 * b * h
+
+let shapes = [
+    Circle 5.0
+    Rectangle (4.0, 6.0)
+    Triangle (3.0, 8.0)
+]
+
+shapes
+|> List.iter (fun s ->
+    let a = area s
+    printfn ""Area of %A = %.2f"" s a)
+
+let totalArea = shapes |> List.map area |> List.sum
+printfn ""\nTotal combined area: %.2f"" totalArea
+"
+        },
+        new()
+        {
+            Id = "rust_iterators_starter",
+            Title = "Rust Iterators & Visual Dumps",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            LanguageId = Languages.LanguageIds.Rust,
+            Description = "A Rust starter with structs, iterator adapters, collections and interactive table dumps, built with Cargo.",
+            IconKind = MaterialIconKind.LanguageRust,
+            AccentColor = "#DEA584",
+            AccentBackground = "#2A211C",
+            AccentBorder = "#4A3A2F",
+            CategoryBadge = "Rust • Native",
+            Tags = new List<string> { "Rust", "Iterators", "fry::table", "Native" },
+            Notes = @"# Rust Iterators & Interactive Visual Dumps
+
+This file builds with Cargo (`cargo build`) and runs natively with the Rust toolchain installed on this computer.
+
+### Key Features:
+- **Zero Configuration Display Crate**: `fry` is added to the build automatically; `use fry::prelude::*;` brings it in.
+- **Interactive Tables**: `table(&value, ""Title"")` shows a list of structs with a column per field, a map as key and value, a list of lists as a grid.
+- **Instant Dump**: `dump!(expression)` prints a value titled with its own source text.
+- **Crates**: add one with a comment such as `// #crate: rand = ""0.8""`; it is downloaded once and reused by every script.
+- **Native Debugging**: set breakpoints in the gutter and press F5 to debug with `lldb-dap`.",
+            InitialCode = """
+// Rust: iterators, structs and visual dumps.
+// Add a crate with a comment such as:  // #crate: rand = "0.8"
+use fry::prelude::*;
+use std::collections::BTreeMap;
+
+#[derive(Debug, Clone)]
+struct Planet {
+    name: &'static str,
+    moons: u32,
+    gravity: f64,
+}
+
+fn main() {
+    println!("=== Rust iterators ===");
+
+    // A list of structs becomes a table with a column per field in the Results deck.
+    let planets = vec![
+        Planet { name: "Earth", moons: 1, gravity: 9.81 },
+        Planet { name: "Mars", moons: 2, gravity: 3.72 },
+        Planet { name: "Jupiter", moons: 95, gravity: 24.79 },
+    ];
+    table(&planets, "Planets");
+
+    // Iterator adapters: filter, map, collect.
+    let with_moons: Vec<&str> = planets.iter().filter(|p| p.moons > 1).map(|p| p.name).collect();
+    println!("Planets with more than one moon: {:?}", with_moons);
+
+    // Fold the whole list into one number.
+    let total_moons: u32 = planets.iter().map(|p| p.moons).sum();
+    dump!(total_moons);
+
+    // A map is a two-column table.
+    let gravity: BTreeMap<&str, f64> = planets.iter().map(|p| (p.name, p.gravity)).collect();
+    table(&gravity, "Surface gravity (m/s²)");
+}
+"""
         },
         new()
         {
@@ -426,6 +611,47 @@ Display.Html(@""<!DOCTYPE html>
 </html>"");
 
 Console.WriteLine(""Live HTML5 canvas rendering in NativeWebView via Display.Html."");"
+        },
+        new()
+        {
+            Id = "sql_database_starter",
+            LanguageId = Languages.LanguageIds.Sql,
+            Title = "SQLite Database & Schema Starter",
+            Category = "Database",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Create SQLite tables, populate sample data, and run structured aggregation and join queries.",
+            IconKind = MaterialIconKind.Database,
+            AccentColor = "#F29111",
+            AccentBackground = "#2A2215",
+            AccentBorder = "#5A4422",
+            CategoryBadge = "SQL • Database",
+            Tags = new List<string> { "SQL", "SQLite", "Schema", "Tables", "Queries" },
+            InitialCode = @"-- SQLite Database Starter (.sql)
+-- :database :memory:
+
+CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    lead TEXT NOT NULL,
+    budget REAL NOT NULL,
+    status TEXT DEFAULT 'Planning'
+);
+
+INSERT INTO projects (title, lead, budget, status) VALUES
+    ('Cloud Migration', 'Alex Chen', 45000.0, 'Active'),
+    ('Security Audit', 'Sarah Connor', 18500.0, 'Completed'),
+    ('AI Assistant Integration', 'Antigravity', 72000.0, 'Active'),
+    ('Mobile UI Refresh', 'Dev Team', 28000.0, 'Planning');
+
+SELECT 
+    id,
+    title,
+    lead,
+    printf('$%,.2f', budget) AS formatted_budget,
+    status
+FROM projects
+ORDER BY budget DESC;
+"
         }
     };
 }

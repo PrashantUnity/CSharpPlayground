@@ -7,8 +7,6 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
 public partial class VisualizerSequence : ObservableObject
 {
-    private DispatcherTimer? _playbackTimer;
-
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentStep))]
     [NotifyPropertyChangedFor(nameof(CanStepBack))]
@@ -119,64 +117,10 @@ public partial class VisualizerSequence : ObservableObject
         }
 
         IsPlaying = true;
-        StartTimer();
     }
 
     public void Pause()
     {
         IsPlaying = false;
-        StopTimer();
-    }
-
-    private void StartTimer()
-    {
-        StopTimer();
-        int intervalMs = Math.Max(50, (int)(600 / Math.Max(0.1, PlaybackSpeed)));
-
-        try
-        {
-            _playbackTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(intervalMs)
-            };
-            _playbackTimer.Tick += OnTimerTick;
-            _playbackTimer.Start();
-        }
-        catch
-        {
-            // Headless unit tests where DispatcherTimer may not have an active platform loop
-        }
-    }
-
-    private void StopTimer()
-    {
-        if (_playbackTimer != null)
-        {
-            _playbackTimer.Stop();
-            _playbackTimer.Tick -= OnTimerTick;
-            _playbackTimer = null;
-        }
-    }
-
-    private void OnTimerTick(object? sender, EventArgs e)
-    {
-        if (!IsPlaying) return;
-
-        if (CurrentIndex < Steps.Count - 1)
-        {
-            NextStep();
-        }
-        else
-        {
-            Pause();
-        }
-    }
-
-    partial void OnPlaybackSpeedChanged(double value)
-    {
-        if (IsPlaying)
-        {
-            StartTimer();
-        }
     }
 }

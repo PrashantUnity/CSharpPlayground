@@ -4,27 +4,13 @@ using System.Linq;
 using System.Text;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75.MultiLanguage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Core;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.CSharp;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Cpp;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Java;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.JavaScript;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Languages.Python;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 
 public static partial class Blind75CatalogService
 {
-    static Blind75CatalogService()
-    {
-        ProblemLanguageRegistry.Register(CSharpProblemLanguageAdapter.Instance);
-        ProblemLanguageRegistry.Register(PythonProblemLanguageAdapter.Instance);
-        ProblemLanguageRegistry.Register(JavaScriptProblemLanguageAdapter.Instance);
-        ProblemLanguageRegistry.Register(JavaProblemLanguageAdapter.Instance);
-        ProblemLanguageRegistry.Register(CppProblemLanguageAdapter.Instance);
-    }
-
     private static readonly Lazy<IReadOnlyList<BlindProblemItem>> _problems = new(CreateAllProblems);
 
     /// <summary>
@@ -49,7 +35,6 @@ public static partial class Blind75CatalogService
         // notebook always check both and print a ✅/❌ line per case.
         foreach (var problem in sorted)
         {
-            Blind75MultiLanguageSolutions.Enrich(problem);
             if (problem.TestCases.Count == 0)
             {
                 foreach (var test in problem.Tests)
@@ -129,13 +114,13 @@ public static partial class Blind75CatalogService
         _ => MaterialIconKind.CodeBraces
     };
 
-    public static ScriptDocumentItem ConvertToScript(BlindProblemItem problem, string languageId = "csharp") =>
-        ProblemLanguageRegistry.GetAdapter(languageId).BuildScript(problem);
+    public static ScriptDocumentItem ConvertToScript(BlindProblemItem problem) =>
+        CSharpProblemLanguageAdapter.Instance.BuildScript(problem);
 
-    public static NotebookDocumentItem ConvertToNotebook(BlindProblemItem problem, string languageId = "csharp") =>
-        ProblemLanguageRegistry.GetAdapter(languageId).BuildNotebook(problem);
+    public static NotebookDocumentItem ConvertToNotebook(BlindProblemItem problem) =>
+        CSharpProblemLanguageAdapter.Instance.BuildNotebook(problem);
 
-    /// <summary>Generates verification test assertions for this problem in the specified language.</summary>
-    public static string BuildTestCode(BlindProblemItem problem, string languageId = "csharp") =>
-        ProblemLanguageRegistry.GetAdapter(languageId).BuildTestCode(problem);
+    /// <summary>Generates verification test assertions for this problem.</summary>
+    public static string BuildTestCode(BlindProblemItem problem) =>
+        CSharpProblemLanguageAdapter.Instance.BuildTestCode(problem);
 }

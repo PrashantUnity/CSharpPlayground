@@ -9,7 +9,22 @@ public class VisualizerStep
     public List<string> ActiveNodeIds { get; set; } = new();
     public Dictionary<string, string> AuxiliaryInfo { get; set; } = new();
     public List<StepWatch> Watches { get; set; } = new();
-    public object? Snapshot { get; set; }
+
+    private object? _snapshot;
+
+    /// <summary>The data as it was at this step (a copy of the grid, tree, list… the step draws).</summary>
+    public object? Snapshot
+    {
+        get => _snapshot ?? SnapshotSource?.Invoke();
+        set => _snapshot = value;
+    }
+
+    /// <summary>
+    /// Builds <see cref="Snapshot"/> when it is first asked for, so a visualizer drawn from a spec with thousands of
+    /// steps holds only the steps being looked at (the source caches what it builds).
+    /// </summary>
+    public Func<object?>? SnapshotSource { get; set; }
+
     public object? CustomData { get; set; }
 
     /// <summary>1-based line of the call that recorded this step; 0 when the step was generated automatically.</summary>

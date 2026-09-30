@@ -81,10 +81,17 @@ public partial class CSharpDocsViewModel : ObservableObject
         UpdateBreadcrumb();
     }
 
-    partial void OnSelectedCategoryChanged(DocCategory? value) => UpdateBreadcrumb();
-
-    partial void OnSelectedArticleChanged(DocArticle? value)
+    partial void OnSelectedCategoryChanged(DocCategory? oldValue, DocCategory? newValue)
     {
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null) newValue.IsSelected = true;
+        UpdateBreadcrumb();
+    }
+
+    partial void OnSelectedArticleChanged(DocArticle? oldValue, DocArticle? newValue)
+    {
+        if (oldValue != null) oldValue.IsSelected = false;
+        if (newValue != null) newValue.IsSelected = true;
         UpdateBreadcrumb();
         OnPropertyChanged(nameof(HasNextArticle));
         OnPropertyChanged(nameof(HasPreviousArticle));

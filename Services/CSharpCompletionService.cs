@@ -18,7 +18,7 @@ public class CSharpCompletionService
     private readonly RoslynCompilerService _compilerService;
 
     // The script is analysed behind the namespaces it runs with, so its offsets shift by this prefix's length only.
-    private const string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
+    private static readonly string AnalysisPrefix = RoslynCompilerService.DefaultScriptUsings + "\n";
 
     // Common C# keywords with high base priority
     private static readonly Lazy<List<CSharpCompletionItem>> Keywords = new(() =>
@@ -444,6 +444,17 @@ public class CSharpCompletionService
             .ToList();
     }
 
+    // A member marked [EditorBrowsable(Never)] still works but isn't offered, as in Visual Studio: older names kept for old
+    // scripts. An extension method carries the attribute on its declaration, not on the form bound to a receiver.
+    private static bool IsHidden(ISymbol symbol)
+    {
+        var declared = symbol is IMethodSymbol { ReducedFrom: { } reduced } ? reduced : symbol;
+        return declared.GetAttributes().Any(a =>
+            a.AttributeClass?.ToDisplayString() == "System.ComponentModel.EditorBrowsableAttribute" &&
+            a.ConstructorArguments is [{ Value: int state }] &&
+            state == (int)System.ComponentModel.EditorBrowsableState.Never);
+    }
+
     private static IReadOnlyList<CSharpCompletionItem> FormatAndRankSymbols(
         IEnumerable<ISymbol> rawSymbols,
         bool isMember,
@@ -451,7 +462,7 @@ public class CSharpCompletionService
     {
         var items = new List<CSharpCompletionItem>();
         var grouped = rawSymbols
-            .Where(s => !s.IsImplicitlyDeclared && !s.Name.StartsWith("<") && !string.IsNullOrEmpty(s.Name))
+            .Where(s => !s.IsImplicitlyDeclared && !s.Name.StartsWith("<") && !string.IsNullOrEmpty(s.Name) && !IsHidden(s))
             .GroupBy(s => s.Name);
 
         foreach (var group in grouped)

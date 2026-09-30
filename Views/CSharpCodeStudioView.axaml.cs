@@ -22,7 +22,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
-public partial class CSharpCodeStudioView : UserControl
+public partial class CSharpCodeStudioView : UserControl, IDisposable
 {
     private TextEditor? _editor;
     private FoldingManager? _foldingManager;
@@ -31,6 +31,9 @@ public partial class CSharpCodeStudioView : UserControl
     private CSharpQuickInfoController? _quickInfoController;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
+
+    // Characters: above this a document's foldings are worked out shortly after it is shown, not before it appears.
+    private const int LargeDocumentLength = CSharpCodeStudioViewModel.LargeDocumentLength;
     private CSharpCodeStudioViewModel? _currentVm;
     private bool _isUpdatingText;
 
@@ -408,6 +411,26 @@ public partial class CSharpCodeStudioView : UserControl
         PolishLeftMargins(isDark);
     }
 
+    /// <summary>
+    /// Enables or disables syntax highlighting without altering other editor state.
+    /// When disabled the highlighting definition is set to null (plain text).
+    /// When re-enabled the correct language theme is restored.
+    /// </summary>
+    private void ApplySyntaxHighlighting(bool enable)
+    {
+        if (_editor == null) return;
+        if (!enable)
+        {
+            _editor.SyntaxHighlighting = null;
+        }
+        else
+        {
+            _editor.SyntaxHighlighting = _editorLanguage != null
+                ? _editorLanguage.GetHighlighting(IsDarkTheme())
+                : CSharpSyntaxHighlightingTheme.GetDarkTheme();
+        }
+    }
+
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -478,7 +501,7 @@ public partial class CSharpCodeStudioView : UserControl
                 }
                 else if (_editorLanguage.Folding is { } folding)
                 {
-                    var foldings = folding.CreateFoldings(_editor.Document, out var firstErrorOffset);
+                    var foldings = FoldingLimits.Cap(folding.CreateFoldings(_editor.Document, out var firstErrorOffset));
                     _foldingManager.UpdateFoldings(foldings, firstErrorOffset);
                 }
                 else
@@ -518,7 +541,17 @@ public partial class CSharpCodeStudioView : UserControl
                              (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light &&
                               (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
                 PolishLeftMargins(isDark);
-                UpdateCodeFolding();
+
+                // A big document's folding takes a while to work out: show the text first, fold it a moment later.
+                if (newDoc.TextLength > LargeDocumentLength)
+                {
+                    _foldingTimer.Stop();
+                    _foldingTimer.Start();
+                }
+                else
+                {
+                    UpdateCodeFolding();
+                }
             }
             catch
             {
@@ -526,31 +559,46 @@ public partial class CSharpCodeStudioView : UserControl
         }
     }
 
+    /// <summary>Releases the studio for good: the view model stops holding this view, and the editor's helpers are disposed.</summary>
+    public void Dispose()
+    {
+        ReleaseViewModel();
+        _currentVm = null;
+        _debugHoverController?.Dispose();
+        _debugHoverController = null;
+    }
+
+    // The view model outlives its views, so every handler hooked on it keeps this view (and its editor) alive and
+    // reacting until it is unhooked here.
+    private void ReleaseViewModel()
+    {
+        if (_currentVm == null) return;
+
+        _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
+        _currentVm.RequestGoToLine -= ScrollToAndSelectLine;
+        _currentVm.RequestFoldAll -= FoldAll;
+        _currentVm.RequestUnfoldAll -= UnfoldAll;
+        _currentVm.RequestToggleSearch -= ToggleSearch;
+        _currentVm.RequestSetPausedLine -= OnSetPausedLine;
+        _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
+        _currentVm.RequestReloadEditorText -= OnReloadEditorText;
+        _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
+        _currentVm.RequestFocusNotes -= OnFocusNotes;
+        _currentVm.RequestExploreVariable -= OpenCollectionView;
+        _currentVm.RequestViewVariable -= OpenValueViewer;
+        _currentVm.PropertyChanged -= OnVmPropertyChanged;
+        _completionController?.Dispose();
+        _completionController = null;
+        _quickInfoController?.Dispose();
+        _quickInfoController = null;
+        _languageAssistant?.Dispose();
+        _languageAssistant = null;
+        _editorLanguage = null;
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (_currentVm != null)
-        {
-            _currentVm.RequestNavigateToCaret -= OnNavigateToCaret;
-            _currentVm.RequestGoToLine -= ScrollToAndSelectLine;
-            _currentVm.RequestFoldAll -= FoldAll;
-            _currentVm.RequestUnfoldAll -= UnfoldAll;
-            _currentVm.RequestToggleSearch -= ToggleSearch;
-            _currentVm.RequestSetPausedLine -= OnSetPausedLine;
-            _currentVm.RequestSyncBreakpoints -= OnSyncBreakpoints;
-            _currentVm.RequestReloadEditorText -= OnReloadEditorText;
-            _currentVm.RequestSwitchTabDocument -= OnSwitchTabDocument;
-            _currentVm.RequestFocusNotes -= OnFocusNotes;
-            _currentVm.RequestExploreVariable -= OpenCollectionView;
-            _currentVm.RequestViewVariable -= OpenValueViewer;
-            _currentVm.PropertyChanged -= OnVmPropertyChanged;
-            _completionController?.Dispose();
-            _completionController = null;
-            _quickInfoController?.Dispose();
-            _quickInfoController = null;
-            _languageAssistant?.Dispose();
-            _languageAssistant = null;
-            _editorLanguage = null;
-        }
+        ReleaseViewModel();
 
         _currentVm = DataContext as CSharpCodeStudioViewModel;
         UpdateDeckPlacement();
@@ -580,14 +628,14 @@ public partial class CSharpCodeStudioView : UserControl
             _completionController = new CSharpEditorCompletionController(_editor, _currentVm.CompilerService)
             {
                 LanguageMode = _currentVm.CurrentLanguageMode,
-                IsSuppressed = () => _editorLanguage?.Has(LanguageCapabilities.Completion) == false
+                IsSuppressed = () => !_editorLanguage.UsesRoslynHelper(LanguageCapabilities.Completion)
             };
 
             // While the debugger is paused, hovering shows the debug data tip instead.
             var compiler = _currentVm.CompilerService;
             _quickInfoController = new CSharpQuickInfoController(_editor, () => new CSharpQuickInfoService(compiler))
             {
-                IsSuppressed = () => _currentVm?.IsPaused == true || _editorLanguage?.Has(LanguageCapabilities.QuickInfo) == false
+                IsSuppressed = () => _currentVm?.IsPaused == true || !_editorLanguage.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
             };
 
             ApplyEditorLanguage(_currentVm.ActiveLanguage);
@@ -597,6 +645,11 @@ public partial class CSharpCodeStudioView : UserControl
             {
                 _editor.Options.IndentationSize = _currentVm.IndentationSize;
             }
+
+            // Apply persisted feature-toggle settings
+            ApplySyntaxHighlighting(_currentVm.IsSyntaxHighlightingEnabled);
+            if (_completionController != null)
+                _completionController.IsFeatureEnabled = _currentVm.IsAutoCompletionEnabled;
 
             _isUpdatingText = true;
             try
@@ -628,7 +681,14 @@ public partial class CSharpCodeStudioView : UserControl
         if (_editor == null) return;
         if (!Dispatcher.UIThread.CheckAccess())
         {
-            Dispatcher.UIThread.Post(() => OnSwitchTabDocument(tab));
+            Dispatcher.UIThread.Post(() =>
+            {
+                try { OnSwitchTabDocument(tab); }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CSharpCodeStudioView] Tab switch error: {ex}");
+                }
+            });
             return;
         }
 
@@ -638,15 +698,31 @@ public partial class CSharpCodeStudioView : UserControl
         _isUpdatingText = true;
         try
         {
-            var doc = tab.DocumentModel;
             var targetCode = tab.Document.Code ?? string.Empty;
-            if (doc.Text != targetCode)
+            TextDocument doc;
+            var replacedText = false;
+            try
             {
-                doc.Text = targetCode;
+                doc = tab.DocumentModel;
+                if (!DocumentEquals(doc, targetCode))
+                {
+                    doc.Text = targetCode;
+                    replacedText = true;
+                }
             }
+            catch (InvalidOperationException)
+            {
+                // The TextDocument was instantiated on a different thread; re-create it bound to the UI thread.
+                doc = new TextDocument(targetCode);
+                tab.DocumentModel = doc;
+            }
+
+            var alreadyShown = ReferenceEquals(_editor.Document, doc);
             _editor.Document = doc;
 
-            UpdateCodeFolding();
+            // Showing a different document already installs and updates its foldings (OnEditorDocumentChanged); a pass
+            // here as well would only repeat a full scan of the document.
+            if (alreadyShown && replacedText) UpdateCodeFolding();
 
             var maxLines = Math.Max(1, _editor.Document?.LineCount ?? 1);
             var targetLine = Math.Clamp(tab.CaretLine, 1, maxLines);
@@ -675,21 +751,39 @@ public partial class CSharpCodeStudioView : UserControl
             var targetCode = _currentVm.Code ?? string.Empty;
             if (_editor.Document != null)
             {
-                if (_editor.Document.Text != targetCode)
+                // Only a real change needs the folding scan (and the text is compared without copying it).
+                if (!DocumentEquals(_editor.Document, targetCode))
                 {
                     _editor.Document.Text = targetCode;
+                    UpdateCodeFolding();
                 }
             }
             else
             {
                 _editor.Text = targetCode;
+                UpdateCodeFolding();
             }
-            UpdateCodeFolding();
         }
         finally
         {
             _isUpdatingText = false;
         }
+    }
+
+    // Whether the document holds exactly this text. Document.Text builds a copy of the whole document (megabytes, on the
+    // large object heap, for a big file) just to compare it, and it was done on every tab switch; this compares in chunks.
+    private static bool DocumentEquals(TextDocument document, string text)
+    {
+        if (document.TextLength != text.Length) return false;
+
+        const int chunk = 8192;
+        for (var offset = 0; offset < text.Length; offset += chunk)
+        {
+            var length = Math.Min(chunk, text.Length - offset);
+            if (!document.GetText(offset, length).AsSpan().SequenceEqual(text.AsSpan(offset, length))) return false;
+        }
+
+        return true;
     }
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -725,6 +819,15 @@ public partial class CSharpCodeStudioView : UserControl
         else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsDeckDockedToRight))
         {
             UpdateDeckPlacement();
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsSyntaxHighlightingEnabled))
+        {
+            ApplySyntaxHighlighting(_currentVm.IsSyntaxHighlightingEnabled);
+        }
+        else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsAutoCompletionEnabled))
+        {
+            if (_completionController != null)
+                _completionController.IsFeatureEnabled = _currentVm.IsAutoCompletionEnabled;
         }
     }
 
@@ -762,7 +865,7 @@ public partial class CSharpCodeStudioView : UserControl
 
         var changed = !ReferenceEquals(_editorLanguage, language);
         _editorLanguage = language;
-        _editor.SyntaxHighlighting = language.GetHighlighting(IsDarkTheme());
+        ApplySyntaxHighlighting(_currentVm?.IsSyntaxHighlightingEnabled ?? true);
         _breakpointMargin.IsVisible = language.Has(LanguageCapabilities.Breakpoints);
         if (!changed) return;
 

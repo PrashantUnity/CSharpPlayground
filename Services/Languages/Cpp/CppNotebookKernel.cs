@@ -4,6 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 
@@ -123,6 +124,7 @@ public sealed partial class CppNotebookKernel : INotebookKernel
         }
 
         var compileResult = await _host.RunAsync(compilerPath, compileArgs, TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+        if (ct.IsCancellationRequested) return Cancelled(clock);
         if (compileResult.ExitCode != 0)
         {
             var parser = new ClangGccDiagnosticParser();
@@ -155,6 +157,8 @@ public sealed partial class CppNotebookKernel : INotebookKernel
             Environment = env
         };
 
+        // The cell's visuals, and the events on them its code listens to while it runs (over the event socket).
+        using var visuals = new ExternalVisualSession();
         var consoleBuilder = new StringBuilder();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
@@ -165,16 +169,22 @@ public sealed partial class CppNotebookKernel : INotebookKernel
             onRichOutput: bundle =>
             {
                 request.OnRichOutput?.Invoke(bundle);
-            });
+            },
+            visuals: visuals.Visuals);
 
-        var managedProcess = _processes.Start(
-            spec,
+        using var managedProcess = _processes.Start(
+            visuals.Apply(spec),
             onStandardOutput: text => processor.ProcessChunk(text),
             onStandardError: err => processor.ProcessChunk(err));
 
+        // A cell can't be typed into, so a program that reads its input sees the end of it rather than waiting for good.
+        managedProcess.CloseInput();
+
         try
         {
-            var exitCode = await managedProcess.Completion.WaitAsync(TimeSpan.FromSeconds(45), ct).ConfigureAwait(false);
+            // No limit of the kernel's own: how long a cell may take is the studio's ExecutionTimeoutSeconds setting, which
+            // arrives as the cancellation token.
+            var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
             processor.Flush();
 
             return new KernelExecutionResult
@@ -187,15 +197,16 @@ public sealed partial class CppNotebookKernel : INotebookKernel
         }
         catch (OperationCanceledException)
         {
-            managedProcess.Kill();
-            return new KernelExecutionResult
-            {
-                WasCancelled = true,
-                ErrorMessage = "Cell execution was cancelled.",
-                Elapsed = clock.Elapsed
-            };
+            return Cancelled(clock);
         }
     }
+
+    private static KernelExecutionResult Cancelled(Stopwatch clock) => new()
+    {
+        WasCancelled = true,
+        ErrorMessage = "Cell execution was cancelled.",
+        Elapsed = clock.Elapsed
+    };
 
     public Task<IReadOnlyList<NotebookVariableInfo>> GetVariablesAsync(CancellationToken ct)
     {

@@ -4,34 +4,57 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
-             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="880"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpBlindProblemsView"
              x:DataType="vm:CSharpBlindProblemsViewModel"
-             Background="{DynamicResource M3SurfaceContainerLowestBrush}">
+             Background="{DynamicResource DsBgBrush}">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
 
     <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/BlindProblemsStyles.axaml" />
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
-        <!-- 1. Top Header Bar (Search, Difficulty, Shuffle) -->
-        <controls:BlindProblemsTopBarControl Grid.Row="0" />
+    <Panel>
+        <!-- Top-Right Ambient Glow Effect (Blind 75 Trophy Amber Tint) -->
+        <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                Width="500" Height="360"
+                IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                    <GradientStop Offset="0" Color="#18F59E0B" />
+                    <GradientStop Offset="1" Color="#000D1117" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
 
-        <!-- 2. Category Filter Bar (Horizontal Pill Chips) -->
-        <controls:BlindProblemsCategoryBarControl Grid.Row="1" />
+        <Grid RowDefinitions="Auto,Auto,Auto,*">
+            <!-- 1. Top Header Bar (Search, Difficulty, Shuffle) -->
+            <controls:BlindProblemsTopBarControl Grid.Row="0" />
 
-        <!-- 3. Progress Statistics & Status Filter Bar -->
-        <controls:BlindProblemsStatsControl Grid.Row="2" />
+            <!-- 2. Category Filter Bar (Horizontal Pill Chips) -->
+            <controls:BlindProblemsCategoryBarControl Grid.Row="1" />
 
-        <!-- 4. Problem Table & Detail Flyout -->
-        <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
-            <!-- Problem Table matching screenshot -->
-            <controls:BlindProblemsTableControl Grid.Column="0" />
+            <!-- 3. Progress Statistics & Status Filter Bar -->
+            <controls:BlindProblemsStatsControl Grid.Row="2" />
 
-            <!-- Problem Detail Drawer -->
-            <controls:BlindProblemDetailFlyoutControl Grid.Column="1"
-                                                      IsVisible="{Binding IsDetailFlyoutOpen}" />
+            <!-- 4. Problem Table & Detail Flyout -->
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                <!-- Problem Table -->
+                <controls:BlindProblemsTableControl Grid.Column="0" />
+
+                <!-- Problem Detail Drawer -->
+                <controls:BlindProblemDetailFlyoutControl Grid.Column="1"
+                                                          IsVisible="{Binding IsDetailFlyoutOpen}" />
+            </Grid>
         </Grid>
-    </Grid>
+    </Panel>
 </UserControl>

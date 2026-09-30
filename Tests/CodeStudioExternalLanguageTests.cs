@@ -132,6 +132,27 @@ public class CodeStudioExternalLanguageTests : IDisposable
     }
 
     [Fact]
+    public async Task AnInstallThatBelongsToTheFile_WritesItsLineIntoTheFile_OnlyOnce()
+    {
+        _fake.FakePackages.DirectiveToInsert = "// #fakecrate: numpy = \"1\"";
+        _launcher.Behavior = (_, p) =>
+        {
+            p.WriteError("Line 2: numpy is missing\nmissing module numpy\n");
+            p.Exit(1);
+            return Task.CompletedTask;
+        };
+        var studio = await StudioWith("hello.fake", "print a\nimport numpy\n");
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        var problem = Assert.Single(studio.Diagnostics);
+        await problem.QuickFixCommand!.ExecuteAsync(null);
+        await problem.QuickFixCommand!.ExecuteAsync(null);
+
+        Assert.Equal("// #fakecrate: numpy = \"1\"" + Environment.NewLine + "print a\nimport numpy\n", studio.Code);
+        Assert.Contains("Added `// #fakecrate: numpy = \"1\"` to the file", studio.ConsoleOutput);
+    }
+
+    [Fact]
     public async Task AMissingToolchain_SaysWhatToInstall_AndStartsNothing()
     {
         _fake.FakeToolchain.Installed = false;

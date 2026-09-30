@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
-             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
              x:DataType="vm:CSharpStudioHostViewModel"
@@ -17,27 +17,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <UserControl.DataTemplates>
-        <DataTemplate DataType="vm:CSharpManagerViewModel">
-            <views:CSharpManagerView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:CSharpCodeStudioViewModel">
-            <views:CSharpCodeStudioView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:CSharpNotebookStudioViewModel">
-            <views:CSharpNotebookStudioView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:CSharpDocsViewModel">
-            <views:CSharpDocsView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:CSharpBlindProblemsViewModel">
-            <views:CSharpBlindProblemsView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:CSharpSettingsViewModel">
-            <views:CSharpSettingsView />
-        </DataTemplate>
-    </UserControl.DataTemplates>
-
-    <!-- Studio Host Active Page -->
-    <TransitioningContentControl Content="{Binding CurrentPage}" />
+    <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
+         shows which view model), then only shown or hidden. -->
+    <controls:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
 </UserControl>

@@ -185,6 +185,6 @@ public class CSharpFoldingStrategy
         }
 
         foldings.Sort((a, b) => a.StartOffset.CompareTo(b.StartOffset));
-        return foldings;
+        return FoldingLimits.Cap(foldings);
     }
 }

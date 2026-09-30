@@ -1,0 +1,9 @@
+{
+  "title": "Two pointers",
+  "kind": "arrayPointers",
+  "state": { "array": { "values": [1, 3, 5, 7, true, "x", null, 2.5] } },
+  "pointers": [ { "name": "i", "at": 0 }, { "name": "j", "at": 7 } ],
+  "steps": [
+    { "description": "move i", "pointers": [ { "name": "i", "at": 1 }, { "name": "j", "at": 7 } ], "highlight": [1, 7], "changes": { "items": [ { "index": 0, "state": "done" } ] } }
+  ]
+}

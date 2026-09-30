@@ -51,8 +51,9 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     public string ToolchainPlaceholderText => IsCSharp
         ? "/usr/local/share/dotnet/dotnet"
         : IsCompiled
-            ? (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac")
-            : "/path/to/executable";
+            ? (Language.Id == LanguageIds.Rust ? "~/.cargo/bin/cargo" : Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
+            : (Language.Id == LanguageIds.FSharp ? "/usr/local/share/dotnet/dotnet" :
+               Language.Id == LanguageIds.Sql ? "/usr/bin/sqlite3" : "/path/to/executable");
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;
@@ -129,6 +130,7 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
     private string _missingSummary = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDownloadUrl))]
     private string? _missingDownloadUrl;
 
     [ObservableProperty]
@@ -226,6 +228,23 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
         DiscoveredToolchains.Clear();
         EnvironmentDetails.Clear();
         MissingSteps.Clear();
+        SetupSteps.Clear();
+
+        AvailableActions.Clear();
+        if (Provider != null)
+        {
+            foreach (var action in Provider.Actions)
+            {
+                AvailableActions.Add(action);
+            }
+        }
+        if (IsCSharp && DotNetProvider != null)
+        {
+            foreach (var action in DotNetProvider.Actions)
+            {
+                AvailableActions.Add(action);
+            }
+        }
 
         foreach (var t in allFound)
         {
@@ -310,6 +329,12 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                         "compilerVendor" => "Compiler Vendor",
                         "languageStandard" => "Language Standard",
                         "hostArchitecture" => "Host Architecture",
+                        "rustc" => "Rust Compiler (rustc)",
+                        "hostTriple" => "Host Target",
+                        "channel" => "Release Channel",
+                        "llvmVersion" => "LLVM Version",
+                        "commitHash" => "Compiler Commit",
+                        "edition" => "Default Edition",
                         _ => k
                     };
                     EnvironmentDetails.Add(new EnvironmentPropertyItem(label, v));
@@ -331,15 +356,24 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
                 MissingTitle = missing.Title;
                 MissingSummary = missing.Summary;
                 MissingDownloadUrl = missing.DownloadUrl;
+                var host = ParentSettings?.LanguageServices.Host;
                 foreach (var step in missing.Steps)
                 {
                     MissingSteps.Add(step);
+                    SetupSteps.Add(ParseSetupStep(step, host));
                 }
+                OnPropertyChanged(nameof(HasDownloadUrl));
+                OnPropertyChanged(nameof(HasQuickSetup));
+                OnPropertyChanged(nameof(PrimaryQuickSetup));
             }
             else
             {
                 MissingTitle = $"{Provider?.ToolName ?? DisplayName} wasn't found";
                 MissingSummary = "Please install the runtime or specify an existing executable path.";
+                MissingDownloadUrl = null;
+                OnPropertyChanged(nameof(HasDownloadUrl));
+                OnPropertyChanged(nameof(HasQuickSetup));
+                OnPropertyChanged(nameof(PrimaryQuickSetup));
             }
         }
     }

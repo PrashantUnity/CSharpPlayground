@@ -5,6 +5,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Kinds;
+using System.ComponentModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
@@ -13,16 +16,17 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 /// not nodes moving. With <c>rows: true</c> every step is redrawn in link order, one row per separate chain, which
 /// reads best when lists are merged, split or woven together.
 /// </summary>
-public sealed class LinkedListTracker
+public sealed class LinkedListTracker : IVisualSource
 {
     public const int MaxNodes = 40;
 
-    /// <summary>The fill <see cref="Mark"/> uses by default: "this part is finished".</summary>
+    /// <summary>The fill for a finished node: a node marked done or visited, or painted without a colour of its own.</summary>
     public const string DoneColor = "#14532d";
 
     private readonly List<object> _nodes = new();
     private readonly Dictionary<object, int> _indexOf = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<object, string> _colors = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<object, ElementState> _states = new(ReferenceEqualityComparer.Instance);
     private readonly List<int> _chainStarts = new();
     private readonly WatchList _watches = new();
     private readonly bool _rows;
@@ -61,13 +65,46 @@ public sealed class LinkedListTracker
     }
 
     /// <summary>Shows a live queue, stack, set, map or list beneath the chain at every step recorded after this call.</summary>
-    public void Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "") =>
+    public LinkedListTracker Watch(object collection, [CallerArgumentExpression(nameof(collection))] string name = "")
+    {
         _watches.Add(collection, name);
+        return this;
+    }
 
-    /// <summary>Fills a node with a colour from the next recorded step on, e.g. the finished part of a merged list.</summary>
-    public void Mark(object node, string color = DoneColor) => _colors[node] = color;
+    /// <summary>Fills a node with a colour from the next recorded step on, e.g. the finished part of a merged list; null clears it.</summary>
+    public LinkedListTracker Paint(object node, string? color)
+    {
+        if (color == null) _colors.Remove(node);
+        else _colors[node] = color;
+        return this;
+    }
 
-    public void Unmark(object node) => _colors.Remove(node);
+    /// <summary>
+    /// Sets a node's state from the next recorded step on (the one state vocabulary every visualizer shares): current is
+    /// highlighted, done or visited filled as finished.
+    /// </summary>
+    public LinkedListTracker Mark(object node, ElementState state)
+    {
+        if (state == ElementState.Default) _states.Remove(node);
+        else _states[node] = state;
+        return this;
+    }
+
+    /// <summary>Fills a node as finished (or with <paramref name="color"/>); the name before <see cref="Paint"/>.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public LinkedListTracker Mark(object node, string color = DoneColor) => Paint(node, color);
+
+    /// <summary>Clears what <see cref="Mark(object, ElementState)"/> and <see cref="Paint"/> set on a node.</summary>
+    public LinkedListTracker Unmark(object node)
+    {
+        _colors.Remove(node);
+        _states.Remove(node);
+        return this;
+    }
+
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
 
     /// <summary>Records the list as it is now; pass pointers as <c>new { prev, curr, next }</c> (other values become badges).</summary>
     public LinkedListTracker Step(
@@ -171,7 +208,9 @@ public sealed class LinkedListTracker
             data.Nodes.Add(new LinkedListNodeData(data.Nodes.Count, ValueOf(node), nextSlot[slot] is int target ? displayIndex[target] : null)
             {
                 RawValue = node,
-                Color = _colors.TryGetValue(node, out var color) ? color : null,
+                Color = _colors.TryGetValue(node, out var color) ? color
+                    : _states.TryGetValue(node, out var done) && done is ElementState.Done or ElementState.Visited ? DoneColor : null,
+                IsActive = _states.TryGetValue(node, out var state) && state == ElementState.Current,
                 ContinuesBeyondView = NextOf(node) != null && nextSlot[slot] == null
             });
         }

@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="750"
+        x:Class="PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DWindow"
+        Title="3D Visualizer"
+        Width="1100" Height="750"
+        MinWidth="640" MinHeight="450"
+        WindowStartupLocation="CenterScreen"
+        Background="#070B10">
+
+    <Grid>
+        <!-- 1. The Main 3D Canvas filling 100% of the window -->
+        <charting3d:Plot3DCanvasControl Name="CanvasControl"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch" />
+
+        <!-- 2. Floating Top Header & Action Deck -->
+        <Border VerticalAlignment="Top"
+                Margin="14,12,14,0"
+                Padding="12,8"
+                Background="#D00F1722"
+                BorderBrush="#40556B82"
+                BorderThickness="1"
+                CornerRadius="8"
+                BoxShadow="0 8 24 0 #80000000">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Title & Info Pill -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="CubeOutline" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Name="WindowTitleText" Text="3D Visualization" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+
+                    <Border Background="#253548" BorderBrush="#3D516B" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Name="WindowStatsText" Text="3D View" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Full Action Suite -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Camera View Presets -->
+                    <Border Background="#16202C" BorderBrush="#2A3C50" BorderThickness="1" CornerRadius="4" Padding="2">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button Name="WinIsoViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Isometric 3D View (1)">
+                                <TextBlock Text="ISO" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="WinTopViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Top View XY (2)">
+                                <TextBlock Text="TOP" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="WinFrontViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Front View XZ (3)">
+                                <TextBlock Text="FRT" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <Button Name="WinSideViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Side View YZ (4)">
+                                <TextBlock Text="SIDE" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Camera Projection Toggle (Persp / Ortho) -->
+                    <Button Name="WinProjectionToggleBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Toggle Perspective / Orthographic (P)">
+                        <materialIcons:MaterialIcon Kind="CameraOutline" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- Grid & Box Toggle -->
+                    <Button Name="WinGridToggleBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Toggle Floor Grid &amp; Bounding Box (G)">
+                        <materialIcons:MaterialIcon Kind="Grid" Width="13" Height="13" />
+                    </Button>
+
+                    <!-- Wireframe Toggle -->
+                    <Button Name="WinWireframeToggleBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Toggle Wireframe Mesh (W)">
+                        <materialIcons:MaterialIcon Kind="VectorSquare" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- ColorMap Preset Cycler -->
+                    <Button Name="WinColorMapCycleBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Cycle Color Map Preset (Viridis, Plasma, Turbo, CoolWarm, etc.)">
+                        <materialIcons:MaterialIcon Kind="PaletteOutline" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- Auto-Rotate Turntable Toggle -->
+                    <Button Name="WinAutoRotateBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Toggle 360° Turntable Auto-Rotate (Space)">
+                        <materialIcons:MaterialIcon Name="WinAutoRotateIcon" Kind="RotateRight" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- Reset Camera -->
+                    <Button Name="WinResetCameraBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Reset Camera to Default (R)">
+                        <materialIcons:MaterialIcon Kind="HomeOutline" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- HTML Export -->
+                    <Button Name="WinExportHtmlBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Export to Standalone WebGL HTML (Three.js)">
+                        <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- Fullscreen Toggle -->
+                    <Button Name="WinFullscreenToggleBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Toggle Fullscreen (F11)">
+                        <materialIcons:MaterialIcon Name="WinFullscreenIcon" Kind="Fullscreen" Width="14" Height="14" />
+                    </Button>
+
+                    <!-- Close Window -->
+                    <Button Name="WinCloseBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Close (Esc)">
+                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="#EF4444" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 3. Floating Bottom HUD / Navigation Hint Bar -->
+        <Border VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,14"
+                Padding="14,6"
+                Background="#C80D131B"
+                BorderBrush="#35485E"
+                BorderThickness="1"
+                CornerRadius="16"
+                BoxShadow="0 4 16 0 #60000000">
+            <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="GestureTap" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
+                    <TextBlock Text="Left-Drag: Orbit  •  Right/Shift-Drag: Pan  •  Wheel: Zoom  •  Space: Rotate  •  F11: Fullscreen  •  Esc: Exit"
+                               FontSize="10.5"
+                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Name="WinCameraInfoText"
+                           Text="Pitch: -45.0°  Yaw: 30.0°"
+                           FontSize="10"
+                           FontFamily="Consolas, Menlo, Monaco, monospace"
+                           Foreground="{DynamicResource M3PrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

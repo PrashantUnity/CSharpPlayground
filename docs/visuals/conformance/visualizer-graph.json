@@ -1,0 +1,37 @@
+{
+  "mime": "application/vnd.fry.visualizer.v1\u002Bjson",
+  "spec": {
+    "kind": "graph",
+    "state": {
+      "graph": {
+        "directed": true,
+        "nodes": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          }
+        ],
+        "edges": [
+          {
+            "from": "a",
+            "to": "b"
+          },
+          {
+            "from": "b",
+            "to": "c"
+          }
+        ]
+      }
+    },
+    "showCoordinates": true,
+    "showValues": true,
+    "cellSize": 38,
+    "fitOnOpen": true,
+    "title": "Graph"
+  }
+}

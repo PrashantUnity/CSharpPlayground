@@ -18,13 +18,13 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.explorer-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -40,7 +40,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Text="{Binding SearchQuery, Mode=TwoWay}"
                          Classes="sidebar-search-box"
-                         PlaceholderText="Search in script..." />
+                         PlaceholderText="{Binding SearchPlaceholder}" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="4,0,0,0">
                     <ToggleButton IsChecked="{Binding SearchMatchCase, Mode=TwoWay}"
                                   Classes="sidebar-option-toggle"
@@ -57,6 +57,11 @@
                                   ToolTip.Tip="Use Regular Expression (Alt+R)">
                         <TextBlock Text=".*" FontSize="11" FontWeight="Bold" />
                     </ToggleButton>
+                    <ToggleButton IsChecked="{Binding SearchAllFiles, Mode=TwoWay}"
+                                  Classes="sidebar-option-toggle"
+                                  ToolTip.Tip="Search every file of the workspace, not just this one">
+                        <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="14" Height="14" />
+                    </ToggleButton>
                 </StackPanel>
             </Grid>
 
@@ -70,49 +75,77 @@
                          Classes="sidebar-search-box"
                          PlaceholderText="Replace..." />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="4,0,0,0">
-                    <Button Command="{Binding ReplaceNextCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Replace (Ctrl+Shift+1)">
-                        <materialIcons:MaterialIcon Kind="FindReplace" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    <Button Command="{Binding ReplaceNextCommand}" IsEnabled="{Binding !SearchAllFiles}" Classes="explorer-tool-btn" ToolTip.Tip="Replace (Ctrl+Shift+1)">
+                        <materialIcons:MaterialIcon Kind="FindReplace" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
-                    <Button Command="{Binding ReplaceAllCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Replace All (Ctrl+Alt+Enter)">
-                        <materialIcons:MaterialIcon Kind="SelectAll" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    <Button Command="{Binding ReplaceAllCommand}" IsEnabled="{Binding !SearchAllFiles}" Classes="explorer-tool-btn" ToolTip.Tip="Replace All (Ctrl+Alt+Enter)">
+                        <materialIcons:MaterialIcon Kind="SelectAll" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
                 </StackPanel>
             </Grid>
         </StackPanel>
 
         <!-- Results Summary Header -->
-        <Border Grid.Row="1" Padding="12,4" Background="{DynamicResource M3SurfaceContainerBrush}">
+        <Border Grid.Row="1" Padding="12,4" Background="{DynamicResource DsSurfaceBrush}">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding SearchStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="0" Text="{Binding SearchStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
             </Grid>
         </Border>
 
-        <!-- Search Matches List -->
-        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="6,4">
-                <TextBlock Text="Type a search query above to inspect occurrences."
-                           FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                           Margin="8" IsVisible="{Binding !SearchMatches.Count}" />
+        <!-- Shown while the workspace is still being read -->
+        <ProgressBar Grid.Row="2" IsIndeterminate="True" Height="2" MinHeight="2" IsVisible="{Binding IsSearching}" />
 
-                <ItemsControl ItemsSource="{Binding SearchMatches}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="models:SearchResultItem">
-                            <Button Command="{Binding $parent[UserControl].DataContext.NavigateToSearchMatchCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="Transparent" BorderThickness="0"
-                                    Padding="6,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                    Cursor="Hand">
-                                <Grid ColumnDefinitions="Auto,*">
-                                    <Border Grid.Column="0" Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FormattedLocation}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+        <!-- Search Matches List: virtualized (a search of the workspace can list thousands of rows), so the ScrollViewer is in
+             the template and the VirtualizingStackPanel is its direct content. -->
+        <Grid Grid.Row="3">
+            <TextBlock Text="{Binding SearchEmptyText}"
+                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}"
+                       Margin="14,10" VerticalAlignment="Top" TextWrapping="Wrap"
+                       IsVisible="{Binding !SearchMatches.Count}" />
+
+            <ItemsControl ItemsSource="{Binding SearchMatches}" Margin="6,4">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.Template>
+                    <ControlTemplate>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ItemsControl.Template>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:SearchResultItem">
+                        <Button Command="{Binding $parent[UserControl].DataContext.NavigateToSearchMatchCommand}"
+                                CommandParameter="{Binding}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="6,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                Cursor="Hand">
+                            <Panel>
+                                <!-- A file of the workspace search: its name, its folder and how many matches it has -->
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding IsFileHeader}">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="FileCodeOutline" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding LineText}" FontSize="10" Margin="8,0,6,0" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Border Grid.Column="3" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="8" Padding="6,1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding MatchCountText}" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Border>
-                                    <TextBlock Grid.Column="1" Text="{Binding LineText}" FontSize="11.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource M3OnSurfaceBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                 </Grid>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </ScrollViewer>
+
+                                <!-- A match -->
+                                <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsFileHeader}">
+                                    <Border Grid.Column="0" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FormattedLocation}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding LineText}" FontSize="11.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </Grid>
+                            </Panel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
     </Grid>
 </UserControl>

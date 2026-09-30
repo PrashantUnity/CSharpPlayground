@@ -81,4 +81,71 @@ public class CppBuildAndRunScriptRunnerTests
         Assert.False(runStep.IsBuildStep);
         Assert.EndsWith("solve.exe", runStep.Spec.FileName);
     }
+
+    [Fact]
+    public async Task PlanAsync_OnWindows_WhenMsvcInstalled_SuppliesMsvcIncludesToClang()
+    {
+        var host = new FakeHostEnvironment(FakeOs.Windows);
+        host.Variables["ProgramFiles"] = @"C:\Program Files";
+        host.Variables["ProgramFiles(x86)"] = @"C:\Program Files (x86)";
+
+        host.AddDirectory(@"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include");
+        host.AddDirectory(@"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\lib\x64");
+        host.AddDirectory(@"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt");
+        host.AddDirectory(@"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared");
+        host.AddDirectory(@"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um");
+
+        const string clangPath = @"C:\Program Files\LLVM\bin\clang++.exe";
+        host.AddCpp(clangPath, "18.1.8", "clang");
+
+        var runner = new CppBuildAndRunScriptRunner(host);
+        var toolchain = new ToolchainInfo
+        {
+            LanguageId = LanguageIds.Cpp,
+            ExecutablePath = clangPath,
+            Version = new Version(18, 1, 8),
+            DisplayName = "Clang 18",
+            Source = "LLVM"
+        };
+
+        var context = new ScriptRunContext(@"C:\work\main.cpp", @"C:\work", toolchain);
+        var plan = await runner.PlanAsync(context);
+
+        var buildStep = plan.Steps[0];
+        Assert.Contains("-imsvc", buildStep.Spec.Arguments);
+        Assert.Contains(buildStep.Spec.Arguments, a => a.Contains("MSVC") && a.EndsWith("include"));
+        Assert.Contains(buildStep.Spec.Arguments, a => a.Contains("10.0.22621.0") && a.EndsWith("ucrt"));
+        Assert.NotNull(buildStep.Spec.Environment);
+        Assert.True(buildStep.Spec.Environment.ContainsKey("INCLUDE"));
+        Assert.True(buildStep.Spec.Environment.ContainsKey("LIB"));
+    }
+
+    [Fact]
+    public async Task PlanAsync_OnWindows_WhenMinGwInstalled_SuppliesMinGwTarget()
+    {
+        var host = new FakeHostEnvironment(FakeOs.Windows);
+        host.AddDirectory(@"C:\msys64\ucrt64\include\c++");
+        host.AddFile(@"C:\msys64\ucrt64\bin\g++.exe");
+
+        const string clangPath = @"C:\Program Files\LLVM\bin\clang++.exe";
+        host.AddCpp(clangPath, "18.1.8", "clang");
+
+        var runner = new CppBuildAndRunScriptRunner(host);
+        var toolchain = new ToolchainInfo
+        {
+            LanguageId = LanguageIds.Cpp,
+            ExecutablePath = clangPath,
+            Version = new Version(18, 1, 8),
+            DisplayName = "Clang 18",
+            Source = "LLVM"
+        };
+
+        var context = new ScriptRunContext(@"C:\work\main.cpp", @"C:\work", toolchain);
+        var plan = await runner.PlanAsync(context);
+
+        var buildStep = plan.Steps[0];
+        Assert.Contains("--target=x86_64-w64-windows-gnu", buildStep.Spec.Arguments);
+        Assert.Contains(@"--sysroot=C:\msys64\ucrt64", buildStep.Spec.Arguments);
+        Assert.Contains(@"C:\msys64\ucrt64\bin", buildStep.Spec.Environment?["PATH"]);
+    }
 }

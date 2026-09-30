@@ -35,15 +35,124 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public string LibraryRootPath => _libraryRoot;
 
+    // How many times the workspace has been walked to list its files or folders. Diagnostic: it lets a test or the
+    // perf tool prove that switching a tab or returning to the Hub does not re-scan the whole workspace.
+    private int _workspaceScanCount;
+    public int WorkspaceScanCount => Volatile.Read(ref _workspaceScanCount);
+
+    // Change stamps: consumers remember the value they last loaded at and reload only when it has moved, instead of
+    // re-walking the whole workspace every time the user switches a tab or returns to the Hub.
+    private long _structureVersion;
+    private long _contentVersion;
+    public long StructureVersion => Interlocked.Read(ref _structureVersion);
+    public long ContentVersion => Interlocked.Read(ref _contentVersion);
+
+    /// <param name="structural">An item appeared, disappeared, moved or was renamed (the Explorer tree changes); false for a save (titles and times change, the tree does not).</param>
+    private void MarkChanged(bool structural = true)
+    {
+        Volatile.Write(ref _lastOwnChangeTick, Environment.TickCount64);
+        BumpVersions(structural);
+    }
+
+    private void BumpVersions(bool structural)
+    {
+        if (structural) Interlocked.Increment(ref _structureVersion);
+        Interlocked.Increment(ref _contentVersion);
+    }
+
+    // ── Changes made outside the studio ──────────────────────────────────────────────────────────────────────────
+    // The studio's own operations bump the versions themselves; files changed behind its back (git, another editor)
+    // are noticed by watching the active workspace folder, once StartWatchingForChanges has been called.
+
+    /// <summary>Raised (on a background thread) once a burst of changes made outside the studio has settled.</summary>
+    public event Action? ExternalChangeDetected;
+
+    private const long OwnChangeEchoMilliseconds = 1500;
+    private readonly object _watcherGate = new();
+    private WorkspaceWatcher? _watcher;
+    private bool _watchingEnabled;
+    private long _lastOwnChangeTick;
+
+    /// <summary>Starts watching the active workspace folder (and follows it when another folder is opened).</summary>
+    public void StartWatchingForChanges()
+    {
+        _watchingEnabled = true;
+        if (_initialized) RestartWatcher();
+    }
+
+    private void RestartWatcher()
+    {
+        if (!_watchingEnabled) return;
+
+        lock (_watcherGate)
+        {
+            _watcher?.Dispose();
+            _watcher = WorkspaceWatcher.TryStart(EffectiveWorkspaceRoot, OnChangedOnDisk);
+        }
+    }
+
+    private void OnChangedOnDisk(bool structural)
+    {
+        // The file system reports the studio's own writes too, and the studio has already accounted for those.
+        if (Environment.TickCount64 - Volatile.Read(ref _lastOwnChangeTick) < OwnChangeEchoMilliseconds) return;
+
+        BumpVersions(structural);
+        ExternalChangeDetected?.Invoke();
+    }
+
     private string EffectiveWorkspaceRoot => _activeWorkspaceRootPath ?? _libraryRoot;
     public string ActiveWorkspaceRootPath => EffectiveWorkspaceRoot;
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
     public event Action? ActiveWorkspaceChanged;
 
-    /// <param name="languages">The languages whose plain source files (main.py) the workspace lists; the built-in ones by default.</param>
-    public LocalScriptStorageService(string? customBaseDir = null, LanguageRegistry? languages = null)
+    // Walking a folder stops after this many files (or folders); see IsWorkspaceTruncated.
+    private readonly int _workspaceFileLimit;
+    private volatile bool _filesTruncated;
+    private volatile bool _foldersTruncated;
+
+    public int WorkspaceFileLimit => _workspaceFileLimit;
+
+    private readonly WorkspaceFileIndex _fileIndex;
+    private string? _indexedRoot;
+    private long _indexedStructureVersion = -1;
+
+    /// <summary>
+    /// The names of every file in the active workspace, searchable at once ("Go to File"), however big the project is.
+    /// Asking for it starts the background walk that fills it, and again after the workspace changed (another folder opened, a
+    /// file created, deleted or renamed), so it is usually ready by the time it is searched.
+    /// </summary>
+    public WorkspaceFileIndex FileIndex
     {
+        get
+        {
+            var root = EffectiveWorkspaceRoot;
+            var version = StructureVersion;
+            bool stale;
+            lock (_fileIndex)
+            {
+                stale = !string.Equals(_indexedRoot, root, StringComparison.Ordinal) || _indexedStructureVersion != version;
+                if (stale)
+                {
+                    _indexedRoot = root;
+                    _indexedStructureVersion = version;
+                }
+            }
+
+            if (stale) _ = _fileIndex.RebuildAsync(root);
+            return _fileIndex;
+        }
+    }
+
+    /// <summary>True when the last listing of the workspace stopped at <see cref="WorkspaceFileLimit"/>: the folder holds more than is listed.</summary>
+    public bool IsWorkspaceTruncated => _filesTruncated || _foldersTruncated;
+
+    /// <param name="languages">The languages whose plain source files (main.py) the workspace lists; the built-in ones by default.</param>
+    /// <param name="workspaceFileLimit">How many files (or folders) a listing of the workspace includes before it stops; a folder with more is reported as truncated.</param>
+    public LocalScriptStorageService(string? customBaseDir = null, LanguageRegistry? languages = null, int workspaceFileLimit = WorkspaceWalker.MaxFiles)
+    {
+        _workspaceFileLimit = workspaceFileLimit;
         _languages = languages ?? StudioLanguageServices.Default.Registry;
+        _fileIndex = new WorkspaceFileIndex(IsWorkspaceFile);
         _baseDir = !string.IsNullOrEmpty(customBaseDir)
             ? customBaseDir
             : Path.Combine(
@@ -74,6 +183,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             // auto-populated with all of them, so a first-run Explorer starts empty until the user
             // creates something.
             _initialized = true;
+            RestartWatcher(); // The active folder is known now (a folder opened last time comes back).
         }
         finally
         {
@@ -159,11 +269,23 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<List<WorkspaceItemSummary>> LoadWorkspaceSummariesAsync()
     {
+        Interlocked.Increment(ref _workspaceScanCount);
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
-        var list = new List<WorkspaceItemSummary>();
-        var files = await Task.Run(() => WorkspaceWalker.Files(root, IsWorkspaceFile)).ConfigureAwait(false);
+        var (files, filesTruncated) = await Task.Run(() =>
+        {
+            var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var truncated, _workspaceFileLimit);
+            return (found, truncated);
+        }).ConfigureAwait(false);
+        _filesTruncated = filesTruncated;
 
+        return await SummarizeFilesAsync(files, root);
+    }
+
+    // What the workspace lists about each of these files: a document's own title and id (read from the file), a source file's name.
+    private async Task<List<WorkspaceItemSummary>> SummarizeFilesAsync(IReadOnlyList<string> files, string root)
+    {
+        var list = new List<WorkspaceItemSummary>();
         foreach (var file in files.Where(f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase)))
         {
             try
@@ -226,12 +348,114 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
         }
 
+        foreach (var file in files.Where(f => f.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(file);
+                var srv = JsonSerializer.Deserialize<FryServerDocumentItem>(json);
+                if (srv != null)
+                {
+                    _knownFileLocations[srv.Id] = file;
+                    list.Add(new WorkspaceItemSummary
+                    {
+                        Id = srv.Id,
+                        Title = srv.Title,
+                        Description = srv.Description,
+                        Category = "API Server",
+                        Kind = WorkspaceItemKind.Server,
+                        LastModified = srv.LastModified,
+                        CellCount = srv.Cells.Count,
+                        FolderPath = GetFolderPath(file),
+                        IsExternalRoot = IsExternalWorkspaceActive,
+                        WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null,
+                        FileExtension = ".fryserver"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Skipping corrupted server file '{file}': {ex.Message}");
+            }
+        }
+
         foreach (var file in files)
         {
             if (_languages.FindSourceFileLanguage(file) is { } language) list.Add(SourceFileSummary(file, language, root));
         }
 
         return list.OrderByDescending(x => x.LastModified).ToList();
+    }
+
+    /// <summary>
+    /// What the Explorer lists. A workspace that fits the limit is listed whole, every folder and document. A bigger one lists only its
+    /// top folder here, and each folder's contents come from <see cref="ListFolderAsync"/> as the folder is opened: nothing is cut
+    /// off, and nothing costs more than the folder being looked at.
+    /// </summary>
+    public async Task<WorkspaceListing> LoadExplorerListingAsync()
+    {
+        Interlocked.Increment(ref _workspaceScanCount);
+        await EnsureInitializedAsync();
+        var root = EffectiveWorkspaceRoot;
+
+        // Names only: cheap enough to ask before deciding how to list (the walk stops as soon as the limit is passed).
+        var (files, truncated) = await Task.Run(() =>
+        {
+            var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var cutOff, _workspaceFileLimit);
+            return (found, cutOff);
+        }).ConfigureAwait(false);
+        if (truncated) return await ListFolderCoreAsync(root, string.Empty).ConfigureAwait(false);
+
+        var folders = await Task.Run(() =>
+            WorkspaceWalker.Folders(root, out _, _workspaceFileLimit)
+                .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
+                .ToList()).ConfigureAwait(false);
+        _filesTruncated = false;
+        _foldersTruncated = false;
+        return new WorkspaceListing(folders, await SummarizeFilesAsync(files, root).ConfigureAwait(false), IsPartial: false);
+    }
+
+    /// <summary>One folder of the workspace, as a path from the root (empty for the root itself): its subfolders and the documents directly in it.</summary>
+    public async Task<WorkspaceListing> ListFolderAsync(string relativeFolder)
+    {
+        await EnsureInitializedAsync();
+        return await ListFolderCoreAsync(EffectiveWorkspaceRoot, relativeFolder ?? string.Empty).ConfigureAwait(false);
+    }
+
+    private async Task<WorkspaceListing> ListFolderCoreAsync(string root, string relativeFolder)
+    {
+        var folder = relativeFolder.Length == 0 ? root : Path.Combine(root, relativeFolder.Replace('/', Path.DirectorySeparatorChar));
+        string[] directories;
+        string[] files;
+        try
+        {
+            (directories, files) = await Task.Run(() => (Directory.GetDirectories(folder), Directory.GetFiles(folder))).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new WorkspaceListing([], [], IsPartial: true);
+        }
+
+        var subfolders = directories
+            .Where(d => !WorkspaceWalker.IsSkipped(d))
+            .Select(d => Path.GetRelativePath(root, d).Replace(Path.DirectorySeparatorChar, '/'))
+            .ToList();
+        var wanted = files.Where(IsWorkspaceFile).ToList();
+        var truncated = wanted.Count > _workspaceFileLimit;
+        if (truncated) wanted.RemoveRange(_workspaceFileLimit, wanted.Count - _workspaceFileLimit);
+        return new WorkspaceListing(subfolders, await SummarizeFilesAsync(wanted, root).ConfigureAwait(false), IsPartial: true, IsTruncated: truncated);
+    }
+
+    /// <summary>
+    /// Where a document lives, as a path from the workspace root (<c>/</c> separators), when it is known to this session and inside
+    /// the active workspace; null otherwise. The Explorer of a big workspace uses it to open the folders down to the open document.
+    /// </summary>
+    public string? GetWorkspaceRelativePath(string documentId)
+    {
+        if (!_knownFileLocations.TryGetValue(documentId, out var path)) return null;
+
+        var relative = Path.GetRelativePath(EffectiveWorkspaceRoot, path);
+        return relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative) ? null : relative.Replace(Path.DirectorySeparatorChar, '/');
     }
 
     public async Task<ScriptDocumentItem?> LoadScriptAsync(string id)
@@ -270,6 +494,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (existing != null)
             {
                 await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
                 return true;
             }
 
@@ -329,6 +554,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (existing != null)
             {
                 await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
                 return true;
             }
 
@@ -340,6 +566,78 @@ public partial class LocalScriptStorageService : IScriptStorageService
             Debug.WriteLine($"[CSharpEditorPlugin] Failed to save notebook '{notebook.Id}': {ex.Message}");
             return false;
         }
+    }
+
+    public async Task<FryServerDocumentItem?> LoadServerDocumentAsync(string id)
+    {
+        await EnsureInitializedAsync();
+        var file = await FindExistingFilePathAsync(id, ".fryserver");
+        if (file == null) return null;
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(file);
+            return JsonSerializer.Deserialize<FryServerDocumentItem>(json, _jsonOptions);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to load server doc '{id}': {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<bool> SaveServerDocumentAsync(FryServerDocumentItem serverDoc, string? folderPath = null)
+    {
+        try
+        {
+            serverDoc.LastModified = DateTime.UtcNow;
+            var json = JsonSerializer.Serialize(serverDoc, _jsonOptions);
+
+            var existing = await FindExistingFilePathAsync(serverDoc.Id, ".fryserver");
+            if (existing != null)
+            {
+                await File.WriteAllTextAsync(existing, json);
+                MarkChanged(structural: false);
+                return true;
+            }
+
+            await WriteNewDocumentAsync(serverDoc.Id, ".fryserver", folderPath, json, serverDoc.Title);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to save server doc '{serverDoc.Id}': {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<FryServerDocumentItem> CreateNewServerDocumentAsync(string title = "New Server", string? folderPath = null)
+    {
+        var doc = new FryServerDocumentItem
+        {
+            Title = title,
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = 5000,
+                ApiPrefix = "/api",
+                EnableCors = true
+            },
+            Cells = new()
+            {
+                new FryServerCellItem
+                {
+                    Type = FryServerCellType.Endpoint,
+                    Title = "Get Status",
+                    Method = "GET",
+                    Route = "/status",
+                    Source = "return Ok(new { status = \"healthy\", timestamp = DateTime.UtcNow });"
+                }
+            }
+        };
+
+        await SaveServerDocumentAsync(doc, folderPath);
+        return doc;
     }
 
     private async Task WriteNewDocumentAsync(string id, string extension, string? folderPath, string json, string title)
@@ -360,6 +658,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         var file = Path.Combine(targetDir, $"{finalName}{extension}");
         await File.WriteAllTextAsync(file, json);
         _knownFileLocations[id] = file;
+        MarkChanged();
     }
 
     public async Task<ScriptDocumentItem> CreateNewScriptAsync(string title = "New Script", string? templateId = null, string? folderPath = null)
@@ -368,6 +667,13 @@ public partial class LocalScriptStorageService : IScriptStorageService
         var templates = CodeTemplateLibrary.GetTemplates();
         var template = templates.FirstOrDefault(t => t.Id == templateId && t.Kind == WorkspaceItemKind.Script)
                        ?? templates.FirstOrDefault(t => t.Kind == WorkspaceItemKind.Script);
+
+        // A template of another language (Rust) is a plain source file of that language, not a C# document.
+        if (template?.LanguageId is { } languageId &&
+            await CreateNewSourceFileAsync(languageId, template.Id, folderPath, template.InitialCode) is { } sourceFile)
+        {
+            return sourceFile;
+        }
 
         var script = new ScriptDocumentItem
         {
@@ -447,6 +753,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         if (IsSourceFileId(id))
         {
             DeleteSourceFile(id);
+            MarkChanged();
             return;
         }
 
@@ -463,14 +770,21 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         _knownFileLocations.TryRemove(id, out _);
+        MarkChanged();
     }
 
     public Task<List<string>> LoadFolderPathsAsync()
     {
+        Interlocked.Increment(ref _workspaceScanCount);
         var root = EffectiveWorkspaceRoot;
-        return Task.Run(() => WorkspaceWalker.Folders(root)
-            .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
-            .ToList());
+        return Task.Run(() =>
+        {
+            var folders = WorkspaceWalker.Folders(root, out var truncated, _workspaceFileLimit);
+            _foldersTruncated = truncated;
+            return folders
+                .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
+                .ToList();
+        });
     }
 
     public Task<string> CreateFolderAsync(string? parentFolderPath, string desiredName)
@@ -489,6 +803,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         Directory.CreateDirectory(Path.Combine(parentDir, finalName));
+        MarkChanged();
 
         var relativePath = string.IsNullOrEmpty(parentFolderPath) ? finalName : $"{parentFolderPath}/{finalName}";
         return Task.FromResult(relativePath);
@@ -516,6 +831,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             var tempDir = Path.Combine(parentDir, $"{safeName}__rename_{Guid.NewGuid():N}");
             Directory.Move(sourceDir, tempDir);
             Directory.Move(tempDir, destDir);
+            MarkChanged();
             return Task.FromResult(newRelativePath);
         }
 
@@ -525,6 +841,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         Directory.Move(sourceDir, destDir);
+        MarkChanged();
         return Task.FromResult(newRelativePath);
     }
 
@@ -534,6 +851,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         if (Directory.Exists(dir))
         {
             Directory.Delete(dir, recursive: true);
+            MarkChanged();
         }
         return Task.CompletedTask;
     }
@@ -688,6 +1006,11 @@ public partial class LocalScriptStorageService : IScriptStorageService
             return await OpenLooseNotebookAsync(path);
         }
 
+        if (ext == ".fryserver")
+        {
+            return await OpenLooseServerAsync(path);
+        }
+
         if (ext == ".frycs")
         {
             return await OpenLooseScriptAsync(path);
@@ -719,7 +1042,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
 
         var sourceExtensions = string.Concat(_languages.SourceFileLanguages.SelectMany(l => l.FileExtensions).Select(e => ", " + e));
-        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .cs, .csx, .csproj, .zip{sourceExtensions}");
+        return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .fryserver, .cs, .csx, .csproj, .zip{sourceExtensions}");
     }
 
     private async Task<OpenProjectResult> OpenFolderAsync(string dirPath)
@@ -732,6 +1055,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
         await SaveWorkspaceStateAsync();
+        MarkChanged();
+        RestartWatcher();
         ActiveWorkspaceChanged?.Invoke();
 
         var summaries = await LoadWorkspaceSummariesAsync();
@@ -769,6 +1094,32 @@ public partial class LocalScriptStorageService : IScriptStorageService
         catch (Exception ex)
         {
             return new OpenProjectResult(false, $"Failed to open notebook: {ex.Message}");
+        }
+    }
+
+    private async Task<OpenProjectResult> OpenLooseServerAsync(string filePath)
+    {
+        try
+        {
+            var json = await File.ReadAllTextAsync(filePath);
+            var server = JsonSerializer.Deserialize<FryServerDocumentItem>(json);
+            if (server == null)
+            {
+                return new OpenProjectResult(false, $"Failed to parse API server JSON in '{Path.GetFileName(filePath)}'.");
+            }
+
+            _knownFileLocations[server.Id] = filePath;
+
+            return new OpenProjectResult(
+                Success: true,
+                Message: $"Loaded API server '{server.Title}'",
+                PrimaryDocumentId: server.Id,
+                PrimaryDocumentKind: WorkspaceItemKind.Server,
+                DocumentsLoadedCount: 1);
+        }
+        catch (Exception ex)
+        {
+            return new OpenProjectResult(false, $"Failed to open API server: {ex.Message}");
         }
     }
 

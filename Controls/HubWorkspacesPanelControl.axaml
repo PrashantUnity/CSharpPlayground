@@ -102,6 +102,16 @@
                                                     </StackPanel>
                                                 </Button>
 
+                                                <!-- Servers Chip -->
+                                                <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Servers"
+                                                        Classes="nexus-filter-chip"
+                                                        Classes.active="{Binding IsServersFilterActive}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                        <TextBlock Text="Servers" />
+                                                        <TextBlock Text="{Binding TotalServers}" FontSize="10" Opacity="0.7" />
+                                                    </StackPanel>
+                                                </Button>
+
                                                 <!-- Pinned Chip -->
                                                 <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Pinned"
                                                         Classes="nexus-filter-chip"
@@ -385,6 +395,18 @@
                                                         </DataTemplate>
                                                     </ItemsControl.DataTemplates>
                                                 </ItemsControl>
+
+                                                <!-- Only the first cards are drawn (each is a heavy control); the rest is one click away. -->
+                                                <Button Command="{Binding ShowMoreItemsCommand}"
+                                                        IsVisible="{Binding HasHiddenItems}"
+                                                        HorizontalAlignment="Center"
+                                                        Margin="0,12,0,6"
+                                                        Padding="16,7"
+                                                        CornerRadius="6"
+                                                        Background="{DynamicResource DsSurfaceHighBrush}">
+                                                    <TextBlock Text="{Binding HiddenItemsText}" FontSize="12"
+                                                               Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                </Button>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

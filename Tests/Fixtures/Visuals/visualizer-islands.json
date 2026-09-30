@@ -1,0 +1,6 @@
+{
+  "title": "Number of islands",
+  "kind": "islands",
+  "islands": { "fourDirectional": true, "recordSteps": false },
+  "state": { "grid": { "values": [["1", "1", "0"], ["0", "1", "0"], ["0", "0", "1"]] } }
+}

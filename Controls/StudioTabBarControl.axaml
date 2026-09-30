@@ -69,7 +69,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="14" Height="14"
                                                                     IsVisible="{Binding !HasLanguageIcon}"
-                                                                    Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                                                    Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                         <!-- A source file (main.py) shows its language's icon. -->
                                         <materialIcons:MaterialIcon Kind="{Binding LanguageIconKind}" Width="14" Height="14"
                                                                     IsVisible="{Binding HasLanguageIcon}"
@@ -81,7 +81,7 @@
                                                    VerticalAlignment="Center" />
                                         <!-- Unsaved dirty dot -->
                                         <Ellipse Width="6" Height="6"
-                                                 Fill="{DynamicResource M3PrimaryBrush}"
+                                                 Fill="{DynamicResource DsPrimaryBrush}"
                                                  Margin="2,0,0,0"
                                                  VerticalAlignment="Center"
                                                  IsVisible="{Binding IsDirty}" />
@@ -96,7 +96,7 @@
                                         Margin="8,0,0,0"
                                         ToolTip.Tip="Close Script">
                                     <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11"
-                                                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>
                             </Grid>
                         </Border>
@@ -111,7 +111,7 @@
                     Margin="4,0,0,0"
                     VerticalAlignment="Center"
                     ToolTip.Tip="New Script">
-                <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
             </Button>
         </StackPanel>
     </ScrollViewer>

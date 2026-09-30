@@ -139,6 +139,11 @@ public class DapScope
 
     [JsonPropertyName("expensive")]
     public bool Expensive { get; set; }
+
+    /// <summary><c>arguments</c>, <c>locals</c> or <c>registers</c>, when the adapter says what the scope is.</summary>
+    [JsonPropertyName("presentationHint")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PresentationHint { get; set; }
 }
 
 public class DapVariable

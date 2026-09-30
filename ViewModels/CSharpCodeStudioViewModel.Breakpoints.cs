@@ -44,7 +44,7 @@ public partial class CSharpCodeStudioViewModel
         _ = _storageService.SaveScriptAsync(Script);
 
         var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        var sourcePath = currentTab?.Document.SourceFilePath ?? (Script.Title.EndsWith(".cs") ? Script.Title : $"{Script.Title}.cs");
+        var sourcePath = DebugSourcePath(currentTab);
         if (_activeDebugSession != null)
         {
             _ = _activeDebugSession.SetBreakpointsAsync(sourcePath, Breakpoints.ToList()).ContinueWith(_ =>

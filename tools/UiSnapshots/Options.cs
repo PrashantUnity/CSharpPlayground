@@ -6,7 +6,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 /// <summary>The command line: a command, then problem numbers and <c>--name value</c> / <c>--flag</c> options in any order.</summary>
 internal sealed class Options
 {
-    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test", "while-running", "python-demo", "nothing-installed", "unique", "timestamp" };
+    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test", "while-running", "python-demo", "nothing-installed", "unique", "timestamp", "js-demo", "polyglot-demo", "java-share", "java-exception", "java-table", "cpp-demo", "go-demo", "fsharp-demo", "sql-demo", "rust-demo" };
 
     private readonly Dictionary<string, string?> _named = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _positional = new();
@@ -57,6 +57,8 @@ internal sealed class Options
         _positional.Count > 0
             ? _positional.Select(p => CheckedProblem(ParseInt(p, "a problem number"))).ToList()
             : Blind75CatalogService.GetAllProblems().Select(p => p.Number).ToList();
+
+    public string? Positional(int index = 0) => _positional.Count > index ? _positional[index] : null;
 
     private static int ParseInt(string text, string what) =>
         int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)

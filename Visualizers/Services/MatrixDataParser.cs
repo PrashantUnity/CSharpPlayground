@@ -196,7 +196,15 @@ public static class MatrixDataParser
             }
         }
 
-        // Semantic defaults
+        InferTerrain(cell, val, options);
+    }
+
+    /// <summary>
+    /// What a plain value says a cell is: 1 is land and 0 water (as a number, a char, a string or a boolean), "S" the
+    /// start, "T" or "E" the target, "#" or "wall" a wall. Grids from every language are read this way.
+    /// </summary>
+    internal static void InferTerrain(GridCell cell, object? val, MatrixParseOptions options)
+    {
         switch (val)
         {
             case char ch:

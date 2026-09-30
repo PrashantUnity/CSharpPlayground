@@ -45,6 +45,7 @@ public partial class DocumentationService
         var testingDebuggingCategory = BuildTestingDebuggingCategory();
         var advancedTopicsCategory = BuildAdvancedTopicsCategory();
         var visualizerCategory = BuildVisualizersCategory();
+        var polyglotVisualsCategory = BuildPolyglotVisualsCategory();
         var displayCategory = BuildDisplayApisCategory();
         var shortcutsCategory = BuildShortcutsCategory();
 
@@ -67,6 +68,7 @@ public partial class DocumentationService
         _categories.Add(testingDebuggingCategory);
         _categories.Add(advancedTopicsCategory);
         _categories.Add(visualizerCategory);
+        _categories.Add(polyglotVisualsCategory);
         _categories.Add(displayCategory);
         _categories.Add(shortcutsCategory);
 

@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The views and view models to render, and the Runner for the app's Material 3 theme (avares://FrySharp/...). -->
     <ProjectReference Include="../../CSharpEditorPlugin.csproj" />
     <ProjectReference Include="../../Runner/CSharpEditorPlugin.Runner.csproj" />

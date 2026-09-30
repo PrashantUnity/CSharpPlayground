@@ -7,7 +7,7 @@
     <!-- ============================================================ -->
     <Style Selector="Button.activity-bar-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="BorderThickness" Value="2,0,0,0" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="CornerRadius" Value="0" />
@@ -26,41 +26,41 @@
         </Setter>
     </Style>
     <Style Selector="Button.activity-bar-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.activity-bar-btn.active">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
     <!-- ============================================================ -->
     <!-- 2. VS CODE MULTI-TAB STRIP STYLES (Zone 3)                   -->
     <!-- ============================================================ -->
     <Style Selector="Border.vscode-tab">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
         <Setter Property="BorderThickness" Value="0,0,1,0" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Padding" Value="12,0,8,0" />
         <Setter Property="Height" Value="35" />
     </Style>
     <Style Selector="Border.vscode-tab:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
     </Style>
     <Style Selector="Border.vscode-tab.active">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
         <Setter Property="BorderThickness" Value="0,2,1,0" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
     <Style Selector="Border.vscode-tab TextBlock.tab-title">
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
     </Style>
     <Style Selector="Border.vscode-tab:pointerover TextBlock.tab-title">
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Border.vscode-tab.active TextBlock.tab-title">
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -73,19 +73,19 @@
 
     <Style Selector="Button.vscode-tab-close">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Width" Value="20" />
         <Setter Property="Height" Value="20" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.vscode-tab-close:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -93,10 +93,10 @@
     <!-- ============================================================ -->
     <Style Selector="Button.ide-tab-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Height" Value="30" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="FontSize" Value="12" />
@@ -110,12 +110,13 @@
         </Setter>
     </Style>
     <Style Selector="Button.ide-tab-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.ide-tab-btn.active">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="Border.ide-tab-badge">
@@ -123,7 +124,7 @@
         <Setter Property="MinHeight" Value="16" />
         <Setter Property="MinWidth" Value="16" />
         <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="Padding" Value="5,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
@@ -140,7 +141,7 @@
     <!-- 4. TOOLBAR BUTTON STYLES                                     -->
     <!-- ============================================================ -->
     <Style Selector="Button.cs-toolbar-filled, Button.cs-toolbar-tonal, Button.cs-toolbar-outlined">
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="10,0" />
@@ -157,32 +158,35 @@
         </Setter>
     </Style>
     <Style Selector="Button.cs-toolbar-filled">
-        <Setter Property="Background" Value="{DynamicResource M3SuccessBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsGreenBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
     <Style Selector="Button.cs-toolbar-filled:pointerover">
         <Setter Property="Opacity" Value="0.9" />
     </Style>
     <Style Selector="Button.cs-toolbar-tonal">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="Button.cs-toolbar-tonal:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
     </Style>
     <Style Selector="Button.cs-toolbar-outlined">
         <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.cs-toolbar-outlined:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
     </Style>
     <Style Selector="Button.cs-toolbar-icon">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Width" Value="28" />
         <Setter Property="Height" Value="28" />
         <Setter Property="Padding" Value="0" />
@@ -191,14 +195,13 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.cs-toolbar-icon:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
 
-    <!-- Pane splitters (VS Code "sashes"): a 4px grab strip in the editor's colour, so the neighbouring panes' 1px borders
-         are the only line you see; it lights up while hovered or dragged. Fluent's 6px minimum is cleared. -->
+    <!-- Pane splitters (VS Code "sashes") -->
     <Style Selector="GridSplitter.studio-sash">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Transitions">
@@ -208,15 +211,14 @@
         </Setter>
     </Style>
     <Style Selector="GridSplitter.studio-sash:pointerover, GridSplitter.studio-sash:pressed">
-        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
-    <!-- A clickable status bar item (Ln/Col, Spaces, language mode...): as wide as its text, 18px tall.
-         cs-toolbar-icon is a 28px square and would cut the text off. -->
+    <!-- A clickable status bar item -->
     <Style Selector="Button.status-item">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Height" Value="18" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="5,0" />
@@ -226,44 +228,47 @@
     </Style>
     <Style Selector="Button.status-item:pointerover /template/ ContentPresenter#PART_ContentPresenter,
                      Button.status-item:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
     </Style>
 
     <!-- ============================================================ -->
     <!-- 5. SIDEBAR & EXPLORER STYLES (Zone 2)                        -->
     <!-- ============================================================ -->
     <Style Selector="TextBox.sidebar-search-box">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerSmall}" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+    <Style Selector="TextBox.sidebar-search-box:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
 
     <Style Selector="TextBox.explorer-rename-box">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="FontSize" Value="11.5" />
         <Setter Property="Height" Value="22" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="5,1" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="CaretBrush" Value="{DynamicResource M3PrimaryBrush}" />
-        <Setter Property="SelectionBrush" Value="{DynamicResource M3PrimaryBrush}" />
-        <Setter Property="SelectionForegroundBrush" Value="{DynamicResource M3OnPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimarySubtleBrush}" />
     </Style>
     <Style Selector="TextBox.explorer-rename-box /template/ Border#PART_BorderElement">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowestBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="MinHeight" Value="0" />
     </Style>
 
@@ -271,19 +276,23 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Width" Value="24" />
         <Setter Property="Height" Value="24" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.sidebar-option-toggle:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="ToggleButton.sidebar-option-toggle:checked">
-        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
     <Style Selector="Button.explorer-item-btn">
@@ -292,16 +301,16 @@
         <Setter Property="Padding" Value="4,3" />
         <Setter Property="Height" Value="24" />
         <Setter Property="MinHeight" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.explorer-item-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerLowBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
     </Style>
     <Style Selector="Button.explorer-item-btn.selected">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -309,10 +318,10 @@
     <!-- ============================================================ -->
     <Style Selector="Button.cell-output-tab-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerExtraSmall}" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Height" Value="22" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="6,1" />
@@ -330,16 +339,16 @@
         </Setter>
     </Style>
     <Style Selector="Button.cell-output-tab-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.cell-output-tab-btn.active">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
     </Style>
     <Style Selector="Button.cell-output-tab-btn.active materialIcons|MaterialIcon">
-        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
     <Style Selector="Border.cell-output-tab-badge">
@@ -350,30 +359,99 @@
         <Setter Property="Padding" Value="4,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Center" />
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
     </Style>
     <Style Selector="Border.cell-output-tab-badge > TextBlock">
         <Setter Property="FontSize" Value="9" />
         <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
     <Style Selector="Button.cell-output-tab-btn.active Border.cell-output-tab-badge">
-        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
     <Style Selector="Button.cell-output-tab-btn.active Border.cell-output-tab-badge > TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
 
     <!-- ============================================================ -->
     <!-- 8. DOCUMENTATION & LEARNING CENTER STYLES                    -->
     <!-- ============================================================ -->
+    <Style Selector="Button.doc-category-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-category-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-category-btn.selected">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-category-btn:pointerover Border.nav-icon-box">
+        <Setter Property="RenderTransform" Value="scale(1.06)" />
+    </Style>
+
+    <Style Selector="Button.doc-article-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-article-item:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-article-item.active">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.doc-article-item.active materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
     <Style Selector="Button.doc-nav-item">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -381,19 +459,20 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.doc-nav-item:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
     <Style Selector="Button.doc-nav-item.active">
-        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
 
     <Style Selector="Button.snippet-action-btn">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontSize" Value="11" />
@@ -401,13 +480,13 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.snippet-action-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
     <Style Selector="Button.snippet-run-btn">
-        <Setter Property="Background" Value="{DynamicResource M3SuccessContainerBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessContainerBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsGreenBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="10,4" />
@@ -416,16 +495,15 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.snippet-run-btn:pointerover">
-        <Setter Property="Background" Value="{DynamicResource M3SuccessBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource M3OnSuccessBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
     </Style>
 
     <!-- ============================================================ -->
     <!-- 9. MODERN IDE FLYOUT & MENU STYLES                           -->
     <!-- ============================================================ -->
     <Style Selector="FlyoutPresenter.ide-menu-flyout">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="4" />
@@ -448,19 +526,19 @@
         </Setter>
     </Style>
     <Style Selector="Button.ide-menu-item-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
     </Style>
     <Style Selector="Button.ide-menu-item-btn:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
     </Style>
     <Style Selector="Button.ide-menu-item-btn.selected /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
     </Style>
 
     <!-- Cell Language Chip Button -->
     <Style Selector="Button.cell-lang-chip">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Height" Value="22" />
@@ -478,8 +556,8 @@
         </Setter>
     </Style>
     <Style Selector="Button.cell-lang-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighestBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
 </Styles>

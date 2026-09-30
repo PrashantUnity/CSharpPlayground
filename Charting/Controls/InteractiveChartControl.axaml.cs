@@ -2,10 +2,13 @@ using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Material.Icons;
-using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 
@@ -14,116 +17,85 @@ public partial class InteractiveChartControl : UserControl
     public static readonly StyledProperty<ChartOptions?> OptionsProperty =
         AvaloniaProperty.Register<InteractiveChartControl, ChartOptions?>(nameof(Options));
 
-    public ChartOptions? Options
-    {
-        get => GetValue(OptionsProperty);
-        set => SetValue(OptionsProperty, value);
-    }
+    public ChartOptions? Options { get => GetValue(OptionsProperty); set => SetValue(OptionsProperty, value); }
+    public ChartViewState ViewState { get; set; } = new();
 
-    static InteractiveChartControl()
-    {
+    private T? Find<T>(string name) where T : Control { try { return this.FindControl<T>(name); } catch { return null; } }
+    private ChartCanvasControl? Canvas => Find<ChartCanvasControl>("CanvasControl");
+
+    static InteractiveChartControl() =>
         OptionsProperty.Changed.AddClassHandler<InteractiveChartControl>((x, _) => x.ApplyOptions());
-    }
 
-    public InteractiveChartControl()
-    {
-        try { InitializeComponent(); WireEvents(); }
-        catch { /* Headless test runner without Avalonia platform rendering */ }
-    }
+    public InteractiveChartControl() { try { InitializeComponent(); SetupChrome(); WireEvents(); } catch { } }
+    public InteractiveChartControl(ChartOptions options) : this() { Options = options; ApplyOptions(); }
 
-    public InteractiveChartControl(ChartOptions options) : this()
+    public event EventHandler<ElementClickedEventArgs<ChartHitTestResult>>? ValueClicked;
+
+    private void SetupChrome()
     {
-        Options = options;
-        ApplyOptions();
+        var chrome = Find<VisualChromeControl>("Chrome");
+        var tools = Find<StackPanel>("KindToolsPanel");
+        var canvas = Canvas;
+        var legend = Find<ItemsControl>("SeriesLegendPanel");
+
+        if (chrome != null)
+        {
+            if (tools != null) { tools.IsVisible = true; chrome.SetKindTools(tools); }
+            if (canvas != null) { canvas.IsVisible = true; chrome.SetCanvasContent(canvas); }
+            if (legend != null) chrome.SetFooter(legend);
+
+            chrome.SpecGetter = () => Options != null ? ChartOptionsConverter.ToSpec(Options) : null;
+            chrome.DataCsvGetter = () => Options != null ? ChartExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
+            chrome.ResetFitRequested += (_, _) => { ViewState.Reset(); Canvas?.InvalidateVisual(); };
+        }
     }
 
     private void WireEvents()
     {
-        var lineBtn = this.FindControl<Button>("LineTypeBtn");
-        var areaBtn = this.FindControl<Button>("AreaTypeBtn");
-        var barBtn = this.FindControl<Button>("BarTypeBtn");
-        var scatterBtn = this.FindControl<Button>("ScatterTypeBtn");
-        var pieBtn = this.FindControl<Button>("PieTypeBtn");
-        var gridBtn = this.FindControl<Button>("GridToggleBtn");
-        var copyBtn = this.FindControl<Button>("CopyCsvBtn");
-
-        if (lineBtn != null) lineBtn.Click += (_, _) => SwitchType(ChartType.Line);
-        if (areaBtn != null) areaBtn.Click += (_, _) => SwitchType(ChartType.Area);
-        if (barBtn != null) barBtn.Click += (_, _) => SwitchType(ChartType.Bar);
-        if (scatterBtn != null) scatterBtn.Click += (_, _) => SwitchType(ChartType.Scatter);
-        if (pieBtn != null) pieBtn.Click += (_, _) => SwitchType(ChartType.Pie);
-
-        if (gridBtn != null)
-        {
-            gridBtn.Click += (_, _) =>
-            {
-                if (Options != null)
-                {
-                    Options.ShowGrid = !Options.ShowGrid;
-                    this.FindControl<ChartCanvasControl>("CanvasControl")?.InvalidateVisual();
-                }
-            };
-        }
-
-        if (copyBtn != null)
-        {
-            copyBtn.Click += async (_, _) =>
-            {
-                if (Options != null) await ChartExportService.CopyCsvToClipboardAsync(Options);
-            };
-        }
+        if (Canvas is { } canvas) canvas.ValueClicked += (_, e) => ValueClicked?.Invoke(this, e);
+        Bind("LineTypeBtn", () => SwitchType(ChartType.Line));
+        Bind("AreaTypeBtn", () => SwitchType(ChartType.Area));
+        Bind("BarTypeBtn", () => SwitchType(ChartType.Bar));
+        Bind("ScatterTypeBtn", () => SwitchType(ChartType.Scatter));
+        Bind("PieTypeBtn", () => SwitchType(ChartType.Pie));
+        Bind("GridToggleBtn", () => { if (Options != null) { ViewState.OverrideShowGrid = !ViewState.EffectiveShowGrid(Options); Canvas?.InvalidateVisual(); } });
     }
+
+    private void Bind(string name, Action act) { if (Find<Button>(name) is { } b) b.Click += (_, _) => act(); }
 
     public void ApplyOptions()
     {
         var opts = Options;
         if (opts == null) return;
-
-        var canvas = this.FindControl<ChartCanvasControl>("CanvasControl");
-        if (canvas != null) { canvas.Options = opts; canvas.InvalidateVisual(); }
-
-        var titleBlock = this.FindControl<TextBlock>("ChartTitleText");
-        if (titleBlock != null)
+        var canvas = Canvas;
+        if (canvas != null)
         {
-            titleBlock.Text = string.IsNullOrWhiteSpace(opts.Title) ? $"{opts.Type} Chart" : opts.Title;
+            canvas.Options = opts;
+            canvas.ViewState = ViewState;
+            if (opts.Height > 0) canvas.Height = Math.Max(canvas.MinHeight, opts.Height);
+            canvas.InvalidateVisual();
         }
-
-        var statsBorder = this.FindControl<Border>("StatsPillBorder");
-        var statsBlock = this.FindControl<TextBlock>("StatsSummaryText");
-        if (statsBlock != null && statsBorder != null)
-        {
-            statsBorder.IsVisible = opts.ShowStats && opts.Series.Count > 0;
-            if (statsBorder.IsVisible)
-            {
-                var total = opts.Series.Sum(s => s.Points.Count);
-                statsBlock.Text = $"Min: {opts.Series.Min(s => s.MinY):0.##} • Max: {opts.Series.Max(s => s.MaxY):0.##} • Avg: {opts.Series.Average(s => s.AvgY):0.##} • N: {total}";
-            }
-        }
-
-        UpdateIcon();
+        UpdateHeader();
+        ApplyLegend(opts);
     }
 
     private void SwitchType(ChartType newType)
     {
         if (Options == null) return;
-        Options.Type = newType;
-
-        var titleBlock = this.FindControl<TextBlock>("ChartTitleText");
-        if (titleBlock != null && string.IsNullOrWhiteSpace(Options.Title))
-        {
-            titleBlock.Text = $"{newType} Chart";
-        }
-
-        UpdateIcon();
-        this.FindControl<ChartCanvasControl>("CanvasControl")?.InvalidateVisual();
+        ViewState.OverrideType = newType;
+        UpdateHeader();
+        ApplyLegend(Options);
+        Canvas?.InvalidateVisual();
     }
 
-    private void UpdateIcon()
+    private void UpdateHeader()
     {
-        var icon = this.FindControl<MaterialIcon>("HeaderChartIcon");
-        if (icon == null || Options == null) return;
-
-        icon.Kind = Options.Type switch
+        var opts = Options;
+        if (opts == null) return;
+        var effectiveType = ViewState.EffectiveType(opts);
+        var title = string.IsNullOrWhiteSpace(opts.Title) ? $"{effectiveType} Chart" : opts.Title;
+        var stats = opts.ShowStats ? ChartStatistics.Of(opts)?.ToString() : null;
+        var icon = effectiveType switch
         {
             ChartType.Line => MaterialIconKind.ChartLine,
             ChartType.Area => MaterialIconKind.ChartAreaspline,
@@ -132,5 +104,31 @@ public partial class InteractiveChartControl : UserControl
             ChartType.Pie or ChartType.Donut => MaterialIconKind.ChartPie,
             _ => MaterialIconKind.ChartLine
         };
+        Find<VisualChromeControl>("Chrome")?.SetHeader(title, opts.Subtitle, stats, opts.Notice, icon);
+    }
+
+    private void ApplyLegend(ChartOptions opts)
+    {
+        var panel = Find<ItemsControl>("SeriesLegendPanel");
+        if (panel == null) return;
+        panel.Items.Clear();
+        var show = opts.ShowLegend && ViewState.EffectiveType(opts) is not (ChartType.Pie or ChartType.Donut);
+        panel.IsVisible = show;
+        Find<VisualChromeControl>("Chrome")?.SetFooter(show ? panel : null);
+        if (!show) return;
+
+        int drawn = 0;
+        foreach (var series in opts.Series.Where(s => s.Points.Count > 0))
+        {
+            var color = ChartPaletteService.ParseColor(string.IsNullOrEmpty(series.Color) ? ChartPaletteService.GetSeriesColor(drawn++) : series.Color);
+            panel.Items.Add(new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Spacing = 5, Margin = new Thickness(0, 0, 14, 2),
+                Children = {
+                    new Border { Width = 10, Height = 10, CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(color), VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = series.Name, FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center }
+                }
+            });
+        }
     }
 }

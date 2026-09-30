@@ -1,5 +1,8 @@
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.*;
 import jdk.jshell.*;
 
 /**
@@ -8,40 +11,156 @@ import jdk.jshell.*;
  */
 public class FryKernel {
     private static JShell jshell;
-    private static String currentRequestId = null;
+    private static volatile String currentRequestId = null;
     private static int executionCount = 0;
     private static final PrintStream protocolOut = System.out;
-    private static final ByteArrayOutputStream snippetOutput = new ByteArrayOutputStream();
+    private static final SnippetOutputStream snippetOutStream = new SnippetOutputStream();
+    private static final PrintStream snippetPs = new PrintStream(snippetOutStream, true, StandardCharsets.UTF_8);
+    private static final BlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    private static final Map<String, String> displayOwners = new ConcurrentHashMap<>();
+
+    private static class SnippetOutputStream extends OutputStream {
+        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        @Override
+        public synchronized void write(int b) {
+            if (b == '\n') {
+                flushLine();
+            } else {
+                buffer.write(b);
+            }
+        }
+
+        @Override
+        public synchronized void write(byte[] b, int off, int len) {
+            for (int i = off; i < off + len; i++) {
+                if (b[i] == '\n') {
+                    flushLine();
+                } else {
+                    buffer.write(b[i]);
+                }
+            }
+        }
+
+        private void flushLine() {
+            String line = buffer.toString(StandardCharsets.UTF_8);
+            buffer.reset();
+            processSnippetLine(line);
+        }
+
+        @Override
+        public synchronized void flush() {
+            // Lines are flushed on newline '\n' to prevent splitting long protocol payloads.
+        }
+
+        @Override
+        public synchronized void close() {
+            if (buffer.size() > 0) {
+                flushLine();
+            }
+        }
+    }
+
+    private static synchronized void processSnippetLine(String line) {
+        String trimmed = line.trim();
+        if (trimmed.startsWith("__FRY_DISPLAY__ ")) {
+            String payload = trimmed.substring("__FRY_DISPLAY__ ".length()).trim();
+            handleDisplayPayload(payload);
+            return;
+        }
+        int markerIdx = line.indexOf("__FRY_DISPLAY__ ");
+        if (markerIdx >= 0) {
+            String pre = line.substring(0, markerIdx);
+            String payload = line.substring(markerIdx + "__FRY_DISPLAY__ ".length()).trim();
+            if (!pre.isEmpty() && currentRequestId != null) {
+                sendStream(currentRequestId, "stdout", pre + "\n");
+            }
+            handleDisplayPayload(payload);
+            return;
+        }
+
+        if (currentRequestId != null && !line.isEmpty()) {
+            sendStream(currentRequestId, "stdout", line + "\n");
+        }
+    }
+
+    public static void handleDisplayPayload(String payload) {
+        try {
+            String trimmed = payload.trim();
+            if (!trimmed.startsWith("{")) return;
+
+            String displayId = null;
+            int atTrans = trimmed.indexOf("\"display_id\"");
+            if (atTrans >= 0) {
+                int colon = trimmed.indexOf(':', atTrans);
+                int q1 = trimmed.indexOf('"', colon);
+                int q2 = trimmed.indexOf('"', q1 + 1);
+                if (q1 >= 0 && q2 > q1) {
+                    displayId = trimmed.substring(q1 + 1, q2);
+                }
+            }
+
+            String targetCellId = currentRequestId;
+            if (trimmed.contains("\"type\":\"display\"") && displayId != null && targetCellId != null) {
+                displayOwners.put(displayId, targetCellId);
+            } else if (displayId != null && targetCellId == null) {
+                targetCellId = displayOwners.get(displayId);
+            }
+
+            String toSend = trimmed;
+            if (targetCellId != null) {
+                toSend = "{\"id\":\"" + targetCellId + "\"," + trimmed.substring(1);
+            }
+            protocolOut.println(toSend);
+            protocolOut.flush();
+        } catch (Exception ex) {
+            System.err.println("[FryKernel] error handling display: " + ex);
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         String version = System.getProperty("java.version");
         String javaHome = System.getProperty("java.home");
         String javaExe = javaHome + File.separator + "bin" + File.separator + "java";
 
-        PrintStream snippetPs = new PrintStream(snippetOutput, true);
+        String kernelDir = null;
+        for (int i = 0; i < args.length; i++) {
+            if ("--kernel-dir".equals(args[i]) && i + 1 < args.length) {
+                kernelDir = args[i + 1];
+            } else if ("--cwd".equals(args[i]) && i + 1 < args.length) {
+                try {
+                    System.setProperty("user.dir", args[i + 1]);
+                } catch (Exception ignored) {}
+            }
+        }
+
         jshell = JShell.builder().out(snippetPs).err(snippetPs).build();
 
         // Default imports
         evalSnippet("import java.util.*;");
         evalSnippet("import java.util.stream.*;");
         evalSnippet("import java.io.*;");
+        evalSnippet("import java.nio.file.*;");
 
-        // Display queue helper
-        evalSnippet("""
-        class FryDisplay {
-            public static final List<Object> pending = new ArrayList<>();
-            public static void show(Object obj) { pending.add(obj); }
+        // Load unified Display.java
+        File displayFile = kernelDir != null ? new File(kernelDir, "Display.java") : new File("Display.java");
+        if (!displayFile.exists()) {
+            File cand = new File(System.getProperty("user.dir", "."), "Display.java");
+            if (cand.exists()) displayFile = cand;
         }
-        class Display {
-            public static <T> T dump(T obj) { FryDisplay.show(obj); return obj; }
-            public static <T> T dump(String title, T obj) { FryDisplay.show(obj); return obj; }
-            public static void table(Object obj) { FryDisplay.show(obj); }
-            public static void table(String title, Object obj) { FryDisplay.show(obj); }
-            public static void show(Object obj) { FryDisplay.show(obj); }
+        if (displayFile.exists()) {
+            try {
+                String displayCode = Files.readString(displayFile.toPath());
+                evalSnippet(displayCode);
+            } catch (Exception e) {
+                System.err.println("[FryKernel] Failed loading Display.java: " + e);
+            }
+        } else {
+            System.err.println("[FryKernel] Warning: Display.java not found at " + displayFile.getAbsolutePath());
         }
-        """);
-        evalSnippet("void display(Object obj) { FryDisplay.show(obj); }");
-        evalSnippet("void dump(Object obj) { FryDisplay.show(obj); }");
+
+        evalSnippet("void display(Object obj) { Display.show(obj); }");
+        evalSnippet("void dump(Object obj) { Display.show(obj); }");
 
         // JSON serializer helper
         evalSnippet("""
@@ -106,11 +225,32 @@ public class FryKernel {
             "executable", javaExe
         ));
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-            if (line.isEmpty()) continue;
+        // Background stdin reader: dispatches events immediately, queues execute/variables requests
+        Thread readerThread = new Thread(() -> {
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+                    Map<String, Object> msg = parseJsonMap(line);
+                    String type = (String) msg.get("type");
+                    if ("event".equals(type)) {
+                        handleEvent(msg, line);
+                    } else if ("shutdown".equals(type)) {
+                        System.exit(0);
+                    } else {
+                        messageQueue.put(line);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }, "fry-stdin-reader");
+        readerThread.setDaemon(true);
+        readerThread.start();
+
+        while (true) {
+            String line = messageQueue.take();
             handleMessage(line);
         }
     }
@@ -144,10 +284,32 @@ public class FryKernel {
         }
     }
 
+    private static void handleEvent(Map<String, Object> msg, String jsonLine) {
+        String id = (String) msg.get("id");
+        currentRequestId = id;
+        try {
+            String escaped = escapeJavaString(jsonLine);
+            jshell.eval("Display.deliverEventLine(\"" + escaped + "\");");
+            snippetPs.flush();
+        } catch (Exception ex) {
+            System.err.println("[FryKernel] handleEvent error: " + ex);
+        } finally {
+            currentRequestId = null;
+        }
+    }
+
+    private static String escapeJavaString(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
     private static void handleExecute(String id, String code, String cell) {
         currentRequestId = id;
         executionCount++;
-        snippetOutput.reset();
 
         SourceCodeAnalysis sca = jshell.sourceCodeAnalysis();
         String remaining = code;
@@ -183,14 +345,9 @@ public class FryKernel {
             remaining = info.remaining();
         }
 
-        // Check for rich displays queued by display(...)
-        checkAndSendDisplays(id);
+        snippetPs.flush();
 
-        // Flush any output captured
-        String captured = snippetOutput.toString();
-        if (!captured.isEmpty()) {
-            sendStream(id, "stdout", captured);
-        } else if (!hasError && lastValue != null) {
+        if (!hasError && lastValue != null) {
             sendStream(id, "stdout", lastValue + "\n");
         }
 
@@ -201,60 +358,6 @@ public class FryKernel {
         }
 
         currentRequestId = null;
-    }
-
-    private static void checkAndSendDisplays(String id) {
-        try {
-            var sizeEv = jshell.eval("FryDisplay.pending.size()");
-            if (!sizeEv.isEmpty() && sizeEv.get(0).value() != null) {
-                int count = Integer.parseInt(sizeEv.get(0).value());
-                for (int i = 0; i < count; i++) {
-                    var itemEv = jshell.eval("__FryJson.toJson(FryDisplay.pending.get(" + i + "))");
-                    if (!itemEv.isEmpty() && itemEv.get(0).value() != null) {
-                        String raw = unquote(itemEv.get(0).value());
-                        Object parsed = new JsonParser(raw).parse();
-                        Map<String, Object> bundle = new LinkedHashMap<>();
-                        if (parsed instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map<?,?> firstRow) {
-                            List<String> cols = new ArrayList<>();
-                            for (Object k : ((Map<?,?>) firstRow).keySet()) cols.add(String.valueOf(k));
-                            List<List<Object>> rows = new ArrayList<>();
-                            for (Object r : list) {
-                                if (r instanceof Map<?,?> rowMap) {
-                                    List<Object> row = new ArrayList<>();
-                                    for (String c : cols) row.add(rowMap.get(c));
-                                    rows.add(row);
-                                }
-                            }
-                            bundle.put("application/vnd.fry.table+json", Map.of(
-                                "title", "Table",
-                                "columns", cols,
-                                "numeric", cols.stream().map(c -> false).toList(),
-                                "rows", rows,
-                                "totalRows", rows.size(),
-                                "totalColumns", cols.size()
-                            ));
-                        } else if (parsed instanceof List<?> list && !list.isEmpty()) {
-                            List<List<Object>> rows = new ArrayList<>();
-                            int idx = 0;
-                            for (Object item : list) {
-                                rows.add(List.of(idx++, item != null ? item : "null"));
-                            }
-                            bundle.put("application/vnd.fry.table+json", Map.of(
-                                "title", "List[" + list.size() + "]",
-                                "columns", List.of("Index", "Value"),
-                                "numeric", List.of(true, false),
-                                "rows", rows,
-                                "totalRows", rows.size(),
-                                "totalColumns", 2
-                            ));
-                        }
-                        bundle.put("text/plain", raw);
-                        send(Map.of("type", "display", "id", id, "data", bundle, "metadata", Map.of()));
-                    }
-                }
-                jshell.eval("FryDisplay.pending.clear();");
-            }
-        } catch (Exception ignored) {}
     }
 
     private static void handleVariables(String id) {

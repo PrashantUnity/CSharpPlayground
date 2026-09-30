@@ -11,13 +11,14 @@ public class BarChartRenderer : ChartRendererBase
 {
     public override void Render(DrawingContext context, Rect bounds, ChartOptions options)
     {
-        var plotArea = GetPlotArea(bounds);
-        GetDataBounds(options, out var minX, out var maxX, out var minY, out var maxY);
+        var plotArea = GetPlotArea(bounds, options);
 
-        // For bar charts, ensure baseline at 0
-        if (minY > 0) minY = 0;
+        // Bars grow from zero, so zero is always on the axis: above bars of negative values too.
+        var range = ChartDataRange.Of(options, zeroBaseline: true);
+        var (minX, maxX, minY, maxY, _) = range;
 
-        DrawGridAndAxes(context, plotArea, minX, maxX, minY, maxY, options.ShowGrid);
+        DrawGridAndAxes(context, plotArea, range, options.ShowGrid);
+        DrawAxisTitles(context, bounds, plotArea, options);
 
         var allSeries = options.Series.Where(s => s.Points.Count > 0).ToList();
         if (allSeries.Count == 0) return;
@@ -30,34 +31,34 @@ public class BarChartRenderer : ChartRendererBase
         double usableGroupWidth = slotWidth - groupPadding;
         double singleBarWidth = Math.Max(2, Math.Min(45, usableGroupWidth / allSeries.Count));
 
-        double zeroY = ToCanvasY(0, minY, maxY, plotArea);
-
-        for (int catIdx = 0; catIdx < categoryCount; catIdx++)
+        double zeroY = ToCanvasY(Math.Clamp(0, minY, maxY), minY, maxY, plotArea);
+        using (ClipToPlot(context, plotArea))
         {
-            double slotLeft = plotArea.Left + catIdx * slotWidth + (groupPadding / 2.0);
-
             for (int seriesIdx = 0; seriesIdx < allSeries.Count; seriesIdx++)
             {
+                // A missing value leaves its place empty; with more bars than pixels, a column shows its tallest.
                 var series = allSeries[seriesIdx];
-                if (catIdx >= series.Points.Count) continue;
+                foreach (var catIdx in ChartPoints.ForBars(series.Points, slotWidth))
+                {
+                    var point = series.Points[catIdx];
+                    var colorStr = !string.IsNullOrEmpty(point.CustomColor)
+                        ? point.CustomColor
+                        : (!string.IsNullOrEmpty(series.Color) ? series.Color : ChartPaletteService.GetSeriesColor(seriesIdx));
 
-                var point = series.Points[catIdx];
-                var colorStr = !string.IsNullOrEmpty(point.CustomColor)
-                    ? point.CustomColor
-                    : (!string.IsNullOrEmpty(series.Color) ? series.Color : ChartPaletteService.GetSeriesColor(seriesIdx));
+                    var baseColor = ChartPaletteService.ParseColor(colorStr);
+                    var barBrush = new SolidColorBrush(baseColor);
 
-                var baseColor = ChartPaletteService.ParseColor(colorStr);
-                var barBrush = new SolidColorBrush(baseColor);
+                    double slotLeft = plotArea.Left + catIdx * slotWidth + (groupPadding / 2.0);
+                    double barX = slotLeft + (seriesIdx * singleBarWidth);
+                    double targetY = ToCanvasY(point.Y, minY, maxY, plotArea);
 
-                double barX = slotLeft + (seriesIdx * singleBarWidth);
-                double targetY = ToCanvasY(point.Y, minY, maxY, plotArea);
+                    double barTop = Math.Min(zeroY, targetY);
+                    double barHeight = Math.Max(2, Math.Abs(targetY - zeroY));
 
-                double barTop = Math.Min(zeroY, targetY);
-                double barHeight = Math.Max(2, Math.Abs(targetY - zeroY));
-
-                var barRect = new Rect(barX, barTop, Math.Max(1, singleBarWidth - 2), barHeight);
-                var rounded = new RoundedRect(barRect, 3, 3, 0, 0);
-                context.DrawRectangle(barBrush, null, rounded);
+                    var barRect = new Rect(barX, barTop, Math.Max(1, singleBarWidth - 2), barHeight);
+                    var rounded = new RoundedRect(barRect, 3, 3, 0, 0);
+                    context.DrawRectangle(barBrush, null, rounded);
+                }
             }
         }
 
@@ -78,7 +79,7 @@ public class BarChartRenderer : ChartRendererBase
 
     public override ChartHitTestResult? HitTest(Point pointerPosition, Rect bounds, ChartOptions options)
     {
-        var plotArea = GetPlotArea(bounds);
+        var plotArea = GetPlotArea(bounds, options);
         if (!plotArea.Contains(pointerPosition)) return null;
 
         var allSeries = options.Series.Where(s => s.Points.Count > 0).ToList();
@@ -91,8 +92,7 @@ public class BarChartRenderer : ChartRendererBase
         int targetCat = (int)((pointerPosition.X - plotArea.Left) / slotWidth);
         if (targetCat < 0 || targetCat >= categoryCount) return null;
 
-        GetDataBounds(options, out _, out _, out var minY, out var maxY);
-        if (minY > 0) minY = 0;
+        GetDataBounds(options, out _, out _, out var minY, out var maxY, zeroBaseline: true);
 
         double groupPadding = slotWidth * 0.2;
         double usableGroupWidth = slotWidth - groupPadding;
@@ -108,12 +108,14 @@ public class BarChartRenderer : ChartRendererBase
             if (pointerPosition.X >= barX && pointerPosition.X <= barX + singleBarWidth)
             {
                 var point = series.Points[targetCat];
+                if (!double.IsFinite(point.Y)) return null; // a gap has no bar to point at
                 double targetY = ToCanvasY(point.Y, minY, maxY, plotArea);
                 return new ChartHitTestResult(point, series, new Point(barX + singleBarWidth / 2, targetY));
             }
         }
 
         // Fallback: Return primary series point in this category
+        if (targetCat >= allSeries[0].Points.Count || !double.IsFinite(allSeries[0].Points[targetCat].Y)) return null;
         var fallbackPoint = allSeries[0].Points[targetCat];
         double fallbackY = ToCanvasY(fallbackPoint.Y, minY, maxY, plotArea);
         return new ChartHitTestResult(fallbackPoint, allSeries[0], new Point(slotLeft + singleBarWidth / 2, fallbackY));

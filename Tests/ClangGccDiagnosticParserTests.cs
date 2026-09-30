@@ -107,4 +107,23 @@ Segmentation fault: 11
         Assert.Equal("SIGSEGV", diag.Id);
         Assert.Contains("invalid memory access", diag.Message);
     }
+
+    [Fact]
+    public void MissingIostreamHeader_IsNotExtractedAsPackageDependency()
+    {
+        const string output = @"
+C:\Users\prashant\Downloads\CStudio\script_190947.cpp:2:10: fatal error: 'iostream' file not found
+    2 | #include <iostream>
+      |          ^~~~~~~~~~
+1 error generated.
+";
+        var result = _parser.Parse(output, @"C:\Users\prashant\Downloads\CStudio\script_190947.cpp");
+
+        Assert.Single(result.Diagnostics);
+        var diag = result.Diagnostics[0];
+        Assert.Equal(2, diag.Line);
+        Assert.Equal(10, diag.Column);
+        Assert.Contains("'iostream' file not found", diag.Message);
+        Assert.Null(result.MissingDependency);
+    }
 }

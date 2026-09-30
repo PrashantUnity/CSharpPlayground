@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChartSpec",
+  "x-mimeType": "application/vnd.fry.chart.v1+json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": [
+        "line",
+        "area",
+        "bar",
+        "scatter",
+        "pie",
+        "donut",
+        "histogram"
+      ]
+    },
+    "xAxis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "yAxis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "legend": {
+      "type": "object",
+      "properties": {
+        "show": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "grid": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Grid lines behind the data (default: on, except for pie and donut charts)."
+    },
+    "showPoints": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "A dot on every value of a line or area, where there is room for them (default: when no series has more than 40 values)."
+    },
+    "showStats": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "The min, max, average and count summary in the header (default: on)."
+    },
+    "bins": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "How many bars a histogram groups its values into (default: 10, at most 50)."
+    },
+    "color": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The colour of the first series; the others follow the studio's palette (a CSS colour, e.g. #4ec9b0)."
+    },
+    "series": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Names the series in click events."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lineWidth": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "The line's width in pixels (default: 2)."
+          },
+          "x": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "y": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "labels": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "colors": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "A colour for each value (a bar, point or slice); null keeps the series colour."
+          },
+          "ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Names each value in click events."
+          },
+          "values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "A histogram's samples: the studio counts them into bins."
+          }
+        },
+        "additionalProperties": false,
+        "description": "One series of a chart, as columns. ChartSeriesSpec.Y holds the values; ChartSeriesSpec.X their positions (the index when left out); ChartSeriesSpec.Labels a name for each value (categories on the x axis, slice names in a pie). Every column given must be as long as ChartSeriesSpec.Y. A histogram's series has ChartSeriesSpec.Values instead: the samples to count."
+      }
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "subtitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "A line under the title."
+    },
+    "width": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The widest the visual is drawn, in pixels; it still fits narrower space. Left out, it takes the width there is."
+    },
+    "height": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The drawing's height in pixels, under the header. Left out, the studio picks one for the kind."
+    }
+  },
+  "additionalProperties": false,
+  "description": "A 2D chart (application/vnd.fry.chart.v1+json): one or more series drawn as lines, areas, bars, points or slices. Series are columns of values, as in a Plotly trace; a missing value (null) is a gap."
+}

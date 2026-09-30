@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
@@ -12,8 +13,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 /// Draws a trie as a tree of letters. The live trie is re-read at every step, so inserted letters appear (outlined as
 /// new), word ends are green with the word underneath, and <c>path:</c> lights up the letters walked so far.
 /// </summary>
-public sealed class TrieTracker
+public sealed class TrieTracker : IVisualSource
 {
+    /// <summary>The visualizer as a spec, as every language describes one.</summary>
+    public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
     public const int MaxNodes = 300;
     private const string RootId = "trie_root";
 

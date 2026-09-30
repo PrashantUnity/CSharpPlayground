@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
@@ -44,8 +46,6 @@ public class CodeStudioResultsTabTests : IDisposable
     }
 
     [Theory]
-    [InlineData(CellOutputKind.Visualizer)]
-    [InlineData(CellOutputKind.Chart)]
     [InlineData(CellOutputKind.Control)]
     [InlineData(CellOutputKind.Image)]
     [InlineData(CellOutputKind.Html)]
@@ -57,6 +57,68 @@ public class CodeStudioResultsTabTests : IDisposable
         studio.RichOutputs.Add(new RichCellOutput { Kind = kind });
 
         Assert.False(studio.HasNoResults);
+    }
+
+    [Theory]
+    [InlineData(VisualFamily.Chart)]
+    [InlineData(VisualFamily.Plot3D)]
+    [InlineData(VisualFamily.Visualizer)]
+    public void AVisual_HidesTheHint(VisualFamily family)
+    {
+        var studio = Studio();
+
+        studio.RichOutputs.Add(VisualOutputs.FromSpec(SampleSpecs.Of(family, "shown")));
+
+        Assert.False(studio.HasNoResults);
+    }
+
+    // A chart in Code Studio's Results was blank: Display.Chart built its control on the script's thread, where it
+    // couldn't load. The output is now the chart's spec, which the Results view draws on the UI thread.
+    [Fact]
+    public async Task RunningAScriptThatShowsAChart_PutsTheChartInResults()
+    {
+        var studio = Studio(new ScriptDocumentItem { Title = "Chart", Code = "Display.Chart(new[] { 1, 4, 9 }, title: \"Squares\");" });
+
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        var chart = Assert.Single(studio.RichOutputs, o => o.IsVisualKind);
+        Assert.Equal("Squares", chart.ChartSpec().Title);
+        Assert.Null(chart.InteractiveControl);
+        Assert.False(studio.HasNoResults);
+        Assert.Equal(0, studio.SelectedBottomTabIndex); // Results, as after a program in any other language
+    }
+
+    [Fact]
+    public async Task RunningAProgramThatShowsAChart_PutsTheChartInResults()
+    {
+        var studio = Studio(new ScriptDocumentItem
+        {
+            Title = "Program",
+            Code = "public static class Program { public static void Main() { Display.Chart(new[] { 1, 4, 9 }, title: \"From Main\"); } }"
+        });
+        studio.SelectedLanguageModeIndex = 1; // C# Program
+
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        Assert.True(studio.RichOutputs.Any(o => o.IsVisualKind), studio.ConsoleOutput);
+        Assert.Equal("From Main", Assert.Single(studio.RichOutputs, o => o.IsVisualKind).ChartSpec().Title);
+        Assert.Equal(0, studio.SelectedBottomTabIndex);
+    }
+
+    [Fact]
+    public async Task ASpecWithAMistake_IsReportedInTheTerminal_WithWhereItIs()
+    {
+        var studio = Studio(new ScriptDocumentItem
+        {
+            Title = "Mistake",
+            Code = "Display.Show(new ChartSpec { Series = { new ChartSeriesSpec { X = new() { 1, 2 }, Y = new() { 1, 2, 3 } } } });"
+        });
+
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        Assert.Contains("⚠️", studio.ConsoleOutput);
+        Assert.Contains("$.series[0].x", studio.ConsoleOutput);
+        Assert.True(studio.HasNoResults);
     }
 
     [Theory]
@@ -88,7 +150,7 @@ public class CodeStudioResultsTabTests : IDisposable
         var changes = new List<string?>();
         studio.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
 
-        studio.RichOutputs.Add(new RichCellOutput { Kind = CellOutputKind.Visualizer });
+        studio.RichOutputs.Add(VisualOutputs.FromSpec(SampleSpecs.Visualizer()));
         Assert.Contains(nameof(CSharpCodeStudioViewModel.HasNoResults), changes);
 
         changes.Clear();
@@ -103,7 +165,7 @@ public class CodeStudioResultsTabTests : IDisposable
         var withResults = await _storage.CreateNewScriptAsync("With a visualizer");
         var withoutResults = await _storage.CreateNewScriptAsync("Nothing drawn");
         var studio = Studio(withResults);
-        studio.RichOutputs.Add(new RichCellOutput { Kind = CellOutputKind.Visualizer });
+        studio.RichOutputs.Add(VisualOutputs.FromSpec(SampleSpecs.Visualizer()));
 
         await studio.UpdateActiveScriptAsync(withoutResults);
         Assert.True(studio.HasNoResults);

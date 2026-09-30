@@ -371,4 +371,132 @@ public class DapClientTests
 
         await serverTask;
     }
+
+    [Theory]
+    [InlineData(101, 101)]
+    [InlineData(1, 1)]
+    [InlineData(0, 0)]
+    public async Task DapDebugSession_ReportsHowTheProgramExited(int sent, int expected)
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        client.Start();
+        await using var session = new DapDebugSession("rust", client);
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>();
+        session.Terminated += args => terminated.TrySetResult(args);
+
+        // The adapter says how the program ended, then that debugging is over (the order the DAP specification gives).
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 1, type = "event", @event = "exited", body = new { exitCode = sent } }));
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 2, type = "event", @event = "terminated", body = new { } }));
+
+        var args = await terminated.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(expected, args.ExitCode);
+        Assert.False(args.WasCancelled);
+        Assert.Equal(DebugSessionState.Terminated, session.State);
+    }
+
+    [Fact]
+    public async Task DapDebugSession_ATerminatedEventAloneCarriesNoExitCode_SoItIsZero()
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        client.Start();
+        await using var session = new DapDebugSession("rust", client);
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>();
+        session.Terminated += args => terminated.TrySetResult(args);
+
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 1, type = "event", @event = "terminated", body = new { } }));
+
+        Assert.Equal(0, (await terminated.Task.WaitAsync(TimeSpan.FromSeconds(5))).ExitCode);
+    }
+
+    [Fact]
+    public async Task DapDebugSession_AnExitedEventWithoutACode_IsZero_AndTheLaterTerminatedEventChangesNothing()
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        client.Start();
+        await using var session = new DapDebugSession("rust", client);
+        var seen = new List<DebugTerminatedEventArgs>();
+        var first = new TaskCompletionSource<bool>();
+        session.Terminated += args => { seen.Add(args); first.TrySetResult(true); };
+
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 1, type = "event", @event = "exited", body = new { } }));
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 2, type = "event", @event = "terminated", body = new { } }));
+        await first.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.Delay(100);
+
+        var only = Assert.Single(seen);
+        Assert.Equal(0, only.ExitCode);
+    }
+
+    [Fact]
+    public async Task DapClient_HandlesEventsInTheOrderTheyArrive_EvenWhenAHandlerIsSlow()
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        var seen = new List<int>();
+        var done = new TaskCompletionSource<bool>();
+        client.EventReceived += async evt =>
+        {
+            var number = evt.Body!.Value.GetProperty("n").GetInt32();
+            if (number % 7 == 0) await Task.Delay(15);   // a slow one must not let later ones overtake it
+            lock (seen) seen.Add(number);
+            if (number == 49) done.TrySetResult(true);
+        };
+        client.Start();
+
+        for (var n = 0; n < 50; n++)
+        {
+            await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = n + 1, type = "event", @event = "output", body = new { n } }));
+        }
+
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(Enumerable.Range(0, 50), seen);
+    }
+
+    [Fact]
+    public async Task DapClient_ReportsTheDisconnectOnlyAfterEveryEarlierEventIsHandled()
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        var log = new List<string>();
+        var disconnected = new TaskCompletionSource<bool>();
+        client.EventReceived += async evt =>
+        {
+            await Task.Delay(50);
+            lock (log) log.Add(evt.Event);
+        };
+        client.Disconnected += () =>
+        {
+            lock (log) log.Add("disconnected");
+            disconnected.TrySetResult(true);
+        };
+        client.Start();
+
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 1, type = "event", @event = "exited", body = new { exitCode = 3 } }));
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 2, type = "event", @event = "terminated", body = new { } }));
+        serverOut.Dispose(); // the adapter goes away
+
+        await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(["exited", "terminated", "disconnected"], log);
+    }
+
+    [Fact]
+    public async Task DapDebugSession_AnAdapterThatExitsAndThenDisconnects_KeepsTheProgramsExitCode()
+    {
+        var (clientIn, clientOut, _, serverOut) = CreateDuplexStreams();
+        await using var client = new DapClient(clientIn, clientOut);
+        client.Start();
+        await using var session = new DapDebugSession("rust", client);
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>();
+        session.Terminated += args => terminated.TrySetResult(args);
+
+        // lldb-dap says the program exited, then quits: the disconnect (-1) must not replace the exit code.
+        await WriteDapMessageAsync(serverOut, JsonSerializer.Serialize(new { seq = 1, type = "event", @event = "exited", body = new { exitCode = 101 } }));
+        serverOut.Dispose();
+
+        Assert.Equal(101, (await terminated.Task.WaitAsync(TimeSpan.FromSeconds(5))).ExitCode);
+    }
 }

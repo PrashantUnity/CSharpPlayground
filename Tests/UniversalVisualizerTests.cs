@@ -6,6 +6,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using Xunit;
+using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 
@@ -182,7 +183,7 @@ public class UniversalVisualizerTests
         }
         Assert.NotNull(emittedBars);
         Assert.Equal(CellOutputKind.Visualizer, emittedBars.Kind);
-        Assert.Equal(VisualizerKind.Bars, emittedBars.VisualizerOptions?.Kind);
+        Assert.Equal(VisualizerKind.Bars, emittedBars.VisualizerSpec().Kind);
 
         RichCellOutput? emittedBoard = null;
         using (InteractiveDisplayContext.EnterScope(o => emittedBoard = o))
@@ -192,7 +193,7 @@ public class UniversalVisualizerTests
         }
         Assert.NotNull(emittedBoard);
         Assert.Equal(CellOutputKind.Visualizer, emittedBoard.Kind);
-        Assert.Equal(VisualizerKind.Board, emittedBoard.VisualizerOptions?.Kind);
+        Assert.Equal(VisualizerKind.Board, emittedBoard.VisualizerSpec().Kind);
 
         RichCellOutput? emittedCanvas = null;
         using (InteractiveDisplayContext.EnterScope(o => emittedCanvas = o))
@@ -201,6 +202,6 @@ public class UniversalVisualizerTests
         }
         Assert.NotNull(emittedCanvas);
         Assert.Equal(CellOutputKind.Visualizer, emittedCanvas.Kind);
-        Assert.Equal(VisualizerKind.Canvas, emittedCanvas.VisualizerOptions?.Kind);
+        Assert.Equal(VisualizerKind.Canvas, emittedCanvas.VisualizerSpec().Kind);
     }
 }
