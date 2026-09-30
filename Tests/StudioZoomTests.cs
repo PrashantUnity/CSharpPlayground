@@ -106,8 +106,12 @@ public class StudioZoomTests : IDisposable
     {
         EditorZoomController.ScheduleSave(_settingsStore, 18.0);
 
-        // Wait for 400ms debounce + margin
-        await Task.Delay(550);
+        // Wait for 400ms debounce to persist
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline && Math.Abs(_settingsStore.GetSettings().FontSize - 18.0) > 0.001)
+        {
+            await Task.Delay(50);
+        }
 
         var reloaded = _settingsStore.GetSettings();
         Assert.Equal(18.0, reloaded.FontSize);

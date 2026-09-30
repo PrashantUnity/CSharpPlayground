@@ -128,7 +128,12 @@ public sealed class VisualEventHub : IDisposable
         {
             var read = await stream.ReadAsync(line.AsMemory(length, 1), ct).ConfigureAwait(false);
             if (read == 0) return null;
-            if (line[length] == (byte)'\n') return line[..length];
+            if (line[length] == (byte)'\n')
+            {
+                var end = length;
+                if (end > 0 && line[end - 1] == (byte)'\r') end--;
+                return line[..end];
+            }
             length++;
         }
 

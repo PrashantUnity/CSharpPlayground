@@ -78,8 +78,9 @@ public class VisualEventsTests
         var chartCell = new Cell();
         await Run(kernel, "var order = new System.Collections.Concurrent.ConcurrentQueue<string>(); Display.Chart(new[] { 1, 2 }).OnClick(_ => order.Enqueue(\"callback\"));", chartCell);
 
-        var busy = Run(kernel, "System.Threading.Thread.Sleep(400); order.Enqueue(\"cell\");", new Cell());
-        await Task.Delay(100); // the cell is running now
+        var busyCell = new Cell();
+        var busy = Run(kernel, "Console.Write(\"started;\"); System.Threading.Thread.Sleep(400); order.Enqueue(\"cell\");", busyCell);
+        await WaitUntil(() => busyCell.Text.Contains("started")); // the cell is running and holding the lock now
         chartCell.Visual.Raise(ClickOn(0));
         await busy;
 

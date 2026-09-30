@@ -27,7 +27,7 @@ public class VisualSchemaTests
     [InlineData(VisualFamily.Visualizer)]
     public void TheCheckedInSchema_IsTheOneTheSpecTypesDescribe(VisualFamily family)
     {
-        var generated = VisualSchemas.Generate(family).ToJsonString(Indented) + "\n";
+        var generated = VisualSchemas.Generate(family).ToJsonString(Indented).ReplaceLineEndings("\n") + "\n";
         var path = Path.Combine(RepositoryPaths.Root, "docs", "visuals", "schema", VisualSchemas.FileName(family));
 
         if (Environment.GetEnvironmentVariable("FRY_UPDATE_SCHEMAS") == "1")

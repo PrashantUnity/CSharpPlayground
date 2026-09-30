@@ -145,12 +145,18 @@ public sealed class JavaDebuggerProvider : IDebuggerProvider, IDapAdapterRegistr
         var env = await JavaProcessEnvironment.ForAsync(_host, resolved.Toolchain, ct).ConfigureAwait(false);
 
         // Compile with -g (full debug symbols for locals, lines, and source)
-        var compileResult = await _host.RunAsync(javacPath, ["-g", "-d", outDir, "-encoding", "UTF-8", compileFile], TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+        var compileResult = await _host.RunAsync(javacPath, ["-g", "-d", outDir, "-encoding", "UTF-8", compileFile], TimeSpan.FromSeconds(60), ct).ConfigureAwait(false);
         if (compileResult.ExitCode != 0)
         {
             var parser = new JavaCompilerDiagnosticParser();
-            var parseResult = parser.Parse(compileResult.StandardOutput + "\n" + compileResult.StandardError, scriptFile);
-            throw new DebugCompilationException(parseResult.Diagnostics);
+            var output = compileResult.StandardOutput + "\n" + compileResult.StandardError;
+            var parseResult = parser.Parse(output, scriptFile);
+            var diags = parseResult.Diagnostics;
+            if (diags.Count == 0)
+            {
+                diags = [new DiagnosticItem { Message = string.IsNullOrWhiteSpace(output) ? $"javac failed with exit code {compileResult.ExitCode}" : output.Trim(), Severity = Microsoft.CodeAnalysis.DiagnosticSeverity.Error }];
+            }
+            throw new DebugCompilationException(diags);
         }
 
         var workingDir = Path.GetDirectoryName(scriptFile) ?? Directory.GetCurrentDirectory();

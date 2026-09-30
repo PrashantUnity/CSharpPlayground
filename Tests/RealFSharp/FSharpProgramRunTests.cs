@@ -77,7 +77,7 @@ public class FSharpProgramRunTests : IDisposable
         var result = await session.Completion.WaitAsync(Patience);
 
         Assert.Equal(0, result.ExitCode);
-        var joined = string.Join("\n", output);
+        var joined = string.Concat(output);
         Assert.Contains("Hello from F# run test!", joined);
         Assert.Contains("TOTAL=15", joined);
     }

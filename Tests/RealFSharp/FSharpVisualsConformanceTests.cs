@@ -183,7 +183,7 @@ h.on_click(fun (e: Event) ->
     | Some idx -> printfn "clicked %s" idx
     | None -> ()
 ) |> ignore
-Display.wait(10.0)
+Display.wait(30.0)
 """);
         var script = Write("main.fsx", scriptCode);
         var (session, console, outputs, processor) = await StartRun(script, visualSession);

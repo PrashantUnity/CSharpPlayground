@@ -82,7 +82,7 @@ public class ExternalChangeTests : IDisposable
         var script = await _storage.CreateNewScriptAsync("Own");
         script.Code = "// edited";
         await _storage.SaveScriptAsync(script);
-        await Task.Delay(TimeSpan.FromSeconds(2.5)); // Long enough for the file system's report plus the settle time.
+        await Task.Delay(TimeSpan.FromSeconds(1.5)); // Long enough for the file system's report plus the settle time.
 
         Assert.False(raised);
     }

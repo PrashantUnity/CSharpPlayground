@@ -102,17 +102,17 @@ public class NotebookExecutionKernel : INotebookKernel
     }
 
     // A cell's code as the next submission: the first, or one that continues from the state so far.
-    private Script<object> Submission(string code) =>
-        _currentState == null
-            ? CSharpScript.Create<object>(code, _scriptOptions, assemblyLoader: _assemblyLoader)
-            : _currentState.Script.ContinueWith<object>(code, _scriptOptions);
-
     private async Task<ScriptState<object>> RunSubmissionAsync(string code, CancellationToken ct)
     {
-        var script = await CompileAsync(Submission(code), ct);
-        return _currentState == null
+        var priorState = _currentState;
+        var submission = priorState == null
+            ? CSharpScript.Create<object>(code, _scriptOptions, assemblyLoader: _assemblyLoader)
+            : priorState.Script.ContinueWith<object>(code, _scriptOptions);
+
+        var script = await CompileAsync(submission, ct);
+        return priorState == null
             ? await script.RunAsync(cancellationToken: ct)
-            : await script.RunFromAsync(_currentState, cancellationToken: ct);
+            : await script.RunFromAsync(priorState, cancellationToken: ct);
     }
 
     public NotebookExecutionKernel()
@@ -251,7 +251,10 @@ public class NotebookExecutionKernel : INotebookKernel
                     {
                         var newState = await RunSubmissionAsync(cleanCode, ct);
 
-                        _currentState = newState;
+                        if (ReferenceEquals(executionLock, _executionLock) && !ct.IsCancellationRequested)
+                        {
+                            _currentState = newState;
+                        }
                         result.Success = true;
 
                         // Inspect return value for rich media or expression output

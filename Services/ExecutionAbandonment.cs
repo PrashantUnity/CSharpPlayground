@@ -16,7 +16,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services;
 /// </summary>
 public static class ExecutionAbandonment
 {
-    public static readonly TimeSpan GracePeriod = TimeSpan.FromSeconds(1);
+    public static readonly TimeSpan GracePeriod = TimeSpan.FromSeconds(3);
 
     /// <summary>
     /// Waits for <paramref name="task"/>, but gives up early if <paramref name="token"/> is

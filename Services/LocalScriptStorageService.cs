@@ -67,7 +67,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
     /// <summary>Raised (on a background thread) once a burst of changes made outside the studio has settled.</summary>
     public event Action? ExternalChangeDetected;
 
-    private const long OwnChangeEchoMilliseconds = 1500;
+    private const long OwnChangeEchoMilliseconds = 4000;
     private readonly object _watcherGate = new();
     private WorkspaceWatcher? _watcher;
     private bool _watchingEnabled;

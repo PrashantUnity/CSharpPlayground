@@ -66,7 +66,7 @@ public class VisualConformanceFixturesTests
             ["mime"] = visual.MimeType,
             ["spec"] = JsonNode.Parse(VisualJson.SerializeToUtf8Bytes(visual.Spec))
         };
-        return fixture.ToJsonString(new JsonSerializerOptions { WriteIndented = true, IndentSize = 2 }) + "\n";
+        return fixture.ToJsonString(new JsonSerializerOptions { WriteIndented = true, IndentSize = 2 }).ReplaceLineEndings("\n") + "\n";
     }
 
     /// <summary>

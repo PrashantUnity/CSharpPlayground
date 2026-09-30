@@ -101,6 +101,7 @@ public sealed class ExternalVisualSession : IVisualEventSink, IDisposable
             await foreach (var line in _events.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 await stream.WriteAsync(line).ConfigureAwait(false);
+                await stream.FlushAsync().ConfigureAwait(false);
             }
         }
         catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException or InvalidOperationException)
