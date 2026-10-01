@@ -90,6 +90,9 @@ internal static class Usage
               --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
+          about                  The About C# Code Studio dialog (AboutWindow).
+          update                 The Check for Updates dialog (UpdateDialogWindow).
+          app-window             The main application window (MainWindow) with macOS NativeMenu bar.
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)

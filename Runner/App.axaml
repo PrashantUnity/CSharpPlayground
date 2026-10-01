@@ -19,4 +19,13 @@
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <StyleInclude Source="avares://FrySharp/Material3ExpressiveStyles.axaml" />
     </Application.Styles>
+
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="About C# Code Studio" Click="AboutMenuItem_OnClick" />
+            <NativeMenuItem Header="Check for Updates..." Click="CheckForUpdatesMenuItem_OnClick" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="Settings..." Gesture="Meta+OemComma" Click="SettingsMenuItem_OnClick" />
+        </NativeMenu>
+    </NativeMenu.Menu>
 </Application>

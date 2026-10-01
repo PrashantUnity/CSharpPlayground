@@ -29,6 +29,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     // choices, studio environments and processes serve the Code Studio, the notebooks and the Hub.
     private readonly StudioLanguageServices _languages;
     public StudioLanguageServices Languages => _languages;
+    public IScriptStorageService StorageService => _storageService;
     private RoslynCompilerService? _compilerService;
     private ScriptExecutionEngine? _executionEngine;
 

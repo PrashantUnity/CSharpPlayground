@@ -33,6 +33,9 @@ try
         case "perf": PerfSnapshots.Run(options); break;
         case "server": StudioSnapshots.ServerStudio(options); break;
         case "diagrams": DiagramSnapshots.Run(options); break;
+        case "about": AppSnapshots.About(options); break;
+        case "update": AppSnapshots.Update(options); break;
+        case "app-window" or "mainwindow": AppSnapshots.MainWindow(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;
