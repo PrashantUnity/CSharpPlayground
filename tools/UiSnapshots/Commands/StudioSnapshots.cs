@@ -350,6 +350,13 @@ internal static class StudioSnapshots
             vm.EditorFontSize = nbZoomSize;
         }
 
+        if (options.Flag("loading"))
+        {
+            vm.IsLoading = true;
+            vm.LoadingTitle = options.Value("loading-title") ?? "Opening Notebook...";
+            vm.LoadingSubtitle = options.Value("loading-sub") ?? "MachineLeaningCode.frynb";
+        }
+
         var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         if (options.Value("zoom-keys") is { } nbZoomKeys)
         {

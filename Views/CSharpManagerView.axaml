@@ -211,5 +211,15 @@
         <!-- ================================================================ -->
         <controls:HubCreateItemDialogControl />
 
+        <!-- ================================================================ -->
+        <!-- STUDIO LOADING OVERLAY POPUP                                     -->
+        <!-- ================================================================ -->
+        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+                                              LoadingTitle="{Binding LoadingTitle}"
+                                              LoadingSubtitle="{Binding LoadingSubtitle}"
+                                              ZIndex="1000"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch" />
+
     </Panel>
 </UserControl>

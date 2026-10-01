@@ -8,7 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpStudioHostViewModel : ObservableObject
+public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadingState
 {
     private const string PluginId = "com.frypdf.plugin.csharpeditor";
 
@@ -54,6 +54,18 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     [ObservableProperty]
     private string _activeDocumentTitle = "Hub";
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Loading...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = string.Empty;
+
+    public IDisposable BeginLoading(string title, string subtitle = "") =>
+        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
 
     /// <summary>
     /// Action callback for standalone test runners or host shells to close the preview window.
@@ -266,28 +278,36 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     public async void NavigateToCodeStudio(ScriptDocumentItem script)
     {
-        if (CodeStudioViewModel == null)
+        using (BeginLoading("Opening Script...", string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title))
         {
-            await _initTask;
+            await Task.Yield();
+            if (CodeStudioViewModel == null)
+            {
+                await _initTask;
+            }
+            if (CodeStudioViewModel == null) return;
+            await CodeStudioViewModel.UpdateActiveScriptAsync(script);
+            CurrentPage = CodeStudioViewModel;
+            IsOnManagerPage = false;
+            ActiveDocumentTitle = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
         }
-        if (CodeStudioViewModel == null) return;
-        await CodeStudioViewModel.UpdateActiveScriptAsync(script);
-        CurrentPage = CodeStudioViewModel;
-        IsOnManagerPage = false;
-        ActiveDocumentTitle = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
     }
 
     public async void NavigateToNotebookStudio(NotebookDocumentItem notebook)
     {
-        if (NotebookStudioViewModel == null)
+        using (BeginLoading("Opening Notebook...", string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title))
         {
-            await _initTask;
+            await Task.Yield();
+            if (NotebookStudioViewModel == null)
+            {
+                await _initTask;
+            }
+            if (NotebookStudioViewModel == null) return;
+            NotebookStudioViewModel.UpdateActiveNotebook(notebook);
+            CurrentPage = NotebookStudioViewModel;
+            IsOnManagerPage = false;
+            ActiveDocumentTitle = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
         }
-        if (NotebookStudioViewModel == null) return;
-        NotebookStudioViewModel.UpdateActiveNotebook(notebook);
-        CurrentPage = NotebookStudioViewModel;
-        IsOnManagerPage = false;
-        ActiveDocumentTitle = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
     }
 
     public void NavigateToServerStudio(FryServerDocumentItem server, string? filePath = null)

@@ -8,7 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle, IStudioLoadingState
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -32,6 +32,18 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
 
     public QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Loading...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = string.Empty;
+
+    public IDisposable BeginLoading(string title, string subtitle = "") =>
+        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]

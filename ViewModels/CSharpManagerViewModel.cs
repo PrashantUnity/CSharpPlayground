@@ -10,7 +10,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
+public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
 {
     private readonly IScriptStorageService _storageService;
     private readonly Action<ScriptDocumentItem> _openScriptAction;
@@ -29,6 +29,15 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 
     [ObservableProperty]
     private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Loading...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = string.Empty;
+
+    public IDisposable BeginLoading(string title, string subtitle = "") =>
+        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
 
     [ObservableProperty]
     private bool _hasFilteredItems = true;
@@ -1015,28 +1024,32 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     {
         if (item == null) return;
 
-        if (item.IsServer)
+        using (BeginLoading(item.IsServer ? "Opening API Server..." : (item.IsNotebook ? "Opening Notebook..." : "Opening Script..."), item.Title))
         {
-            var server = await _storageService.LoadServerDocumentAsync(item.Id);
-            if (server != null)
+            await Task.Yield();
+            if (item.IsServer)
             {
-                _openServerAction?.Invoke(server);
+                var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.Id));
+                if (server != null)
+                {
+                    _openServerAction?.Invoke(server);
+                }
             }
-        }
-        else if (item.IsNotebook)
-        {
-            var nb = await _storageService.LoadNotebookAsync(item.Id);
-            if (nb != null)
+            else if (item.IsNotebook)
             {
-                _openNotebookAction.Invoke(nb);
+                var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.Id));
+                if (nb != null)
+                {
+                    _openNotebookAction.Invoke(nb);
+                }
             }
-        }
-        else
-        {
-            var sc = await _storageService.LoadScriptAsync(item.Id);
-            if (sc != null)
+            else
             {
-                _openScriptAction.Invoke(sc);
+                var sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.Id));
+                if (sc != null)
+                {
+                    _openScriptAction.Invoke(sc);
+                }
             }
         }
     }
@@ -1078,31 +1091,35 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         if (PendingCreateKind is not { } kind) return;
         if (IsLaunching || IsLoading) return;
 
-        IsLaunching = true;
-        try
+        using (BeginLoading("Creating Document...", string.IsNullOrWhiteSpace(NewItemName) ? "New Document" : NewItemName.Trim()))
         {
-            var folderPath = SelectedFolderPath;
-            var title = string.IsNullOrWhiteSpace(NewItemName)
-                ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : (kind == WorkspaceItemKind.Server ? "New API Server" : "New Automation Script"))
-                : NewItemName.Trim();
+            await Task.Yield();
+            IsLaunching = true;
+            try
+            {
+                var folderPath = SelectedFolderPath;
+                var title = string.IsNullOrWhiteSpace(NewItemName)
+                    ? (kind == WorkspaceItemKind.Notebook ? "New Interactive Notebook" : (kind == WorkspaceItemKind.Server ? "New API Server" : "New Automation Script"))
+                    : NewItemName.Trim();
 
-            if (kind == WorkspaceItemKind.Notebook)
-            {
-                await CreateNewNotebookCoreAsync(_pendingTemplateId, folderPath, title);
+                if (kind == WorkspaceItemKind.Notebook)
+                {
+                    await CreateNewNotebookCoreAsync(_pendingTemplateId, folderPath, title);
+                }
+                else if (kind == WorkspaceItemKind.Server)
+                {
+                    await CreateNewServerCoreAsync(_pendingTemplateId, folderPath, title);
+                }
+                else
+                {
+                    await CreateNewScriptCoreAsync(_pendingTemplateId, folderPath, title);
+                }
             }
-            else if (kind == WorkspaceItemKind.Server)
+            finally
             {
-                await CreateNewServerCoreAsync(_pendingTemplateId, folderPath, title);
+                IsLaunching = false;
+                PendingCreateKind = null;
             }
-            else
-            {
-                await CreateNewScriptCoreAsync(_pendingTemplateId, folderPath, title);
-            }
-        }
-        finally
-        {
-            IsLaunching = false;
-            PendingCreateKind = null;
         }
     }
 
@@ -1142,32 +1159,36 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
         if (template == null) return;
         if (IsLaunching || IsLoading) return;
 
-        IsLaunching = true;
-        try
+        using (BeginLoading("Launching Template...", template.Title))
         {
-            var existing = AllItems.FirstOrDefault(i =>
-                (template.Kind == WorkspaceItemKind.Notebook && i.IsNotebook || template.Kind == WorkspaceItemKind.Script && i.IsScript) &&
-                (string.Equals(i.Id, template.Id, StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(i.Title, template.Title, StringComparison.OrdinalIgnoreCase)));
+            await Task.Yield();
+            IsLaunching = true;
+            try
+            {
+                var existing = AllItems.FirstOrDefault(i =>
+                    (template.Kind == WorkspaceItemKind.Notebook && i.IsNotebook || template.Kind == WorkspaceItemKind.Script && i.IsScript) &&
+                    (string.Equals(i.Id, template.Id, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(i.Title, template.Title, StringComparison.OrdinalIgnoreCase)));
 
-            if (existing != null)
-            {
-                await OpenItemAsync(existing);
-                return;
-            }
+                if (existing != null)
+                {
+                    await OpenItemAsync(existing);
+                    return;
+                }
 
-            if (template.Kind == WorkspaceItemKind.Notebook)
-            {
-                await CreateNewNotebookCoreAsync(template.Id);
+                if (template.Kind == WorkspaceItemKind.Notebook)
+                {
+                    await CreateNewNotebookCoreAsync(template.Id);
+                }
+                else
+                {
+                    await CreateNewScriptCoreAsync(template.Id);
+                }
             }
-            else
+            finally
             {
-                await CreateNewScriptCoreAsync(template.Id);
+                IsLaunching = false;
             }
-        }
-        finally
-        {
-            IsLaunching = false;
         }
     }
 
@@ -1206,63 +1227,67 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     public async Task OpenExistingProjectAsync(string? path = null)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
 
-        IsLaunching = true;
-        try
+        using (BeginLoading("Opening Project...", System.IO.Path.GetFileName(path) ?? path))
         {
-            var result = await _storageService.OpenExternalProjectAsync(path);
-            if (result.Success)
+            await Task.Yield();
+            IsLaunching = true;
+            try
             {
-                await LoadWorkspaceItemsAsync();
-                StatusBannerMessage = result.Message;
-                IsStatusBannerError = false;
-                HasStatusBannerMessage = true;
-
-                if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+                var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
+                if (result.Success)
                 {
-                    if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
+                    await LoadWorkspaceItemsAsync();
+                    StatusBannerMessage = result.Message;
+                    IsStatusBannerError = false;
+                    HasStatusBannerMessage = true;
+
+                    if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                     {
-                        var server = await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId);
-                        if (server != null)
+                        if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
                         {
-                            _openServerAction?.Invoke(server);
+                            var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId));
+                            if (server != null)
+                            {
+                                _openServerAction?.Invoke(server);
+                            }
                         }
-                    }
-                    else if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
-                    {
-                        var nb = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
-                        if (nb != null)
+                        else if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
                         {
-                            _openNotebookAction.Invoke(nb);
+                            var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId));
+                            if (nb != null)
+                            {
+                                _openNotebookAction.Invoke(nb);
+                            }
                         }
-                    }
-                    else
-                    {
-                        var sc = await _storageService.LoadScriptAsync(result.PrimaryDocumentId);
-                        if (sc != null)
+                        else
                         {
-                            _openScriptAction.Invoke(sc);
+                            var sc = await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId));
+                            if (sc != null)
+                            {
+                                _openScriptAction.Invoke(sc);
+                            }
                         }
                     }
                 }
+                else
+                {
+                    StatusBannerMessage = result.Message;
+                    IsStatusBannerError = true;
+                    HasStatusBannerMessage = true;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                StatusBannerMessage = result.Message;
+                StatusBannerMessage = $"Failed to open project: {ex.Message}";
                 IsStatusBannerError = true;
                 HasStatusBannerMessage = true;
             }
-        }
-        catch (Exception ex)
-        {
-            StatusBannerMessage = $"Failed to open project: {ex.Message}";
-            IsStatusBannerError = true;
-            HasStatusBannerMessage = true;
-        }
-        finally
-        {
-            IsLaunching = false;
+            finally
+            {
+                IsLaunching = false;
+            }
         }
     }
 }

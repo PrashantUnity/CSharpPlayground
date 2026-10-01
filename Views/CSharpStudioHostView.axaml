@@ -17,7 +17,17 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
-         shows which view model), then only shown or hidden. -->
-    <controls:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
+    <Panel>
+        <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
+             shows which view model), then only shown or hidden. -->
+        <controls:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
+
+        <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
+        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+                                              LoadingTitle="{Binding LoadingTitle}"
+                                              LoadingSubtitle="{Binding LoadingSubtitle}"
+                                              ZIndex="1000"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch" />
+    </Panel>
 </UserControl>
