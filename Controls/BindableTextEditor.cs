@@ -181,7 +181,7 @@ public class BindableTextEditor : TextEditor
     public void RevealLine(int line)
     {
         if (Document == null || line < 1 || line > Document.LineCount) return;
-        ScrollPositionIntoViewIfNeeded(new TextViewPosition(line, 1));
+        ScrollPositionIntoViewIfNeeded(new TextViewPosition(line, 1), force: true);
     }
 
     public void ApplyThemeVariant()
@@ -570,21 +570,13 @@ public class BindableTextEditor : TextEditor
     private void OnRequestBringIntoView(object? sender, RequestBringIntoViewEventArgs e)
     {
         // Stop default BringIntoView from bubbling to the outer ScrollViewer.
-        // When cell content exceeds viewport height, default ScrollViewer bring-into-view
-        // forces newOffset.Y = rect.Top, causing the notebook to violently snap back to the cell top.
+        // Never auto-scroll the outer notebook canvas on focus or bring-into-view requests.
         e.Handled = true;
-
-        // Never auto-scroll the outer notebook during mouse pointer clicks or drags.
-        // The user intentionally clicked an on-screen location; auto-scrolling under the cursor creates jumpiness.
-        if (_isPointerInteraction) return;
-
-        // Instead, perform smooth caret-only visibility checks during keyboard typing/navigation:
-        ScrollCaretIntoViewIfNeeded();
     }
 
     public void ScrollCaretIntoViewIfNeeded()
     {
-        if (_isPointerInteraction) return;
+        if (_isPointerInteraction || !IsKeyboardFocusWithin) return;
         var caret = TextArea?.Caret;
         if (caret != null)
         {
@@ -592,11 +584,12 @@ public class BindableTextEditor : TextEditor
         }
     }
 
-    private void ScrollPositionIntoViewIfNeeded(TextViewPosition position)
+    private void ScrollPositionIntoViewIfNeeded(TextViewPosition position, bool force = false)
     {
         try
         {
             if (_isPointerInteraction) return;
+            if (!force && !IsKeyboardFocusWithin) return;
 
             var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
             if (scrollViewer == null) return;

@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using Xunit;
@@ -129,4 +135,59 @@ public class UiPolishTests : IDisposable
         Assert.Equal("{Solution}", variables["sol"].ValueDisplay);
         Assert.Equal("\"hi\"", variables["label"].ValueDisplay);
     }
+
+    [Fact]
+    public void TestNotebookCanvasScrollViewerSuppressBringIntoView()
+    {
+        var sv = new NotebookCanvasScrollViewer();
+        var panel = new StackPanel();
+        var btn = new Button();
+        panel.Children.Add(btn);
+        sv.Content = panel;
+
+        // Apply template
+        sv.ApplyTemplate();
+
+        var args = new RequestBringIntoViewEventArgs
+        {
+            RoutedEvent = Control.RequestBringIntoViewEvent,
+            TargetObject = btn,
+            TargetRect = new Avalonia.Rect(0, 500, 10, 10)
+        };
+        btn.RaiseEvent(args);
+
+        Assert.True(args.Handled, "RequestBringIntoView should be marked handled by canvas scroller content");
+
+        // Now test GotFocus on child:
+        var bringIntoViewFired = false;
+        btn.AddHandler(Control.RequestBringIntoViewEvent, (s, e) => bringIntoViewFired = true, RoutingStrategies.Bubble, handledEventsToo: true);
+
+        // Raise GotFocus on sv as if it bubbled up from btn
+        var gotFocusArgs = new FocusChangedEventArgs(InputElement.GotFocusEvent)
+        {
+            Source = btn
+        };
+        sv.RaiseEvent(gotFocusArgs);
+        Assert.False(bringIntoViewFired, "GotFocus on button should NOT trigger BringIntoView on NotebookCanvasScrollViewer");
+
+        // Test nested bring into view suppression with class handler
+        var outerSv = new NotebookCanvasScrollViewer();
+        var innerBorder = new Border();
+        var innerBtn = new Button();
+        innerBorder.Child = innerBtn;
+        outerSv.Content = innerBorder;
+
+        var reqArgs = new RequestBringIntoViewEventArgs
+        {
+            RoutedEvent = Control.RequestBringIntoViewEvent,
+            TargetObject = innerBtn,
+            TargetRect = new Avalonia.Rect(0, 500, 10, 10)
+        };
+        innerBtn.RaiseEvent(reqArgs);
+
+        Assert.True(reqArgs.Handled, "RequestBringIntoView on any descendant of NotebookCanvasScrollViewer must be marked handled!");
+
+    }
 }
+
+

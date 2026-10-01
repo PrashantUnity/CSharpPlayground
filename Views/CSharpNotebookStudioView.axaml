@@ -94,8 +94,14 @@
             <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
         </Style>
 
+        <!-- Notebook Canvas Buttons: Prevent focus-steal and auto-scroll on click -->
+        <Style Selector="controls|NotebookCanvasScrollViewer Button">
+            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
+        </Style>
+
         <!-- Cell Hover Action Icons -->
         <Style Selector="Button.cell-tool-btn">
+            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="4" />
@@ -123,6 +129,7 @@
 
         <!-- Gutter Run Play Button -->
         <Style Selector="Button.gutter-run-btn">
+            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="4" />
@@ -141,6 +148,7 @@
 
         <!-- Gutter Menu Button -->
         <Style Selector="Button.gutter-menu-btn">
+            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="4" />
@@ -178,6 +186,25 @@
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         </Style>
 
+        <!-- Dedicated Notebook Cell Output Card (VS Code Authentic) -->
+        <Style Selector="Border.notebook-output-card">
+            <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.notebook-output-card:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+
         <!-- Between-Cell Interactive Insertion Divider -->
         <Style Selector="Border.cell-insert-divider">
             <Setter Property="Height" Value="20" />
@@ -208,6 +235,7 @@
         </Style>
 
         <Style Selector="Button.insert-cell-pill">
+            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -1118,14 +1146,13 @@
                     <ItemsControl ItemsSource="{Binding CanvasRows}">
                         <ItemsControl.Template>
                             <ControlTemplate>
-                                <ScrollViewer x:Name="NotebookCanvasScrollViewer"
-                                              ScrollViewer.BringIntoViewOnFocusChange="False"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              VerticalScrollBarVisibility="Auto">
+                                <controls:NotebookCanvasScrollViewer x:Name="NotebookCanvasScrollViewer"
+                                                                     HorizontalScrollBarVisibility="Disabled"
+                                                                     VerticalScrollBarVisibility="Auto">
                                     <!-- Side margins only: the top and bottom gaps are the header and footer rows. A vertical margin
                                          here would shrink the area the virtualizing panel fills. -->
                                     <ItemsPresenter Margin="24,0,36,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
-                                </ScrollViewer>
+                                </controls:NotebookCanvasScrollViewer>
                             </ControlTemplate>
                         </ItemsControl.Template>
                         <ItemsControl.ItemsPanel>
@@ -1167,7 +1194,7 @@
                                             <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
                                                 <!-- COLUMN 0: LEFT GUTTER (Aligned with Line 1) -->
                                                 <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
-                                                    <!-- Row 1: Gutter Input Fold, Run Button & Execution Badge -->
+                                                    <!-- Row 1: Gutter Input Fold & Run Button -->
                                                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                                                         <Button Command="{Binding ToggleInputCollapseCommand}"
                                                                 Classes="gutter-fold-btn"
@@ -1186,42 +1213,7 @@
                                                                 ToolTip.Tip="Execute Cell (Ctrl+Enter)">
                                                             <materialIcons:MaterialIcon Kind="Play" Width="10" Height="10" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                         </Button>
-
-                                                        <!-- Execution Badge [1] (Code Cells) -->
-                                                        <TextBlock Text="{Binding ExecutionBadgeText}"
-                                                                   FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
-                                                                   FontSize="11"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{Binding StatusBadgeForeground}"
-                                                                   VerticalAlignment="Center"
-                                                                   IsVisible="{Binding IsCodeCell}" />
                                                     </StackPanel>
-
-                                                    <!-- Row 2: Execution Duration: ✓ 0.1s -->
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Spacing="2"
-                                                                HorizontalAlignment="Right"
-                                                                IsVisible="{Binding ExecutionDurationShortText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                        <materialIcons:MaterialIcon Kind="Check" Width="10" Height="10" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" VerticalAlignment="Center" />
-                                                        <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="#EF4444" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
-                                                        <TextBlock Text="{Binding ExecutionDurationShortText}"
-                                                                   FontSize="9"
-                                                                   Foreground="{DynamicResource DsMutedBrush}"
-                                                                   VerticalAlignment="Center" />
-                                                    </StackPanel>
-
-                                                    <!-- Row 3: Gutter Output Fold Button (Visible when cell has output) -->
-                                                    <Button Command="{Binding ToggleOutputCollapseCommand}"
-                                                            Classes="gutter-fold-btn"
-                                                            IsVisible="{Binding HasOutput}"
-                                                            ToolTip.Tip="{Binding ToggleOutputCollapseTooltip}"
-                                                            HorizontalAlignment="Right"
-                                                            Margin="0,2,0,0">
-                                                        <Panel Width="10" Height="10">
-                                                            <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding !IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                            <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                        </Panel>
-                                                    </Button>
                                                 </StackPanel>
 
                                                 <!-- COLUMN 1: UNIFIED CELL CARD -->
@@ -1556,12 +1548,9 @@
                                                                 </Button>
                                                             </Border>
 
-                                                            <!-- INLINE OUTPUT STREAM (Inside Card) -->
-                                                            <controls:NotebookCellOutputControl Margin="4,4,4,8" IsVisible="{Binding HasOutput}" />
-
                                                             <!-- The running code asks for a line of input (Python's input()) -->
                                                             <Border IsVisible="{Binding IsAwaitingInput}"
-                                                                    Margin="4,0,4,8"
+                                                                    Margin="4,0,4,6"
                                                                     Padding="8,4"
                                                                     CornerRadius="6"
                                                                     Background="{DynamicResource DsBgBrush}"
@@ -1592,8 +1581,100 @@
                                                                     </Button>
                                                                 </Grid>
                                                             </Border>
+
+                                                            <!-- VS Code Cell Footer Status Bar (Execution count, duration, language) -->
+                                                            <Border Background="{DynamicResource DsSurfaceContainerLowestBrush}"
+                                                                    BorderBrush="{DynamicResource DsBorderSubtleBrush}"
+                                                                    BorderThickness="0,1,0,0"
+                                                                    Padding="8,4"
+                                                                    Margin="-6,0,0,0"
+                                                                    IsVisible="{Binding IsCodeCell}">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                                    <!-- Left: [1] ✓ 0.5s -->
+                                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding ExecutionBadgeText}"
+                                                                                   FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                                                   FontSize="10.5"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{Binding StatusBadgeForeground}"
+                                                                                   VerticalAlignment="Center" />
+                                                                        <StackPanel Orientation="Horizontal"
+                                                                                    Spacing="2"
+                                                                                    VerticalAlignment="Center"
+                                                                                    IsVisible="{Binding ExecutionDurationShortText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                                            <materialIcons:MaterialIcon Kind="Check" Width="10" Height="10" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" VerticalAlignment="Center" />
+                                                                            <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="#EF4444" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
+                                                                            <TextBlock Text="{Binding ExecutionDurationShortText}"
+                                                                                       FontSize="9.5"
+                                                                                       Foreground="{DynamicResource DsMutedBrush}"
+                                                                                       VerticalAlignment="Center" />
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+
+                                                                    <!-- Right: Language name (Python, C#, etc.) -->
+                                                                    <TextBlock Grid.Column="2"
+                                                                               Text="{Binding EffectiveLanguageDefinition.DisplayName, FallbackValue=C#}"
+                                                                               FontSize="10"
+                                                                               Foreground="{DynamicResource DsMutedBrush}"
+                                                                               VerticalAlignment="Center" />
+                                                                </Grid>
+                                                            </Border>
                                                         </StackPanel>
                                                     </Grid>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- 2. DEDICATED CELL OUTPUT BLOCK (Its own separate row, just like VS Code!) -->
+                                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding HasOutput}" Margin="0,3,0,0">
+                                                <!-- COLUMN 0: OUTPUT GUTTER (Output options '...' and Output Fold) -->
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
+                                                    <!-- Output Options Menu (...) Flyout -->
+                                                    <Button Classes="gutter-fold-btn"
+                                                            Width="16" Height="16"
+                                                            ToolTip.Tip="Output Options">
+                                                        <Button.Flyout>
+                                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                                <MenuItem Header="Clear Output" Command="{Binding ClearOutputCommand}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="DeleteSweepOutline" Width="14" Height="14" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="{Binding ToggleOutputCollapseText}" Command="{Binding ToggleOutputCollapseCommand}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="14" Height="14" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="{Binding ToggleOutputScrolledText}" Command="{Binding ToggleOutputScrolledCommand}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="FormatLineSpacing" Width="14" Height="14" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Copy Console Output" Command="{Binding CopyOutputCommand}" IsVisible="{Binding HasTextOutput}">
+                                                                    <MenuItem.Icon>
+                                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                            </MenuFlyout>
+                                                        </Button.Flyout>
+                                                        <materialIcons:MaterialIcon Kind="DotsHorizontal" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Button>
+
+                                                    <!-- Gutter Output Fold Button -->
+                                                    <Button Command="{Binding ToggleOutputCollapseCommand}"
+                                                            Classes="gutter-fold-btn"
+                                                            ToolTip.Tip="{Binding ToggleOutputCollapseTooltip}"
+                                                            HorizontalAlignment="Right">
+                                                        <Panel Width="10" Height="10">
+                                                            <materialIcons:MaterialIcon Kind="ChevronDown" IsVisible="{Binding !IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            <materialIcons:MaterialIcon Kind="ChevronRight" IsVisible="{Binding IsOutputCollapsed}" Width="10" Height="10" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Panel>
+                                                    </Button>
+                                                </StackPanel>
+
+                                                <!-- COLUMN 1: DEDICATED OUTPUT CONTAINER -->
+                                                <Border Grid.Column="1"
+                                                        Classes="notebook-output-card">
+                                                    <controls:NotebookCellOutputControl />
                                                 </Border>
                                             </Grid>
 

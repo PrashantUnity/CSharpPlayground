@@ -317,6 +317,7 @@
     <!-- 8. NOTEBOOK CELL OUTPUT TAB STYLES                           -->
     <!-- ============================================================ -->
     <Style Selector="Button.cell-output-tab-btn">
+        <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
