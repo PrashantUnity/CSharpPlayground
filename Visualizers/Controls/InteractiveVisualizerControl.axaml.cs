@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -14,6 +15,9 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 public partial class InteractiveVisualizerControl : UserControl
 {
     private const double ZoomStep = 1.2;
+    private const double MinCanvasHeight = 80;
+    private const double MaxCanvasHeight = 1200;
+    private const double DefaultCanvasHeight = 200;
 
     public static readonly StyledProperty<VisualizerOptions?> OptionsProperty =
         AvaloniaProperty.Register<InteractiveVisualizerControl, VisualizerOptions?>(nameof(Options));
@@ -22,10 +26,20 @@ public partial class InteractiveVisualizerControl : UserControl
         RoutedEvent.Register<InteractiveVisualizerControl, VisualizerStepLineEventArgs>("StepSourceLineChanged", RoutingStrategies.Bubble);
 
     private VisualizerSequence? _observedSequence;
+    private bool _isFullScreenView;
 
     public VisualizerOptions? Options { get => GetValue(OptionsProperty); set => SetValue(OptionsProperty, value); }
     public VisualizerViewState ViewState { get; set; } = new();
-    public bool IsFullScreenView { get; set; }
+    public bool IsFullScreenView
+    {
+        get => _isFullScreenView;
+        set
+        {
+            _isFullScreenView = value;
+            ApplyViewMode();
+        }
+    }
+
     public event EventHandler? ExitFullScreenRequested;
     public event EventHandler<ElementClickedEventArgs<VisualizerHitTestResult>>? ElementClicked;
 
@@ -35,7 +49,7 @@ public partial class InteractiveVisualizerControl : UserControl
     static InteractiveVisualizerControl() =>
         OptionsProperty.Changed.AddClassHandler<InteractiveVisualizerControl>((c, _) => c.ApplyOptions());
 
-    public InteractiveVisualizerControl() { try { InitializeComponent(); SetupChrome(); WireEvents(); } catch { } }
+    public InteractiveVisualizerControl() { try { InitializeComponent(); SetupChrome(); WireEvents(); ApplyViewMode(); } catch { } }
     public InteractiveVisualizerControl(VisualizerOptions options) : this() { Options = options; ApplyOptions(); }
 
     private void SetupChrome()
@@ -62,11 +76,56 @@ public partial class InteractiveVisualizerControl : UserControl
 
     private void Bind(string name, Action act) { if (Find<Button>(name) is { } b) b.Click += (_, _) => act(); }
 
+    public double GetInlineCanvasHeight() => InlineCanvasHeight();
+
+    private double InlineCanvasHeight() =>
+        Options?.Height is { } height && height > 0 ? Math.Clamp(height, MinCanvasHeight, MaxCanvasHeight) : GetDefaultCanvasHeightForKind();
+
+    private double GetDefaultCanvasHeightForKind()
+    {
+        if (Options == null) return DefaultCanvasHeight;
+        return Options.Kind switch
+        {
+            VisualizerKind.ArrayPointers => 125,
+            VisualizerKind.LinkedList => 125,
+            VisualizerKind.Bars => 140,
+            VisualizerKind.Tree => 220,
+            VisualizerKind.Graph => 230,
+            VisualizerKind.Matrix => 210,
+            VisualizerKind.Islands => 210,
+            VisualizerKind.Board => 220,
+            VisualizerKind.Canvas => 240,
+            _ => DefaultCanvasHeight
+        };
+    }
+
+    private void ApplyViewMode()
+    {
+        VerticalAlignment = IsFullScreenView ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+
+        if (Find<Border>("CanvasHost") is { } host)
+        {
+            host.Height = IsFullScreenView ? double.NaN : InlineCanvasHeight();
+            host.VerticalAlignment = IsFullScreenView ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+        }
+
+        if (Find<VisualChromeControl>("Chrome") is { } chrome)
+        {
+            chrome.VerticalAlignment = IsFullScreenView ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+            chrome.SetFullScreenState(IsFullScreenView);
+        }
+    }
+
     public void ApplyOptions()
     {
         var opts = Options;
         if (opts == null) return;
-        if (Canvas is { } canvas) { canvas.Options = opts; canvas.ViewState = ViewState; if (Find<Border>("CanvasHost") is { } host && opts.Height > 0) host.Height = Math.Max(host.MinHeight, opts.Height.Value); }
+        if (Canvas is { } canvas) { canvas.Options = opts; canvas.ViewState = ViewState; }
+        if (Find<VisualChromeControl>("Chrome") is { } chrome)
+        {
+            chrome.DefaultCanvasHeight = InlineCanvasHeight();
+        }
+        ApplyViewMode();
         if (Find<VisualizerPlaybackControl>("PlaybackControl") is { } play) { play.Sequence = opts.Sequence; play.IsVisible = opts.Sequence is { HasSteps: true }; }
         if (Find<StackPanel>("MatrixToolsPanel") is { } mt) mt.IsVisible = opts.MatrixData != null;
         UpdateHeader();

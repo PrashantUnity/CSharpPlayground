@@ -329,10 +329,34 @@ internal static class StudioSnapshots
         var fsharpDemo = options.Flag("fsharp-demo");
         var sqlDemo = options.Flag("sql-demo");
         var rustDemo = options.Flag("rust-demo");
-        int number = (pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
+        var templateQuery = options.Value("template");
+        CodeTemplate? template = null;
+        if (templateQuery != null)
+        {
+            template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t =>
+                t.Id.Contains(templateQuery, StringComparison.OrdinalIgnoreCase) ||
+                t.Title.Contains(templateQuery, StringComparison.OrdinalIgnoreCase));
+        }
+
+        int number = (template != null || pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry);
+        var notebookDoc = template != null
+            ? Snapshot.Wait(storage.CreateNewNotebookAsync(template.Title, template.Id))
+            : rustDemo ? RustDemoNotebook()
+            : sqlDemo ? SqlDemoNotebook()
+            : fsharpDemo ? FSharpDemoNotebook()
+            : goDemo ? GoDemoNotebook()
+            : cppDemo ? CppDemoNotebook()
+            : javaException ? JavaExceptionDemoNotebook()
+            : javaTable ? JavaTableDemoNotebook()
+            : javaShare ? JavaShareDemoNotebook()
+            : jsDemo ? PolyglotDemoNotebook()
+            : pyDemo ? PythonDemoNotebook()
+            : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!);
+
         var vm = new CSharpNotebookStudioViewModel(
-            rustDemo ? RustDemoNotebook() : sqlDemo ? SqlDemoNotebook() : fsharpDemo ? FSharpDemoNotebook() : goDemo ? GoDemoNotebook() : cppDemo ? CppDemoNotebook() : javaException ? JavaExceptionDemoNotebook() : javaTable ? JavaTableDemoNotebook() : javaShare ? JavaShareDemoNotebook() : jsDemo ? PolyglotDemoNotebook() : pyDemo ? PythonDemoNotebook() : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!),
-            new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry),
+            notebookDoc,
+            storage,
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
             backToHubAction: () => { },
@@ -350,6 +374,13 @@ internal static class StudioSnapshots
             vm.EditorFontSize = nbZoomSize;
         }
 
+        if (options.Flag("loading"))
+        {
+            vm.IsLoading = true;
+            vm.LoadingTitle = options.Value("loading-title") ?? "Opening Notebook...";
+            vm.LoadingSubtitle = options.Value("loading-sub") ?? "MachineLeaningCode.frynb";
+        }
+
         var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         if (options.Value("zoom-keys") is { } nbZoomKeys)
         {
@@ -358,7 +389,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (template != null ? $"notebook_{template.Id}" : sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -366,6 +397,35 @@ internal static class StudioSnapshots
             {
                 tab.SelectCell(tab.Cells[Math.Min(cell, tab.Cells.Count) - 1]);
                 Snapshot.Settle();
+            }
+
+            if (options.Value("scroll-y") is { } scrollYStr && double.TryParse(scrollYStr, System.Globalization.CultureInfo.InvariantCulture, out var scrollY))
+            {
+                var nbScroller = window.GetVisualDescendants().OfType<NotebookCanvasScrollViewer>().FirstOrDefault();
+                if (nbScroller != null)
+                {
+                    nbScroller.SetScrollOffset(new Avalonia.Vector(nbScroller.Offset.X, scrollY));
+                    Snapshot.Settle();
+                }
+                else if (window.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } scroller)
+                {
+                    scroller.Offset = new Avalonia.Vector(scroller.Offset.X, scrollY);
+                    Snapshot.Settle();
+                }
+            }
+            else if (options.Flag("scroll-to-end"))
+            {
+                var nbScroller = window.GetVisualDescendants().OfType<NotebookCanvasScrollViewer>().FirstOrDefault();
+                if (nbScroller != null)
+                {
+                    nbScroller.SetScrollOffset(new Avalonia.Vector(nbScroller.Offset.X, Math.Max(0, nbScroller.Extent.Height - nbScroller.Viewport.Height)));
+                    Snapshot.Settle();
+                }
+                else if (window.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } scroller)
+                {
+                    scroller.Offset = new Avalonia.Vector(scroller.Offset.X, Math.Max(0, scroller.Extent.Height - scroller.Viewport.Height));
+                    Snapshot.Settle();
+                }
             }
 
             ShowQuickInfo(window, options);
@@ -1096,6 +1156,10 @@ internal static class StudioSnapshots
         else if (options.Flag("explorer"))
         {
             vm.SelectActivityBarItem(2);
+        }
+        else if (options.Flag("no-sidebar") || options.Flag("collapsed-sidebar"))
+        {
+            vm.IsSideBarVisible = false;
         }
 
         if (options.Flag("run") || options.Flag("running"))

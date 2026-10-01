@@ -44,6 +44,7 @@ public partial class DocumentationService
         var efCoreCategory = BuildEfCoreCategory();
         var testingDebuggingCategory = BuildTestingDebuggingCategory();
         var advancedTopicsCategory = BuildAdvancedTopicsCategory();
+        var diagramsCategory = BuildDiagramsAndVisualizationsCategory();
         var visualizerCategory = BuildVisualizersCategory();
         var polyglotVisualsCategory = BuildPolyglotVisualsCategory();
         var displayCategory = BuildDisplayApisCategory();
@@ -67,6 +68,7 @@ public partial class DocumentationService
         _categories.Add(efCoreCategory);
         _categories.Add(testingDebuggingCategory);
         _categories.Add(advancedTopicsCategory);
+        _categories.Add(diagramsCategory);
         _categories.Add(visualizerCategory);
         _categories.Add(polyglotVisualsCategory);
         _categories.Add(displayCategory);
@@ -154,10 +156,12 @@ public partial class DocumentationService
 
     public ScriptDocumentItem CreateScriptFromSnippet(DocCodeSnippet snippet)
     {
+        var lang = Languages.StudioLanguageServices.Default.Registry.Get(snippet.Language);
         return new ScriptDocumentItem
         {
             Title = string.IsNullOrWhiteSpace(snippet.Title) ? "Docs Sample Script" : snippet.Title,
             Code = snippet.Code,
+            LanguageId = lang?.Id ?? snippet.Language ?? Languages.LanguageIds.CSharp,
             Notes = $"# {snippet.Title}\n\n{snippet.Description}\n\nGenerated from C# Code Studio Documentation."
         };
     }
@@ -183,6 +187,58 @@ public partial class DocumentationService
             // A Python snippet is a Python cell; C# is the notebook's own language.
             Language = Languages.StudioLanguageServices.Default.Registry.Get(snippet.Language) is { Id: not Languages.LanguageIds.CSharp } language ? language.Id : null
         });
+
+        return notebook;
+    }
+
+    public NotebookDocumentItem CreateNotebookFromArticle(DocArticle article)
+    {
+        var notebook = new NotebookDocumentItem
+        {
+            Title = string.IsNullOrWhiteSpace(article.Title) ? "Docs Sample Notebook" : article.Title
+        };
+
+        var mdIntro = $"# 📘 {article.Title}\n\n{article.Summary}";
+        if (!string.IsNullOrWhiteSpace(article.Subtitle))
+            mdIntro += $"\n\n*{article.Subtitle}*";
+
+        notebook.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Markdown,
+            Source = mdIntro,
+            IsMarkdownPreviewMode = true
+        });
+
+        foreach (var section in article.Sections)
+        {
+            var secMd = $"### {section.Heading}\n\n{section.Content}";
+            if (!string.IsNullOrWhiteSpace(section.CalloutText))
+                secMd += $"\n\n> **Tip**: {section.CalloutText}";
+
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = secMd,
+                IsMarkdownPreviewMode = true
+            });
+        }
+
+        foreach (var snippet in article.CodeSnippets)
+        {
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = $"#### {snippet.Title}\n{snippet.Description}",
+                IsMarkdownPreviewMode = true
+            });
+
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = snippet.Code,
+                Language = Languages.StudioLanguageServices.Default.Registry.Get(snippet.Language) is { Id: not Languages.LanguageIds.CSharp } language ? language.Id : null
+            });
+        }
 
         return notebook;
     }

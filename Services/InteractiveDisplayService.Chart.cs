@@ -21,6 +21,7 @@ public static partial class Display
         string? title = null,
         string? color = null,
         string? chartType = null,
+        ChartType? type = null,
         double? width = null,
         double? height = null,
         bool? showGrid = null,
@@ -28,7 +29,8 @@ public static partial class Display
         bool? showStats = null,
         Action<ChartSpec>? configure = null)
     {
-        var spec = ChartSpecBuilder.From(data, KindOf(chartType));
+        var resolvedType = type ?? KindOf(chartType);
+        var spec = ChartSpecBuilder.From(data, resolvedType);
         Set(spec, title, color, width, height);
         spec.Grid = showGrid ?? spec.Grid;
         spec.ShowPoints = showPoints ?? spec.ShowPoints;

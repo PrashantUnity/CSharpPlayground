@@ -46,100 +46,109 @@ public partial class CSharpCodeStudioViewModel
     {
         if (tab.Id == Script.Id && tab.IsActive) return;
 
-        // 1. Save state of current active tab
-        var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-        if (currentTab != null)
+        using (BeginLoading("Switching Tab...", tab.Title))
         {
-            currentTab.Document.Code = Code;
-            currentTab.Document.Notes = Notes;
-            currentTab.ConsoleHeader = ConsoleHeader;
-            currentTab.ConsoleBody = ConsoleBody;
-            currentTab.ConsoleFooter = ConsoleFooter;
-            currentTab.ConsoleExitCode = ConsoleExitCode;
-            currentTab.ConsoleOutput = ConsoleOutput;
-            currentTab.ExecutionTimeText = ExecutionTimeText;
-            currentTab.CompilerStatusText = CompilerStatusText;
-            currentTab.PausedLine = CurrentPausedLine;
-            currentTab.IsExecuting = IsExecuting;
-            currentTab.IsDebugging = IsDebugging;
-            currentTab.IsPaused = IsPaused;
-            currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
-            CopyItems(currentTab.Diagnostics, Diagnostics);
-            CopyItems(currentTab.DumpResults, DumpResults);
-            CopyItems(currentTab.RichOutputs, RichOutputs);
-            CopyItems(currentTab.Locals, Locals);
-            CopyItems(currentTab.CallStack, CallStack);
+            await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            // 1. Save state of current active tab
+            var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+            if (currentTab != null)
+            {
+                currentTab.Document.Code = Code;
+                currentTab.Document.Notes = Notes;
+                currentTab.ConsoleHeader = ConsoleHeader;
+                currentTab.ConsoleBody = ConsoleBody;
+                currentTab.ConsoleFooter = ConsoleFooter;
+                currentTab.ConsoleExitCode = ConsoleExitCode;
+                currentTab.ConsoleOutput = ConsoleOutput;
+                currentTab.ExecutionTimeText = ExecutionTimeText;
+                currentTab.CompilerStatusText = CompilerStatusText;
+                currentTab.PausedLine = CurrentPausedLine;
+                currentTab.IsExecuting = IsExecuting;
+                currentTab.IsDebugging = IsDebugging;
+                currentTab.IsPaused = IsPaused;
+                currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
+                CopyItems(currentTab.Diagnostics, Diagnostics);
+                CopyItems(currentTab.DumpResults, DumpResults);
+                CopyItems(currentTab.RichOutputs, RichOutputs);
+                CopyItems(currentTab.Locals, Locals);
+                CopyItems(currentTab.CallStack, CallStack);
+            }
+
+            // 2. Mark active flags
+            foreach (var t in OpenTabs)
+            {
+                t.IsActive = (t.Id == tab.Id);
+            }
+
+            // 3. Restore target tab state into active studio context
+            Script = tab.Document;
+            _isRestoringTabState = true;
+            try
+            {
+                Code = tab.Document.Code ?? string.Empty;
+                Notes = tab.Document.Notes;
+            }
+            finally
+            {
+                _isRestoringTabState = false;
+            }
+
+            IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
+            SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
+            {
+                "Program" => 1,
+                "Expression" => 2,
+                _ => 0
+            };
+
+            ConsoleHeader = tab.ConsoleHeader;
+            ConsoleBody = tab.ConsoleBody;
+            ConsoleFooter = tab.ConsoleFooter;
+            ConsoleExitCode = tab.ConsoleExitCode;
+            ConsoleOutput = tab.ConsoleOutput;
+            ExecutionTimeText = tab.ExecutionTimeText;
+            CompilerStatusText = tab.CompilerStatusText;
+            CurrentPausedLine = tab.PausedLine;
+            IsExecuting = tab.IsExecuting;
+            IsDebugging = tab.IsDebugging;
+            IsPaused = tab.IsPaused;
+            SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
+            IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
+
+            CopyItems(Diagnostics, tab.Diagnostics);
+            CopyItems(DumpResults, tab.DumpResults);
+            CopyItems(RichOutputs, tab.RichOutputs);
+            CopyItems(Locals, tab.Locals);
+            CopyItems(CallStack, tab.CallStack);
+            CopyItems(TestCases, tab.Document.TestCases);
+
+            Breakpoints.Clear();
+            foreach (var bpLine in tab.Document.Breakpoints)
+            {
+                Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
+            }
+
+            RequestSwitchTabDocument?.Invoke(tab);
+            RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+            RequestSetPausedLine?.Invoke(CurrentPausedLine > 0 ? CurrentPausedLine : -1);
+            RequestReloadEditorText?.Invoke();
+
+            ErrorCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
+            WarningCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
+
+            if (Diagnostics.Count == 0 && !string.IsNullOrWhiteSpace(Code))
+            {
+                TriggerDiagnosticsCheck();
+            }
+
+            // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
+            await RefreshExplorerIfStaleAsync();
         }
-
-        // 2. Mark active flags
-        foreach (var t in OpenTabs)
-        {
-            t.IsActive = (t.Id == tab.Id);
-        }
-
-        // 3. Restore target tab state into active studio context
-        Script = tab.Document;
-        _isRestoringTabState = true;
-        try
-        {
-            Code = tab.Document.Code ?? string.Empty;
-            Notes = tab.Document.Notes;
-        }
-        finally
-        {
-            _isRestoringTabState = false;
-        }
-
-        IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
-        SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
-        {
-            "Program" => 1,
-            "Expression" => 2,
-            _ => 0
-        };
-
-        ConsoleHeader = tab.ConsoleHeader;
-        ConsoleBody = tab.ConsoleBody;
-        ConsoleFooter = tab.ConsoleFooter;
-        ConsoleExitCode = tab.ConsoleExitCode;
-        ConsoleOutput = tab.ConsoleOutput;
-        ExecutionTimeText = tab.ExecutionTimeText;
-        CompilerStatusText = tab.CompilerStatusText;
-        CurrentPausedLine = tab.PausedLine;
-        IsExecuting = tab.IsExecuting;
-        IsDebugging = tab.IsDebugging;
-        IsPaused = tab.IsPaused;
-        SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
-        IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
-
-        CopyItems(Diagnostics, tab.Diagnostics);
-        CopyItems(DumpResults, tab.DumpResults);
-        CopyItems(RichOutputs, tab.RichOutputs);
-        CopyItems(Locals, tab.Locals);
-        CopyItems(CallStack, tab.CallStack);
-        CopyItems(TestCases, tab.Document.TestCases);
-
-        Breakpoints.Clear();
-        foreach (var bpLine in tab.Document.Breakpoints)
-        {
-            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
-        }
-
-        RequestSwitchTabDocument?.Invoke(tab);
-        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-        RequestSetPausedLine?.Invoke(CurrentPausedLine > 0 ? CurrentPausedLine : -1);
-        RequestReloadEditorText?.Invoke();
-
-        ErrorCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
-        WarningCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
-
-        if (Diagnostics.Count == 0 && !string.IsNullOrWhiteSpace(Code))
-        {
-            TriggerDiagnosticsCheck();
-        }
-
-        // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
-        await RefreshExplorerIfStaleAsync();
     }
 
     public async Task CloseTabAsync(StudioTabItemViewModel tab)

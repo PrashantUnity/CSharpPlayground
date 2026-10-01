@@ -11,6 +11,10 @@ if (options.Command is null or "help" or "-h")
 
 try
 {
+    if (options.Flag("dap-trace"))
+    {
+        PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap.DapClient.Trace = Console.WriteLine;
+    }
     Snapshot.Start(options);
     switch (options.Command)
     {
@@ -28,6 +32,7 @@ try
         case "visuals": VisualSnapshots.Render(options); break;
         case "perf": PerfSnapshots.Run(options); break;
         case "server": StudioSnapshots.ServerStudio(options); break;
+        case "diagrams": DiagramSnapshots.Run(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

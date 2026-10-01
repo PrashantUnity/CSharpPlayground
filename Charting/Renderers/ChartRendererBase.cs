@@ -6,14 +6,26 @@ using Avalonia;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 
 public abstract class ChartRendererBase : IChartRenderer
 {
-    protected static readonly IPen GridPen = new Pen(new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), 1);
-    protected static readonly IPen AxisPen = new Pen(new SolidColorBrush(Color.FromArgb(80, 255, 255, 255)), 1);
-    protected static readonly IBrush TextBrush = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255));
+    protected static bool IsDarkTheme => ThemeService.IsDark;
+
+    private static readonly IPen DarkGridPen = new Pen(new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), 1);
+    private static readonly IPen LightGridPen = new Pen(new SolidColorBrush(Color.FromArgb(30, 0, 0, 0)), 1);
+    protected static IPen GridPen => IsDarkTheme ? DarkGridPen : LightGridPen;
+
+    private static readonly IPen DarkAxisPen = new Pen(new SolidColorBrush(Color.FromArgb(80, 255, 255, 255)), 1);
+    private static readonly IPen LightAxisPen = new Pen(new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)), 1);
+    protected static IPen AxisPen => IsDarkTheme ? DarkAxisPen : LightAxisPen;
+
+    private static readonly IBrush DarkTextBrush = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255));
+    private static readonly IBrush LightTextBrush = new SolidColorBrush(Color.FromArgb(200, 30, 41, 59));
+    protected static IBrush TextBrush => IsDarkTheme ? DarkTextBrush : LightTextBrush;
+
     protected static readonly Typeface DefaultTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
 
     // The height an axis title takes beside its axis.

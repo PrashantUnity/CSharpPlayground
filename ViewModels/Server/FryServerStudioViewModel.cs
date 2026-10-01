@@ -15,17 +15,22 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 
 public partial class FryServerStudioViewModel : ObservableObject, IDisposable
 {
-    private readonly IFryHttpServerEngine _engine;
+    private IFryHttpServerEngine _engine;
+    private readonly IFryServerRegistry _registry;
     private readonly IPortAvailabilityService _portService;
     private readonly IScriptStorageService? _storageService;
     private readonly Action? _backToHubAction;
     private readonly Action? _backToHomeAction;
 
     [ObservableProperty]
-    private GridLength _sideBarGridLength = new(260);
+    private GridLength _sideBarGridLength = new(270, GridUnitType.Pixel);
+
+    private double _savedSideBarWidth = 270;
 
     [ObservableProperty]
-    private GridLength _bottomDeckGridLength = new(180);
+    private GridLength _bottomDeckGridLength = new(180, GridUnitType.Pixel);
+
+    private double _savedBottomDeckHeight = 180;
 
     public int EndpointCount => Cells.Count(c => c.IsEndpoint);
     public int MiddlewareCount => Cells.Count(c => c.Type == FryServerCellType.Middleware);
@@ -50,10 +55,26 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
 
     // 5-Zone VS Code Layout properties
     [ObservableProperty]
-    private int _selectedActivityBarIndex = 0; // 0 = Endpoints Outline, 1 = Traffic Logs, 2 = Explorer
+    private int _selectedActivityBarIndex = 0; // 0 = Endpoints Outline, 1 = Traffic Logs, 2 = Explorer, 3 = Running Servers
 
     [ObservableProperty]
     private bool _isSideBarVisible = true;
+
+    partial void OnIsSideBarVisibleChanged(bool value)
+    {
+        if (value)
+        {
+            SideBarGridLength = new GridLength(_savedSideBarWidth > 120 ? _savedSideBarWidth : 270, GridUnitType.Pixel);
+        }
+        else
+        {
+            if (SideBarGridLength.IsAbsolute && SideBarGridLength.Value > 120)
+            {
+                _savedSideBarWidth = SideBarGridLength.Value;
+            }
+            SideBarGridLength = new GridLength(0, GridUnitType.Pixel);
+        }
+    }
 
     [ObservableProperty]
     private string _sideBarTitle = "OUTLINE";
@@ -61,6 +82,7 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
     public bool IsEndpointsOutlineActive => SelectedActivityBarIndex == 0;
     public bool IsTrafficActive => SelectedActivityBarIndex == 1;
     public bool IsExplorerActive => SelectedActivityBarIndex == 2;
+    public bool IsServersActive => SelectedActivityBarIndex == 3;
 
     [RelayCommand]
     public void SelectActivityBarItem(string? indexStr)
@@ -85,15 +107,33 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
             0 => "OUTLINE",
             1 => "TRAFFIC LOGS",
             2 => "EXPLORER",
+            3 => "RUNNING SERVERS",
             _ => "SIDEBAR"
         };
         OnPropertyChanged(nameof(IsEndpointsOutlineActive));
         OnPropertyChanged(nameof(IsTrafficActive));
         OnPropertyChanged(nameof(IsExplorerActive));
+        OnPropertyChanged(nameof(IsServersActive));
     }
 
     [ObservableProperty]
     private bool _isBottomPanelVisible = true;
+
+    partial void OnIsBottomPanelVisibleChanged(bool value)
+    {
+        if (value)
+        {
+            BottomDeckGridLength = new GridLength(_savedBottomDeckHeight > 60 ? _savedBottomDeckHeight : 180, GridUnitType.Pixel);
+        }
+        else
+        {
+            if (BottomDeckGridLength.IsAbsolute && BottomDeckGridLength.Value > 60)
+            {
+                _savedBottomDeckHeight = BottomDeckGridLength.Value;
+            }
+            BottomDeckGridLength = new GridLength(0, GridUnitType.Pixel);
+        }
+    }
 
     [ObservableProperty]
     private int _selectedBottomPanelIndex = 0; // 0 = Traffic Log, 1 = Output, 2 = Problems
@@ -142,10 +182,11 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         IPortAvailabilityService? portService = null,
         IScriptStorageService? storageService = null,
         Action? backToHubAction = null,
-        Action? backToHomeAction = null)
+        Action? backToHomeAction = null,
+        IFryServerRegistry? registry = null)
     {
         _portService = portService ?? new PortAvailabilityService();
-        _engine = engine ?? new FryHttpListenerServerEngine(_portService);
+        _registry = registry ?? FryServerRegistry.Shared;
         _storageService = storageService;
         _backToHubAction = backToHubAction;
         _backToHomeAction = backToHomeAction;
@@ -160,10 +201,27 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         _apiPrefixInput = doc.ServerConfig.ApiPrefix;
         _corsEnabled = doc.ServerConfig.EnableCors;
 
+        // Check if this document is already running in the registry!
+        var existing = _registry.GetServer(doc.Id);
+        if (existing != null)
+        {
+            _engine = existing.Engine;
+            _isServerRunning = existing.IsRunning;
+            _boundPort = existing.BoundPort;
+            _baseUrl = existing.BaseUrl;
+            _serverStatusText = $"Listening on :{existing.BoundPort}";
+        }
+        else
+        {
+            _engine = engine ?? new FryHttpListenerServerEngine(_portService);
+        }
+
         _engine.StateChanged += OnServerStateChanged;
         _engine.RequestProcessed += OnRequestProcessed;
+        _registry.RunningServersChanged += OnRunningServersChanged;
 
         PopulateCells();
+        SyncRunningServers();
         _ = CheckPortAvailabilityAsync();
     }
 
@@ -237,9 +295,55 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void ToggleBottomPanel() => IsBottomPanelVisible = !IsBottomPanelVisible;
 
+    public ObservableCollection<FryRunningServerItem> RunningServers { get; } = new();
+    public int RunningServerCount => RunningServers.Count;
+    public bool HasRunningServers => RunningServers.Count > 0;
+    public string RunningServersBadgeText => RunningServerCount > 0 ? RunningServerCount.ToString() : string.Empty;
+
+    private void OnRunningServersChanged()
+    {
+        Dispatcher.UIThread.Post(SyncRunningServers);
+    }
+
+    public void SyncRunningServers()
+    {
+        RunningServers.Clear();
+        foreach (var server in _registry.RunningServers)
+        {
+            RunningServers.Add(server);
+        }
+        OnPropertyChanged(nameof(RunningServerCount));
+        OnPropertyChanged(nameof(HasRunningServers));
+        OnPropertyChanged(nameof(RunningServersBadgeText));
+    }
+
+    [RelayCommand]
+    public async Task StopRunningServerAsync(FryRunningServerItem? server)
+    {
+        if (server == null) return;
+        await _registry.StopServerAsync(server.ServerId).ConfigureAwait(false);
+    }
+
+    [RelayCommand]
+    public async Task StopAllRunningServersAsync()
+    {
+        await _registry.StopAllAsync().ConfigureAwait(false);
+    }
+
+    [RelayCommand]
+    public void SwitchToRunningServer(FryRunningServerItem? server)
+    {
+        if (server?.Document != null)
+        {
+            LoadDocument(server.Document, server.FilePath);
+        }
+    }
+
     public void LoadDocument(FryServerDocumentItem document, string? filePath = null)
     {
-        _ = _engine.StopAsync();
+        _engine.StateChanged -= OnServerStateChanged;
+        _engine.RequestProcessed -= OnRequestProcessed;
+
         Document = document;
         FilePath = filePath ?? string.Empty;
         DocumentTitle = string.IsNullOrWhiteSpace(document.Title) ? "API Server" : document.Title;
@@ -249,8 +353,28 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         ApiPrefixInput = document.ServerConfig.ApiPrefix;
         CorsEnabled = document.ServerConfig.EnableCors;
 
+        var existing = _registry.GetServer(document.Id);
+        if (existing != null)
+        {
+            _engine = existing.Engine;
+            IsServerRunning = existing.IsRunning;
+            BoundPort = existing.BoundPort;
+            BaseUrl = existing.BaseUrl;
+            ServerStatusText = $"Listening on :{existing.BoundPort}";
+        }
+        else
+        {
+            _engine = new FryHttpListenerServerEngine(_portService);
+            IsServerRunning = false;
+            ServerStatusText = "Stopped";
+        }
+
+        _engine.StateChanged += OnServerStateChanged;
+        _engine.RequestProcessed += OnRequestProcessed;
+
         PopulateCells();
         _ = CheckPortAvailabilityAsync();
+        SyncRunningServers();
     }
 
     [RelayCommand]
@@ -270,6 +394,6 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
     {
         _engine.StateChanged -= OnServerStateChanged;
         _engine.RequestProcessed -= OnRequestProcessed;
-        _ = _engine.StopAsync();
+        _registry.RunningServersChanged -= OnRunningServersChanged;
     }
 }

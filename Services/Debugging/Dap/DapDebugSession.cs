@@ -525,6 +525,15 @@ public sealed class DapDebugSession : IDebugSession
                 reason = stopped.Reason;
                 threadId = stopped.ThreadId;
                 _lastThreadId = threadId;
+
+                if (!string.IsNullOrEmpty(stopped.Text))
+                {
+                    EmitOutput($"\n⚠️ Paused on {stopped.Reason}: {stopped.Text}\n");
+                }
+                else if (!string.IsNullOrEmpty(stopped.Description))
+                {
+                    EmitOutput($"\n⚠️ Paused on {stopped.Reason}: {stopped.Description}\n");
+                }
             }
         }
 

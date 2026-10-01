@@ -44,6 +44,7 @@ public partial class InteractiveChartControl : UserControl
             if (canvas != null) { canvas.IsVisible = true; chrome.SetCanvasContent(canvas); }
             if (legend != null) chrome.SetFooter(legend);
 
+            chrome.DefaultCanvasHeight = Options?.Height > 100 ? Options.Height : 260;
             chrome.SpecGetter = () => Options != null ? ChartOptionsConverter.ToSpec(Options) : null;
             chrome.DataCsvGetter = () => Options != null ? ChartExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
             chrome.ResetFitRequested += (_, _) => { ViewState.Reset(); Canvas?.InvalidateVisual(); };
@@ -72,8 +73,12 @@ public partial class InteractiveChartControl : UserControl
         {
             canvas.Options = opts;
             canvas.ViewState = ViewState;
-            if (opts.Height > 0) canvas.Height = Math.Max(canvas.MinHeight, opts.Height);
+            canvas.Height = double.NaN;
             canvas.InvalidateVisual();
+        }
+        if (Find<VisualChromeControl>("Chrome") is { } chrome)
+        {
+            if (opts.Height > 0) chrome.DefaultCanvasHeight = opts.Height;
         }
         UpdateHeader();
         ApplyLegend(opts);

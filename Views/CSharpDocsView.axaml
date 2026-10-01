@@ -28,18 +28,12 @@
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- HEADER BAR                                                     -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource DsSurfaceBrush}"
-                BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,0">
+        <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="0,0,0,1" Padding="16,0">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto">
                 <!-- Back to Hub Button -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Command="{Binding BackToHubCommand}"
-                            Classes="nexus-btn-surface"
-                            Height="34" Padding="12,0"
-                            ToolTip.Tip="Return to Hub (Esc)">
+                    <Button Command="{Binding BackToHubCommand}" Classes="nexus-btn-surface" Height="34" Padding="12,0" ToolTip.Tip="Return to Hub (Esc)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
                             <TextBlock Text="Hub" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12.5" />
@@ -74,17 +68,9 @@
                 </StackPanel>
 
                 <!-- Global Search Box (Matches Hub Search Bar) -->
-                <Border Grid.Column="2"
-                        Background="{DynamicResource DsSurfaceHighBrush}"
-                        BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Height="36"
-                        MaxWidth="460"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Center"
-                        Margin="12,0"
-                        Padding="10,0">
+                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1" CornerRadius="8" Height="36" MaxWidth="460"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="12,0" Padding="10,0">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16"
                                                     Foreground="{DynamicResource DsMutedBrush}"
@@ -155,7 +141,7 @@
                     <Border.Background>
                         <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
                             <GradientStop Offset="0" Color="#1A2F81F7" />
-                            <GradientStop Offset="1" Color="#000D1117" />
+                            <GradientStop Offset="1" Color="#002F81F7" />
                         </RadialGradientBrush>
                     </Border.Background>
                 </Border>
@@ -164,12 +150,8 @@
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Stretch" Margin="36,24,36,40">
                         <StackPanel Grid.Column="0" Spacing="22">
                             <!-- Breadcrumbs Strip -->
-                            <Border Background="{DynamicResource DsSurfaceBrush}"
-                                    BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="10,5"
-                                    HorizontalAlignment="Left">
+                            <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="10,5" HorizontalAlignment="Left">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding ActiveBreadcrumb}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -178,16 +160,10 @@
 
                             <!-- Article Title & Header -->
                             <StackPanel Spacing="8">
-                                <TextBlock Text="{Binding SelectedArticle.Title}"
-                                           FontSize="26" FontWeight="Bold"
-                                           Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                <TextBlock Text="{Binding SelectedArticle.Subtitle}"
-                                           FontSize="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="{Binding SelectedArticle.Title}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="{Binding SelectedArticle.Subtitle}" FontSize="14" Foreground="{DynamicResource DsMutedBrush}" />
                                 <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
-                                    <Border Classes="nexus-badge-pill"
-                                            Background="{Binding SelectedCategory.AccentBgColor}"
-                                            BorderBrush="{Binding SelectedCategory.AccentColor}"
-                                            BorderThickness="1">
+                                    <Border Classes="nexus-badge-pill" Background="{Binding SelectedCategory.AccentBgColor}" BorderBrush="{Binding SelectedCategory.AccentColor}" BorderThickness="1">
                                         <TextBlock Text="{Binding SelectedCategory.Badge}" Foreground="{Binding SelectedCategory.AccentColor}" />
                                     </Border>
                                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -198,11 +174,8 @@
                             </StackPanel>
 
                             <!-- Summary Callout Box -->
-                            <Border Background="{DynamicResource DsSurfaceBrush}"
-                                    BorderBrush="{DynamicResource DsPrimaryBrush}"
-                                    BorderThickness="3,1,1,1"
-                                    CornerRadius="10"
-                                    Padding="18,14">
+                            <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsPrimaryBrush}"
+                                    BorderThickness="3,1,1,1" CornerRadius="10" Padding="18,14">
                                 <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13.5" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" LineHeight="22" />
                             </Border>
 
@@ -305,6 +278,36 @@
                                                         </Grid>
                                                     </Border>
 
+                                                    <!-- Multi-Language Tab Bar (C++ | Java | Python | C#) -->
+                                                    <Border IsVisible="{Binding HasVariants}"
+                                                            Background="{DynamicResource DsSurfaceBrush}"
+                                                            BorderBrush="{DynamicResource DsBorderBrush}"
+                                                            BorderThickness="0,0,0,1"
+                                                            Padding="12,5">
+                                                        <ItemsControl ItemsSource="{Binding Variants}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="models:DocCodeLanguageVariant">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                                                                        <Button Command="{Binding $parent[ItemsControl].((models:DocCodeSnippet)DataContext).SelectVariantCommand}"
+                                                                                CommandParameter="{Binding}"
+                                                                                Classes="doc-lang-tab"
+                                                                                Classes.selected="{Binding IsSelected}">
+                                                                            <TextBlock Text="{Binding DisplayLabel}" />
+                                                                        </Button>
+                                                                        <TextBlock Text="|" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.6"
+                                                                                   VerticalAlignment="Center" Margin="4,0" IsVisible="{Binding HasSeparator}"
+                                                                                   IsHitTestVisible="False" />
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Border>
+
                                                     <!-- Code Block Canvas -->
                                                     <Border Padding="6" Background="{DynamicResource DsBgBrush}">
                                                         <controls:CodeViewer Code="{Binding Code}" Language="{Binding Language}" />
@@ -326,14 +329,12 @@
                                                 <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="6,8">
                                                     <Grid ColumnDefinitions="180,90,110,*">
                                                         <TextBlock Grid.Column="0" Text="{Binding Action}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                 Height="22" MinHeight="22" CornerRadius="4" Padding="6,0" HorizontalAlignment="Left" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding MacKey}" FontSize="11" FontWeight="Bold" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsPrimaryBrush}"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                                         </Border>
-                                                        <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                                        <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                                 Height="22" MinHeight="22" CornerRadius="4" Padding="6,0" HorizontalAlignment="Left" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding WinKey}" FontSize="11" FontWeight="Bold" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource NavNotebooksFgBrush}"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />

@@ -246,4 +246,185 @@ public class JavaDebuggerTests : IDisposable
 
         await session.StopAsync(cts.Token);
     }
+
+    [JavaFact]
+    public async Task JavaDebugger_Quicksort_RecursiveStepping()
+    {
+        var java = TestJava.Require();
+        var services = TestJava.Services(Path.Combine(_dir, ".studio"));
+        var lang = (JavaLanguage)services.Registry.Get(LanguageIds.Java)!;
+
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var sourcePath = Path.Combine(repoRoot, "tools", "UiSnapshots", "Samples", "Quicksort.java");
+        var sourceCode = File.ReadAllText(sourcePath);
+        var copiedSourcePath = Write("Quicksort.java", sourceCode);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var pauses = new List<DebugPausedEventArgs>();
+        var pauseTcs = new TaskCompletionSource<DebugPausedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var launchContext = new DebugLaunchContext(
+            ScriptId: "quicksort-test",
+            SourceFilePath: copiedSourcePath,
+            SourceCode: sourceCode,
+            Breakpoints: [new() { LineNumber = 11, IsEnabled = true }],
+            Toolchain: new ToolchainResolution(java),
+            OnLiveOutput: s => Console.WriteLine("[LIVE] " + s),
+            CancellationToken: cts.Token);
+
+        await using var session = await lang.Debugger!.LaunchAsync(launchContext, cts.Token);
+        session.Paused += args =>
+        {
+            lock (pauses)
+            {
+                pauses.Add(args);
+                pauseTcs.TrySetResult(args);
+            }
+        };
+
+        async Task<DebugPausedEventArgs> StepAndAwaitPauseAsync(Func<Task> stepAction)
+        {
+            lock (pauses)
+            {
+                pauseTcs = new TaskCompletionSource<DebugPausedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            await stepAction();
+            return await pauseTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        var initialPause = await pauseTcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.Equal(11, initialPause.LineNumber);
+        Assert.Contains("main", initialPause.CallStack.FirstOrDefault()?.MethodName);
+
+        // Step 1: Step into quicksort(data, 0, data.length - 1)
+        var p1 = await StepAndAwaitPauseAsync(() => session.StepIntoAsync(cts.Token));
+        Assert.Equal(19, p1.LineNumber);
+        Assert.Equal(2, p1.CallStack.Count);
+        Assert.Contains("quicksort", p1.CallStack[0].MethodName);
+
+        // Step 2: Step over line 19 (if (low < high))
+        var p2 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(20, p2.LineNumber);
+        Assert.Equal(2, p2.CallStack.Count);
+
+        // Step 3: Step over line 20 (int pi = partition(...))
+        var p3 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(21, p3.LineNumber);
+        Assert.Equal(2, p3.CallStack.Count);
+
+        // Step 4: Step into recursive quicksort at line 21 (low=0, high=-1)
+        var p4 = await StepAndAwaitPauseAsync(() => session.StepIntoAsync(cts.Token));
+        Assert.Equal(19, p4.LineNumber);
+        Assert.Equal(3, p4.CallStack.Count);
+
+        // Step 5: Step over inside recursive quicksort (at line 19 where 0 < -1 is false)
+        var p5 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(24, p5.LineNumber);
+        Assert.Equal(3, p5.CallStack.Count);
+
+        // Step 6: Step over line 24 (return from first recursive quicksort)
+        var p6 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(22, p6.LineNumber);
+        Assert.Equal(2, p6.CallStack.Count);
+
+        // Step 7: Step into second recursive quicksort at line 22 (quicksort(arr, pi + 1, high))
+        var p7 = await StepAndAwaitPauseAsync(() => session.StepIntoAsync(cts.Token));
+        Assert.Equal(19, p7.LineNumber);
+        Assert.Equal(3, p7.CallStack.Count);
+
+        // Step 8: Step over line 19 (if (low < high) where low=1, high=10)
+        var p8 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(20, p8.LineNumber);
+        Assert.Equal(3, p8.CallStack.Count);
+
+        // Step 9: Step over line 20 (partition) -> advances to line 21 (quicksort(arr, low, pi - 1))
+        var p9 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(21, p9.LineNumber);
+        Assert.Equal(3, p9.CallStack.Count);
+
+        // Step 10: Step over line 21 (quicksort(arr, low, pi - 1))
+        var p10 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(22, p10.LineNumber);
+        Assert.Equal(3, p10.CallStack.Count);
+
+        // Step 11: Step over line 22 (quicksort(arr, pi + 1, high)) -> finishes sort, returns to main
+        var p11 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(13, p11.LineNumber);
+        Assert.Single(p11.CallStack);
+        Assert.Contains("main", p11.CallStack[0].MethodName);
+
+        await session.StopAsync(cts.Token);
+    }
+
+    [JavaFact]
+    public async Task JavaDebugger_Quicksort_StepInFirst_ThenStepOverSecond()
+    {
+        var java = TestJava.Require();
+        var services = TestJava.Services(Path.Combine(_dir, ".studio"));
+        var lang = (JavaLanguage)services.Registry.Get(LanguageIds.Java)!;
+
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var sourcePath = Path.Combine(repoRoot, "tools", "UiSnapshots", "Samples", "Quicksort.java");
+        var sourceCode = File.ReadAllText(sourcePath);
+        var copiedSourcePath = Write("Quicksort2.java", sourceCode);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var pauseTcs = new TaskCompletionSource<DebugPausedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var launchContext = new DebugLaunchContext(
+            ScriptId: "quicksort2-test",
+            SourceFilePath: copiedSourcePath,
+            SourceCode: sourceCode,
+            Breakpoints: [new() { LineNumber = 11, IsEnabled = true }],
+            Toolchain: new ToolchainResolution(java),
+            OnLiveOutput: null,
+            CancellationToken: cts.Token);
+
+        await using var session = await lang.Debugger!.LaunchAsync(launchContext, cts.Token);
+        session.Paused += args => pauseTcs.TrySetResult(args);
+
+        async Task<DebugPausedEventArgs> StepAndAwaitPauseAsync(Func<Task> stepAction)
+        {
+            pauseTcs = new TaskCompletionSource<DebugPausedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+            await stepAction();
+            return await pauseTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        var initialPause = await pauseTcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.Equal(11, initialPause.LineNumber);
+
+        // Step in to quicksort at line 19
+        var p1 = await StepAndAwaitPauseAsync(() => session.StepIntoAsync(cts.Token));
+        Assert.Equal(19, p1.LineNumber);
+
+        // Step over line 19 -> 20
+        var p2 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(20, p2.LineNumber);
+
+        // Step over line 20 -> 21
+        var p3 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(21, p3.LineNumber);
+
+        // Step in on first quicksort (line 21) -> enters recursive call at line 19
+        var p4 = await StepAndAwaitPauseAsync(() => session.StepIntoAsync(cts.Token));
+        Assert.Equal(19, p4.LineNumber);
+        Assert.Equal(3, p4.CallStack.Count);
+
+        // Step over line 19 -> reaches line 24 (empty branch)
+        var p5 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(24, p5.LineNumber);
+
+        // Step over line 24 -> returns to caller at line 22 (the second quicksort call)
+        var p6 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(22, p6.LineNumber);
+        Assert.Equal(2, p6.CallStack.Count);
+
+        // Step over second quicksort (line 22) -> runs remaining recursive sort, returns cleanly to main at line 13
+        var p7 = await StepAndAwaitPauseAsync(() => session.StepOverAsync(cts.Token));
+        Assert.Equal(13, p7.LineNumber);
+        Assert.Single(p7.CallStack);
+        Assert.Contains("main", p7.CallStack[0].MethodName);
+
+        await session.StopAsync(cts.Token);
+    }
 }

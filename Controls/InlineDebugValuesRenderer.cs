@@ -8,13 +8,16 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 
 public class InlineDebugValuesRenderer : IBackgroundRenderer
 {
     private static readonly Typeface HintTypeface = new("JetBrains Mono, Menlo, Monaco, Consolas, monospace", FontStyle.Italic, FontWeight.Normal);
-    private static readonly IBrush DefaultHintBrush = new SolidColorBrush(Color.FromArgb(190, 140, 155, 175));
+    private static readonly IBrush DarkHintBrush = new SolidColorBrush(Color.FromArgb(190, 140, 155, 175));
+    private static readonly IBrush LightHintBrush = new SolidColorBrush(Color.FromArgb(200, 80, 95, 110));
+    private static IBrush DefaultHintBrush => ThemeService.IsDark ? DarkHintBrush : LightHintBrush;
     private static readonly IBrush ChangedHintBrush = new SolidColorBrush(Color.FromRgb(255, 121, 198)); // Vibrant accent for changed values
 
     public KnownLayer Layer => KnownLayer.Selection;

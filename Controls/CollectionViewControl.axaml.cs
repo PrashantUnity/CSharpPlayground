@@ -80,6 +80,13 @@ public partial class CollectionViewControl : UserControl
         RowCountText.Text = $"{filteredRows.Count} rows";
         if (_headers.Count == 0) return;
 
+        var headerFg = ResolveBrush("CodeTypeBrush", "#4EC9B0");
+        var headerBg = ResolveBrush("M3SurfaceContainerHighBrush", "#28FFFFFF");
+        var indexFg = ResolveBrush("M3OnSurfaceVariantBrush", "#8B949E");
+        var cellFg = ResolveBrush("M3OnSurfaceBrush", "#E6EDF3");
+        var zebraBg = ResolveBrush("DsSurfaceHoverBrush", "#10FFFFFF");
+        var monoFont = new FontFamily("JetBrains Mono, Menlo, monospace");
+
         // Render Header Row
         var headerGrid = CreateRowGrid();
         for (int i = 0; i < _headers.Count; i++)
@@ -89,8 +96,8 @@ public partial class CollectionViewControl : UserControl
                 Text = _headers[i],
                 FontSize = 11,
                 FontWeight = FontWeight.Bold,
-                Foreground = new SolidColorBrush(Color.Parse("#4EC9B0")),
-                FontFamily = new FontFamily("JetBrains Mono, Menlo, monospace"),
+                Foreground = headerFg,
+                FontFamily = monoFont,
                 Margin = new Thickness(8, 4),
                 MinWidth = i == 0 ? 30 : 60
             };
@@ -99,7 +106,7 @@ public partial class CollectionViewControl : UserControl
         }
         TableContentPanel.Children.Add(new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)),
+            Background = headerBg,
             CornerRadius = new CornerRadius(4),
             Child = headerGrid,
             Margin = new Thickness(0, 0, 0, 3)
@@ -116,8 +123,8 @@ public partial class CollectionViewControl : UserControl
                 {
                     Text = row[i],
                     FontSize = 11,
-                    FontFamily = new FontFamily("JetBrains Mono, Menlo, monospace"),
-                    Foreground = i == 0 ? new SolidColorBrush(Color.Parse("#8B949E")) : new SolidColorBrush(Color.Parse("#E6EDF3")),
+                    FontFamily = monoFont,
+                    Foreground = i == 0 ? indexFg : cellFg,
                     Margin = new Thickness(8, 3),
                     MinWidth = i == 0 ? 30 : 60,
                     TextTrimming = TextTrimming.CharacterEllipsis
@@ -127,13 +134,26 @@ public partial class CollectionViewControl : UserControl
             }
             TableContentPanel.Children.Add(new Border
             {
-                Background = rowIndex % 2 == 1 ? new SolidColorBrush(Color.FromArgb(16, 255, 255, 255)) : Brushes.Transparent,
+                Background = rowIndex % 2 == 1 ? zebraBg : Brushes.Transparent,
                 CornerRadius = new CornerRadius(3),
                 Child = rowGrid,
                 Margin = new Thickness(0, 1)
             });
             rowIndex++;
         }
+    }
+
+    private IBrush ResolveBrush(string resourceKey, string fallbackHex)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is IBrush b)
+        {
+            return b;
+        }
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is IBrush appB)
+        {
+            return appB;
+        }
+        return new SolidColorBrush(Color.Parse(fallbackHex));
     }
 
     private async void OnCopyTableClicked(object? sender, RoutedEventArgs e)

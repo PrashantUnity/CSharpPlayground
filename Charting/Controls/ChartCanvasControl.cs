@@ -8,6 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 
@@ -18,7 +19,9 @@ public class ChartCanvasControl : Control
 
     private static readonly Typeface TooltipTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
     private static readonly IBrush TooltipTextBrush = new SolidColorBrush(Color.FromArgb(240, 255, 255, 255));
-    private static readonly IBrush EmptyTextBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
+    private static readonly IBrush DarkEmptyTextBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
+    private static readonly IBrush LightEmptyTextBrush = new SolidColorBrush(Color.FromArgb(140, 100, 116, 139));
+    private static IBrush EmptyTextBrush => ThemeService.IsDark ? DarkEmptyTextBrush : LightEmptyTextBrush;
 
     public ChartViewState ViewState { get; set; } = new();
 

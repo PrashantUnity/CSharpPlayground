@@ -92,7 +92,11 @@ public partial class VisualizerFullScreenOverlay : UserControl
         if (_topLevel != null) _topLevel.PropertyChanged += OnTopLevelPropertyChanged;
         if (_source != null) _source.DetachedFromVisualTree += OnSourceDetached;
         FillWindow();
-        Dispatcher.UIThread.Post(View.FocusCanvas, DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() =>
+        {
+            View.FitToView();
+            View.FocusCanvas();
+        }, DispatcherPriority.Loaded);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

@@ -6,7 +6,6 @@
              xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="380"
-             VerticalAlignment="Top"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.InteractiveVisualizerControl">
 
     <UserControl.Styles>
@@ -42,8 +41,9 @@
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
-                Height="200"
                 MinHeight="80"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
                 ClipToBounds="True"
                 IsVisible="False">
             <visControls:VisualizerCanvasControl Name="CanvasControl" />

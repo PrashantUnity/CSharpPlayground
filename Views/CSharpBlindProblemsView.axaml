@@ -31,7 +31,7 @@
             <Border.Background>
                 <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
                     <GradientStop Offset="0" Color="#18F59E0B" />
-                    <GradientStop Offset="1" Color="#000D1117" />
+                    <GradientStop Offset="1" Color="#00F59E0B" />
                 </RadialGradientBrush>
             </Border.Background>
         </Border>

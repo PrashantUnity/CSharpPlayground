@@ -55,17 +55,17 @@
         </StackPanel>
 
         <Border x:Name="CanvasContainer"
-                Background="#070B10"
+                Background="{DynamicResource VisCanvasBgBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="2"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
+                ClipToBounds="True"
                 IsVisible="False">
             <charting3d:Plot3DCanvasControl x:Name="CanvasControl"
-                                             Height="300"
-                                             MinHeight="180"
+                                             MinHeight="80"
                                              HorizontalAlignment="Stretch"
                                              VerticalAlignment="Stretch" />
         </Border>

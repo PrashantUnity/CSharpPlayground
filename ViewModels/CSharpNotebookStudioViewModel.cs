@@ -12,7 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle
+public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
 {
     private readonly IScriptStorageService _storageService;
     private readonly StudioLanguageServices _languages;
@@ -36,6 +36,18 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
     [ObservableProperty]
     private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Loading...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = string.Empty;
+
+    public IDisposable BeginLoading(string title, string subtitle = "") =>
+        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
 
     [ObservableProperty]
     private int _selectedActivityBarIndex = 0;
@@ -555,27 +567,31 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         var timestamp = DateTime.Now.ToString("HHmmss");
         var title = $"Notebook_{timestamp}";
 
-        NotebookDocumentItem newDoc;
-        try
+        using (BeginLoading("Creating Notebook...", $"{title}.frynb"))
         {
-            newDoc = await _storageService.CreateNewNotebookAsync(title);
+            await Task.Yield();
+            NotebookDocumentItem newDoc;
+            try
+            {
+                newDoc = await Task.Run(async () => await _storageService.CreateNewNotebookAsync(title));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to create new notebook: {ex.Message}");
+                newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
+            }
+
+            var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
+
+            ConfigureNotebookTab(newTab);
+            Tabs.Add(newTab);
+            SelectTab(newTab);
+            RefreshQuickOpenDocuments();
+
+            var newExpItem = EnsureDocumentInExplorer(newDoc);
+            HighlightExplorerItem(newExpItem.Name);
+            newExpItem.StartRename();
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create new notebook: {ex.Message}");
-            newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
-        }
-
-        var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
-
-        ConfigureNotebookTab(newTab);
-        Tabs.Add(newTab);
-        SelectTab(newTab);
-        RefreshQuickOpenDocuments();
-
-        var newExpItem = EnsureDocumentInExplorer(newDoc);
-        HighlightExplorerItem(newExpItem.Name);
-        newExpItem.StartRename();
     }
 
     // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
@@ -793,107 +809,129 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
 
-        // API server documents open in the Server Studio.
-        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+        using (BeginLoading("Opening File...", item.Name))
         {
-            if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
+            await Task.Yield();
+            if (Avalonia.Application.Current != null)
             {
-                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
-                if (server != null)
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            // API server documents open in the Server Studio.
+            if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
                 {
-                    _openServerAction.Invoke(server);
-                    return;
+                    var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.DocumentId));
+                    if (server != null)
+                    {
+                        _openServerAction.Invoke(server);
+                        return;
+                    }
                 }
             }
-        }
 
-        // Scripts, and source files of any language (main.py), open in the Code Studio.
-        if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
-            item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
-            _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
-        {
-            if (_openScriptAction != null && !string.IsNullOrEmpty(item.DocumentId))
+            // Scripts, and source files of any language (main.py), open in the Code Studio.
+            if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
+                item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
+                _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
             {
-                var sc = await _storageService.LoadScriptAsync(item.DocumentId);
-                if (sc != null)
+                if (_openScriptAction != null)
                 {
-                    _openScriptAction.Invoke(sc);
-                    return;
+                    ScriptDocumentItem? sc = null;
+                    if (!string.IsNullOrEmpty(item.DocumentId))
+                    {
+                        sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.DocumentId));
+                    }
+                    if (sc == null && !string.IsNullOrEmpty(item.FullPath))
+                    {
+                        var openRes = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(item.FullPath));
+                        if (openRes.Success && !string.IsNullOrEmpty(openRes.PrimaryDocumentId))
+                        {
+                            sc = await Task.Run(async () => await _storageService.LoadScriptAsync(openRes.PrimaryDocumentId));
+                        }
+                    }
+
+                    if (sc != null)
+                    {
+                        _openScriptAction.Invoke(sc);
+                        return;
+                    }
                 }
             }
-        }
 
-        var fileName = item.Name;
-        var folderName = item.Parent?.Name ?? "Library";
-        var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
-        var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? fileName.Substring(0, fileName.Length - 6)
-            : fileName;
+            var fileName = item.Name;
+            var folderName = item.Parent?.Name ?? "Library";
+            var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
+            var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Substring(0, fileName.Length - 6)
+                : fileName;
 
-        var existingTab = Tabs.FirstOrDefault(t =>
-            (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-            string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
+            var existingTab = Tabs.FirstOrDefault(t =>
+                (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
+                string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
 
-        if (existingTab != null)
-        {
-            SelectTab(existingTab);
-            return;
-        }
-
-        NotebookDocumentItem? loadedDoc = null;
-        if (!string.IsNullOrEmpty(item.DocumentId))
-        {
-            loadedDoc = await _storageService.LoadNotebookAsync(item.DocumentId);
-        }
-
-        if (loadedDoc == null)
-        {
-            var summaries = await _storageService.LoadWorkspaceSummariesAsync();
-            var match = summaries.FirstOrDefault(s => s.IsNotebook && (
-                string.Equals(s.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(s.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(s.Title, fileName, StringComparison.OrdinalIgnoreCase)));
-
-            if (match != null)
+            if (existingTab != null)
             {
-                loadedDoc = await _storageService.LoadNotebookAsync(match.Id);
-                if (loadedDoc != null) item.DocumentId = match.Id;
+                SelectTab(existingTab);
+                return;
             }
+
+            NotebookDocumentItem? loadedDoc = null;
+            if (!string.IsNullOrEmpty(item.DocumentId))
+            {
+                loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
+            }
+
+            if (loadedDoc == null)
+            {
+                var summaries = await Task.Run(async () => await _storageService.LoadWorkspaceSummariesAsync());
+                var match = summaries.FirstOrDefault(s => s.IsNotebook && (
+                    string.Equals(s.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.Title, fileName, StringComparison.OrdinalIgnoreCase)));
+
+                if (match != null)
+                {
+                    loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(match.Id));
+                    if (loadedDoc != null) item.DocumentId = match.Id;
+                }
+            }
+
+            if (loadedDoc == null)
+            {
+                loadedDoc = new NotebookDocumentItem
+                {
+                    Id = item.DocumentId ?? Guid.NewGuid().ToString("N"),
+                    Title = docTitle,
+                    Category = "Interactive",
+                    Created = DateTime.UtcNow,
+                    LastModified = DateTime.UtcNow
+                };
+
+                loadedDoc.Cells.Add(new NotebookCellItem
+                {
+                    Type = CellType.Markdown,
+                    Source = $"# 📓 {docTitle}\nWrite documentation or notes in this cell.",
+                    IsMarkdownPreviewMode = true
+                });
+                loadedDoc.Cells.Add(new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
+                });
+
+                await Task.Run(async () => await _storageService.SaveNotebookAsync(loadedDoc));
+                item.DocumentId = loadedDoc.Id;
+            }
+
+            var newTab = CreateTab(loadedDoc, folderName, filePath);
+            ConfigureNotebookTab(newTab);
+            Tabs.Add(newTab);
+            SelectTab(newTab);
         }
-
-        if (loadedDoc == null)
-        {
-            loadedDoc = new NotebookDocumentItem
-            {
-                Id = item.DocumentId ?? Guid.NewGuid().ToString("N"),
-                Title = docTitle,
-                Category = "Interactive",
-                Created = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
-            };
-
-            loadedDoc.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = $"# 📓 {docTitle}\nWrite documentation or notes in this cell.",
-                IsMarkdownPreviewMode = true
-            });
-            loadedDoc.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
-            });
-
-            await _storageService.SaveNotebookAsync(loadedDoc);
-            item.DocumentId = loadedDoc.Id;
-        }
-
-        var newTab = CreateTab(loadedDoc, folderName, filePath);
-
-        Tabs.Add(newTab);
-        SelectTab(newTab);
     }
 
     [RelayCommand]
@@ -1388,40 +1426,44 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     {
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        try
+        using (BeginLoading("Opening Project...", Path.GetFileName(path) ?? path))
         {
-            var result = await _storageService.OpenExternalProjectAsync(path);
-            if (!result.Success)
+            await Task.Yield();
+            try
             {
+                var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
+                if (!result.Success)
+                {
+                    if (ActiveTab != null)
+                    {
+                        ActiveTab.KernelStatusText = result.Message;
+                    }
+                    return;
+                }
+
+                await RefreshExplorer();
+
+                if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+                {
+                    var loaded = await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId));
+                    if (loaded != null)
+                    {
+                        UpdateActiveNotebook(loaded);
+                    }
+                }
+
                 if (ActiveTab != null)
                 {
                     ActiveTab.KernelStatusText = result.Message;
                 }
-                return;
             }
-
-            await RefreshExplorer();
-
-            if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
+            catch (Exception ex)
             {
-                var loaded = await _storageService.LoadNotebookAsync(result.PrimaryDocumentId);
-                if (loaded != null)
+                Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
+                if (ActiveTab != null)
                 {
-                    UpdateActiveNotebook(loaded);
+                    ActiveTab.KernelStatusText = $"Error opening project: {ex.Message}";
                 }
-            }
-
-            if (ActiveTab != null)
-            {
-                ActiveTab.KernelStatusText = result.Message;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
-            if (ActiveTab != null)
-            {
-                ActiveTab.KernelStatusText = $"Error opening project: {ex.Message}";
             }
         }
     }
@@ -1472,22 +1514,29 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     // Go to File: opens any file of the workspace by its path. A notebook opens here, anything else in the Code Studio.
     private async Task OpenWorkspaceFileAsync(string fullPath)
     {
-        var result = await _storageService.OpenExternalProjectAsync(fullPath);
-        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+        using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
         {
-            if (ActiveTab != null) ActiveTab.KernelStatusText = result.Message;
-            return;
-        }
+            await Task.Yield();
+            var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(fullPath));
+            if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
+            {
+                if (ActiveTab != null) ActiveTab.KernelStatusText = result.Message;
+                return;
+            }
 
-        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
-        {
-            if (await _storageService.LoadNotebookAsync(result.PrimaryDocumentId) is { } notebook) UpdateActiveNotebook(notebook);
-            return;
-        }
+            if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+            {
+                if (await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId)) is { } notebook)
+                {
+                    UpdateActiveNotebook(notebook);
+                }
+                return;
+            }
 
-        if (_openScriptAction != null && await _storageService.LoadScriptAsync(result.PrimaryDocumentId) is { } script)
-        {
-            _openScriptAction.Invoke(script);
+            if (_openScriptAction != null && await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId)) is { } script)
+            {
+                _openScriptAction.Invoke(script);
+            }
         }
     }
 

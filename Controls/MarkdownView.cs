@@ -148,10 +148,146 @@ public class MarkdownView : UserControl
                 continue;
             }
 
+            if (trimmed.Contains('|') && i + 1 < lines.Length && IsTableSeparator(lines[i + 1]))
+            {
+                foreach (var block in Flush()) yield return block;
+                var headers = SplitTableRow(line);
+                var separators = SplitTableRow(lines[i + 1]);
+                var alignments = separators.Select(ParseAlignment).ToArray();
+                var rows = new List<string[]>();
+                i += 2;
+                for (; i < lines.Length; i++)
+                {
+                    string rowLine = lines[i].Trim();
+                    if (string.IsNullOrWhiteSpace(rowLine) || !rowLine.Contains('|'))
+                    {
+                        break;
+                    }
+                    rows.Add(SplitTableRow(rowLine));
+                }
+                i--;
+                yield return Table(headers, alignments, rows);
+                continue;
+            }
+
             paragraph.Add(trimmed);
         }
 
         foreach (var block in Flush()) yield return block;
+    }
+
+    private static string[] SplitTableRow(string line)
+    {
+        var trimmed = line.Trim();
+        if (trimmed.StartsWith('|')) trimmed = trimmed[1..];
+        if (trimmed.EndsWith('|')) trimmed = trimmed[..^1];
+        return trimmed.Split('|').Select(c => c.Trim()).ToArray();
+    }
+
+    private static bool IsTableSeparator(string line)
+    {
+        var cols = SplitTableRow(line);
+        return cols.Length > 0 && cols.All(c => Regex.IsMatch(c, @"^:?-+:?$"));
+    }
+
+    private static TextAlignment ParseAlignment(string col)
+    {
+        col = col.Trim();
+        bool left = col.StartsWith(':');
+        bool right = col.EndsWith(':');
+        if (left && right) return TextAlignment.Center;
+        if (right) return TextAlignment.Right;
+        return TextAlignment.Left;
+    }
+
+    private Control Table(string[] headers, TextAlignment[] alignments, List<string[]> rows)
+    {
+        if (headers.Length == 0) return new Panel();
+
+        var grid = new Grid();
+        for (int c = 0; c < headers.Length; c++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        }
+
+        grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+        // Header Background
+        var headerBg = new Border
+        {
+            Background = CodeBlockBrush,
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            BorderBrush = RuleBrush
+        };
+        Grid.SetRow(headerBg, 0);
+        Grid.SetColumnSpan(headerBg, Math.Max(1, headers.Length));
+        grid.Children.Add(headerBg);
+
+        for (int c = 0; c < headers.Length; c++)
+        {
+            var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
+            var text = Text(headers[c], FontSize, FontWeight.SemiBold);
+            text.TextAlignment = align;
+
+            var cell = new Border
+            {
+                Padding = new Thickness(12, 7),
+                BorderThickness = new Thickness(0, 0, c < headers.Length - 1 ? 1 : 0, 0),
+                BorderBrush = RuleBrush,
+                Child = text
+            };
+            Grid.SetRow(cell, 0);
+            Grid.SetColumn(cell, c);
+            grid.Children.Add(cell);
+        }
+
+        for (int r = 0; r < rows.Count; r++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            var rowData = rows[r];
+            bool isLastRow = (r == rows.Count - 1);
+
+            if (r % 2 == 1)
+            {
+                var zebraBg = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromArgb(14, 128, 128, 128))
+                };
+                Grid.SetRow(zebraBg, r + 1);
+                Grid.SetColumnSpan(zebraBg, Math.Max(1, headers.Length));
+                grid.Children.Add(zebraBg);
+            }
+
+            for (int c = 0; c < headers.Length; c++)
+            {
+                string cellText = c < rowData.Length ? rowData[c] : string.Empty;
+                var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
+                var text = Text(cellText, FontSize, FontWeight.Normal);
+                text.TextAlignment = align;
+
+                var cell = new Border
+                {
+                    Padding = new Thickness(12, 6),
+                    BorderThickness = new Thickness(0, 0, c < headers.Length - 1 ? 1 : 0, isLastRow ? 0 : 1),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(35, 128, 128, 128)),
+                    Child = text
+                };
+                Grid.SetRow(cell, r + 1);
+                Grid.SetColumn(cell, c);
+                grid.Children.Add(cell);
+            }
+        }
+
+        return new Border
+        {
+            BorderBrush = RuleBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(5),
+            ClipToBounds = true,
+            Margin = new Thickness(0, 4, 0, 8),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Child = grid
+        };
     }
 
     private Control List(List<(int Indent, string Marker, string Text)> items)

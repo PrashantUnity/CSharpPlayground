@@ -255,4 +255,62 @@ public class HttpServerEngineTests
         var jsonRes = Assert.IsType<JsonResult>(result);
         Assert.NotNull(jsonRes.Value);
     }
+
+    [Fact]
+    public async Task ServerEngine_WhenCellCodeUpdatedWhileRunning_ReturnsUpdatedLogicImmediately()
+    {
+        var port = GetFreePort();
+        var cell = new FryServerCellItem
+        {
+            Id = "hot-reload-cell",
+            Method = "GET",
+            Route = "/version",
+            Type = FryServerCellType.Endpoint,
+            Source = "return Ok(new { version = 1, message = \"Original\" });"
+        };
+
+        var doc = new FryServerDocumentItem
+        {
+            ServerConfig = new FryServerConfiguration
+            {
+                Host = "localhost",
+                Port = port,
+                Scheme = "http",
+                ApiPrefix = "/api"
+            },
+            Cells = new List<FryServerCellItem> { cell }
+        };
+
+        var engine = new FryHttpListenerServerEngine();
+
+        try
+        {
+            await engine.StartAsync(doc);
+            using var client = new HttpClient();
+
+            // First request: returns version 1
+            var response1 = await client.GetAsync($"http://localhost:{engine.BoundPort}/api/version");
+            Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+            var json1 = await response1.Content.ReadAsStringAsync();
+            using var doc1 = JsonDocument.Parse(json1);
+            Assert.Equal(1, doc1.RootElement.GetProperty("version").GetInt32());
+            Assert.Equal("Original", doc1.RootElement.GetProperty("message").GetString());
+
+            // User updates code inside running server
+            cell.Source = "return Ok(new { version = 2, message = \"Updated Logic!\" });";
+            await engine.InvalidateCellCompilationAsync(cell);
+
+            // Second request: MUST return version 2 with updated logic!
+            var response2 = await client.GetAsync($"http://localhost:{engine.BoundPort}/api/version");
+            Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+            var json2 = await response2.Content.ReadAsStringAsync();
+            using var doc2 = JsonDocument.Parse(json2);
+            Assert.Equal(2, doc2.RootElement.GetProperty("version").GetInt32());
+            Assert.Equal("Updated Logic!", doc2.RootElement.GetProperty("message").GetString());
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
 }

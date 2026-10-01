@@ -141,6 +141,7 @@ public partial class FryServerStudioViewModel
             ActiveCell = Cells.ElementAtOrDefault(index) ?? Cells.LastOrDefault();
         }
         NotifyCellCounts();
+        _engine.RefreshRoutes();
     }
 
     [RelayCommand]
@@ -166,6 +167,7 @@ public partial class FryServerStudioViewModel
         Document.Cells.Insert(index + 1, duplicateItem);
         SelectCell(vm);
         NotifyCellCounts();
+        _engine.RefreshRoutes();
     }
 
     [RelayCommand]
@@ -178,6 +180,7 @@ public partial class FryServerStudioViewModel
             Cells.Move(idx, idx - 1);
             Document.Cells.RemoveAt(idx);
             Document.Cells.Insert(idx - 1, cell.Model);
+            _engine.RefreshRoutes();
         }
     }
 
@@ -191,6 +194,7 @@ public partial class FryServerStudioViewModel
             Cells.Move(idx, idx + 1);
             Document.Cells.RemoveAt(idx);
             Document.Cells.Insert(idx + 1, cell.Model);
+            _engine.RefreshRoutes();
         }
     }
 
@@ -210,5 +214,6 @@ public partial class FryServerStudioViewModel
         Cells.Add(vm);
         SelectCell(vm);
         NotifyCellCounts();
+        _engine.RefreshRoutes();
     }
 }

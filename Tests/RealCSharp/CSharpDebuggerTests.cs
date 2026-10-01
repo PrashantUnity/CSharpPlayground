@@ -192,6 +192,31 @@ public class CSharpDebuggerTests : IDisposable
 
         Assert.Equal(3, (await terminated.Task.WaitAsync(Patience)).ExitCode);
     }
+
+    [Fact]
+    public async Task AScriptUsingPluginTypesAndCheck_PausesAtBreakpoint_AndResolvesAssemblies()
+    {
+        var provider = Provider();
+        if (!await NetCoreDbgInstalled(provider)) return;
+        using var cts = new CancellationTokenSource(Patience);
+        var paused = new TaskCompletionSource<DebugPausedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var terminated = new TaskCompletionSource<DebugTerminatedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        const string scriptWithPluginTypes = "var nums = new[] { 1, 2 };\nCheck(\"T1\", nums.Length, \"2\");\nvar done = true;\n";
+
+        await using var session = await provider.LaunchAsync(Context(scriptWithPluginTypes, null, 3), cts.Token);
+        session.Paused += args => paused.TrySetResult(args);
+        session.Terminated += args => terminated.TrySetResult(args);
+        Assert.IsType<DapDebugSession>(session);
+
+        var pausedArgs = await paused.Task.WaitAsync(Patience);
+        Assert.Equal(3, pausedArgs.LineNumber);
+        Assert.Equal("breakpoint", pausedArgs.Reason);
+
+        await session.ContinueAsync(cts.Token);
+        var end = await terminated.Task.WaitAsync(Patience);
+        Assert.Equal(0, end.ExitCode);
+    }
 }
 
 [CollectionDefinition(Name, DisableParallelization = true)]

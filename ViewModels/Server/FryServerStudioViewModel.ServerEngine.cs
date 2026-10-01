@@ -112,6 +112,18 @@ public partial class FryServerStudioViewModel
 
             await _engine.StartAsync(Document).ConfigureAwait(false);
 
+            _registry.RegisterServer(new FryRunningServerItem
+            {
+                ServerId = Document.Id,
+                DocumentTitle = DocumentTitle,
+                FilePath = FilePath,
+                BoundPort = _engine.BoundPort,
+                BaseUrl = _engine.BaseUrl,
+                Engine = _engine,
+                Document = Document,
+                StartedAt = DateTime.UtcNow
+            });
+
             Dispatcher.UIThread.Post(() =>
             {
                 BoundPort = _engine.BoundPort;
@@ -137,6 +149,7 @@ public partial class FryServerStudioViewModel
     {
         ServerStatusText = "Stopping…";
         await _engine.StopAsync().ConfigureAwait(false);
+        _registry.UnregisterServer(Document.Id);
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -227,6 +240,10 @@ public partial class FryServerStudioViewModel
             {
                 BoundPort = _engine.BoundPort;
                 BaseUrl = _engine.BaseUrl;
+            }
+            else if (state is ServerLifecycleState.Stopped or ServerLifecycleState.Faulted)
+            {
+                _registry.UnregisterServer(Document.Id);
             }
         });
     }

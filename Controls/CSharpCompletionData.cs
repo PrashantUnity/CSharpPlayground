@@ -10,6 +10,7 @@ using AvaloniaEdit.Editing;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
 
@@ -47,7 +48,7 @@ public class CSharpCompletionData : ICompletionData
             {
                 Text = _item.DisplayText,
                 FontSize = 12,
-                Foreground = new SolidColorBrush(Color.Parse("#E6EDF3")),
+                Foreground = new SolidColorBrush(Color.Parse(ThemeService.IsDark ? "#E6EDF3" : "#1F2328")),
                 Margin = new Thickness(4, 2)
             };
         }
@@ -76,13 +77,15 @@ public class CSharpCompletionData : ICompletionData
         Grid.SetColumn(icon, 0);
         grid.Children.Add(icon);
 
+        bool isDark = ThemeService.IsDark;
+
         var textBlock = new TextBlock
         {
             Text = _item.DisplayText,
             FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
             FontSize = 12,
             FontWeight = FontWeight.Medium,
-            Foreground = new SolidColorBrush(Color.Parse("#E6EDF3")),
+            Foreground = new SolidColorBrush(Color.Parse(isDark ? "#E6EDF3" : "#1F2328")),
             VerticalAlignment = VerticalAlignment.Center
         };
         Grid.SetColumn(textBlock, 1);
@@ -95,7 +98,7 @@ public class CSharpCompletionData : ICompletionData
                 Text = _item.ReturnType,
                 FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
                 FontSize = 10.5,
-                Foreground = new SolidColorBrush(Color.Parse("#8B949E")),
+                Foreground = new SolidColorBrush(Color.Parse(isDark ? "#8B949E" : "#57606A")),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(12, 0, 4, 0)
             };
@@ -115,12 +118,14 @@ public class CSharpCompletionData : ICompletionData
             Margin = new Thickness(6, 4)
         };
 
+        bool isDark = ThemeService.IsDark;
+
         if (!string.IsNullOrEmpty(_item.Signature))
         {
             var sigBorder = new Border
             {
-                Background = new SolidColorBrush(Color.Parse("#161B22")),
-                BorderBrush = new SolidColorBrush(Color.Parse("#30363D")),
+                Background = new SolidColorBrush(Color.Parse(isDark ? "#161B22" : "#F6F8FA")),
+                BorderBrush = new SolidColorBrush(Color.Parse(isDark ? "#30363D" : "#D0D7DE")),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(8, 5)
@@ -131,7 +136,7 @@ public class CSharpCompletionData : ICompletionData
                 Text = _item.Signature,
                 FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
                 FontSize = 11.5,
-                Foreground = new SolidColorBrush(Color.Parse("#58A6FF")),
+                Foreground = new SolidColorBrush(Color.Parse(isDark ? "#58A6FF" : "#0969DA")),
                 TextWrapping = TextWrapping.Wrap
             };
             sigBorder.Child = sigBlock;
@@ -144,7 +149,7 @@ public class CSharpCompletionData : ICompletionData
             {
                 Text = _item.Documentation,
                 FontSize = 11.5,
-                Foreground = new SolidColorBrush(Color.Parse("#C9D1D9")),
+                Foreground = new SolidColorBrush(Color.Parse(isDark ? "#C9D1D9" : "#24292F")),
                 TextWrapping = TextWrapping.Wrap,
                 LineHeight = 16
             };

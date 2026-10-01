@@ -23,9 +23,9 @@ from fry_channel import Event, process_events, wait  # noqa: F401  (part of the 
 TABLE_MIME = "application/vnd.fry.table+json"
 
 __all__ = [
-    "Display", "DisplayHandle", "Recorder", "Event", "show", "dump", "display", "table", "html", "markdown", "image", "json",
+    "Display", "DisplayHandle", "Recorder", "CanvasBuilder", "Event", "show", "dump", "display", "table", "html", "markdown", "image", "json",
     "chart", "line_chart", "area_chart", "bar_chart", "scatter_chart", "pie_chart", "donut_chart", "histogram",
-    "plot3d", "scatter3d", "trajectory3d", "surface3d", "graph3d", "voxel_bar3d",
+    "plot3d", "scatter3d", "trajectory3d", "surface3d", "graph3d", "voxel_bar3d", "plot3d_surface", "voxel_bars",
     "visualize", "matrix", "islands", "tree", "graph", "linked_list", "array", "bars", "board", "canvas", "recorder",
     "process_events", "wait",
 ]
@@ -266,9 +266,10 @@ def _table(obj, title):
 
 # ----------------------------------------------------------------------------------------------------------- charts
 
-def chart(data, title=None, kind="line", x=None, y=None, **options):
+def chart(data, title=None, kind="line", x=None, y=None, chart_type=None, chartType=None, **options):
     """A chart of data (kind: line, area, bar, scatter, pie, donut, histogram); x and y pick the fields of records."""
-    mime, spec = fry_specs.chart_spec(data, kind, x=x, y=y)
+    resolved_kind = chart_type or chartType or kind
+    mime, spec = fry_specs.chart_spec(data, resolved_kind, x=x, y=y)
     return _show(mime, spec, dict(options, title=title))
 
 
@@ -303,9 +304,10 @@ def histogram(samples, title=None, bins=None, **options):
 
 # --------------------------------------------------------------------------------------------------------------- 3D
 
-def plot3d(data, title=None, kind=None, **options):
+def plot3d(data, title=None, kind=None, plot_type=None, plotType=None, **options):
     """A 3D plot, z up (kind: scatter, trajectory, surface, wireframe, graph, voxelBar)."""
-    mime, spec = fry_specs.plot3d_spec(data, kind)
+    resolved_kind = plot_type or plotType or kind
+    mime, spec = fry_specs.plot3d_spec(data, resolved_kind)
     return _show(mime, spec, dict(options, title=title))
 
 
@@ -321,6 +323,10 @@ def voxel_bar3d(data, title=None, **options):
     return plot3d(data, title, "voxelBar", **options)
 
 
+def voxel_bars(data, title=None, **options):
+    return voxel_bar3d(data, title=title, **options)
+
+
 def graph3d(data, title=None, **options):
     return plot3d(data, title, "graph", **options)
 
@@ -332,6 +338,14 @@ def surface3d(data, title=None, x=(-5, 5), y=(-5, 5), resolution=30, wireframe=F
     else:
         mime, spec = fry_specs.plot3d_spec(data, "wireframe" if wireframe else "surface")
     return _show(mime, spec, dict(options, title=title))
+
+
+def plot3d_surface(data, title=None, x=(-5, 5), y=(-5, 5), x_range=None, y_range=None, resolution=30, res=None, colormap=None, color_map=None, wireframe=False, **options):
+    """Plots a 3D surface z = f(x, y) over ranges with colormap and camera options."""
+    opts = dict(options)
+    if colormap or color_map:
+        opts["color_map"] = colormap or color_map
+    return surface3d(data, title=title, x=x_range or x, y=y_range or y, resolution=res or resolution, wireframe=wireframe, **opts)
 
 
 # ------------------------------------------------------------------------------------------------------ visualizers
@@ -383,10 +397,68 @@ def board(grid, title=None, checkerboard=True, **options):
     return _visual(fry_specs.board_spec(grid, checkerboard), title, options)
 
 
-def canvas(shapes, title=None, width=600, height=300, background=None, **options):
-    """Free drawing: shapes as dicts ({"type": "rect", "x": 10, "y": 10, "width": 50, "height": 20}, circle, line,
-    arrow, text)."""
-    return _visual(fry_specs.canvas_spec(shapes, width, height, background), title, options)
+class CanvasBuilder:
+    def __init__(self, title=None, width=600, height=300, background=None, **options):
+        self.title = title
+        self.width = width
+        self.height = height
+        self.background = background
+        self.options = options
+        self.shapes = []
+
+    def add_rect(self, x, y, width, height, label=None, fill=None, stroke=None, corner_radius=None, **opts):
+        shape = {"type": "rect", "x": x, "y": y, "width": width, "height": height}
+        if label is not None: shape["label"] = str(label)
+        if fill is not None: shape["fill"] = fill
+        if stroke is not None: shape["stroke"] = stroke
+        if corner_radius is not None: shape["cornerRadius"] = corner_radius
+        shape.update(opts)
+        self.shapes.append(shape)
+        return self
+
+    def add_circle(self, cx, cy, radius=20, label=None, fill=None, stroke=None, **opts):
+        shape = {"type": "circle", "cx": cx, "cy": cy, "radius": radius}
+        if label is not None: shape["label"] = str(label)
+        if fill is not None: shape["fill"] = fill
+        if stroke is not None: shape["stroke"] = stroke
+        shape.update(opts)
+        self.shapes.append(shape)
+        return self
+
+    def add_arrow(self, x1, y1, x2, y2, label=None, color=None, stroke=None, **opts):
+        shape = {"type": "arrow", "x1": x1, "y1": y1, "x2": x2, "y2": y2}
+        if label is not None: shape["label"] = str(label)
+        s = color or stroke
+        if s is not None: shape["stroke"] = s
+        shape.update(opts)
+        self.shapes.append(shape)
+        return self
+
+    def add_line(self, x1, y1, x2, y2, color=None, stroke=None, **opts):
+        shape = {"type": "line", "x1": x1, "y1": y1, "x2": x2, "y2": y2}
+        s = color or stroke
+        if s is not None: shape["stroke"] = s
+        shape.update(opts)
+        self.shapes.append(shape)
+        return self
+
+    def add_text(self, x, y, text="", font_size=14, color=None, **opts):
+        shape = {"type": "text", "x": x, "y": y, "text": str(text), "fontSize": font_size}
+        if color is not None: shape["color"] = color
+        shape.update(opts)
+        self.shapes.append(shape)
+        return self
+
+    def show(self):
+        return _visual(fry_specs.canvas_spec(self.shapes, self.width, self.height, self.background), self.title, self.options)
+
+
+def canvas(shapes_or_title=None, title=None, width=600, height=300, background=None, **options):
+    """Free drawing: shapes as dicts or a CanvasBuilder for method chaining."""
+    if isinstance(shapes_or_title, str) or shapes_or_title is None:
+        resolved_title = shapes_or_title or title
+        return CanvasBuilder(title=resolved_title, width=width, height=height, background=background, **options)
+    return _visual(fry_specs.canvas_spec(shapes_or_title, width, height, background), title, options)
 
 
 class Recorder:

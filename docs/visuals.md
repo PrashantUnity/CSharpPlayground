@@ -2,6 +2,9 @@
 
 C# Code Studio and FrySharp provide a unified, polyglot visual runtime for interactive 2D charts, 3D plots, and algorithm/data structure visualizers. Regardless of the language (C#, Python, JavaScript, Java, Go, Rust, C++, or F#), programs generate rich interactive output through canonical APIs, standardized MIME bundles, and a shared visual chrome.
 
+> [!TIP]
+> For a full tutorial on generating diagrams (trees, graphs, 2D grids, vector canvas) with multi-language code examples, see [Diagrams & Visualizations API](file:///Users/codefrydev/Desktop/SourceCode/CSharpPlayground/docs/diagrams-and-visualizations.md).
+
 ---
 
 ## 1. Unified Visual Controls & Chrome

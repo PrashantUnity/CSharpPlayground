@@ -6,6 +6,7 @@
              xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
              xmlns:serverControls="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Server"
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:server="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Server"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="900"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.Server.FryServerStudioView"
              x:DataType="vm:FryServerStudioViewModel"
@@ -162,7 +163,7 @@
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="48" />
-                <ColumnDefinition Width="{Binding SideBarGridLength, Mode=TwoWay}" MinWidth="180" />
+                <ColumnDefinition Width="{Binding SideBarGridLength, Mode=TwoWay}" MinWidth="0" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" MinWidth="300" />
             </Grid.ColumnDefinitions>
@@ -211,6 +212,25 @@
                                 Classes.active="{Binding IsExplorerActive}"
                                 ToolTip.Tip="Server Explorer (Ctrl+Shift+E)">
                             <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20" />
+                        </Button>
+
+                        <!-- Running Servers (Index 3) -->
+                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
+                                Classes="activity-bar-btn"
+                                Classes.active="{Binding IsServersActive}"
+                                ToolTip.Tip="Running Servers &amp; Processes">
+                            <Grid>
+                                <materialIcons:MaterialIcon Kind="ServerNetwork" Width="20" Height="20" />
+                                <Border Background="{DynamicResource DsGreenBrush}" CornerRadius="7"
+                                        Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
+                                        IsVisible="{Binding HasRunningServers}">
+                                    <TextBlock Text="{Binding RunningServersBadgeText}" FontSize="8.5" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                               Margin="0,1,0,0"
+                                               Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                </Border>
+                            </Grid>
                         </Button>
                     </StackPanel>
 
@@ -470,6 +490,48 @@
                                         </StackPanel>
                                     </Border>
 
+                                    <!-- Active Running Servers Card -->
+                                    <Border IsVisible="{Binding HasRunningServers}"
+                                            Background="{DynamicResource DsSurfaceHighBrush}"
+                                            BorderBrush="{DynamicResource DsGreenBrush}"
+                                            BorderThickness="1" CornerRadius="6" Padding="10">
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <Ellipse Width="8" Height="8" Fill="{DynamicResource DsGreenBrush}" />
+                                                    <TextBlock Text="{Binding RunningServerCount, StringFormat='{}RUNNING SERVERS ({0})'}"
+                                                               FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" />
+                                                </StackPanel>
+                                                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
+                                                        Classes="cell-tool-btn" Height="20" Padding="4,0" ToolTip.Tip="Manage Running Servers">
+                                                    <materialIcons:MaterialIcon Kind="ArrowRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
+                                                </Button>
+                                            </Grid>
+                                            <ItemsControl ItemsSource="{Binding RunningServers}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="server:FryRunningServerItem">
+                                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" Margin="0,2">
+                                                            <TextBlock Grid.Column="0" Text="{Binding DocumentTitle}"
+                                                                       FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                            <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}"
+                                                                    CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}"
+                                                                           FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                            </Border>
+                                                            <Button Grid.Column="2"
+                                                                    Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).StopRunningServerCommand}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Classes="cell-tool-btn" Width="18" Height="18" ToolTip.Tip="Stop Server">
+                                                                <materialIcons:MaterialIcon Kind="Stop" Width="11" Height="11" Foreground="{DynamicResource DsRedBrush}" />
+                                                            </Button>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+
                                     <!-- Quick Export Actions -->
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="QUICK EXPORTS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" Margin="0,4,0,2" />
@@ -495,6 +557,122 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
+
+                        <!-- View 3: Running Servers Manager -->
+                        <Grid IsVisible="{Binding IsServersActive}" RowDefinitions="Auto,*">
+                            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0"
+                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding RunningServerCount, StringFormat='{}RUNNING SERVERS ({0})'}"
+                                               FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource DsMutedBrush}"
+                                               VerticalAlignment="Center" />
+                                    <Button Command="{Binding StopAllRunningServersCommand}"
+                                            Classes="cell-tool-btn"
+                                            IsVisible="{Binding HasRunningServers}"
+                                            Padding="6,2"
+                                            ToolTip.Tip="Stop All Running Servers">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="StopCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsRedBrush}" />
+                                            <TextBlock Text="Stop All" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsRedBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <Panel Grid.Row="1">
+                                <!-- Empty State -->
+                                <StackPanel IsVisible="{Binding !HasRunningServers}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" Margin="16">
+                                    <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource DsSurfaceHighBrush}"
+                                            HorizontalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="ServerNetworkOff" Width="22" Height="22" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="No Active Servers" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Servers started from this or other files will appear here with live metrics and control actions."
+                                               FontSize="10" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- Running Servers List -->
+                                <ScrollViewer IsVisible="{Binding HasRunningServers}" Padding="10">
+                                    <ItemsControl ItemsSource="{Binding RunningServers}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="server:FryRunningServerItem">
+                                                <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="6"
+                                                        Padding="10"
+                                                        Margin="0,0,0,8">
+                                                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                                                        <!-- Row 0: Status Dot + Title + Port Badge -->
+                                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
+                                                            <Ellipse Grid.Column="0" Width="8" Height="8" Fill="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding DocumentTitle}"
+                                                                       FontSize="11.5" FontWeight="Bold"
+                                                                       Foreground="{DynamicResource DsTextWhiteBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       VerticalAlignment="Center" />
+                                                            <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}"
+                                                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="3"
+                                                                    Padding="4,1">
+                                                                <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}"
+                                                                           FontSize="9" FontWeight="Bold"
+                                                                           Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                            </Border>
+                                                        </Grid>
+
+                                                        <!-- Row 1: URL and Metrics -->
+                                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                                            <TextBlock Grid.Column="0" Text="{Binding BaseUrl}"
+                                                                       FontFamily="Consolas, monospace" FontSize="10"
+                                                                       Foreground="{DynamicResource DsMutedBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       VerticalAlignment="Center" />
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                                <TextBlock Text="{Binding EndpointCount, StringFormat='{}{0} routes'}"
+                                                                           FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}"
+                                                                           VerticalAlignment="Center" />
+                                                                <TextBlock Text="•" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="{Binding TotalRequests, StringFormat='{}{0} reqs'}"
+                                                                           FontSize="9.5" Foreground="{DynamicResource DsPrimaryBrush}"
+                                                                           VerticalAlignment="Center" />
+                                                            </StackPanel>
+                                                        </Grid>
+
+                                                        <!-- Row 2: Actions (Switch / Open in Editor + Stop) -->
+                                                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,2,0,0" ColumnSpacing="6">
+                                                            <Button Grid.Column="0"
+                                                                    Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).SwitchToRunningServerCommand}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Classes="cell-tool-btn"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    Height="24"
+                                                                    Padding="6,0">
+                                                                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                                                    <materialIcons:MaterialIcon Kind="FileEditOutline" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                                    <TextBlock Text="Open in Editor" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                                </StackPanel>
+                                                            </Button>
+
+                                                            <Button Grid.Column="1"
+                                                                    Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).StopRunningServerCommand}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Classes="cell-tool-btn"
+                                                                    Width="24" Height="24"
+                                                                    ToolTip.Tip="Stop This Server">
+                                                                <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="{DynamicResource DsRedBrush}" />
+                                                            </Button>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Panel>
+                        </Grid>
                     </Panel>
                 </Grid>
             </Border>
@@ -516,7 +694,7 @@
                     <RowDefinition Height="38" />
                     <RowDefinition Height="*" MinHeight="100" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="{Binding BottomDeckGridLength, Mode=TwoWay}" MinHeight="60" />
+                    <RowDefinition Height="{Binding BottomDeckGridLength, Mode=TwoWay}" MinHeight="0" />
                 </Grid.RowDefinitions>
 
                 <!-- ROW 0: VS CODE DOCUMENT TAB BAR (35px) -->
@@ -800,6 +978,17 @@
                                 VerticalAlignment="Center" />
                         <TextBlock Text="{Binding ServerStatusText}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
+
+                    <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
+                            Classes="cell-tool-btn"
+                            IsVisible="{Binding HasRunningServers}"
+                            Height="18" Padding="4,0"
+                            ToolTip.Tip="View all running servers">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ServerNetwork" Width="11" Height="11" Foreground="{DynamicResource DsGreenBrush}" />
+                            <TextBlock Text="{Binding RunningServerCount, StringFormat='{}{0} active'}" FontSize="10" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- Right Indicators -->

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -25,6 +26,7 @@ public partial class CSharpNotebookStudioView : UserControl
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
+        Loaded += (_, _) => HookNotebookCanvas();
         Unloaded += OnViewUnloaded;
     }
 
@@ -90,10 +92,21 @@ public partial class CSharpNotebookStudioView : UserControl
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        HookNotebookCanvas();
         if (_subscribedVm == null && DataContext is CSharpNotebookStudioViewModel vm)
         {
             _subscribedVm = vm;
             vm.RequestScrollToCell += OnRequestScrollToCell;
+        }
+    }
+
+    private void HookNotebookCanvas()
+    {
+        var scrollViewer = this.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault(s => s.Name == "NotebookCanvasScrollViewer");
+        if (scrollViewer != null)
+        {
+            scrollViewer.BringIntoViewOnFocusChange = false;
+            ScrollViewer.SetBringIntoViewOnFocusChange(scrollViewer, false);
         }
     }
 

@@ -25,9 +25,6 @@
     </UserControl.Styles>
 
     <StackPanel Spacing="4">
-        <!-- Subtle separator between input and output -->
-        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" Opacity="0.6" Margin="0,0,0,4" />
-
         <!-- Collapsed Output Banner -->
         <Border Classes="notebook-collapsed-output-banner"
                 IsVisible="{Binding IsOutputCollapsedBarVisible}">
@@ -88,6 +85,8 @@
 
                     <!-- Multiple Output Kinds: Sleek Segmented Tab Strip -->
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  BringIntoViewOnFocusChange="False"
+                                  ScrollViewer.BringIntoViewOnFocusChange="False"
                                   IsVisible="{Binding HasMultipleOutputKinds}">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Tab: Table (.Dump) -->
@@ -253,7 +252,9 @@
 
             <!-- Output Elements -->
             <ScrollViewer Classes="notebook-output-scroll"
-                          Classes.scrolled="{Binding IsOutputScrolled}">
+                          Classes.scrolled="{Binding IsOutputScrolled}"
+                          BringIntoViewOnFocusChange="False"
+                          ScrollViewer.BringIntoViewOnFocusChange="False">
                 <StackPanel Spacing="6">
                     <!-- Missing Variable Smart Hint (CS0103) -->
                     <Border IsVisible="{Binding HasMissingVariableError}"

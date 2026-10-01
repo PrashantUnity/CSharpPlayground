@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -77,15 +80,85 @@ public class DocSection
     public bool HasBullets => BulletPoints.Count > 0;
 }
 
-public class DocCodeSnippet
+public partial class DocCodeLanguageVariant : ObservableObject
+{
+    public string Language { get; set; } = "csharp";
+    public string DisplayLabel { get; set; } = "C#";
+    public string Code { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    [ObservableProperty]
+    private bool _hasSeparator;
+
+    [ObservableProperty]
+    private bool _isSelected;
+}
+
+public partial class DocCodeSnippet : ObservableObject
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string Code { get; set; } = string.Empty;
-    public string Language { get; set; } = "csharp";
+
+    [ObservableProperty]
+    private string _code = string.Empty;
+
+    [ObservableProperty]
+    private string _language = "csharp";
+
     public WorkspaceItemKind TargetKind { get; set; } = WorkspaceItemKind.Script;
     public string Category { get; set; } = "General";
+
+    public ObservableCollection<DocCodeLanguageVariant> Variants { get; set; } = new();
+
+    public bool HasVariants => Variants.Count > 1;
+
+    [ObservableProperty]
+    private DocCodeLanguageVariant? _selectedVariant;
+
+    [RelayCommand]
+    public void SelectVariant(DocCodeLanguageVariant? variant)
+    {
+        if (variant == null) return;
+        foreach (var v in Variants)
+        {
+            v.IsSelected = (v == variant);
+        }
+        SelectedVariant = variant;
+        Code = variant.Code;
+        Language = variant.Language;
+    }
+
+    public DocCodeSnippet AddVariant(string language, string displayLabel, string code, string description = "")
+    {
+        if (Variants.Count > 0)
+        {
+            Variants[^1].HasSeparator = true;
+        }
+
+        var variant = new DocCodeLanguageVariant
+        {
+            Language = language,
+            DisplayLabel = displayLabel,
+            Code = code.Trim(),
+            Description = description,
+            HasSeparator = false
+        };
+        Variants.Add(variant);
+        if (Variants.Count == 1 || SelectedVariant == null)
+        {
+            SelectVariant(variant);
+        }
+        OnPropertyChanged(nameof(HasVariants));
+        return this;
+    }
+
+    public void EnsureDefaultSelection()
+    {
+        if (Variants.Count > 0 && (SelectedVariant == null || string.IsNullOrEmpty(Code)))
+        {
+            SelectVariant(Variants[0]);
+        }
+    }
 }
 
 public class DocApiSignature

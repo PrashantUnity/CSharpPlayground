@@ -95,9 +95,12 @@ public class GridMatrixRenderer : VisualizerRendererBase
                 }
 
                 // Draw cell sub-label (e.g. costs, heuristic, DP value)
-                if (!string.IsNullOrEmpty(cell.SubLabel) && cellSize >= 26)
+                if (!string.IsNullOrEmpty(cell.SubLabel) && cellSize >= 22)
                 {
-                    var subText = CreateFormattedText(cell.SubLabel, Math.Max(7.5, cellSize * 0.22), MutedTextBrush);
+                    var subBrush = (cell.CustomColor != null || cell.State == GridCellState.Current || cell.State == GridCellState.Path || cell.State == GridCellState.Visited)
+                        ? Brushes.White
+                        : MutedTextBrush;
+                    var subText = CreateFormattedText(cell.SubLabel, Math.Max(7.5, cellSize * 0.22), subBrush, FontWeight.SemiBold);
                     context.DrawText(subText, new Point(x + cellSize - subText.Width - 3, y + cellSize - subText.Height - 2));
                 }
 

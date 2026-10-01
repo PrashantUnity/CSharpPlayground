@@ -8,7 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 
-public partial class CSharpStudioHostViewModel : ObservableObject
+public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadingState
 {
     private const string PluginId = "com.frypdf.plugin.csharpeditor";
 
@@ -54,6 +54,18 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     [ObservableProperty]
     private string _activeDocumentTitle = "Hub";
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Loading...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = string.Empty;
+
+    public IDisposable BeginLoading(string title, string subtitle = "") =>
+        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
 
     /// <summary>
     /// Action callback for standalone test runners or host shells to close the preview window.
@@ -266,50 +278,82 @@ public partial class CSharpStudioHostViewModel : ObservableObject
 
     public async void NavigateToCodeStudio(ScriptDocumentItem script)
     {
-        if (CodeStudioViewModel == null)
+        var title = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
+        using (BeginLoading("Opening Script...", title))
         {
-            await _initTask;
+            await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            if (CodeStudioViewModel == null)
+            {
+                await _initTask;
+            }
+            if (CodeStudioViewModel == null) return;
+
+            using (CodeStudioViewModel.BeginLoading("Opening Script...", title))
+            {
+                await CodeStudioViewModel.UpdateActiveScriptAsync(script);
+                CurrentPage = CodeStudioViewModel;
+                IsOnManagerPage = false;
+                ActiveDocumentTitle = title;
+            }
         }
-        if (CodeStudioViewModel == null) return;
-        await CodeStudioViewModel.UpdateActiveScriptAsync(script);
-        CurrentPage = CodeStudioViewModel;
-        IsOnManagerPage = false;
-        ActiveDocumentTitle = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
     }
 
     public async void NavigateToNotebookStudio(NotebookDocumentItem notebook)
     {
-        if (NotebookStudioViewModel == null)
+        var title = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
+        using (BeginLoading("Opening Notebook...", title))
         {
-            await _initTask;
+            await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            if (NotebookStudioViewModel == null)
+            {
+                await _initTask;
+            }
+            if (NotebookStudioViewModel == null) return;
+
+            using (NotebookStudioViewModel.BeginLoading("Opening Notebook...", title))
+            {
+                NotebookStudioViewModel.UpdateActiveNotebook(notebook);
+                CurrentPage = NotebookStudioViewModel;
+                IsOnManagerPage = false;
+                ActiveDocumentTitle = title;
+            }
         }
-        if (NotebookStudioViewModel == null) return;
-        NotebookStudioViewModel.UpdateActiveNotebook(notebook);
-        CurrentPage = NotebookStudioViewModel;
-        IsOnManagerPage = false;
-        ActiveDocumentTitle = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
     }
 
     public void NavigateToServerStudio(FryServerDocumentItem server, string? filePath = null)
     {
-        if (ServerStudioViewModel == null)
+        var title = string.IsNullOrWhiteSpace(server.Title) ? "API Server" : server.Title;
+        using (BeginLoading("Opening API Server...", title))
         {
-            ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
-                document: server,
-                filePath: filePath,
-                portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
-                storageService: _storageService,
-                backToHubAction: NavigateToManager,
-                backToHomeAction: NavigateToHome);
-        }
-        else
-        {
-            ServerStudioViewModel.LoadDocument(server, filePath);
-        }
+            if (ServerStudioViewModel == null)
+            {
+                ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
+                    document: server,
+                    filePath: filePath,
+                    portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
+                    storageService: _storageService,
+                    backToHubAction: NavigateToManager,
+                    backToHomeAction: NavigateToHome);
+            }
+            else
+            {
+                ServerStudioViewModel.LoadDocument(server, filePath);
+            }
 
-        CurrentPage = ServerStudioViewModel;
-        IsOnManagerPage = false;
-        ActiveDocumentTitle = string.IsNullOrWhiteSpace(server.Title) ? "API Server" : server.Title;
+            CurrentPage = ServerStudioViewModel;
+            IsOnManagerPage = false;
+            ActiveDocumentTitle = title;
+        }
     }
 
     [RelayCommand]

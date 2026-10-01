@@ -467,8 +467,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         try
         {
-            var json = await File.ReadAllTextAsync(file);
-            return JsonSerializer.Deserialize<ScriptDocumentItem>(json);
+            var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
+            return await Task.Run(() => JsonSerializer.Deserialize<ScriptDocumentItem>(json)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -516,8 +516,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         try
         {
-            var json = await File.ReadAllTextAsync(file);
-            var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
+            var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
+            var nb = await Task.Run(() => JsonSerializer.Deserialize<NotebookDocumentItem>(json)).ConfigureAwait(false);
             if (nb != null)
             {
                 bool migrated = false;
@@ -576,8 +576,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         try
         {
-            var json = await File.ReadAllTextAsync(file);
-            return JsonSerializer.Deserialize<FryServerDocumentItem>(json, _jsonOptions);
+            var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
+            return await Task.Run(() => JsonSerializer.Deserialize<FryServerDocumentItem>(json, _jsonOptions)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -721,20 +721,37 @@ public partial class LocalScriptStorageService : IScriptStorageService
             LastModified = DateTime.UtcNow
         };
 
-        notebook.Cells.Add(new NotebookCellItem
+        if (template?.Cells != null && template.Cells.Count > 0)
         {
-            Type = CellType.Markdown,
-            Source = $"# 📓 {notebook.Title}\nWrite documentation or notes in this cell.",
-            IsMarkdownPreviewMode = true
-        });
+            foreach (var cell in template.Cells)
+            {
+                notebook.Cells.Add(new NotebookCellItem
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Type = cell.Type,
+                    Source = cell.Source,
+                    Language = cell.Language,
+                    IsMarkdownPreviewMode = cell.IsMarkdownPreviewMode
+                });
+            }
+        }
+        else
+        {
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = $"# 📓 {notebook.Title}\nWrite documentation or notes in this cell.",
+                IsMarkdownPreviewMode = true
+            });
 
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = !string.IsNullOrWhiteSpace(template?.InitialCode)
-                ? template.InitialCode
-                : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
-        });
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = !string.IsNullOrWhiteSpace(template?.InitialCode)
+                    ? template.InitialCode
+                    : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
+            });
+        }
 
         try
         {
@@ -1075,8 +1092,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
     {
         try
         {
-            var json = await File.ReadAllTextAsync(filePath);
-            var nb = JsonSerializer.Deserialize<NotebookDocumentItem>(json);
+            var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+            var nb = await Task.Run(() => JsonSerializer.Deserialize<NotebookDocumentItem>(json)).ConfigureAwait(false);
             if (nb == null)
             {
                 return new OpenProjectResult(false, $"Failed to parse notebook JSON in '{Path.GetFileName(filePath)}'.");
@@ -1101,8 +1118,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
     {
         try
         {
-            var json = await File.ReadAllTextAsync(filePath);
-            var server = JsonSerializer.Deserialize<FryServerDocumentItem>(json);
+            var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+            var server = await Task.Run(() => JsonSerializer.Deserialize<FryServerDocumentItem>(json)).ConfigureAwait(false);
             if (server == null)
             {
                 return new OpenProjectResult(false, $"Failed to parse API server JSON in '{Path.GetFileName(filePath)}'.");

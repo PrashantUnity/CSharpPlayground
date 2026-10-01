@@ -17,7 +17,8 @@ public record CellCompilationResult(bool Success, IReadOnlyList<DiagnosticItem> 
 
 public class RoslynServerCompilationService
 {
-    private readonly ConcurrentDictionary<string, ScriptRunner<object?>> _compiledDelegates = new();
+    private record CachedCompilation(string Source, ScriptRunner<object?> Runner);
+    private readonly ConcurrentDictionary<string, CachedCompilation> _compiledDelegates = new();
     private readonly ScriptOptions _scriptOptions;
 
     public RoslynServerCompilationService()
@@ -67,7 +68,7 @@ public class RoslynServerCompilationService
             }
 
             var runner = script.CreateDelegate();
-            _compiledDelegates[cell.Id] = runner;
+            _compiledDelegates[cell.Id] = new CachedCompilation(cell.Source ?? string.Empty, runner);
             return new CellCompilationResult(true, Array.Empty<DiagnosticItem>());
         }
         catch (CompilationErrorException ex)
@@ -90,14 +91,32 @@ public class RoslynServerCompilationService
     }
 
     /// <summary>
+    /// Invalidates cached compilation for a specific cell.
+    /// </summary>
+    public void InvalidateCell(string cellId)
+    {
+        _compiledDelegates.TryRemove(cellId, out _);
+    }
+
+    /// <summary>
+    /// Clears all cached compiled cell delegates.
+    /// </summary>
+    public void ClearCache()
+    {
+        _compiledDelegates.Clear();
+    }
+
+    /// <summary>
     /// Executes a compiled cell with the provided execution context.
     /// </summary>
     public async Task<IServerResult> ExecuteCellAsync(FryServerCellItem cell, FryServerContext context, CancellationToken cancellationToken = default)
     {
-        if (!_compiledDelegates.TryGetValue(cell.Id, out var runner))
+        var currentSource = cell.Source ?? string.Empty;
+        if (!_compiledDelegates.TryGetValue(cell.Id, out var cached) ||
+            !string.Equals(cached.Source, currentSource, StringComparison.Ordinal))
         {
             var compileRes = await CompileCellAsync(cell, cancellationToken).ConfigureAwait(false);
-            if (!compileRes.Success || !_compiledDelegates.TryGetValue(cell.Id, out runner))
+            if (!compileRes.Success || !_compiledDelegates.TryGetValue(cell.Id, out cached))
             {
                 return new StatusCodeResult(500, new
                 {
@@ -108,6 +127,7 @@ public class RoslynServerCompilationService
             }
         }
 
+        var runner = cached.Runner;
         var globals = new FryServerScriptGlobals { Context = context };
 
         try
