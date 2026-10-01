@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
@@ -14,6 +15,18 @@ internal static class VisualizerSnapshots
     public static void Frames(Options options)
     {
         bool quiet = options.Flag("quiet");
+        if (options.Value("template") is { } templateQuery)
+        {
+            var template = CodeTemplateLibrary.GetTemplates().FirstOrDefault(t =>
+                t.Id.Contains(templateQuery, StringComparison.OrdinalIgnoreCase) ||
+                t.Title.Contains(templateQuery, StringComparison.OrdinalIgnoreCase));
+            if (template is null)
+                throw new ArgumentException($"No template found matching '{templateQuery}'.");
+
+            RenderTemplate(template, options, quiet);
+            return;
+        }
+
         foreach (int number in options.Problems())
         {
             var problem = Blind75CatalogService.GetProblemByNumber(number)!;
@@ -53,6 +66,62 @@ internal static class VisualizerSnapshots
                     Snapshot.Save(window, $"p{number}_v{k}_s{step}");
                     window.Close();
                 }
+            }
+        }
+    }
+
+    private static void RenderTemplate(PdfEditorApp.Plugins.CSharpEditor.Models.CodeTemplate template, Options options, bool quiet)
+    {
+        var outputs = new List<RichCellOutput>();
+        var kernel = new NotebookExecutionKernel();
+        var codeSnippets = template.Cells != null && template.Cells.Count > 0
+            ? template.Cells.Where(c => c.Type == CellType.Code).Select(c => c.Source).ToList()
+            : new List<string> { template.InitialCode };
+
+        Console.WriteLine($"==== Template: {template.Title} ({codeSnippets.Count} code cells)");
+        foreach (var code in codeSnippets)
+        {
+            var result = Snapshot.Wait(Task.Run(() => kernel.ExecuteCellAsync(code, onRichOutput: outputs.Add)));
+            if (!result.Success)
+            {
+                Console.WriteLine($"Cell failed: {result.ErrorMessage}");
+            }
+            if (!string.IsNullOrWhiteSpace(result.ConsoleOutput))
+            {
+                Console.WriteLine(result.ConsoleOutput.Trim());
+            }
+        }
+
+        int k = 0;
+        var visualizers = outputs
+            .Where(o => o.Visual?.Spec is VisualizerSpec)
+            .Select(o => VisualizerRenderModelBuilder.Build((VisualizerSpec)o.Visual!.Spec));
+        int targetViz = options.Int("viz", options.Int("visualizer", 0));
+        foreach (var visualizer in visualizers)
+        {
+            k++;
+            if (targetViz > 0 && k != targetViz) continue;
+            var sequence = visualizer.Sequence;
+            int total = sequence?.TotalSteps ?? 1;
+            Console.WriteLine($"-- visualizer {k}: {visualizer.Kind}, {total} steps, \"{visualizer.Title}\"");
+            if (sequence != null && !quiet)
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    Console.WriteLine($"   {i,3} [Ln {sequence.Steps[i].SourceLine,3}] {sequence.Steps[i].Description}");
+                }
+            }
+
+            foreach (int step in Steps(options, total))
+            {
+                sequence?.SeekStep(step);
+                var content = new ScrollViewer { Content = new Border { Padding = new Thickness(10), Child = new InteractiveVisualizerControl(visualizer) } };
+                var window = Snapshot.Show(content, options.Int("width", 900), options.Int("height", 640));
+                string name = options.Value("name") is { } customName && !options.List("steps").Any()
+                    ? customName
+                    : $"{template.Id}_v{k}_s{step}";
+                Snapshot.Save(window, name);
+                window.Close();
             }
         }
     }

@@ -721,20 +721,37 @@ public partial class LocalScriptStorageService : IScriptStorageService
             LastModified = DateTime.UtcNow
         };
 
-        notebook.Cells.Add(new NotebookCellItem
+        if (template?.Cells != null && template.Cells.Count > 0)
         {
-            Type = CellType.Markdown,
-            Source = $"# 📓 {notebook.Title}\nWrite documentation or notes in this cell.",
-            IsMarkdownPreviewMode = true
-        });
+            foreach (var cell in template.Cells)
+            {
+                notebook.Cells.Add(new NotebookCellItem
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Type = cell.Type,
+                    Source = cell.Source,
+                    Language = cell.Language,
+                    IsMarkdownPreviewMode = cell.IsMarkdownPreviewMode
+                });
+            }
+        }
+        else
+        {
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Markdown,
+                Source = $"# 📓 {notebook.Title}\nWrite documentation or notes in this cell.",
+                IsMarkdownPreviewMode = true
+            });
 
-        notebook.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = !string.IsNullOrWhiteSpace(template?.InitialCode)
-                ? template.InitialCode
-                : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
-        });
+            notebook.Cells.Add(new NotebookCellItem
+            {
+                Type = CellType.Code,
+                Source = !string.IsNullOrWhiteSpace(template?.InitialCode)
+                    ? template.InitialCode
+                    : "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
+            });
+        }
 
         try
         {

@@ -23,6 +23,7 @@ public partial class CodeTemplate : ObservableObject
     public string? LanguageId { get; set; }
 
     public List<TestCaseItem> TestCases { get; set; } = new();
+    public List<NotebookCellItem> Cells { get; set; } = new();
 
     public string AccentColor { get; set; } = "#A8C7FA";
     public string AccentBackground { get; set; } = "#0F387D";
