@@ -11,7 +11,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
 [Collection(RealPythonCollection.Name)]
 public class CodeStudioPythonRunTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _baseDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioPython_" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()

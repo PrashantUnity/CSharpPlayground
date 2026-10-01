@@ -12,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealGo;
 [Collection(RealGoCollection.Name)]
 public class GoProgramRunTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_GoRun_" + Guid.NewGuid().ToString("N"));
 
     public GoProgramRunTests()

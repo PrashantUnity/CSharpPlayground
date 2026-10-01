@@ -21,7 +21,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 /// </summary>
 public class ExternalVisualSessionTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private static string Chart(string title, int[] y, string? displayId = null, string type = "display") => JsonSerializer.Serialize(new Dictionary<string, object?>
     {

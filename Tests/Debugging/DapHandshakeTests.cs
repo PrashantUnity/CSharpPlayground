@@ -12,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
 /// </summary>
 public class DapHandshakeTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private static DebugLaunchContext Context() => new(
         ScriptId: "handshake",

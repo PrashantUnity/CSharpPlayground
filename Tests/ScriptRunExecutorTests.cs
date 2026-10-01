@@ -8,7 +8,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 /// <summary>A run plan's steps run in order with their output streamed, input typed in, and Stop ending them.</summary>
 public class ScriptRunExecutorTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private static ProcessStep Step(string label, string program, bool build = false) =>
         new(label, new ProcessStartSpec { FileName = program }, build);

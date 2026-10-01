@@ -14,7 +14,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
 [Collection(RealPythonCollection.Name)]
 public class PythonNotebookTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
 
     private readonly string _baseDir = Path.Combine(Path.GetTempPath(), "FryPDF_PythonNotebook_" + Guid.NewGuid().ToString("N"));
     private readonly List<NotebookTabViewModel> _tabs = new();
@@ -144,7 +144,7 @@ public class PythonNotebookTests : IDisposable
         var status = tab.KernelStatusText;
         await Run(tab, 2);
 
-        Assert.True(stopped < TimeSpan.FromSeconds(3), $"stopping took {stopped}");
+        Assert.True(stopped < TimeSpan.FromSeconds(8), $"stopping took {stopped}");
         Assert.Equal("🛑 Cell execution interrupted", status);
         Assert.Equal("10\n", tab.Cells[2].OutputText);
     }

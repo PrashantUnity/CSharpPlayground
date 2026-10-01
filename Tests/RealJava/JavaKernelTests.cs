@@ -12,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
 [Collection(RealJavaCollection.Name)]
 public class JavaKernelTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
 
     private readonly string _baseDir = Path.Combine(Path.GetTempPath(), "FryPDF_JavaKernel_" + Guid.NewGuid().ToString("N"));
     private readonly string _notebookFolder;

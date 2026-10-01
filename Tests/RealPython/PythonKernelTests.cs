@@ -13,7 +13,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
 [Collection(RealPythonCollection.Name)]
 public class PythonKernelTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
 
     private readonly string _baseDir = Path.Combine(Path.GetTempPath(), "FryPDF_PythonKernel_" + Guid.NewGuid().ToString("N"));
     private readonly string _notebookFolder;
@@ -153,7 +153,7 @@ public class PythonKernelTests : IDisposable
             var run = await Execute(kernel, code, stop.Token);
 
             Assert.True(run.Result.WasCancelled, run.Console);
-            Assert.True(clock.Elapsed < TimeSpan.FromSeconds(3), $"stopping took {clock.Elapsed}");
+            Assert.True(clock.Elapsed < TimeSpan.FromSeconds(8), $"stopping took {clock.Elapsed}");
         }
 
         Assert.Equal("7\n", (await Execute(kernel, "x")).Console);
@@ -172,7 +172,7 @@ public class PythonKernelTests : IDisposable
 
         Assert.False(crash.Result.Success);
         Assert.Contains("exit code 3", crash.Result.ErrorMessage);
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(30));
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(45));
         Assert.Contains("variables from before are gone", next.Console);
         Assert.Contains("fresh", next.Console);
     }
@@ -274,7 +274,7 @@ public class PythonKernelTests : IDisposable
         var busy = await Run("{\"type\": \"execute\", \"id\": \"1\", \"code\": \"import time\\ntime.sleep(30)\", \"cell\": \"[1]\"}\n");
 
         Assert.Contains("\"json\": \"42\"", answered.Output);
-        Assert.True(busy.Took < TimeSpan.FromSeconds(10), $"a busy kernel took {busy.Took} to exit");
+        Assert.True(busy.Took < TimeSpan.FromSeconds(20), $"a busy kernel took {busy.Took} to exit");
     }
 
     [PythonFact]

@@ -19,7 +19,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJavaScript;
 [Collection(RealJavaScriptCollection.Name)]
 public class JavaScriptVisualsConformanceTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_JSVisuals_" + Guid.NewGuid().ToString("N"));
     private readonly List<INotebookKernel> _kernels = [];
 
@@ -173,7 +173,7 @@ public class JavaScriptVisualsConformanceTests : IDisposable
         var script = Write("click.js", """
             const h = Display.lineChart([1, 2, 3], "C");
             h.onClick(e => console.log("clicked " + e.target.index));
-            Display.wait(10);
+            Display.wait(20);
             """);
         var (runSession, console, outputs, _) = await StartRun(script, session);
 

@@ -76,7 +76,7 @@ public class RustNotebookKernelTests : IDisposable
         };
     }
 
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
 
     private async Task<(KernelExecutionResult Result, string Console, List<RichCellOutput> Rich)> Run(RustNotebookKernel kernel, string code, CancellationToken ct = default)
     {

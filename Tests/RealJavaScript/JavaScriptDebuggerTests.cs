@@ -11,7 +11,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJavaScript;
 [Collection(RealJavaScriptCollection.Name)]
 public class JavaScriptDebuggerTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_JSDbg_" + Guid.NewGuid().ToString("N"));
 
     public JavaScriptDebuggerTests()

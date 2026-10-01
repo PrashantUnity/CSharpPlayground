@@ -12,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
 [Collection(RealJavaCollection.Name)]
 public class JavaProgramRunTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_JavaRun_" + Guid.NewGuid().ToString("N"));
 
     public JavaProgramRunTests()

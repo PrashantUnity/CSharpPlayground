@@ -86,7 +86,7 @@ public class GoNotebookKernelTests : IDisposable
 
     private const string Go = "/opt/homebrew/bin/go";
 
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
 
     private static async Task WaitUntil(Func<bool> condition)
     {

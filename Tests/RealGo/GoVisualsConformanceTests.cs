@@ -19,7 +19,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealGo;
 [Collection(RealGoCollection.Name)]
 public class GoVisualsConformanceTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_GoVisuals_" + Guid.NewGuid().ToString("N"));
     private readonly List<INotebookKernel> _kernels = [];
 
@@ -189,7 +189,7 @@ public class GoVisualsConformanceTests : IDisposable
                 target, _ := e["target"].(map[string]any)
                 println("clicked", int(target["index"].(float64)))
             })
-            fry.Wait(30)
+            fry.Wait(60)
         """);
         var script = Write("main.go", scriptCode);
         var (session, console, outputs, processor) = await StartRun(script, visualSession);

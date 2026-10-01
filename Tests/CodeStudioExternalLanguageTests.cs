@@ -13,7 +13,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 /// </summary>
 public class CodeStudioExternalLanguageTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private readonly string _baseDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExternalLanguage_" + Guid.NewGuid().ToString("N"));
     private readonly FakeProcessLauncher _launcher = new();

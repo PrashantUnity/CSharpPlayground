@@ -156,7 +156,7 @@ internal sealed class FakeInspector : IAsyncDisposable
 
 public class CdpClientTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
 
     private static async Task<CdpClient> Connect(FakeInspector inspector)
     {

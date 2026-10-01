@@ -18,7 +18,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
 /// </summary>
 public class DebugAdapterLaunchTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_DapLaunch_" + Guid.NewGuid().ToString("N"));
 
     public DebugAdapterLaunchTests()

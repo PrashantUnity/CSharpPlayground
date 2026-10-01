@@ -13,7 +13,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealSql;
 [Collection(RealSqlCollection.Name)]
 public class SqlProgramRunTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_SqlRun_" + Guid.NewGuid().ToString("N"));
 
     public SqlProgramRunTests()

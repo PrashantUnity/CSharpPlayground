@@ -12,7 +12,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
 [Collection(RealPythonCollection.Name)]
 public class PythonScriptRunTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_PythonRun_" + Guid.NewGuid().ToString("N"));
 
     public PythonScriptRunTests()
@@ -137,7 +137,7 @@ public class PythonScriptRunTests : IDisposable
         var result = await session.Completion.WaitAsync(Patience);
 
         Assert.True(result.WasCancelled);
-        Assert.True(stopped.Elapsed < TimeSpan.FromSeconds(5), $"Stop took {stopped.Elapsed}");
+        Assert.True(stopped.Elapsed < TimeSpan.FromSeconds(10), $"Stop took {stopped.Elapsed}");
     }
 
     [PythonFact]

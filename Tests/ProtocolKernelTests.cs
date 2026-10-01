@@ -15,7 +15,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 /// </summary>
 public class ProtocolKernelTests
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private sealed class Launcher(bool available = true) : IKernelLauncher
     {

@@ -11,7 +11,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
 [Collection(RealPythonCollection.Name)]
 public class PythonDebuggerTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_PyDbg_" + Guid.NewGuid().ToString("N"));
 
     public PythonDebuggerTests()

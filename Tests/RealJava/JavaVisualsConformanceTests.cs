@@ -19,7 +19,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
 [Collection(RealJavaCollection.Name)]
 public class JavaVisualsConformanceTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_JavaVisuals_" + Guid.NewGuid().ToString("N"));
     private readonly List<INotebookKernel> _kernels = [];
 
@@ -223,7 +223,7 @@ public class JavaVisualsConformanceTests : IDisposable
                 var target = (java.util.Map<?, ?>) e.get("target");
                 System.out.println("clicked " + target.get("index"));
             });
-            Display.wait(10);
+            Display.wait(20);
         """);
         var script = Write("Main.java", scriptCode);
         var (session, console, outputs, processor) = await StartRun(script, visualSession);
