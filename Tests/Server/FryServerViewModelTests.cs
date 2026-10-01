@@ -248,4 +248,146 @@ public class FryServerViewModelTests
             }
         }
     }
+
+    [Fact]
+    public async Task ServerRegistry_RegisterAndStopServer_UpdatesStateAndNotifies()
+    {
+        var registry = new FryServerRegistry();
+        var engine = new FryHttpListenerServerEngine();
+        var doc = new FryServerDocumentItem
+        {
+            Id = "server-test-1",
+            Title = "Inventory Service",
+            ServerConfig = new() { Port = 5991 }
+        };
+
+        var item = new FryRunningServerItem
+        {
+            ServerId = doc.Id,
+            DocumentTitle = doc.Title,
+            BoundPort = 5991,
+            BaseUrl = "http://localhost:5991",
+            Engine = engine,
+            Document = doc
+        };
+
+        var eventFired = false;
+        registry.RunningServersChanged += () => eventFired = true;
+
+        registry.RegisterServer(item);
+
+        Assert.True(eventFired);
+        Assert.Equal(1, registry.RunningCount);
+        Assert.Same(item, registry.GetServer(doc.Id));
+
+        // Stop server via registry
+        await registry.StopServerAsync(doc.Id);
+
+        Assert.Equal(0, registry.RunningCount);
+        Assert.Null(registry.GetServer(doc.Id));
+    }
+
+    [Fact]
+    public async Task ServerRegistry_StopAll_StopsAllRegisteredServers()
+    {
+        var registry = new FryServerRegistry();
+        var engine1 = new FryHttpListenerServerEngine();
+        var engine2 = new FryHttpListenerServerEngine();
+
+        var item1 = new FryRunningServerItem
+        {
+            ServerId = "s1",
+            DocumentTitle = "Server 1",
+            BoundPort = 5992,
+            BaseUrl = "http://localhost:5992",
+            Engine = engine1,
+            Document = new() { Id = "s1", Title = "Server 1" }
+        };
+        var item2 = new FryRunningServerItem
+        {
+            ServerId = "s2",
+            DocumentTitle = "Server 2",
+            BoundPort = 5993,
+            BaseUrl = "http://localhost:5993",
+            Engine = engine2,
+            Document = new() { Id = "s2", Title = "Server 2" }
+        };
+
+        registry.RegisterServer(item1);
+        registry.RegisterServer(item2);
+        Assert.Equal(2, registry.RunningCount);
+
+        await registry.StopAllAsync();
+        Assert.Equal(0, registry.RunningCount);
+    }
+
+    [Fact]
+    public void StudioViewModel_RunningServers_TracksActiveServersAndSwitches()
+    {
+        var registry = new FryServerRegistry();
+        var engine = new FryHttpListenerServerEngine();
+        var docA = new FryServerDocumentItem { Id = "srv-a", Title = "Server A" };
+        var docB = new FryServerDocumentItem { Id = "srv-b", Title = "Server B" };
+
+        var studio = new FryServerStudioViewModel(document: docA, registry: registry);
+
+        var runningB = new FryRunningServerItem
+        {
+            ServerId = docB.Id,
+            DocumentTitle = docB.Title,
+            BoundPort = 5880,
+            BaseUrl = "http://localhost:5880",
+            Engine = engine,
+            Document = docB
+        };
+        registry.RegisterServer(runningB);
+        studio.SyncRunningServers();
+
+        Assert.True(studio.HasRunningServers);
+        Assert.Equal(1, studio.RunningServerCount);
+
+        // Switch to running server B
+        studio.SwitchToRunningServer(runningB);
+
+        Assert.Equal("Server B", studio.DocumentTitle);
+        Assert.Equal(docB.Id, studio.Document.Id);
+    }
+
+    [Fact]
+    public void StudioViewModel_ToggleSideBar_CollapsesToZeroAndRestoresWidth()
+    {
+        var studio = new FryServerStudioViewModel();
+
+        Assert.True(studio.IsSideBarVisible);
+        Assert.True(studio.SideBarGridLength.Value > 0);
+
+        // Toggle collapsed
+        studio.ToggleSideBar();
+        Assert.False(studio.IsSideBarVisible);
+        Assert.Equal(0, studio.SideBarGridLength.Value);
+
+        // Toggle restored
+        studio.ToggleSideBar();
+        Assert.True(studio.IsSideBarVisible);
+        Assert.Equal(270, studio.SideBarGridLength.Value);
+    }
+
+    [Fact]
+    public void StudioViewModel_ToggleBottomPanel_CollapsesToZeroAndRestoresHeight()
+    {
+        var studio = new FryServerStudioViewModel();
+
+        Assert.True(studio.IsBottomPanelVisible);
+        Assert.True(studio.BottomDeckGridLength.Value > 0);
+
+        // Toggle collapsed
+        studio.ToggleBottomPanel();
+        Assert.False(studio.IsBottomPanelVisible);
+        Assert.Equal(0, studio.BottomDeckGridLength.Value);
+
+        // Toggle restored
+        studio.ToggleBottomPanel();
+        Assert.True(studio.IsBottomPanelVisible);
+        Assert.Equal(180, studio.BottomDeckGridLength.Value);
+    }
 }

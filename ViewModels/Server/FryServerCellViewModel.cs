@@ -240,19 +240,34 @@ public partial class FryServerCellViewModel : ObservableObject
     }
 
     partial void OnTitleChanged(string value) => Model.Title = value;
-    partial void OnEnabledChanged(bool value) => Model.Enabled = value;
+    partial void OnEnabledChanged(bool value)
+    {
+        Model.Enabled = value;
+        _engine?.RefreshRoutes();
+    }
 
     partial void OnMethodChanged(string value)
     {
         Model.Method = value;
+        _engine?.RefreshRoutes();
         OnPropertyChanged(nameof(MethodBadgeBrush));
         OnPropertyChanged(nameof(TypeBadgeBrush));
         OnPropertyChanged(nameof(TypeBadgeText));
     }
 
-    partial void OnRouteChanged(string value) => Model.Route = value;
+    partial void OnRouteChanged(string value)
+    {
+        Model.Route = value;
+        _engine?.RefreshRoutes();
+    }
+
     partial void OnDescriptionChanged(string value) => Model.Description = value;
-    partial void OnSourceChanged(string value) => Model.Source = value;
+
+    partial void OnSourceChanged(string value)
+    {
+        Model.Source = value;
+        _engine?.InvalidateCellCompilationAsync(Model);
+    }
 
     partial void OnTestBodyChanged(string value) => Model.TestHarness.Body = value;
     partial void OnTestBodyContentTypeChanged(string value) => Model.TestHarness.BodyContentType = value;

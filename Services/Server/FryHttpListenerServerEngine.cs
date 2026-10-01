@@ -182,8 +182,14 @@ public class FryHttpListenerServerEngine : IFryHttpServerEngine
 
     public Task InvalidateCellCompilationAsync(FryServerCellItem cell, CancellationToken cancellationToken = default)
     {
+        _compiler.InvalidateCell(cell.Id);
         _routeMatcher.RegisterCells(_activeDocument?.Cells ?? Enumerable.Empty<FryServerCellItem>());
         return _compiler.CompileCellAsync(cell, cancellationToken);
+    }
+
+    public void RefreshRoutes()
+    {
+        _routeMatcher.RegisterCells(_activeDocument?.Cells ?? Enumerable.Empty<FryServerCellItem>());
     }
 
     private async Task ListenLoopAsync(CancellationToken ct)

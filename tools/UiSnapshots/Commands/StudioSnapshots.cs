@@ -1104,6 +1104,10 @@ internal static class StudioSnapshots
         {
             vm.SelectActivityBarItem(2);
         }
+        else if (options.Flag("no-sidebar") || options.Flag("collapsed-sidebar"))
+        {
+            vm.IsSideBarVisible = false;
+        }
 
         if (options.Flag("run") || options.Flag("running"))
         {

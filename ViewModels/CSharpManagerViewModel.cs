@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
@@ -16,6 +17,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     private readonly Action<ScriptDocumentItem> _openScriptAction;
     private readonly Action<NotebookDocumentItem> _openNotebookAction;
     private readonly Action<FryServerDocumentItem>? _openServerAction;
+    private readonly IFryServerRegistry _serverRegistry;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     [ObservableProperty]
@@ -593,9 +595,12 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         Action? navigateToBlindProblemsAction = null,
         StudioLanguageServices? languages = null,
         Action<string?>? navigateToSettingsAction = null,
-        Action<FryServerDocumentItem>? openServerAction = null)
+        Action<FryServerDocumentItem>? openServerAction = null,
+        IFryServerRegistry? serverRegistry = null)
     {
         _storageService = storageService;
+        _serverRegistry = serverRegistry ?? FryServerRegistry.Shared;
+        _serverRegistry.RunningServersChanged += OnRunningServersChanged;
         var registry = (languages ?? StudioLanguageServices.Default).Registry;
         foreach (var language in registry.All)
         {
@@ -608,6 +613,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         _navigateToDocsAction = navigateToDocsAction;
         _navigateToBlindProblemsAction = navigateToBlindProblemsAction;
         _navigateToSettingsAction = navigateToSettingsAction;
+        SyncRunningServers();
 
         foreach (var t in CodeTemplateLibrary.GetTemplates())
         {

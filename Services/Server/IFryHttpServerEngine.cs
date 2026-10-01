@@ -33,4 +33,5 @@ public interface IFryHttpServerEngine : IAsyncDisposable
 
     Task<IServerResult> ExecuteLoopbackTestAsync(FryServerCellItem cell, FryServerTestHarnessItem testHarness, CancellationToken cancellationToken = default);
     Task InvalidateCellCompilationAsync(FryServerCellItem cell, CancellationToken cancellationToken = default);
+    void RefreshRoutes();
 }
