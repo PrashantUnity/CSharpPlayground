@@ -102,8 +102,8 @@ public sealed class LazyExplorerTree
                 _rows.ChangeChildren(folder, () =>
                 {
                     folder.Children.Clear();
-                    folder.ChildrenLoaded = true;
                     AddListing(folder, listing);
+                    folder.ChildrenLoaded = true;
                 });
             }
             finally
