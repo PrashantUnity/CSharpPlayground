@@ -110,7 +110,7 @@
             <!-- Canvas Host Slot -->
             <Border Grid.Row="1"
                     x:Name="CanvasContainerBorder"
-                    Background="#070B10"
+                    Background="{DynamicResource VisCanvasBgBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="1"
                     CornerRadius="4"

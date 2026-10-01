@@ -155,7 +155,7 @@
                     <Border.Background>
                         <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
                             <GradientStop Offset="0" Color="#1A2F81F7" />
-                            <GradientStop Offset="1" Color="#000D1117" />
+                            <GradientStop Offset="1" Color="#002F81F7" />
                         </RadialGradientBrush>
                     </Border.Background>
                 </Border>

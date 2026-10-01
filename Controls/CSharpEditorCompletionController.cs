@@ -232,9 +232,10 @@ public class CSharpEditorCompletionController : IDisposable
                         MaxWidth = 480
                     };
 
-                    _completionWindow.CompletionList.Background = new SolidColorBrush(Color.Parse("#14171F"));
-                    _completionWindow.CompletionList.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
-                    _completionWindow.CompletionList.BorderBrush = new SolidColorBrush(Color.Parse("#30363D"));
+                    bool isDark = ThemeService.IsDark;
+                    _completionWindow.CompletionList.Background = new SolidColorBrush(Color.Parse(isDark ? "#14171F" : "#FFFFFF"));
+                    _completionWindow.CompletionList.Foreground = new SolidColorBrush(Color.Parse(isDark ? "#D4D4D4" : "#1F2328"));
+                    _completionWindow.CompletionList.BorderBrush = new SolidColorBrush(Color.Parse(isDark ? "#30363D" : "#D0D7DE"));
                     _completionWindow.CompletionList.BorderThickness = new Thickness(1);
                     _completionWindow.CompletionList.CornerRadius = new CornerRadius(8);
 

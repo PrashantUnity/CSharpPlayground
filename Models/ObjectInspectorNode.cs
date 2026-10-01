@@ -26,6 +26,28 @@ public partial class ObjectInspectorPropertyRow : ObservableObject
     [ObservableProperty]
     private ObjectInspectorNode? _childNode;
 
+    /// <summary>
+    /// Returns a semantic theme-resource key that resolves to the correct foreground brush for this
+    /// value in both Light and Dark themes. Consumed by <c>ResourceKeyBrushConverter</c> in the view.
+    /// </summary>
+    public string ValueForegroundKey
+    {
+        get
+        {
+            if (IsNull) return "CodeNullBrush";
+            if (string.IsNullOrEmpty(SimpleValueText)) return "M3OnSurfaceBrush";
+            if (SimpleValueText.StartsWith("\"") || SimpleValueText.StartsWith("'")) return "CodeStringBrush";
+            if (bool.TryParse(SimpleValueText, out _)) return "CodeKeywordBrush";
+            if (char.IsDigit(SimpleValueText[0]) || (SimpleValueText.Length > 1 && (SimpleValueText[0] == '-' || SimpleValueText[0] == '+') && char.IsDigit(SimpleValueText[1])))
+                return "CodeNumberBrush";
+            if (SimpleValueText.StartsWith("[") && SimpleValueText.EndsWith("]")) return "CodeTypeBrush";
+            return "M3OnSurfaceBrush";
+        }
+    }
+
+    /// <summary>
+    /// Legacy foreground hex calculation for backward compatibility and tests.
+    /// </summary>
     public string ValueForeground
     {
         get
@@ -43,11 +65,13 @@ public partial class ObjectInspectorPropertyRow : ObservableObject
 
     partial void OnSimpleValueTextChanged(string value)
     {
+        OnPropertyChanged(nameof(ValueForegroundKey));
         OnPropertyChanged(nameof(ValueForeground));
     }
 
     partial void OnIsNullChanged(bool value)
     {
+        OnPropertyChanged(nameof(ValueForegroundKey));
         OnPropertyChanged(nameof(ValueForeground));
     }
 }

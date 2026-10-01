@@ -169,7 +169,9 @@
 
                 <!-- Deleting a source file removes the user's own file from disk, so it's confirmed first. -->
                 <Border IsVisible="{Binding IsConfirmingDelete}"
-                        Background="#3A1D28"
+                        Background="{DynamicResource NavPinnedBgBrush}"
+                        BorderBrush="{DynamicResource NavPinnedFgBrush}"
+                        BorderThickness="1"
                         CornerRadius="4"
                         Margin="{Binding IndentPadding}"
                         Padding="8,4">
@@ -179,7 +181,7 @@
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         <Button Grid.Column="1" Command="{Binding ConfirmDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" Margin="6,0,2,0" ToolTip.Tip="Delete the file">
-                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" />
+                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource NavPinnedFgBrush}" />
                         </Button>
                         <Button Grid.Column="2" Command="{Binding CancelDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" ToolTip.Tip="Keep the file">

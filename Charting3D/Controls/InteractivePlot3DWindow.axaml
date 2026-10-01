@@ -10,7 +10,15 @@
         Width="1100" Height="750"
         MinWidth="640" MinHeight="450"
         WindowStartupLocation="CenterScreen"
-        Background="#070B10">
+        Background="{DynamicResource VisCanvasBgBrush}">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
 
     <Grid>
         <!-- 1. The Main 3D Canvas filling 100% of the window -->
@@ -22,18 +30,18 @@
         <Border VerticalAlignment="Top"
                 Margin="14,12,14,0"
                 Padding="12,8"
-                Background="#D00F1722"
-                BorderBrush="#40556B82"
+                Background="{DynamicResource DsGlassBgBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="8"
-                BoxShadow="0 8 24 0 #80000000">
+                BoxShadow="0 8 24 0 #40000000">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Title & Info Pill -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="CubeOutline" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                     <TextBlock Name="WindowTitleText" Text="3D Visualization" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
 
-                    <Border Background="#253548" BorderBrush="#3D516B" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                         <TextBlock Name="WindowStatsText" Text="3D View" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                     </Border>
                 </StackPanel>
@@ -41,7 +49,7 @@
                 <!-- Right: Full Action Suite -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <!-- Camera View Presets -->
-                    <Border Background="#16202C" BorderBrush="#2A3C50" BorderThickness="1" CornerRadius="4" Padding="2">
+                    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
                         <StackPanel Orientation="Horizontal" Spacing="2">
                             <Button Name="WinIsoViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Isometric 3D View (1)">
                                 <TextBlock Text="ISO" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -111,11 +119,11 @@
                 HorizontalAlignment="Center"
                 Margin="0,0,0,14"
                 Padding="14,6"
-                Background="#C80D131B"
-                BorderBrush="#35485E"
+                Background="{DynamicResource DsGlassBgBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="16"
-                BoxShadow="0 4 16 0 #60000000">
+                BoxShadow="0 4 16 0 #40000000">
             <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="GestureTap" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />

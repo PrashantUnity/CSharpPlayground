@@ -120,11 +120,11 @@
             <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         </Style>
         <Style Selector="Button.cell-tool-btn.delete-tool:pointerover">
-            <Setter Property="Background" Value="#3D1418" />
-            <Setter Property="Foreground" Value="#EF4444" />
+            <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
         </Style>
         <Style Selector="Button.cell-tool-btn.delete-tool:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="#EF4444" />
+            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
         </Style>
 
         <!-- Gutter Run Play Button -->

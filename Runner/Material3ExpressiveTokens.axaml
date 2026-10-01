@@ -185,6 +185,15 @@
             <SolidColorBrush x:Key="VisActiveBorderBrush" Color="{StaticResource VisActiveBorderColor}" />
             <SolidColorBrush x:Key="VisActiveTextBrush" Color="{StaticResource VisActiveTextColor}" />
 
+            <!-- Semantic Code Syntax Brushes (Light — VS Code Light+ palette) -->
+            <!-- Used by debug hover tips, local variable trees, object inspector, and collection view -->
+            <SolidColorBrush x:Key="CodeTypeBrush"    Color="#267F99" />  <!-- teal type names -->
+            <SolidColorBrush x:Key="CodeMemberBrush"  Color="#001080" />  <!-- dark blue member/identifier -->
+            <SolidColorBrush x:Key="CodeStringBrush"  Color="#A31515" />  <!-- brick-red string literals -->
+            <SolidColorBrush x:Key="CodeNumberBrush"  Color="#098658" />  <!-- green numeric literals -->
+            <SolidColorBrush x:Key="CodeKeywordBrush" Color="#0000FF" />  <!-- keyword blue -->
+            <SolidColorBrush x:Key="CodeNullBrush"    Color="#808080" />  <!-- muted gray for null/empty -->
+
             <!-- LeetCode / Algorithm Badges (Light) -->
             <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A0D9488" />
             <SolidColorBrush x:Key="BadgeEasyBorderBrush" Color="#4D0D9488" />
@@ -391,6 +400,15 @@
             <SolidColorBrush x:Key="VisActiveBgBrush" Color="{StaticResource VisActiveBgColor}" />
             <SolidColorBrush x:Key="VisActiveBorderBrush" Color="{StaticResource VisActiveBorderColor}" />
             <SolidColorBrush x:Key="VisActiveTextBrush" Color="{StaticResource VisActiveTextColor}" />
+
+            <!-- Semantic Code Syntax Brushes (Dark — VS Code Dark+ palette) -->
+            <!-- Used by debug hover tips, local variable trees, object inspector, and collection view -->
+            <SolidColorBrush x:Key="CodeTypeBrush"    Color="#4EC9B0" />  <!-- mint teal type names -->
+            <SolidColorBrush x:Key="CodeMemberBrush"  Color="#9CDCFE" />  <!-- light blue member/identifier -->
+            <SolidColorBrush x:Key="CodeStringBrush"  Color="#CE9178" />  <!-- warm orange string literals -->
+            <SolidColorBrush x:Key="CodeNumberBrush"  Color="#B5CEA8" />  <!-- sage green numeric literals -->
+            <SolidColorBrush x:Key="CodeKeywordBrush" Color="#569CD6" />  <!-- steel blue keywords -->
+            <SolidColorBrush x:Key="CodeNullBrush"    Color="#808080" />  <!-- muted gray for null/empty -->
 
             <!-- LeetCode / Algorithm Badges (Dark) -->
             <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A00B8A3" />

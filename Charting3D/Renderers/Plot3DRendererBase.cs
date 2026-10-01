@@ -5,19 +5,28 @@ using Avalonia;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services;
 using Vector3D = PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial.Vector3D;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Renderers;
 
 public abstract class Plot3DRendererBase : IPlot3DRenderer
 {
-    protected static readonly Typeface LabelTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
-    protected static readonly IBrush AxisLabelBrush = new SolidColorBrush(Color.FromArgb(200, 210, 220, 235));
-    protected static readonly IBrush FloorGridBrush = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
-    protected static readonly IBrush BoundingBoxBrush = new SolidColorBrush(Color.FromArgb(25, 255, 255, 255));
+    protected static bool IsDarkTheme => ThemeService.IsDark;
 
-    protected static readonly Pen FloorGridPen = new(FloorGridBrush, 1.0);
-    protected static readonly Pen BoundingBoxPen = new(BoundingBoxBrush, 1.0);
+    protected static readonly Typeface LabelTypeface = new(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+
+    private static readonly IBrush DarkAxisLabelBrush = new SolidColorBrush(Color.FromArgb(200, 210, 220, 235));
+    private static readonly IBrush LightAxisLabelBrush = new SolidColorBrush(Color.FromArgb(200, 30, 41, 59));
+    protected static IBrush AxisLabelBrush => IsDarkTheme ? DarkAxisLabelBrush : LightAxisLabelBrush;
+
+    private static readonly Pen DarkFloorGridPen = new(new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), 1.0);
+    private static readonly Pen LightFloorGridPen = new(new SolidColorBrush(Color.FromArgb(30, 0, 0, 0)), 1.0);
+    protected static Pen FloorGridPen => IsDarkTheme ? DarkFloorGridPen : LightFloorGridPen;
+
+    private static readonly Pen DarkBoundingBoxPen = new(new SolidColorBrush(Color.FromArgb(25, 255, 255, 255)), 1.0);
+    private static readonly Pen LightBoundingBoxPen = new(new SolidColorBrush(Color.FromArgb(25, 0, 0, 0)), 1.0);
+    protected static Pen BoundingBoxPen => IsDarkTheme ? DarkBoundingBoxPen : LightBoundingBoxPen;
 
     protected static readonly Pen AxisXPen = new(new SolidColorBrush(Color.FromArgb(220, 224, 108, 117)), 1.8);
     protected static readonly Pen AxisYPen = new(new SolidColorBrush(Color.FromArgb(220, 152, 195, 121)), 1.8);

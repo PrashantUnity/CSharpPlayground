@@ -30,7 +30,7 @@
                         <!-- Tab 0: Results (.Dump) -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="0"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=0}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Table" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Results (.Dump)" VerticalAlignment="Center" />
@@ -45,7 +45,7 @@
                         <!-- Tab 1: Terminal / Console -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="1"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=1}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" />
                                 <TextBlock Text="Terminal / Console" VerticalAlignment="Center" />
@@ -55,7 +55,7 @@
                         <!-- Tab 2: Problems -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="2"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=2}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#EAB308" />
                                 <TextBlock Text="Problems" VerticalAlignment="Center" />
@@ -71,7 +71,7 @@
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="3"
                                 Classes="ide-tab-btn"
                                 IsVisible="{Binding SupportsTestCases}"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=3}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="CheckboxMarkedCircleOutline" Width="14" Height="14" />
                                 <TextBlock Text="Test Cases" VerticalAlignment="Center" />
@@ -82,7 +82,7 @@
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="4"
                                 Classes="ide-tab-btn"
                                 IsVisible="{Binding SupportsDebugging}"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=4}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Debug Console" VerticalAlignment="Center" />
@@ -144,7 +144,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="services:RichCellOutput">
                                         <StackPanel Spacing="0">
-                                            <Border IsVisible="{Binding IsImageKind}" Background="#080C11" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
+                                            <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
                                                 <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
                                             </Border>
                                             <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
@@ -423,11 +423,11 @@
                                                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Variable Name -->
-                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="#9CDCFE" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                                                         <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Type Name -->
-                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="#4EC9B0" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
 
                                                         <!-- Value Display (Normal or Changed Highlight) -->
                                                         <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -471,9 +471,9 @@
                                                                             <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                                         </Button>
                                                                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="#9CDCFE" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
                                                                         <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="#4EC9B0" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
                                                                         <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                                                         <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                                             <Button Command="{Binding $parent[UserControl].DataContext.ExploreVariableCommand}" CommandParameter="{Binding}"
