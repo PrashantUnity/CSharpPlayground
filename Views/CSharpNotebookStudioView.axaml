@@ -1140,9 +1140,9 @@
                     <!-- Active Canvas (Visible when HasActiveTab) -->
                     <Grid IsVisible="{Binding HasActiveTab}">
 
-                    <!-- Notebook Canvas: one virtualized list of rows (the header, then a row per cell), so only the cells
-                         on screen are built however long the notebook is. The ScrollViewer is in the template so that the
-                         VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+                    <!-- Notebook Canvas: one continuous list of rows (the header, then a row per cell, then the footer).
+                         Using StackPanel ensures consistent layout and accurate scroll extents for variable-height cells,
+                         avoiding virtualization extent jumps when cells, images, or interactive tables are resized or focused. -->
                     <ItemsControl ItemsSource="{Binding CanvasRows}">
                         <ItemsControl.Template>
                             <ControlTemplate>
@@ -1157,7 +1157,7 @@
                         </ItemsControl.Template>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <VirtualizingStackPanel />
+                                <StackPanel />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.DataTemplates>
