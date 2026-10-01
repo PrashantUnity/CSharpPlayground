@@ -400,6 +400,118 @@ func Surface3D(data any, args ...any) *DisplayHandle {
 	return sendDisplay(Plot3DMime, plot3dSpec("surface", data, opts.title))
 }
 
+func Surface3DFunc(title string, f func(x, y float64) float64, minX, maxX, minY, maxY float64, resolution int) *DisplayHandle {
+	n := resolution
+	if n < 2 {
+		n = 2
+	}
+	var zGrid [][]any
+	for r := 0; r < n; r++ {
+		y := minY + (maxY-minY)*float64(r)/float64(n-1)
+		var row []any
+		for c := 0; c < n; c++ {
+			x := minX + (maxX-minX)*float64(c)/float64(n-1)
+			row = append(row, f(x, y))
+		}
+		zGrid = append(zGrid, row)
+	}
+	spec := map[string]any{
+		"kind": "surface",
+		"surface": map[string]any{
+			"x": map[string]any{"min": minX, "max": maxX},
+			"y": map[string]any{"min": minY, "max": maxY},
+			"z": zGrid,
+		},
+	}
+	if title != "" {
+		spec["title"] = title
+	}
+	return sendDisplay(Plot3DMime, spec)
+}
+
+func VoxelBars(data any, args ...any) *DisplayHandle {
+	opts := parseOptions(args)
+	return sendDisplay(Plot3DMime, plot3dSpec("voxelBar", data, opts.title))
+}
+
+type CanvasVisualizer struct {
+	title  string
+	width  int
+	height int
+	shapes []map[string]any
+}
+
+func Canvas(title string, width, height int) *CanvasVisualizer {
+	return &CanvasVisualizer{title: title, width: width, height: height}
+}
+
+func (c *CanvasVisualizer) AddRect(x, y, width, height float64, opts ...string) *CanvasVisualizer {
+	shape := map[string]any{
+		"type": "rect", "x": x, "y": y, "width": width, "height": height,
+	}
+	if len(opts) > 0 && opts[0] != "" { shape["label"] = opts[0] }
+	if len(opts) > 1 && opts[1] != "" { shape["fill"] = opts[1] }
+	if len(opts) > 2 && opts[2] != "" { shape["stroke"] = opts[2] }
+	c.shapes = append(c.shapes, shape)
+	return c
+}
+
+func (c *CanvasVisualizer) AddArrow(x1, y1, x2, y2 float64, opts ...string) *CanvasVisualizer {
+	shape := map[string]any{
+		"type": "arrow", "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+	}
+	if len(opts) > 0 && opts[0] != "" { shape["label"] = opts[0] }
+	if len(opts) > 1 && opts[1] != "" { shape["stroke"] = opts[1] }
+	c.shapes = append(c.shapes, shape)
+	return c
+}
+
+func (c *CanvasVisualizer) AddCircle(cx, cy, radius float64, opts ...string) *CanvasVisualizer {
+	shape := map[string]any{
+		"type": "circle", "cx": cx, "cy": cy, "radius": radius,
+	}
+	if len(opts) > 0 && opts[0] != "" { shape["label"] = opts[0] }
+	if len(opts) > 1 && opts[1] != "" { shape["fill"] = opts[1] }
+	if len(opts) > 2 && opts[2] != "" { shape["stroke"] = opts[2] }
+	c.shapes = append(c.shapes, shape)
+	return c
+}
+
+func (c *CanvasVisualizer) AddLine(x1, y1, x2, y2 float64, stroke ...string) *CanvasVisualizer {
+	shape := map[string]any{
+		"type": "line", "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+	}
+	if len(stroke) > 0 && stroke[0] != "" { shape["stroke"] = stroke[0] }
+	c.shapes = append(c.shapes, shape)
+	return c
+}
+
+func (c *CanvasVisualizer) AddText(x, y float64, text string, fontSize int, color ...string) *CanvasVisualizer {
+	shape := map[string]any{
+		"type": "text", "x": x, "y": y, "text": text, "fontSize": fontSize,
+	}
+	if len(color) > 0 && color[0] != "" { shape["color"] = color[0] }
+	c.shapes = append(c.shapes, shape)
+	return c
+}
+
+func (c *CanvasVisualizer) Show() *DisplayHandle {
+	spec := map[string]any{
+		"kind": "canvas",
+		"state": map[string]any{
+			"canvas": map[string]any{
+				"width":  c.width,
+				"height": c.height,
+				"shapes": c.shapes,
+			},
+		},
+	}
+	if c.title != "" {
+		spec["title"] = c.title
+	}
+	return sendDisplay(VisualizerMime, spec)
+}
+
 func Graph3D(data any, args ...any) *DisplayHandle {
 	opts := parseOptions(args)
 	return sendDisplay(Plot3DMime, plot3dSpec("graph", data, opts.title))
@@ -705,6 +817,26 @@ func plot3dSpec(kind string, data any, title string) map[string]any {
 			"y": map[string]any{"min": 0, "max": maxRows},
 			"z": zGrid,
 		}
+	case "voxelBar":
+		rows := toSlice(data)
+		var xs, ys, zs, labels []any
+		if rows != nil {
+			for r, row := range rows {
+				cols := toSlice(row)
+				if cols != nil {
+					for c, cell := range cols {
+						val := toNum(cell)
+						if val != nil {
+							xs = append(xs, r)
+							ys = append(ys, c)
+							zs = append(zs, val)
+							labels = append(labels, fmt.Sprintf("[%d,%d]=%v", r, c, val))
+						}
+					}
+				}
+			}
+		}
+		spec["series"] = []map[string]any{{"x": xs, "y": ys, "z": zs, "labels": labels}}
 	case "graph":
 		spec["graph"] = parseGraphData(data)
 	}

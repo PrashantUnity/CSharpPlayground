@@ -98,6 +98,9 @@ internal static class DiagramSnapshots
             "java" => ".java",
             "cpp" or "c++" => ".cpp",
             "javascript" or "js" => ".js",
+            "rust" or "rs" => ".rs",
+            "go" => ".go",
+            "fsharp" or "fs" or "fsx" => ".fsx",
             _ => ".txt"
         };
 

@@ -349,6 +349,94 @@ module private Helpers =
         emitProtocol json
         DisplayHandle(mime, id, specJson)
 
+type CanvasVisualizer(title: string, width: int, height: int) =
+    let shapes = List<string>()
+
+    member this.AddRect(x: float, y: float, w: float, h: float, ?label: string, ?fill: string, ?stroke: string) =
+        let sb = StringBuilder(sprintf "{\"type\":\"rect\",\"x\":%s,\"y\":%s,\"width\":%s,\"height\":%s"
+                                  (x.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (w.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (h.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+        label |> Option.iter (fun l -> sb.Append(sprintf ",\"label\":%s" (JsonSerializer.Serialize(l))) |> ignore)
+        fill |> Option.iter (fun f -> sb.Append(sprintf ",\"fill\":%s" (JsonSerializer.Serialize(f))) |> ignore)
+        stroke |> Option.iter (fun s -> sb.Append(sprintf ",\"stroke\":%s" (JsonSerializer.Serialize(s))) |> ignore)
+        sb.Append("}") |> ignore
+        shapes.Add(sb.ToString())
+        this
+
+    member this.add_rect(x: float, y: float, w: float, h: float, ?label: string, ?fill: string, ?stroke: string) =
+        this.AddRect(x, y, w, h, ?label = label, ?fill = fill, ?stroke = stroke)
+
+    member this.AddArrow(x1: float, y1: float, x2: float, y2: float, ?label: string, ?stroke: string) =
+        let sb = StringBuilder(sprintf "{\"type\":\"arrow\",\"x1\":%s,\"y1\":%s,\"x2\":%s,\"y2\":%s"
+                                  (x1.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y1.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (x2.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y2.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+        label |> Option.iter (fun l -> sb.Append(sprintf ",\"label\":%s" (JsonSerializer.Serialize(l))) |> ignore)
+        stroke |> Option.iter (fun s -> sb.Append(sprintf ",\"stroke\":%s" (JsonSerializer.Serialize(s))) |> ignore)
+        sb.Append("}") |> ignore
+        shapes.Add(sb.ToString())
+        this
+
+    member this.add_arrow(x1: float, y1: float, x2: float, y2: float, ?label: string, ?stroke: string) =
+        this.AddArrow(x1, y1, x2, y2, ?label = label, ?stroke = stroke)
+
+    member this.AddCircle(cx: float, cy: float, radius: float, ?label: string, ?fill: string, ?stroke: string) =
+        let sb = StringBuilder(sprintf "{\"type\":\"circle\",\"cx\":%s,\"cy\":%s,\"radius\":%s"
+                                  (cx.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (cy.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (radius.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+        label |> Option.iter (fun l -> sb.Append(sprintf ",\"label\":%s" (JsonSerializer.Serialize(l))) |> ignore)
+        fill |> Option.iter (fun f -> sb.Append(sprintf ",\"fill\":%s" (JsonSerializer.Serialize(f))) |> ignore)
+        stroke |> Option.iter (fun s -> sb.Append(sprintf ",\"stroke\":%s" (JsonSerializer.Serialize(s))) |> ignore)
+        sb.Append("}") |> ignore
+        shapes.Add(sb.ToString())
+        this
+
+    member this.add_circle(cx: float, cy: float, radius: float, ?label: string, ?fill: string, ?stroke: string) =
+        this.AddCircle(cx, cy, radius, ?label = label, ?fill = fill, ?stroke = stroke)
+
+    member this.AddLine(x1: float, y1: float, x2: float, y2: float, ?stroke: string) =
+        let sb = StringBuilder(sprintf "{\"type\":\"line\",\"x1\":%s,\"y1\":%s,\"x2\":%s,\"y2\":%s"
+                                  (x1.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y1.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (x2.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y2.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+        stroke |> Option.iter (fun s -> sb.Append(sprintf ",\"stroke\":%s" (JsonSerializer.Serialize(s))) |> ignore)
+        sb.Append("}") |> ignore
+        shapes.Add(sb.ToString())
+        this
+
+    member this.add_line(x1: float, y1: float, x2: float, y2: float, ?stroke: string) =
+        this.AddLine(x1, y1, x2, y2, ?stroke = stroke)
+
+    member this.AddText(x: float, y: float, text: string, ?fontSize: int, ?color: string) =
+        let fs = defaultArg fontSize 14
+        let sb = StringBuilder(sprintf "{\"type\":\"text\",\"x\":%s,\"y\":%s,\"text\":%s,\"fontSize\":%d"
+                                  (x.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (y.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (JsonSerializer.Serialize(text)) fs)
+        color |> Option.iter (fun c -> sb.Append(sprintf ",\"color\":%s" (JsonSerializer.Serialize(c))) |> ignore)
+        sb.Append("}") |> ignore
+        shapes.Add(sb.ToString())
+        this
+
+    member this.add_text(x: float, y: float, text: string, ?fontSize: int, ?color: string) =
+        this.AddText(x, y, text, ?fontSize = fontSize, ?color = color)
+
+    member this.Show() : DisplayHandle =
+        let shapesJson = String.Join(",", shapes)
+        let sb = StringBuilder(sprintf "{\"kind\":\"canvas\",\"state\":{\"canvas\":{\"width\":%d,\"height\":%d,\"shapes\":[%s]}}" width height shapesJson)
+        if not (String.IsNullOrEmpty(title)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(title)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay Detail.VISUALIZER_MIME (sb.ToString())
+
+    member this.show() = this.Show()
+
 type Display private () =
     // ── Basic Display Primitives ──────────────────────────────────────────
 
@@ -464,33 +552,47 @@ type Display private () =
         let ys = StringBuilder("[")
         let ls = StringBuilder("[")
         let mutable first = true
+        let mutable hasLabels = false
         for item in data do
             if not first then
                 ys.Append(",") |> ignore
-                ls.Append(",") |> ignore
             first <- false
             let itemObj = box item
             let t = itemObj.GetType()
-            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
-                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
-                ls.Append(toJsonVal fields.[0]) |> ignore
-                ys.Append(toJsonVal fields.[1]) |> ignore
-            elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
-                let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
-                let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
-                let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
-                let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
-                let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
-                let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
-                ls.Append(toJsonVal nVal) |> ignore
-                ys.Append(toJsonVal vVal) |> ignore
+            match tryGetKeyValue itemObj with
+            | Some (k, v) ->
+                if hasLabels then ls.Append(",") |> ignore
+                hasLabels <- true
+                ls.Append(toJsonVal k) |> ignore
+                ys.Append(toJsonVal v) |> ignore
+            | None ->
+                if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                    let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
+                    if hasLabels then ls.Append(",") |> ignore
+                    hasLabels <- true
+                    ls.Append(toJsonVal fields.[0]) |> ignore
+                    ys.Append(toJsonVal fields.[1]) |> ignore
+                elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
+                    let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
+                    let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
+                    let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
+                    let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
+                    let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
+                    let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
+                    if hasLabels then ls.Append(",") |> ignore
+                    hasLabels <- true
+                    ls.Append(toJsonVal nVal) |> ignore
+                    ys.Append(toJsonVal vVal) |> ignore
+                else
+                    ys.Append(toJsonVal itemObj) |> ignore
         ys.Append("]") |> ignore
         ls.Append("]") |> ignore
 
         let sb = StringBuilder("{\"kind\":\"bar\",\"series\":[{\"y\":")
         sb.Append(ys.ToString()) |> ignore
-        sb.Append(",\"labels\":") |> ignore
-        sb.Append(ls.ToString()) |> ignore
+        if hasLabels then
+            sb.Append(",\"labels\":") |> ignore
+            sb.Append(ls.ToString()) |> ignore
         sb.Append("}]") |> ignore
         if not (String.IsNullOrEmpty(titleStr)) then
             sb.Append(",\"title\":") |> ignore
@@ -507,33 +609,47 @@ type Display private () =
         let ys = StringBuilder("[")
         let ls = StringBuilder("[")
         let mutable first = true
+        let mutable hasLabels = false
         for item in data do
             if not first then
                 ys.Append(",") |> ignore
-                ls.Append(",") |> ignore
             first <- false
             let itemObj = box item
             let t = itemObj.GetType()
-            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
-                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
-                ls.Append(toJsonVal fields.[0]) |> ignore
-                ys.Append(toJsonVal fields.[1]) |> ignore
-            elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
-                let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
-                let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
-                let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
-                let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
-                let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
-                let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
-                ls.Append(toJsonVal nVal) |> ignore
-                ys.Append(toJsonVal vVal) |> ignore
+            match tryGetKeyValue itemObj with
+            | Some (k, v) ->
+                if hasLabels then ls.Append(",") |> ignore
+                hasLabels <- true
+                ls.Append(toJsonVal k) |> ignore
+                ys.Append(toJsonVal v) |> ignore
+            | None ->
+                if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                    let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(itemObj)
+                    if hasLabels then ls.Append(",") |> ignore
+                    hasLabels <- true
+                    ls.Append(toJsonVal fields.[0]) |> ignore
+                    ys.Append(toJsonVal fields.[1]) |> ignore
+                elif Microsoft.FSharp.Reflection.FSharpType.IsRecord(t) then
+                    let fields = Microsoft.FSharp.Reflection.FSharpType.GetRecordFields(t)
+                    let values = Microsoft.FSharp.Reflection.FSharpValue.GetRecordFields(itemObj)
+                    let nameIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("label", StringComparison.OrdinalIgnoreCase))
+                    let valIdx = fields |> Array.tryFindIndex (fun f -> f.Name.Equals("value", StringComparison.OrdinalIgnoreCase) || f.Name.Equals("y", StringComparison.OrdinalIgnoreCase))
+                    let nVal = match nameIdx with Some i -> values.[i] | None -> values.[0]
+                    let vVal = match valIdx with Some i -> values.[i] | None -> values.[1]
+                    if hasLabels then ls.Append(",") |> ignore
+                    hasLabels <- true
+                    ls.Append(toJsonVal nVal) |> ignore
+                    ys.Append(toJsonVal vVal) |> ignore
+                else
+                    ys.Append(toJsonVal itemObj) |> ignore
         ys.Append("]") |> ignore
         ls.Append("]") |> ignore
 
         let sb = StringBuilder("{\"kind\":\"pie\",\"series\":[{\"y\":")
         sb.Append(ys.ToString()) |> ignore
-        sb.Append(",\"labels\":") |> ignore
-        sb.Append(ls.ToString()) |> ignore
+        if hasLabels then
+            sb.Append(",\"labels\":") |> ignore
+            sb.Append(ls.ToString()) |> ignore
         sb.Append("}]") |> ignore
         if not (String.IsNullOrEmpty(titleStr)) then
             sb.Append(",\"title\":") |> ignore
@@ -682,7 +798,7 @@ type Display private () =
     static member scatter3D(data: seq<'T>, ?title: string) = Display.Scatter3D(data, ?title = title)
 
     // 8. Surface 3D
-    static member Surface3D(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+    static member Surface3D(data: seq<#seq<'T>>, ?title: string) : DisplayHandle =
         let titleStr = defaultArg title ""
         let rows = data |> Seq.map (fun r -> r |> Seq.toArray) |> Seq.toArray
         let rowCount = rows.Length
@@ -709,8 +825,95 @@ type Display private () =
         sb.Append("}") |> ignore
         Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
 
-    static member surface3d(data: seq<seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
-    static member surface3D(data: seq<seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
+    static member surface3d(data: seq<#seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
+    static member surface3D(data: seq<#seq<'T>>, ?title: string) = Display.Surface3D(data, ?title = title)
+
+    // 8b. Surface 3D from Function
+    static member Surface3D(title: string, func: float -> float -> float, minX: float, maxX: float, minY: float, maxY: float, ?resolution: int) : DisplayHandle =
+        let n = defaultArg resolution 30 |> max 2
+        let zRows = StringBuilder("[")
+        for r in 0 .. n - 1 do
+            if r > 0 then zRows.Append(",") |> ignore
+            zRows.Append("[") |> ignore
+            let y = minY + (maxY - minY) * float r / float (n - 1)
+            for c in 0 .. n - 1 do
+                if c > 0 then zRows.Append(",") |> ignore
+                let x = minX + (maxX - minX) * float c / float (n - 1)
+                let z = func x y
+                zRows.Append(z.ToString(System.Globalization.CultureInfo.InvariantCulture)) |> ignore
+            zRows.Append("]") |> ignore
+        zRows.Append("]") |> ignore
+
+        let sb = StringBuilder(sprintf "{\"kind\":\"surface\",\"surface\":{\"x\":{\"min\":%s,\"max\":%s},\"y\":{\"min\":%s,\"max\":%s},\"z\":%s}"
+                                  (minX.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (maxX.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (minY.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (maxY.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                                  (zRows.ToString()))
+        if not (String.IsNullOrEmpty(title)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(title)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
+
+    static member surface3d(title: string, func: float -> float -> float, minX: float, maxX: float, minY: float, maxY: float, ?resolution: int) =
+        Display.Surface3D(title, func, minX, maxX, minY, maxY, ?resolution = resolution)
+
+    // 8c. Voxel Bars
+    static member VoxelBars(data: seq<#seq<'T>>, ?title: string) : DisplayHandle =
+        let titleStr = defaultArg title ""
+        let xs = StringBuilder("[")
+        let ys = StringBuilder("[")
+        let zs = StringBuilder("[")
+        let ls = StringBuilder("[")
+        let mutable first = true
+        let mutable r = 0
+        for row in data do
+            let mutable c = 0
+            for cell in row do
+                if not first then
+                    xs.Append(",") |> ignore
+                    ys.Append(",") |> ignore
+                    zs.Append(",") |> ignore
+                    ls.Append(",") |> ignore
+                first <- false
+                xs.Append(r) |> ignore
+                ys.Append(c) |> ignore
+                let zVal = toJsonVal (box cell)
+                zs.Append(zVal) |> ignore
+                ls.Append(sprintf "\"[%d,%d]=%s\"" r c zVal) |> ignore
+                c <- c + 1
+            r <- r + 1
+        xs.Append("]") |> ignore
+        ys.Append("]") |> ignore
+        zs.Append("]") |> ignore
+        ls.Append("]") |> ignore
+
+        let sb = StringBuilder("{\"kind\":\"voxelBar\",\"series\":[{\"x\":")
+        sb.Append(xs.ToString()) |> ignore
+        sb.Append(",\"y\":") |> ignore
+        sb.Append(ys.ToString()) |> ignore
+        sb.Append(",\"z\":") |> ignore
+        sb.Append(zs.ToString()) |> ignore
+        sb.Append(",\"labels\":") |> ignore
+        sb.Append(ls.ToString()) |> ignore
+        sb.Append("}]") |> ignore
+        if not (String.IsNullOrEmpty(titleStr)) then
+            sb.Append(",\"title\":") |> ignore
+            sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore
+        sb.Append("}") |> ignore
+        Helpers.emitDisplay PLOT3D_MIME (sb.ToString())
+
+    static member voxelBars(data: seq<#seq<'T>>, ?title: string) = Display.VoxelBars(data, ?title = title)
+    static member voxel_bars(data: seq<#seq<'T>>, ?title: string) = Display.VoxelBars(data, ?title = title)
+
+    // Canvas Visualizer
+    static member Canvas(title: string, ?width: int, ?height: int) =
+        let w = defaultArg width 600
+        let h = defaultArg height 300
+        CanvasVisualizer(title, w, h)
+
+    static member canvas(title: string, ?width: int, ?height: int) = Display.Canvas(title, ?width = width, ?height = height)
 
     // 9. Graph 3D
     static member Graph3D(data: obj, ?title: string) : DisplayHandle =
@@ -756,7 +959,7 @@ type Display private () =
     static member graph3D(data: obj, ?title: string) = Display.Graph3D(data, ?title = title)
 
     // 10. Matrix
-    static member Matrix(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+    static member Matrix(data: seq<#seq<'T>>, ?title: string) : DisplayHandle =
         let titleStr = defaultArg title ""
         let valSb = StringBuilder("[")
         let cellSb = StringBuilder("[")
@@ -791,10 +994,10 @@ type Display private () =
         sb.Append("}") |> ignore
         Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
 
-    static member matrix(data: seq<seq<'T>>, ?title: string) = Display.Matrix(data, ?title = title)
+    static member matrix(data: seq<#seq<'T>>, ?title: string) = Display.Matrix(data, ?title = title)
 
     // 11. Islands
-    static member Islands(data: seq<seq<'T>>, ?title: string) : DisplayHandle =
+    static member Islands(data: seq<#seq<'T>>, ?title: string) : DisplayHandle =
         let titleStr = defaultArg title ""
         let valSb = StringBuilder("[")
         let cellSb = StringBuilder("[")
@@ -829,7 +1032,7 @@ type Display private () =
         sb.Append("}") |> ignore
         Helpers.emitDisplay VISUALIZER_MIME (sb.ToString())
 
-    static member islands(data: seq<seq<'T>>, ?title: string) = Display.Islands(data, ?title = title)
+    static member islands(data: seq<#seq<'T>>, ?title: string) = Display.Islands(data, ?title = title)
 
     // 12. Array with Pointers
     static member Array(values: seq<'T>, pointers: obj, ?title: string) : DisplayHandle =

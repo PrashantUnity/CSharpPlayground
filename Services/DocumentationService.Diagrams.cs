@@ -108,6 +108,52 @@ public partial class DocumentationService
                     // Call our API to emit an interactive bar chart diagram
                     Display.Chart(numbers, title: "Quarterly Trend Analysis", type: ChartType.Bar);
                     """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: Quickstart Visual Diagram with our API
+                    use fry::*;
+
+                    fn main() {
+                        // 1. Prepare data points for the diagram
+                        let numbers = vec![10, 25, 45, 30, 60, 85];
+
+                        // 2. Call our API to emit an interactive bar chart diagram
+                        bar_chart(&numbers).title("Quarterly Trend Analysis").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: Quickstart Visual Diagram with our API
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Prepare data points for the diagram
+                        numbers := []int{10, 25, 45, 30, 60, 85}
+
+                        // 2. Call our API to emit an interactive bar chart diagram
+                        fry.BarChart(numbers, fry.Title("Quarterly Trend Analysis"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: Quickstart Visual Diagram with our API
+                    const { Display } = require('fry');
+
+                    // 1. Prepare data points for the diagram
+                    const numbers = [10, 25, 45, 30, 60, 85];
+
+                    // 2. Call our API to emit an interactive bar chart diagram
+                    Display.barChart(numbers, "Quarterly Trend Analysis");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: Quickstart Visual Diagram with our API
+                    open Fry
+
+                    // 1. Prepare data points for the diagram
+                    let numbers = [ 10; 25; 45; 30; 60; 85 ]
+
+                    // 2. Call our API to emit an interactive bar chart diagram
+                    Display.BarChart(numbers, title = "Quarterly Trend Analysis") |> ignore
+                    """)
             }
         };
     }
@@ -228,6 +274,81 @@ public partial class DocumentationService
                     // 2. Call our API to display the interactive tree diagram
                     Display.Tree(root, title: "Binary Search Tree Diagram");
                     """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: Hierarchical Binary Search Tree Diagram
+                    use fry::*;
+
+                    fn main() {
+                        // 1. Construct binary tree nodes
+                        let left = TreeNode::with_children(30, TreeNode::new(20), TreeNode::new(40));
+                        let right = TreeNode::new(70);
+                        let root = TreeNode::with_children(50, left, right);
+
+                        // 2. Call our API to display the interactive tree diagram
+                        tree(&root).title("Binary Search Tree Diagram").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: Hierarchical Binary Search Tree Diagram
+                    package main
+
+                    import "fry"
+
+                    type TreeNode struct {
+                        Val   int
+                        Left  *TreeNode
+                        Right *TreeNode
+                    }
+
+                    func main() {
+                        // 1. Construct binary tree nodes
+                        root := &TreeNode{
+                            Val: 50,
+                            Left: &TreeNode{
+                                Val:   30,
+                                Left:  &TreeNode{Val: 20},
+                                Right: &TreeNode{Val: 40},
+                            },
+                            Right: &TreeNode{Val: 70},
+                        }
+
+                        // 2. Call our API to display the interactive tree diagram
+                        fry.Tree(root, fry.Title("Binary Search Tree Diagram"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: Hierarchical Binary Search Tree Diagram
+                    const { Display } = require('fry');
+
+                    class TreeNode {
+                        constructor(val, left = null, right = null) {
+                            this.val = val;
+                            this.left = left;
+                            this.right = right;
+                        }
+                    }
+
+                    // 1. Construct binary tree nodes
+                    const root = new TreeNode(50,
+                        new TreeNode(30, new TreeNode(20), new TreeNode(40)),
+                        new TreeNode(70)
+                    );
+
+                    // 2. Call our API to display the interactive tree diagram
+                    Display.tree(root, "Binary Search Tree Diagram");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: Hierarchical Binary Search Tree Diagram
+                    open Fry
+
+                    // 1. Construct binary tree nodes
+                    let root = TreeNode(50,
+                        TreeNode(30, TreeNode(20), TreeNode(40)),
+                        TreeNode(70))
+
+                    // 2. Call our API to display the interactive tree diagram
+                    Display.Tree(root, title = "Binary Search Tree Diagram") |> ignore
+                    """)
             }
         };
     }
@@ -328,6 +449,68 @@ public partial class DocumentationService
 
                     // Call our API to display the interactive graph diagram
                     Display.Graph(network, directed: true, title: "Microservice Architecture Flow");
+                    """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: Directed Network Graph Diagram
+                    use fry::*;
+                    use std::collections::BTreeMap;
+
+                    fn main() {
+                        // 1. Define network adjacency map
+                        let mut network = BTreeMap::new();
+                        network.insert("API Gateway", vec!["Auth Service", "Billing Service"]);
+                        network.insert("Auth Service", vec!["Redis Cache"]);
+                        network.insert("Billing Service", vec!["Postgres DB"]);
+
+                        // 2. Call our API to display the interactive graph diagram
+                        graph(&network).title("Microservice Architecture Flow").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: Directed Network Graph Diagram
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Define network adjacency map
+                        network := map[string][]string{
+                            "API Gateway":     {"Auth Service", "Billing Service"},
+                            "Auth Service":    {"Redis Cache"},
+                            "Billing Service": {"Postgres DB"},
+                        }
+
+                        // 2. Call our API to display the interactive graph diagram
+                        fry.Graph(network, fry.Title("Microservice Architecture Flow"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: Directed Network Graph Diagram
+                    const { Display } = require('fry');
+
+                    // 1. Define network adjacency object
+                    const network = {
+                        "API Gateway": ["Auth Service", "Billing Service"],
+                        "Auth Service": ["Redis Cache"],
+                        "Billing Service": ["Postgres DB"]
+                    };
+
+                    // 2. Call our API to display the interactive graph diagram
+                    Display.graph(network, "Microservice Architecture Flow");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: Directed Network Graph Diagram
+                    open Fry
+
+                    // 1. Define network adjacency list
+                    let network = [
+                        "API Gateway", box [ "Auth Service"; "Billing Service" ]
+                        "Auth Service", box [ "Redis Cache" ]
+                        "Billing Service", box [ "Postgres DB" ]
+                    ]
+
+                    // 2. Call our API to display the interactive graph diagram
+                    Display.Graph(network, title = "Microservice Architecture Flow") |> ignore
                     """)
             }
         };

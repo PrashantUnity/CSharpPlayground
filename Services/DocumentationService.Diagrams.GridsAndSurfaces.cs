@@ -100,6 +100,68 @@ public partial class DocumentationService
                     // Call our API to display interactive island diagram
                     Display.Islands(grid, title: "Archipelago Island Traversal");
                     """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: 2D Grid & Island Diagram
+                    use fry::*;
+
+                    fn main() {
+                        // 1. Define 2D matrix map
+                        let grid = vec![
+                            vec![1, 1, 0, 0],
+                            vec![1, 1, 0, 1],
+                            vec![0, 0, 1, 1],
+                        ];
+
+                        // 2. Call our API to display interactive island diagram
+                        islands(&grid).title("Archipelago Island Traversal").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: 2D Grid & Island Diagram
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Define 2D matrix map
+                        grid := [][]int{
+                            {1, 1, 0, 0},
+                            {1, 1, 0, 1},
+                            {0, 0, 1, 1},
+                        }
+
+                        // 2. Call our API to display interactive island diagram
+                        fry.Islands(grid, fry.Title("Archipelago Island Traversal"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: 2D Grid & Island Diagram
+                    const { Display } = require('fry');
+
+                    // 1. Define 2D matrix map
+                    const grid = [
+                        [1, 1, 0, 0],
+                        [1, 1, 0, 1],
+                        [0, 0, 1, 1]
+                    ];
+
+                    // 2. Call our API to display interactive island diagram
+                    Display.islands(grid, "Archipelago Island Traversal");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: 2D Grid & Island Diagram
+                    open Fry
+
+                    // 1. Define 2D matrix map
+                    let grid = [
+                        [ 1; 1; 0; 0 ]
+                        [ 1; 1; 0; 1 ]
+                        [ 0; 0; 1; 1 ]
+                    ]
+
+                    // 2. Call our API to display interactive island diagram
+                    Display.Islands(grid, title = "Archipelago Island Traversal") |> ignore
+                    """)
             }
         };
     }
@@ -202,6 +264,72 @@ public partial class DocumentationService
 
                     // Call our API to render an interactive 3D voxel bar matrix
                     Display.VoxelBar3D(matrix3d, title: "3D Voxel Matrix Topography", autoRotate: true);
+                    """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: 3D Voxel Matrix Diagram
+                    use fry::*;
+
+                    fn main() {
+                        // 1. Define 3D height matrix values
+                        let matrix3d = vec![
+                            vec![10, 20, 15, 5],
+                            vec![25, 40, 30, 12],
+                            vec![18, 35, 50, 22],
+                            vec![8,  14, 28, 45],
+                        ];
+
+                        // 2. Call our API to render an interactive 3D voxel bar matrix
+                        voxel_bars(&matrix3d).title("3D Voxel Matrix Topography").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: 3D Voxel Matrix Diagram
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Define 3D height matrix values
+                        matrix3d := [][]int{
+                            {10, 20, 15, 5},
+                            {25, 40, 30, 12},
+                            {18, 35, 50, 22},
+                            {8,  14, 28, 45},
+                        }
+
+                        // 2. Call our API to render an interactive 3D voxel bar matrix
+                        fry.VoxelBars(matrix3d, fry.Title("3D Voxel Matrix Topography"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: 3D Voxel Matrix Diagram
+                    const { Display } = require('fry');
+
+                    // 1. Define 3D height matrix values
+                    const matrix3d = [
+                        [10, 20, 15, 5],
+                        [25, 40, 30, 12],
+                        [18, 35, 50, 22],
+                        [8,  14, 28, 45]
+                    ];
+
+                    // 2. Call our API to render an interactive 3D voxel bar matrix
+                    Display.voxelBar3d(matrix3d, "3D Voxel Matrix Topography");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: 3D Voxel Matrix Diagram
+                    open Fry
+
+                    // 1. Define 3D height matrix values
+                    let matrix3d = [
+                        [ 10; 20; 15; 5 ]
+                        [ 25; 40; 30; 12 ]
+                        [ 18; 35; 50; 22 ]
+                        [ 8;  14; 28; 45 ]
+                    ]
+
+                    // 2. Call our API to render an interactive 3D voxel bar matrix
+                    Display.VoxelBars(matrix3d, title = "3D Voxel Matrix Topography") |> ignore
                     """),
                 new DocCodeSnippet
                 {
@@ -257,6 +385,52 @@ public partial class DocumentationService
                         (1, 1, 1), (2, 1, 1), (2, 2, 2)
                     };
                     Display.Scatter3D(pathPoints, title: "3D BFS Shortest Path Trajectory");
+                    """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: 3D Spatial Coordinate Points
+                    use fry::scatter3d;
+
+                    fn main() {
+                        let points = vec![
+                            (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0),
+                            (1.0, 1.0, 1.0), (2.0, 1.0, 1.0), (2.0, 2.0, 2.0),
+                        ];
+                        scatter3d(&points).title("3D BFS Shortest Path Trajectory").show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: 3D Spatial Coordinate Points
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        points := [][]float64{
+                            {0, 0, 0}, {1, 0, 0}, {1, 1, 0},
+                            {1, 1, 1}, {2, 1, 1}, {2, 2, 2},
+                        }
+                        fry.Scatter3D(points, fry.Title("3D BFS Shortest Path Trajectory"))
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: 3D Spatial Coordinate Points
+                    const { Display } = require('fry');
+
+                    const points = [
+                        [0, 0, 0], [1, 0, 0], [1, 1, 0],
+                        [1, 1, 1], [2, 1, 1], [2, 2, 2]
+                    ];
+                    Display.scatter3d(points, "3D BFS Shortest Path Trajectory");
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: 3D Spatial Coordinate Points
+                    open Fry
+
+                    let points = [
+                        (0.0, 0.0, 0.0); (1.0, 0.0, 0.0); (1.0, 1.0, 0.0)
+                        (1.0, 1.0, 1.0); (2.0, 1.0, 1.0); (2.0, 2.0, 2.0)
+                    ]
+                    Display.Scatter3D(points, title = "3D BFS Shortest Path Trajectory") |> ignore
                     """)
             }
         };
@@ -368,6 +542,80 @@ public partial class DocumentationService
                     // Call our API to display the diagram
                     Display.Visualizer(recorder);
                     """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: Freeform Vector Canvas Diagram
+                    use fry::canvas;
+
+                    fn main() {
+                        // 1. Initialize vector canvas diagram
+                        let mut c = canvas("Pipeline Architecture", 420, 240);
+
+                        // 2. Draw pipeline stages and connecting arrows
+                        c.add_rect(30.0, 80.0, 100.0, 45.0, "Ingestion", "#0284c7", "#38bdf8");
+                        c.add_arrow(135.0, 102.0, 175.0, 102.0, "JSON", "#94a3b8");
+                        c.add_rect(180.0, 80.0, 100.0, 45.0, "Transform", "#7c3aed", "#a78bfa");
+                        c.add_arrow(285.0, 102.0, 325.0, 102.0, "Parquet", "#94a3b8");
+                        c.add_rect(330.0, 80.0, 100.0, 45.0, "Storage", "#10b981", "#34d399");
+
+                        // 3. Call our API to display the diagram
+                        c.show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: Freeform Vector Canvas Diagram
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Initialize vector canvas diagram
+                        c := fry.Canvas("Pipeline Architecture", 420, 240)
+
+                        // 2. Draw pipeline stages and connecting arrows
+                        c.AddRect(30, 80, 100, 45, "Ingestion", "#0284c7", "#38bdf8")
+                        c.AddArrow(135, 102, 175, 102, "JSON", "#94a3b8")
+                        c.AddRect(180, 80, 100, 45, "Transform", "#7c3aed", "#a78bfa")
+                        c.AddArrow(285, 102, 325, 102, "Parquet", "#94a3b8")
+                        c.AddRect(330, 80, 100, 45, "Storage", "#10b981", "#34d399")
+
+                        // 3. Call our API to display the diagram
+                        c.Show()
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: Freeform Vector Canvas Diagram
+                    const { Display } = require('fry');
+
+                    // 1. Initialize vector canvas diagram
+                    const c = Display.canvas("Pipeline Architecture", 420, 240);
+
+                    // 2. Draw pipeline stages and connecting arrows
+                    c.addRect(30, 80, 100, 45, "Ingestion", "#0284c7", "#38bdf8");
+                    c.addArrow(135, 102, 175, 102, "JSON", "#94a3b8");
+                    c.addRect(180, 80, 100, 45, "Transform", "#7c3aed", "#a78bfa");
+                    c.addArrow(285, 102, 325, 102, "Parquet", "#94a3b8");
+                    c.addRect(330, 80, 100, 45, "Storage", "#10b981", "#34d399");
+
+                    // 3. Call our API to display the diagram
+                    c.show();
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: Freeform Vector Canvas Diagram
+                    open Fry
+
+                    // 1. Initialize vector canvas diagram
+                    let canvas = Display.Canvas("Pipeline Architecture", width = 420, height = 240)
+
+                    // 2. Draw pipeline stages and connecting arrows
+                    canvas.AddRect(30.0, 80.0, 100.0, 45.0, label = "Ingestion", fill = "#0284c7", stroke = "#38bdf8") |> ignore
+                    canvas.AddArrow(135.0, 102.0, 175.0, 102.0, label = "JSON", stroke = "#94a3b8") |> ignore
+                    canvas.AddRect(180.0, 80.0, 100.0, 45.0, label = "Transform", fill = "#7c3aed", stroke = "#a78bfa") |> ignore
+                    canvas.AddArrow(285.0, 102.0, 325.0, 102.0, label = "Parquet", stroke = "#94a3b8") |> ignore
+                    canvas.AddRect(330.0, 80.0, 100.0, 45.0, label = "Storage", fill = "#10b981", stroke = "#34d399") |> ignore
+
+                    // 3. Call our API to display the diagram
+                    canvas.Show() |> ignore
+                    """)
             }
         };
     }
@@ -454,6 +702,51 @@ public partial class DocumentationService
                         yRange: (-3, 3),
                         resolution: 30,
                         title: "Hyperbolic Paraboloid Saddle");
+                    """)
+                .AddVariant("rust", "Rust", """
+                    // Rust: 3D Surface Function Diagram
+                    use fry::Surface3D;
+
+                    fn main() {
+                        // 1. Define mathematical surface function z = f(x, y)
+                        let surface = Surface3D::new("Hyperbolic Paraboloid",
+                            |x, y| x * x - y * y,
+                            -3.0, 3.0, -3.0, 3.0, 30);
+
+                        // 2. Call our API to display the interactive 3D diagram
+                        surface.show();
+                    }
+                    """)
+                .AddVariant("go", "Go", """
+                    // Go: 3D Surface Function Diagram
+                    package main
+
+                    import "fry"
+
+                    func main() {
+                        // 1. Call our API to display a 3D mathematical surface
+                        fry.Surface3DFunc("Hyperbolic Paraboloid",
+                            func(x, y float64) float64 { return x*x - y*y },
+                            -3.0, 3.0, -3.0, 3.0, 30)
+                    }
+                    """)
+                .AddVariant("javascript", "JavaScript", """
+                    // JavaScript: 3D Surface Function Diagram
+                    const { Display } = require('fry');
+
+                    // 1. Call our API to display a 3D mathematical surface
+                    Display.surface3dFunc("Hyperbolic Paraboloid",
+                        (x, y) => x * x - y * y,
+                        -3.0, 3.0, -3.0, 3.0, 30);
+                    """)
+                .AddVariant("fsharp", "F#", """
+                    // F#: 3D Surface Function Diagram
+                    open Fry
+
+                    // 1. Call our API to display a 3D mathematical surface
+                    Display.Surface3D("Hyperbolic Paraboloid",
+                        (fun x y -> x * x - y * y),
+                        -3.0, 3.0, -3.0, 3.0, resolution = 30) |> ignore
                     """)
             }
         };

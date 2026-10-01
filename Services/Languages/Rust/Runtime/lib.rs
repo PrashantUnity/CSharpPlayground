@@ -474,6 +474,15 @@ pub fn graph3d<T: Debug + ?Sized>(data: &T) -> Plot3DBuilder {
     }
 }
 
+pub fn voxel_bars<T: Debug + ?Sized>(data: &T) -> Plot3DBuilder {
+    Plot3DBuilder {
+        kind: "voxelBar",
+        data_debug: format!("{:#?}", data),
+        title: None,
+    }
+}
+
+
 pub fn matrix<T: Debug + ?Sized>(grid: &T) -> VisualizerBuilder {
     VisualizerBuilder {
         kind: "matrix",
@@ -534,6 +543,174 @@ pub fn bars<T: Debug + ?Sized>(values: &T) -> VisualizerBuilder {
         data_debug: format!("{:#?}", values),
         extra_debug: None,
         title: None,
+    }
+}
+
+// ── Freeform Vector Canvas Visualizer ────────────────────────────────────────
+
+pub struct CanvasVisualizer {
+    title: String,
+    width: u32,
+    height: u32,
+    shapes: Vec<String>,
+}
+
+impl CanvasVisualizer {
+    pub fn new(title: impl Into<String>, width: u32, height: u32) -> Self {
+        Self {
+            title: title.into(),
+            width,
+            height,
+            shapes: Vec::new(),
+        }
+    }
+
+    pub fn add_rect(&mut self, x: f64, y: f64, width: f64, height: f64, label: &str, fill: &str, stroke: &str) -> &mut Self {
+        let mut s = format!("{{\"type\":\"rect\",\"x\":{},\"y\":{},\"width\":{},\"height\":{}", x, y, width, height);
+        if !label.is_empty() { s.push_str(&format!(",\"label\":{}", json_string(label))); }
+        if !fill.is_empty() { s.push_str(&format!(",\"fill\":{}", json_string(fill))); }
+        if !stroke.is_empty() { s.push_str(&format!(",\"stroke\":{}", json_string(stroke))); }
+        s.push('}');
+        self.shapes.push(s);
+        self
+    }
+
+    pub fn add_arrow(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, label: &str, stroke: &str) -> &mut Self {
+        let mut s = format!("{{\"type\":\"arrow\",\"x1\":{},\"y1\":{},\"x2\":{},\"y2\":{}", x1, y1, x2, y2);
+        if !label.is_empty() { s.push_str(&format!(",\"label\":{}", json_string(label))); }
+        if !stroke.is_empty() { s.push_str(&format!(",\"stroke\":{}", json_string(stroke))); }
+        s.push('}');
+        self.shapes.push(s);
+        self
+    }
+
+    pub fn add_circle(&mut self, cx: f64, cy: f64, radius: f64, label: &str, fill: &str, stroke: &str) -> &mut Self {
+        let mut s = format!("{{\"type\":\"circle\",\"cx\":{},\"cy\":{},\"radius\":{}", cx, cy, radius);
+        if !label.is_empty() { s.push_str(&format!(",\"label\":{}", json_string(label))); }
+        if !fill.is_empty() { s.push_str(&format!(",\"fill\":{}", json_string(fill))); }
+        if !stroke.is_empty() { s.push_str(&format!(",\"stroke\":{}", json_string(stroke))); }
+        s.push('}');
+        self.shapes.push(s);
+        self
+    }
+
+    pub fn add_line(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, stroke: &str) -> &mut Self {
+        let mut s = format!("{{\"type\":\"line\",\"x1\":{},\"y1\":{},\"x2\":{},\"y2\":{}", x1, y1, x2, y2);
+        if !stroke.is_empty() { s.push_str(&format!(",\"stroke\":{}", json_string(stroke))); }
+        s.push('}');
+        self.shapes.push(s);
+        self
+    }
+
+    pub fn add_text(&mut self, x: f64, y: f64, text: &str, font_size: u32, color: &str) -> &mut Self {
+        let mut s = format!("{{\"type\":\"text\",\"x\":{},\"y\":{},\"text\":{},\"fontSize\":{}", x, y, json_string(text), font_size);
+        if !color.is_empty() { s.push_str(&format!(",\"color\":{}", json_string(color))); }
+        s.push('}');
+        self.shapes.push(s);
+        self
+    }
+
+    pub fn show(&self) -> DisplayHandle {
+        let mut spec = format!(
+            "{{\"kind\":\"canvas\",\"state\":{{\"canvas\":{{\"width\":{},\"height\":{},\"shapes\":[{}]}}}}",
+            self.width, self.height, self.shapes.join(",")
+        );
+        if !self.title.is_empty() {
+            spec.push_str(&format!(",\"title\":{}", json_string(&self.title)));
+        }
+        spec.push('}');
+        emit_display(VISUALIZER_MIME, &spec)
+    }
+}
+
+pub fn canvas(title: impl Into<String>, width: u32, height: u32) -> CanvasVisualizer {
+    CanvasVisualizer::new(title, width, height)
+}
+
+// ── Interactive 3D Surface Function ────────────────────────────────────────
+
+pub struct Surface3D {
+    title: String,
+    z_grid: Vec<Vec<f64>>,
+    min_x: f64,
+    max_x: f64,
+    min_y: f64,
+    max_y: f64,
+}
+
+impl Surface3D {
+    pub fn new<F: Fn(f64, f64) -> f64>(
+        title: impl Into<String>,
+        func: F,
+        min_x: f64,
+        max_x: f64,
+        min_y: f64,
+        max_y: f64,
+        resolution: usize,
+    ) -> Self {
+        let n = resolution.max(2);
+        let mut z_grid = Vec::with_capacity(n);
+        for r in 0..n {
+            let mut row = Vec::with_capacity(n);
+            let y = min_y + (max_y - min_y) * (r as f64) / ((n - 1) as f64);
+            for c in 0..n {
+                let x = min_x + (max_x - min_x) * (c as f64) / ((n - 1) as f64);
+                row.push(func(x, y));
+            }
+            z_grid.push(row);
+        }
+        Self {
+            title: title.into(),
+            z_grid,
+            min_x,
+            max_x,
+            min_y,
+            max_y,
+        }
+    }
+
+    pub fn show(&self) -> DisplayHandle {
+        let z_rows: Vec<String> = self.z_grid.iter().map(|row| {
+            format!("[{}]", row.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(","))
+        }).collect();
+        let mut spec = format!(
+            "{{\"kind\":\"surface\",\"surface\":{{\"x\":{{\"min\":{},\"max\":{}}},\"y\":{{\"min\":{},\"max\":{}}},\"z\":[{}]}}",
+            self.min_x, self.max_x, self.min_y, self.max_y, z_rows.join(",")
+        );
+        if !self.title.is_empty() {
+            spec.push_str(&format!(",\"title\":{}", json_string(&self.title)));
+        }
+        spec.push('}');
+        emit_display(PLOT3D_MIME, &spec)
+    }
+}
+
+pub fn plot3d_surface<F: Fn(f64, f64) -> f64>(
+    title: impl Into<String>,
+    func: F,
+    min_x: f64,
+    max_x: f64,
+    min_y: f64,
+    max_y: f64,
+    resolution: usize,
+) -> DisplayHandle {
+    Surface3D::new(title, func, min_x, max_x, min_y, max_y, resolution).show()
+}
+
+#[derive(Debug, Clone)]
+pub struct Point3D {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub label: Option<String>,
+}
+
+impl Point3D {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Self { x, y, z, label: None }
+    }
+    pub fn with_label(x: f64, y: f64, z: f64, label: impl Into<String>) -> Self {
+        Self { x, y, z, label: Some(label.into()) }
     }
 }
 
@@ -694,6 +871,21 @@ fn build_plot3d_spec(kind: &str, node: Option<&Node>, title: Option<&str>) -> St
                             ys.push(node_number_or_null(&pts[1]));
                             zs.push(node_number_or_null(&pts[2]));
                         }
+                    } else if let Node::Struct(_, fields) = item {
+                        let mut x_val = "0".to_string();
+                        let mut y_val = "0".to_string();
+                        let mut z_val = "0".to_string();
+                        for (fname, fnode) in fields {
+                            match fname.as_str() {
+                                "x" => x_val = node_number_or_null(fnode),
+                                "y" => y_val = node_number_or_null(fnode),
+                                "z" => z_val = node_number_or_null(fnode),
+                                _ => {}
+                            }
+                        }
+                        xs.push(x_val);
+                        ys.push(y_val);
+                        zs.push(z_val);
                     }
                 }
             }
@@ -702,6 +894,34 @@ fn build_plot3d_spec(kind: &str, node: Option<&Node>, title: Option<&str>) -> St
                 xs.join(","),
                 ys.join(","),
                 zs.join(",")
+            ));
+        }
+        "voxelBar" => {
+            let mut xs = Vec::new();
+            let mut ys = Vec::new();
+            let mut zs = Vec::new();
+            let mut labels = Vec::new();
+            if let Some(Node::List(rows) | Node::Tuple(None, rows)) = node {
+                for (r_idx, r) in rows.iter().enumerate() {
+                    if let Node::List(cols) | Node::Tuple(None, cols) = r {
+                        for (c_idx, c) in cols.iter().enumerate() {
+                            let num_str = node_number_or_null(c);
+                            if num_str != "null" {
+                                xs.push(r_idx.to_string());
+                                ys.push(c_idx.to_string());
+                                zs.push(num_str.clone());
+                                labels.push(format!("\"[{},{}]={}\"", r_idx, c_idx, num_str));
+                            }
+                        }
+                    }
+                }
+            }
+            out.push_str(&format!(
+                ",\"series\":[{{\"x\":[{}],\"y\":[{}],\"z\":[{}],\"labels\":[{}]}}]",
+                xs.join(","),
+                ys.join(","),
+                zs.join(","),
+                labels.join(",")
             ));
         }
         "surface" => {

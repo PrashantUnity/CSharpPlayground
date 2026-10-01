@@ -735,6 +735,31 @@ class Display {
     static array(values, pointers, titleOrOpts, opts) { return sendDisplay(VISUALIZER_MIME, arraySpec(values, pointers, titleOrOpts, opts)); }
     static bars(values, titleOrOpts, opts) { return sendDisplay(VISUALIZER_MIME, barsSpec(values, titleOrOpts, opts)); }
 
+    static canvas(title, width, height) { return new CanvasVisualizer(title, width, height); }
+    static surface3dFunc(title, fn, minX = -3, maxX = 3, minY = -3, maxY = 3, resolution = 30) {
+        const n = Math.max(2, resolution);
+        const zGrid = [];
+        for (let r = 0; r < n; r++) {
+            const y = minY + (maxY - minY) * r / (n - 1);
+            const row = [];
+            for (let c = 0; c < n; c++) {
+                const x = minX + (maxX - minX) * c / (n - 1);
+                row.push(fn(x, y));
+            }
+            zGrid.push(row);
+        }
+        const spec = {
+            kind: "surface",
+            surface: {
+                x: { min: minX, max: maxX },
+                y: { min: minY, max: maxY },
+                z: zGrid
+            }
+        };
+        if (title) spec.title = title;
+        return sendDisplay(PLOT3D_MIME, spec);
+    }
+
     static processEvents() {
         runPendingEvents();
         return new Promise(r => setImmediate(r));
@@ -744,6 +769,90 @@ class Display {
         ensureEventSocket();
         runPendingEvents();
         return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+    }
+}
+
+class CanvasVisualizer {
+    constructor(title = "", width = 600, height = 300) {
+        this.title = title;
+        this.width = width;
+        this.height = height;
+        this.shapes = [];
+    }
+
+    addRect(x, y, width, height, label = "", fill = "", stroke = "") {
+        const shape = { type: "rect", x, y, width, height };
+        if (label) shape.label = label;
+        if (fill) shape.fill = fill;
+        if (stroke) shape.stroke = stroke;
+        this.shapes.push(shape);
+        return this;
+    }
+
+    add_rect(x, y, width, height, label = "", fill = "", stroke = "") {
+        return this.addRect(x, y, width, height, label, fill, stroke);
+    }
+
+    addArrow(x1, y1, x2, y2, label = "", stroke = "") {
+        const shape = { type: "arrow", x1, y1, x2, y2 };
+        if (label) shape.label = label;
+        if (stroke) shape.stroke = stroke;
+        this.shapes.push(shape);
+        return this;
+    }
+
+    add_arrow(x1, y1, x2, y2, label = "", stroke = "") {
+        return this.addArrow(x1, y1, x2, y2, label, stroke);
+    }
+
+    addCircle(cx, cy, radius, label = "", fill = "", stroke = "") {
+        const shape = { type: "circle", cx, cy, radius };
+        if (label) shape.label = label;
+        if (fill) shape.fill = fill;
+        if (stroke) shape.stroke = stroke;
+        this.shapes.push(shape);
+        return this;
+    }
+
+    add_circle(cx, cy, radius, label = "", fill = "", stroke = "") {
+        return this.addCircle(cx, cy, radius, label, fill, stroke);
+    }
+
+    addLine(x1, y1, x2, y2, stroke = "") {
+        const shape = { type: "line", x1, y1, x2, y2 };
+        if (stroke) shape.stroke = stroke;
+        this.shapes.push(shape);
+        return this;
+    }
+
+    add_line(x1, y1, x2, y2, stroke = "") {
+        return this.addLine(x1, y1, x2, y2, stroke);
+    }
+
+    addText(x, y, text, fontSize = 14, color = "") {
+        const shape = { type: "text", x, y, text, fontSize };
+        if (color) shape.color = color;
+        this.shapes.push(shape);
+        return this;
+    }
+
+    add_text(x, y, text, fontSize = 14, color = "") {
+        return this.addText(x, y, text, fontSize, color);
+    }
+
+    show() {
+        const spec = {
+            kind: "canvas",
+            state: {
+                canvas: {
+                    width: this.width,
+                    height: this.height,
+                    shapes: this.shapes
+                }
+            }
+        };
+        if (this.title) spec.title = this.title;
+        return sendDisplay(VISUALIZER_MIME, spec);
     }
 }
 
@@ -792,6 +901,8 @@ module.exports = {
     linked_list: Display.linked_list,
     array: Display.array,
     bars: Display.bars,
+    CanvasVisualizer,
+    canvas: Display.canvas,
     processEvents: Display.processEvents,
     wait: Display.wait
 };
