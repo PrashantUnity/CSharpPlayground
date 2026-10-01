@@ -42,8 +42,7 @@
         </StackPanel>
 
         <charting:ChartCanvasControl x:Name="CanvasControl"
-                                     Height="260"
-                                     MinHeight="180"
+                                     MinHeight="80"
                                      HorizontalAlignment="Stretch"
                                      VerticalAlignment="Stretch"
                                      IsVisible="False" />

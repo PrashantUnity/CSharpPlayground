@@ -23,6 +23,18 @@
             <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
         </Style>
+
+        <!-- Drag handle under the inline canvas -->
+        <Style Selector="Border.canvas-resize-grip">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="SizeNorthSouth" />
+        </Style>
+        <Style Selector="Border.canvas-resize-grip > Border">
+            <Setter Property="Background" Value="{DynamicResource M3OutlineVariantBrush}" />
+        </Style>
+        <Style Selector="Border.canvas-resize-grip:pointerover > Border">
+            <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+        </Style>
     </UserControl.Styles>
 
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
@@ -30,7 +42,7 @@
             BorderThickness="1"
             CornerRadius="6"
             Padding="12,10">
-        <Grid RowDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
             <!-- Header Toolbar -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
                 <!-- Left: Title, Icon, Subtitle, Notice -->
@@ -103,14 +115,27 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     Padding="4"
-                    HorizontalAlignment="Stretch">
+                    ClipToBounds="True"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
                 <ContentControl x:Name="CanvasHost"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch" />
             </Border>
 
+            <!-- Resize Grip (drag to resize canvas, double-click to reset) -->
+            <Border Grid.Row="2"
+                    x:Name="ResizeGrip"
+                    Classes="canvas-resize-grip"
+                    Focusable="True"
+                    Height="10"
+                    Margin="0,2,0,2"
+                    ToolTip.Tip="Drag to resize • double-click to reset">
+                <Border Width="36" Height="3" CornerRadius="1.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+
             <!-- Footer Slot -->
-            <ContentControl Grid.Row="2" x:Name="FooterHost" Margin="0,6,0,0" IsVisible="False" />
+            <ContentControl Grid.Row="3" x:Name="FooterHost" Margin="0,4,0,0" IsVisible="False" />
         </Grid>
     </Border>
 </UserControl>

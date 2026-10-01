@@ -50,6 +50,7 @@ public partial class InteractivePlot3DControl : UserControl
         if (Find<VisualChromeControl>("Chrome") is not { } chrome) return;
         if (Find<StackPanel>("KindToolsPanel") is { } tools) { tools.IsVisible = true; chrome.SetKindTools(tools); }
         if (Find<Border>("CanvasContainer") is { } cont) { cont.IsVisible = true; chrome.SetCanvasContent(cont); }
+        chrome.DefaultCanvasHeight = Options?.Height > 100 ? Options.Height : 320;
         chrome.SpecGetter = () => Options != null ? Plot3DOptionsConverter.ToSpec(Canvas?.GetEffectiveOptions() ?? Options) : null;
         chrome.DataCsvGetter = () => Options != null ? Plot3DExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
         chrome.ResetFitRequested += (_, _) => { ViewState.Reset(Options); Repaint(); };
@@ -78,7 +79,16 @@ public partial class InteractivePlot3DControl : UserControl
     {
         var opts = Options;
         if (opts == null) return;
-        if (Canvas != null) { Canvas.Options = opts; Canvas.ViewState = ViewState; if (opts.Height > 100) Canvas.Height = Math.Max(Canvas.MinHeight, opts.Height); }
+        if (Canvas != null)
+        {
+            Canvas.Options = opts;
+            Canvas.ViewState = ViewState;
+            Canvas.Height = double.NaN;
+        }
+        if (Find<VisualChromeControl>("Chrome") is { } chrome)
+        {
+            if (opts.Height > 100) chrome.DefaultCanvasHeight = opts.Height;
+        }
         UpdateHeader();
         if (ViewState.AutoRotate || opts.AutoRotate) StartAutoRotateTimer();
     }
