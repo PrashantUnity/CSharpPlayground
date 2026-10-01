@@ -34,6 +34,9 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
     [GeneratedRegex(@"(?:\w+\[\d+\]\s*$|>\s*$)", RegexOptions.Compiled)]
     private static partial Regex PromptRegex();
 
+    [GeneratedRegex(@"\w+\[\d+\]\s*$", RegexOptions.Compiled)]
+    private static partial Regex SuspendedPromptRegex();
+
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private readonly IManagedProcess _process;
@@ -116,13 +119,15 @@ public sealed partial class JavaDapAdapter : IAsyncDisposable
         if (shouldCheckStop)
         {
             var textToCheck = checkOffset < fullText.Length ? fullText[checkOffset..] : string.Empty;
-            var stopMatch = StopRegex().Match(textToCheck);
-            if (stopMatch.Success && PromptRegex().IsMatch(textToCheck))
+            var matches = StopRegex().Matches(textToCheck);
+            if (matches.Count > 0 && SuspendedPromptRegex().IsMatch(textToCheck))
             {
+                var stopMatch = matches[^1];
                 lock (_stateLock)
                 {
                     if (_isCurrentlyPaused) return;
                     _isCurrentlyPaused = true;
+                    _lastResumeIndex = fullText.Length;
                     _pausedLine = int.Parse(stopMatch.Groups["line"].Value);
                     _pausedMethod = stopMatch.Groups["method"].Value.Trim();
                 }

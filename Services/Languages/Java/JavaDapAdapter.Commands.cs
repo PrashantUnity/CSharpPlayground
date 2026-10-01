@@ -33,8 +33,13 @@ public sealed partial class JavaDapAdapter
                 break;
 
             case "configurationdone":
-                await SendResponseAsync(reqSeq, command, true, null).ConfigureAwait(false);
+                lock (_stateLock)
+                {
+                    _isCurrentlyPaused = false;
+                    _lastResumeIndex = _jdbOutputBuffer.Length;
+                }
                 await SendCommandAsync("run").ConfigureAwait(false);
+                await SendResponseAsync(reqSeq, command, true, null).ConfigureAwait(false);
                 break;
 
             case "threads":
@@ -114,8 +119,8 @@ public sealed partial class JavaDapAdapter
             _isCurrentlyPaused = false;
             _lastResumeIndex = _jdbOutputBuffer.Length;
         }
-        await SendResponseAsync(reqSeq, command, true, null).ConfigureAwait(false);
         await SendCommandAsync(jdbCmd).ConfigureAwait(false);
+        await SendResponseAsync(reqSeq, command, true, null).ConfigureAwait(false);
     }
 
     private async Task<List<object>> HandleSetBreakpointsAsync(JsonElement? args)
@@ -150,7 +155,7 @@ public sealed partial class JavaDapAdapter
 
             frames.Add(new
             {
-                id = idx + 1,
+                id = idx,
                 name = method,
                 line,
                 column = 1,

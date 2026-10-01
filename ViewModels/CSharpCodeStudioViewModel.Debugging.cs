@@ -337,25 +337,33 @@ public partial class CSharpCodeStudioViewModel
     [RelayCommand]
     public void ContinueDebug()
     {
-        _ = _activeDebugSession?.ContinueAsync() ?? Task.CompletedTask;
+        if (!IsPaused || _activeDebugSession == null) return;
+        IsPaused = false;
+        _ = _activeDebugSession.ContinueAsync();
     }
 
     [RelayCommand]
     public void StepOver()
     {
-        _ = _activeDebugSession?.StepOverAsync() ?? Task.CompletedTask;
+        if (!IsPaused || _activeDebugSession == null) return;
+        IsPaused = false;
+        _ = _activeDebugSession.StepOverAsync();
     }
 
     [RelayCommand]
     public void StepInto()
     {
-        _ = _activeDebugSession?.StepIntoAsync() ?? Task.CompletedTask;
+        if (!IsPaused || _activeDebugSession == null) return;
+        IsPaused = false;
+        _ = _activeDebugSession.StepIntoAsync();
     }
 
     [RelayCommand]
     public void StepOut()
     {
-        _ = _activeDebugSession?.StepOutAsync() ?? Task.CompletedTask;
+        if (!IsPaused || _activeDebugSession == null) return;
+        IsPaused = false;
+        _ = _activeDebugSession.StepOutAsync();
     }
 
     [RelayCommand]
