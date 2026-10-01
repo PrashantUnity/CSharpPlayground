@@ -228,17 +228,18 @@ public class Display {
                ",\"text/plain\":\"" + escapeJson(fallback) + "\"},\"metadata\":{},\"transient\":{\"display_id\":\"" + displayId + "\"}}";
     }
 
-    private static DisplayHandle sendDisplay(String mime, Map<String, Object> spec) {
+    public static DisplayHandle sendDisplay(String mime, Map<String, Object> spec) {
         String id = newId();
         emitRaw(buildMessage("display", mime, spec, id));
         return new DisplayHandle(mime, spec, id);
     }
 
-    // --------------------------------------------------------------------------------------------------------- API
-    public static <T> T dump(T obj) { return dump(null, obj); }
+    public static <T> T dump(T obj) { return dump((String) null, obj); }
     public static <T> T dump(String title, T obj) { table(title, obj); return obj; }
+    public static <T> T dump(T obj, String title) { return dump(title, obj); }
     public static <T> T show(T obj) { return dump(obj); }
     public static <T> T show(String title, T obj) { return dump(title, obj); }
+    public static <T> T show(T obj, String title) { return dump(title, obj); }
 
     public static void table(Object obj) { table(null, obj); }
     public static void table(String title, Object obj) {
@@ -311,6 +312,50 @@ public class Display {
 
     public static DisplayHandle graph3d(Object data) { return graph3d(data, null); }
     public static DisplayHandle graph3d(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("graph", data, title)); }
+
+    public static DisplayHandle voxelBars(Object data) { return voxelBars(data, null); }
+    public static DisplayHandle voxelBars(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("voxelBar", data, title)); }
+
+    @FunctionalInterface
+    public interface DoubleBinaryFunction {
+        double apply(double x, double y);
+    }
+
+    public static DisplayHandle plot3d(String title, DoubleBinaryFunction func, double minX, double maxX, double minY, double maxY, int res) {
+        int n = Math.max(2, res);
+        List<List<Object>> zGrid = new ArrayList<>();
+        for (int r = 0; r < n; r++) {
+            double y = minY + (maxY - minY) * r / (n - 1);
+            List<Object> row = new ArrayList<>();
+            for (int c = 0; c < n; c++) {
+                double x = minX + (maxX - minX) * c / (n - 1);
+                try {
+                    row.add(func.apply(x, y));
+                } catch (Exception e) {
+                    row.add(null);
+                }
+            }
+            zGrid.add(row);
+        }
+        Map<String, Object> surface = new LinkedHashMap<>();
+        surface.put("x", Map.of("min", minX, "max", maxX));
+        surface.put("y", Map.of("min", minY, "max", maxY));
+        surface.put("z", zGrid);
+
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "surface");
+        spec.put("surface", surface);
+        if (title != null) spec.put("title", title);
+        return sendDisplay(PLOT3D_MIME, spec);
+    }
+
+    public static DisplayHandle plot3d(DoubleBinaryFunction func, double minX, double maxX, double minY, double maxY, int res, String title) {
+        return plot3d(title, func, minX, maxX, minY, maxY, res);
+    }
+
+    public static DisplayHandle plot3d(Object data, String title) { return surface3d(data, title); }
+    public static DisplayHandle plot3d(Object data) { return surface3d(data, null); }
+
 
     // Visualizers
     public static DisplayHandle matrix(Object grid) { return matrix(grid, null); }
@@ -482,6 +527,32 @@ public class Display {
             surface.put("y", Map.of("min", 0, "max", Math.max(0, numRows - 1)));
             surface.put("z", zGrid);
             spec.put("surface", surface);
+        } else if ("voxelBar".equals(kind)) {
+            List<List<Object>> rows = to2DList(data);
+            List<Object> x = new ArrayList<>();
+            List<Object> y = new ArrayList<>();
+            List<Object> z = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            for (int r = 0; r < rows.size(); r++) {
+                List<Object> cols = rows.get(r);
+                for (int c = 0; c < cols.size(); c++) {
+                    Object cell = cols.get(c);
+                    Object numObj = toNum(cell);
+                    if (numObj instanceof Number n) {
+                        double num = n.doubleValue();
+                        x.add(r);
+                        y.add(c);
+                        z.add(num);
+                        labels.add("[" + r + "," + c + "]=" + num);
+                    }
+                }
+            }
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("x", x);
+            s.put("y", y);
+            s.put("z", z);
+            s.put("labels", labels);
+            spec.put("series", List.of(s));
         } else if ("graph".equals(kind)) {
             Set<String> nodeSet = new LinkedHashSet<>();
             List<Map<String, Object>> edges = new ArrayList<>();

@@ -45,10 +45,12 @@ public static class CppDisplayRuntime
 
             var header1 = Path.Combine(fryIncludeDir, "display.hpp");
             var header2 = Path.Combine(includeDir, "display.hpp");
+            var header3 = Path.Combine(includeDir, "fry_display.hpp");
 
             var content = GetDisplayHppContent();
             await File.WriteAllTextAsync(header1, content, ct).ConfigureAwait(false);
             await File.WriteAllTextAsync(header2, content, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(header3, content, ct).ConfigureAwait(false);
         }
         catch
         {

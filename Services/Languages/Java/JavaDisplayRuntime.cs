@@ -16,32 +16,46 @@ public static class JavaDisplayRuntime
         {
             Directory.CreateDirectory(srcDir);
 
-            // 1. Generate Display in the user's declared package (or default package if none)
-            string userPkgDir;
-            if (!string.IsNullOrWhiteSpace(package))
-            {
-                userPkgDir = Path.Combine(srcDir, package.Replace('.', Path.DirectorySeparatorChar));
-            }
-            else
-            {
-                userPkgDir = srcDir;
-            }
+            // 1. Generate Display and Visualizer in the user's declared package (or default package if none)
+            string userPkgDir = !string.IsNullOrWhiteSpace(package)
+                ? Path.Combine(srcDir, package.Replace('.', Path.DirectorySeparatorChar))
+                : srcDir;
             Directory.CreateDirectory(userPkgDir);
 
             var userDisplayPath = Path.Combine(userPkgDir, "Display.java");
-            var userDisplayCode = GenerateDisplayJavaSource(package);
-            await File.WriteAllTextAsync(userDisplayPath, userDisplayCode, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(userDisplayPath, GenerateDisplayJavaSource(package), ct).ConfigureAwait(false);
             files.Add(userDisplayPath);
 
-            // 2. Also generate under package 'fry' so scripts can use `import fry.Display;` regardless of their package
+            var userVisualizerPath = Path.Combine(userPkgDir, "Visualizer.java");
+            await File.WriteAllTextAsync(userVisualizerPath, GenerateVisualizerJavaSource(package), ct).ConfigureAwait(false);
+            files.Add(userVisualizerPath);
+
+            // 2. Also generate under package 'fry' so scripts can use `import fry.Display;` / `import fry.Visualizer;`
             if (!string.Equals(package, "fry", StringComparison.OrdinalIgnoreCase))
             {
                 var fryDir = Path.Combine(srcDir, "fry");
                 Directory.CreateDirectory(fryDir);
                 var fryDisplayPath = Path.Combine(fryDir, "Display.java");
-                var fryDisplayCode = GenerateDisplayJavaSource("fry");
-                await File.WriteAllTextAsync(fryDisplayPath, fryDisplayCode, ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(fryDisplayPath, GenerateDisplayJavaSource("fry"), ct).ConfigureAwait(false);
                 files.Add(fryDisplayPath);
+
+                var fryVisualizerPath = Path.Combine(fryDir, "Visualizer.java");
+                await File.WriteAllTextAsync(fryVisualizerPath, GenerateVisualizerJavaSource("fry"), ct).ConfigureAwait(false);
+                files.Add(fryVisualizerPath);
+            }
+
+            // 3. Also generate under package 'com.frypdf.display' so scripts can use `import com.frypdf.display.Display;` / `import com.frypdf.display.Visualizer;`
+            if (!string.Equals(package, "com.frypdf.display", StringComparison.OrdinalIgnoreCase))
+            {
+                var comDir = Path.Combine(srcDir, "com", "frypdf", "display");
+                Directory.CreateDirectory(comDir);
+                var comDisplayPath = Path.Combine(comDir, "Display.java");
+                await File.WriteAllTextAsync(comDisplayPath, GenerateDisplayJavaSource("com.frypdf.display"), ct).ConfigureAwait(false);
+                files.Add(comDisplayPath);
+
+                var comVisualizerPath = Path.Combine(comDir, "Visualizer.java");
+                await File.WriteAllTextAsync(comVisualizerPath, GenerateVisualizerJavaSource("com.frypdf.display"), ct).ConfigureAwait(false);
+                files.Add(comVisualizerPath);
             }
         }
         catch
@@ -53,12 +67,44 @@ public static class JavaDisplayRuntime
     }
 
     private static string? _cachedDisplaySource;
+    private static string? _cachedVisualizerSource;
 
     public static string GenerateDisplayJavaSource(string? package)
     {
         var pkgHeader = !string.IsNullOrWhiteSpace(package) ? $"package {package};\n\n" : string.Empty;
         return pkgHeader + GetBaseDisplaySource();
     }
+
+    public static string GenerateVisualizerJavaSource(string? package)
+    {
+        var pkgHeader = !string.IsNullOrWhiteSpace(package) ? $"package {package};\n\n" : string.Empty;
+        return pkgHeader + GetBaseVisualizerSource();
+    }
+
+    private static string GetBaseVisualizerSource()
+    {
+        if (_cachedVisualizerSource != null) return _cachedVisualizerSource;
+        try
+        {
+            using var stream = typeof(JavaDisplayRuntime).Assembly.GetManifestResourceStream("JavaRuntime.Visualizer.java");
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                return _cachedVisualizerSource = reader.ReadToEnd();
+            }
+        }
+        catch { }
+
+        var devPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Services", "Languages", "Java", "Runtime", "Visualizer.java");
+        if (File.Exists(devPath))
+        {
+            try { return _cachedVisualizerSource = File.ReadAllText(devPath); } catch { }
+        }
+
+        return VisualizerJavaFallback;
+    }
+
+    private const string VisualizerJavaFallback = "// Companion to public class Display for FryPDF C# Code Studio\npublic class Visualizer { }";
 
     private static string GetBaseDisplaySource()
     {

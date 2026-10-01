@@ -81,6 +81,18 @@ inline std::shared_ptr<ListNode<T>> make_list(T v, std::shared_ptr<ListNode<T>> 
     return std::make_shared<ListNode<T>>(v, std::move(n));
 }
 
+// ── Point3D ───────────────────────────────────────────────────────────────
+
+struct Point3D {
+    double x{0};
+    double y{0};
+    double z{0};
+    std::string label{};
+
+    Point3D() = default;
+    Point3D(double x, double y, double z, std::string l = "") : x(x), y(y), z(z), label(std::move(l)) {}
+};
+
 // ── Event & Event Loop ────────────────────────────────────────────────────
 
 struct Event {
@@ -740,22 +752,31 @@ inline DisplayHandle bar_chart(const T& data, std::string_view title = "") {
     std::ostringstream l_ss;
     y_ss << "[";
     l_ss << "[";
+    bool has_labels = false;
     size_t i = 0;
     for (const auto& item : data) {
-        if (i++ > 0) { y_ss << ","; l_ss << ","; }
+        if (i++ > 0) y_ss << ",";
         if constexpr (detail::PairLike<decltype(item)>) {
+            if (has_labels) l_ss << ",";
+            has_labels = true;
             l_ss << detail::escape_json(std::string_view(item.first));
             y_ss << detail::to_json_val(item.second);
         } else if constexpr (detail::HasNameAndValue<decltype(item)>) {
+            if (has_labels) l_ss << ",";
+            has_labels = true;
             l_ss << detail::escape_json(std::string_view(item.name));
             y_ss << detail::to_json_val(item.value);
+        } else {
+            y_ss << detail::to_json_val(item);
         }
     }
     y_ss << "]";
     l_ss << "]";
 
     std::ostringstream ss;
-    ss << "{\"kind\":\"bar\",\"series\":[{\"y\":" << y_ss.str() << ",\"labels\":" << l_ss.str() << "}]";
+    ss << "{\"kind\":\"bar\",\"series\":[{\"y\":" << y_ss.str();
+    if (has_labels) ss << ",\"labels\":" << l_ss.str();
+    ss << "}]";
     if (!title.empty()) ss << ",\"title\":" << detail::escape_json(title);
     ss << "}";
     return detail::emit_display(CHART_MIME, ss.str());
@@ -789,9 +810,9 @@ inline DisplayHandle pie_chart(const T& data, std::string_view title = "") {
     return detail::emit_display(CHART_MIME, ss.str());
 }
 
-// 5. General Chart (Multi-series or records)
+// 5. General Chart (Multi-series, records, or scalar values)
 template <typename T>
-inline DisplayHandle chart(const T& data, std::string_view title = "") {
+inline DisplayHandle chart(const T& data, std::string_view title = "", std::string_view chart_type = "line") {
     if constexpr (detail::Iterable<T>) {
         using Elem = std::decay_t<decltype(*std::begin(data))>;
         if constexpr (detail::PairLike<Elem>) {
@@ -814,27 +835,36 @@ inline DisplayHandle chart(const T& data, std::string_view title = "") {
         }
     }
 
-    // Otherwise records with labels + y:
+    // Otherwise records or values:
     std::ostringstream y_ss;
     std::ostringstream l_ss;
     y_ss << "[";
     l_ss << "[";
+    bool has_labels = false;
     size_t i = 0;
     for (const auto& item : data) {
-        if (i++ > 0) { y_ss << ","; l_ss << ","; }
+        if (i++ > 0) y_ss << ",";
         if constexpr (detail::PairLike<decltype(item)>) {
+            if (has_labels) l_ss << ",";
+            has_labels = true;
             l_ss << detail::escape_json(std::string_view(item.first));
             y_ss << detail::to_json_val(item.second);
         } else if constexpr (detail::HasNameAndValue<decltype(item)>) {
+            if (has_labels) l_ss << ",";
+            has_labels = true;
             l_ss << detail::escape_json(std::string_view(item.name));
             y_ss << detail::to_json_val(item.value);
+        } else {
+            y_ss << detail::to_json_val(item);
         }
     }
     y_ss << "]";
     l_ss << "]";
 
     std::ostringstream ss;
-    ss << "{\"kind\":\"line\",\"series\":[{\"y\":" << y_ss.str() << ",\"labels\":" << l_ss.str() << "}]";
+    ss << "{\"kind\":\"" << (chart_type.empty() ? "line" : chart_type) << "\",\"series\":[{\"y\":" << y_ss.str();
+    if (has_labels) ss << ",\"labels\":" << l_ss.str();
+    ss << "}]";
     if (!title.empty()) ss << ",\"title\":" << detail::escape_json(title);
     ss << "}";
     return detail::emit_display(CHART_MIME, ss.str());
@@ -855,26 +885,41 @@ inline DisplayHandle histogram(const T& data, std::string_view title = "", int b
 // 7. Scatter 3D
 template <typename T>
 inline DisplayHandle scatter3d(const T& data, std::string_view title = "") {
-    std::ostringstream xs, ys, zs;
-    xs << "["; ys << "["; zs << "[";
+    std::ostringstream xs, ys, zs, labels;
+    xs << "["; ys << "["; zs << "["; labels << "[";
+    bool has_labels = false;
     size_t i = 0;
     for (const auto& pt : data) {
-        if (i++ > 0) { xs << ","; ys << ","; zs << ","; }
-        if constexpr (requires { std::get<0>(pt); }) {
+        if (i++ > 0) { xs << ","; ys << ","; zs << ","; labels << ","; }
+        if constexpr (requires { pt.x; pt.y; pt.z; }) {
+            xs << detail::to_json_val(pt.x);
+            ys << detail::to_json_val(pt.y);
+            zs << detail::to_json_val(pt.z);
+            if constexpr (requires { pt.label; }) {
+                if (!pt.label.empty()) has_labels = true;
+                labels << detail::escape_json(pt.label);
+            } else {
+                labels << "null";
+            }
+        } else if constexpr (requires { std::get<0>(pt); }) {
             xs << detail::to_json_val(std::get<0>(pt));
             ys << detail::to_json_val(std::get<1>(pt));
             zs << detail::to_json_val(std::get<2>(pt));
+            labels << "null";
         } else {
             auto it = std::begin(pt);
             xs << detail::to_json_val(*it); ++it;
             ys << detail::to_json_val(*it); ++it;
             zs << detail::to_json_val(*it);
+            labels << "null";
         }
     }
-    xs << "]"; ys << "]"; zs << "]";
+    xs << "]"; ys << "]"; zs << "]"; labels << "]";
 
     std::ostringstream ss;
-    ss << "{\"kind\":\"scatter\",\"series\":[{\"x\":" << xs.str() << ",\"y\":" << ys.str() << ",\"z\":" << zs.str() << "}]";
+    ss << "{\"kind\":\"scatter\",\"series\":[{\"x\":" << xs.str() << ",\"y\":" << ys.str() << ",\"z\":" << zs.str();
+    if (has_labels) ss << ",\"labels\":" << labels.str();
+    ss << "}]";
     if (!title.empty()) ss << ",\"title\":" << detail::escape_json(title);
     ss << "}";
     return detail::emit_display(PLOT3D_MIME, ss.str());
@@ -902,6 +947,35 @@ inline DisplayHandle surface3d(const T& data, std::string_view title = "") {
     std::ostringstream ss;
     ss << "{\"kind\":\"surface\",\"surface\":{\"x\":{\"min\":0,\"max\":" << max_x
        << "},\"y\":{\"min\":0,\"max\":" << max_y << "},\"z\":" << z_ss.str() << "}";
+    if (!title.empty()) ss << ",\"title\":" << detail::escape_json(title);
+    ss << "}";
+    return detail::emit_display(PLOT3D_MIME, ss.str());
+}
+
+// 8b. Voxel Bars 3D
+template <typename T>
+inline DisplayHandle voxel_bars(const T& data, std::string_view title = "") {
+    std::ostringstream xs, ys, zs, labels;
+    xs << "["; ys << "["; zs << "["; labels << "[";
+    size_t count = 0;
+    size_t r = 0;
+    for (const auto& row : data) {
+        size_t c = 0;
+        for (const auto& cell : row) {
+            if (count++ > 0) { xs << ","; ys << ","; zs << ","; labels << ","; }
+            xs << r;
+            ys << c;
+            zs << detail::to_json_val(cell);
+            labels << "\"[" << r << "," << c << "]=" << cell << "\"";
+            c++;
+        }
+        r++;
+    }
+    xs << "]"; ys << "]"; zs << "]"; labels << "]";
+
+    std::ostringstream ss;
+    ss << "{\"kind\":\"voxelBar\",\"series\":[{\"x\":" << xs.str() << ",\"y\":" << ys.str() << ",\"z\":" << zs.str()
+       << ",\"labels\":" << labels.str() << "}]";
     if (!title.empty()) ss << ",\"title\":" << detail::escape_json(title);
     ss << "}";
     return detail::emit_display(PLOT3D_MIME, ss.str());
@@ -1338,6 +1412,187 @@ inline void wait(double seconds) {
 
 inline void process_events() {}
 
+// ── Visualizer Helper Classes ──────────────────────────────────────────────
+
+class TreeVisualizer {
+    std::string title_;
+    std::shared_ptr<TreeNode<int>> root_;
+
+    void insert_internal(std::shared_ptr<TreeNode<int>>& node, int val) {
+        if (!node) {
+            node = std::make_shared<TreeNode<int>>(val);
+            return;
+        }
+        if (val < node->val) {
+            insert_internal(node->left, val);
+        } else {
+            insert_internal(node->right, val);
+        }
+    }
+
+public:
+    TreeVisualizer() = default;
+    TreeVisualizer(std::string_view title) : title_(title) {}
+
+    TreeVisualizer& insert(int val) {
+        insert_internal(root_, val);
+        return *this;
+    }
+
+    DisplayHandle show() {
+        return fry::tree(root_, title_);
+    }
+};
+
+class GraphVisualizer {
+    std::string title_;
+    bool directed_{true};
+    std::map<std::string, std::vector<std::string>> adj_;
+
+public:
+    GraphVisualizer() = default;
+    GraphVisualizer(std::string_view title, bool directed = true) : title_(title), directed_(directed) {}
+
+    GraphVisualizer& add_edge(std::string_view from, std::string_view to) {
+        adj_[std::string(from)].push_back(std::string(to));
+        if (adj_.find(std::string(to)) == adj_.end()) {
+            adj_[std::string(to)] = {};
+        }
+        return *this;
+    }
+
+    DisplayHandle show() {
+        return fry::graph(adj_, title_);
+    }
+};
+
+class CanvasVisualizer {
+    std::string title_;
+    int width_{600};
+    int height_{300};
+    std::vector<std::string> shapes_;
+
+public:
+    CanvasVisualizer() = default;
+    CanvasVisualizer(std::string_view title, int width = 600, int height = 300)
+        : title_(title), width_(width), height_(height) {}
+
+    CanvasVisualizer& add_rect(double x, double y, double width, double height,
+                               std::string_view label = "", std::string_view fill = "", std::string_view stroke = "") {
+        std::ostringstream ss;
+        ss << "{\"type\":\"rect\",\"x\":" << x << ",\"y\":" << y << ",\"width\":" << width << ",\"height\":" << height;
+        if (!label.empty()) ss << ",\"label\":" << detail::escape_json(label);
+        if (!fill.empty()) ss << ",\"fill\":" << detail::escape_json(fill);
+        if (!stroke.empty()) ss << ",\"stroke\":" << detail::escape_json(stroke);
+        ss << "}";
+        shapes_.push_back(ss.str());
+        return *this;
+    }
+
+    CanvasVisualizer& add_arrow(double x1, double y1, double x2, double y2,
+                                std::string_view label = "", std::string_view stroke = "") {
+        std::ostringstream ss;
+        ss << "{\"type\":\"arrow\",\"x1\":" << x1 << ",\"y1\":" << y1 << ",\"x2\":" << x2 << ",\"y2\":" << y2;
+        if (!label.empty()) ss << ",\"label\":" << detail::escape_json(label);
+        if (!stroke.empty()) ss << ",\"stroke\":" << detail::escape_json(stroke);
+        ss << "}";
+        shapes_.push_back(ss.str());
+        return *this;
+    }
+
+    CanvasVisualizer& add_circle(double cx, double cy, double radius,
+                                 std::string_view label = "", std::string_view fill = "", std::string_view stroke = "") {
+        std::ostringstream ss;
+        ss << "{\"type\":\"circle\",\"cx\":" << cx << ",\"cy\":" << cy << ",\"radius\":" << radius;
+        if (!label.empty()) ss << ",\"label\":" << detail::escape_json(label);
+        if (!fill.empty()) ss << ",\"fill\":" << detail::escape_json(fill);
+        if (!stroke.empty()) ss << ",\"stroke\":" << detail::escape_json(stroke);
+        ss << "}";
+        shapes_.push_back(ss.str());
+        return *this;
+    }
+
+    CanvasVisualizer& add_line(double x1, double y1, double x2, double y2, std::string_view stroke = "") {
+        std::ostringstream ss;
+        ss << "{\"type\":\"line\",\"x1\":" << x1 << ",\"y1\":" << y1 << ",\"x2\":" << x2 << ",\"y2\":" << y2;
+        if (!stroke.empty()) ss << ",\"stroke\":" << detail::escape_json(stroke);
+        ss << "}";
+        shapes_.push_back(ss.str());
+        return *this;
+    }
+
+    CanvasVisualizer& add_text(double x, double y, std::string_view text, int font_size = 14, std::string_view color = "") {
+        std::ostringstream ss;
+        ss << "{\"type\":\"text\",\"x\":" << x << ",\"y\":" << y << ",\"text\":" << detail::escape_json(text)
+           << ",\"fontSize\":" << font_size;
+        if (!color.empty()) ss << ",\"color\":" << detail::escape_json(color);
+        ss << "}";
+        shapes_.push_back(ss.str());
+        return *this;
+    }
+
+    DisplayHandle show() {
+        std::ostringstream ss;
+        ss << "{\"kind\":\"canvas\",\"state\":{\"canvas\":{\"width\":" << width_ << ",\"height\":" << height_
+           << ",\"shapes\":[";
+        for (size_t i = 0; i < shapes_.size(); ++i) {
+            if (i > 0) ss << ",";
+            ss << shapes_[i];
+        }
+        ss << "]}}";
+        if (!title_.empty()) ss << ",\"title\":" << detail::escape_json(title_);
+        ss << "}";
+        return detail::emit_display(VISUALIZER_MIME, ss.str());
+    }
+};
+
+class Surface3D {
+    std::string title_;
+    std::function<double(double, double)> func_;
+    double min_x_{-5.0};
+    double max_x_{5.0};
+    double min_y_{-5.0};
+    double max_y_{5.0};
+    int resolution_{30};
+
+public:
+    Surface3D(std::string_view title, std::function<double(double, double)> func,
+              double min_x, double max_x, double min_y, double max_y, int resolution = 30)
+        : title_(title), func_(std::move(func)),
+          min_x_(min_x), max_x_(max_x), min_y_(min_y), max_y_(max_y), resolution_(resolution) {}
+
+    DisplayHandle show() {
+        int n = std::max(2, resolution_);
+        std::ostringstream z_grid;
+        z_grid << "[";
+        for (int r = 0; r < n; ++r) {
+            if (r > 0) z_grid << ",";
+            z_grid << "[";
+            double y = min_y_ + (max_y_ - min_y_) * r / (n - 1);
+            for (int c = 0; c < n; ++c) {
+                if (c > 0) z_grid << ",";
+                double x = min_x_ + (max_x_ - min_x_) * c / (n - 1);
+                try {
+                    double val = func_(x, y);
+                    if (std::isnan(val) || std::isinf(val)) z_grid << "null";
+                    else z_grid << val;
+                } catch (...) {
+                    z_grid << "null";
+                }
+            }
+            z_grid << "]";
+        }
+        z_grid << "]";
+
+        std::ostringstream ss;
+        ss << "{\"kind\":\"surface\",\"surface\":{\"x\":{\"min\":" << min_x_ << ",\"max\":" << max_x_
+           << "},\"y\":{\"min\":" << min_y_ << ",\"max\":" << max_y_ << "},\"z\":" << z_grid.str() << "}";
+        if (!title_.empty()) ss << ",\"title\":" << detail::escape_json(title_);
+        ss << "}";
+        return detail::emit_display(PLOT3D_MIME, ss.str());
+    }
+};
+
 } // namespace fry
 
 // ── Backward Compatible Display Class ──────────────────────────────────────
@@ -1426,4 +1681,18 @@ public:
     static fry::DisplayHandle bars(const T& data, std::string_view title = "") {
         return fry::bars(data, title);
     }
+    template <typename T>
+    static fry::DisplayHandle voxel_bars(const T& data, std::string_view title = "") {
+        return fry::voxel_bars(data, title);
+    }
+
+    using TreeVisualizer = fry::TreeVisualizer;
+    using GraphVisualizer = fry::GraphVisualizer;
+    using CanvasVisualizer = fry::CanvasVisualizer;
+    using Surface3D = fry::Surface3D;
+    using Point3D = fry::Point3D;
 };
+
+namespace fry {
+    using Display = ::Display;
+}

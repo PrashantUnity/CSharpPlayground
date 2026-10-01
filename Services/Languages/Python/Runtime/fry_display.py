@@ -38,6 +38,17 @@ def display(*objects, **kwargs):
         publish_object(obj)
 
 
+def __getattr__(name):
+    """Fallback export to unify 'from fry_display import Display' with 'from fry import Display'."""
+    try:
+        import fry
+        if hasattr(fry, name):
+            return getattr(fry, name)
+    except Exception:
+        pass
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 def publish_object(obj):
     if getattr(obj, "_fry_shown", False): return
     data, metadata = to_mime(obj)

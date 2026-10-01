@@ -82,10 +82,11 @@ public static partial class Display
     }
 
     /// <summary>A graph: an adjacency map (node → neighbours) or a list of edges.</summary>
-    public static DisplayHandle<VisualizerSpec> Graph(object graph, string? title = null, bool isDirected = true, Action<VisualizerSpec>? configure = null)
+    public static DisplayHandle<VisualizerSpec> Graph(object graph, string? title = null, bool isDirected = true, Action<VisualizerSpec>? configure = null, bool? directed = null)
     {
+        var actuallyDirected = directed ?? isDirected;
         if (graph is GraphTracker tracker) return ShowVisualizer(VisualizerOptionsConverter.ToSpec(tracker.Options), title, configure);
-        return ShowVisualizer(VisualizerSpecBuilder.Graph(graph, isDirected), title, configure);
+        return ShowVisualizer(VisualizerSpecBuilder.Graph(graph, actuallyDirected), title, configure);
     }
 
     /// <summary>A linked list from its head (nodes with next); <paramref name="recordCycleSteps"/> records Floyd's cycle search.</summary>

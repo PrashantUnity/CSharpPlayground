@@ -32,6 +32,7 @@ try
         case "visuals": VisualSnapshots.Render(options); break;
         case "perf": PerfSnapshots.Run(options); break;
         case "server": StudioSnapshots.ServerStudio(options); break;
+        case "diagrams": DiagramSnapshots.Run(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;
