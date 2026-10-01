@@ -56,6 +56,7 @@ public class BindableTextEditor : TextEditor
     }
 
     private bool _isSyncing;
+    private bool _isPointerInteraction;
     private readonly FoldingManager? _foldingManager;
     private readonly CSharpFoldingStrategy _foldingStrategy = new();
     private readonly DispatcherTimer _foldingTimer;
@@ -128,11 +129,39 @@ public class BindableTextEditor : TextEditor
             PrecedingContextProvider = () => _cellVm?.GetPrecedingContext() ?? string.Empty,
             IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
         };
-
         TextChanged += OnEditorTextChanged;
 
         // Prevent oversized cell editors from snapping the parent notebook ScrollViewer to the top of the cell
         AddHandler(RequestBringIntoViewEvent, OnRequestBringIntoView, RoutingStrategies.Bubble, handledEventsToo: true);
+        AddHandler(PointerPressedEvent, OnEditorPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, OnEditorPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerCaptureLostEvent, OnEditorPointerCaptureLost, RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    private void OnEditorPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _isPointerInteraction = true;
+        if (_cellVm != null)
+        {
+            if (this.FindAncestorOfType<Views.CSharpNotebookStudioView>()?.DataContext is CSharpNotebookStudioViewModel studioVm)
+            {
+                studioVm.SelectCell(_cellVm);
+            }
+            else
+            {
+                _cellVm.IsSelected = true;
+            }
+        }
+    }
+
+    private void OnEditorPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() => _isPointerInteraction = false, DispatcherPriority.Input);
+    }
+
+    private void OnEditorPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() => _isPointerInteraction = false, DispatcherPriority.Input);
     }
 
     public void SetPausedLine(int line)
@@ -545,12 +574,17 @@ public class BindableTextEditor : TextEditor
         // forces newOffset.Y = rect.Top, causing the notebook to violently snap back to the cell top.
         e.Handled = true;
 
-        // Instead, perform smooth caret-only visibility checks:
+        // Never auto-scroll the outer notebook during mouse pointer clicks or drags.
+        // The user intentionally clicked an on-screen location; auto-scrolling under the cursor creates jumpiness.
+        if (_isPointerInteraction) return;
+
+        // Instead, perform smooth caret-only visibility checks during keyboard typing/navigation:
         ScrollCaretIntoViewIfNeeded();
     }
 
     public void ScrollCaretIntoViewIfNeeded()
     {
+        if (_isPointerInteraction) return;
         var caret = TextArea?.Caret;
         if (caret != null)
         {
@@ -562,35 +596,39 @@ public class BindableTextEditor : TextEditor
     {
         try
         {
+            if (_isPointerInteraction) return;
+
             var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
             if (scrollViewer == null) return;
 
             var textView = TextArea?.TextView;
             if (textView == null || !textView.IsVisible) return;
 
-            // Compute visual position of the target line
-            var caretBottom = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineBottom);
-            var caretTop = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineTop);
+            textView.EnsureVisualLines();
+
+            // Compute visual position of the target line relative to textView
+            var caretBottom = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineBottom) - textView.ScrollOffset;
+            var caretTop = textView.GetVisualPosition(position, AvaloniaEdit.Rendering.VisualYPosition.LineTop) - textView.ScrollOffset;
             var caretHeight = Math.Max(18, caretBottom.Y - caretTop.Y);
 
-            // Translate points to scrollViewer coordinates
-            var pInScroll = this.TranslatePoint(caretBottom, scrollViewer);
+            // Translate points from textView to scrollViewer coordinates
+            var pInScroll = textView.TranslatePoint(caretBottom, scrollViewer);
             if (!pInScroll.HasValue) return;
 
             var caretYInScroll = pInScroll.Value.Y;
             var viewportHeight = scrollViewer.Viewport.Height;
             if (viewportHeight <= 0) return;
 
-            const double padding = 28.0;
+            const double padding = 8.0;
             var currentOffset = scrollViewer.Offset;
 
-            if (caretYInScroll > viewportHeight - padding)
+            if (caretYInScroll > viewportHeight)
             {
                 // Caret is below viewport -> scroll down just enough to reveal it
-                var delta = caretYInScroll - (viewportHeight - padding);
+                var delta = caretYInScroll - viewportHeight + padding;
                 scrollViewer.Offset = new Vector(currentOffset.X, currentOffset.Y + delta);
             }
-            else if (caretYInScroll - caretHeight < padding)
+            else if (caretYInScroll - caretHeight < 0)
             {
                 // Caret is above viewport -> scroll up just enough to reveal it
                 var delta = (caretYInScroll - caretHeight) - padding;
