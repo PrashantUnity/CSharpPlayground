@@ -282,4 +282,144 @@ public class DocumentationServiceTests
         vm.BackToHub();
         Assert.True(backToHubCalled);
     }
+
+    [Fact]
+    public void DocumentationService_DiagramsCategory_ShouldHaveComprehensiveMultiLanguageArticles()
+    {
+        var service = DocumentationService.Instance;
+        var diagramsCat = service.Categories.FirstOrDefault(c => c.Id == "diagrams_and_visualizations");
+
+        Assert.NotNull(diagramsCat);
+        Assert.True(diagramsCat.Articles.Count >= 7, "Expected at least 7 diagram articles.");
+
+        var articleIds = diagramsCat.Articles.Select(a => a.Id).ToList();
+        Assert.Contains("diagrams_quickstart", articleIds);
+        Assert.Contains("diagrams_trees", articleIds);
+        Assert.Contains("diagrams_graphs", articleIds);
+        Assert.Contains("diagrams_matrices", articleIds);
+        Assert.Contains("diagrams_3d_matrices", articleIds);
+        Assert.Contains("diagrams_vector_canvas", articleIds);
+        Assert.Contains("diagrams_3d_surfaces", articleIds);
+
+        foreach (var article in diagramsCat.Articles)
+        {
+            Assert.NotEmpty(article.CodeSnippets);
+            var snippet = article.CodeSnippets[0];
+            Assert.True(snippet.HasVariants, $"Snippet {snippet.Id} should have multi-language variants.");
+            Assert.True(snippet.Variants.Count >= 4, $"Snippet {snippet.Id} should have at least 4 languages (C++, Java, Python, C#).");
+
+            var langs = snippet.Variants.Select(v => v.Language).ToList();
+            Assert.Contains("cpp", langs);
+            Assert.Contains("java", langs);
+            Assert.Contains("python", langs);
+            Assert.Contains("csharp", langs);
+
+            // Default selection should be active
+            Assert.NotNull(snippet.SelectedVariant);
+            Assert.False(string.IsNullOrWhiteSpace(snippet.Code));
+        }
+
+        // Test search
+        var searchResults = service.SearchArticles("diagram");
+        Assert.NotEmpty(searchResults);
+        Assert.Contains(searchResults, a => a.CategoryId == "diagrams_and_visualizations");
+    }
+
+    [Fact]
+    public void DocCodeSnippet_MultiLanguageVariants_ShouldSwitchLanguageAndCodeCorrectly()
+    {
+        var service = DocumentationService.Instance;
+        var snippet = new DocCodeSnippet
+        {
+            Id = "test_multi",
+            Title = "Codes [C++ | Java | Python3 | C#]",
+            Description = "Multi-language test snippet"
+        }
+        .AddVariant("cpp", "C++", "std::cout << \"Hello C++\";")
+        .AddVariant("java", "Java", "System.out.println(\"Hello Java\");")
+        .AddVariant("python", "Python3", "print(\"Hello Python\")")
+        .AddVariant("csharp", "C#", "Console.WriteLine(\"Hello C#\");");
+
+        Assert.True(snippet.HasVariants);
+        Assert.Equal(4, snippet.Variants.Count);
+        Assert.Equal("cpp", snippet.Language);
+        Assert.Contains("Hello C++", snippet.Code);
+
+        // Switch to Java
+        var javaVariant = snippet.Variants.First(v => v.Language == "java");
+        snippet.SelectVariant(javaVariant);
+        Assert.True(javaVariant.IsSelected);
+        Assert.False(snippet.Variants[0].IsSelected);
+        Assert.Equal("java", snippet.Language);
+        Assert.Contains("Hello Java", snippet.Code);
+
+        // Check script creation with Java
+        var script = service.CreateScriptFromSnippet(snippet);
+        Assert.Equal("java", script.LanguageId);
+        Assert.Contains("Hello Java", script.Code);
+
+        // Switch to Python
+        var pyVariant = snippet.Variants.First(v => v.Language == "python");
+        snippet.SelectVariant(pyVariant);
+        Assert.Equal("python", snippet.Language);
+        Assert.Contains("Hello Python", snippet.Code);
+
+        var pyScript = service.CreateScriptFromSnippet(snippet);
+        Assert.Equal("python", pyScript.LanguageId);
+    }
+
+    [Fact]
+    public void Plot3DSpecBuilder_VoxelBarWith2DMatrix_ShouldCreateVoxelPoints()
+    {
+        int[,] matrix = {
+            { 10, 20 },
+            { 30, 40 }
+        };
+
+        var spec = PdfEditorApp.Plugins.CSharpEditor.Visuals.Building.Plot3DSpecBuilder.From(matrix, PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec.Plot3DType.VoxelBar);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec.Plot3DType.VoxelBar, spec.Kind);
+        Assert.Single(spec.Series);
+        Assert.Equal(4, spec.Series[0].X.Count);
+        Assert.Equal(4, spec.Series[0].Z.Count);
+        Assert.Equal(10, spec.Series[0].Z[0]);
+        Assert.Equal(20, spec.Series[0].Z[1]);
+        Assert.Equal(30, spec.Series[0].Z[2]);
+        Assert.Equal(40, spec.Series[0].Z[3]);
+    }
+
+    [Fact]
+    public void DocumentationService_CreateNotebookFromArticle_ShouldContainMarkdownSectionsAndCodeSnippets()
+    {
+        var service = DocumentationService.Instance;
+        var diagramsCat = service.Categories.First(c => c.Id == "diagrams_and_visualizations");
+        var article = diagramsCat.Articles.First(a => a.Id == "diagrams_3d_matrices");
+
+        var notebook = service.CreateNotebookFromArticle(article);
+        Assert.NotNull(notebook);
+        Assert.Equal("3D Matrix & Voxel Grid Diagrams", notebook.Title);
+        Assert.True(notebook.Cells.Count >= 4, "Expected markdown intro, section notes, and code cells.");
+
+        var mdCells = notebook.Cells.Where(c => c.Type == CellType.Markdown).ToList();
+        var codeCells = notebook.Cells.Where(c => c.Type == CellType.Code).ToList();
+
+        Assert.NotEmpty(mdCells);
+        Assert.NotEmpty(codeCells);
+        Assert.Contains(mdCells, c => c.Source.Contains("3D Spatial Grid & BFS Pathfinding"));
+        Assert.Contains(codeCells, c => c.Source.Contains("VoxelBar3D") || c.Source.Contains("voxel_bars") || c.Source.Contains("voxelBars"));
+    }
+
+    [Fact]
+    public void CodeTemplateLibrary_3DVoxelMatrixTemplate_ShouldExistAsNotebookWithCells()
+    {
+        var templates = CodeTemplateLibrary.GetTemplates();
+        var template = templates.FirstOrDefault(t => t.Id == "charting3d_voxel_matrix_and_spatial_grid");
+
+        Assert.NotNull(template);
+        Assert.Equal(WorkspaceItemKind.Notebook, template.Kind);
+        Assert.True(template.IsNotebook);
+        Assert.NotEmpty(template.Cells);
+        Assert.Contains(template.Cells, c => c.Type == CellType.Markdown && c.Source.Contains("3D Spatial Grid & BFS Pathfinding"));
+        Assert.Contains(template.Cells, c => c.Type == CellType.Code && c.Source.Contains("VoxelBar3D"));
+        Assert.Contains(template.Cells, c => c.Type == CellType.Code && c.Source.Contains("Scatter3D"));
+    }
 }

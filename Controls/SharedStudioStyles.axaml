@@ -561,4 +561,40 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
+    <!-- Documentation Multi-Language Tabs -->
+    <Style Selector="Button.doc-lang-tab">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-lang-tab TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab:pointerover TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab.selected TextBlock">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
 </Styles>

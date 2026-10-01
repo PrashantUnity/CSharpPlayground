@@ -36,10 +36,17 @@ public static class Plot3DSpecBuilder
                 return new Plot3DSpec { Kind = SurfaceKind(kind), Surface = Plot3DOptionsConverter.ToSpec(surface) };
             case Func<double, double, double> function:
                 return Surface(function, (-5, 5), (-5, 5), 30, kind);
+            case Array { Rank: 2 } grid when kind == Plot3DType.VoxelBar:
+                return VoxelGrid(Rows(grid));
             case Array { Rank: 2 } grid:
                 return new Plot3DSpec { Kind = SurfaceKind(kind), Surface = Grid(Rows(grid)) };
             case IEnumerable rows when kind is Plot3DType.Surface or Plot3DType.Wireframe && data is not string:
                 return new Plot3DSpec { Kind = SurfaceKind(kind), Surface = Grid(rows.Cast<object?>().Select(r => r is IEnumerable row and not string ? row.Cast<object?>().ToList() : []).ToList()) };
+            case IEnumerable rows when kind == Plot3DType.VoxelBar && data is not string:
+                var nested = rows.Cast<object?>().Select(r => r is IEnumerable row and not string ? row.Cast<object?>().ToList() : null).ToList();
+                if (nested.Count > 0 && nested.All(r => r != null))
+                    return VoxelGrid(nested!);
+                break;
             case Graph3DData graph:
                 return new Plot3DSpec { Kind = Plot3DType.Graph3D, Graph = Graph(graph) };
             case IDictionary adjacency when kind == Plot3DType.Graph3D:
@@ -91,6 +98,31 @@ public static class Plot3DSpecBuilder
             spec.Z.Add(Enumerable.Range(0, columns).Select(c => c < row.Count && DataReader.TryNumber(row[c], out var z) ? z : null).ToList());
         }
 
+        return spec;
+    }
+
+    private static Plot3DSpec VoxelGrid(List<List<object?>> rows)
+    {
+        var spec = new Plot3DSpec { Kind = Plot3DType.VoxelBar };
+        var series = new Plot3DSeriesSpec();
+        var labels = new List<string?>();
+        for (var r = 0; r < rows.Count; r++)
+        {
+            var row = rows[r];
+            for (var c = 0; c < row.Count; c++)
+            {
+                if (DataReader.TryNumber(row[c], out var z))
+                {
+                    series.X.Add(r);
+                    series.Y.Add(c);
+                    series.Z.Add(z);
+                    labels.Add($"[{r},{c}]={z:0.##}");
+                }
+            }
+        }
+
+        if (labels.Count > 0) series.Labels = labels;
+        spec.Series.Add(series);
         return spec;
     }
 

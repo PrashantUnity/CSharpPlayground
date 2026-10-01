@@ -261,6 +261,13 @@ public partial class CSharpDocsViewModel : ObservableObject
     [RelayCommand]
     public void OpenNotebookStudio()
     {
+        if (SelectedArticle != null)
+        {
+            var articleNotebook = _docService.CreateNotebookFromArticle(SelectedArticle);
+            _openNotebookAction?.Invoke(articleNotebook);
+            return;
+        }
+
         var initialNotebook = new NotebookDocumentItem
         {
             Title = "Interactive C# Notebook"
