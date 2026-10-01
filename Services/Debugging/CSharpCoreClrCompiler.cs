@@ -39,6 +39,18 @@ public sealed class CSharpCoreClrCompiler
         var syntaxTrees = new List<SyntaxTree> { syntaxTree };
         if (exitCodeFile != null) syntaxTrees.Add(CSharpSyntaxTree.ParseText(Microsoft.CodeAnalysis.Text.SourceText.From(ExitCodeReporter(exitCodeFile), Encoding.UTF8), path: "exit-code-reporter.cs"));
 
+        var assemblyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var r in _compilerService.DefaultReferences)
+        {
+            if (r is PortableExecutableReference peRef && !string.IsNullOrEmpty(peRef.FilePath) && File.Exists(peRef.FilePath))
+            {
+                var name = Path.GetFileNameWithoutExtension(peRef.FilePath);
+                assemblyMap[name] = peRef.FilePath;
+            }
+        }
+        var probeDirs = assemblyMap.Values.Select(Path.GetDirectoryName).Where(d => !string.IsNullOrEmpty(d)).Distinct()!;
+        syntaxTrees.Add(CSharpSyntaxTree.ParseText(Microsoft.CodeAnalysis.Text.SourceText.From(AssemblyResolver(assemblyMap, probeDirs!), Encoding.UTF8), path: "assembly-resolver.cs"));
+
         var compilation = CSharpCompilation.Create(
             assemblyName,
             syntaxTrees: syntaxTrees,
@@ -65,7 +77,7 @@ public sealed class CSharpCoreClrCompiler
                 .Where(d =>
                 {
                     var mapped = d.Location.GetMappedLineSpan();
-                    return !mapped.IsValid || string.IsNullOrEmpty(mapped.Path) || mapped.Path is "script.cs" or "exit-code-reporter.cs";
+                    return !mapped.IsValid || string.IsNullOrEmpty(mapped.Path) || mapped.Path is "script.cs" or "exit-code-reporter.cs" or "assembly-resolver.cs";
                 })
                 .Select(d =>
                 {
@@ -134,4 +146,66 @@ public sealed class CSharpCoreClrCompiler
         """;
 
     private static string ToLiteral(string text) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(text, quote: true);
+
+    internal static string AssemblyResolver(Dictionary<string, string> assemblyMap, IEnumerable<string> probeDirs)
+    {
+        var mapEntries = string.Join(",\n", assemblyMap.Select(kvp => $"        [{ToLiteral(kvp.Key)}] = {ToLiteral(kvp.Value)}"));
+        var dirEntries = string.Join(",\n", probeDirs.Select(d => $"        {ToLiteral(d)}"));
+
+        return $$"""
+internal static class FryAssemblyResolver
+{
+    private static readonly System.Collections.Generic.Dictionary<string, string> AssemblyMap =
+        new(System.StringComparer.OrdinalIgnoreCase)
+        {
+{{mapEntries}}
+        };
+
+    private static readonly string[] ProbeDirs = new string[]
+    {
+{{dirEntries}}
+    };
+
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void Register()
+    {
+        System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += (context, assemblyName) =>
+        {
+            var name = assemblyName.Name;
+            if (string.IsNullOrEmpty(name)) return null;
+
+            if (AssemblyMap.TryGetValue(name, out var exactPath) && System.IO.File.Exists(exactPath))
+            {
+                try
+                {
+                    return context.LoadFromAssemblyPath(exactPath);
+                }
+                catch
+                {
+                }
+            }
+
+            foreach (var dir in ProbeDirs)
+            {
+                var candidate = System.IO.Path.Combine(dir, name + ".dll");
+                if (System.IO.File.Exists(candidate))
+                {
+                    try
+                    {
+                        return context.LoadFromAssemblyPath(candidate);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return null;
+        };
+    }
 }
+""";
+    }
+}
+
+

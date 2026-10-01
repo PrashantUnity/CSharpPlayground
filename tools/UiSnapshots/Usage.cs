@@ -37,6 +37,7 @@ internal static class Usage
               --edit-notes           click Edit in Scratchpad & Notes first
               --run                  run the script first (F5)
               --debug <line>         set a breakpoint on that line, debug and wait until it pauses there
+              --dap-trace            print every DAP protocol message sent and received
               --panel <tab>          bottom panel tab: results, terminal, problems, tests or debug
               --panel-height <px>    bottom panel height (default 280), e.g. 700 to see a whole visualizer
               --generate-tests       click Generate in the Test Cases panel (Blind 75 problems)

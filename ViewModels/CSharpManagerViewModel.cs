@@ -1027,6 +1027,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         using (BeginLoading(item.IsServer ? "Opening API Server..." : (item.IsNotebook ? "Opening Notebook..." : "Opening Script..."), item.Title))
         {
             await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
             if (item.IsServer)
             {
                 var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.Id));

@@ -11,6 +11,10 @@ if (options.Command is null or "help" or "-h")
 
 try
 {
+    if (options.Flag("dap-trace"))
+    {
+        PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap.DapClient.Trace = Console.WriteLine;
+    }
     Snapshot.Start(options);
     switch (options.Command)
     {

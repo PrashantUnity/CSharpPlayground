@@ -222,11 +222,15 @@ public partial class CSharpCodeStudioViewModel
         int line = args.LineNumber;
         _variableChangeTracker.TrackAndMarkChanges(args.Locals);
 
+        var status = line > 0
+            ? $"⏸️ Paused at Line {line} ({args.Reason})"
+            : $"⏸️ Paused ({args.Reason})";
+
         if (tab != null)
         {
             tab.IsPaused = true;
-            tab.PausedLine = line;
-            tab.CompilerStatusText = $"⏸️ Paused at Line {line} ({args.Reason})";
+            tab.PausedLine = line > 0 ? line : -1;
+            tab.CompilerStatusText = status;
             tab.Locals.Clear();
             foreach (var l in args.Locals) tab.Locals.Add(l);
             tab.CallStack.Clear();
@@ -236,8 +240,8 @@ public partial class CSharpCodeStudioViewModel
         if (tab == null || tab.IsActive)
         {
             IsPaused = true;
-            CurrentPausedLine = line;
-            CompilerStatusText = $"⏸️ Paused at Line {line} ({args.Reason})";
+            CurrentPausedLine = line > 0 ? line : -1;
+            CompilerStatusText = status;
 
             Locals.Clear();
             foreach (var l in args.Locals) Locals.Add(l);
@@ -250,8 +254,15 @@ public partial class CSharpCodeStudioViewModel
             SelectedBottomTabIndex = 4;
             IsBottomDeckExpanded = true;
 
-            RequestSetPausedLine?.Invoke(line);
-            RequestNavigateToCaret?.Invoke(line, 1);
+            if (line > 0)
+            {
+                RequestSetPausedLine?.Invoke(line);
+                RequestNavigateToCaret?.Invoke(line, 1);
+            }
+            else
+            {
+                RequestSetPausedLine?.Invoke(-1);
+            }
         }
     }
 

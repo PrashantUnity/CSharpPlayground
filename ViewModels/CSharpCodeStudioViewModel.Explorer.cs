@@ -412,42 +412,47 @@ public partial class CSharpCodeStudioViewModel
 
         if (string.IsNullOrEmpty(item.DocumentId)) return;
 
-        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
-        {
-            if (_openServerAction != null)
-            {
-                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
-                if (server != null)
-                {
-                    _openServerAction.Invoke(server);
-                    return;
-                }
-            }
-        }
-
-        if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
-            item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))
-        {
-            if (_openNotebookAction != null)
-            {
-                var nb = await _storageService.LoadNotebookAsync(item.DocumentId);
-                if (nb != null)
-                {
-                    _openNotebookAction.Invoke(nb);
-                    return;
-                }
-            }
-        }
-
-        if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
-        {
-            HighlightExplorerItem(item.DocumentId);
-            return;
-        }
-
         using (BeginLoading("Loading File...", item.Name))
         {
             await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_openServerAction != null)
+                {
+                    var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.DocumentId));
+                    if (server != null)
+                    {
+                        _openServerAction.Invoke(server);
+                        return;
+                    }
+                }
+            }
+
+            if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
+                item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_openNotebookAction != null)
+                {
+                    var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
+                    if (nb != null)
+                    {
+                        _openNotebookAction.Invoke(nb);
+                        return;
+                    }
+                }
+            }
+
+            if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
+            {
+                HighlightExplorerItem(item.DocumentId);
+                return;
+            }
+
             await SaveDocumentAsync(userAsked: false);
 
             var loaded = await Task.Run(async () => await _storageService.LoadScriptAsync(item.DocumentId));

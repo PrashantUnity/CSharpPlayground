@@ -45,7 +45,7 @@ public sealed class DapClient : IAsyncDisposable
     /// Told every message that crosses a connection, as <c>-&gt; json</c> (sent) or <c>&lt;- json</c> (received): for finding out what an adapter
     /// really says when a session doesn't behave. Nothing is set in normal use.
     /// </summary>
-    internal static volatile Action<string>? Trace;
+    public static volatile Action<string>? Trace;
 
     public event Func<DapEvent, Task>? EventReceived;
     public event Action<Exception>? ErrorOccurred;

@@ -809,58 +809,76 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
 
-        // API server documents open in the Server Studio.
-        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
-        {
-            if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
-            {
-                var server = await _storageService.LoadServerDocumentAsync(item.DocumentId);
-                if (server != null)
-                {
-                    _openServerAction.Invoke(server);
-                    return;
-                }
-            }
-        }
-
-        // Scripts, and source files of any language (main.py), open in the Code Studio.
-        if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
-            item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
-            _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
-        {
-            if (_openScriptAction != null && !string.IsNullOrEmpty(item.DocumentId))
-            {
-                var sc = await _storageService.LoadScriptAsync(item.DocumentId);
-                if (sc != null)
-                {
-                    _openScriptAction.Invoke(sc);
-                    return;
-                }
-            }
-        }
-
-        var fileName = item.Name;
-        var folderName = item.Parent?.Name ?? "Library";
-        var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
-        var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? fileName.Substring(0, fileName.Length - 6)
-            : fileName;
-
-        var existingTab = Tabs.FirstOrDefault(t =>
-            (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-            string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
-
-        if (existingTab != null)
-        {
-            SelectTab(existingTab);
-            return;
-        }
-
-        using (BeginLoading("Opening Notebook...", fileName))
+        using (BeginLoading("Opening File...", item.Name))
         {
             await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+            }
+
+            // API server documents open in the Server Studio.
+            if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
+                {
+                    var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.DocumentId));
+                    if (server != null)
+                    {
+                        _openServerAction.Invoke(server);
+                        return;
+                    }
+                }
+            }
+
+            // Scripts, and source files of any language (main.py), open in the Code Studio.
+            if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
+                item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
+                _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
+            {
+                if (_openScriptAction != null)
+                {
+                    ScriptDocumentItem? sc = null;
+                    if (!string.IsNullOrEmpty(item.DocumentId))
+                    {
+                        sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.DocumentId));
+                    }
+                    if (sc == null && !string.IsNullOrEmpty(item.FullPath))
+                    {
+                        var openRes = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(item.FullPath));
+                        if (openRes.Success && !string.IsNullOrEmpty(openRes.PrimaryDocumentId))
+                        {
+                            sc = await Task.Run(async () => await _storageService.LoadScriptAsync(openRes.PrimaryDocumentId));
+                        }
+                    }
+
+                    if (sc != null)
+                    {
+                        _openScriptAction.Invoke(sc);
+                        return;
+                    }
+                }
+            }
+
+            var fileName = item.Name;
+            var folderName = item.Parent?.Name ?? "Library";
+            var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
+            var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Substring(0, fileName.Length - 6)
+                : fileName;
+
+            var existingTab = Tabs.FirstOrDefault(t =>
+                (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
+                string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
+
+            if (existingTab != null)
+            {
+                SelectTab(existingTab);
+                return;
+            }
+
             NotebookDocumentItem? loadedDoc = null;
             if (!string.IsNullOrEmpty(item.DocumentId))
             {

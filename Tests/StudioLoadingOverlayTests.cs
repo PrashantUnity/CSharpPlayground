@@ -111,4 +111,111 @@ public class StudioLoadingOverlayTests
         Assert.Equal("file.cs", control.LoadingSubtitle);
         Assert.Equal(MaterialIconKind.SyncCircle, control.IconKind);
     }
+
+    [Fact]
+    public async System.Threading.Tasks.Task NotebookStudio_OpenDocumentAsync_SetsLoadingDuringFileTransition()
+    {
+        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NotebookLoadingTest_" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(tempDir);
+        try
+        {
+            var storage = new LocalScriptStorageService(tempDir);
+            var initial = new NotebookDocumentItem { Title = "Initial Notebook" };
+            var studio = new CSharpNotebookStudioViewModel(
+                initial,
+                storage,
+                new RoslynCompilerService(),
+                new ScriptExecutionEngine(),
+                backToHubAction: () => { },
+                backToHomeAction: () => { });
+
+            bool wasLoadingDuringOpen = false;
+            string? capturedTitle = null;
+            studio.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(IStudioLoadingState.IsLoading) && studio.IsLoading)
+                {
+                    wasLoadingDuringOpen = true;
+                    capturedTitle = studio.LoadingTitle;
+                }
+            };
+
+            var item = new ExplorerItemViewModel
+            {
+                Name = "MachineLearning.frynb",
+                DocumentId = "ml_doc_1",
+                FileExtension = ".frynb",
+                IsDirectory = false
+            };
+
+            await studio.OpenDocumentAsync(item);
+
+            Assert.True(wasLoadingDuringOpen, "NotebookStudio should set IsLoading=true during OpenDocumentAsync");
+            Assert.Equal("Opening File...", capturedTitle);
+            Assert.False(studio.IsLoading, "IsLoading should be false after OpenDocumentAsync completes");
+        }
+        finally
+        {
+            if (System.IO.Directory.Exists(tempDir))
+            {
+                System.IO.Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task CodeStudio_SwitchToScriptAsync_SetsLoadingDuringFileTransition()
+    {
+        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CodeLoadingTest_" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(tempDir);
+        try
+        {
+            var storage = new LocalScriptStorageService(tempDir);
+            var script = new ScriptDocumentItem { Title = "Script 1", Code = "// code" };
+            await storage.SaveScriptAsync(script);
+
+            var secondScript = new ScriptDocumentItem { Title = "Script 2", Code = "// script 2" };
+            await storage.SaveScriptAsync(secondScript);
+
+            var studio = new CSharpCodeStudioViewModel(
+                script,
+                storage,
+                new RoslynCompilerService(),
+                new ScriptExecutionEngine(),
+                backToHubAction: () => { },
+                backToHomeAction: () => { });
+
+            bool wasLoadingDuringSwitch = false;
+            string? capturedTitle = null;
+            studio.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(IStudioLoadingState.IsLoading) && studio.IsLoading)
+                {
+                    wasLoadingDuringSwitch = true;
+                    capturedTitle = studio.LoadingTitle;
+                }
+            };
+
+            var item = new ExplorerItemViewModel
+            {
+                Name = "Script 2.frycs",
+                DocumentId = secondScript.Id,
+                FileExtension = ".frycs",
+                IsDirectory = false
+            };
+
+            await studio.SwitchToScriptAsync(item);
+
+            Assert.True(wasLoadingDuringSwitch, "CodeStudio should set IsLoading=true during SwitchToScriptAsync");
+            Assert.Equal("Loading File...", capturedTitle);
+            Assert.False(studio.IsLoading, "IsLoading should be false after SwitchToScriptAsync completes");
+        }
+        finally
+        {
+            if (System.IO.Directory.Exists(tempDir))
+            {
+                System.IO.Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
 }
