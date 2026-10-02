@@ -184,12 +184,8 @@ public partial class LocalScriptStorageService
         }
     }
 
-    /// <summary>Creates <c>script_HHmmss.py</c> (or <paramref name="fileName"/>) with the language's starter text.</summary>
-    public Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null) =>
-        CreateNewSourceFileAsync(languageId, fileName, folderPath, initialContent: null);
-
     /// <summary>Creates a source file of a language with <paramref name="initialContent"/> in it (null: the language's new-file template).</summary>
-    public async Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName, string? folderPath, string? initialContent)
+    public async Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null, string? initialContent = null)
     {
         await EnsureInitializedAsync();
         var language = _languages.Get(languageId);

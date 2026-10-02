@@ -78,8 +78,8 @@ public interface IScriptStorageService
     /// <summary>The languages whose plain source files (main.py) the workspace lists alongside its documents.</summary>
     LanguageRegistry Languages { get; }
 
-    /// <summary>Creates a source file of a language (script_HHmmss.py, or <paramref name="fileName"/>) with its starter text.</summary>
-    Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null);
+    /// <summary>Creates a source file of a language (script_HHmmss.py, or <paramref name="fileName"/>) with its starter text (or <paramref name="initialContent"/>).</summary>
+    Task<ScriptDocumentItem?> CreateNewSourceFileAsync(string languageId, string? fileName = null, string? folderPath = null, string? initialContent = null);
 
     /// <summary>Renames a source file on disk; its id changes with its path.</summary>
     Task<SourceFileRename> RenameSourceFileAsync(string id, string newFileName);

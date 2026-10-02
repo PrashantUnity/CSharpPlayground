@@ -126,7 +126,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             docService: DocumentationService.Instance,
             backToHubAction: NavigateToManager,
             openScriptAction: NavigateToCodeStudio,
-            openNotebookAction: NavigateToNotebookStudio);
+            openNotebookAction: NavigateToNotebookStudio,
+            storageService: _storageService,
+            languages: _languages);
 
         // ── Initialize Blind 75 Algorithm Hub page ──
         BlindProblemsViewModel = new BlindProblems.CSharpBlindProblemsViewModel(

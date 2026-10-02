@@ -182,8 +182,12 @@ public partial class CSharpCodeStudioViewModel
         // In a big workspace the document may sit in a folder that has not been listed yet: it is not an outsider.
         if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(Script.Id) != null) return;
 
-        var sourceLanguage = Script.SourceFilePath != null ? ActiveLanguage : null;
-        var fileName = sourceLanguage != null || Script.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ? Script.Title : $"{Script.Title}.frycs";
+        var isSourceLang = ActiveLanguage.Storage == LanguageStorageKind.SourceFile;
+        var sourceLanguage = (Script.SourceFilePath != null || isSourceLang) ? ActiveLanguage : null;
+        var ext = isSourceLang ? ActiveLanguage.DefaultExtension() : ".frycs";
+        var fileName = Script.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase)
+            ? Script.Title
+            : (isSourceLang && Script.SourceFilePath != null ? Script.Title : $"{Script.Title}{ext}");
         _explorerOrphanItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
         ExplorerRootItems.Add(_explorerOrphanItem);
         if (sort) SortExplorerTree(ExplorerRootItems);

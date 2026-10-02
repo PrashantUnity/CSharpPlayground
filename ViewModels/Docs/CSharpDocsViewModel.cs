@@ -6,6 +6,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs;
@@ -16,6 +18,8 @@ public partial class CSharpDocsViewModel : ObservableObject
     private readonly Action? _backToHubAction;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+    private readonly IScriptStorageService? _storageService;
+    private readonly StudioLanguageServices? _languages;
 
     [ObservableProperty]
     private DocCategory? _selectedCategory;
@@ -48,12 +52,16 @@ public partial class CSharpDocsViewModel : ObservableObject
         DocumentationService? docService = null,
         Action? backToHubAction = null,
         Action<ScriptDocumentItem>? openScriptAction = null,
-        Action<NotebookDocumentItem>? openNotebookAction = null)
+        Action<NotebookDocumentItem>? openNotebookAction = null,
+        IScriptStorageService? storageService = null,
+        StudioLanguageServices? languages = null)
     {
         _docService = docService ?? DocumentationService.Instance;
         _backToHubAction = backToHubAction;
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
+        _storageService = storageService;
+        _languages = languages;
 
         LoadDocumentation();
     }
@@ -212,7 +220,7 @@ public partial class CSharpDocsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void TryInStudio(DocCodeSnippet? snippet)
+    public async Task TryInStudioAsync(DocCodeSnippet? snippet)
     {
         if (snippet == null) return;
 
@@ -223,17 +231,59 @@ public partial class CSharpDocsViewModel : ObservableObject
         }
         else
         {
-            var script = _docService.CreateScriptFromSnippet(snippet);
+            var script = await PrepareScriptFromSnippetAsync(snippet);
             _openScriptAction?.Invoke(script);
         }
     }
 
+    public void TryInStudio(DocCodeSnippet? snippet)
+    {
+        _ = TryInStudioAsync(snippet);
+    }
+
     [RelayCommand]
-    public void TryInScriptStudio(DocCodeSnippet? snippet)
+    public async Task TryInScriptStudioAsync(DocCodeSnippet? snippet)
     {
         if (snippet == null) return;
-        var script = _docService.CreateScriptFromSnippet(snippet);
+        var script = await PrepareScriptFromSnippetAsync(snippet);
         _openScriptAction?.Invoke(script);
+    }
+
+    public void TryInScriptStudio(DocCodeSnippet? snippet)
+    {
+        _ = TryInScriptStudioAsync(snippet);
+    }
+
+    private async Task<ScriptDocumentItem> PrepareScriptFromSnippetAsync(DocCodeSnippet snippet)
+    {
+        if (_storageService != null)
+        {
+            var registry = _languages?.Registry ?? StudioLanguageServices.Default.Registry;
+            var lang = registry.Get(snippet.Language);
+            var isSourceFileLang = lang != null && lang.Storage == LanguageStorageKind.SourceFile;
+            var cleanTitle = DocumentationService.CleanSnippetTitle(snippet.Title);
+
+            if (isSourceFileLang)
+            {
+                var sourceFile = await _storageService.CreateNewSourceFileAsync(
+                    lang!.Id,
+                    cleanTitle,
+                    folderPath: null,
+                    initialContent: snippet.Code);
+                if (sourceFile != null)
+                {
+                    return sourceFile;
+                }
+            }
+            else
+            {
+                var script = _docService.CreateScriptFromSnippet(snippet);
+                await _storageService.SaveScriptAsync(script);
+                return script;
+            }
+        }
+
+        return _docService.CreateScriptFromSnippet(snippet);
     }
 
     [RelayCommand]

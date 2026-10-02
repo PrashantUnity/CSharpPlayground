@@ -482,6 +482,21 @@ public partial class LocalScriptStorageService : IScriptStorageService
             return await SaveSourceFileAsync(script, overwriteChangesOnDisk: false);
         }
 
+        var lang = _languages.Get(script.LanguageId);
+        if (lang != null && lang.Storage == LanguageStorageKind.SourceFile)
+        {
+            var sourceFile = await CreateNewSourceFileAsync(script.LanguageId, script.Title, folderPath, script.Code);
+            if (sourceFile != null)
+            {
+                script.Id = sourceFile.Id;
+                script.SourceFilePath = sourceFile.SourceFilePath;
+                script.Title = sourceFile.Title;
+                script.LastModified = sourceFile.LastModified;
+                return true;
+            }
+            return false;
+        }
+
         try
         {
             script.LastModified = DateTime.UtcNow;

@@ -1,4 +1,5 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 
@@ -150,12 +151,34 @@ public partial class DocumentationService
         return results.OrderByDescending(r => r.Score).Select(r => r.Article).ToList();
     }
 
+    public static string CleanSnippetTitle(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return string.Empty;
+        var trimmed = title.Trim();
+        if (trimmed.StartsWith("Codes [", StringComparison.OrdinalIgnoreCase))
+        {
+            var colonIndex = trimmed.IndexOf(" : ", StringComparison.Ordinal);
+            if (colonIndex >= 0)
+            {
+                return trimmed[(colonIndex + 3)..].Trim();
+            }
+        }
+        return trimmed;
+    }
+
     public ScriptDocumentItem CreateScriptFromSnippet(DocCodeSnippet snippet)
     {
         var lang = Languages.StudioLanguageServices.Default.Registry.Get(snippet.Language);
+        var cleanTitle = CleanSnippetTitle(snippet.Title);
+        var isSourceFile = lang != null && lang.Storage == Languages.LanguageStorageKind.SourceFile;
+        var ext = isSourceFile ? lang!.DefaultExtension() : string.Empty;
+        var title = isSourceFile && !cleanTitle.EndsWith(ext, StringComparison.OrdinalIgnoreCase)
+            ? $"{cleanTitle}{ext}"
+            : cleanTitle;
+
         return new ScriptDocumentItem
         {
-            Title = string.IsNullOrWhiteSpace(snippet.Title) ? "Docs Sample Script" : snippet.Title,
+            Title = string.IsNullOrWhiteSpace(title) ? (isSourceFile ? $"Docs Sample Script{ext}" : "Docs Sample Script") : title,
             Code = snippet.Code,
             LanguageId = lang?.Id ?? snippet.Language ?? Languages.LanguageIds.CSharp,
             Notes = $"# {snippet.Title}\n\n{snippet.Description}\n\nGenerated from C# Code Studio Documentation."
