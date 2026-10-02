@@ -272,13 +272,23 @@ public static class DumpTableBuilder
         else if (val is IEnumerable items and not string) text = FormatSequence(items, depth: 0);
         else text = val.ToString() ?? string.Empty;
 
+        DumpTableResult? nestedTable = null;
+        if (!IsScalarType(t) || val is string)
+        {
+            if (NestedTableDetector.TryDetectNestedTable(val, out var detected))
+            {
+                nestedTable = detected;
+            }
+        }
+
         return new DumpTableCell
         {
             DisplayText = text,
             RawValue = val,
             IsNumeric = num,
             IsBoolean = b,
-            IsNull = false
+            IsNull = false,
+            NestedTable = nestedTable
         };
     }
 

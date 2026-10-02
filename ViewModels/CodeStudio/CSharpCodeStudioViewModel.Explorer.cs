@@ -60,7 +60,7 @@ public partial class CSharpCodeStudioViewModel
         // Only the top folder itself can be cut off here (a nested one says so in its own rows).
         IsExplorerTruncated = listing.IsTruncated;
         EnsureOpenDocumentListed(sort: false);
-        HighlightExplorerItem(Script?.Id);
+        HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
 
     public void PopulateExplorerTree()
@@ -107,7 +107,7 @@ public partial class CSharpCodeStudioViewModel
         }
 
         EnsureOpenDocumentListed();
-        HighlightExplorerItem(Script?.Id);
+        HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
 
     // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
@@ -255,7 +255,7 @@ public partial class CSharpCodeStudioViewModel
         EnsureOpenDocumentListed(sort: false);
 
         SortExplorerTree(ExplorerRootItems);
-        HighlightExplorerItem(Script?.Id);
+        HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
         IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
@@ -285,12 +285,12 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void HighlightExplorerItem(string? documentId)
+    private void HighlightExplorerItem(string? documentId, string? title = null, string? sourceFilePath = null)
     {
         DeselectAll(ExplorerRootItems);
-        if (string.IsNullOrEmpty(documentId)) return;
+        if (string.IsNullOrEmpty(documentId) && string.IsNullOrEmpty(sourceFilePath) && string.IsNullOrEmpty(title)) return;
 
-        var match = FindByDocumentId(ExplorerRootItems, documentId);
+        var match = FindExplorerItem(ExplorerRootItems, documentId, title, sourceFilePath);
         if (match != null)
         {
             match.IsSelected = true;
@@ -301,10 +301,51 @@ public partial class CSharpCodeStudioViewModel
                 parent = parent.Parent;
             }
         }
-        else if (LazyExplorer.IsActive)
+        else if (LazyExplorer.IsActive && !string.IsNullOrEmpty(documentId))
         {
             _ = RevealInLazyExplorerAsync(documentId);
         }
+    }
+
+    private Explorer.ExplorerItemViewModel? FindExplorerItem(IEnumerable<Explorer.ExplorerItemViewModel> items, string? documentId, string? title, string? sourceFilePath)
+    {
+        foreach (var item in items)
+        {
+            if (!item.IsDirectory)
+            {
+                if (!string.IsNullOrEmpty(documentId) && string.Equals(item.DocumentId, documentId, StringComparison.OrdinalIgnoreCase))
+                    return item;
+
+                if (!string.IsNullOrEmpty(sourceFilePath))
+                {
+                    if (string.Equals(item.FullPath, sourceFilePath, StringComparison.OrdinalIgnoreCase))
+                        return item;
+                    try
+                    {
+                        if (Path.IsPathRooted(item.FullPath) && Path.IsPathRooted(sourceFilePath) &&
+                            string.Equals(Path.GetFullPath(item.FullPath), Path.GetFullPath(sourceFilePath), StringComparison.OrdinalIgnoreCase))
+                            return item;
+                    }
+                    catch { }
+                }
+
+                if (!string.IsNullOrEmpty(title))
+                {
+                    if (string.Equals(item.Name, title, StringComparison.OrdinalIgnoreCase))
+                        return item;
+                    try
+                    {
+                        if (string.Equals(Path.GetFileNameWithoutExtension(item.Name), Path.GetFileNameWithoutExtension(title), StringComparison.OrdinalIgnoreCase))
+                            return item;
+                    }
+                    catch { }
+                }
+            }
+
+            var childMatch = FindExplorerItem(item.Children, documentId, title, sourceFilePath);
+            if (childMatch != null) return childMatch;
+        }
+        return null;
     }
 
     // A big workspace lists a folder when it is opened: open the folders down to the document, then highlight it.
@@ -456,7 +497,7 @@ public partial class CSharpCodeStudioViewModel
 
             if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
             {
-                HighlightExplorerItem(item.DocumentId);
+                HighlightExplorerItem(item.DocumentId, item.Name, item.FullPath);
                 return;
             }
 

@@ -20,10 +20,17 @@ public class NativeMenuContextualTests
         lock (InitLock)
         {
             if (_isAvaloniaInitialized || Application.Current != null) return;
-            AppBuilder.Configure<App>()
-                .UseSkia()
-                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-                .SetupWithoutStarting();
+            try
+            {
+                AppBuilder.Configure<App>()
+                    .UseSkia()
+                    .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
+                    .SetupWithoutStarting();
+            }
+            catch (InvalidOperationException)
+            {
+                // Already configured by another test suite in the same test runner
+            }
             _isAvaloniaInitialized = true;
         }
     }

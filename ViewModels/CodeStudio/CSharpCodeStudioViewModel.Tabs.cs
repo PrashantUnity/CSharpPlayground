@@ -183,7 +183,7 @@ public partial class CSharpCodeStudioViewModel
     public async Task CloseOtherTabsAsync(Common.StudioTabItemViewModel tab)
     {
         if (OpenTabs.Count <= 1) return;
-        var toRemove = OpenTabs.Where(t => t.Id != tab.Id).ToList();
+        var toRemove = OpenTabs.Where(t => t != tab).ToList();
         foreach (var t in toRemove)
         {
             StopTabRun(t);
@@ -234,8 +234,25 @@ public partial class CSharpCodeStudioViewModel
     {
         try
         {
-            var text = !string.IsNullOrEmpty(tab.Document.Title) ? tab.Document.Title : "Untitled Script";
-            _ = CopyTextToClipboardAsync(text);
+            var path = tab.Document.SourceFilePath;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                var relative = _storageService.GetWorkspaceRelativePath(tab.Id);
+                if (!string.IsNullOrWhiteSpace(relative) && !string.IsNullOrWhiteSpace(_storageService.ActiveWorkspaceRootPath))
+                {
+                    path = Path.Combine(_storageService.ActiveWorkspaceRootPath, relative.Replace('/', Path.DirectorySeparatorChar));
+                }
+                else if (!string.IsNullOrWhiteSpace(_storageService.ActiveWorkspaceRootPath) && !string.IsNullOrWhiteSpace(tab.Document.Title))
+                {
+                    path = Path.Combine(_storageService.ActiveWorkspaceRootPath, tab.Document.Title);
+                }
+                else
+                {
+                    path = !string.IsNullOrEmpty(tab.Document.Title) ? tab.Document.Title : "Untitled Script";
+                }
+            }
+            _ = CopyTextToClipboardAsync(path);
+            CompilerStatusText = $"Copied path to clipboard: {path}";
         }
         catch
         {
@@ -246,7 +263,7 @@ public partial class CSharpCodeStudioViewModel
     {
         SelectedActivityBarIndex = 0; // Explorer
         IsSideBarVisible = true;
-        HighlightExplorerItem(tab.Id);
+        HighlightExplorerItem(tab.Id, tab.Document.Title, tab.Document.SourceFilePath);
     }
 
     [RelayCommand]
@@ -292,8 +309,10 @@ public partial class CSharpCodeStudioViewModel
         {
             var clipboard = Avalonia.Application.Current?.ApplicationLifetime switch
             {
-                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop => desktop.MainWindow?.Clipboard,
-                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView => Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop =>
+                    desktop.Windows.FirstOrDefault(w => w.IsActive)?.Clipboard ?? desktop.MainWindow?.Clipboard,
+                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView =>
+                    Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
                 _ => null
             };
             if (clipboard != null)

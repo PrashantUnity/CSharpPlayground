@@ -178,4 +178,44 @@ public class TabManagementTests : IDisposable
         Assert.Equal(2, studio.Tabs.Count);
         Assert.DoesNotContain(studio.Tabs, t => t.Title == "Last");
     }
+
+    [Fact]
+    public async Task CSharpCodeStudio_CopyTabPath_SetsCompilerStatus()
+    {
+        var doc = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            doc,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            () => { },
+            () => { });
+
+        var activeTab = studio.OpenTabs.First();
+        studio.CopyTabPath(activeTab);
+
+        Assert.Contains("Copied path to clipboard", studio.CompilerStatusText);
+    }
+
+    [Fact]
+    public async Task CSharpCodeStudio_RevealTabInExplorer_FocusesExplorerSideBar()
+    {
+        var doc = await _testStorage.CreateNewScriptAsync("ExplorerTarget");
+        var studio = new CSharpCodeStudioViewModel(
+            doc,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            () => { },
+            () => { });
+
+        studio.SelectedActivityBarIndex = 2; // e.g. Debug
+        studio.IsSideBarVisible = false;
+
+        var activeTab = studio.OpenTabs.First();
+        studio.RevealTabInExplorer(activeTab);
+
+        Assert.Equal(0, studio.SelectedActivityBarIndex);
+        Assert.True(studio.IsSideBarVisible);
+    }
 }

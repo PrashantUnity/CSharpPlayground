@@ -1,11 +1,11 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
-using Material.Icons;
-using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
@@ -14,6 +14,7 @@ public partial class DumpTableView : UserControl
 {
     private Grid? _tableGrid;
     private ScrollViewer? _scrollViewer;
+    private DumpTableResult? _currentTable;
 
     public DumpTableView()
     {
@@ -62,8 +63,15 @@ public partial class DumpTableView : UserControl
 
         if (DataContext is DumpTableResult table)
         {
+            HookTable(table);
             BuildTable(table);
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        UnhookTable();
     }
 
     private void InitializeComponent()
@@ -72,6 +80,31 @@ public partial class DumpTableView : UserControl
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        UnhookTable();
+        if (DataContext is DumpTableResult table)
+        {
+            HookTable(table);
+            BuildTable(table);
+        }
+    }
+
+    private void HookTable(DumpTableResult table)
+    {
+        _currentTable = table;
+        _currentTable.RowsViewChanged += OnTableRowsViewChanged;
+    }
+
+    private void UnhookTable()
+    {
+        if (_currentTable != null)
+        {
+            _currentTable.RowsViewChanged -= OnTableRowsViewChanged;
+            _currentTable = null;
+        }
+    }
+
+    private void OnTableRowsViewChanged()
     {
         if (DataContext is DumpTableResult table)
         {
@@ -92,148 +125,26 @@ public partial class DumpTableView : UserControl
         return new SolidColorBrush(Color.Parse(fallbackHex));
     }
 
-    public void BuildTable(DumpTableResult table)
+    private static async Task SetClipboardTextAsync(string text)
     {
-        _tableGrid ??= this.FindControl<Grid>("TableGrid");
-        if (_tableGrid == null) return;
-
-        _tableGrid.Children.Clear();
-        _tableGrid.ColumnDefinitions.Clear();
-        _tableGrid.RowDefinitions.Clear();
-
-        int colCount = table.Columns.Count;
-        if (colCount == 0) return;
-
-        // Determine column layout mode:
-        // Key/Value or Property/Value tables (e.g. anonymous object dump)
-        bool isKeyValue = colCount == 2 &&
-            (table.Columns[0].Header.Equals("Property", StringComparison.OrdinalIgnoreCase) ||
-             table.Columns[0].Header.Equals("Key", StringComparison.OrdinalIgnoreCase));
-
-        if (isKeyValue)
+        try
         {
-            // Property / Key column takes Auto (sized to header/content, e.g. 160px)
-            // Value column takes 1* (expands to fill the entire remaining canvas width!)
-            _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto)
+            TopLevel? topLevel = null;
+            if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
             {
-                MinWidth = 150,
-                MaxWidth = 360
-            });
-            _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star)
+                var win = desktop.Windows.FirstOrDefault(w => w.IsActive) ?? desktop.MainWindow;
+                if (win != null) topLevel = TopLevel.GetTopLevel(win);
+            }
+            else if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView && singleView.MainView != null)
             {
-                MinWidth = 200
-            });
-        }
-        else
-        {
-            // All columns share equal * width, filling 100% of the canvas
-            for (int i = 0; i < colCount; i++)
+                topLevel = TopLevel.GetTopLevel(singleView.MainView);
+            }
+
+            if (topLevel?.Clipboard != null)
             {
-                _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star)
-                {
-                    MinWidth = 110
-                });
+                await topLevel.Clipboard.SetTextAsync(text);
             }
         }
-
-        // Header Row definition
-        _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-
-        var headerBrush = ResolveBrush("M3SurfaceContainerHighBrush", "#252C36");
-        var borderBrush = ResolveBrush("M3OutlineVariantBrush", "#3D4450");
-        var onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E2E6");
-        var onSurfaceMutedBrush = ResolveBrush("M3OnSurfaceVariantBrush", "#9BA1AD");
-
-        // Build Header Cells
-        for (int c = 0; c < colCount; c++)
-        {
-            var col = table.Columns[c];
-            var headerBorder = new Border
-            {
-                Background = headerBrush,
-                BorderBrush = borderBrush,
-                BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : 1), 1),
-                Padding = new Thickness(12, 6)
-            };
-
-            var headerGrid = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitions("*,Auto")
-            };
-
-            var headerText = new TextBlock
-            {
-                Text = col.Header,
-                FontSize = 12,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = onSurfaceBrush,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextAlignment = col.IsNumeric ? TextAlignment.Right : TextAlignment.Left
-            };
-            Grid.SetColumn(headerText, 0);
-            headerGrid.Children.Add(headerText);
-
-            var icon = new MaterialIcon
-            {
-                Kind = MaterialIconKind.Menu,
-                Width = 13,
-                Height = 13,
-                Foreground = onSurfaceMutedBrush,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(6, 0, 0, 0)
-            };
-            Grid.SetColumn(icon, 1);
-            headerGrid.Children.Add(icon);
-
-            headerBorder.Child = headerGrid;
-
-            Grid.SetRow(headerBorder, 0);
-            Grid.SetColumn(headerBorder, c);
-            _tableGrid.Children.Add(headerBorder);
-        }
-
-        // Data Rows definition and cells
-        var rowBgEven = ResolveBrush("M3SurfaceContainerLowestBrush", "#0B0E11");
-        var rowBgOdd = ResolveBrush("M3SurfaceContainerLowBrush", "#161A1F");
-        var monospaceFont = new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
-
-        for (int r = 0; r < table.Rows.Count; r++)
-        {
-            _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-
-            var row = table.Rows[r];
-            var rowBg = (r % 2 == 0) ? rowBgEven : rowBgOdd;
-            bool isLastRow = (r == table.Rows.Count - 1);
-
-            for (int c = 0; c < colCount; c++)
-            {
-                var cell = (c < row.Cells.Count) ? row.Cells[c] : null;
-                var cellText = cell?.DisplayText ?? string.Empty;
-
-                var cellBorder = new Border
-                {
-                    Background = rowBg,
-                    BorderBrush = borderBrush,
-                    BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : 1), isLastRow ? 0 : 1),
-                    Padding = new Thickness(12, 5.5)
-                };
-
-                var textBlock = new SelectableTextBlock
-                {
-                    Text = cellText,
-                    FontSize = 12,
-                    FontFamily = monospaceFont,
-                    Foreground = onSurfaceBrush,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    TextAlignment = (cell?.Alignment ?? TextAlignment.Left)
-                };
-
-                cellBorder.Child = textBlock;
-
-                Grid.SetRow(cellBorder, r + 1);
-                Grid.SetColumn(cellBorder, c);
-                _tableGrid.Children.Add(cellBorder);
-            }
-        }
+        catch { }
     }
 }

@@ -737,8 +737,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             var clipboard = Avalonia.Application.Current?.ApplicationLifetime switch
             {
-                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop => desktop.MainWindow?.Clipboard,
-                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView => Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop =>
+                    desktop.Windows.FirstOrDefault(w => w.IsActive)?.Clipboard ?? desktop.MainWindow?.Clipboard,
+                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView =>
+                    Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
                 _ => null
             };
             if (clipboard != null)
