@@ -51,6 +51,114 @@ internal static class StudioSnapshots
         for (int i = 1; i <= 3; i++) await storage.CreateNewScriptAsync($"Loose script {i}");
     }
 
+    private static async Task SeedDemoWorkspaceFiles(LocalScriptStorageService storage)
+    {
+        var root = storage.ActiveWorkspaceRootPath;
+        var assetsDir = Path.Combine(root, "assets");
+        Directory.CreateDirectory(assetsDir);
+        var dataDir = Path.Combine(root, "data");
+        Directory.CreateDirectory(dataDir);
+        var scriptsDir = Path.Combine(root, "scripts");
+        Directory.CreateDirectory(scriptsDir);
+
+        // 1. Image assets (binary PNG & JPG)
+        var repoLogo = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "app-logo.png");
+        var repoBanner = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "frysharp-thumbnail.jpg");
+
+        if (File.Exists(repoLogo))
+        {
+            File.Copy(repoLogo, Path.Combine(assetsDir, "logo.png"), overwrite: true);
+        }
+        else
+        {
+            byte[] pngBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            await File.WriteAllBytesAsync(Path.Combine(assetsDir, "logo.png"), pngBytes);
+        }
+
+        if (File.Exists(repoBanner))
+        {
+            File.Copy(repoBanner, Path.Combine(assetsDir, "banner.jpg"), overwrite: true);
+        }
+        else
+        {
+            byte[] jpgBytes = Convert.FromBase64String("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=");
+            await File.WriteAllBytesAsync(Path.Combine(assetsDir, "banner.jpg"), jpgBytes);
+        }
+
+        // 2. Data files (.csv, .pdf)
+        string csvContent = """
+            id,metric,value,timestamp,status
+            1,cpu_usage,42.5,2026-10-02T10:00:00Z,ok
+            2,memory_usage,68.2,2026-10-02T10:01:00Z,ok
+            3,disk_io,120.4,2026-10-02T10:02:00Z,warning
+            """;
+        await File.WriteAllTextAsync(Path.Combine(dataDir, "metrics.csv"), csvContent);
+
+        byte[] pdfBytes = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n173\n%%EOF\n"u8.ToArray();
+        await File.WriteAllBytesAsync(Path.Combine(dataDir, "report.pdf"), pdfBytes);
+
+        // 3. Config & documentation in root (.json, .txt)
+        string jsonContent = """
+            {
+              "project": "PdfEditorApp",
+              "environment": "Production",
+              "enableDiagnostics": true,
+              "cacheSizeMb": 512
+            }
+            """;
+        await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), jsonContent);
+
+        string notesContent = """
+            Workspace Notes
+            ===============
+            - All data files, images, and configs are accessible in scripts.
+            - Reference paths relative to workspace root (e.g. "data/metrics.csv", "assets/logo.png").
+            """;
+        await File.WriteAllTextAsync(Path.Combine(root, "notes.txt"), notesContent);
+
+        // 4. Multi-language scripts (.py, .cs)
+        string pythonContent = """
+            import csv
+            import os
+
+            print("Processing workspace files...")
+            with open("data/metrics.csv", mode="r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    print(f"Metric {row['metric']}: {row['value']} ({row['status']})")
+            print("Done!")
+            """;
+        await File.WriteAllTextAsync(Path.Combine(scriptsDir, "process.py"), pythonContent);
+
+        // 5. Documentation (.md)
+        var docsDir = Path.Combine(root, "docs");
+        Directory.CreateDirectory(docsDir);
+        string guideContent = """
+            # Analytics Dashboard Guide
+
+            Welcome to the **C# Code Studio** workspace documentation.
+
+            ## Overview
+            This workspace includes integrated script automation, polyglot notebooks, and raw data assets:
+
+            - **Assets**: Application logo (`assets/logo.png`) and banner (`assets/banner.jpg`).
+            - **Data**: Performance metrics (`data/metrics.csv`) and PDF documentation (`data/report.pdf`).
+            - **Scripts**: Python automation (`scripts/process.py`) and Roslyn algorithms.
+
+            ### Quick Code Example
+            ```csharp
+            using System;
+            using System.IO;
+
+            var lines = File.ReadAllLines("data/metrics.csv");
+            Console.WriteLine($"Loaded {lines.Length} metric lines.");
+            ```
+
+            > **Tip**: Toggle between **Preview Mode** and **Edit Mode** anytime using `Ctrl+Shift+V` or the toolbar button!
+            """;
+        await File.WriteAllTextAsync(Path.Combine(docsDir, "guide.md"), guideContent);
+    }
+
     private static void ExpandAll(IEnumerable<ExplorerItemViewModel> items)
     {
         foreach (var item in items.Where(i => i.IsDirectory))
@@ -81,14 +189,9 @@ internal static class StudioSnapshots
 
         // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
         if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
+        if (options.Flag("demo-files")) Snapshot.Wait(SeedDemoWorkspaceFiles(storage));
 
-        // A source file (main.py) is copied into the throwaway workspace and opened as one; any other file is a C# script.
-        var sourceLanguage = languages.Registry.FindSourceFileLanguage(file);
-        var script = file != null && sourceLanguage == null
-            ? new ScriptDocumentItem { Title = Path.GetFileName(file), Code = File.ReadAllText(file) }
-            : file != null
-                ? new ScriptDocumentItem { Title = "Notes" }
-                : Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem())!);
+        var script = Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem())!);
 
         // Throwaway progress too: --run-tests marks a Blind 75 problem solved when all its cases pass.
         var vm = new CSharpCodeStudioViewModel(
@@ -100,11 +203,30 @@ internal static class StudioSnapshots
             backToHomeAction: () => { },
             blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("blind75-progress")),
             languages: languages);
-        if (file != null && sourceLanguage != null) OpenSourceFile(vm, storage, file);
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : sourceLanguage != null || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
-        vm.IsSideBarVisible = true;
-        if (options.Int("tree", 0) > 0) ExpandAll(vm.ExplorerRootItems);
+
+        if (file != null)
+        {
+            OpenSourceFile(vm, storage, file);
+            var keepTab = vm.OpenTabs.FirstOrDefault(t => t.Id == vm.Script.Id);
+            if (keepTab != null) Snapshot.Wait(vm.CloseOtherTabsAsync(keepTab));
+        }
+        else
+        {
+            Snapshot.Wait(vm.RefreshExplorerAsync());
+        }
+
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : file != null || options.Flag("demo-files") || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
+        if (options.Int("tree", 0) > 0 || options.Flag("demo-files")) ExpandAll(vm.ExplorerRootItems);
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
+        if (options.Flag("image-code")) vm.ShowImageCodeDrawer = true;
+        if (options.Flag("edit-raw"))
+        {
+            if (vm.IsDocumentPreviewMode) vm.ToggleDocumentPreviewModeCommand.Execute(null);
+        }
+        else if (options.Flag("preview"))
+        {
+            if (!vm.IsDocumentPreviewMode) vm.ToggleDocumentPreviewModeCommand.Execute(null);
+        }
 
         if (options.Value("zoom") is { } zoomStr && double.TryParse(zoomStr, System.Globalization.CultureInfo.InvariantCulture, out var zoomSize))
         {
@@ -264,11 +386,43 @@ internal static class StudioSnapshots
     // The file goes into the workspace under its own name and is opened from the Explorer, as a person would.
     private static void OpenSourceFile(CSharpCodeStudioViewModel vm, LocalScriptStorageService storage, string file)
     {
-        var copy = Path.Combine(storage.LibraryRootPath, Path.GetFileName(file));
-        File.Copy(file, copy, overwrite: true);
+        var fullPath = Path.IsPathRooted(file) && File.Exists(file)
+            ? file
+            : Path.Combine(storage.ActiveWorkspaceRootPath, file);
+
+        if (!File.Exists(fullPath) && File.Exists(file))
+        {
+            var copy = Path.Combine(storage.ActiveWorkspaceRootPath, Path.GetFileName(file));
+            File.Copy(file, copy, overwrite: true);
+            fullPath = copy;
+        }
+
         Snapshot.Wait(vm.RefreshExplorerAsync());
-        var item = vm.ExplorerRootItems.First(i => string.Equals(i.Name, Path.GetFileName(file), StringComparison.OrdinalIgnoreCase));
-        Snapshot.Wait(vm.SwitchToScriptAsync(item));
+        var fileName = Path.GetFileName(file);
+        var item = FindItem(vm.ExplorerRootItems, fileName)
+            ?? FindItem(vm.ExplorerRootItems, fullPath);
+
+        if (item != null)
+        {
+            Snapshot.Wait(vm.SwitchToScriptAsync(item));
+        }
+    }
+
+    private static ExplorerItemViewModel? FindItem(IEnumerable<ExplorerItemViewModel> items, string target)
+    {
+        foreach (var item in items)
+        {
+            if (string.Equals(item.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(item.FullPath, target, StringComparison.OrdinalIgnoreCase) ||
+                item.FullPath.EndsWith(Path.DirectorySeparatorChar + target, StringComparison.OrdinalIgnoreCase) ||
+                item.FullPath.EndsWith("/" + target, StringComparison.OrdinalIgnoreCase))
+            {
+                return item;
+            }
+            var found = FindItem(item.Children, target);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     // --debug <line>: a breakpoint on that line, then Debug (F5), returning once the debugger has paused there. The

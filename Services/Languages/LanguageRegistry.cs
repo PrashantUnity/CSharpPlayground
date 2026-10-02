@@ -16,7 +16,7 @@ public sealed class LanguageRegistry
 
     /// <summary>Languages kept as plain source files, in registration order (these get "New … File" entries).</summary>
     public IReadOnlyList<ILanguageDefinition> SourceFileLanguages =>
-        All.Where(l => l.Storage == LanguageStorageKind.SourceFile).ToArray();
+        All.Where(l => l.Storage == LanguageStorageKind.SourceFile && l.Id != LanguageIds.Text).ToArray();
 
     /// <summary>Languages a notebook cell can be written in.</summary>
     public IReadOnlyList<ILanguageDefinition> NotebookLanguages =>

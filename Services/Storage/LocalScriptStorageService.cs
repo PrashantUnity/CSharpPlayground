@@ -378,10 +378,49 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         foreach (var file in files)
         {
-            if (_languages.FindSourceFileLanguage(file) is { } language) list.Add(SourceFileSummary(file, language, root));
+            if (file.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
+                file.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+                file.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (_languages.FindSourceFileLanguage(file) is { } language && language.Id != LanguageIds.Text)
+            {
+                list.Add(SourceFileSummary(file, language, root));
+            }
+            else
+            {
+                list.Add(GenericFileSummary(file, root));
+            }
         }
 
         return list.OrderByDescending(x => x.LastModified).ToList();
+    }
+
+    private static readonly HashSet<string> KnownImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg", ".tiff", ".tif"
+    };
+
+    private WorkspaceItemSummary GenericFileSummary(string file, string root)
+    {
+        var ext = Path.GetExtension(file);
+        var isImg = KnownImageExtensions.Contains(ext);
+        return new WorkspaceItemSummary
+        {
+            Id = RegisterSourceFile(file),
+            Title = Path.GetFileNameWithoutExtension(file),
+            Description = isImg ? "Image asset" : (string.IsNullOrEmpty(ext) ? "File" : $"{ext.TrimStart('.').ToUpperInvariant()} file"),
+            Category = isImg ? "Images" : "Files",
+            Kind = WorkspaceItemKind.Script,
+            LanguageId = LanguageIds.Text,
+            LanguageName = isImg ? "Image" : (string.IsNullOrEmpty(ext) ? "File" : ext.TrimStart('.').ToUpperInvariant()),
+            FileExtension = ext,
+            IsSourceFile = false,
+            LastModified = LastWriteTimeUtc(file),
+            FolderPath = GetFolderPath(file),
+            IsExternalRoot = IsExternalWorkspaceActive,
+            WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
+        };
     }
 
     /// <summary>
@@ -899,7 +938,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
     {
         var summaries = await LoadWorkspaceSummariesAsync();
         var results = new List<ScriptProjectItem>();
-        foreach (var s in summaries.Where(x => !x.IsSourceFile))
+        foreach (var s in summaries.Where(x => !x.IsSourceFile && !IsSourceFileId(x.Id)))
         {
             if (s.IsNotebook)
             {
@@ -1068,6 +1107,17 @@ public partial class LocalScriptStorageService : IScriptStorageService
             {
                 return await OpenFolderAsync(folder);
             }
+        }
+
+        if (File.Exists(path))
+        {
+            var id = RegisterSourceFile(path);
+            return new OpenProjectResult(
+                Success: true,
+                Message: $"Opened file '{Path.GetFileName(path)}'",
+                PrimaryDocumentId: id,
+                PrimaryDocumentKind: WorkspaceItemKind.Script,
+                DocumentsLoadedCount: 1);
         }
 
         var sourceExtensions = string.Concat(_languages.SourceFileLanguages.SelectMany(l => l.FileExtensions).Select(e => ", " + e));

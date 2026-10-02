@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:codeStudio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioCsvPreviewControl"
+             x:DataType="codeStudio:CSharpCodeStudioViewModel">
+
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource DsBgBrush}">
+        <!-- 1. Top Action & Metadata Header Bar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Height="38"
+                Padding="14,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Table Mode Badge & Summary Metrics -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Background="#2EA043" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="DATA TABLE" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                    </Border>
+                    <TextBlock Text="{Binding Script.Title}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DsTextWhiteBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CsvDimensionsSummary}"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    </Border>
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CsvDelimiterSummary, StringFormat='Delimiter: {0}'}"
+                                   FontSize="10.5"
+                                   Foreground="{DynamicResource DsMutedBrush}" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Quick Export & Edit Actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Copy as Markdown Table -->
+                    <Button Command="{Binding CopyCsvAsMarkdownCommand}"
+                            Classes="cs-toolbar-tonal"
+                            Height="26"
+                            Padding="8,0"
+                            CornerRadius="4"
+                            ToolTip.Tip="Copy Table as Markdown Grid">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy Markdown" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Copy as JSON Array -->
+                    <Button Command="{Binding CopyCsvAsJsonCommand}"
+                            Classes="cs-toolbar-tonal"
+                            Height="26"
+                            Padding="8,0"
+                            CornerRadius="4"
+                            ToolTip.Tip="Copy Data as JSON Array of Objects">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="CodeJson" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy JSON" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Switch to Edit Raw Mode -->
+                    <Button Command="{Binding ToggleDocumentPreviewModeCommand}"
+                            Classes="cs-toolbar-tonal"
+                            Height="26"
+                            Padding="8,0"
+                            CornerRadius="4"
+                            ToolTip.Tip="Switch to Raw Text Editor (Ctrl+Shift+V)">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Edit Raw CSV" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Interactive Table Canvas -->
+        <Border Grid.Row="1" Padding="16,12" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <views:DumpTableView DataContext="{Binding ActiveCsvTable}" />
+        </Border>
+    </Grid>
+</UserControl>

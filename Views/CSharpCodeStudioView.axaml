@@ -497,6 +497,23 @@
                                 </StackPanel>
                             </Button>
 
+                            <!-- Preview / Edit Mode Toggle (Markdown & CSV) -->
+                            <Button Command="{Binding ToggleDocumentPreviewModeCommand}"
+                                    Classes="cs-toolbar-tonal"
+                                    Background="{DynamicResource DsSurfaceHighBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1"
+                                    Height="26"
+                                    Padding="8,0"
+                                    CornerRadius="4"
+                                    IsVisible="{Binding HasPreviewMode}"
+                                    ToolTip.Tip="{Binding DocumentPreviewModeTooltip}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="{Binding DocumentPreviewToggleIconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="{Binding DocumentPreviewToggleText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                </StackPanel>
+                            </Button>
+
                             <Rectangle Width="1" Height="16" Fill="{DynamicResource DsBorderBrush}" Margin="2,0" />
 
                             <!-- Apply as Studio Customization -->
@@ -552,7 +569,8 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0" Name="EditorHostGrid">
-                        <Border Background="{DynamicResource DsBgBrush}">
+                        <Border Background="{DynamicResource DsBgBrush}"
+                                IsVisible="{Binding ShowTextEditor}">
                             <avaloniaEdit:TextEditor Name="Editor"
                                                      FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace"
                                                      FontSize="{Binding EditorFontSize}"
@@ -563,6 +581,15 @@
                                                      Background="{DynamicResource DsBgBrush}"
                                                      Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </Border>
+
+                        <!-- Authentic VS Code Visual Image Viewer -->
+                        <studio:StudioImageViewerControl IsVisible="{Binding IsActiveDocumentImage}" />
+
+                        <!-- Rendered Markdown Preview Surface -->
+                        <studio:StudioMarkdownPreviewControl IsVisible="{Binding ShowMarkdownPreview}" />
+
+                        <!-- Interactive CSV / TSV Data Table Surface -->
+                        <studio:StudioCsvPreviewControl IsVisible="{Binding ShowCsvPreview}" />
 
                         <!-- Live Debug Hover Data Tip Card -->
                         <editor:DebugHoverDataTipControl Name="DebugHoverTip"

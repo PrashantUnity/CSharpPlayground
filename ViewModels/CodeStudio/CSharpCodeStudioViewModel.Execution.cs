@@ -420,6 +420,11 @@ public partial class CSharpCodeStudioViewModel
     {
         if (IsExecuting) return;
 
+        if (ActiveLanguage.Id == LanguageIds.Text || ActiveLanguage.Capabilities == LanguageCapabilities.None)
+        {
+            CompilerStatusText = $"ℹ️ '{Script?.Title ?? "File"}' is a text/asset file and cannot be executed directly.";
+            return;
+        }
         if (ActiveLanguage.ScriptRunner != null)
         {
             await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage);

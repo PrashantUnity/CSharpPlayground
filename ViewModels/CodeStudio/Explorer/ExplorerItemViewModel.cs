@@ -97,6 +97,28 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public Thickness IndentPadding => new Thickness(Math.Max(4, (Depth * 14) + 4), 0, 4, 0);
 
+    public static (string IconKind, string IconColor) IconForExtension(string ext)
+    {
+        return ext.ToLowerInvariant() switch
+        {
+            ".frynb" or ".ipynb" => ("NotebookOutline", NotebookAmberHex),
+            ".cs" or ".frycs" => ("LanguageCsharp", "#58A6FF"),
+            ".json" => ("CodeJson", "#E5C07B"),
+            ".md" => ("FormatHeaderPound", "#4EC9B0"),
+            ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif" => ("ImageOutline", "#C586C0"),
+            ".csv" or ".tsv" => ("Table", "#75D59A"),
+            ".pdf" => ("FilePdfBox", "#F14C4C"),
+            ".xml" or ".xaml" or ".axaml" or ".html" or ".htm" => ("Xml", "#E5C07B"),
+            ".yaml" or ".yml" => ("FileCodeOutline", "#CB88FF"),
+            ".sql" => ("DatabaseOutline", "#DCDCAA"),
+            ".zip" or ".tar" or ".gz" or ".7z" or ".rar" => ("ZipBoxOutline", "#CE9178"),
+            ".mp3" or ".wav" or ".ogg" or ".flac" => ("MusicNote", "#4EC9B0"),
+            ".mp4" or ".mov" or ".avi" or ".mkv" or ".webm" => ("VideoOutline", "#4EC9B0"),
+            ".txt" or ".log" or ".ini" or ".env" or ".config" => ("FileDocumentOutline", "#8B949E"),
+            _ => ("FileOutline", "#8B949E")
+        };
+    }
+
     public string IconKind
     {
         get
@@ -107,16 +129,7 @@ public partial class ExplorerItemViewModel : ObservableObject
             }
 
             if (LanguageIconKind != null) return LanguageIconKind;
-
-            return FileExtension.ToLowerInvariant() switch
-            {
-                ".frynb" or ".ipynb" => "NotebookOutline",
-                ".cs" or ".frycs" => "LanguageCsharp",
-                ".json" => "CodeJson",
-                ".md" => "FormatHeaderPound",
-                ".png" or ".jpg" or ".jpeg" or ".svg" => "ImageOutline",
-                _ => "FileOutline"
-            };
+            return IconForExtension(FileExtension).IconKind;
         }
     }
 
@@ -126,16 +139,7 @@ public partial class ExplorerItemViewModel : ObservableObject
         {
             if (IsDirectory) return NotebookAmberHex;
             if (LanguageIconColor != null) return LanguageIconColor;
-
-            return FileExtension.ToLowerInvariant() switch
-            {
-                ".frynb" or ".ipynb" => NotebookAmberHex,
-                ".cs" or ".frycs" => "#58A6FF",
-                ".json" => "#E5C07B",
-                ".md" => "#4EC9B0",
-                ".png" or ".jpg" or ".jpeg" or ".svg" => "#C586C0",
-                _ => "#8B949E"
-            };
+            return IconForExtension(FileExtension).IconColor;
         }
     }
 
@@ -150,6 +154,7 @@ public partial class ExplorerItemViewModel : ObservableObject
     public Action<ExplorerItemViewModel>? OnRenameCommitted { get; set; }
     public Action<ExplorerItemViewModel>? OnDuplicateRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnCopyPathRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnCopyRelativePathRequested { get; set; }
 
     partial void OnDepthChanged(int value)
     {
@@ -272,5 +277,11 @@ public partial class ExplorerItemViewModel : ObservableObject
     public void RequestCopyPath()
     {
         OnCopyPathRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestCopyRelativePath()
+    {
+        OnCopyRelativePathRequested?.Invoke(this);
     }
 }

@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="Markdig" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>

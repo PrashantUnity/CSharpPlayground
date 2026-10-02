@@ -13,10 +13,25 @@ public partial class CSharpCodeStudioViewModel
         var sourceLanguage = (document.SourceFilePath != null || !string.Equals(document.LanguageId, PdfEditorApp.Plugins.CSharpEditor.Services.Languages.LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase))
             ? _languages.LanguageOf(document)
             : null;
+
+        var iconKind = sourceLanguage?.IconKind;
+        var iconColor = sourceLanguage?.AccentHex;
+
+        if (sourceLanguage == null || sourceLanguage.Id == PdfEditorApp.Plugins.CSharpEditor.Services.Languages.LanguageIds.Text)
+        {
+            var ext = Path.GetExtension(document.SourceFilePath ?? document.Title);
+            if (!string.IsNullOrEmpty(ext))
+            {
+                var (extIcon, extColor) = Explorer.ExplorerItemViewModel.IconForExtension(ext);
+                iconKind = extIcon;
+                iconColor = extColor;
+            }
+        }
+
         return new Common.StudioTabItemViewModel(document, isActive)
         {
-            LanguageIconKind = sourceLanguage?.IconKind,
-            LanguageIconColor = sourceLanguage?.AccentHex,
+            LanguageIconKind = iconKind,
+            LanguageIconColor = iconColor,
             OnSelect = t => SafeTabAction(() => SwitchToTabAsync(t), "SwitchTab"),
             OnClose = t => SafeTabAction(() => CloseTabAsync(t), "CloseTab"),
             OnCloseOthers = t => SafeTabAction(() => CloseOtherTabsAsync(t), "CloseOtherTabs"),
@@ -72,6 +87,13 @@ public partial class CSharpCodeStudioViewModel
                 currentTab.IsDebugging = IsDebugging;
                 currentTab.IsPaused = IsPaused;
                 currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
+                currentTab.ImageZoomFactor = ImageZoomFactor;
+                currentTab.ImageFitToWindow = ImageFitToWindow;
+                currentTab.ShowImageCodeDrawer = ShowImageCodeDrawer;
+                currentTab.IsDocumentPreviewMode = IsDocumentPreviewMode;
+                currentTab.CsvTable = ActiveCsvTable;
+                currentTab.CsvDimensionsSummary = CsvDimensionsSummary;
+                currentTab.CsvDelimiterSummary = CsvDelimiterSummary;
                 CopyItems(currentTab.Diagnostics, Diagnostics);
                 CopyItems(currentTab.DumpResults, DumpResults);
                 CopyItems(currentTab.RichOutputs, RichOutputs);
@@ -97,6 +119,9 @@ public partial class CSharpCodeStudioViewModel
             {
                 _isRestoringTabState = false;
             }
+
+            UpdateImageStateForDocument(tab.Document);
+            UpdatePreviewStateForDocument(tab.Document, tab.IsDocumentPreviewMode);
 
             IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
             SelectedLanguageModeIndex = tab.Document.ExecutionMode switch

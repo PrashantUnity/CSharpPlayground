@@ -419,7 +419,8 @@ public partial class CSharpCodeStudioViewModel
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -444,7 +445,8 @@ public partial class CSharpCodeStudioViewModel
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -920,8 +922,19 @@ public partial class CSharpCodeStudioViewModel
     public void CopyItemPath(Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
-        var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
-        CompilerStatusText = $"Path: {path}";
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        var abs = Path.GetFullPath(Path.Combine(_storageService.ActiveWorkspaceRootPath, rel.Replace('/', Path.DirectorySeparatorChar)));
+        _ = CopyTextToClipboardAsync(abs);
+        CompilerStatusText = $"Copied full path: {abs}";
+    }
+
+    [RelayCommand]
+    public void CopyItemRelativePath(Explorer.ExplorerItemViewModel item)
+    {
+        if (item == null) return;
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        _ = CopyTextToClipboardAsync(rel);
+        CompilerStatusText = $"Copied relative path: {rel}";
     }
 
     [RelayCommand]

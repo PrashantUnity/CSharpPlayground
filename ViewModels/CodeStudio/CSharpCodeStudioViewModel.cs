@@ -349,6 +349,8 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         RefreshFilteredTemplates();
 
         OpenTabs.Add(CreateTab(script, isActive: true));
+        UpdateImageStateForDocument(script);
+        UpdatePreviewStateForDocument(script);
 
         QuickOpen.RequestGoToLine += line => RequestGoToLine?.Invoke(line);
         InitializeQuickOpenCommands();
@@ -413,6 +415,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         }
         TriggerDiagnosticsCheck();
         RefreshDocumentNuGetPackages();
+        if (IsActiveDocumentCsv && IsDocumentPreviewMode)
+        {
+            RefreshActiveDocumentPreview();
+        }
     }
 
     partial void OnNotesChanged(string value)

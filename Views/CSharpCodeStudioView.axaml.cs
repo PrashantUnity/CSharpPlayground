@@ -223,6 +223,17 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             return;
         }
 
+        // Ctrl+Shift+V / Cmd+Shift+V: Toggle Preview Mode (Markdown / CSV)
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.V)
+        {
+            if (_currentVm.HasPreviewMode)
+            {
+                _currentVm.ToggleDocumentPreviewModeCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.F5 && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)) &&
             !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !_currentVm.IsExecuting && !_currentVm.IsDebugging)
         {

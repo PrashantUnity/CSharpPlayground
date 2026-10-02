@@ -80,7 +80,12 @@
                                 </MenuItem.Icon>
                             </MenuItem>
                             <Separator />
-                            <MenuItem Header="Copy Path" Command="{Binding RequestCopyPathCommand}">
+                            <MenuItem Header="Copy Relative Path" Command="{Binding RequestCopyRelativePathCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FileTreeOutline" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Copy Full Path" Command="{Binding RequestCopyPathCommand}">
                                 <MenuItem.Icon>
                                     <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
                                 </MenuItem.Icon>

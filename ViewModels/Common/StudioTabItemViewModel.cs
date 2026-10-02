@@ -102,6 +102,20 @@ public partial class StudioTabItemViewModel : ObservableObject
     public string? LanguageIconColor { get; init; }
     public bool HasLanguageIcon => LanguageIconKind != null;
 
+    public bool IsImage { get; set; }
+    public Avalonia.Media.Imaging.Bitmap? ImageBitmap { get; set; }
+    public string ImageDimensionsText { get; set; } = string.Empty;
+    public string ImageFileSizeText { get; set; } = string.Empty;
+    public string ImageFormatText { get; set; } = string.Empty;
+    public double ImageZoomFactor { get; set; } = 1.0;
+    public bool ImageFitToWindow { get; set; } = true;
+    public bool ShowImageCodeDrawer { get; set; }
+
+    public bool? IsDocumentPreviewMode { get; set; }
+    public DumpTableResult? CsvTable { get; set; }
+    public string CsvDimensionsSummary { get; set; } = string.Empty;
+    public string CsvDelimiterSummary { get; set; } = "Comma (,)";
+
     public Action<StudioTabItemViewModel>? OnSelect { get; set; }
     public Action<StudioTabItemViewModel>? OnClose { get; set; }
     public Action<StudioTabItemViewModel>? OnCloseOthers { get; set; }
