@@ -47,9 +47,11 @@ public partial class LanguageEnvironmentSettingControl : UserControl
     private async void OnRunActionClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { DataContext: ToolchainAction action } &&
-            DataContext is LanguageSettingItemViewModel vm &&
-            vm.Provider != null)
+            DataContext is LanguageSettingItemViewModel vm)
         {
+            var provider = vm.Provider ?? vm.DotNetProvider;
+            if (provider == null) return;
+
             vm.IsRunningAction = true;
             vm.ActionStatusMessage = $"Executing {action.Label}…";
             vm.ActionOutputLog = $"--- Starting {action.Label} ---\n";
@@ -65,7 +67,7 @@ public partial class LanguageEnvironmentSettingControl : UserControl
             try
             {
                 var query = new ToolchainQuery(null, null);
-                var result = await Task.Run(() => vm.Provider.RunActionAsync(action.Id, query, Append));
+                var result = await Task.Run(() => provider.RunActionAsync(action.Id, query, Append));
                 vm.ActionStatusMessage = result.Success ? result.Message : $"⚠️ {result.Message}";
                 vm.ActionOutputLog += $"\n[Finished: {result.Message}]\n";
             }

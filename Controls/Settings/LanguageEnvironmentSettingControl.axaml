@@ -6,6 +6,7 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:toolchains="using:PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains"
              xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:local="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.LanguageEnvironmentSettingControl"
              x:DataType="settings:LanguageSettingItemViewModel"
@@ -54,13 +55,24 @@
                             <TextBlock Text="{Binding RuntimeDescription}" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>
 
-                        <!-- Status Badge -->
-                        <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                                <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" />
-                                <TextBlock Text="{Binding StatusBadge}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
-                            </StackPanel>
-                        </Border>
+                        <!-- Quick Test & Status Badge -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{Binding TestHelloWorldCommand}"
+                                    IsEnabled="{Binding !IsTestingHelloWorld}"
+                                    Classes="snippet-action-btn"
+                                    ToolTip.Tip="Run Hello World verification test with active runtime">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsGreenBrush}" />
+                                    <TextBlock Text="{Binding TestButtonLabel}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                    <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" />
+                                    <TextBlock Text="{Binding StatusBadge}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -117,22 +129,13 @@
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <Button Click="OnCopyStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding CanCopy}" ToolTip.Tip="Copy to clipboard">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" />
-                                                        <TextBlock Text="{Binding CopyButtonLabel}" FontSize="10.5" VerticalAlignment="Center" />
-                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" /><TextBlock Text="{Binding CopyButtonLabel}" FontSize="10.5" /></StackPanel>
                                                 </Button>
                                                 <Button Click="OnRunStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding IsRunnable}" ToolTip.Tip="Execute setup command">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="12" Height="12" />
-                                                        <TextBlock Text="Install / Run" FontSize="10.5" VerticalAlignment="Center" />
-                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="12" Height="12" /><TextBlock Text="Install / Run" FontSize="10.5" /></StackPanel>
                                                 </Button>
                                                 <Button Click="OnOpenStepUrlClick" Classes="snippet-action-btn" IsVisible="{Binding HasUrl}" ToolTip.Tip="Open website link">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="12" Height="12" />
-                                                        <TextBlock Text="Open Link" FontSize="10.5" VerticalAlignment="Center" />
-                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="OpenInNew" Width="12" Height="12" /><TextBlock Text="Open Link" FontSize="10.5" /></StackPanel>
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
@@ -242,7 +245,10 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 5. ENVIRONMENT ACTIONS & SETUP CARD -->
+                <!-- 5. RUNTIME HEALTH & HELLO WORLD CHECK CARD -->
+                <local:RuntimeVerificationCardControl />
+
+                <!-- 6. ENVIRONMENT ACTIONS & SETUP CARD -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
                         BorderThickness="1"

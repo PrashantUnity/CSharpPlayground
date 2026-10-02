@@ -113,6 +113,10 @@ internal static class HubAndDocsSnapshots
                 if (target.IsToolchainLanguage) Snapshot.Wait(vm.RefreshLanguageToolchainAsync(target));
             }
         }
+        if (options.Flag("test-hello-world") && vm.SelectedLanguage is { } selected)
+        {
+            Snapshot.Wait(selected.TestHelloWorldAsync());
+        }
         var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         string defaultName = options.Value("name") switch
         {
