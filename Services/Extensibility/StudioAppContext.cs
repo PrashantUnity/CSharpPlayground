@@ -85,5 +85,17 @@ public class StudioAppContext : IStudioApp
         {
             HookRegistry.InvokeThemeChanged(themeId);
         };
+
+        // Built-in showcase command: Floating Snake Game window
+        CommandPipeline.Register(
+            "game.snake",
+            "Play Snake Game (Floating Window)",
+            () =>
+            {
+                var window = new SnakeGameWindow(this);
+                window.Show();
+            },
+            gesture: "Ctrl+Alt+G",
+            category: "Games");
     }
 }

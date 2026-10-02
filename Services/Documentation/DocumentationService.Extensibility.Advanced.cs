@@ -277,101 +277,172 @@ public partial class DocumentationService
     }
 
     // =========================================================================
-    // CHAPTER 10: MULTI-FILE EXTENSIONS & MANIFEST ARCHITECTURE
+    // =========================================================================
+    // CHAPTER 10: BUILDING APPS & MULTI-FILE EXTENSIONS
     // =========================================================================
     private DocArticle CreateMultiFileExtensionsArticle()
     {
         return new DocArticle
         {
             Id = "extensibility_ch10_extensions",
-            Title = "10. Multi-File Extensions & Manifest Architecture",
-            Subtitle = "Package, distribute, and load multi-file plugins with isolated contexts.",
-            ReadingTime = "5 min read",
-            Summary = "Package multi-file C# extensions with an extension.json manifest, isolated assembly loading, and clean activation lifecycles.",
-            Keywords = new List<string> { "extensions", "manifest", "extension.json", "plugins", "packaging", "assemblyloadcontext", "entryPoint", "lifecycle" },
+            Title = "10. Building Apps & Multi-File Extensions",
+            Subtitle = "Create standalone interactive apps with scripts, floating Avalonia windows, and multi-file plugins.",
+            ReadingTime = "6 min read",
+            Summary = "Master building interactive desktop apps, games (like the floating Snake Game), and multi-file extensions with manifests, lifecycle tracking, and hot-reload.",
+            Keywords = new List<string> { "extensions", "apps", "snake game", "floating window", "manifest", "extension.json", "plugins", "packaging", "assemblyloadcontext", "entryPoint", "lifecycle", "dispatcher" },
             Sections = new List<DocSection>
             {
                 new()
                 {
-                    Heading = "Extension Package Structure",
-                    Content = "For larger plugins, multi-file extensions reside in '.frysharp/extensions/<PackageName>/' or '~/.frysharp/extensions/'. Each package contains an 'extension.json' manifest and one or more C# source files.",
-                    CalloutType = DocCalloutType.Info,
-                    CalloutText = "Multi-file extensions are compiled into isolated AssemblyLoadContexts and watch their directory for live hot-reload."
+                    Heading = "Core Philosophy: In-App Scripting & Custom Apps",
+                    Content = "C# Code Studio is a live, programmable C# execution platform powered by Roslyn and Avalonia. Any developer can build full interactive desktop apps, floating tools, custom monitors, or games right inside the IDE using standard C# and Avalonia controls.",
+                    CalloutType = DocCalloutType.Tip,
+                    CalloutText = "You can prototype any window or app in an active tab or script and evaluate it instantly into the live studio runtime using Ctrl+Alt+R (Cmd+Alt+R on macOS)."
                 },
                 new()
                 {
-                    Heading = "The Manifest Schema",
-                    Content = "The 'extension.json' manifest defines package metadata and the entry point class:",
+                    Heading = "Step-by-Step: Anatomy of a Script-Based App",
+                    Content = "Building an interactive app in a C# script follows five core patterns:",
                     BulletPoints = new List<string>
                     {
-                        "id: Unique identifier (e.g. 'com.example.git_tools').",
-                        "name: Human-readable display name.",
-                        "version: Semantic version (e.g. '1.0.0').",
-                        "entryPoint: Fully qualified class implementing IExtensionEntryPoint.",
-                        "description: Summary of what the extension provides."
+                        "UI Thread Dispatch: Always instantiate and show Avalonia Windows on the UI thread using 'Dispatcher.UIThread.Post(() => { ... })'.",
+                        "Layout & Graphics: Use Avalonia primitives such as 'Canvas', 'Grid', 'Border', and 'SolidColorBrush' to construct your interface.",
+                        "Game & Telemetry Loops: Use 'DispatcherTimer' for frame loops, animations, or periodic background polling without locking the UI.",
+                        "Keyboard & Mouse Input: Listen to 'KeyDown' for WASD/Arrow controls and 'PointerPressed' with 'BeginMoveDrag(e)' for borderless floating windows.",
+                        "State Persistence: Save high scores, preferences, or counters using 'App.State.Get<T>()' and 'App.State.Set<T>()' across sessions."
                     }
                 },
                 new()
                 {
-                    Heading = "Implementing IExtensionEntryPoint",
-                    Content = "Your entry class implements 'OnActivate(IExtensionContext context)' and 'OnDeactivate()'. The context provides isolated state storage, package storage paths, and the ambient 'App' facade."
+                    Heading = "Showcase: The Floating Snake Game Window",
+                    Content = "The studio includes a built-in floating Snake Game showcase ('game.snake') demonstrating borderless Avalonia windows, 20x20 canvas grid rendering, wrap-around wall physics, self-collision detection, and persistent best scores stored in 'App.State'. It can be launched via keyboard shortcut Ctrl+Alt+G or 'await App.Commands.ExecuteAsync(\"game.snake\")'."
+                },
+                new()
+                {
+                    Heading = "Packaging Multi-File Extensions (.frysharp/extensions)",
+                    Content = "When your tool grows beyond a single script, package it as a multi-file extension inside '.frysharp/extensions/<PackageName>/' (project-scoped) or '~/.frysharp/extensions/' (user-global). The package contains an 'extension.json' manifest and C# source files.",
+                    CalloutType = DocCalloutType.Info,
+                    CalloutText = "Extensions are dynamically compiled into an isolated, collectible AssemblyLoadContext and automatically hot-reload when any source file is saved."
+                },
+                new()
+                {
+                    Heading = "Implementing IExtensionEntryPoint & Clean Disposal",
+                    Content = "The extension entry point class implements 'IExtensionEntryPoint'. Use 'InitializeAsync' to register commands and UI components, and 'TrackDisposable' so all registrations are automatically disposed on unload or hot-reload."
                 }
             },
             ApiSignatures = new List<DocApiSignature>
             {
-                new() { ReturnType = "void", MethodName = "IExtensionEntryPoint.OnActivate", Parameters = "IExtensionContext context", Description = "Called when the extension is loaded or hot-reloaded into memory." },
-                new() { ReturnType = "void", MethodName = "IExtensionEntryPoint.OnDeactivate", Parameters = "", Description = "Called before the extension assembly unloads to release unmanaged resources." },
-                new() { ReturnType = "IStudioApp", MethodName = "context.App", Parameters = "", Description = "The ambient studio application facade." },
-                new() { ReturnType = "ExtensionManifest", MethodName = "context.Manifest", Parameters = "", Description = "Metadata loaded from extension.json." },
-                new() { ReturnType = "IStateBag", MethodName = "context.State", Parameters = "", Description = "Isolated state store scoped exclusively to this extension package." }
+                new() { ReturnType = "Task", MethodName = "IExtensionEntryPoint.InitializeAsync", Parameters = "IExtensionContext context", Description = "Called when the extension is activated or hot-reloaded into memory." },
+                new() { ReturnType = "Task", MethodName = "IExtensionEntryPoint.DeactivateAsync", Parameters = "", Description = "Called before the extension unloads to release unmanaged resources." },
+                new() { ReturnType = "void", MethodName = "context.TrackDisposable", Parameters = "IDisposable disposable", Description = "Registers disposables (commands, UI widgets, hooks) for automatic cleanup on reload." },
+                new() { ReturnType = "T?", MethodName = "context.GetSetting<T>", Parameters = "string key", Description = "Reads a setting defined in extension.json with typed fallback." },
+                new() { ReturnType = "Task<bool>", MethodName = "App.Commands.ExecuteAsync", Parameters = "string commandId, object? parameter = null", Description = "Asynchronously invokes any registered command by ID (e.g. 'game.snake')." },
+                new() { ReturnType = "void", MethodName = "Dispatcher.UIThread.Post", Parameters = "Action action", Description = "Dispatches UI creation onto the Avalonia UI thread." }
+            },
+            Shortcuts = new List<DocShortcutItem>
+            {
+                new() { Action = "Launch Snake Game", MacKey = "Cmd+Alt+G", WinKey = "Ctrl+Alt+G", Description = "Opens the floating Snake Game window.", Category = "Games" },
+                new() { Action = "Run Active Script as Customization", MacKey = "Cmd+Alt+R", WinKey = "Ctrl+Alt+R", Description = "Instantly evaluates the current file into the live IDE runtime.", Category = "Customization" }
             },
             CodeSnippets = new List<DocCodeSnippet>
             {
                 new()
                 {
+                    Id = "ch10_snake_launch_snippet",
+                    Title = "Launching the Snake Game & Built-in Apps",
+                    Description = "Launch the showcase Snake Game via the asynchronous command pipeline or direct UI thread window instantiation.",
+                    Code = """
+                        using Avalonia.Threading;
+                        using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
+                        using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
+
+                        // Method 1: Asynchronously invoke registered command ID
+                        await App.Commands.ExecuteAsync("game.snake");
+
+                        // Method 2: Instantiate and show the floating window directly on the UI thread
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            var snake = new SnakeGameWindow(App);
+                            snake.Show();
+                        });
+                        """
+                },
+                CreateSnakeMiniAppScriptSnippet(),
+                new()
+                {
                     Id = "ch10_manifest_snippet",
                     Title = "extension.json Manifest Example",
-                    Description = "Configuration manifest placed at the root of the extension folder.",
+                    Description = "Configuration manifest declaring package metadata, settings, and main entry class.",
                     Code = """
                         {
-                          "id": "com.frypdf.extension.tools",
-                          "name": "Developer Power Tools",
+                          "id": "com.developer.arcade_tools",
+                          "name": "Arcade & Productivity Tools",
                           "version": "1.0.0",
-                          "author": "Codefry",
-                          "entryPoint": "MyExtension.PowerToolsPlugin",
-                          "description": "Custom developer commands, themes, and bottom deck widgets."
+                          "author": "Developer",
+                          "mainEntryClass": "MyArcadeExtension.ArcadeExtensionEntryPoint",
+                          "description": "Interactive mini-apps, floating games, and status bar widgets.",
+                          "settings": {
+                            "gameSpeed": {
+                              "key": "gameSpeed",
+                              "label": "Snake Game Speed (ms)",
+                              "type": "integer",
+                              "defaultValue": 115
+                            }
+                          }
                         }
                         """
                 },
                 new()
                 {
                     Id = "ch10_entrypoint_snippet",
-                    Title = "C# Entry Point Implementation",
-                    Description = "The main class implementing IExtensionEntryPoint inside the package.",
+                    Title = "Multi-File Extension Entry Point",
+                    Description = "Complete plugin implementing IExtensionEntryPoint with command registration, status bar widget, and automatic lifecycle tracking.",
                     Code = """
+                        using System;
+                        using System.Threading.Tasks;
+                        using Avalonia.Threading;
                         using FrySharp.Sdk;
+                        using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
 
-                        namespace MyExtension;
+                        namespace MyArcadeExtension;
 
-                        public class PowerToolsPlugin : IExtensionEntryPoint
+                        public class ArcadeExtensionEntryPoint : IExtensionEntryPoint
                         {
-                            private IDisposable? _commandRegistration;
-
-                            public void OnActivate(IExtensionContext context)
+                            public Task InitializeAsync(IExtensionContext context)
                             {
-                                // Register command using ambient App
-                                _commandRegistration = context.App.Commands.Register(
-                                    "powertools.greet",
-                                    "PowerTools: Greet",
-                                    () => context.App.UI.ShowSuccess("PowerTools extension activated!")
-                                );
+                                // 1. Read custom extension settings from extension.json
+                                int speed = context.GetSetting<int>("gameSpeed");
+                                if (speed <= 0) speed = 115;
 
-                                context.App.UI.ShowSuccess($"Extension {context.Manifest.Name} v{context.Manifest.Version} loaded!");
+                                // 2. Register command with automatic disposal tracking
+                                var cmd = context.App.Commands.Register(
+                                    "arcade.snake",
+                                    "Arcade: Play Snake Game",
+                                    () => Dispatcher.UIThread.Post(() => new SnakeGameWindow(context.App).Show()),
+                                    gesture: "Ctrl+Alt+G",
+                                    category: "Games"
+                                );
+                                context.TrackDisposable(cmd);
+
+                                // 3. Register a Status Bar widget
+                                var statusWidget = context.App.UI.RegisterStatusBarWidget(new StatusBarWidgetDescriptor
+                                {
+                                    Id = "arcade.snake.status",
+                                    Text = "🐍 Snake",
+                                    Tooltip = "Click to play Snake Game (Ctrl+Alt+G)",
+                                    CommandId = "arcade.snake",
+                                    Priority = 20
+                                });
+                                context.TrackDisposable(statusWidget);
+
+                                context.App.UI.ShowSuccess($"Extension '{context.Manifest.Name}' activated!");
+                                return Task.CompletedTask;
                             }
 
-                            public void OnDeactivate()
+                            public Task DeactivateAsync()
                             {
-                                _commandRegistration?.Dispose();
+                                // All tracked disposables (commands, widgets) are automatically disposed.
+                                return Task.CompletedTask;
                             }
                         }
                         """
