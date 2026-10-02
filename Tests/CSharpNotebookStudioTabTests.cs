@@ -332,18 +332,51 @@ public class CSharpNotebookStudioTabTests : IDisposable
     public async Task NotebookKernel_ExecuteSkiaSharp3_ExecutesSuccessfully()
     {
         var kernel = new NotebookExecutionKernel();
-        var code = @"#r ""nuget: SkiaSharp, 3.119.4""
-using SkiaSharp;
+        var code = """
+            #r "nuget: SkiaSharp, 3.119.4"
+            using SkiaSharp;
 
-var info = new SKImageInfo(480, 240);
-var surface = SKSurface.Create(info);
-var canvas = surface.Canvas;
+            var info = new SKImageInfo(480, 240);
+            var surface = SKSurface.Create(info);
+            var canvas = surface.Canvas;
 
-var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
-canvas.DrawCircle(100, 120, 50, paint);
+            var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+            canvas.DrawCircle(100, 120, 50, paint);
 
-Display.Image(surface.Snapshot());
-Console.WriteLine(""Success!"");";
+            Display.Image(surface.Snapshot());
+            Console.WriteLine("Success!");
+            """;
+
+        RichCellOutput? emittedRich = null;
+        var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => emittedRich = r);
+        if (!result.Success)
+        {
+            throw new Exception($"Kernel execution failed:\nConsole: {result.ConsoleOutput}\nError: {result.ErrorMessage}");
+        }
+        Assert.True(result.Success);
+        Assert.NotNull(emittedRich);
+        Assert.Equal(CellOutputKind.Image, emittedRich.Kind);
+        Assert.NotNull(emittedRich.ImageBytes);
+        Assert.True(emittedRich.ImageBytes.Length > 0);
+    }
+
+    [Fact]
+    public async Task NotebookKernel_ExecuteSkiaSharpBitmap_ExecutesSuccessfully()
+    {
+        var kernel = new NotebookExecutionKernel();
+        var code = """
+            #r "nuget: SkiaSharp, 3.119.4"
+            using SkiaSharp;
+
+            var bmp = new SKBitmap(100, 100);
+            using (var canvas = new SKCanvas(bmp))
+            {
+                canvas.Clear(SKColors.Red);
+            }
+
+            Display.Image(bmp);
+            Console.WriteLine("SKBitmap Display Success!");
+            """;
 
         RichCellOutput? emittedRich = null;
         var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => emittedRich = r);
@@ -362,18 +395,20 @@ Console.WriteLine(""Success!"");";
     public async Task NotebookKernel_ExecuteSkiaSharpNoVersion_ExecutesSuccessfully()
     {
         var kernel = new NotebookExecutionKernel();
-        var code = @"#r ""nuget: SkiaSharp""
-using SkiaSharp;
+        var code = """
+            #r "nuget: SkiaSharp"
+            using SkiaSharp;
 
-var info = new SKImageInfo(480, 240);
-var surface = SKSurface.Create(info);
-var canvas = surface.Canvas;
+            var info = new SKImageInfo(480, 240);
+            var surface = SKSurface.Create(info);
+            var canvas = surface.Canvas;
 
-var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
-canvas.DrawCircle(100, 120, 50, paint);
+            var paint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+            canvas.DrawCircle(100, 120, 50, paint);
 
-Display.Image(surface.Snapshot());
-Console.WriteLine(""Success!"");";
+            Display.Image(surface.Snapshot());
+            Console.WriteLine("Success!");
+            """;
 
         RichCellOutput? emittedRich = null;
         var result = await kernel.ExecuteCellAsync(code, onRichOutput: r => emittedRich = r);
@@ -390,16 +425,18 @@ Console.WriteLine(""Success!"");";
     public async Task NotebookKernel_ExecuteSkiaSharpLegacy4Preview_GracefullyBindsToHostRuntime()
     {
         var kernel = new NotebookExecutionKernel();
-        var code = @"#r ""nuget: SkiaSharp, 4.154.0-preview.1.26454.9""
-using SkiaSharp;
+        var code = """
+            #r "nuget: SkiaSharp, 4.154.0-preview.1.26454.9"
+            using SkiaSharp;
 
-var info = new SKImageInfo(300, 150);
-var surface = SKSurface.Create(info);
-var canvas = surface.Canvas;
-canvas.Clear(new SKColor(30, 40, 60));
+            var info = new SKImageInfo(300, 150);
+            var surface = SKSurface.Create(info);
+            var canvas = surface.Canvas;
+            canvas.Clear(new SKColor(30, 40, 60));
 
-Display.Image(surface.Snapshot());
-Console.WriteLine(""Legacy directive executed safely."");";
+            Display.Image(surface.Snapshot());
+            Console.WriteLine("Legacy directive executed safely.");
+            """;
 
         var result = await kernel.ExecuteCellAsync(code);
         if (!result.Success)

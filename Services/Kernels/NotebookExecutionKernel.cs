@@ -396,6 +396,52 @@ public class NotebookExecutionKernel : INotebookKernel
                         }
                     }
                 }
+                else if (typeName.Contains("SKBitmap"))
+                {
+                    var skImageType = returnValue.GetType().Assembly.GetType("SkiaSharp.SKImage");
+                    var fromBitmap = skImageType?.GetMethod("FromBitmap", new[] { returnValue.GetType() })
+                        ?? skImageType?.GetMethods().FirstOrDefault(m => m.Name == "FromBitmap" && m.GetParameters().Length == 1);
+                    if (fromBitmap?.Invoke(null, new[] { returnValue }) is object skImg)
+                    {
+                        var imgEncode = skImg.GetType().GetMethod("Encode", Type.EmptyTypes);
+                        if (imgEncode?.Invoke(skImg, null) is object data)
+                        {
+                            var toArray = data.GetType().GetMethod("ToArray");
+                            if (toArray?.Invoke(data, null) is byte[] skBytes)
+                            {
+                                onRichOutput?.Invoke(new RichCellOutput
+                                {
+                                    Kind = CellOutputKind.Image,
+                                    ImageBytes = skBytes,
+                                    ImageFormat = "PNG"
+                                });
+                                return;
+                            }
+                        }
+                    }
+                }
+                else if (typeName.Contains("SKSurface"))
+                {
+                    var snapshot = returnValue.GetType().GetMethod("Snapshot")?.Invoke(returnValue, null);
+                    if (snapshot != null)
+                    {
+                        var imgEncode = snapshot.GetType().GetMethod("Encode", Type.EmptyTypes);
+                        if (imgEncode?.Invoke(snapshot, null) is object data)
+                        {
+                            var toArray = data.GetType().GetMethod("ToArray");
+                            if (toArray?.Invoke(data, null) is byte[] skBytes)
+                            {
+                                onRichOutput?.Invoke(new RichCellOutput
+                                {
+                                    Kind = CellOutputKind.Image,
+                                    ImageBytes = skBytes,
+                                    ImageFormat = "PNG"
+                                });
+                                return;
+                            }
+                        }
+                    }
+                }
             }
             catch { }
         }
