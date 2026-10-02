@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>One line of a file that matched: where, how long, and what the line says (trimmed, and cut short when it is huge).</summary>
 /// <param name="Cell">The 1-based cell of a notebook the line is in; 0 for anything that is not a notebook.</param>

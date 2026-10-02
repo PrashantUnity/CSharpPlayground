@@ -2,9 +2,10 @@ using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 /// <summary>
 /// The Test Cases panel. A case is a <c>Check("name", answer, "expected")</c> line in the script: adding one writes that

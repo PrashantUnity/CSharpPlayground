@@ -4,8 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="35"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioTabBarControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioTabBarControl"
              x:CompileBindings="False">
 
 
@@ -22,7 +23,7 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:StudioTabItemViewModel">
+                    <DataTemplate x:DataType="common:StudioTabItemViewModel">
                         <Border Classes="vscode-tab"
                                 Classes.active="{Binding IsActive}"
                                 PointerPressed="OnTabPointerPressed">

@@ -1,13 +1,12 @@
 using System.Collections.Concurrent;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealSql;
+namespace CSharpEditorPlugin.Tests.RealSql;
 
 /// <summary>.sql files executed with real sqlite3 CLI, plus notebook kernel integration.</summary>
 [Collection(RealSqlCollection.Name)]

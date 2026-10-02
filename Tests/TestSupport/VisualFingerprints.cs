@@ -1,11 +1,10 @@
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// What each renderer reads from a model, written out as text, so two models compare equal exactly when they draw the

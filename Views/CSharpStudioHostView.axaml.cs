@@ -2,7 +2,15 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CSharpDocsViewModel;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using CSharpSettingsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel;
+using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 

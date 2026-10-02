@@ -5,9 +5,10 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.DocsNavRailControl"
-             x:DataType="vm:CSharpDocsViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Docs.DocsNavRailControl"
+             x:DataType="docs:CSharpDocsViewModel">
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -29,7 +30,7 @@
                         <ItemsControl ItemsSource="{Binding FilteredArticles}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:DocArticle">
-                                    <Button Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
+                                    <Button Command="{Binding $parent[UserControl].((docs:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
                                             CommandParameter="{Binding}"
                                             Classes="doc-article-item"
                                             Classes.active="{Binding IsSelected}">
@@ -87,7 +88,7 @@
                                 <DataTemplate x:DataType="models:DocCategory">
                                     <StackPanel Spacing="2" Margin="0,0,0,3">
                                         <!-- Category Item Button (Matches Manager nav-item) -->
-                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).ToggleCategoryCommand}"
+                                        <Button Command="{Binding $parent[UserControl].((docs:CSharpDocsViewModel)DataContext).ToggleCategoryCommand}"
                                                 CommandParameter="{Binding}"
                                                 Classes="doc-category-btn"
                                                 Classes.selected="{Binding IsSelected}"
@@ -140,7 +141,7 @@
                                             <ItemsControl ItemsSource="{Binding Articles}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="models:DocArticle">
-                                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
+                                                        <Button Command="{Binding $parent[UserControl].((docs:CSharpDocsViewModel)DataContext).SelectArticleCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 Classes="doc-article-item"
                                                                 Classes.active="{Binding IsSelected}">

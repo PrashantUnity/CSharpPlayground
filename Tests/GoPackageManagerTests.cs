@@ -1,7 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class GoPackageManagerTests
 {

@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 /// <summary>
 /// Content that is built the first time it is needed. XAML builds everything it declares up front, and hiding something

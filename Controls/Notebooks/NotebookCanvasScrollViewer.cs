@@ -1,4 +1,3 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -8,7 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks;
 
 /// <summary>
 /// A specialized ScrollViewer for the Notebook Canvas that completely prevents automatic

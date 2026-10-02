@@ -1,10 +1,8 @@
-using System;
-using System.IO;
 using System.Xml;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 public static class CSharpSyntaxHighlightingTheme
 {

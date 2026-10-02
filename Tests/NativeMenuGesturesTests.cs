@@ -1,8 +1,7 @@
-using System;
 using Avalonia.Input;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class NativeMenuGesturesTests
 {

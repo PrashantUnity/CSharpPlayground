@@ -1,14 +1,11 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub;
 
 public partial class CSharpManagerViewModel
 {

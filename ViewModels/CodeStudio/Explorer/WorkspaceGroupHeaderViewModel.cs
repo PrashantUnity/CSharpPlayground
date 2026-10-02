@@ -1,4 +1,4 @@
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 // A divider row the Manager's workspace list injects above documents belonging to the currently
 // opened external folder, so the list reads as "workspace, then its documents" instead of a flat pile

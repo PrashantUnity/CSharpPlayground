@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 /// <summary>
 /// Cooperative-cancellation counterpart to InteractiveDisplayContext, using the same AsyncLocal

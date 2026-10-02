@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,7 +6,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 public class DebugHoverDataTipController : IDisposable
 {

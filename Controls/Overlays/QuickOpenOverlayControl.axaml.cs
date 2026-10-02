@@ -2,9 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using QuickOpenViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.QuickOpenViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Overlays;
 
 public partial class QuickOpenOverlayControl : UserControl
 {

@@ -1,4 +1,5 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 

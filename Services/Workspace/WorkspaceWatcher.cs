@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>
 /// Watches a workspace folder and reports, once things have settled, that files under it changed behind the studio's back

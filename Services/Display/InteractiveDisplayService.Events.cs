@@ -1,7 +1,6 @@
-using System;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 // Events: a visual's callbacks (DisplayHandle.On, OnClick…) run when the kernel is free; running code that wants them
 // sooner, or wants to wait for them, says so here.

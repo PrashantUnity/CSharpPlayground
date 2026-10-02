@@ -1,8 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 /// <summary>
 /// The Explorer's visible rows as one flat list: every item of the tree, depth first, leaving out what a collapsed folder

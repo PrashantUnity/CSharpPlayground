@@ -5,9 +5,10 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.QuickOpenOverlayControl"
-             x:DataType="vm:QuickOpenViewModel"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Overlays.QuickOpenOverlayControl"
+             x:DataType="common:QuickOpenViewModel"
              IsVisible="{Binding IsOpen}">
 
     <UserControl.Styles>

@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="48" d:DesignHeight="800"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioActivityBarControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioActivityBarControl"
              x:CompileBindings="False">
 
 

@@ -5,9 +5,10 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubCreateItemDialogControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubCreateItemDialogControl"
+             x:DataType="hub:CSharpManagerViewModel">
 
         <Border IsVisible="{Binding IsCreatePromptOpen}"
                 Background="#B3000000"

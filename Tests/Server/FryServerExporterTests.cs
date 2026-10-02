@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using System.Text.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Server;
+namespace CSharpEditorPlugin.Tests.Server;
 
 public class FryServerExporterTests
 {

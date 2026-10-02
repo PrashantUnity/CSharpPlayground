@@ -5,7 +5,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using AvaloniaEdit;
@@ -13,7 +12,7 @@ using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>What a language's hover lookup found under the pointer.</summary>
 /// <param name="SpanStart">Where the hovered symbol starts in the text.</param>

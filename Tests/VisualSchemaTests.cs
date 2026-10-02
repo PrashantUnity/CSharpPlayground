@@ -1,11 +1,9 @@
-using System.IO;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The schemas in docs/visuals/schema are generated from the spec types; this keeps them current. After changing a spec

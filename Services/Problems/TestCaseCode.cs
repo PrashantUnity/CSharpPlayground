@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Problems;
 
 /// <summary>
 /// A script's test cases are its <c>Check("name", answer, "expected")</c> lines: each prints a ✅/❌ line the Test Cases

@@ -1,10 +1,8 @@
-using System.IO;
-using System.Linq;
 using System.Text.Json.Nodes;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// Visual specs as JSON: every fixture (the JSON every language must write) reads and writes back unchanged, and a spec

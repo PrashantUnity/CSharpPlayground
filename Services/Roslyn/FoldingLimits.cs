@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
 using AvaloniaEdit.Folding;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 /// <summary>
 /// Caps how many foldings a document gets. Two costs of the editor's folding grow with their number: for every visual line it

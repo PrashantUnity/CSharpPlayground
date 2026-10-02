@@ -1,21 +1,16 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A C# visual can change after it is shown, and tell its code what the user does to it: callbacks run when the kernel is

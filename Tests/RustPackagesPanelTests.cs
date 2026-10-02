@@ -1,10 +1,14 @@
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>The Dependencies side panel for Rust (and the Go directive it used to miss).</summary>
 public class RustPackagesPanelTests : IDisposable
@@ -70,7 +74,7 @@ public class RustPackagesPanelTests : IDisposable
         studio.NuGetSearchQuery = "no-such-crate-anywhere";
         await studio.SearchNuGetPackagesCommand.ExecuteAsync(null);
         Assert.Empty(studio.NuGetSearchResults);
-        Assert.Equal("No crates found in catalog", studio.NuGetStatusMessage);
+        Assert.Equal((string?)"No crates found in catalog", (string?)studio.NuGetStatusMessage);
     }
 
     [Fact]
@@ -80,7 +84,7 @@ public class RustPackagesPanelTests : IDisposable
 
         studio.AddNuGetPackage(new NuGetPackageItem("rand", "0.9", "d", "a", 1));
 
-        Assert.StartsWith("// #crate: rand = \"0.9\"" + Environment.NewLine + "fn main()", studio.Code);
+        Assert.StartsWith("// #crate: rand = \"0.9\"" + Environment.NewLine + "fn main()", (string?)studio.Code);
         Assert.Equal(["// #crate: rand = \"0.9\""], studio.DocumentNuGetPackages);
     }
 
@@ -91,7 +95,7 @@ public class RustPackagesPanelTests : IDisposable
 
         studio.AddNuGetPackage(new NuGetPackageItem("serde", "1", "d", "a", 1));
 
-        Assert.StartsWith("// #crate: serde = { version = \"1\", features = [\"derive\"] }", studio.Code);
+        Assert.StartsWith((string?)"// #crate: serde = { version = \"1\", features = [\"derive\"] }", (string?)studio.Code);
     }
 
     [Fact]
@@ -104,7 +108,7 @@ public class RustPackagesPanelTests : IDisposable
         studio.AddNuGetPackage(rand);
 
         Assert.Equal(1, studio.Code.Split("// #crate: rand").Length - 1);
-        Assert.Contains("already referenced", studio.NuGetStatusMessage);
+        Assert.Contains((string)"already referenced", (string?)studio.NuGetStatusMessage);
     }
 
     [Fact]
@@ -120,8 +124,8 @@ public class RustPackagesPanelTests : IDisposable
 
         studio.RemoveNuGetPackage("// #crate: rand = \"0.9\"");
 
-        Assert.DoesNotContain("rand", studio.Code);
-        Assert.Contains("serde", studio.Code);
+        Assert.DoesNotContain((string)"rand", (string?)studio.Code);
+        Assert.Contains((string)"serde", (string?)studio.Code);
     }
 
     [Fact]

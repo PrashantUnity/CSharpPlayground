@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 /// <summary>
 /// High-performance folding strategy for C# source code.

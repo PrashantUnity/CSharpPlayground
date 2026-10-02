@@ -1,17 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Visualizers;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+namespace CSharpEditorPlugin.Tests.Debugging;
 
 public class DebugTypeVisualizerTests
 {

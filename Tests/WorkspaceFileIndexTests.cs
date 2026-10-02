@@ -1,8 +1,11 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class WorkspaceFileIndexTests : IDisposable
 {
@@ -239,7 +242,7 @@ public class GoToFileTests : IDisposable
     }
 
     private CSharpCodeStudioViewModel CreateStudio() => new(
-        new Models.ScriptDocumentItem { Title = "Untitled" },
+        new PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem { Title = "Untitled" },
         _storage,
         new RoslynCompilerService(),
         new ScriptExecutionEngine(),
@@ -269,9 +272,9 @@ public class GoToFileTests : IDisposable
 
         await studio.QuickOpen.ExecuteSelectedAsync();
 
-        Assert.EndsWith("helpers.py", studio.Script.SourceFilePath);
+        Assert.EndsWith((string?)"helpers.py", (string?)studio.Script.SourceFilePath);
         Assert.Contains(studio.OpenTabs, t => t.Title.Contains("helpers"));
-        Assert.Contains("def helper", studio.Code);
+        Assert.Contains((string)"def helper", (string?)studio.Code);
     }
 
     [Fact]

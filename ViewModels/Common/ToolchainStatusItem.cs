@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 /// <summary>
 /// A Hub STUDIO ENVIRONMENT row for a language that runs with an installed toolchain (Python): what the studio found,

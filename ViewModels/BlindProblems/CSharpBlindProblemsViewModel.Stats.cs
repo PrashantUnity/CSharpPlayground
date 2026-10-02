@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems;
 
 public partial class CSharpBlindProblemsViewModel
 {

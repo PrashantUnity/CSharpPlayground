@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 /// <summary>An entry of the status bar's toolchain picker: an installed Python, or "Automatic".</summary>
 public sealed record ToolchainChoice(string Label, string Detail, bool IsSelected, IRelayCommand Command);
@@ -98,7 +98,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     private ToolchainQuery CurrentToolchainQuery() => new(
-        Script.SourceFilePath is { } path ? Path.GetDirectoryName(path) : null,
+        Script.SourceFilePath is { } path ? Path.GetDirectoryName((string?)path) : null,
         _storageService.ActiveWorkspaceRootPath);
 
     // Looks up (off the UI thread) which toolchain the document would run with, for the status bar.

@@ -2,14 +2,14 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 /// <summary>Status of one kernel active in this notebook.</summary>
 public sealed record NotebookKernelStatusItem(
@@ -49,7 +49,7 @@ public partial class NotebookTabViewModel
     {
         get
         {
-            if (Path.IsPathRooted(FilePath) && Path.GetDirectoryName(FilePath) is { Length: > 0 } folder) return folder;
+            if (Path.IsPathRooted((string?)FilePath) && Path.GetDirectoryName((string?)FilePath) is { Length: > 0 } folder) return folder;
             return _workspaceRoot?.Invoke();
         }
     }

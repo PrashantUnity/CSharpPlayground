@@ -1,10 +1,10 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class GoToolchainProviderTests : IDisposable
 {

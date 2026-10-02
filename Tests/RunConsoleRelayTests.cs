@@ -1,17 +1,14 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A run's console output shows in the Terminal exactly once and in order, whether its queued live writes reach the UI
@@ -217,8 +214,8 @@ public class RunConsoleRelayTests : IDisposable
         Deliver(held);
 
         Assert.Equal(1, Occurrences(studio.ConsoleOutput, "from Main"));
-        Assert.True(studio.ConsoleOutput.IndexOf("from Main", StringComparison.Ordinal) <
-                    studio.ConsoleOutput.IndexOf("Execution finished", StringComparison.Ordinal),
+        Assert.True((bool)(studio.ConsoleOutput.IndexOf("from Main", StringComparison.Ordinal) <
+                           studio.ConsoleOutput.IndexOf("Execution finished", StringComparison.Ordinal)),
                     studio.ConsoleOutput);
     }
 

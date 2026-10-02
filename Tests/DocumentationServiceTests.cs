@@ -1,12 +1,12 @@
-using System;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
+using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CSharpDocsViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class DocumentationServiceTests
 {
@@ -238,17 +238,17 @@ public class DocumentationServiceTests
 
         // Navigate to a specific topic
         vm.SelectTopic("dump_api");
-        Assert.Equal("dump_api", vm.SelectedArticle.Id);
-        Assert.Equal("display_apis", vm.SelectedCategory.Id);
-        Assert.Contains("dump", vm.ActiveBreadcrumb.ToLowerInvariant());
+        Assert.Equal((string?)"dump_api", (string?)vm.SelectedArticle.Id);
+        Assert.Equal((string?)"display_apis", (string?)vm.SelectedCategory.Id);
+        Assert.Contains((string)"dump", (string?)vm.ActiveBreadcrumb.ToLowerInvariant());
 
         // Test search
         vm.SearchQuery = "matrix";
-        Assert.True(vm.HasSearchQuery);
+        Assert.True((bool)vm.HasSearchQuery);
         Assert.NotEmpty(vm.FilteredArticles);
 
         vm.ClearSearch();
-        Assert.False(vm.HasSearchQuery);
+        Assert.False((bool)vm.HasSearchQuery);
         Assert.Empty(vm.FilteredArticles);
 
         // Next / Previous article
@@ -258,7 +258,7 @@ public class DocumentationServiceTests
             vm.NextArticle();
             Assert.NotEqual(currentId, vm.SelectedArticle.Id);
             vm.PreviousArticle();
-            Assert.Equal(currentId, vm.SelectedArticle.Id);
+            Assert.Equal((string?)currentId, (string?)vm.SelectedArticle.Id);
         }
 
         // Try in Studio command

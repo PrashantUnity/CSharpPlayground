@@ -1,6 +1,6 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>
 /// What the Explorer is given to draw. For a workspace that fits the listing limit it is everything (<see cref="IsPartial"/> is

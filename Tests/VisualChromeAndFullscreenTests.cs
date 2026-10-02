@@ -1,12 +1,11 @@
-using System;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class VisualChromeAndFullscreenTests
 {

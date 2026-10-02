@@ -6,9 +6,12 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs"
+             xmlns:docs1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
+             xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="880"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpDocsView"
-             x:DataType="vm:CSharpDocsViewModel"
+             x:DataType="docs:CSharpDocsViewModel"
              Background="{DynamicResource DsBgBrush}">
 
     <UserControl.Resources>
@@ -130,7 +133,7 @@
         <!-- ══════════════════════════════════════════════════════════════ -->
         <Grid Grid.Row="1" ColumnDefinitions="310,*">
             <!-- LEFT NAVIGATION RAIL (Reusable DocsNavRailControl) -->
-            <controls:DocsNavRailControl Grid.Column="0" />
+            <docs1:DocsNavRailControl Grid.Column="0" />
 
             <!-- RIGHT ARTICLE CONTENT VIEWER -->
             <Panel Grid.Column="1">
@@ -252,7 +255,7 @@
                                                             </StackPanel>
                                                             <!-- Copy Button -->
                                                             <Button Grid.Column="1"
-                                                                    Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).CopySnippetCommand}"
+                                                                    Command="{Binding $parent[UserControl].((docs:CSharpDocsViewModel)DataContext).CopySnippetCommand}"
                                                                     CommandParameter="{Binding}"
                                                                     Classes="nexus-btn-surface"
                                                                     Height="30" Padding="10,0"
@@ -265,7 +268,7 @@
                                                             </Button>
                                                             <!-- Try in Studio Button -->
                                                             <Button Grid.Column="2"
-                                                                    Command="{Binding $parent[UserControl].((vm:CSharpDocsViewModel)DataContext).TryInStudioCommand}"
+                                                                    Command="{Binding $parent[UserControl].((docs:CSharpDocsViewModel)DataContext).TryInStudioCommand}"
                                                                     CommandParameter="{Binding}"
                                                                     Classes="nexus-btn-primary"
                                                                     Height="30" Padding="12,0"
@@ -310,7 +313,7 @@
 
                                                     <!-- Code Block Canvas -->
                                                     <Border Padding="6" Background="{DynamicResource DsBgBrush}">
-                                                        <controls:CodeViewer Code="{Binding Code}" Language="{Binding Language}" />
+                                                        <editor:CodeViewer Code="{Binding Code}" Language="{Binding Language}" />
                                                     </Border>
                                                 </StackPanel>
                                             </Border>
@@ -380,7 +383,7 @@
                                 </Button>
                             </Grid>
                         </StackPanel>
-                        <controls:DocsOutlinePanelControl Grid.Column="1" IsVisible="{Binding IsOutlineVisible}" />
+                        <docs1:DocsOutlinePanelControl Grid.Column="1" IsVisible="{Binding IsOutlineVisible}" />
                     </Grid>
                 </ScrollViewer>
             </Panel>

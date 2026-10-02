@@ -5,9 +5,10 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubSidebarControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubSidebarControl"
+             x:DataType="hub:CSharpManagerViewModel">
 
             <Border Grid.Column="0"
                     Background="{DynamicResource DsSurfaceBrush}"

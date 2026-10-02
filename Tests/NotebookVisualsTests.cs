@@ -1,17 +1,14 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A notebook cell's charts, 3D plots and visualizers: every one it shows, in order; cleared with the rest of its output;
@@ -51,7 +48,7 @@ public class NotebookVisualsTests : IDisposable
     {
         var (_, cell) = await RunCell(FourVisuals);
 
-        Assert.False(cell.HasError, cell.OutputText);
+        Assert.False((bool)cell.HasError, cell.OutputText);
         Assert.Equal(["First chart", "Points", "Grid", "Second chart"], cell.Visuals.Select(v => v.Spec.Title));
         Assert.Equal(["First chart", "Second chart"], cell.ChartVisuals.Select(v => v.Spec.Title));
         Assert.Single(cell.Plot3DVisuals);
@@ -94,7 +91,7 @@ public class NotebookVisualsTests : IDisposable
 
         Assert.Equal(VisualLimits.MaxVisualsPerCell, cell.Visuals.Count);
         Assert.Equal(VisualLimits.MaxVisualsPerCell, cell.Model.Visuals!.Count);
-        Assert.Equal($"showing the first {VisualLimits.MaxVisualsPerCell} of {shown} visuals", cell.VisualsNotice);
+        Assert.Equal((string?)$"showing the first {VisualLimits.MaxVisualsPerCell} of {shown} visuals", (string?)cell.VisualsNotice);
     }
 
     // A reopened notebook used to lose its charts, 3D plots and visualizers: the cell had nowhere to save them.
@@ -111,7 +108,7 @@ public class NotebookVisualsTests : IDisposable
         Assert.Equal(4, shown.Count);
         Assert.Equal(shown, cell.Visuals.Select(v => VisualJson.Serialize(v.Spec)));
         Assert.Equal(2, cell.ChartVisuals.Count);
-        Assert.True(cell.HasOutput);
+        Assert.True((bool)cell.HasOutput);
     }
 
     [Fact]
@@ -172,8 +169,8 @@ public class NotebookVisualsTests : IDisposable
         var (_, cell) = await RunCell("Display.Show(new ChartSpec { Series = { new ChartSeriesSpec { X = new() { 1, 2 }, Y = new() { 1, 2, 3 } } } });");
 
         Assert.Empty(cell.Visuals);
-        Assert.Contains("⚠️", cell.OutputText);
-        Assert.Contains("$.series[0].x", cell.OutputText);
+        Assert.Contains((string)"⚠️", (string?)cell.OutputText);
+        Assert.Contains((string)"$.series[0].x", (string?)cell.OutputText);
     }
 
     // A cell that returns a spec, or anything that describes itself as one, shows it as the visual.
@@ -183,7 +180,7 @@ public class NotebookVisualsTests : IDisposable
         var (_, cell) = await RunCell("new ChartSpec { Title = \"Returned\", Series = { new ChartSeriesSpec { Y = new() { 1, 2 } } } }");
 
         Assert.Equal("Returned", Assert.Single(cell.ChartVisuals).Spec.Title);
-        Assert.False(cell.HasInspectorOutput);
+        Assert.False((bool)cell.HasInspectorOutput);
     }
 
     private static NotebookDocumentItem Notebook(string code) => new()

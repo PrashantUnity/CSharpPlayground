@@ -1,16 +1,11 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Xml;
 using Microsoft.CodeAnalysis;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 /// <summary>
 /// Finds the XML documentation (IntelliSense) files for the assemblies scripts reference, so metadata symbols get their

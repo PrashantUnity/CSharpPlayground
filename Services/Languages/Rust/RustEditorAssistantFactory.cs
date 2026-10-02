@@ -1,4 +1,5 @@
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 

@@ -1,6 +1,4 @@
-using System;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+namespace PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 
 /// <summary>
 /// Represents a captured HTTP request and response event for live server telemetry.

@@ -5,9 +5,10 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubPinnedWorkspacesControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubPinnedWorkspacesControl"
+             x:DataType="hub:CSharpManagerViewModel">
 
                             <StackPanel Spacing="14">
                                 <Grid ColumnDefinitions="*,Auto">
@@ -148,7 +149,7 @@
                                                                     <ItemsControl ItemsSource="{Binding UnpinnedItems}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate x:DataType="models:WorkspaceItemSummary">
-                                                                                <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).PinItemCommand}"
+                                                                                <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).PinItemCommand}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn" Margin="0,2">
                                                                                     <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
@@ -324,7 +325,7 @@
                                                                     <ItemsControl ItemsSource="{Binding UnpinnedItems}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate x:DataType="models:WorkspaceItemSummary">
-                                                                                <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).PinItemCommand}"
+                                                                                <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).PinItemCommand}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn" Margin="0,2">
                                                                                     <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
@@ -503,7 +504,7 @@
                                                                     <ItemsControl ItemsSource="{Binding UnpinnedItems}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate x:DataType="models:WorkspaceItemSummary">
-                                                                                <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).PinItemCommand}"
+                                                                                <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).PinItemCommand}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Classes="nexus-card-btn"
                                                                                         Margin="0,2">

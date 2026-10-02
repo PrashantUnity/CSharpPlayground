@@ -1,16 +1,14 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using Xunit;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class VisualizerWatchAndDiffTests
 {

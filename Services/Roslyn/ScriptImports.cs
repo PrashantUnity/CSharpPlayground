@@ -1,6 +1,6 @@
-using System.Linq;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 /// <summary>
 /// The namespaces user C# sees without a using directive, the same everywhere it runs: a script, a program with a Main,
@@ -33,6 +33,8 @@ public static class ScriptImports
         "Avalonia.Threading",
 
         "PdfEditorApp.Plugins.CSharpEditor.Services",
+        "PdfEditorApp.Plugins.CSharpEditor.Services.Display",
+        "PdfEditorApp.Plugins.CSharpEditor.Services.Execution",
         "PdfEditorApp.Plugins.CSharpEditor.Models",
         "PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec",
         "PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction",

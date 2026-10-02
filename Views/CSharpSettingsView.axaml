@@ -5,9 +5,11 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:settings1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpSettingsView"
-             x:DataType="vm:CSharpSettingsViewModel"
+             x:DataType="settings:CSharpSettingsViewModel"
              Background="{DynamicResource DsBgBrush}">
 
     <UserControl.Resources>
@@ -140,8 +142,8 @@
                             <StackPanel Spacing="2" Margin="16,2,0,8" IsVisible="{Binding IsLanguagesCategoryActive}">
                                 <ItemsControl ItemsSource="{Binding FilteredLanguages}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:LanguageSettingItemViewModel">
-                                            <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
+                                        <DataTemplate x:DataType="settings:LanguageSettingItemViewModel">
+                                            <Button Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectLanguageItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
                                                     CommandParameter="{Binding}"
                                                     Classes="doc-nav-item"
                                                     Classes.active="{Binding IsSelected}"
@@ -199,20 +201,20 @@
                 <Panel>
                     <!-- Detail for Languages & Runtimes -->
                     <Panel IsVisible="{Binding IsLanguagesCategoryActive}">
-                        <controls:LanguageEnvironmentSettingControl
+                        <settings1:LanguageEnvironmentSettingControl
                             DataContext="{Binding SelectedLanguage}" />
                     </Panel>
 
                     <!-- Detail for Editor & Formatting -->
-                    <controls:EditorSettingsSectionControl
+                    <settings1:EditorSettingsSectionControl
                         IsVisible="{Binding IsEditorCategoryActive}" />
 
                     <!-- Detail for Execution & Terminal -->
-                    <controls:ExecutionSettingsSectionControl
+                    <settings1:ExecutionSettingsSectionControl
                         IsVisible="{Binding IsExecutionCategoryActive}" />
 
                     <!-- Detail for Keymap Reference -->
-                    <controls:KeymapSettingsSectionControl
+                    <settings1:KeymapSettingsSectionControl
                         IsVisible="{Binding IsKeymapCategoryActive}" />
                 </Panel>
             </Border>

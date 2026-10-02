@@ -5,7 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioLoadingOverlayControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioLoadingOverlayControl"
              x:Name="LoadingRoot"
              IsVisible="{Binding #LoadingRoot.IsLoading}">
 

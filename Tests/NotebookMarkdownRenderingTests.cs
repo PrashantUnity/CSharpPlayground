@@ -1,11 +1,9 @@
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 using Xunit;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Running a notebook shows its markdown rendered instead of as source, the way Jupyter does.</summary>
 public class NotebookMarkdownRenderingTests
@@ -24,12 +22,12 @@ public class NotebookMarkdownRenderingTests
     public async Task RunAll_RendersEveryMarkdownCell()
     {
         var tab = Tab((CellType.Markdown, "# Problem"), (CellType.Code, "var x = 1;"), (CellType.Markdown, "## Notes"));
-        Assert.All(tab.Cells.Where(c => c.IsMarkdownCell), c => Assert.False(c.IsMarkdownPreviewMode));
+        Assert.All(tab.Cells.Where(c => c.IsMarkdownCell), c => Assert.False((bool)c.IsMarkdownPreviewMode));
 
         await tab.RunAllCellsAsync();
 
-        Assert.All(tab.Cells.Where(c => c.IsMarkdownCell), c => Assert.True(c.IsMarkdownPreviewMode));
-        Assert.NotNull(tab.Cells[1].ExecutionCount);
+        Assert.All(tab.Cells.Where(c => c.IsMarkdownCell), c => Assert.True((bool)c.IsMarkdownPreviewMode));
+        Assert.NotNull<int>(tab.Cells[1].ExecutionCount);
     }
 
     [Fact]
@@ -39,8 +37,8 @@ public class NotebookMarkdownRenderingTests
 
         await tab.RunSingleCellAsync(tab.Cells[0]);
 
-        Assert.True(tab.Cells[0].IsMarkdownPreviewMode);
-        Assert.Null(tab.Cells[0].ExecutionCount);
+        Assert.True((bool)tab.Cells[0].IsMarkdownPreviewMode);
+        Assert.Null<int>(tab.Cells[0].ExecutionCount);
     }
 
     [Fact]
@@ -50,8 +48,8 @@ public class NotebookMarkdownRenderingTests
 
         await tab.RunCellsAboveAsync(tab.Cells[1]);
 
-        Assert.True(tab.Cells[0].IsMarkdownPreviewMode);
-        Assert.False(tab.Cells[2].IsMarkdownPreviewMode);
+        Assert.True((bool)tab.Cells[0].IsMarkdownPreviewMode);
+        Assert.False((bool)tab.Cells[2].IsMarkdownPreviewMode);
     }
 
     [Fact]

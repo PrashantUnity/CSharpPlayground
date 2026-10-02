@@ -1,14 +1,12 @@
-using System;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
 using AvaloniaEdit;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>
 /// Minimal read-only, syntax-highlighted code viewer (C# unless <see cref="Language"/> says otherwise) for static snippets

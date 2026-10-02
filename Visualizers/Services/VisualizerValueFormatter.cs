@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 

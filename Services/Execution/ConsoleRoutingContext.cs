@@ -1,9 +1,6 @@
-using System;
-using System.IO;
 using System.Text;
-using System.Threading;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 
 /// <summary>
 /// Routes Console.Out/Error through an AsyncLocal-scoped sink per execution flow.

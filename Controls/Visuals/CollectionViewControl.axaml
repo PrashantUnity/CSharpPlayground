@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.CollectionViewControl">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals.CollectionViewControl">
 
     <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"

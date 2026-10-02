@@ -1,12 +1,11 @@
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 /// <summary>
 /// A cell's charts, 3D plots and visualizers: every one it showed, in order, each drawn by the shared visual view and

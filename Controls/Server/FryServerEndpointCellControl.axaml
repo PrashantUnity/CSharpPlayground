@@ -6,6 +6,8 @@
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
+             xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Server.FryServerEndpointCellControl"
              x:DataType="vm:FryServerCellViewModel">
@@ -496,14 +498,14 @@
                                 IsVisible="{Binding !IsInputCollapsed}">
                             <Panel>
                                 <!-- C# Syntax Highlighted Editor -->
-                                <controls:BindableTextEditor IsVisible="{Binding !IsMarkdown}"
+                                <editor:BindableTextEditor IsVisible="{Binding !IsMarkdown}"
                                                              TextContent="{Binding Source, Mode=TwoWay}"
                                                              ExecuteCommand="{Binding SendTestRequestCommand}"
                                                              MinHeight="55"
                                                              FontSize="12.5" />
 
                                 <!-- Markdown documentation cell -->
-                                <controls:MarkdownView IsVisible="{Binding IsMarkdown}"
+                                <docs:MarkdownView IsVisible="{Binding IsMarkdown}"
                                                        Markdown="{Binding Source}"
                                                        Margin="8,4"
                                                        FontSize="12.5"

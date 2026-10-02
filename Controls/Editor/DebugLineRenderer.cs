@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
 using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Rendering;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 public class DebugLineRenderer : IBackgroundRenderer
 {

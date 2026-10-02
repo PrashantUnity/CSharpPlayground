@@ -1,4 +1,3 @@
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
@@ -6,7 +5,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A step says only what changed since the one before. The literal null once became a value there (every cell of every

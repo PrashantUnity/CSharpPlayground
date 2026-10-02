@@ -1,11 +1,15 @@
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The Code Studio runs a file of any language that brings a runner, using only what the language declares. FakeLang's
@@ -73,18 +77,18 @@ public class CodeStudioExternalLanguageTests : IDisposable
         var run = Assert.Single(_launcher.Started);
         Assert.Equal("/fake/bin/fakec", run.FileName);
         Assert.Equal(["run", studio.Script.SourceFilePath!], run.Arguments);
-        Assert.Equal(Path.GetDirectoryName(studio.Script.SourceFilePath), run.WorkingDirectory);
-        Assert.Contains("▶ FakeLang 1.2.3 (Test) · hello.fake", studio.ConsoleOutput);
-        Assert.Contains("hello from fakelang", studio.ConsoleOutput);
-        Assert.Contains("exited with code 0", studio.ConsoleOutput);
-        Assert.Contains("▶ FakeLang 1.2.3 (Test) · hello.fake", studio.ConsoleHeader);
-        Assert.Equal("hello from fakelang\n", studio.ConsoleBody);
-        Assert.Contains("exited with code 0", studio.ConsoleFooter);
-        Assert.Equal(0, studio.ConsoleExitCode);
+        Assert.Equal(Path.GetDirectoryName((string?)studio.Script.SourceFilePath), run.WorkingDirectory);
+        Assert.Contains((string)"▶ FakeLang 1.2.3 (Test) · hello.fake", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"hello from fakelang", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"exited with code 0", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"▶ FakeLang 1.2.3 (Test) · hello.fake", (string?)studio.ConsoleHeader);
+        Assert.Equal((string?)"hello from fakelang\n", (string?)studio.ConsoleBody);
+        Assert.Contains((string)"exited with code 0", (string?)studio.ConsoleFooter);
+        Assert.Equal<int?>(0, studio.ConsoleExitCode);
         Assert.True(studio.IsConsoleExitSuccess);
         Assert.False(studio.IsConsoleExitError);
-        Assert.Equal("Completed", studio.CompilerStatusText);
-        Assert.False(studio.IsExecuting);
+        Assert.Equal((string?)"Completed", (string?)studio.CompilerStatusText);
+        Assert.False((bool)studio.IsExecuting);
         Assert.Equal("FakeLang 1.2.3 (Test)", studio.RuntimeLabel);
     }
 
@@ -122,13 +126,13 @@ public class CodeStudioExternalLanguageTests : IDisposable
         var problem = Assert.Single(studio.Diagnostics);
         Assert.Equal(2, problem.Line);
         Assert.Equal(2, studio.SelectedBottomTabIndex); // Problems
-        Assert.Equal("Exited with code 1", studio.CompilerStatusText);
+        Assert.Equal((string?)"Exited with code 1", (string?)studio.CompilerStatusText);
         Assert.Equal("Install fake-numpy", problem.QuickFixLabel);
 
         await problem.QuickFixCommand!.ExecuteAsync(null);
 
         Assert.Equal("install fake-numpy", Assert.Single(_fake.FakePackages.Ran));
-        Assert.Contains("Installed fake-numpy", studio.CompilerStatusText);
+        Assert.Contains((string)"Installed fake-numpy", (string?)studio.CompilerStatusText);
     }
 
     [Fact]
@@ -148,8 +152,8 @@ public class CodeStudioExternalLanguageTests : IDisposable
         await problem.QuickFixCommand!.ExecuteAsync(null);
         await problem.QuickFixCommand!.ExecuteAsync(null);
 
-        Assert.Equal("// #fakecrate: numpy = \"1\"" + Environment.NewLine + "print a\nimport numpy\n", studio.Code);
-        Assert.Contains("Added `// #fakecrate: numpy = \"1\"` to the file", studio.ConsoleOutput);
+        Assert.Equal("// #fakecrate: numpy = \"1\"" + Environment.NewLine + "print a\nimport numpy\n", (string?)studio.Code);
+        Assert.Contains((string)"Added `// #fakecrate: numpy = \"1\"` to the file", (string?)studio.ConsoleOutput);
     }
 
     [Fact]
@@ -161,10 +165,10 @@ public class CodeStudioExternalLanguageTests : IDisposable
         await studio.RunCodeCommand.ExecuteAsync(null);
 
         Assert.Empty(_launcher.Started);
-        Assert.Contains("FakeLang isn't installed", studio.ConsoleOutput);
-        Assert.Contains("fakepkg install fakelang", studio.ConsoleOutput);
-        Assert.Equal("FakeLang not found", studio.CompilerStatusText);
-        Assert.True(studio.IsToolchainMissing);
+        Assert.Contains((string)"FakeLang isn't installed", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"fakepkg install fakelang", (string?)studio.ConsoleOutput);
+        Assert.Equal((string?)"FakeLang not found", (string?)studio.CompilerStatusText);
+        Assert.True((bool)studio.IsToolchainMissing);
     }
 
     [Fact]
@@ -185,9 +189,9 @@ public class CodeStudioExternalLanguageTests : IDisposable
         await studio.SendProgramInputCommand.ExecuteAsync(null);
         await run.WaitAsync(Patience);
 
-        Assert.Contains("Name? Ada\nHi Ada", studio.ConsoleOutput);
-        Assert.Equal(string.Empty, studio.ProgramInputText);
-        Assert.False(studio.IsAcceptingProgramInput);
+        Assert.Contains((string)"Name? Ada\nHi Ada", (string?)studio.ConsoleOutput);
+        Assert.Equal(string.Empty, (string?)studio.ProgramInputText);
+        Assert.False((bool)studio.IsAcceptingProgramInput);
     }
 
     [Fact]
@@ -207,8 +211,8 @@ public class CodeStudioExternalLanguageTests : IDisposable
         await run.WaitAsync(Patience);
 
         Assert.True(running!.WasKilled);
-        Assert.Equal("🛑 Cancelled", studio.CompilerStatusText);
-        Assert.Contains("Stopped.", studio.ConsoleOutput);
+        Assert.Equal((string?)"🛑 Cancelled", (string?)studio.CompilerStatusText);
+        Assert.Contains((string)"Stopped.", (string?)studio.ConsoleOutput);
     }
 
     [Fact]
@@ -239,8 +243,8 @@ public class CodeStudioExternalLanguageTests : IDisposable
         await studio.DebugCodeCommand.ExecuteAsync(null);
 
         Assert.Single(_launcher.Started);
-        Assert.False(studio.IsDebugging);
-        Assert.Contains("no FakeLang debugger yet", studio.ConsoleOutput);
+        Assert.False((bool)studio.IsDebugging);
+        Assert.Contains((string)"no FakeLang debugger yet", (string?)studio.ConsoleOutput);
     }
 
     [Fact]
@@ -256,18 +260,18 @@ public class CodeStudioExternalLanguageTests : IDisposable
         Assert.True(studio.HasToolchain);
 
         studio.FormatCode();
-        Assert.Equal("x =    1\nprint x\n", studio.Code);
+        Assert.Equal((string?)"x =    1\nprint x\n", (string?)studio.Code);
 
         studio.AddTestCaseCommand.Execute(null);
-        Assert.False(studio.IsAddingTestCase);
+        Assert.False((bool)studio.IsAddingTestCase);
         studio.NewTestCaseName = "Case 1";
         studio.NewTestCaseCall = "Solve()";
         studio.NewTestCaseExpected = "1";
         studio.ConfirmAddTestCaseCommand.Execute(null);
-        Assert.Equal("x =    1\nprint x\n", studio.Code);
+        Assert.Equal((string?)"x =    1\nprint x\n", (string?)studio.Code);
 
         studio.InsertTemplate(CodeTemplateLibrary.GetTemplates()[0]);
-        Assert.Equal("x =    1\nprint x\n", studio.Code);
+        Assert.Equal((string?)"x =    1\nprint x\n", (string?)studio.Code);
 
         studio.ToggleBreakpoint(1);
         Assert.Empty(studio.Breakpoints);

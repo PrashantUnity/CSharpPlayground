@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 // Charts. Every helper takes the data first, then the title, then what is particular to it; settings left out are the
 // studio's defaults, the same in every language, and `configure` can change anything in the spec before it is shown.

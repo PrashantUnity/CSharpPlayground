@@ -5,17 +5,26 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.Views.Server;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>The two studios, with a Blind 75 problem (or any script file) open, optionally after running it.</summary>
 internal static class StudioSnapshots
@@ -395,7 +404,7 @@ internal static class StudioSnapshots
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
             if (options.Int("cell", 0) is > 0 and var cell && vm.ActiveTab is { } tab)
             {
-                tab.SelectCell(tab.Cells[Math.Min(cell, tab.Cells.Count) - 1]);
+                tab.SelectCell(tab.Cells[Math.Min(cell, (int)tab.Cells.Count) - 1]);
                 Snapshot.Settle();
             }
 

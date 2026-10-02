@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="750"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.ExecutionSettingsSectionControl"
-             x:DataType="vm:CSharpSettingsViewModel"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.ExecutionSettingsSectionControl"
+             x:DataType="settings:CSharpSettingsViewModel"
              Background="Transparent">
 
     <UserControl.Resources>

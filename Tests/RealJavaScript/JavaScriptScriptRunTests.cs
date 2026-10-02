@@ -1,12 +1,11 @@
 using System.Collections.Concurrent;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJavaScript;
+namespace CSharpEditorPlugin.Tests.RealJavaScript;
 
 /// <summary>.js files run with real Node.js: output, exit code, and tracebacks.</summary>
 [Collection(RealJavaScriptCollection.Name)]

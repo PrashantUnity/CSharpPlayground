@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Input;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 /// <summary>
 /// A left press and release in (nearly) the same place: a click, as against a drag that pans, orbits or scrubs. Canvases

@@ -5,7 +5,7 @@ using AvaloniaEdit.Highlighting;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Python in the editor: its colors in both themes, and indentation after Enter.</summary>
 public class PythonEditorTests

@@ -5,6 +5,7 @@
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.ObjectInspectorView"
              x:DataType="models:ObjectInspectorNode">
@@ -102,7 +103,7 @@
                                         <TextBlock Text="{Binding SimpleValueText}"
                                                    FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
                                                    FontSize="11.5"
-                                                   Foreground="{Binding ValueForegroundKey, Converter={x:Static controls:ResourceKeyBrushConverter.Instance}}"
+                                                   Foreground="{Binding ValueForegroundKey, Converter={x:Static common:ResourceKeyBrushConverter.Instance}}"
                                                    IsVisible="{Binding !IsNull}"
                                                    VerticalAlignment="Center"
                                                    TextWrapping="Wrap" />

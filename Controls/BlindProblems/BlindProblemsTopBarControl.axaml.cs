@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems;
 
 public partial class BlindProblemsTopBarControl : UserControl
 {

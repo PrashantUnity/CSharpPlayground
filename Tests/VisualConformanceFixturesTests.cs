@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The specs the canonical calls make, from C# (the reference): <c>docs/visuals/conformance/&lt;case&gt;.json</c>. Every
@@ -81,9 +77,9 @@ public class VisualConformanceFixturesTests
         Assert.True(errors.Count == 0, string.Join("; ", errors));
         return VisualDrawing.Prepare(parsed).Model switch
         {
-            Charting.Models.ChartOptions chart => VisualFingerprints.Of(chart),
-            Charting3D.Models.Plot3DOptions plot => VisualFingerprints.Of(plot),
-            Visualizers.Models.VisualizerOptions visualizer => VisualFingerprints.Of(visualizer),
+            PdfEditorApp.Plugins.CSharpEditor.Charting.Models.ChartOptions chart => VisualFingerprints.Of(chart),
+            PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models.Plot3DOptions plot => VisualFingerprints.Of(plot),
+            PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models.VisualizerOptions visualizer => VisualFingerprints.Of(visualizer),
             var other => throw new InvalidOperationException($"{mime} drew as {other?.GetType().Name ?? "nothing"}")
         };
     }

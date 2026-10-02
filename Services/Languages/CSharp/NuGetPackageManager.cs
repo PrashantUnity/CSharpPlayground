@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.CSharp;

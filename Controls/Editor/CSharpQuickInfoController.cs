@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -13,9 +10,9 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>
 /// Quick Info for a C# editor: rest the pointer on a symbol (or press Ctrl+K Ctrl+I, as in VS Code, for the one at the

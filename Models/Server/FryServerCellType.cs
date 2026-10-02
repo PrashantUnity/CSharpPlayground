@@ -1,4 +1,4 @@
-namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+namespace PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 
 /// <summary>
 /// The functional type of a cell within a .fryserver document.

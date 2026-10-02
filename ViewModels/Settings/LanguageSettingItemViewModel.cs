@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
 public sealed record EnvironmentPropertyItem(string Key, string Value);
 public sealed record CapabilityItem(string Name, bool IsSupported, string Description, string IconKind);

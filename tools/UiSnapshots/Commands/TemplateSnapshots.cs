@@ -3,20 +3,19 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary><c>templates</c>: runs and verifies that all gallery template code executes correctly without errors.</summary>
 internal static class TemplateSnapshots

@@ -1,19 +1,13 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Emit;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 
 public enum ExecutionLanguageMode
 {
@@ -73,7 +67,7 @@ public class RoslynCompilerService
             typeof(HttpClient).Assembly.Location,              // System.Net.Http
             typeof(Uri).Assembly.Location,                                     // System.Private.Uri (required transitively by System.Net.Http types)
             typeof(System.Net.HttpStatusCode).Assembly.Location,               // System.Net.Primitives (required transitively by System.Net.Http types)
-            typeof(Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
+            typeof(Display.Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
             typeof(System.Data.DataTable).Assembly.Location,                   // System.Data.Common

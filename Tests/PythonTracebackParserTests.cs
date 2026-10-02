@@ -1,7 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A failed Python run's traceback becomes a Problems entry at the right line of the script. The samples are real
@@ -33,7 +33,7 @@ public class PythonTracebackParserTests : IDisposable
 
     private string File_(string name) => Path.Combine(_dir, name);
 
-    private Services.Processes.DiagnosticParseResult Parse(string sample, string script) =>
+    private PdfEditorApp.Plugins.CSharpEditor.Services.Processes.DiagnosticParseResult Parse(string sample, string script) =>
         _parser.Parse(sample.Replace("{DIR}", _dir).Replace("/", Path.DirectorySeparatorChar.ToString()), File_(script));
 
     private const string Runtime39 = """

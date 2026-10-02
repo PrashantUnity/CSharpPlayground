@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Hub;
 
 public partial class HubSidebarControl : UserControl
 {

@@ -3,7 +3,7 @@ using Avalonia.Media.Imaging;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 public enum CellOutputKind
 {

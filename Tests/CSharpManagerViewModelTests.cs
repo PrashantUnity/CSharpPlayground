@@ -1,13 +1,10 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 using Xunit;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpManagerViewModelTests : IDisposable
 {
@@ -459,9 +456,9 @@ public class CSharpManagerViewModelTests : IDisposable
 
             await vm.OpenExistingProjectAsync(scriptPath);
 
-            Assert.True(vm.HasStatusBannerMessage);
-            Assert.False(vm.IsStatusBannerError);
-            Assert.Contains("Loaded script", vm.StatusBannerMessage);
+            Assert.True((bool)vm.HasStatusBannerMessage);
+            Assert.False((bool)vm.IsStatusBannerError);
+            Assert.Contains((string)"Loaded script", (string?)vm.StatusBannerMessage);
 
             Assert.True(scriptOpens > 0);
             Assert.NotNull(lastScript);

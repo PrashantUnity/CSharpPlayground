@@ -8,6 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Kinds;
 using System.ComponentModel;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 

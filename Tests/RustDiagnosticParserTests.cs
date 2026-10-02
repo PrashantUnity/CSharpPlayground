@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 // The samples are real rustc / cargo 1.94 output (paths shortened).
 public class RustDiagnosticParserTests : IDisposable

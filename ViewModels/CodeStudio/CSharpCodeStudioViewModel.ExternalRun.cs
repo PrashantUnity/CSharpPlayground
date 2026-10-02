@@ -2,14 +2,13 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 /// <summary>
 /// Running a source file with its language's toolchain (a <c>.py</c> with Python): the file is saved, the toolchain
@@ -29,7 +28,7 @@ public partial class CSharpCodeStudioViewModel
 
     /// <param name="note">A line printed before the run, e.g. why F5 ran without the debugger.</param>
     private async Task RunWithScriptRunnerAsync(
-        StudioTabItemViewModel? runningTab,
+        Common.StudioTabItemViewModel? runningTab,
         ILanguageDefinition language,
         string? note = null,
         IScriptRunner? overrideRunner = null,
@@ -54,7 +53,7 @@ public partial class CSharpCodeStudioViewModel
             {
                 var tempFolder = Path.Combine(Path.GetTempPath(), "FryStudio", "staged_scripts");
                 Directory.CreateDirectory(tempFolder);
-                var safeName = !string.IsNullOrWhiteSpace(document.Title) ? Path.GetFileNameWithoutExtension(document.Title) : "Script";
+                var safeName = !string.IsNullOrWhiteSpace(document.Title) ? Path.GetFileNameWithoutExtension((string?)document.Title) : "Script";
                 var ext = language.FileExtensions.FirstOrDefault() ?? ".cs";
                 sourceFile = Path.Combine(tempFolder, $"{safeName}{ext}");
                 await File.WriteAllTextAsync(sourceFile, Code);
@@ -66,7 +65,7 @@ public partial class CSharpCodeStudioViewModel
             }
         }
 
-        var folder = Path.GetDirectoryName(sourceFile)!;
+        var folder = Path.GetDirectoryName((string?)sourceFile)!;
         var cts = new CancellationTokenSource();
         var timeoutSeconds = _getTimeoutSeconds();
         using var timeoutCts = timeoutSeconds > 0 ? new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)) : new CancellationTokenSource();
@@ -207,7 +206,7 @@ public partial class CSharpCodeStudioViewModel
             ToolchainLabel = toolchain.Label;
             IsToolchainMissing = false;
             var plan = await runner.PlanAsync(new ScriptRunContext(sourceFile, folder, toolchain), token);
-            header += $"▶ {toolchain.Label} · {Path.GetFileName(sourceFile)}\n";
+            header += $"▶ {toolchain.Label} · {Path.GetFileName((string?)sourceFile)}\n";
             CompilerStatusText = "Running…";
             ShowNow();
 
@@ -298,15 +297,15 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // A failed run's errors in Problems (the tab's and, if it's active, the panel's), with a fix for a missing dependency.
-    private void ShowProblems(StudioTabItemViewModel? runningTab, ILanguageDefinition language, ToolchainInfo toolchain, DiagnosticParseResult diagnostics)
+    private void ShowProblems(Common.StudioTabItemViewModel? runningTab, ILanguageDefinition language, ToolchainInfo toolchain, DiagnosticParseResult diagnostics)
     {
-        var problems = new List<DiagnosticItemViewModel>();
+        var problems = new List<Common.DiagnosticItemViewModel>();
         foreach (var item in diagnostics.Diagnostics)
         {
             var package = diagnostics.MissingDependency != null && language.Packages is { } packages
                 ? packages.PackageForMissingDependency(diagnostics.MissingDependency)
                 : null;
-            problems.Add(new DiagnosticItemViewModel(item, (line, column) =>
+            problems.Add(new Common.DiagnosticItemViewModel(item, (line, column) =>
             {
                 SetCaretPosition(line, column);
                 RequestNavigateToCaret?.Invoke(line, column);
@@ -393,7 +392,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // A closed tab's run doesn't go on unseen.
-    private static void StopTabRun(StudioTabItemViewModel tab)
+    private static void StopTabRun(Common.StudioTabItemViewModel tab)
     {
         tab.ActiveRun?.Stop();
         try

@@ -3,10 +3,10 @@ using System.Text.RegularExpressions;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
 /// <summary>
 /// An actionable setup step for installing a missing compiler or language runtime.
@@ -182,11 +182,11 @@ public partial class LanguageSettingItemViewModel
         }
 
         step.IsCopied = true;
-        _ = Task.Run(async () =>
+        _ = Task.Run((Func<Task?>)(async () =>
         {
             await Task.Delay(2500);
             Avalonia.Threading.Dispatcher.UIThread.Post(() => step.IsCopied = false);
-        });
+        }));
     }
 
     [RelayCommand]

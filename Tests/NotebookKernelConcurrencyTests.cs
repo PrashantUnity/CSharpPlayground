@@ -1,9 +1,8 @@
 using System.Collections.Concurrent;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// C# notebooks whose cells compile at the same time. Before cells compiled one at a time, about a third of the

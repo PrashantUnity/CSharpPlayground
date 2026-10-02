@@ -1,14 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 using Xunit;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
+using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class BlindProblemsCatalogAndProgressTests
 {
@@ -225,13 +221,13 @@ public class BlindProblemsCatalogAndProgressTests
         var hostVm = new CSharpStudioHostViewModel(blindProgress: new InMemoryProgressService());
 
         Assert.NotNull(hostVm.BlindProblemsViewModel);
-        Assert.Equal(hostVm.ManagerViewModel, hostVm.CurrentPage);
+        Assert.Equal<object>(hostVm.ManagerViewModel, hostVm.CurrentPage);
 
         hostVm.NavigateToBlindProblems(226);
-        Assert.Equal(hostVm.BlindProblemsViewModel, hostVm.CurrentPage);
-        Assert.False(hostVm.IsOnManagerPage);
-        Assert.Equal("Blind 75", hostVm.ActiveDocumentTitle);
-        Assert.Equal(226, hostVm.BlindProblemsViewModel.SelectedProblem?.Number);
+        Assert.Equal<object>(hostVm.BlindProblemsViewModel, hostVm.CurrentPage);
+        Assert.False((bool)hostVm.IsOnManagerPage);
+        Assert.Equal((string?)"Blind 75", (string?)hostVm.ActiveDocumentTitle);
+        Assert.Equal<int?>(226, hostVm.BlindProblemsViewModel.SelectedProblem?.Number);
         // The view model's own row, the one its table highlights, not the shared catalog's copy.
         Assert.Contains(hostVm.BlindProblemsViewModel.SelectedProblem, hostVm.BlindProblemsViewModel.AllProblems);
     }

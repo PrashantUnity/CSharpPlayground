@@ -6,14 +6,16 @@
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubStarterTemplatesGalleryControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubStarterTemplatesGalleryControl"
+             x:DataType="hub:CSharpManagerViewModel">
 
     <UserControl.Resources>
         <!-- Template Card in Nexus Style with Direct Action Button & Double Click -->
         <DataTemplate x:Key="TemplateCardTemplate" x:DataType="models:CodeTemplate">
-            <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).SelectTemplateCommand}"
+            <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).SelectTemplateCommand}"
                     CommandParameter="{Binding}"
                     Classes="nexus-card-btn"
                     Margin="0,0,16,16">
@@ -84,7 +86,7 @@
 
                             <!-- Direct "Use" Action Button -->
                             <Button Grid.Column="1"
-                                    Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).LaunchTemplateCommand}"
+                                    Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).LaunchTemplateCommand}"
                                     CommandParameter="{Binding}"
                                     Classes="nexus-card-use-btn"
                                     ToolTip.Tip="Launch template now (or double-click card)">
@@ -102,7 +104,7 @@
 
     <StackPanel Spacing="16">
         <!-- Header: Title, Category Filter Chips & Search -->
-        <Border controls:CompactWhenCrowded.IsEnabled="True">
+        <Border common:CompactWhenCrowded.IsEnabled="True">
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
                     <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />

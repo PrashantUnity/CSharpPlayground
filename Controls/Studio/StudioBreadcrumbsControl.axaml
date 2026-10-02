@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="24"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioBreadcrumbsControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioBreadcrumbsControl"
              x:CompileBindings="False">
 
 

@@ -1,17 +1,14 @@
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.CSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using Xunit;
+using LanguageSettingItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.LanguageSettingItemViewModel;
+using ToolchainSetupStepItem = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.ToolchainSetupStepItem;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class ToolchainSetupRunnerTests : IDisposable
 {
@@ -102,7 +99,7 @@ public class ToolchainSetupRunnerTests : IDisposable
 
         await vm.CopyCommandToClipboardAsync(step, clipboard: null);
 
-        Assert.True(step.IsCopied);
+        Assert.True((bool)step.IsCopied);
         Assert.Equal("Copied! ✓", step.CopyButtonLabel);
     }
 
@@ -126,7 +123,7 @@ public class ToolchainSetupRunnerTests : IDisposable
 
         Assert.True(vm.IsMissing);
         Assert.True(vm.HasDownloadUrl);
-        Assert.Equal("https://fakelang.org/installer", vm.MissingDownloadUrl);
+        Assert.Equal((string?)"https://fakelang.org/installer", (string?)vm.MissingDownloadUrl);
         Assert.Equal(2, vm.SetupSteps.Count);
         Assert.Equal("winget install fakelang", vm.SetupSteps[0].Command);
         Assert.Equal("https://fakelang.org/download", vm.SetupSteps[1].Url);

@@ -1,12 +1,13 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealCSharp;
+namespace CSharpEditorPlugin.Tests.RealCSharp;
 
 /// <summary>
 /// C# scripts debugged with the real netcoredbg. Each test returns at once where netcoredbg isn't installed, unless

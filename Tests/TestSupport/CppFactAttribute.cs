@@ -3,7 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// A test that runs a real C++ compiler (clang++ or g++). Skipped on a machine without a compiler, unless <c>FRY_REQUIRE_CPP=1</c>.

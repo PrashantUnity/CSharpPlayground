@@ -1,9 +1,9 @@
 using System.Text;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Plain source files (main.py) in the workspace: listed, opened, saved safely, created, renamed and deleted.</summary>
 public class SourceFileStorageTests : IDisposable

@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.KeymapSettingsSectionControl"
-             x:DataType="vm:CSharpSettingsViewModel"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.KeymapSettingsSectionControl"
+             x:DataType="settings:CSharpSettingsViewModel"
              Background="Transparent">
 
     <UserControl.Resources>
@@ -81,8 +82,8 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:KeymapCategoryChip">
-                                        <Button Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectKeymapCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
+                                    <DataTemplate x:DataType="settings:KeymapCategoryChip">
+                                        <Button Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectKeymapCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue={x:Null}}"
                                                 CommandParameter="{Binding}"
                                                 Classes="snippet-action-btn"
                                                 Classes.active="{Binding IsSelected}"
@@ -116,7 +117,7 @@
                             CornerRadius="6">
                         <ItemsControl ItemsSource="{Binding FilteredShortcuts}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:KeymapShortcutItem">
+                                <DataTemplate x:DataType="settings:KeymapShortcutItem">
                                     <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
                                         <Grid ColumnDefinitions="180,240,*">
                                             <!-- Action Name & Category Badge -->

@@ -1,8 +1,6 @@
-using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 /// <summary>Opens web pages in the user's default browser.</summary>
 public static class BrowserLauncher

@@ -1,19 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CSharpDocsViewModel;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>What the UI review found in the view models behind the Hub, Docs, notebook variables and .Dump() tables.</summary>
 public class UiPolishTests : IDisposable
@@ -44,17 +40,17 @@ public class UiPolishTests : IDisposable
         docs.SelectArticle(article);
 
         Assert.Same(other, docs.SelectedCategory);
-        Assert.Equal($"{other.Title} > {article.Title}", docs.ActiveBreadcrumb);
+        Assert.Equal((string?)$"{other.Title} > {article.Title}", (string?)docs.ActiveBreadcrumb);
     }
 
     [Fact]
     public void DocsViewModel_HasOutlineVisibleDefault_AndCanBeToggled()
     {
         var docs = new CSharpDocsViewModel();
-        Assert.True(docs.IsOutlineVisible);
+        Assert.True((bool)docs.IsOutlineVisible);
 
         docs.IsOutlineVisible = false;
-        Assert.False(docs.IsOutlineVisible);
+        Assert.False((bool)docs.IsOutlineVisible);
     }
 
     // ── Hub ───────────────────────────────────────────────────────────────────

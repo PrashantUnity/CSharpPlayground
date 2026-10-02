@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>
 /// Combines multiple editor assistants (e.g. Quick Info hover + Code Completion) into a single disposable unit.

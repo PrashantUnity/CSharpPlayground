@@ -1,7 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 /// <summary>The row above the first cell: the divider that inserts a cell at the beginning of the notebook.</summary>
 public sealed class NotebookCanvasHeader

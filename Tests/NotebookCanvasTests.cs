@@ -1,19 +1,22 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using Avalonia.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using Xunit;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class NotebookCanvasRowsTests
 {
     private static NotebookCellViewModel Cell(string source) => new(new NotebookCellItem { Source = source });
 
-    private static string Describe(NotebookCanvasRows rows) => string.Join(",", rows.Rows.Select(r => r switch
+    private static string Describe(NotebookCanvasRows rows) => string.Join(",", rows.Rows.Select<object, string>(r => r switch
     {
         NotebookCanvasHeader => "H",
         NotebookCanvasFooter => "F",

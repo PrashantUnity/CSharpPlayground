@@ -1,11 +1,10 @@
-using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 
 /// <summary>
 /// Hides the DispatcherTimer + InvalidateVisual boilerplate for a self-repainting animation.

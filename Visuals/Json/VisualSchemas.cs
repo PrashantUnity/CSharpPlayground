@@ -2,6 +2,8 @@ using System.Reflection;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using XmlDocumentationParser = PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn.XmlDocumentationParser;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 

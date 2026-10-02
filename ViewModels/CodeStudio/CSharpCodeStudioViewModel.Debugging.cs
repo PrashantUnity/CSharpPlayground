@@ -1,22 +1,15 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel
 {
@@ -171,7 +164,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void HandleCompilationFailure(IReadOnlyList<DiagnosticItem> diagnostics, StudioTabItemViewModel? debuggingTab)
+    private void HandleCompilationFailure(IReadOnlyList<DiagnosticItem> diagnostics, Common.StudioTabItemViewModel? debuggingTab)
     {
         var failMsg = "❌ Debug compilation failed. Check the Problems tab for details.\n";
         if (debuggingTab != null)
@@ -180,7 +173,7 @@ public partial class CSharpCodeStudioViewModel
             debuggingTab.Diagnostics.Clear();
             foreach (var d in diagnostics)
             {
-                debuggingTab.Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                debuggingTab.Diagnostics.Add(new Common.DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
             }
             debuggingTab.CompilerStatusText = "Build Failed";
             debuggingTab.IsExecuting = false;
@@ -193,7 +186,7 @@ public partial class CSharpCodeStudioViewModel
             Diagnostics.Clear();
             foreach (var d in diagnostics)
             {
-                Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                Diagnostics.Add(new Common.DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
             }
             ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
             WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
@@ -204,7 +197,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void AppendLiveDebugOutput(string text, StudioTabItemViewModel? tab)
+    private void AppendLiveDebugOutput(string text, Common.StudioTabItemViewModel? tab)
     {
         if (tab != null)
         {
@@ -217,7 +210,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void HandleSessionPaused(DebugPausedEventArgs args, StudioTabItemViewModel? tab)
+    private void HandleSessionPaused(DebugPausedEventArgs args, Common.StudioTabItemViewModel? tab)
     {
         int line = args.LineNumber;
         _variableChangeTracker.TrackAndMarkChanges(args.Locals);
@@ -266,7 +259,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void HandleSessionResumed(StudioTabItemViewModel? tab)
+    private void HandleSessionResumed(Common.StudioTabItemViewModel? tab)
     {
         if (tab != null)
         {
@@ -285,11 +278,11 @@ public partial class CSharpCodeStudioViewModel
     }
 
     /// <summary>The file a debug session knows the script as; breakpoints set while it runs must use the same name.</summary>
-    private string DebugSourcePath(StudioTabItemViewModel? tab) =>
+    private string DebugSourcePath(Common.StudioTabItemViewModel? tab) =>
         tab?.Document.SourceFilePath
         ?? (Script.Title.Contains('.') ? Script.Title : $"{Script.Title}{ActiveLanguage.FileExtensions.FirstOrDefault() ?? ".cs"}");
 
-    private void HandleSessionTerminated(DebugTerminatedEventArgs args, StudioTabItemViewModel? tab, Stopwatch sw)
+    private void HandleSessionTerminated(DebugTerminatedEventArgs args, Common.StudioTabItemViewModel? tab, Stopwatch sw)
     {
         sw.Stop();
         var timeText = $"{sw.Elapsed.TotalMilliseconds:N0} ms";

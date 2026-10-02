@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpSettingsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 

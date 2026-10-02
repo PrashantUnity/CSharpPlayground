@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 public enum FakeOs
 {

@@ -1,10 +1,10 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Which Node.js a script or cell runs with, on each OS, described with a pretend computer.</summary>
 public class JavaScriptToolchainProviderTests : IDisposable

@@ -1,15 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Rendering;
 using AvaloniaEdit.Editing;
-using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 public class BreakpointMargin : AbstractMargin, ICustomHitTest
 {

@@ -3,11 +3,12 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 public partial class NotebookTabViewModel : ObservableObject
 {
@@ -418,7 +419,7 @@ public partial class NotebookTabViewModel : ObservableObject
         // call), which Roslyn's cancellation can never preempt. Give up waiting rather than
         // hang this command (and the cell's "running" UI) forever; the thread-pool thread
         // keeps running in the background until it naturally returns or the process exits.
-        _ = executionTask.ContinueWith(t =>
+        _ = executionTask.ContinueWith((Task<KernelExecutionResult> t) =>
         {
             Dispatcher.UIThread.Post(() =>
             {

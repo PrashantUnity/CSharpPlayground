@@ -1,5 +1,6 @@
 using System.Globalization;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 

@@ -2,7 +2,7 @@ using AvaloniaEdit;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The editor's C# (Roslyn) completion and hover must not run on a language that brings its own, or both would pop up on

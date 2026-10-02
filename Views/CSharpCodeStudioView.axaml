@@ -9,9 +9,16 @@
              xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:codeStudio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio"
+             xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
+             xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
+             xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
+             xmlns:overlays="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Overlays"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="820"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpCodeStudioView"
-             x:DataType="vm:CSharpCodeStudioViewModel">
+             x:DataType="codeStudio:CSharpCodeStudioViewModel">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -61,7 +68,7 @@
             <!-- ======================================================== -->
             <!-- 1A. ACTIVITY BAR (Column 0, 48px fixed)                  -->
             <!-- ======================================================== -->
-            <controls:StudioActivityBarControl Grid.Column="0" />
+            <studio:StudioActivityBarControl Grid.Column="0" />
 
             <!-- ======================================================== -->
             <!-- 1B. PRIMARY SIDEBAR (Column 1, Resizable, Collapsible)   -->
@@ -100,7 +107,7 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:NewFileOption">
+                                        <DataTemplate x:DataType="common:NewFileOption">
                                             <Button Command="{Binding Command}" Classes="explorer-tool-btn" ToolTip.Tip="{Binding Label}">
                                                 <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{Binding AccentHex}" />
                                             </Button>
@@ -161,10 +168,10 @@
                     <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedActivityBarIndex}">
 
                         <!-- Page 0: Explorer Tree -->
-                        <controls:StudioExplorerPanelControl OpenProjectRequested="OnOpenProjectClick" />
+                        <studio:StudioExplorerPanelControl OpenProjectRequested="OnOpenProjectClick" />
 
                         <!-- Page 1: Search in Active Script -->
-                        <controls:StudioSearchPanelControl />
+                        <studio:StudioSearchPanelControl />
 
                         <!-- Page 2: Run & Debug Sidebar Panel -->
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -268,10 +275,10 @@
                                                 <DataTemplate x:DataType="models:BreakpointItem">
                                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2">
                                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                                                  Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).ToggleBreakpointEnabledCommand}"
+                                                                  Command="{Binding $parent[UserControl].((codeStudio:CSharpCodeStudioViewModel)DataContext).ToggleBreakpointEnabledCommand}"
                                                                   CommandParameter="{Binding}" Margin="0,0,4,0" />
                                                         <TextBlock Grid.Column="1" Text="{Binding DisplayText}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                                        <Button Grid.Column="2" Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RemoveBreakpointCommand}" CommandParameter="{Binding}" Classes="explorer-tool-btn" Width="18" Height="18">
+                                                        <Button Grid.Column="2" Command="{Binding $parent[UserControl].((codeStudio:CSharpCodeStudioViewModel)DataContext).RemoveBreakpointCommand}" CommandParameter="{Binding}" Classes="explorer-tool-btn" Width="18" Height="18">
                                                             <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                         </Button>
                                                     </Grid>
@@ -302,7 +309,7 @@
                                                 <DataTemplate x:DataType="models:WatchExpressionItem">
                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,2">
                                                         <TextBlock Grid.Column="0" Text="{Binding Expression, StringFormat='{}{0}: '}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                        <Button Grid.Column="1" Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).RemoveWatchCommand}" CommandParameter="{Binding}" Classes="explorer-tool-btn" Width="18" Height="18">
+                                                        <Button Grid.Column="1" Command="{Binding $parent[UserControl].((codeStudio:CSharpCodeStudioViewModel)DataContext).RemoveWatchCommand}" CommandParameter="{Binding}" Classes="explorer-tool-btn" Width="18" Height="18">
                                                             <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                         </Button>
                                                     </Grid>
@@ -315,7 +322,7 @@
                         </ScrollViewer>
 
                         <!-- Page 3: Dependencies & NuGet -->
-                        <controls:StudioDependenciesPanelControl />
+                        <studio:StudioDependenciesPanelControl />
 
                         <!-- Page 4: Scratchpad & Documentation Notes: rendered markdown, or the markdown source while editing -->
                         <Grid RowDefinitions="Auto,*">
@@ -345,7 +352,7 @@
                                           HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                           Background="{DynamicResource DsBgBrush}">
                                 <Panel Margin="14,12">
-                                    <controls:MarkdownView Markdown="{Binding Notes}"
+                                    <docs:MarkdownView Markdown="{Binding Notes}"
                                                            FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     <TextBlock Text="No notes yet. Click Edit to write requirements, plans or scratch work in markdown."
                                                IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNullOrEmpty}}"
@@ -372,7 +379,7 @@
 
                                 <ItemsControl ItemsSource="{Binding Diagnostics}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
+                                        <DataTemplate x:DataType="common:DiagnosticItemViewModel">
                                             <Button Command="{Binding NavigateCommand}"
                                                     Background="Transparent" BorderThickness="0"
                                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
@@ -426,7 +433,7 @@
                         Padding="0,0,8,0">
                     <Grid ColumnDefinitions="*,Auto">
                         <!-- Scrollable Multi-Tab Document Strip -->
-                        <controls:StudioTabBarControl Grid.Column="0" />
+                        <studio:StudioTabBarControl Grid.Column="0" />
 
                         <!-- Right-Side Editor Action Toolbar -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -529,7 +536,7 @@
                 </Border>
 
                 <!-- Row 1: VS Code Breadcrumbs Bar -->
-                <controls:StudioBreadcrumbsControl Grid.Row="1" />
+                <studio:StudioBreadcrumbsControl Grid.Row="1" />
 
                 <!-- Row 2: AvaloniaEdit Code Canvas + Right Dock Host -->
                 <Grid Grid.Row="2">
@@ -553,19 +560,19 @@
                         </Border>
 
                         <!-- Live Debug Hover Data Tip Card -->
-                        <controls:DebugHoverDataTipControl Name="DebugHoverTip"
+                        <editor:DebugHoverDataTipControl Name="DebugHoverTip"
                                                            HorizontalAlignment="Left"
                                                            VerticalAlignment="Top"
                                                            IsVisible="False" />
 
                         <!-- Interactive Collection View Overlay (Data Explorer) -->
-                        <controls:CollectionViewControl Name="CollectionViewOverlay"
+                        <visuals:CollectionViewControl Name="CollectionViewOverlay"
                                                         HorizontalAlignment="Center"
                                                         VerticalAlignment="Center"
                                                         IsVisible="False" />
 
                         <!-- Text / JSON Value Viewer Overlay -->
-                        <controls:ValueViewerControl Name="ValueViewerOverlay"
+                        <visuals:ValueViewerControl Name="ValueViewerOverlay"
                                                      HorizontalAlignment="Center"
                                                      VerticalAlignment="Center"
                                                      IsVisible="False" />
@@ -604,12 +611,12 @@
         <!-- ============================================================ -->
         <!-- 2. VS CODE STATUS BAR (Bottom 22px Strip)                    -->
         <!-- ============================================================ -->
-        <controls:StudioStatusBarControl Grid.Row="1" />
+        <studio:StudioStatusBarControl Grid.Row="1" />
 
         <!-- ============================================================ -->
         <!-- 3. QUICK OPEN & COMMAND PALETTE OVERLAY MODAL                -->
         <!-- ============================================================ -->
-        <controls:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
+        <overlays:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
                                           Grid.RowSpan="2"
                                           ZIndex="999"
                                           HorizontalAlignment="Stretch"
@@ -618,7 +625,7 @@
         <!-- ============================================================ -->
         <!-- 4. STUDIO LOADING OVERLAY POPUP                              -->
         <!-- ============================================================ -->
-        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
                                               LoadingTitle="{Binding LoadingTitle}"
                                               LoadingSubtitle="{Binding LoadingSubtitle}"
                                               Grid.RowSpan="2"

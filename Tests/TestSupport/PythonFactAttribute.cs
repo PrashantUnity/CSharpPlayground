@@ -3,7 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// A test that runs real Python. It's skipped on a machine without Python 3.9+, unless <c>FRY_REQUIRE_PYTHON=1</c>

@@ -1,10 +1,8 @@
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpEditorShortcutRegistrationTests
 {
@@ -15,7 +13,7 @@ public class CSharpEditorShortcutRegistrationTests
         var scope = new PluginScope();
         var scopedCtx = rootCtx.CreateScopedContext(scope);
 
-        var plugin = new CSharpEditorPlugin();
+        var plugin = new PdfEditorApp.Plugins.CSharpEditor.CSharpEditorPlugin();
         await plugin.ApplyAsync(scopedCtx);
 
         var shortcuts = scopedCtx.GetRegisteredShortcuts().ToList();
@@ -50,7 +48,7 @@ public class CSharpEditorShortcutRegistrationTests
         var scope = new PluginScope();
         var scopedCtx = rootCtx.CreateScopedContext(scope);
 
-        var plugin = new CSharpEditorPlugin();
+        var plugin = new PdfEditorApp.Plugins.CSharpEditor.CSharpEditorPlugin();
         await plugin.ApplyAsync(scopedCtx);
 
         Assert.NotEmpty(rootCtx.GetRegisteredShortcuts());

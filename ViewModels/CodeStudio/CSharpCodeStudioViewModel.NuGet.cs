@@ -1,14 +1,11 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public sealed record NuGetPackageItem(
     string Id,
@@ -163,7 +160,7 @@ public partial class CSharpCodeStudioViewModel
         if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
         {
             NuGetSearchResults.Clear();
-            var filtered = Array.FindAll(PopularCppPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            var filtered = Array.FindAll(PopularCppPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains((string)query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
             return;
@@ -173,7 +170,7 @@ public partial class CSharpCodeStudioViewModel
         if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Go, StringComparison.OrdinalIgnoreCase))
         {
             NuGetSearchResults.Clear();
-            var filtered = Array.FindAll(PopularGoPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            var filtered = Array.FindAll(PopularGoPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains((string)query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
             return;
@@ -183,7 +180,7 @@ public partial class CSharpCodeStudioViewModel
         if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Rust, StringComparison.OrdinalIgnoreCase))
         {
             NuGetSearchResults.Clear();
-            var filtered = Array.FindAll(PopularRustPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            var filtered = Array.FindAll(PopularRustPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains((string)query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching crates" : "No crates found in catalog";
             return;
@@ -216,7 +213,7 @@ public partial class CSharpCodeStudioViewModel
                 }
                 else
                 {
-                    var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+                    var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
                     foreach (var p in filtered) NuGetSearchResults.Add(p);
                     NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found on Maven Central";
                 }
@@ -224,7 +221,7 @@ public partial class CSharpCodeStudioViewModel
             catch
             {
                 NuGetSearchResults.Clear();
-                var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+                var filtered = Array.FindAll(PopularJavaPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
                 foreach (var p in filtered) NuGetSearchResults.Add(p);
                 NuGetStatusMessage = "Network unavailable: showing offline packages";
             }
@@ -241,7 +238,7 @@ public partial class CSharpCodeStudioViewModel
 
         try
         {
-            var url = $"https://azuresearch-usnc.nuget.org/query?q={Uri.EscapeDataString(query)}&take=12&prerelease=false";
+            var url = $"https://azuresearch-usnc.nuget.org/query?q={Uri.EscapeDataString((string)query)}&take=12&prerelease=false";
             var response = await NuGetHttpClient.GetFromJsonAsync<NuGetSearchResponse>(url);
 
             NuGetSearchResults.Clear();
@@ -262,7 +259,7 @@ public partial class CSharpCodeStudioViewModel
             }
             else
             {
-                var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+                var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
                 foreach (var p in filtered) NuGetSearchResults.Add(p);
                 NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found on NuGet";
             }
@@ -270,7 +267,7 @@ public partial class CSharpCodeStudioViewModel
         catch
         {
             NuGetSearchResults.Clear();
-            var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
+            var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = "Network unavailable: showing offline packages";
         }

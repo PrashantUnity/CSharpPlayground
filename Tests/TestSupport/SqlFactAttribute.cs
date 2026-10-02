@@ -3,7 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// A test that runs real SQLite CLI (sqlite3). Skipped on a machine without sqlite3, unless <c>FRY_REQUIRE_SQL=1</c>.

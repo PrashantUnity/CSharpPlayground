@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.QuickInfoTipControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Editor.QuickInfoTipControl"
              Foreground="{DynamicResource M3OnSurfaceBrush}">
 
     <!-- The hover card for a symbol: signature, where it's declared, then its documentation. Filled in code (SetQuickInfo). -->

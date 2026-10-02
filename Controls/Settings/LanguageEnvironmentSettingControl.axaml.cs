@@ -1,10 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using LanguageSettingItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.LanguageSettingItemViewModel;
+using ToolchainSetupStepItem = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.ToolchainSetupStepItem;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Settings;
 
 public partial class LanguageEnvironmentSettingControl : UserControl
 {
@@ -91,7 +93,7 @@ public partial class LanguageEnvironmentSettingControl : UserControl
     {
         if (DataContext is LanguageSettingItemViewModel vm && !string.IsNullOrWhiteSpace(vm.MissingDownloadUrl))
         {
-            PdfEditorApp.Plugins.CSharpEditor.Services.BrowserLauncher.Open(vm.MissingDownloadUrl);
+            BrowserLauncher.Open(vm.MissingDownloadUrl);
         }
     }
 
@@ -99,7 +101,7 @@ public partial class LanguageEnvironmentSettingControl : UserControl
     {
         if (sender is Button { DataContext: ToolchainSetupStepItem { Url: { Length: > 0 } url } })
         {
-            PdfEditorApp.Plugins.CSharpEditor.Services.BrowserLauncher.Open(url);
+            BrowserLauncher.Open(url);
         }
     }
 

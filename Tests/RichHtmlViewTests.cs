@@ -1,9 +1,8 @@
-using System.Linq;
 using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class RichHtmlViewTests
 {

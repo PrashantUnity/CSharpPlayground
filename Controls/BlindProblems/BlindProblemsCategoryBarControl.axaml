@@ -5,9 +5,10 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="80"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsCategoryBarControl"
-             x:DataType="vm:CSharpBlindProblemsViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsCategoryBarControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
 
     <!-- Every category is visible at once: the chips wrap onto another line instead of hiding behind a scrollbar. -->
     <Border Background="{DynamicResource DsSurfaceBrush}"
@@ -23,7 +24,7 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:BlindCategorySummary">
                     <Button Classes="filter-chip" Classes.selected="{Binding IsSelected}"
-                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).SetCategoryCommand}"
+                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).SetCategoryCommand}"
                             CommandParameter="{Binding Name}"
                             ToolTip.Tip="{Binding ToolTipText}">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">

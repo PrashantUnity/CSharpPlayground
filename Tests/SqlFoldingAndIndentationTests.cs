@@ -3,7 +3,7 @@ using AvaloniaEdit.Document;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class SqlFoldingAndIndentationTests
 {

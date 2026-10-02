@@ -1,9 +1,6 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>
 /// Centralized typography and font zoom controller for C# Code Studio, Notebook Studio, and Terminal decks.

@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
+namespace CSharpEditorPlugin.Tests.RealJava;
 
 /// <summary>The notebook's Java kernel with real JDK: state, output, errors, values, variables.</summary>
 [Collection(RealJavaCollection.Name)]

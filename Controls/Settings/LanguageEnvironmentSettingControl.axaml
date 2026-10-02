@@ -5,9 +5,10 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:toolchains="using:PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.LanguageEnvironmentSettingControl"
-             x:DataType="vm:LanguageSettingItemViewModel"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.LanguageEnvironmentSettingControl"
+             x:DataType="settings:LanguageSettingItemViewModel"
              Background="Transparent">
 
     <UserControl.Resources>
@@ -107,7 +108,7 @@
                         <!-- Interactive Setup Step Cards with Copy and Run buttons -->
                         <ItemsControl ItemsSource="{Binding SetupSteps}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ToolchainSetupStepItem">
+                                <DataTemplate x:DataType="settings:ToolchainSetupStepItem">
                                     <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,3">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center" Margin="0,0,12,0">
@@ -157,8 +158,8 @@
                                 <TextBlock Text="In-Process Roslyn (.NET 10) for instant compilation &amp; debugging; External .NET SDK for CLI projects." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn" IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="internal" FontSize="12" />
-                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK" IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="external" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn" IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="internal" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK" IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="external" FontSize="12" />
                             </StackPanel>
                         </Grid>
 
@@ -214,7 +215,7 @@
                                                     <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,0,8,0">
                                                         <TextBlock Text="{Binding Source}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Border>
-                                                    <Button Grid.Column="3" Command="{Binding ((vm:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center" ToolTip.Tip="Use this runtime">
+                                                    <Button Grid.Column="3" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center" ToolTip.Tip="Use this runtime">
                                                         <TextBlock Text="Select" FontSize="10.5" />
                                                     </Button>
                                                 </Grid>
@@ -297,7 +298,7 @@
                         <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6">
                             <ItemsControl ItemsSource="{Binding EnvironmentDetails}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:EnvironmentPropertyItem">
+                                    <DataTemplate x:DataType="settings:EnvironmentPropertyItem">
                                         <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
                                             <Grid ColumnDefinitions="190,*">
                                                 <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -328,7 +329,7 @@
                         <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6">
                             <ItemsControl ItemsSource="{Binding CapabilityItems}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:CapabilityItem">
+                                    <DataTemplate x:DataType="settings:CapabilityItem">
                                         <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="10,7">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />

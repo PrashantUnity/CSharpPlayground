@@ -1,7 +1,6 @@
-using System;
 using System.Text;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 /// <summary>
 /// Carries one run's console output from the running script to the Terminal panel, each piece exactly once and in the

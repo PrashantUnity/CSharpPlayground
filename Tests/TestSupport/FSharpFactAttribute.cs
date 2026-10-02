@@ -3,7 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// A test that runs real F# (dotnet fsi / fsi). Skipped on a machine without F#, unless <c>FRY_REQUIRE_FSHARP=1</c>.

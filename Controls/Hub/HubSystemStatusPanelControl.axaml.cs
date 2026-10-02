@@ -1,8 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Hub;
 
 public partial class HubSystemStatusPanelControl : UserControl
 {

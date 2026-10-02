@@ -3,10 +3,17 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadingState
 {
@@ -75,12 +82,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
 
     private readonly Task _initTask;
 
-    public CSharpManagerViewModel ManagerViewModel { get; }
-    public CSharpDocsViewModel DocsViewModel { get; }
-    public CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
-    public CSharpSettingsViewModel SettingsViewModel { get; }
-    public CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
-    public CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
+    public Hub.CSharpManagerViewModel ManagerViewModel { get; }
+    public Docs.CSharpDocsViewModel DocsViewModel { get; }
+    public BlindProblems.CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
+    public Settings.CSharpSettingsViewModel SettingsViewModel { get; }
+    public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
+    public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
     public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
@@ -114,28 +121,28 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(IPluginSettingsStore)) as IPluginSettingsStore;
 
         // ── Initialize Documentation & Learning Center page ──
-        DocsViewModel = new CSharpDocsViewModel(
+        DocsViewModel = new Docs.CSharpDocsViewModel(
             docService: DocumentationService.Instance,
             backToHubAction: NavigateToManager,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
 
         // ── Initialize Blind 75 Algorithm Hub page ──
-        BlindProblemsViewModel = new CSharpBlindProblemsViewModel(
+        BlindProblemsViewModel = new BlindProblems.CSharpBlindProblemsViewModel(
             progressService: _blindProgress,
             backToHubAction: NavigateToManager,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio);
 
         // ── Initialize Settings & Environment Setup page ──
-        SettingsViewModel = new CSharpSettingsViewModel(
+        SettingsViewModel = new Settings.CSharpSettingsViewModel(
             _languages,
             _languages.StudioSettings,
             backToHubAction: NavigateToManager,
             backToPreviousAction: NavigateToPreviousPage);
 
         // ── Show Manager immediately — it doesn't need the compiler ──
-        ManagerViewModel = new CSharpManagerViewModel(
+        ManagerViewModel = new Hub.CSharpManagerViewModel(
             _storageService,
             openScriptAction: NavigateToCodeStudio,
             openNotebookAction: NavigateToNotebookStudio,
@@ -183,8 +190,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     // ══════════════════════════════════════════════════════════════════════════════════════
     private async Task InitializeCompilerAsync()
     {
-        CSharpCodeStudioViewModel? codeVm = null;
-        CSharpNotebookStudioViewModel? notebookVm = null;
+        CodeStudio.CSharpCodeStudioViewModel? codeVm = null;
+        Notebooks.CSharpNotebookStudioViewModel? notebookVm = null;
 
         await Task.Run(() =>
         {
@@ -201,7 +208,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 Notes = CodeTemplateLibrary.GetTemplates()[0].Notes
             };
 
-            codeVm = new CSharpCodeStudioViewModel(
+            codeVm = new CodeStudio.CSharpCodeStudioViewModel(
                 initialScript,
                 _storageService,
                 _compilerService,
@@ -221,7 +228,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 Title = "Interactive C# Notebook"
             };
 
-            notebookVm = new CSharpNotebookStudioViewModel(
+            notebookVm = new Notebooks.CSharpNotebookStudioViewModel(
                 initialNotebook,
                 _storageService,
                 _compilerService,
@@ -417,7 +424,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         {
             CurrentPage = _previousPageBeforeSettings;
             IsOnManagerPage = ReferenceEquals(CurrentPage, ManagerViewModel);
-            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is CSharpDocsViewModel ? "Documentation" : (CurrentPage is CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is CSharpSettingsViewModel ? "Settings" : (CurrentPage is PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel ? "API Server" : "Editor"))));
+            ActiveDocumentTitle = IsOnManagerPage ? "Hub" : (CurrentPage is Docs.CSharpDocsViewModel ? "Documentation" : (CurrentPage is BlindProblems.CSharpBlindProblemsViewModel ? "Blind 75" : (CurrentPage is Settings.CSharpSettingsViewModel ? "Settings" : (CurrentPage is PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel ? "API Server" : "Editor"))));
         }
         else
         {

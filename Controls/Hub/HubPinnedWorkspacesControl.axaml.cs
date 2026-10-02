@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Hub;
 
 public partial class HubPinnedWorkspacesControl : UserControl
 {

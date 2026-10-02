@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// C# data becomes a spec by the conventions every language follows, and the Display API is the same shape for every
@@ -286,7 +283,7 @@ public class VisualBuildersTests
         Assert.Equal("shown", spec.Title);
     }
 
-    private static T Emit<T>(Func<Visuals.Interaction.DisplayHandle<T>> display) where T : VisualSpec
+    private static T Emit<T>(Func<PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction.DisplayHandle<T>> display) where T : VisualSpec
     {
         T? spec = null;
         using (InteractiveDisplayContext.EnterScope(o => spec = (T)o.Visual!.Spec))

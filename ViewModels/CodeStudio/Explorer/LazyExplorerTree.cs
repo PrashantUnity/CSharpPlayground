@@ -1,9 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 /// <summary>
 /// The Explorer of a workspace too big to list at once (more files than the listing limit): it draws one folder at a time. The

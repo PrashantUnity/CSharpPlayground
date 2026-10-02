@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems;
 using Xunit;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>The Blind 75 problem list: LeetCode links, sorting, filter states and the resizable table columns.</summary>
 public class BlindProblemsBrowserTests : IDisposable
@@ -147,14 +144,14 @@ public class BlindProblemsBrowserTests : IDisposable
         vm.SetCategory("Tries");
         vm.SetDifficulty("Easy");
         Assert.Empty(vm.FilteredProblems);
-        Assert.True(vm.HasNoResults);
+        Assert.True((bool)vm.HasNoResults);
 
         vm.SearchQuery = "trie";
         vm.ClearFilters();
 
-        Assert.False(vm.HasNoResults);
+        Assert.False((bool)vm.HasNoResults);
         Assert.Equal(vm.AllProblems.Count, vm.FilteredProblems.Count);
-        Assert.Equal(("All", "All", "All", ""), (vm.SelectedCategory, vm.SelectedDifficulty, vm.SelectedStatusFilter, vm.SearchQuery));
+        Assert.Equal<(string, string, string, string)>(("All", "All", "All", ""), (vm.SelectedCategory, vm.SelectedDifficulty, vm.SelectedStatusFilter, vm.SearchQuery));
         Assert.True(vm.Categories.Single(c => c.Name == "All").IsSelected);
     }
 

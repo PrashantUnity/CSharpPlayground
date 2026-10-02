@@ -6,9 +6,13 @@
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             xmlns:explorer="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer"
+             xmlns:hub1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Hub"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubWorkspacesPanelControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubWorkspacesPanelControl"
+             x:DataType="hub:CSharpManagerViewModel">
     <UserControl.Styles>
         <Style Selector="StackPanel.hub-filter-chips">
             <Setter Property="Grid.Column" Value="2" />
@@ -63,7 +67,7 @@
                                     <StackPanel Spacing="12" IsVisible="{Binding IsWorkspacesTabActive}">
 
                                         <!-- Header: Title & Category Filter Chips (the chips move under the title when crowded) -->
-                                        <Border controls:CompactWhenCrowded.IsEnabled="True">
+                                        <Border common:CompactWhenCrowded.IsEnabled="True">
                                         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
                                                 <materialIcons:MaterialIcon Kind="History" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -225,7 +229,7 @@
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.DataTemplates>
                                                         <!-- Solution & External Workspace Group Header (Visual Studio & Rider Style) -->
-                                                        <DataTemplate x:DataType="vm:WorkspaceGroupHeaderViewModel">
+                                                        <DataTemplate x:DataType="explorer:WorkspaceGroupHeaderViewModel">
                                                             <Border Background="{DynamicResource DsSurfaceBrush}"
                                                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                                                     BorderThickness="0,1,0,1"
@@ -268,20 +272,20 @@
 
                                                         <!-- Standard Workspace Document Item Row (1-Click Launch) -->
                                                         <DataTemplate x:DataType="models:WorkspaceItemSummary">
-                                                            <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).OpenItemCommand}"
+                                                            <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).OpenItemCommand}"
                                                                     CommandParameter="{Binding}"
                                                                     Classes="nexus-card-btn">
                                                                 <Button.ContextMenu>
                                                                     <ContextMenu>
                                                                         <MenuItem Header="Open in Studio"
-                                                                                  Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).OpenItemCommand}"
+                                                                                  Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).OpenItemCommand}"
                                                                                   CommandParameter="{Binding}">
                                                                             <MenuItem.Icon>
                                                                                 <materialIcons:MaterialIcon Kind="OpenInNew" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                                             </MenuItem.Icon>
                                                                         </MenuItem>
                                                                         <MenuItem Header="Pin / Unpin Workspace"
-                                                                                  Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).TogglePinCommand}"
+                                                                                  Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).TogglePinCommand}"
                                                                                   CommandParameter="{Binding}">
                                                                             <MenuItem.Icon>
                                                                                 <materialIcons:MaterialIcon Kind="Pin" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
@@ -289,7 +293,7 @@
                                                                         </MenuItem>
                                                                         <Separator />
                                                                         <MenuItem Header="Delete Workspace"
-                                                                                  Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).DeleteItemCommand}"
+                                                                                  Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).DeleteItemCommand}"
                                                                                   CommandParameter="{Binding}">
                                                                             <MenuItem.Icon>
                                                                                 <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#F85149" />
@@ -359,7 +363,7 @@
                                                                         <!-- Col 3: Row Actions (Pin Toggle + Delete + Open Cue) -->
                                                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="10,0,0,0" VerticalAlignment="Center">
                                                                             <!-- Pin Toggle Button -->
-                                                                            <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).TogglePinCommand}"
+                                                                            <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).TogglePinCommand}"
                                                                                     CommandParameter="{Binding}"
                                                                                     Classes="nexus-btn-ghost"
                                                                                     Width="28" Height="28" Padding="0"
@@ -378,7 +382,7 @@
                                                                             </Button>
 
                                                                             <!-- Delete Button -->
-                                                                            <Button Command="{Binding $parent[UserControl].((vm:CSharpManagerViewModel)DataContext).DeleteItemCommand}"
+                                                                            <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).DeleteItemCommand}"
                                                                                     CommandParameter="{Binding}"
                                                                                     Classes="nexus-btn-ghost"
                                                                                     Width="28" Height="28" Padding="0"
@@ -412,6 +416,6 @@
                                     </StackPanel>
 
                                     <!-- 3B. STARTER TEMPLATES GALLERY VIEW -->
-                                    <controls:HubStarterTemplatesGalleryControl IsVisible="{Binding IsTemplatesTabActive}" />
+                                    <hub1:HubStarterTemplatesGalleryControl IsVisible="{Binding IsTemplatesTabActive}" />
                                 </StackPanel>
 </UserControl>

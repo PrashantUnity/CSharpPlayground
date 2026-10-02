@@ -5,9 +5,10 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.DocsOutlinePanelControl"
-             x:DataType="vm:CSharpDocsViewModel"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Docs.DocsOutlinePanelControl"
+             x:DataType="docs:CSharpDocsViewModel"
              Width="260" Margin="32,0,0,0" VerticalAlignment="Top">
 
     <StackPanel Spacing="16">

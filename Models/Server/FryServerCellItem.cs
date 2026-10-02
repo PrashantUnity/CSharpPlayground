@@ -1,6 +1,4 @@
-using System;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+namespace PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 
 /// <summary>
 /// A polymorphic cell within a .fryserver document.

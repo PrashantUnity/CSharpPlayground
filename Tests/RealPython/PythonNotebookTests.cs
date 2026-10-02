@@ -1,14 +1,13 @@
 using System.Diagnostics;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using Xunit;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
+namespace CSharpEditorPlugin.Tests.RealPython;
 
 /// <summary>A notebook of C# and Python cells with the real Python: each runs in its own kernel, from the notebook's UI.</summary>
 [Collection(RealPythonCollection.Name)]
@@ -57,11 +56,11 @@ public class PythonNotebookTests : IDisposable
 
         await tab.RunAllCellsAsync().WaitAsync(Patience);
 
-        Assert.All(tab.Cells, c => Assert.False(c.HasError, c.OutputText));
-        Assert.Contains("2", tab.Cells[0].OutputText);
-        Assert.Equal("42\n", tab.Cells[1].OutputText);
-        Assert.Contains("1", tab.Cells[2].OutputText); // C#'s x, not Python's
-        Assert.Equal("40 work\n", tab.Cells[3].OutputText); // Python runs in the notebook's folder
+        Assert.All(tab.Cells, c => Assert.False((bool)c.HasError, c.OutputText));
+        Assert.Contains((string)"2", (string?)tab.Cells[0].OutputText);
+        Assert.Equal((string?)"42\n", (string?)tab.Cells[1].OutputText);
+        Assert.Contains((string)"1", (string?)tab.Cells[2].OutputText); // C#'s x, not Python's
+        Assert.Equal((string?)"40 work\n", (string?)tab.Cells[3].OutputText); // Python runs in the notebook's folder
         Assert.Matches(@"^\.NET \(C#\) · Python 3\.\d+", tab.KernelName);
         Assert.Contains(tab.Variables, v => v is { Name: "x", Kernel: "Python", ValueDisplay: "40" });
     }
@@ -76,9 +75,9 @@ public class PythonNotebookTests : IDisposable
 
         await tab.RunAllCellsAsync().WaitAsync(Patience);
 
-        Assert.All(tab.Cells, c => Assert.False(c.HasError, c.OutputText));
-        Assert.Equal("8 Ada list\n", tab.Cells[1].OutputText);
-        Assert.Contains("78", tab.Cells[2].OutputText); // (9 + 1 + 16) * 3
+        Assert.All(tab.Cells, c => Assert.False((bool)c.HasError, c.OutputText));
+        Assert.Equal((string?)"8 Ada list\n", (string?)tab.Cells[1].OutputText);
+        Assert.Contains((string)"78", (string?)tab.Cells[2].OutputText); // (9 + 1 + 16) * 3
     }
 
     [PythonFact]
@@ -90,10 +89,10 @@ public class PythonNotebookTests : IDisposable
         await Run(tab, 1);
 
         var cell = tab.Cells[1];
-        Assert.True(cell.HasError);
-        Assert.Contains($"<Cell [{cell.ExecutionCount}]>", cell.OutputText);
-        Assert.Contains($"<Cell [{tab.Cells[0].ExecutionCount}]>\", line 2, in f", cell.OutputText);
-        Assert.Contains("ZeroDivisionError", cell.OutputText);
+        Assert.True((bool)cell.HasError);
+        Assert.Contains((string)$"<Cell [{cell.ExecutionCount}]>", (string?)cell.OutputText);
+        Assert.Contains((string)$"<Cell [{tab.Cells[0].ExecutionCount}]>\", line 2, in f", (string?)cell.OutputText);
+        Assert.Contains((string)"ZeroDivisionError", (string?)cell.OutputText);
     }
 
     [PythonFact]
@@ -104,9 +103,9 @@ public class PythonNotebookTests : IDisposable
         await Run(tab, 0);
         await Run(tab, 1);
 
-        Assert.Equal("fry_no_such_module", tab.Cells[0].MissingDependency);
+        Assert.Equal((string?)"fry_no_such_module", (string?)tab.Cells[0].MissingDependency);
         Assert.Equal("Install fry_no_such_module", tab.Cells[0].InstallMissingDependencyLabel);
-        Assert.Equal("total", tab.Cells[1].MissingVariableName);
+        Assert.Equal((string?)"total", (string?)tab.Cells[1].MissingVariableName);
     }
 
     [PythonFact]
@@ -118,15 +117,15 @@ public class PythonNotebookTests : IDisposable
         var run = tab.RunSingleCellAsync(cell);
         var clock = Stopwatch.StartNew();
         while (!cell.IsAwaitingInput && !run.IsCompleted && clock.Elapsed < Patience) await Task.Delay(20);
-        Assert.True(cell.IsAwaitingInput, cell.OutputText);
-        Assert.Equal("Name? ", cell.InputPrompt);
+        Assert.True((bool)cell.IsAwaitingInput, cell.OutputText);
+        Assert.Equal((string?)"Name? ", (string?)cell.InputPrompt);
         cell.InputText = "Ada";
         cell.SubmitInput();
         await run.WaitAsync(Patience);
 
-        Assert.False(cell.HasError, cell.OutputText);
-        Assert.Contains("Name? Ada\n", cell.OutputText);
-        Assert.Contains("Hi Ada", cell.OutputText);
+        Assert.False((bool)cell.HasError, cell.OutputText);
+        Assert.Contains((string)"Name? Ada\n", (string?)cell.OutputText);
+        Assert.Contains((string)"Hi Ada", (string?)cell.OutputText);
     }
 
     [PythonFact]
@@ -145,8 +144,8 @@ public class PythonNotebookTests : IDisposable
         await Run(tab, 2);
 
         Assert.True(stopped < TimeSpan.FromSeconds(8), $"stopping took {stopped}");
-        Assert.Equal("🛑 Cell execution interrupted", status);
-        Assert.Equal("10\n", tab.Cells[2].OutputText);
+        Assert.Equal((string?)"🛑 Cell execution interrupted", (string?)status);
+        Assert.Equal((string?)"10\n", (string?)tab.Cells[2].OutputText);
     }
 
     [PythonFact]

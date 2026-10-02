@@ -1,16 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The Results tab shows its "No Visual Dumps Yet" hint only when it has nothing to draw: a visualizer, chart, image or
@@ -116,8 +115,8 @@ public class CodeStudioResultsTabTests : IDisposable
 
         await studio.RunCodeCommand.ExecuteAsync(null);
 
-        Assert.Contains("⚠️", studio.ConsoleOutput);
-        Assert.Contains("$.series[0].x", studio.ConsoleOutput);
+        Assert.Contains((string)"⚠️", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"$.series[0].x", (string?)studio.ConsoleOutput);
         Assert.True(studio.HasNoResults);
     }
 
@@ -213,9 +212,9 @@ public class CodeStudioResultsTabTests : IDisposable
         processor.ProcessChunk("Sorting completed.\n" + dumpPayload + "\nAll done.\n");
         processor.Flush();
 
-        Assert.Contains("Sorting completed.", studio.ConsoleOutput);
-        Assert.Contains("All done.", studio.ConsoleOutput);
-        Assert.DoesNotContain("__FRY_DISPLAY__", studio.ConsoleOutput);
+        Assert.Contains((string)"Sorting completed.", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"All done.", (string?)studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"__FRY_DISPLAY__", (string?)studio.ConsoleOutput);
 
         Assert.False(studio.HasNoResults);
         Assert.Single(studio.DumpResults);

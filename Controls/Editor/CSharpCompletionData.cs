@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,9 +9,9 @@ using AvaloniaEdit.Editing;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 public class CSharpCompletionData : ICompletionData
 {

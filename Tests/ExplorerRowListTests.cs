@@ -1,10 +1,14 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class ExplorerRowListTests
 {
@@ -14,7 +18,7 @@ public class ExplorerRowListTests
     private static ExplorerItemViewModel File(string name, ExplorerItemViewModel? parent = null) =>
         new() { Name = name, Parent = parent, Depth = (parent?.Depth ?? -1) + 1 };
 
-    private static string Names(ExplorerRowList list) => string.Join(",", list.Rows.Select(r => r.Name));
+    private static string Names(ExplorerRowList list) => string.Join(",", list.Rows.Select<ExplorerItemViewModel, string>(r => r.Name));
 
     // A (folder): a1, N (folder): deep      z
     private static (ObservableCollection<ExplorerItemViewModel> Roots, ExplorerItemViewModel A, ExplorerItemViewModel N) Sample()
@@ -241,7 +245,7 @@ public class ExplorerRowListStudioTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(Models.ScriptDocumentItem script) => new(
+    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
         script,
         _storage,
         new RoslynCompilerService(),
@@ -259,11 +263,11 @@ public class ExplorerRowListStudioTests : IDisposable
 
         var studio = CreateStudio(loose);
 
-        Assert.Equal(new[] { "Algorithms", "Loose.frycs" }, studio.ExplorerRows.Rows.Select(r => r.Name));
+        Assert.Equal(new[] { "Algorithms", "Loose.frycs" }, studio.ExplorerRows.Rows.Select<ExplorerItemViewModel, string>(r => r.Name));
 
         studio.ExplorerRootItems.Single(x => x.IsDirectory).IsExpanded = true;
 
-        Assert.Equal(new[] { "Algorithms", "Inside One.frycs", "Inside Two.frycs", "Loose.frycs" }, studio.ExplorerRows.Rows.Select(r => r.Name));
+        Assert.Equal(new[] { "Algorithms", "Inside One.frycs", "Inside Two.frycs", "Loose.frycs" }, studio.ExplorerRows.Rows.Select<ExplorerItemViewModel, string>(r => r.Name));
     }
 
     [Fact]
@@ -286,7 +290,7 @@ public class ExplorerRowListStudioTests : IDisposable
         await _storage.CreateNewScriptAsync("Two");
         await studio.RefreshExplorerAsync();
 
-        Assert.Equal(new[] { "One.frycs", "Two.frycs" }, studio.ExplorerRows.Rows.Select(r => r.Name));
+        Assert.Equal(new[] { "One.frycs", "Two.frycs" }, studio.ExplorerRows.Rows.Select<ExplorerItemViewModel, string>(r => r.Name));
         Assert.Equal(studio.ExplorerRootItems.Count, studio.ExplorerRows.Rows.Count);
     }
 }

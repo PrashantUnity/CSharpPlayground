@@ -1,11 +1,10 @@
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// What a chart's axes span and what its header says: a missing value is a gap that counts for nothing, a range the

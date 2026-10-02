@@ -1,6 +1,7 @@
 using System;
 using AvaloniaEdit;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 

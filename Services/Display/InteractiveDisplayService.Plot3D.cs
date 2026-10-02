@@ -1,9 +1,8 @@
-using System;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 // 3D plots, z up for every kind.
 public static partial class Display

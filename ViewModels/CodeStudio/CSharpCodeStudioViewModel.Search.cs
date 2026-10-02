@@ -3,10 +3,11 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel
 {
@@ -363,9 +364,9 @@ public partial class CSharpCodeStudioViewModel
         foreach (var t in _allTemplates)
         {
             if (string.IsNullOrEmpty(q) ||
-                t.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                t.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                t.Tags.Any(tag => tag.Contains(q, StringComparison.OrdinalIgnoreCase)))
+                t.Title.Contains((string)q, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains((string)q, StringComparison.OrdinalIgnoreCase) ||
+                t.Tags.Any(tag => tag.Contains((string)q, StringComparison.OrdinalIgnoreCase)))
             {
                 FilteredTemplates.Add(t);
             }

@@ -1,15 +1,13 @@
-using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpCodeStudioExplorerTests : IDisposable
 {
@@ -70,8 +68,8 @@ public class CSharpCodeStudioExplorerTests : IDisposable
             var studio = CreateStudio(script);
 
             var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False(item.IsDirectory);
-            Assert.Equal("External Script.frycs", item.Name);
+            Assert.False((bool)item.IsDirectory);
+            Assert.Equal((string?)"External Script.frycs", (string?)item.Name);
         }
         finally
         {
@@ -95,8 +93,8 @@ public class CSharpCodeStudioExplorerTests : IDisposable
             // Neither external folder is the active workspace root, so only the currently open
             // document shows (via the orphan-node fallback) — the unrelated one must not leak in.
             var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False(item.IsDirectory);
-            Assert.Equal("Open One.frycs", item.Name);
+            Assert.False((bool)item.IsDirectory);
+            Assert.Equal((string?)"Open One.frycs", (string?)item.Name);
         }
         finally
         {
@@ -128,8 +126,8 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         var secondItem = studio.ExplorerRootItems.Single(x => x.Name == "Second Script.frycs");
         await studio.SwitchToScriptAsync(secondItem);
 
-        Assert.Equal(second.Id, studio.Script.Id);
-        Assert.Equal("// second script code", studio.Code);
+        Assert.Equal(second.Id, (string?)studio.Script.Id);
+        Assert.Equal((string?)"// second script code", (string?)studio.Code);
         Assert.True(reloadFired);
 
         var reloadedFirst = await _testStorage.LoadScriptAsync(first.Id);
@@ -159,7 +157,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
 
         await studio.NewScript();
 
-        Assert.NotEqual(initial.Id, studio.Script.Id);
+        Assert.NotEqual<string>(initial.Id, studio.Script.Id);
         Assert.Contains(studio.ExplorerRootItems, x => x.DocumentId == studio.Script.Id);
 
         var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
@@ -253,7 +251,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         item.Name = "New Name.frycs";
         await studio.OnItemRenamedAsync(item);
 
-        Assert.Equal("New Name", studio.Script.Title);
+        Assert.Equal((string?)"New Name", (string?)studio.Script.Title);
 
         var reloaded = await _testStorage.LoadScriptAsync(script.Id);
         Assert.Equal("New Name", reloaded!.Title);
@@ -301,7 +299,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
                 "UpdateActiveScriptAsync deadlocked on a UI-like single-threaded SynchronizationContext.");
             await completed.Task;
 
-            Assert.Equal(second.Id, studio.Script.Id);
+            Assert.Equal(second.Id, (string?)studio.Script.Id);
         }
         finally
         {
@@ -325,8 +323,8 @@ public class CSharpCodeStudioExplorerTests : IDisposable
 
             await studio.OpenExternalProjectAsync(externalFile);
 
-            Assert.Equal("ImportedScript", studio.Script.Title);
-            Assert.Contains("Imported!", studio.Code);
+            Assert.Equal((string?)"ImportedScript", (string?)studio.Script.Title);
+            Assert.Contains((string)"Imported!", (string?)studio.Code);
         }
         finally
         {

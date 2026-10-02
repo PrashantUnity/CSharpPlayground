@@ -3,14 +3,17 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel
 {
-    public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
+    public ObservableCollection<Explorer.ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
     private ExplorerRowList? _explorerRows;
 
@@ -29,7 +32,7 @@ public partial class CSharpCodeStudioViewModel
     private long _explorerStructureVersion = -1;
 
     // The row listing the open document when it isn't part of this workspace (a file opened from elsewhere).
-    private ExplorerItemViewModel? _explorerOrphanItem;
+    private Explorer.ExplorerItemViewModel? _explorerOrphanItem;
 
     private LazyExplorerTree? _lazyExplorer;
 
@@ -51,7 +54,7 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        var openFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
+        var openFolders = Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         _explorerOrphanItem = null;
         LazyExplorer.Build(listing, openFolders);
         // Only the top folder itself can be cut off here (a nested one says so in its own rows).
@@ -192,16 +195,16 @@ public partial class CSharpCodeStudioViewModel
         using var rowsScope = ExplorerRows.Suspend();
 
         // A refresh keeps the folders the user had open open.
-        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
+        var expandedFolders = Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
         _explorerOrphanItem = null;
-        var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        var folderNodes = new Dictionary<string, Explorer.ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
         // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
         // file would be quadratic in the size of a folder.
         var rootKey = new object();
         var namesByFolder = new Dictionary<object, HashSet<string>>();
 
-        ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
+        Explorer.ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return null;
             if (folderNodes.TryGetValue(relativePath, out var existing)) return existing;
@@ -252,11 +255,11 @@ public partial class CSharpCodeStudioViewModel
         IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
-    private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
+    private void SortExplorerTree(ObservableCollection<Explorer.ExplorerItemViewModel> items)
     {
         using var rowsScope = ExplorerRows.Suspend();
 
-        var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var sorted = items.OrderByDescending<Explorer.ExplorerItemViewModel, bool>(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {
             items.Clear();
@@ -269,7 +272,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void DeselectAll(IEnumerable<ExplorerItemViewModel> items)
+    private void DeselectAll(IEnumerable<Explorer.ExplorerItemViewModel> items)
     {
         foreach (var it in items)
         {
@@ -318,7 +321,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // The row of a document, opening the folders down to it first when the workspace is listed folder by folder.
-    private async Task<ExplorerItemViewModel?> FindOrRevealExplorerItemAsync(string documentId)
+    private async Task<Explorer.ExplorerItemViewModel?> FindOrRevealExplorerItemAsync(string documentId)
     {
         var item = FindByDocumentId(ExplorerRootItems, documentId);
         if (item != null || !LazyExplorer.IsActive) return item;
@@ -326,7 +329,7 @@ public partial class CSharpCodeStudioViewModel
         return await LazyExplorer.RevealAsync(documentId);
     }
 
-    private ExplorerItemViewModel? FindByDocumentId(IEnumerable<ExplorerItemViewModel> items, string documentId)
+    private Explorer.ExplorerItemViewModel? FindByDocumentId(IEnumerable<Explorer.ExplorerItemViewModel> items, string documentId)
     {
         foreach (var item in items)
         {
@@ -337,7 +340,7 @@ public partial class CSharpCodeStudioViewModel
         return null;
     }
 
-    private ExplorerItemViewModel? FindSelectedItem(IEnumerable<ExplorerItemViewModel> items)
+    private Explorer.ExplorerItemViewModel? FindSelectedItem(IEnumerable<Explorer.ExplorerItemViewModel> items)
     {
         foreach (var item in items)
         {
@@ -348,15 +351,15 @@ public partial class CSharpCodeStudioViewModel
         return null;
     }
 
-    private void AddToTree(ExplorerItemViewModel? parent, ExplorerItemViewModel child)
+    private void AddToTree(Explorer.ExplorerItemViewModel? parent, Explorer.ExplorerItemViewModel child)
     {
         if (parent != null) parent.Children.Add(child);
         else ExplorerRootItems.Add(child);
     }
 
-    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
+    private Explorer.ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, Explorer.ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
     {
-        return new ExplorerItemViewModel
+        return new Explorer.ExplorerItemViewModel
         {
             Name = name,
             IsDirectory = true,
@@ -376,9 +379,9 @@ public partial class CSharpCodeStudioViewModel
     }
 
     /// <param name="sourceLanguage">The language of a plain source file (main.py), or null for a .frycs/.frynb document.</param>
-    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath, ILanguageDefinition? sourceLanguage = null)
+    private Explorer.ExplorerItemViewModel CreateFileItem(string name, string? documentId, Explorer.ExplorerItemViewModel? parent, string fullPath, ILanguageDefinition? sourceLanguage = null)
     {
-        return new ExplorerItemViewModel
+        return new Explorer.ExplorerItemViewModel
         {
             Name = name,
             DocumentId = documentId,
@@ -400,9 +403,9 @@ public partial class CSharpCodeStudioViewModel
         };
     }
 
-    private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = SwitchToScriptAsync(item);
+    private void OnExplorerItemClicked(Explorer.ExplorerItemViewModel item) => _ = SwitchToScriptAsync(item);
 
-    public async Task SwitchToScriptAsync(ExplorerItemViewModel item)
+    public async Task SwitchToScriptAsync(Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -462,10 +465,10 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    public void DeleteExplorerItem(ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
+    public void DeleteExplorerItem(Explorer.ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
 
     [RelayCommand]
-    public async Task DeleteExplorerItemAsync(ExplorerItemViewModel item)
+    public async Task DeleteExplorerItemAsync(Explorer.ExplorerItemViewModel item)
     {
         if (item == null || item.IsExternalGroup) return;
 
@@ -585,11 +588,11 @@ public partial class CSharpCodeStudioViewModel
             $"New {language.DisplayName} File",
             language.IconKind,
             language.AccentHex,
-            new AsyncRelayCommand<ExplorerItemViewModel?>(target => NewSourceFileAsync(language.Id, target))))
+            new AsyncRelayCommand<Explorer.ExplorerItemViewModel?>(target => NewSourceFileAsync(language.Id, target))))
         .ToArray();
 
     /// <summary>Creates a source file (script_HHmmss.py) in <paramref name="target"/>'s folder, or the selected one, opens it and starts renaming it.</summary>
-    public async Task NewSourceFileAsync(string languageId, ExplorerItemViewModel? target = null)
+    public async Task NewSourceFileAsync(string languageId, Explorer.ExplorerItemViewModel? target = null)
     {
         target ??= FindSelectedItem(ExplorerRootItems);
         var folder = target == null ? null : target.IsDirectory ? target : target.Parent;
@@ -624,10 +627,10 @@ public partial class CSharpCodeStudioViewModel
         await CreateFolderCoreAsync(targetFolder);
     }
 
-    public void NewScriptUnderItem(ExplorerItemViewModel target) => _ = NewScriptUnderItemAsync(target);
+    public void NewScriptUnderItem(Explorer.ExplorerItemViewModel target) => _ = NewScriptUnderItemAsync(target);
 
     [RelayCommand]
-    public async Task NewScriptUnderItemAsync(ExplorerItemViewModel target)
+    public async Task NewScriptUnderItemAsync(Explorer.ExplorerItemViewModel target)
     {
         var folder = target.IsDirectory ? target : target.Parent;
         var timestamp = DateTime.Now.ToString("HHmmss");
@@ -652,16 +655,16 @@ public partial class CSharpCodeStudioViewModel
         newItem?.StartRename();
     }
 
-    public void NewFolderUnderItem(ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
+    public void NewFolderUnderItem(Explorer.ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
 
     [RelayCommand]
-    public async Task NewFolderUnderItemAsync(ExplorerItemViewModel target)
+    public async Task NewFolderUnderItemAsync(Explorer.ExplorerItemViewModel target)
     {
         var folder = target.IsDirectory ? target : target.Parent;
         await CreateFolderCoreAsync(folder);
     }
 
-    private async Task CreateFolderCoreAsync(ExplorerItemViewModel? parentFolder)
+    private async Task CreateFolderCoreAsync(Explorer.ExplorerItemViewModel? parentFolder)
     {
         string newRelativePath;
         try
@@ -691,10 +694,10 @@ public partial class CSharpCodeStudioViewModel
         newFolder.StartRename();
     }
 
-    public void DuplicateExplorerItem(ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
+    public void DuplicateExplorerItem(Explorer.ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
 
     [RelayCommand]
-    public async Task DuplicateExplorerItemAsync(ExplorerItemViewModel item)
+    public async Task DuplicateExplorerItemAsync(Explorer.ExplorerItemViewModel item)
     {
         if (item == null || item.IsDirectory || string.IsNullOrEmpty(item.DocumentId)) return;
 
@@ -741,13 +744,13 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // main.py → main_copy.py next to it, with the text as it is in the editor if it's open.
-    private async Task DuplicateSourceFileAsync(ExplorerItemViewModel item)
+    private async Task DuplicateSourceFileAsync(Explorer.ExplorerItemViewModel item)
     {
         var isActive = string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase);
         var original = isActive ? Script : await _storageService.LoadScriptAsync(item.DocumentId!);
         if (original == null) return;
 
-        var copy = await _storageService.CreateNewSourceFileAsync(original.LanguageId, $"{Path.GetFileNameWithoutExtension(item.Name)}_copy", item.Parent?.FullPath);
+        var copy = await _storageService.CreateNewSourceFileAsync(original.LanguageId, $"{Path.GetFileNameWithoutExtension((string?)item.Name)}_copy", item.Parent?.FullPath);
         if (copy == null) return;
         copy.Code = isActive ? Code : original.Code;
         await _storageService.SaveSourceFileAsync(copy, overwriteChangesOnDisk: true);
@@ -756,9 +759,9 @@ public partial class CSharpCodeStudioViewModel
         await UpdateActiveScriptAsync(copy);
     }
 
-    private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
+    private void OnItemRenamed(Explorer.ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
 
-    internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
+    internal async Task OnItemRenamedAsync(Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -808,10 +811,10 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // A source file's name is its file name: renaming moves the file (and its id, which follows the path).
-    private async Task RenameSourceFileAsync(ExplorerItemViewModel item)
+    private async Task RenameSourceFileAsync(Explorer.ExplorerItemViewModel item)
     {
         var oldId = item.DocumentId!;
-        var oldName = Path.GetFileName(item.FullPath);
+        var oldName = Path.GetFileName((string?)item.FullPath) ?? string.Empty;
         try
         {
             var renamed = await _storageService.RenameSourceFileAsync(oldId, item.Name);
@@ -836,12 +839,12 @@ public partial class CSharpCodeStudioViewModel
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             item.Name = oldName;
-            item.FileExtension = Path.GetExtension(oldName);
+            item.FileExtension = Path.GetExtension(oldName) ?? string.Empty;
             CompilerStatusText = $"⚠️ Couldn't rename {oldName}: {ex.Message}";
         }
     }
 
-    private void UpdateDescendantFullPaths(ExplorerItemViewModel node, string oldPrefix, string newPrefix)
+    private void UpdateDescendantFullPaths(Explorer.ExplorerItemViewModel node, string oldPrefix, string newPrefix)
     {
         foreach (var child in node.Children)
         {
@@ -854,7 +857,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     [RelayCommand]
-    public void CopyItemPath(ExplorerItemViewModel item)
+    public void CopyItemPath(Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
         var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
@@ -870,7 +873,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    private void CollapseItemRecursive(ExplorerItemViewModel item)
+    private void CollapseItemRecursive(Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {

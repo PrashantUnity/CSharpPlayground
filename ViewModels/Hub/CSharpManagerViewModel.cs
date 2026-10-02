@@ -4,12 +4,17 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub;
 
 public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
 {
@@ -246,7 +251,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     public bool IsRoslynEngineActive => true;
 
     /// <summary>A STUDIO ENVIRONMENT row per language that runs with an installed toolchain (Python): found, or how to install it.</summary>
-    public ObservableCollection<ToolchainStatusItem> ToolchainStatuses { get; } = new();
+    public ObservableCollection<Common.ToolchainStatusItem> ToolchainStatuses { get; } = new();
 
     private Task? _toolchainCheck;
 
@@ -604,7 +609,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         var registry = (languages ?? StudioLanguageServices.Default).Registry;
         foreach (var language in registry.All)
         {
-            if (language.Toolchain is { } provider) ToolchainStatuses.Add(new ToolchainStatusItem(language, provider));
+            if (language.Toolchain is { } provider) ToolchainStatuses.Add(new Common.ToolchainStatusItem(language, provider));
         }
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
@@ -923,11 +928,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
             if (string.IsNullOrEmpty(query)) return true;
 
-            return item.Title.ToLowerInvariant().Contains(query) ||
-                   item.Description.ToLowerInvariant().Contains(query) ||
-                   item.Category.ToLowerInvariant().Contains(query) ||
-                   item.ExecutionMode.ToLowerInvariant().Contains(query) ||
-                   item.DisplayLocation.ToLowerInvariant().Contains(query);
+            return item.Title.ToLowerInvariant().Contains((string)query) ||
+                   item.Description.ToLowerInvariant().Contains((string)query) ||
+                   item.Category.ToLowerInvariant().Contains((string)query) ||
+                   item.ExecutionMode.ToLowerInvariant().Contains((string)query) ||
+                   item.DisplayLocation.ToLowerInvariant().Contains((string)query);
         });
 
         matches = SelectedSortOption switch
@@ -989,7 +994,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     public bool HasHiddenItems => HiddenItemCount > 0;
 
-    public string HiddenItemsText => $"Show {Math.Min(ItemPageSize, HiddenItemCount)} more  ·  {HiddenItemCount:N0} not shown";
+    public string HiddenItemsText => $"Show {Math.Min((int)ItemPageSize, (int)HiddenItemCount)} more  ·  {HiddenItemCount:N0} not shown";
 
     partial void OnHiddenItemCountChanged(int value)
     {

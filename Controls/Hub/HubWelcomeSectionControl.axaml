@@ -6,9 +6,11 @@
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              mc:Ignorable="d"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.HubWelcomeSectionControl"
-             x:DataType="vm:CSharpManagerViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubWelcomeSectionControl"
+             x:DataType="hub:CSharpManagerViewModel">
     <UserControl.Styles>
         <Style Selector="StackPanel.hub-welcome-actions">
             <Setter Property="Grid.Column" Value="2" />
@@ -26,7 +28,7 @@
                             <!-- SECTION 1: WELCOME & QUICK ACTIONS                           -->
                             <!-- ============================================================ -->
                             <!-- Title and buttons side by side, or (compact, when they'd overlap) the buttons on a second row. -->
-                            <Border controls:CompactWhenCrowded.IsEnabled="True">
+                            <Border common:CompactWhenCrowded.IsEnabled="True">
                             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                                 <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,24,0">
                                     <TextBlock Text="Welcome back, Developer" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />

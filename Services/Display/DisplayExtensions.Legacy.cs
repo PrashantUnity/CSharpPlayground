@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 // The names these had before every visual's extension was Display + its helper's name. Scripts that use them keep
 // working; completion doesn't offer them, so new code finds only the one name.

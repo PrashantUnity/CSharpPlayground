@@ -5,9 +5,10 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsTableControl"
-             x:DataType="vm:CSharpBlindProblemsViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsTableControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
 
     <!-- Header and rows share their column widths through Columns (BlindProblemTableColumns): Status and the actions are
          fixed, Title takes the rest, and the dividers in the header resize Category, Acceptance and Difficulty (Category
@@ -123,18 +124,18 @@
                         <Border Classes="problem-row" Classes.selected="{Binding IsHighlighted}" Height="44" Padding="16,0,20,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.StatusColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.StatusColumn}" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.CategoryColumn}" />
-                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.AcceptanceColumn}" />
-                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.DifficultyColumn}" />
-                                    <ColumnDefinition Width="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.ActionsColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.CategoryColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.AcceptanceColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.DifficultyColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.ActionsColumn}" />
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Status: solved toggle, plus a lock for LeetCode Premium problems -->
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="-5,0,0,0">
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding SolvedTooltip}">
                                         <Panel>
@@ -150,14 +151,14 @@
 
                                 <!-- Title: opens the problem in Script Studio -->
                                 <Button Grid.Column="1" Classes="title-link" Margin="0,0,12,0"
-                                        Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                        Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
                                         CommandParameter="{Binding}"
                                         ToolTip.Tip="Open in Script Studio">
                                     <TextBlock Text="{Binding FullTitle}" />
                                 </Button>
 
                                 <Border Grid.Column="2" Classes="category-pill" Margin="12,0,8,0"
-                                        IsVisible="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).Columns.IsCategoryVisible}">
+                                        IsVisible="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.IsCategoryVisible}">
                                     <TextBlock Text="{Binding Category}" />
                                 </Border>
 
@@ -180,31 +181,31 @@
                                 <!-- Actions: Script, Notebook, LeetCode, details, save -->
                                 <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Open in Script Studio (run with F5)">
                                         <materialIcons:MaterialIcon Kind="CodeBraces" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Open as a step-by-step notebook">
                                         <materialIcons:MaterialIcon Kind="NotebookOutline" Foreground="{DynamicResource NavNotebooksFgBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding LeetCodeTooltip}">
                                         <materialIcons:MaterialIcon Kind="OpenInNew" Foreground="#FFA116" />
                                     </Button>
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="Problem, approaches and test cases">
                                         <materialIcons:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
-                                            Command="{Binding $parent[UserControl].((vm:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding BookmarkTooltip}">
                                         <Panel>

@@ -6,6 +6,8 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;

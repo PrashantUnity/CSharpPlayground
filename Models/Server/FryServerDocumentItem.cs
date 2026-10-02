@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+namespace PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 
 /// <summary>
 /// Root document model for a .fryserver file.

@@ -1,8 +1,10 @@
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 /// <summary>
 /// A page view model that hears when its page is shown and hidden. Pages are built once and kept in the visual tree
-/// (see <see cref="Controls.KeepAlivePageHost"/>), so leaving a page no longer detaches it: anything that should only
+/// (see <see cref="KeepAlivePageHost"/>), so leaving a page no longer detaches it: anything that should only
 /// run while the page is on screen (timers, polling, animations) starts in <see cref="OnActivated"/> and stops in
 /// <see cref="OnDeactivated"/>.
 /// </summary>

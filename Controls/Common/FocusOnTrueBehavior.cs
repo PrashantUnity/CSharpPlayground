@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 /// <summary>
 /// Lightweight attached-property alternative to pulling in Avalonia.Xaml.Interactivity for one

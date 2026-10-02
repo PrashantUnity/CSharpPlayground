@@ -1,14 +1,12 @@
-using System;
-using System.Collections.Generic;
 using Avalonia;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using Xunit;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class UniversalVisualizerTests
 {

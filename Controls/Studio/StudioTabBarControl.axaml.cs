@@ -1,9 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using StudioTabItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.StudioTabItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
 
 public partial class StudioTabBarControl : UserControl
 {

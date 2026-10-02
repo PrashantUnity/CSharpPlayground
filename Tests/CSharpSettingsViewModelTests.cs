@@ -1,12 +1,12 @@
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
+using CSharpSettingsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel;
+using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpSettingsViewModelTests : IDisposable
 {
@@ -39,18 +39,18 @@ public class CSharpSettingsViewModelTests : IDisposable
         var vm = new CSharpSettingsViewModel(_services, _settingsStore);
 
         Assert.Equal(4, vm.TabSize);
-        Assert.True(vm.ConvertTabsToSpaces);
-        Assert.False(vm.WordWrap);
-        Assert.True(vm.ShowLineNumbers);
-        Assert.True(vm.EnableSyntaxHighlighting);
-        Assert.True(vm.EnableAutoCompletion);
+        Assert.True((bool)vm.ConvertTabsToSpaces);
+        Assert.False((bool)vm.WordWrap);
+        Assert.True((bool)vm.ShowLineNumbers);
+        Assert.True((bool)vm.EnableSyntaxHighlighting);
+        Assert.True((bool)vm.EnableAutoCompletion);
         Assert.Equal(13.0, vm.FontSize);
         Assert.Equal(0, vm.ExecutionTimeoutSeconds);
-        Assert.False(vm.AutoClearConsoleOnRun);
+        Assert.False((bool)vm.AutoClearConsoleOnRun);
         Assert.Equal(10000, vm.MaxTerminalOutputLines);
-        Assert.True(vm.NullableChecksEnabled);
-        Assert.Equal("13.0", vm.LanguageVersion);
-        Assert.False(vm.HasPendingChanges);
+        Assert.True((bool)vm.NullableChecksEnabled);
+        Assert.Equal((string?)"13.0", (string?)vm.LanguageVersion);
+        Assert.False((bool)vm.HasPendingChanges);
     }
 
     [Fact]
@@ -63,12 +63,12 @@ public class CSharpSettingsViewModelTests : IDisposable
         vm.ExecutionTimeoutSeconds = 45;
         vm.LanguageVersion = "12.0";
 
-        Assert.True(vm.HasPendingChanges);
+        Assert.True((bool)vm.HasPendingChanges);
 
         vm.Apply();
 
-        Assert.False(vm.HasPendingChanges);
-        Assert.True(vm.HasStatusMessage);
+        Assert.False((bool)vm.HasPendingChanges);
+        Assert.True((bool)vm.HasStatusMessage);
 
         // Reload fresh from disk
         var freshStore = new StudioSettingsStore(Path.Combine(_tempFolder, "studio_settings.json"));
@@ -92,9 +92,9 @@ public class CSharpSettingsViewModelTests : IDisposable
         vm.ResetDefaults();
 
         Assert.Equal(4, vm.TabSize);
-        Assert.False(vm.WordWrap);
+        Assert.False((bool)vm.WordWrap);
         Assert.Equal(0, vm.ExecutionTimeoutSeconds);
-        Assert.True(vm.HasPendingChanges);
+        Assert.True((bool)vm.HasPendingChanges);
     }
 
     [Fact]
@@ -103,17 +103,17 @@ public class CSharpSettingsViewModelTests : IDisposable
         var vm = new CSharpSettingsViewModel(_services, _settingsStore);
 
         // Defaults are both ON
-        Assert.True(vm.EnableSyntaxHighlighting);
-        Assert.True(vm.EnableAutoCompletion);
+        Assert.True((bool)vm.EnableSyntaxHighlighting);
+        Assert.True((bool)vm.EnableAutoCompletion);
 
         // User disables both
         vm.EnableSyntaxHighlighting = false;
         vm.EnableAutoCompletion = false;
-        Assert.True(vm.HasPendingChanges);
+        Assert.True((bool)vm.HasPendingChanges);
 
         // Persist
         vm.Apply();
-        Assert.False(vm.HasPendingChanges);
+        Assert.False((bool)vm.HasPendingChanges);
 
         // Reload fresh from disk
         var freshStore = new StudioSettingsStore(Path.Combine(_tempFolder, "studio_settings.json"));
@@ -123,9 +123,9 @@ public class CSharpSettingsViewModelTests : IDisposable
 
         // ResetDefaults brings them back ON
         vm.ResetDefaults();
-        Assert.True(vm.EnableSyntaxHighlighting);
-        Assert.True(vm.EnableAutoCompletion);
-        Assert.True(vm.HasPendingChanges);
+        Assert.True((bool)vm.EnableSyntaxHighlighting);
+        Assert.True((bool)vm.EnableAutoCompletion);
+        Assert.True((bool)vm.HasPendingChanges);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class CSharpSettingsViewModelTests : IDisposable
         var csharp = vm.Languages.First(l => l.Language.Id == LanguageIds.CSharp);
 
         Assert.False(csharp.IsToolchainLanguage);
-        Assert.True(csharp.IsFound);
+        Assert.True((bool)csharp.IsFound);
         Assert.False(csharp.IsMissing);
         Assert.NotEmpty(csharp.EnvironmentDetails);
     }
@@ -162,8 +162,8 @@ public class CSharpSettingsViewModelTests : IDisposable
         const string customBinary = "/custom/path/to/python3";
         vm.ApplyCustomPath(python, customBinary);
 
-        Assert.False(python.IsAutoDetect);
-        Assert.Equal(customBinary, python.CustomPath);
+        Assert.False((bool)python.IsAutoDetect);
+        Assert.Equal((string?)customBinary, (string?)python.CustomPath);
         Assert.Equal(customBinary, _services.ToolchainSettings.GetSelectedPath(LanguageIds.Python));
     }
 
@@ -177,8 +177,8 @@ public class CSharpSettingsViewModelTests : IDisposable
         const string customBinary = "/custom/path/to/java";
         vm.ApplyCustomPath(java, customBinary);
 
-        Assert.False(java.IsAutoDetect);
-        Assert.Equal(customBinary, java.CustomPath);
+        Assert.False((bool)java.IsAutoDetect);
+        Assert.Equal((string?)customBinary, (string?)java.CustomPath);
         Assert.Equal(customBinary, _services.ToolchainSettings.GetSelectedPath(LanguageIds.Java));
     }
 
@@ -190,11 +190,11 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.NotNull(js);
 
         vm.ApplyCustomPath(js, "/usr/bin/node");
-        Assert.False(js.IsAutoDetect);
+        Assert.False((bool)js.IsAutoDetect);
 
         vm.SetAutoDetect(js);
-        Assert.True(js.IsAutoDetect);
-        Assert.Empty(js.CustomPath);
+        Assert.True((bool)js.IsAutoDetect);
+        Assert.Empty((string)js.CustomPath);
         Assert.Null(_services.ToolchainSettings.GetSelectedPath(LanguageIds.JavaScript));
     }
 
@@ -248,21 +248,21 @@ public class CSharpSettingsViewModelTests : IDisposable
         var host = new CSharpStudioHostViewModel(languages: _services);
 
         Assert.Same(host.ManagerViewModel, host.CurrentPage);
-        Assert.True(host.IsOnManagerPage);
+        Assert.True((bool)host.IsOnManagerPage);
 
         // Navigate to Settings
         host.NavigateToSettings("Editor");
 
         Assert.Same(host.SettingsViewModel, host.CurrentPage);
-        Assert.False(host.IsOnManagerPage);
-        Assert.Equal("Settings", host.ActiveDocumentTitle);
-        Assert.Equal("Editor", host.SettingsViewModel.ActiveCategory);
+        Assert.False((bool)host.IsOnManagerPage);
+        Assert.Equal((string?)"Settings", (string?)host.ActiveDocumentTitle);
+        Assert.Equal((string?)"Editor", (string?)host.SettingsViewModel.ActiveCategory);
 
         // Navigate back
         host.NavigateToPreviousPage();
 
         Assert.Same(host.ManagerViewModel, host.CurrentPage);
-        Assert.True(host.IsOnManagerPage);
+        Assert.True((bool)host.IsOnManagerPage);
     }
 
     [Fact]
@@ -311,12 +311,12 @@ public class CSharpSettingsViewModelTests : IDisposable
         var python = vm.Languages.First(l => l.Language.Id == LanguageIds.Python);
 
         vm.SelectLanguageItem(csharp);
-        Assert.True(csharp.IsSelected);
-        Assert.False(python.IsSelected);
+        Assert.True((bool)csharp.IsSelected);
+        Assert.False((bool)python.IsSelected);
 
         vm.SelectLanguageItem(python);
-        Assert.False(csharp.IsSelected);
-        Assert.True(python.IsSelected);
+        Assert.False((bool)csharp.IsSelected);
+        Assert.True((bool)python.IsSelected);
     }
 
     [Fact]
@@ -325,14 +325,14 @@ public class CSharpSettingsViewModelTests : IDisposable
         var vm = new CSharpSettingsViewModel(_services, _settingsStore);
 
         Assert.NotEmpty(vm.KeymapCategoryChips);
-        Assert.True(vm.KeymapCategoryChips.First(c => c.Name == "All").IsSelected);
+        Assert.True((bool)vm.KeymapCategoryChips.First(c => c.Name == "All").IsSelected);
         Assert.Equal(vm.Shortcuts.Count, vm.FilteredShortcuts.Count);
 
         // Filter by category
         var debugChip = vm.KeymapCategoryChips.First(c => c.Name == "Debug");
         vm.SelectKeymapCategory(debugChip);
 
-        Assert.True(debugChip.IsSelected);
+        Assert.True((bool)debugChip.IsSelected);
         Assert.All(vm.FilteredShortcuts, s => Assert.Equal("Debug", s.Category));
 
         // Filter by search query
@@ -358,7 +358,7 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.True(csharp.HasDotNetToolchain);
         Assert.True(csharp.HasToolchainConfiguration);
         Assert.NotNull(csharp.DotNetProvider);
-        Assert.Equal("internal", csharp.CSharpExecutionEngine);
+        Assert.Equal((string?)"internal", (string?)csharp.CSharpExecutionEngine);
         Assert.True(csharp.IsInProcessRoslynSelected);
         Assert.False(csharp.IsExternalDotNetSelected);
     }
@@ -371,27 +371,27 @@ public class CSharpSettingsViewModelTests : IDisposable
 
         // Switch to external .NET SDK engine
         vm.SelectCSharpEngine("external");
-        Assert.Equal("external", csharp.CSharpExecutionEngine);
+        Assert.Equal((string?)"external", (string?)csharp.CSharpExecutionEngine);
         Assert.True(csharp.IsExternalDotNetSelected);
         Assert.False(csharp.IsInProcessRoslynSelected);
-        Assert.True(vm.HasPendingChanges);
+        Assert.True((bool)vm.HasPendingChanges);
 
         // Set custom dotnet binary path
         const string customDotNet = "/usr/local/share/dotnet/dotnet";
         vm.ApplyCustomPath(csharp, customDotNet);
-        Assert.False(csharp.IsAutoDetect);
-        Assert.Equal(customDotNet, csharp.CustomPath);
+        Assert.False((bool)csharp.IsAutoDetect);
+        Assert.Equal((string?)customDotNet, (string?)csharp.CustomPath);
         Assert.Equal(customDotNet, _services.ToolchainSettings.GetSelectedPath(LanguageIds.CSharp));
 
         // Save settings
         vm.Apply();
-        Assert.False(vm.HasPendingChanges);
+        Assert.False((bool)vm.HasPendingChanges);
         Assert.Equal("external", _settingsStore.GetSettings().CSharpExecutionEngine);
 
         // Reset to defaults
         vm.ResetDefaults();
-        Assert.Equal("internal", csharp.CSharpExecutionEngine);
+        Assert.Equal((string?)"internal", (string?)csharp.CSharpExecutionEngine);
         Assert.True(csharp.IsInProcessRoslynSelected);
-        Assert.True(csharp.IsAutoDetect);
+        Assert.True((bool)csharp.IsAutoDetect);
     }
 }

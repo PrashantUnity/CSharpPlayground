@@ -8,7 +8,9 @@ using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
 

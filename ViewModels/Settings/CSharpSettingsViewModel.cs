@@ -5,7 +5,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
 public sealed record SettingsCategoryItem(string Id, string Title, string IconKind, string Description);
 public sealed record KeymapShortcutItem(string Action, string Shortcut, string Category, string Description);

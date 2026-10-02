@@ -4,8 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:codeStudio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="280" d:DesignHeight="700"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioDependenciesPanelControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioDependenciesPanelControl"
              x:CompileBindings="False">
 
     <UserControl.Styles>
@@ -53,7 +55,7 @@
                     <!-- Search Results -->
                     <ItemsControl ItemsSource="{Binding NuGetSearchResults}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:NuGetPackageItem">
+                            <DataTemplate x:DataType="codeStudio:NuGetPackageItem">
                                 <Border Background="{DynamicResource DsSurfaceBrush}"
                                         BorderBrush="{DynamicResource DsBorderBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,2">
@@ -133,7 +135,7 @@
 
                     <ItemsControl ItemsSource="{Binding References}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:AssemblyReferenceViewModel">
+                            <DataTemplate x:DataType="common:AssemblyReferenceViewModel">
                                 <Border Padding="6,4" Background="{DynamicResource DsSurfaceBrush}"
                                         BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                         CornerRadius="6" Margin="0,1">

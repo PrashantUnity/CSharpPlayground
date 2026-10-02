@@ -1,9 +1,7 @@
-using System;
-using System.Linq;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems;
 
 /// <summary>
 /// Column widths of the Blind 75 table, shared by its header and every row. Status and the action buttons have fixed

@@ -1,14 +1,13 @@
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>A kernel's MIME bundles become the studio's outputs, the richest kind first; and its files ship in the plugin.</summary>
 public class MimeOutputMapperTests
@@ -138,13 +137,13 @@ public class MimeOutputMapperTests
               "numeric": [true, true, true, false], "rows": [[0, 3, 9, false], [1, 4, 16, true]], "totalRows": 2, "totalColumns": 3},
              "text/plain": "   n  square   even"}
             """);
-        var cell = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.NotebookCellViewModel(new NotebookCellItem { Type = CellType.Code, Source = "frame" });
+        var cell = new NotebookCellViewModel(new NotebookCellItem { Type = CellType.Code, Source = "frame" });
 
         cell.SetTableOutput(output.Rich!.TableResult!);
 
-        Assert.True(cell.HasOutput);
+        Assert.True((bool)cell.HasOutput);
         Assert.True(cell.IsTableTabActive);
-        Assert.Equal("True", cell.TableResult!.Rows[1].Cells[3].DisplayText);
+        Assert.Equal((string?)"True", (string?)cell.TableResult!.Rows[1].Cells[3].DisplayText);
     }
 
     [Fact]

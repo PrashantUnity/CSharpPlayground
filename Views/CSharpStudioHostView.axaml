@@ -4,9 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
+             xmlns:common1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
-             x:DataType="vm:CSharpStudioHostViewModel"
+             x:DataType="common:CSharpStudioHostViewModel"
              Background="{DynamicResource M3SurfaceBrush}">
 
     <UserControl.Resources>
@@ -20,10 +23,10 @@
     <Panel>
         <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
              shows which view model), then only shown or hidden. -->
-        <controls:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
+        <common1:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
 
         <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
-        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
                                               LoadingTitle="{Binding LoadingTitle}"
                                               LoadingSubtitle="{Binding LoadingSubtitle}"
                                               ZIndex="1000"

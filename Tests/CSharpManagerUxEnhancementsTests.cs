@@ -1,14 +1,10 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpManagerUxEnhancementsTests : IDisposable
 {
@@ -55,19 +51,19 @@ public class CSharpManagerUxEnhancementsTests : IDisposable
         var (vm, _, _, _, _) = CreateHub();
 
         // Default state is Workspaces
-        Assert.Equal("Workspaces", vm.ActiveDashboardView);
+        Assert.Equal((string?)"Workspaces", (string?)vm.ActiveDashboardView);
         Assert.True(vm.IsWorkspacesTabActive);
         Assert.False(vm.IsTemplatesTabActive);
 
         // Switch to Templates
         ((ICommand)vm.SetActiveDashboardViewCommand).Execute("Templates");
-        Assert.Equal("Templates", vm.ActiveDashboardView);
+        Assert.Equal((string?)"Templates", (string?)vm.ActiveDashboardView);
         Assert.False(vm.IsWorkspacesTabActive);
         Assert.True(vm.IsTemplatesTabActive);
 
         // Switch back to Workspaces
         ((ICommand)vm.SetActiveDashboardViewCommand).Execute("Workspaces");
-        Assert.Equal("Workspaces", vm.ActiveDashboardView);
+        Assert.Equal((string?)"Workspaces", (string?)vm.ActiveDashboardView);
         Assert.True(vm.IsWorkspacesTabActive);
         Assert.False(vm.IsTemplatesTabActive);
     }

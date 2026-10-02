@@ -1,7 +1,6 @@
-using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Runner;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>Snapshots for application-level windows: About, Update Dialog, and MainWindow.</summary>
 internal static class AppSnapshots

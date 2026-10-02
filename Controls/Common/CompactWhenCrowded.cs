@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 /// <summary>
 /// Adds the <c>compact</c> class to a Border while its content wouldn't fit side by side, so styles can give that content

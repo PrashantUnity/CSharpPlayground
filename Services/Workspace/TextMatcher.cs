@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>Receives one match: its 1-based line and column, its length, and the text of that line (without the line break).</summary>
 public delegate void TextMatchHandler(int line, int column, int length, ReadOnlySpan<char> lineText);

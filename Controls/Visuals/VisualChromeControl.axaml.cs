@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -13,10 +9,11 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Material.Icons;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 
 public partial class VisualChromeControl : UserControl
 {
@@ -105,9 +102,9 @@ public partial class VisualChromeControl : UserControl
             // Notify parent notebook to activate this cell if hosted in a notebook cell
             try
             {
-                if (this.FindAncestorOfType<NotebookCellOutputControl>()?.DataContext is ViewModels.NotebookCellViewModel cellVm)
+                if (this.FindAncestorOfType<NotebookCellOutputControl>()?.DataContext is NotebookCellViewModel cellVm)
                 {
-                    if (this.FindAncestorOfType<Views.CSharpNotebookStudioView>()?.DataContext is ViewModels.CSharpNotebookStudioViewModel studioVm)
+                    if (this.FindAncestorOfType<Views.CSharpNotebookStudioView>()?.DataContext is CSharpNotebookStudioViewModel studioVm)
                     {
                         studioVm.SelectCell(cellVm);
                     }

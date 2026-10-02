@@ -5,8 +5,10 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:explorer="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              mc:Ignorable="d" d:DesignWidth="280" d:DesignHeight="600"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioExplorerPanelControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioExplorerPanelControl"
              x:CompileBindings="False">
 
 
@@ -36,7 +38,7 @@
     </UserControl.Styles>
 
     <UserControl.DataTemplates>
-        <DataTemplate DataType="vm:ExplorerItemViewModel">
+        <DataTemplate DataType="explorer:ExplorerItemViewModel">
             <StackPanel>
                 <!-- Tree Row Item -->
                 <Button Command="{Binding ToggleExpandCommand}"
@@ -119,7 +121,7 @@
                                  Text="{Binding EditName, Mode=TwoWay}"
                                  Margin="0,0,6,0"
                                  IsVisible="{Binding IsRenaming}"
-                                 controls:FocusOnTrueBehavior.IsActive="{Binding IsRenaming}"
+                                 common:FocusOnTrueBehavior.IsActive="{Binding IsRenaming}"
                                  LostFocus="OnRenameTextBoxLostFocus"
                                  VerticalAlignment="Center">
                             <TextBox.KeyBindings>

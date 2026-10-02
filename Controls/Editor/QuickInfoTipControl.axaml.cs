@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
@@ -7,7 +5,7 @@ using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 /// <summary>
 /// The hover card <see cref="CSharpQuickInfoController"/> shows: the symbol's signature and container in the editor's

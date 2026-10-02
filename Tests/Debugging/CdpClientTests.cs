@@ -6,7 +6,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Cdp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+namespace CSharpEditorPlugin.Tests.Debugging;
 
 /// <summary>An inspector standing in for Node's: <c>/json/list</c> names its WebSocket, and the WebSocket answers as a test says.</summary>
 internal sealed class FakeInspector : IAsyncDisposable

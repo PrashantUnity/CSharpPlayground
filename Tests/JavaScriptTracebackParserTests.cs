@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class JavaScriptTracebackParserTests
 {

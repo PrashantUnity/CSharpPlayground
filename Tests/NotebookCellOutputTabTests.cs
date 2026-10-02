@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class NotebookCellOutputTabTests
 {
@@ -18,9 +18,9 @@ public class NotebookCellOutputTabTests
         };
         var vm = new NotebookCellViewModel(item);
 
-        Assert.True(vm.HasOutput);
+        Assert.True((bool)vm.HasOutput);
         Assert.True(vm.HasTextOutput);
-        Assert.False(vm.HasTableOutput);
+        Assert.False((bool)vm.HasTableOutput);
         Assert.Equal(1, vm.AvailableOutputCount);
         Assert.False(vm.HasMultipleOutputKinds);
         Assert.Equal(CellOutputTab.Console, vm.SelectedOutputTab);
@@ -47,8 +47,8 @@ public class NotebookCellOutputTabTests
 
         vm.SetTableOutput(table);
 
-        Assert.True(vm.HasOutput);
-        Assert.True(vm.HasTableOutput);
+        Assert.True((bool)vm.HasOutput);
+        Assert.True((bool)vm.HasTableOutput);
         Assert.False(vm.HasTextOutput);
         Assert.Equal(1, vm.AvailableOutputCount);
         Assert.False(vm.HasMultipleOutputKinds);
@@ -81,9 +81,9 @@ public class NotebookCellOutputTabTests
         }
         vm.SetTableOutput(table);
 
-        Assert.True(vm.HasOutput);
+        Assert.True((bool)vm.HasOutput);
         Assert.True(vm.HasTextOutput);
-        Assert.True(vm.HasTableOutput);
+        Assert.True((bool)vm.HasTableOutput);
         Assert.Equal(2, vm.AvailableOutputCount);
         Assert.True(vm.HasMultipleOutputKinds);
 
@@ -161,14 +161,14 @@ public class NotebookCellOutputTabTests
         vm.OutputText = "Log line\n";
         vm.SetTableOutput(new DumpTableResult("T"));
 
-        Assert.True(vm.HasOutput);
+        Assert.True((bool)vm.HasOutput);
         Assert.True(vm.HasMultipleOutputKinds);
 
         vm.ClearOutput();
 
-        Assert.False(vm.HasOutput);
+        Assert.False((bool)vm.HasOutput);
         Assert.False(vm.HasTextOutput);
-        Assert.False(vm.HasTableOutput);
+        Assert.False((bool)vm.HasTableOutput);
         Assert.Equal(0, vm.AvailableOutputCount);
         Assert.False(vm.HasMultipleOutputKinds);
         Assert.False(vm.IsTableTabActive);
@@ -213,7 +213,7 @@ public class NotebookCellOutputTabTests
 
         var vm = new NotebookCellViewModel(item);
 
-        Assert.True(vm.HasTableOutput);
+        Assert.True((bool)vm.HasTableOutput);
         Assert.True(vm.HasTextOutput);
         Assert.True(vm.HasMultipleOutputKinds);
         Assert.Equal(CellOutputTab.Table, vm.SelectedOutputTab);

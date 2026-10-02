@@ -1,8 +1,7 @@
-using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 /// <summary>
 /// Compares an integer-valued binding to an integer ConverterParameter and returns true when equal.

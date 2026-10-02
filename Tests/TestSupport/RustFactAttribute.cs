@@ -3,7 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// A test that runs real Rust (cargo and rustc). Skipped on a machine without Rust, unless <c>FRY_REQUIRE_RUST=1</c>.

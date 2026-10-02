@@ -1,28 +1,23 @@
-using Microsoft.CodeAnalysis.Scripting.Hosting;
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.Scripting.Hosting;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 
 public class KernelExecutionResult
 {
@@ -126,7 +121,7 @@ public class NotebookExecutionKernel : INotebookKernel
 
     private static void RegisterCoreDependencies(InteractiveAssemblyLoader loader)
     {
-        loader.RegisterDependency(typeof(Display).Assembly);
+        loader.RegisterDependency(typeof(Display.Display).Assembly);
         loader.RegisterDependency(typeof(Control).Assembly);
         loader.RegisterDependency(typeof(Bitmap).Assembly);
         loader.RegisterDependency(typeof(System.Data.DataTable).Assembly);
@@ -490,44 +485,44 @@ public class NotebookExecutionKernel : INotebookKernel
         switch (value)
         {
             case VisualizerRecorder recorder:
-                Display.Visualizer(recorder);
+                Display.Display.Visualizer(recorder);
                 return true;
             case VisualizerSequence sequence:
-                Display.Visualizer(new VisualizerOptions { Sequence = sequence, Kind = sequence.CurrentStep?.Kind ?? VisualizerKind.Matrix });
+                Display.Display.Visualizer(new VisualizerOptions { Sequence = sequence, Kind = sequence.CurrentStep?.Kind ?? VisualizerKind.Matrix });
                 return true;
             case TreeTracker treeTracker:
-                Display.Visualizer(treeTracker);
+                Display.Display.Visualizer(treeTracker);
                 return true;
             case GraphTracker graphTracker:
-                Display.Visualizer(graphTracker);
+                Display.Display.Visualizer(graphTracker);
                 return true;
             case MatrixTracker matrixTracker:
-                Display.Visualizer(matrixTracker);
+                Display.Display.Visualizer(matrixTracker);
                 return true;
             case LinkedListTracker listTracker:
-                Display.Visualizer(listTracker);
+                Display.Display.Visualizer(listTracker);
                 return true;
             case RecursionTracker recursionTracker:
-                Display.Visualizer(recursionTracker);
+                Display.Display.Visualizer(recursionTracker);
                 return true;
             case IntervalTracker intervalTracker:
-                Display.Visualizer(intervalTracker);
+                Display.Display.Visualizer(intervalTracker);
                 return true;
             case TrieTracker trieTracker:
-                Display.Visualizer(trieTracker);
+                Display.Display.Visualizer(trieTracker);
                 return true;
         }
 
         switch (DataStructureDetector.Detect(value))
         {
             case DataStructureShape.Tree:
-                Display.Tree(value, title: value.GetType().Name);
+                Display.Display.Tree(value, title: value.GetType().Name);
                 return true;
             case DataStructureShape.LinkedList:
-                Display.LinkedList(value, title: value.GetType().Name);
+                Display.Display.LinkedList(value, title: value.GetType().Name);
                 return true;
             case DataStructureShape.Grid:
-                Display.Matrix(value);
+                Display.Display.Matrix(value);
                 return true;
             default:
                 return false;

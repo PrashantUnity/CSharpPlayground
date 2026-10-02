@@ -1,8 +1,4 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 
 /// <summary>
 /// Roslyn scripting (and a compiled Main() invoked via reflection) only observes a

@@ -1,8 +1,7 @@
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>A spec the studio can draw passes; one it can't is told where and why, in words for whoever wrote it.</summary>
 public class VisualSpecValidatorTests

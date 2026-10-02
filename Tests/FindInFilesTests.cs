@@ -1,9 +1,12 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>What the Search panel's matcher finds, and how "Find in Files" reads a workspace.</summary>
 public class TextMatcherTests
@@ -334,7 +337,7 @@ public class StudioSearchPanelTests : IDisposable
 
         studio.SearchQuery = "(unclosed";
         Assert.Empty(studio.SearchMatches);
-        Assert.Equal("Invalid regular expression", studio.SearchStatusText);
+        Assert.Equal((string?)"Invalid regular expression", (string?)studio.SearchStatusText);
     }
 
     [Fact]
@@ -347,7 +350,7 @@ public class StudioSearchPanelTests : IDisposable
 
         studio.ReplaceAllCommand.Execute(null);
 
-        Assert.Equal("sum totals sum", studio.Code);
+        Assert.Equal((string?)"sum totals sum", (string?)studio.Code);
     }
 
     [Fact]
@@ -363,7 +366,7 @@ public class StudioSearchPanelTests : IDisposable
         studio.SearchQuery = "needle";
         await WaitUntil(() => !studio.IsSearching && studio.SearchMatches.Count > 0);
 
-        Assert.Equal("3 results in 2 files", studio.SearchStatusText);
+        Assert.Equal((string?)"3 results in 2 files", (string?)studio.SearchStatusText);
         var headers = studio.SearchMatches.Where(m => m.IsFileHeader).ToList();
         Assert.Equal(new[] { "Alpha.frycs", "Beta.frycs" }, headers.Select(h => h.FilePath).OrderBy(p => p));
         Assert.Equal(new[] { 2, 1 }, headers.OrderBy(h => h.FilePath).Select(h => h.MatchCount));
@@ -405,7 +408,7 @@ public class StudioSearchPanelTests : IDisposable
         await WaitUntil(() => !studio.IsSearching);
 
         Assert.Empty(studio.SearchMatches);
-        Assert.Equal("No results in 1 file", studio.SearchStatusText);
+        Assert.Equal((string?)"No results in 1 file", (string?)studio.SearchStatusText);
         Assert.Equal("No results found.", studio.SearchEmptyText);
     }
 
@@ -462,7 +465,7 @@ public class StudioSearchPanelTests : IDisposable
         studio.NavigateToSearchMatchCommand.Execute(studio.SearchMatches.Single(m => !m.IsFileHeader));
         await WaitUntil(() => navigated != null);
 
-        Assert.Equal(beta.Id, studio.Script.Id);
+        Assert.Equal(beta.Id, (string?)studio.Script.Id);
         Assert.Equal((2, 20), navigated);
     }
 

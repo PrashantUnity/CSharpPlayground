@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.DebugHoverDataTipControl">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Editor.DebugHoverDataTipControl">
 
     <UserControl.Styles>
         <Style Selector="Border.hover-node-row">

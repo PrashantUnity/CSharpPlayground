@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Styling;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 /// <summary>
 /// Toggles the app-wide Avalonia theme variant. Callers must invoke this from the UI thread (e.g. a

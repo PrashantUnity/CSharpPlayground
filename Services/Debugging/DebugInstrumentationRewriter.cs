@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 
 public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
 {
@@ -278,7 +275,7 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         var name = Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(DescribeFrame(declaration), quote: true);
         var next = body.Statements.Count > 0 ? body.Statements[0].GetLeadingTrivia() : body.CloseBraceToken.LeadingTrivia;
         var frameStatement = SyntaxFactory.ParseStatement(
-                $"using var __dbgFrame{_frameCounter++} = PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.EnterFrame({name}, {GetLineNumber(declaration)});")
+                $"using var __dbgFrame{_frameCounter++} = PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.ScriptDebugSession.EnterFrame({name}, {GetLineNumber(declaration)});")
             .WithTrailingTrivia(SeparatorBefore(next));
 
         return body.WithStatements(body.Statements.Insert(0, frameStatement));
@@ -584,12 +581,12 @@ public class DebugInstrumentationRewriter : CSharpSyntaxRewriter
         string probeCode;
         if (validVars.Count == 0)
         {
-            probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.Hit({lineNumber}, null);";
+            probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.ScriptDebugSession.Hit({lineNumber}, null);";
         }
         else
         {
             var entries = string.Join(", ", validVars.Select(v => $"{{ \"{v}\", (object?){v} }}"));
-            probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.ScriptDebugSession.Hit({lineNumber}, () => new System.Collections.Generic.Dictionary<string, object?> {{ {entries} }});";
+            probeCode = $"PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.ScriptDebugSession.Hit({lineNumber}, () => new System.Collections.Generic.Dictionary<string, object?> {{ {entries} }});";
         }
 
         return SyntaxFactory.ParseStatement(probeCode)

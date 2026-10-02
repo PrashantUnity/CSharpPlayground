@@ -6,11 +6,18 @@ using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
 {
@@ -26,7 +33,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private readonly Action? _navigateToSettingsAction;
     private readonly Func<int> _getTimeoutSeconds;
 
-    public QuickOpenViewModel QuickOpen { get; } = new();
+    public Common.QuickOpenViewModel QuickOpen { get; } = new();
 
     private readonly ObservableCollection<NotebookCellViewModel> _emptyCells = new();
     private readonly ObservableCollection<NotebookVariableInfo> _emptyVariables = new();
@@ -135,8 +142,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         get
         {
             if (string.IsNullOrWhiteSpace(SearchText)) return Cells;
-            return Cells.Where(c => (c.Source ?? string.Empty).Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                                    (c.OutputText ?? string.Empty).Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            return Cells.Where(c => (c.Source ?? string.Empty).Contains((string)SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                    (c.OutputText ?? string.Empty).Contains((string)SearchText, StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -205,7 +212,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
-    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+    private double _editorFontSize = EditorZoomController.DefaultFontSize;
 
     [ObservableProperty]
     private bool _isSyntaxHighlightingEnabled = true;
@@ -213,32 +220,32 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [ObservableProperty]
     private bool _isAutoCompletionEnabled = true;
 
-    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+    public string ZoomPercentageText => EditorZoomController.FormatPercentage(EditorFontSize);
 
     [RelayCommand]
     public void ZoomIn()
     {
-        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.ZoomIn(EditorFontSize);
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     [RelayCommand]
     public void ZoomOut()
     {
-        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.ZoomOut(EditorFontSize);
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     [RelayCommand]
     public void ResetZoom()
     {
-        EditorFontSize = Controls.EditorZoomController.Reset();
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.Reset();
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     public void ApplyFontSize(double fontSize)
     {
-        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+        EditorFontSize = EditorZoomController.Clamp(fontSize);
     }
 
     [ObservableProperty]
@@ -263,7 +270,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private bool _isTimelineExpanded = false;
 
     public ObservableCollection<NotebookTabViewModel> Tabs { get; } = new();
-    public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
+    public ObservableCollection<CodeStudio.Explorer.ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
     private ExplorerRowList? _explorerRows;
 
@@ -437,7 +444,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         SelectTab(initialTab);
 
         var initialSettings = _languages.StudioSettings.GetSettings();
-        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _editorFontSize = EditorZoomController.Clamp(initialSettings.FontSize);
         _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
         _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
@@ -463,7 +470,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
             {
-                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+                EditorFontSize = EditorZoomController.Clamp(s.FontSize);
             }
             IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;
             IsAutoCompletionEnabled = s.EnableAutoCompletion;
@@ -498,7 +505,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook, bool evenIfInWorkspace = false)
+    public CodeStudio.Explorer.ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook, bool evenIfInWorkspace = false)
     {
         var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
             ? notebook.Title
@@ -794,11 +801,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         QuickOpen.RegisterDocuments(docs);
     }
 
-    private void OnExplorerItemClicked(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
+    private void OnExplorerItemClicked(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
 
-    public void OpenDocument(ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
+    public void OpenDocument(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
 
-    public async Task OpenDocumentAsync(ExplorerItemViewModel item)
+    public async Task OpenDocumentAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -845,7 +852,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
                     }
                     if (sc == null && !string.IsNullOrEmpty(item.FullPath))
                     {
-                        var openRes = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(item.FullPath));
+                        var openRes = await Task.Run<OpenProjectResult>(async () => await _storageService.OpenExternalProjectAsync(item.FullPath));
                         if (openRes.Success && !string.IsNullOrEmpty(openRes.PrimaryDocumentId))
                         {
                             sc = await Task.Run(async () => await _storageService.LoadScriptAsync(openRes.PrimaryDocumentId));
@@ -1153,10 +1160,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    public void DeleteExplorerItem(ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
+    public void DeleteExplorerItem(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
 
     [RelayCommand]
-    public async Task DeleteExplorerItemAsync(ExplorerItemViewModel item)
+    public async Task DeleteExplorerItemAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
 
@@ -1229,10 +1236,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    public void DuplicateExplorerItem(ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
+    public void DuplicateExplorerItem(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
 
     [RelayCommand]
-    public async Task DuplicateExplorerItemAsync(ExplorerItemViewModel item)
+    public async Task DuplicateExplorerItemAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item == null || item.IsDirectory) return;
 
@@ -1307,7 +1314,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     }
 
     [RelayCommand]
-    public void CopyItemPath(ExplorerItemViewModel item)
+    public void CopyItemPath(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
         var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
@@ -1330,10 +1337,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    public void NewFileUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+    public void NewFileUnderItem(CodeStudio.Explorer.ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
 
     [RelayCommand]
-    public async Task NewFileUnderItemAsync(ExplorerItemViewModel target)
+    public async Task NewFileUnderItemAsync(CodeStudio.Explorer.ExplorerItemViewModel target)
     {
         var folder = target.IsDirectory ? target : target.Parent;
         var timestamp = DateTime.Now.ToString("HHmmss");
@@ -1353,7 +1360,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
 
         var fullPath = string.IsNullOrEmpty(folderPath) ? fileName : $"{folderPath}/{fileName}";
-        ExplorerItemViewModel? newFile = null;
+        CodeStudio.Explorer.ExplorerItemViewModel? newFile = null;
 
         // Listing a folder that has not been listed yet finds the new notebook on disk: adding a row too would show it twice.
         if (folder is { ChildrenLoaded: false })
@@ -1382,16 +1389,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         await CreateFolderCoreAsync(targetFolder);
     }
 
-    public void NewFolderUnderItem(ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
+    public void NewFolderUnderItem(CodeStudio.Explorer.ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
 
     [RelayCommand]
-    public async Task NewFolderUnderItemAsync(ExplorerItemViewModel target)
+    public async Task NewFolderUnderItemAsync(CodeStudio.Explorer.ExplorerItemViewModel target)
     {
         var folder = target.IsDirectory ? target : target.Parent;
         await CreateFolderCoreAsync(folder);
     }
 
-    private async Task CreateFolderCoreAsync(ExplorerItemViewModel? parentFolder)
+    private async Task CreateFolderCoreAsync(CodeStudio.Explorer.ExplorerItemViewModel? parentFolder)
     {
         string newRelativePath;
         try
@@ -1551,7 +1558,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private void CollapseItemRecursive(ExplorerItemViewModel item)
+    private void CollapseItemRecursive(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -1594,7 +1601,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             return;
         }
 
-        LazyExplorer.Build(listing, ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems));
+        LazyExplorer.Build(listing, CodeStudio.Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems));
         foreach (var tab in Tabs.ToList())
         {
             EnsureDocumentInExplorer(tab.Notebook);
@@ -1629,15 +1636,15 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         using var rowsScope = ExplorerRows.Suspend();
 
         // A refresh keeps the folders the user had open open.
-        var expandedFolders = ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
+        var expandedFolders = CodeStudio.Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
-        var folderNodes = new Dictionary<string, ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        var folderNodes = new Dictionary<string, CodeStudio.Explorer.ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
         // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
         // file would be quadratic in the size of a folder.
         var rootKey = new object();
         var namesByFolder = new Dictionary<object, HashSet<string>>();
 
-        ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
+        CodeStudio.Explorer.ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath)) return null;
             if (folderNodes.TryGetValue(relativePath, out var existing)) return existing;
@@ -1702,11 +1709,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
     }
 
-    private void SortExplorerTree(ObservableCollection<ExplorerItemViewModel> items)
+    private void SortExplorerTree(ObservableCollection<CodeStudio.Explorer.ExplorerItemViewModel> items)
     {
         using var rowsScope = ExplorerRows.Suspend();
 
-        var sorted = items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var sorted = items.OrderByDescending<CodeStudio.Explorer.ExplorerItemViewModel, bool>(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
         if (!sorted.SequenceEqual(items))
         {
             items.Clear();
@@ -1722,9 +1729,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
+    private CodeStudio.Explorer.ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, CodeStudio.Explorer.ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
     {
-        return new ExplorerItemViewModel
+        return new CodeStudio.Explorer.ExplorerItemViewModel
         {
             Name = name,
             IsDirectory = true,
@@ -1743,9 +1750,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         };
     }
 
-    private ExplorerItemViewModel CreateFileItem(string name, string? documentId, ExplorerItemViewModel? parent, string fullPath)
+    private CodeStudio.Explorer.ExplorerItemViewModel CreateFileItem(string name, string? documentId, CodeStudio.Explorer.ExplorerItemViewModel? parent, string fullPath)
     {
-        return new ExplorerItemViewModel
+        return new CodeStudio.Explorer.ExplorerItemViewModel
         {
             Name = name,
             DocumentId = documentId,
@@ -1764,7 +1771,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         };
     }
 
-    private void AddToTree(ExplorerItemViewModel? parent, ExplorerItemViewModel child)
+    private void AddToTree(CodeStudio.Explorer.ExplorerItemViewModel? parent, CodeStudio.Explorer.ExplorerItemViewModel child)
     {
         if (parent != null)
         {
@@ -1776,11 +1783,11 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private HashSet<string> CollectDescendantDocumentIds(ExplorerItemViewModel item)
+    private HashSet<string> CollectDescendantDocumentIds(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        void Walk(ExplorerItemViewModel node)
+        void Walk(CodeStudio.Explorer.ExplorerItemViewModel node)
         {
             if (!node.IsDirectory && !string.IsNullOrEmpty(node.DocumentId))
             {
@@ -1796,7 +1803,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         return ids;
     }
 
-    private void UpdateDescendantFullPaths(ExplorerItemViewModel node, string oldPrefix, string newPrefix)
+    private void UpdateDescendantFullPaths(CodeStudio.Explorer.ExplorerItemViewModel node, string oldPrefix, string newPrefix)
     {
         foreach (var child in node.Children)
         {
@@ -1808,9 +1815,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private void OnItemRenamed(ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
+    private void OnItemRenamed(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
 
-    internal async Task OnItemRenamedAsync(ExplorerItemViewModel item)
+    internal async Task OnItemRenamedAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item.IsDirectory)
         {
@@ -1854,7 +1861,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private void DeselectAll(IEnumerable<ExplorerItemViewModel> items)
+    private void DeselectAll(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
     {
         foreach (var it in items)
         {
@@ -1906,7 +1913,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         }
     }
 
-    private ExplorerItemViewModel? FindItemByIdOrName(IEnumerable<ExplorerItemViewModel> items, string? docId, string name)
+    private CodeStudio.Explorer.ExplorerItemViewModel? FindItemByIdOrName(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items, string? docId, string name)
     {
         foreach (var it in items)
         {
@@ -1922,7 +1929,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         return null;
     }
 
-    private ExplorerItemViewModel? FindSelectedItem(IEnumerable<ExplorerItemViewModel> items)
+    private CodeStudio.Explorer.ExplorerItemViewModel? FindSelectedItem(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
     {
         foreach (var it in items)
         {
@@ -1933,7 +1940,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         return null;
     }
 
-    private ExplorerItemViewModel? FindFirstFile(IEnumerable<ExplorerItemViewModel> items)
+    private CodeStudio.Explorer.ExplorerItemViewModel? FindFirstFile(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
     {
         foreach (var it in items)
         {

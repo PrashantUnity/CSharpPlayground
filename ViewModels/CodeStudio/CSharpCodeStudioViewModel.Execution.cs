@@ -4,10 +4,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel
 {
@@ -231,8 +235,8 @@ public partial class CSharpCodeStudioViewModel
     // The kinds the Results tab's RichOutputs template draws (StudioBottomDeckControl.axaml).
     private static bool IsDrawnInResults(RichCellOutput output) =>
         output.IsImageKind || output.IsHtmlKind || output.IsControlKind || output.IsInspectorKind || output.IsVisualKind;
-    public ObservableCollection<DiagnosticItemViewModel> Diagnostics { get; } = new();
-    public ObservableCollection<AssemblyReferenceViewModel> References { get; } = new();
+    public ObservableCollection<Common.DiagnosticItemViewModel> Diagnostics { get; } = new();
+    public ObservableCollection<Common.AssemblyReferenceViewModel> References { get; } = new();
     public ObservableCollection<TestCaseItem> TestCases { get; } = new();
 
     /// <summary>
@@ -275,7 +279,7 @@ public partial class CSharpCodeStudioViewModel
         var codeSnapshot = Code;
         var mode = CurrentLanguageMode;
 
-        _ = Task.Run(async () =>
+        _ = Task.Run((Func<Task?>)(async () =>
         {
             try
             {
@@ -298,7 +302,7 @@ public partial class CSharpCodeStudioViewModel
                         targetTab.Diagnostics.Clear();
                         foreach (var item in items)
                         {
-                            targetTab.Diagnostics.Add(new DiagnosticItemViewModel(item, (l, c) =>
+                            targetTab.Diagnostics.Add(new Common.DiagnosticItemViewModel(item, (l, c) =>
                             {
                                 RequestNavigateToCaret?.Invoke(l, c);
                             }));
@@ -310,7 +314,7 @@ public partial class CSharpCodeStudioViewModel
                         Diagnostics.Clear();
                         foreach (var item in items)
                         {
-                            Diagnostics.Add(new DiagnosticItemViewModel(item, (l, c) =>
+                            Diagnostics.Add(new Common.DiagnosticItemViewModel(item, (l, c) =>
                             {
                                 SetCaretPosition(l, c);
                                 RequestNavigateToCaret?.Invoke(l, c);
@@ -347,7 +351,7 @@ public partial class CSharpCodeStudioViewModel
             catch (OperationCanceledException)
             {
             }
-        }, token);
+        }), token);
     }
 
     private void DisposeRichOutputControls()
@@ -585,7 +589,7 @@ public partial class CSharpCodeStudioViewModel
                     };
 
                     var abandonedRunId = myRunId;
-                    _ = kernelExecutionTask.ContinueWith(t =>
+                    _ = kernelExecutionTask.ContinueWith((Task<KernelExecutionResult> t) =>
                     {
                         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                         {
@@ -658,7 +662,7 @@ public partial class CSharpCodeStudioViewModel
                         Diagnostics.Clear();
                         foreach (var d in kernelResult.Diagnostics)
                         {
-                            Diagnostics.Add(new DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
+                            Diagnostics.Add(new Common.DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
                         }
                         ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
                         WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
@@ -716,7 +720,7 @@ public partial class CSharpCodeStudioViewModel
                     result = new ExecutionResult { WasCancelled = true };
 
                     var abandonedRunId = myRunId;
-                    _ = executionTask.ContinueWith(t =>
+                    _ = executionTask.ContinueWith((Task<ExecutionResult> t) =>
                     {
                         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                         {

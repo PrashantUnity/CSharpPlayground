@@ -5,6 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:visControls="using:PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
              mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="380"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.InteractiveVisualizerControl">
 
@@ -13,7 +14,7 @@
     </UserControl.Styles>
 
     <Grid>
-        <controls:VisualChromeControl x:Name="Chrome" />
+        <visuals:VisualChromeControl x:Name="Chrome" />
 
         <StackPanel x:Name="KindToolsPanel" Orientation="Horizontal" Spacing="4" IsVisible="False">
             <Button Name="ZoomOutBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Zoom Out (−)">

@@ -8,8 +8,12 @@
              xmlns:services="using:PdfEditorApp.Plugins.CSharpEditor.Services"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             xmlns:display="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
+             xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
+             xmlns:vm1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="300"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.StudioBottomDeckControl"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioBottomDeckControl"
              x:CompileBindings="False">
 
 
@@ -30,7 +34,7 @@
                         <!-- Tab 0: Results (.Dump) -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="0"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=0}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=0}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Table" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Results (.Dump)" VerticalAlignment="Center" />
@@ -45,7 +49,7 @@
                         <!-- Tab 1: Terminal / Console -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="1"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=1}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=1}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Console" Width="14" Height="14" />
                                 <TextBlock Text="Terminal / Console" VerticalAlignment="Center" />
@@ -55,7 +59,7 @@
                         <!-- Tab 2: Problems -->
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="2"
                                 Classes="ide-tab-btn"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=2}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=2}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#EAB308" />
                                 <TextBlock Text="Problems" VerticalAlignment="Center" />
@@ -71,7 +75,7 @@
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="3"
                                 Classes="ide-tab-btn"
                                 IsVisible="{Binding SupportsTestCases}"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=3}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=3}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="CheckboxMarkedCircleOutline" Width="14" Height="14" />
                                 <TextBlock Text="Test Cases" VerticalAlignment="Center" />
@@ -82,7 +86,7 @@
                         <Button Command="{Binding SetBottomTabCommand}" CommandParameter="4"
                                 Classes="ide-tab-btn"
                                 IsVisible="{Binding SupportsDebugging}"
-                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static controls:NumberEqualsConverter.Instance}, ConverterParameter=4}">
+                                Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=4}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Debug Console" VerticalAlignment="Center" />
@@ -142,7 +146,7 @@
                             <!-- The kinds drawn here are the ones CSharpCodeStudioViewModel.HasNoResults counts; keep them in step. -->
                             <ItemsControl ItemsSource="{Binding RichOutputs}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:RichCellOutput">
+                                    <DataTemplate x:DataType="display:RichCellOutput">
                                         <StackPanel Spacing="0">
                                             <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
                                                 <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
@@ -151,7 +155,7 @@
                                                 <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
                                             </Border>
                                             <Border IsVisible="{Binding IsVisualKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
-                                                <controls:VisualOutputView Output="{Binding Visual}" />
+                                                <visuals:VisualOutputView Output="{Binding Visual}" />
                                             </Border>
                                             <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
                                                 <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
@@ -221,7 +225,7 @@
                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="ChevronRight" Width="14" Height="14"
                                                             Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 <TextBox Grid.Column="1" Text="{Binding ProgramInputText, Mode=TwoWay}"
-                                         controls:FocusOnTrueBehavior.IsActive="{Binding IsAcceptingProgramInput}"
+                                         common:FocusOnTrueBehavior.IsActive="{Binding IsAcceptingProgramInput}"
                                          FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
                                          PlaceholderText="Type input for the program, then Enter"
                                          Background="Transparent" BorderThickness="0" MinHeight="22">
@@ -243,7 +247,7 @@
                         <TextBlock Text="No problems detected in script." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
                         <ItemsControl ItemsSource="{Binding Diagnostics}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:DiagnosticItemViewModel">
+                                <DataTemplate x:DataType="vm1:DiagnosticItemViewModel">
                                     <Border Background="Transparent" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
                                         <Button Command="{Binding NavigateCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Cursor="Hand">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">

@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Docs;
 
 public partial class DocsNavRailControl : UserControl
 {

@@ -1,13 +1,12 @@
-using System.Linq;
-using System.Threading.Tasks;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 using Xunit;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
+using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Server;
+namespace CSharpEditorPlugin.Tests.Server;
 
 public class FryServerViewModelTests
 {
@@ -236,9 +235,9 @@ public class FryServerViewModelTests
 
             host.NavigateToServerStudio(serverDoc);
 
-            Assert.False(host.IsOnManagerPage);
+            Assert.False((bool)host.IsOnManagerPage);
             Assert.Same(host.ServerStudioViewModel, host.CurrentPage);
-            Assert.Equal("Payment Gateway Simulator", host.ActiveDocumentTitle);
+            Assert.Equal((string?)"Payment Gateway Simulator", (string?)host.ActiveDocumentTitle);
         }
         finally
         {

@@ -7,9 +7,12 @@
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:output="using:PdfEditorApp.Plugins.CSharpEditor.Visuals.Output"
+             xmlns:notebooks="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl"
-             x:DataType="vm:NotebookCellViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks.NotebookCellOutputControl"
+             x:DataType="notebooks:NotebookCellViewModel">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -316,13 +319,13 @@
 
                     <!-- 1. Interactive Object Inspector Tree -->
                     <Border IsVisible="{Binding IsInspectorTabActive}" Margin="0,1,0,3">
-                        <controls:LazyContent IsActive="{Binding IsInspectorTabActive}">
-                            <controls:LazyContent.ContentTemplate>
-                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                        <common:LazyContent IsActive="{Binding IsInspectorTabActive}">
+                            <common:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                     <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
                                 </DataTemplate>
-                            </controls:LazyContent.ContentTemplate>
-                        </controls:LazyContent>
+                            </common:LazyContent.ContentTemplate>
+                        </common:LazyContent>
                     </Border>
 
                     <!-- 2. Dark Terminal Card for Console Stdout Output -->
@@ -334,20 +337,20 @@
                             IsVisible="{Binding IsConsoleTabActive}">
                         <SelectableTextBlock Text="{Binding OutputText, Mode=OneWay}"
                                  FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
-                                 FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.0}"
+                                 FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.0}"
                                  Foreground="{DynamicResource DsTextWhiteBrush}"
                                  TextWrapping="Wrap" />
                     </Border>
 
                     <!-- 3. Tabular Output (.Dump()) -->
                     <Border IsVisible="{Binding IsTableTabActive}">
-                        <controls:LazyContent IsActive="{Binding IsTableTabActive}">
-                            <controls:LazyContent.ContentTemplate>
-                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                        <common:LazyContent IsActive="{Binding IsTableTabActive}">
+                            <common:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                     <views:DumpTableView DataContext="{Binding TableResult}" />
                                 </DataTemplate>
-                            </controls:LazyContent.ContentTemplate>
-                        </controls:LazyContent>
+                            </common:LazyContent.ContentTemplate>
+                        </common:LazyContent>
                     </Border>
 
                     <!-- 3b-3d. Charts, visualizers and 3D plots: every one the cell showed, in order, each drawn from its spec -->
@@ -357,9 +360,9 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <controls:LazyContent IsActive="{Binding IsChartTabActive}">
-                            <controls:LazyContent.ContentTemplate>
-                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                        <common:LazyContent IsActive="{Binding IsChartTabActive}">
+                            <common:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                     <StackPanel Spacing="10">
                                         <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                         <ItemsControl ItemsSource="{Binding ChartVisuals}">
@@ -368,14 +371,14 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="output:VisualOutput">
-                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                    <visuals:VisualOutputView Output="{Binding}" />
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </StackPanel>
                                 </DataTemplate>
-                            </controls:LazyContent.ContentTemplate>
-                        </controls:LazyContent>
+                            </common:LazyContent.ContentTemplate>
+                        </common:LazyContent>
                     </Border>
 
                     <Border IsVisible="{Binding IsVisualizerTabActive}"
@@ -384,9 +387,9 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <controls:LazyContent IsActive="{Binding IsVisualizerTabActive}">
-                            <controls:LazyContent.ContentTemplate>
-                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                        <common:LazyContent IsActive="{Binding IsVisualizerTabActive}">
+                            <common:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                     <StackPanel Spacing="10">
                                         <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                         <ItemsControl ItemsSource="{Binding VisualizerVisuals}">
@@ -395,14 +398,14 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="output:VisualOutput">
-                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                    <visuals:VisualOutputView Output="{Binding}" />
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </StackPanel>
                                 </DataTemplate>
-                            </controls:LazyContent.ContentTemplate>
-                        </controls:LazyContent>
+                            </common:LazyContent.ContentTemplate>
+                        </common:LazyContent>
                     </Border>
 
                     <Border IsVisible="{Binding IsPlot3DTabActive}"
@@ -411,9 +414,9 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="8">
-                        <controls:LazyContent IsActive="{Binding IsPlot3DTabActive}">
-                            <controls:LazyContent.ContentTemplate>
-                                <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                        <common:LazyContent IsActive="{Binding IsPlot3DTabActive}">
+                            <common:LazyContent.ContentTemplate>
+                                <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                     <StackPanel Spacing="10">
                                         <TextBlock Text="{Binding VisualsNotice}" IsVisible="{Binding VisualsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
                                         <ItemsControl ItemsSource="{Binding Plot3DVisuals}">
@@ -422,14 +425,14 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="output:VisualOutput">
-                                                    <controls:VisualOutputView Output="{Binding}" />
+                                                    <visuals:VisualOutputView Output="{Binding}" />
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </StackPanel>
                                 </DataTemplate>
-                            </controls:LazyContent.ContentTemplate>
-                        </controls:LazyContent>
+                            </common:LazyContent.ContentTemplate>
+                        </common:LazyContent>
                     </Border>
 
                     <!-- 4. Rendered Graphic / Image Output -->
@@ -522,13 +525,13 @@
                                 <materialIcons:MaterialIcon Kind="LanguageHtml5" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="HTML / Markdown Output" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             </StackPanel>
-                            <controls:LazyContent Grid.Row="1" IsActive="{Binding IsHtmlTabActive}">
-                                <controls:LazyContent.ContentTemplate>
-                                    <DataTemplate x:DataType="vm:NotebookCellViewModel">
+                            <common:LazyContent Grid.Row="1" IsActive="{Binding IsHtmlTabActive}">
+                                <common:LazyContent.ContentTemplate>
+                                    <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
                                         <views:RichHtmlView DataContext="{Binding HtmlContent}" />
                                     </DataTemplate>
-                                </controls:LazyContent.ContentTemplate>
-                            </controls:LazyContent>
+                                </common:LazyContent.ContentTemplate>
+                            </common:LazyContent>
                         </Grid>
                     </Border>
                 </StackPanel>

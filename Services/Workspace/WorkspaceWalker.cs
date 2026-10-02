@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>
 /// Walks a workspace folder the way the Explorer should see it: without the folders tools fill with thousands of files

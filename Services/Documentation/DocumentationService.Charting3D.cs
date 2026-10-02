@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 
 public partial class DocumentationService
 {

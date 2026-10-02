@@ -3,7 +3,7 @@ using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 public partial class ExplorerItemViewModel : ObservableObject
 {
@@ -210,7 +210,7 @@ public partial class ExplorerItemViewModel : ObservableObject
             Name = trimmed;
             if (!IsDirectory)
             {
-                FileExtension = Path.GetExtension(trimmed);
+                FileExtension = Path.GetExtension(trimmed) ?? string.Empty;
                 OnPropertyChanged(nameof(IconKind));
                 OnPropertyChanged(nameof(IconColor));
             }

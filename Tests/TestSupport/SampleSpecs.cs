@@ -1,4 +1,4 @@
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>Small valid specs of each family, for tests about outputs rather than about what is drawn.</summary>
 internal static class SampleSpecs

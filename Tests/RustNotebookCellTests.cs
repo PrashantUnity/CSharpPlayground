@@ -2,7 +2,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>A notebook cell taken apart into the items later cells keep and the statements that run once.</summary>
 public class RustCellSplitterTests

@@ -1,13 +1,12 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>
 /// <c>visuals [word ...]</c>: draws specs through <see cref="VisualOutputView"/>, the view behind every chart, 3D plot and

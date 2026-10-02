@@ -7,9 +7,16 @@
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:notebooks="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks"
+             xmlns:controls1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
+             xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
+             xmlns:overlays="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Overlays"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpNotebookStudioView"
-             x:DataType="vm:CSharpNotebookStudioViewModel">
+             x:DataType="notebooks:CSharpNotebookStudioViewModel">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -95,7 +102,7 @@
         </Style>
 
         <!-- Notebook Canvas Buttons: Prevent focus-steal and auto-scroll on click -->
-        <Style Selector="controls|NotebookCanvasScrollViewer Button">
+        <Style Selector="controls1|NotebookCanvasScrollViewer Button">
             <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
         </Style>
 
@@ -496,7 +503,7 @@
                     <!-- SideBar Body Panels -->
                     <Panel Grid.Row="1">
                         <!-- 1. EXPLORER VIEW (Index 0) -->
-                        <controls:StudioExplorerPanelControl IsVisible="{Binding IsExplorerActive}" OpenProjectRequested="OnOpenProjectClick" />
+                        <studio:StudioExplorerPanelControl IsVisible="{Binding IsExplorerActive}" OpenProjectRequested="OnOpenProjectClick" />
 
                         <!-- 2. OUTLINE VIEW (Index 1) -->
                         <Grid IsVisible="{Binding IsOutlineActive}" RowDefinitions="Auto,*">
@@ -520,8 +527,8 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                                            <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
+                                        <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
+                                            <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
                                                     CommandParameter="{Binding}"
                                                     Background="Transparent"
                                                     BorderThickness="2,0,0,0"
@@ -645,8 +652,8 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:NotebookCellViewModel">
-                                            <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
+                                        <DataTemplate x:DataType="notebooks:NotebookCellViewModel">
+                                            <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
                                                     CommandParameter="{Binding}"
                                                     Background="Transparent"
                                                     BorderThickness="0"
@@ -708,7 +715,7 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:NotebookTabViewModel">
+                                        <DataTemplate x:DataType="notebooks:NotebookTabViewModel">
                                             <!-- Tab Item -->
                                             <Border Classes="studio-tab-item"
                                                     Classes.active="{Binding IsActive}"
@@ -859,7 +866,7 @@
                 <!-- ROW 2: PROFESSIONAL ACTION TOOLBAR (38px)            -->
                 <!-- ==================================================== -->
                 <Border Grid.Row="2"
-                        controls:CompactWhenCrowded.IsEnabled="True"
+                        common:CompactWhenCrowded.IsEnabled="True"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
                         BorderThickness="0,0,0,1"
@@ -1038,7 +1045,7 @@
                                                        Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                             <ItemsControl ItemsSource="{Binding ActiveKernels}">
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:NotebookKernelStatusItem">
+                                                    <DataTemplate x:DataType="notebooks:NotebookKernelStatusItem">
                                                         <Border Padding="8,4" Margin="0,1" CornerRadius="4"
                                                                 Background="{DynamicResource DsSurfaceHighBrush}">
                                                             <Grid ColumnDefinitions="22,*,Auto">
@@ -1065,7 +1072,7 @@
                                                        Margin="8,2,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                             <ItemsControl ItemsSource="{Binding ActiveTab.DefaultLanguageChoices}">
                                                 <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:CellLanguageChoice">
+                                                    <DataTemplate x:DataType="notebooks:CellLanguageChoice">
                                                         <Button Command="{Binding Command}" Classes="ide-menu-item-btn"
                                                                 Classes.selected="{Binding IsSelected}"
                                                                 ToolTip.Tip="{Binding Detail}">
@@ -1146,13 +1153,13 @@
                     <ItemsControl ItemsSource="{Binding CanvasRows}">
                         <ItemsControl.Template>
                             <ControlTemplate>
-                                <controls:NotebookCanvasScrollViewer x:Name="NotebookCanvasScrollViewer"
+                                <controls1:NotebookCanvasScrollViewer x:Name="NotebookCanvasScrollViewer"
                                                                      HorizontalScrollBarVisibility="Disabled"
                                                                      VerticalScrollBarVisibility="Auto">
                                     <!-- Side margins only: the top and bottom gaps are the header and footer rows. A vertical margin
                                          here would shrink the area the virtualizing panel fills. -->
                                     <ItemsPresenter Margin="24,0,36,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
-                                </controls:NotebookCanvasScrollViewer>
+                                </controls1:NotebookCanvasScrollViewer>
                             </ControlTemplate>
                         </ItemsControl.Template>
                         <ItemsControl.ItemsPanel>
@@ -1163,19 +1170,19 @@
                         <ItemsControl.DataTemplates>
 
                             <!-- Top Insert Divider (before first cell) -->
-                            <DataTemplate DataType="vm:NotebookCanvasHeader" x:DataType="vm:NotebookCanvasHeader">
+                            <DataTemplate DataType="notebooks:NotebookCanvasHeader" x:DataType="notebooks:NotebookCanvasHeader">
                             <Border Classes="cell-insert-divider" Margin="56,16,0,8">
                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                                     <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
                                     <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).AddCellAboveCommand}"
+                                        <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).AddCellAboveCommand}"
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Code Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                 <TextBlock Text="Code" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).AddMarkdownCellCommand}"
+                                        <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).AddMarkdownCellCommand}"
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Markdown Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
@@ -1188,7 +1195,7 @@
                             </DataTemplate>
 
                             <!-- Cells -->
-                                    <DataTemplate DataType="vm:NotebookCellViewModel" x:DataType="vm:NotebookCellViewModel">
+                                    <DataTemplate DataType="notebooks:NotebookCellViewModel" x:DataType="notebooks:NotebookCellViewModel">
                                         <StackPanel Spacing="0">
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
                                             <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
@@ -1235,17 +1242,17 @@
                                                                 <!-- Editor Content -->
                                                                 <Panel Margin="6,4,6,4">
                                                                     <!-- C# Syntax Highlighted Code Editor -->
-                                                                    <controls:BindableTextEditor IsVisible="{Binding IsCodeCell}"
+                                                                    <editor:BindableTextEditor IsVisible="{Binding IsCodeCell}"
                                                                                                  TextContent="{Binding Source, Mode=TwoWay}"
                                                                                                  ExecuteCommand="{Binding RunCellCommand}"
                                                                                                  ExecuteAndNextCommand="{Binding RunCellAndSelectNextCommand}"
                                                                                                  MinHeight="24"
-                                                                                                 FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}" />
+                                                                                                 FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}" />
 
                                                                     <!-- Markdown View (Rendered Header & Notes) -->
-                                                                    <controls:MarkdownView IsVisible="{Binding IsViewingMarkdown}" Margin="8,6"
+                                                                    <docs:MarkdownView IsVisible="{Binding IsViewingMarkdown}" Margin="8,6"
                                                                                            Markdown="{Binding Source}"
-                                                                                           FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.5}" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                                                           FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.5}" Foreground="{DynamicResource DsTextWhiteBrush}" />
 
                                                                     <!-- Markdown Edit Mode -->
                                                                     <TextBox IsVisible="{Binding IsEditingMarkdown}"
@@ -1255,7 +1262,7 @@
                                                                              Background="Transparent"
                                                                              BorderThickness="0"
                                                                              MinHeight="24"
-                                                                             FontSize="{Binding ((vm:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}"
+                                                                             FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}"
                                                                              Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                              PlaceholderText="Write markdown documentation (# Header, notes)..."
                                                                              TextWrapping="Wrap" />
@@ -1307,7 +1314,7 @@
                                                                                                    Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                                                                         <ItemsControl ItemsSource="{Binding LanguageChoices}">
                                                                                             <ItemsControl.ItemTemplate>
-                                                                                                <DataTemplate x:DataType="vm:CellLanguageChoice">
+                                                                                                <DataTemplate x:DataType="notebooks:CellLanguageChoice">
                                                                                                     <Button Command="{Binding Command}" Classes="ide-menu-item-btn"
                                                                                                             Classes.selected="{Binding IsSelected}"
                                                                                                             ToolTip.Tip="{Binding Detail}">
@@ -1562,7 +1569,7 @@
                                                                                Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" Margin="0,0,6,0"
                                                                                MaxWidth="360" TextTrimming="CharacterEllipsis" />
                                                                     <TextBox Grid.Column="1"
-                                                                             controls:FocusOnTrueBehavior.IsActive="{Binding IsAwaitingInput}"
+                                                                             common:FocusOnTrueBehavior.IsActive="{Binding IsAwaitingInput}"
                                                                              Text="{Binding InputText, Mode=TwoWay}"
                                                                              PasswordChar="•"
                                                                              RevealPassword="{Binding !IsPasswordInput}"
@@ -1674,7 +1681,7 @@
                                                 <!-- COLUMN 1: DEDICATED OUTPUT CONTAINER -->
                                                 <Border Grid.Column="1"
                                                         Classes="notebook-output-card">
-                                                    <controls:NotebookCellOutputControl />
+                                                    <controls1:NotebookCellOutputControl />
                                                 </Border>
                                             </Grid>
 
@@ -1683,7 +1690,7 @@
                                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                                                     <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
                                                     <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).InsertCodeCellAfterCommand}"
+                                                        <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).InsertCodeCellAfterCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Code Cell Below">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -1691,7 +1698,7 @@
                                                                 <TextBlock Text="Code" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Button>
-                                                        <Button Command="{Binding $parent[UserControl].((vm:CSharpNotebookStudioViewModel)DataContext).InsertMarkdownCellAfterCommand}"
+                                                        <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).InsertMarkdownCellAfterCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Markdown Cell Below">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -1706,7 +1713,7 @@
                                     </DataTemplate>
 
                             <!-- The space at the end of the notebook -->
-                            <DataTemplate DataType="vm:NotebookCanvasFooter" x:DataType="vm:NotebookCanvasFooter">
+                            <DataTemplate DataType="notebooks:NotebookCanvasFooter" x:DataType="notebooks:NotebookCanvasFooter">
                                 <Border Height="48" />
                             </DataTemplate>
                         </ItemsControl.DataTemplates>
@@ -1775,7 +1782,7 @@
         <!-- ============================================================ -->
         <!-- QUICK OPEN & COMMAND PALETTE OVERLAY MODAL                   -->
         <!-- ============================================================ -->
-        <controls:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
+        <overlays:QuickOpenOverlayControl DataContext="{Binding QuickOpen}"
                                           Grid.RowSpan="2"
                                           ZIndex="999"
                                           HorizontalAlignment="Stretch"
@@ -1784,7 +1791,7 @@
         <!-- ============================================================ -->
         <!-- STUDIO LOADING OVERLAY POPUP                                 -->
         <!-- ============================================================ -->
-        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
                                               LoadingTitle="{Binding LoadingTitle}"
                                               LoadingSubtitle="{Binding LoadingSubtitle}"
                                               Grid.RowSpan="2"

@@ -2,10 +2,11 @@ using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 public partial class NotebookCellViewModel : ObservableObject
 {
@@ -424,7 +425,7 @@ public partial class NotebookCellViewModel : ObservableObject
         {
             if (string.IsNullOrWhiteSpace(Source)) return string.Empty;
             var lines = Source.Split(new[] { '\r', '\n' }, StringSplitOptions.None);
-            var bodyLines = lines.Where(l => !l.Trim().StartsWith("#")).ToArray();
+            var bodyLines = Enumerable.Where<string>(lines, l => !l.Trim().StartsWith("#")).ToArray();
             return string.Join(Environment.NewLine, bodyLines).Trim();
         }
     }
@@ -558,7 +559,7 @@ public partial class NotebookCellViewModel : ObservableObject
             if (ExecutionTimeText.EndsWith(" ms", StringComparison.OrdinalIgnoreCase))
             {
                 var numStr = ExecutionTimeText.Substring(0, ExecutionTimeText.Length - 3).Trim();
-                if (double.TryParse(numStr, out var ms))
+                if (double.TryParse((string?)numStr, out var ms))
                 {
                     return $"{ms / 1000.0:F1}s";
                 }

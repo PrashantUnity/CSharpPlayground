@@ -1,7 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 /// <summary>
 /// "Go to File" over the whole workspace: turns what the workspace index finds into Quick Open results that open the file when

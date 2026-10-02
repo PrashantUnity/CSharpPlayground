@@ -1,21 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Layouts;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class DataStructureVisualizerTests
 {

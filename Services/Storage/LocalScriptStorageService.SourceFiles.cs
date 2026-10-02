@@ -3,8 +3,9 @@ using System.Security.Cryptography;
 using System.Text;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 
 /// <summary>
 /// Plain source files (<c>main.py</c>): listed with the workspace's documents, opened and saved as their text so other

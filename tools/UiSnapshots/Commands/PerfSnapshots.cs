@@ -3,13 +3,20 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>
 /// <c>perf</c>: times the real studio (host view, all six pages) over a generated workspace: the first visit of each page,
@@ -342,9 +349,9 @@ internal static class PerfSnapshots
 
                 var text = editor.Text;
                 int unique = 0;
-                Console.WriteLine($"  experiment: setting the view model's Code alone {Median(Repeat(10, () => codeVm.Code = text + new string('y', ++unique))):F1} ms");
+                Console.WriteLine($"  experiment: setting the view model's Code alone {Median(Repeat<string>(10, () => codeVm.Code = text + new string('y', ++unique))):F1} ms");
                 Console.WriteLine($"  experiment: RefreshDocumentNuGetPackages alone  {Median(Repeat(10, () => codeVm.RefreshDocumentNuGetPackages())):F1} ms");
-                Console.WriteLine($"  experiment: ScriptDocumentItem.Code set alone   {Median(Repeat(10, () => codeVm.Script.Code = text + new string('z', ++unique))):F1} ms");
+                Console.WriteLine($"  experiment: ScriptDocumentItem.Code set alone   {Median(Repeat<string>(10, () => codeVm.Script.Code = text + new string('z', ++unique))):F1} ms");
                 var bare = new AvaloniaEdit.Document.TextDocument(text);
                 Console.WriteLine($"  experiment: a bare TextDocument, no editor      {Median(Repeat(10, () => bare.Insert(bare.TextLength - 2, "x"))):F1} ms");
             }
@@ -424,7 +431,7 @@ internal static class PerfSnapshots
         {
             Navigate(window, () => host.NavigateToNotebookStudio(notebook), () => ReferenceEquals(host.CurrentPage, host.NotebookStudioViewModel));
             var scroller = notebookView.GetVisualDescendants().OfType<ScrollViewer>().First(s => s.Name == "NotebookCanvasScrollViewer");
-            int Realized() => notebookView.GetVisualDescendants().OfType<PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor>().Count();
+            int Realized() => notebookView.GetVisualDescendants().OfType<BindableTextEditor>().Count();
             var steps = new List<double>();
             for (int i = 0; i < 25; i++)
             {
@@ -446,7 +453,7 @@ internal static class PerfSnapshots
             scroller.ScrollToEnd();
             Dispatcher.UIThread.RunJobs();
             Dispatcher.UIThread.RunJobs();
-            var lastRealized = notebookView.GetVisualDescendants().OfType<PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor>()
+            var lastRealized = notebookView.GetVisualDescendants().OfType<BindableTextEditor>()
                 .Select(e => e.DataContext as NotebookCellViewModel).Where(c => c != null)
                 .Select(c => host.NotebookStudioViewModel!.Cells.IndexOf(c!)).DefaultIfEmpty(-1).Max();
             Console.WriteLine($"  after Ctrl+End the bottom-most built cell is #{lastRealized} of {cells - 1}");
@@ -461,8 +468,8 @@ internal static class PerfSnapshots
         Console.WriteLine($"  opening the Outline panel: {outline.ToFrame:F0} ms; the Search panel: {search.ToFrame:F0} ms ({cells} cells)");
 
         // What one cell is made of: the two heaviest parts built on their own, 40 of each.
-        Console.WriteLine($"  one code editor:        {Cost(40, () => new PdfEditorApp.Plugins.CSharpEditor.Controls.BindableTextEditor())}");
-        Console.WriteLine($"  one cell output control: {Cost(40, () => new PdfEditorApp.Plugins.CSharpEditor.Controls.NotebookCellOutputControl())}");
+        Console.WriteLine($"  one code editor:        {Cost(40, () => new BindableTextEditor())}");
+        Console.WriteLine($"  one cell output control: {Cost(40, () => new NotebookCellOutputControl())}");
     }
 
     // --external n: open a folder of n source files (25 per folder), the way a big project is opened, and see what the

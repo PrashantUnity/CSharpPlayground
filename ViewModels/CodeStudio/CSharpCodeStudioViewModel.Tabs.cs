@@ -1,19 +1,19 @@
-using System.Collections.ObjectModel;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel
 {
-    private StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
+    private Common.StudioTabItemViewModel CreateTab(ScriptDocumentItem document, bool isActive = false)
     {
         var sourceLanguage = (document.SourceFilePath != null || !string.Equals(document.LanguageId, PdfEditorApp.Plugins.CSharpEditor.Services.Languages.LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase))
             ? _languages.LanguageOf(document)
             : null;
-        return new StudioTabItemViewModel(document, isActive)
+        return new Common.StudioTabItemViewModel(document, isActive)
         {
             LanguageIconKind = sourceLanguage?.IconKind,
             LanguageIconColor = sourceLanguage?.AccentHex,
@@ -42,7 +42,7 @@ public partial class CSharpCodeStudioViewModel
         foreach (var item in source) target.Add(item);
     }
 
-    public async Task SwitchToTabAsync(StudioTabItemViewModel tab)
+    public async Task SwitchToTabAsync(Common.StudioTabItemViewModel tab)
     {
         if (tab.Id == Script.Id && tab.IsActive) return;
 
@@ -151,7 +151,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    public async Task CloseTabAsync(StudioTabItemViewModel tab)
+    public async Task CloseTabAsync(Common.StudioTabItemViewModel tab)
     {
         if (OpenTabs.Count <= 1)
         {
@@ -180,7 +180,7 @@ public partial class CSharpCodeStudioViewModel
         RefreshQuickOpenDocuments();
     }
 
-    public async Task CloseOtherTabsAsync(StudioTabItemViewModel tab)
+    public async Task CloseOtherTabsAsync(Common.StudioTabItemViewModel tab)
     {
         if (OpenTabs.Count <= 1) return;
         var toRemove = OpenTabs.Where(t => t.Id != tab.Id).ToList();
@@ -196,7 +196,7 @@ public partial class CSharpCodeStudioViewModel
         RefreshQuickOpenDocuments();
     }
 
-    public async Task CloseTabsToTheRightAsync(StudioTabItemViewModel tab)
+    public async Task CloseTabsToTheRightAsync(Common.StudioTabItemViewModel tab)
     {
         int index = OpenTabs.IndexOf(tab);
         if (index < 0 || index >= OpenTabs.Count - 1) return;
@@ -230,7 +230,7 @@ public partial class CSharpCodeStudioViewModel
         RefreshQuickOpenDocuments();
     }
 
-    public void CopyTabPath(StudioTabItemViewModel tab)
+    public void CopyTabPath(Common.StudioTabItemViewModel tab)
     {
         try
         {
@@ -242,7 +242,7 @@ public partial class CSharpCodeStudioViewModel
         }
     }
 
-    public void RevealTabInExplorer(StudioTabItemViewModel tab)
+    public void RevealTabInExplorer(Common.StudioTabItemViewModel tab)
     {
         SelectedActivityBarIndex = 0; // Explorer
         IsSideBarVisible = true;

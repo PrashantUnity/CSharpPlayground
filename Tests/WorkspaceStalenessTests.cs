@@ -1,8 +1,11 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// Switching a tab or coming back to a page must not re-walk and re-read the whole workspace; it reloads only when the
@@ -30,7 +33,7 @@ public class WorkspaceStalenessTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(Models.ScriptDocumentItem script) => new(
+    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
         script,
         _storage,
         new RoslynCompilerService(),
@@ -92,7 +95,7 @@ public class WorkspaceStalenessTests : IDisposable
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == first.Id));
 
         Assert.Equal(scans, _storage.WorkspaceScanCount);
-        Assert.True(studio.ExplorerRootItems.Single(x => x.DocumentId == first.Id).IsSelected);
+        Assert.True((bool)studio.ExplorerRootItems.Single(x => x.DocumentId == first.Id).IsSelected);
     }
 
     [Fact]

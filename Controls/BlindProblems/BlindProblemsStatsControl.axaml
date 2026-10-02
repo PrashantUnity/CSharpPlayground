@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="54"
-             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblemsStatsControl"
-             x:DataType="vm:CSharpBlindProblemsViewModel">
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsStatsControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"

@@ -4,14 +4,13 @@ using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>
 /// <c>perf --visuals</c>: what big visuals cost. The display call runs on a worker thread, as a script's does; the view

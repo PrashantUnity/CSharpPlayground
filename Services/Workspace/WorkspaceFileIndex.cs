@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>A file found by <see cref="WorkspaceFileIndex.Find"/>.</summary>
 /// <param name="RelativePath">Path from the workspace root, always with <c>/</c> separators.</param>

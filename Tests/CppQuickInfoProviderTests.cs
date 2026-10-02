@@ -1,7 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Unit tests for the static C++ Quick Info provider — no compiler or UI required.</summary>
 public class CppQuickInfoProviderTests

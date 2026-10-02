@@ -1,6 +1,4 @@
-using System;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 
 public static class ExpressionUnderCursorFinder
 {

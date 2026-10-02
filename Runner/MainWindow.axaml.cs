@@ -6,6 +6,9 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Runner;
 

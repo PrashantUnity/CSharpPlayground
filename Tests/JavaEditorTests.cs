@@ -5,7 +5,7 @@ using AvaloniaEdit.Highlighting;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class JavaEditorTests
 {

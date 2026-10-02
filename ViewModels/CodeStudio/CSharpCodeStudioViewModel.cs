@@ -2,11 +2,22 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
 public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle, IStudioLoadingState
 {
@@ -30,7 +41,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     /// <summary>The active document's language; C# for .frycs documents.</summary>
     public ILanguageDefinition ActiveLanguage => _languages.LanguageOf(Script);
 
-    public QuickOpenViewModel QuickOpen { get; } = new();
+    public Common.QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
 
     [ObservableProperty]
@@ -47,34 +58,34 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
-    private double _editorFontSize = Controls.EditorZoomController.DefaultFontSize;
+    private double _editorFontSize = EditorZoomController.DefaultFontSize;
 
-    public string ZoomPercentageText => Controls.EditorZoomController.FormatPercentage(EditorFontSize);
+    public string ZoomPercentageText => EditorZoomController.FormatPercentage(EditorFontSize);
 
     [RelayCommand]
     public void ZoomIn()
     {
-        EditorFontSize = Controls.EditorZoomController.ZoomIn(EditorFontSize);
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.ZoomIn(EditorFontSize);
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     [RelayCommand]
     public void ZoomOut()
     {
-        EditorFontSize = Controls.EditorZoomController.ZoomOut(EditorFontSize);
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.ZoomOut(EditorFontSize);
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     [RelayCommand]
     public void ResetZoom()
     {
-        EditorFontSize = Controls.EditorZoomController.Reset();
-        Controls.EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
+        EditorFontSize = EditorZoomController.Reset();
+        EditorZoomController.ScheduleSave(_languages.StudioSettings, EditorFontSize);
     }
 
     public void ApplyFontSize(double fontSize)
     {
-        EditorFontSize = Controls.EditorZoomController.Clamp(fontSize);
+        EditorFontSize = EditorZoomController.Clamp(fontSize);
     }
 
     [ObservableProperty]
@@ -160,7 +171,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     }
 
     // ── VS Code Multi-Tab Document Strip ──
-    public ObservableCollection<StudioTabItemViewModel> OpenTabs { get; } = new();
+    public ObservableCollection<Common.StudioTabItemViewModel> OpenTabs { get; } = new();
 
     // ── VS Code Layout: Activity Bar & Primary Side Bar ──
     // 0=Explorer, 1=Search, 2=Debug, 3=NuGet, 4=Scratchpad, 5=Problems
@@ -253,7 +264,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     private int _caretColumn = 1;
 
     public event Action? RequestReloadEditorText;
-    public event Action<StudioTabItemViewModel>? RequestSwitchTabDocument;
+    public event Action<Common.StudioTabItemViewModel>? RequestSwitchTabDocument;
     public event Action<int, int>? RequestNavigateToCaret;
 
     public ObservableCollection<string> LanguageModes { get; } = new()
@@ -320,7 +331,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
 
         foreach (var r in _compilerService.AvailableReferences)
         {
-            References.Add(new AssemblyReferenceViewModel(r));
+            References.Add(new Common.AssemblyReferenceViewModel(r));
         }
 
         foreach (var tc in script.TestCases)
@@ -347,7 +358,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
 
         var initialSettings = _languages.StudioSettings.GetSettings();
-        _editorFontSize = Controls.EditorZoomController.Clamp(initialSettings.FontSize);
+        _editorFontSize = EditorZoomController.Clamp(initialSettings.FontSize);
         _useExternalDotNetRunner = string.Equals(initialSettings.CSharpExecutionEngine, "external", StringComparison.OrdinalIgnoreCase);
         _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
         _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
@@ -377,7 +388,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         {
             if (Math.Abs(EditorFontSize - s.FontSize) > 0.05)
             {
-                EditorFontSize = Controls.EditorZoomController.Clamp(s.FontSize);
+                EditorFontSize = EditorZoomController.Clamp(s.FontSize);
             }
             SetCSharpRunner(s.CSharpExecutionEngine);
             IsSyntaxHighlightingEnabled = s.EnableSyntaxHighlighting;

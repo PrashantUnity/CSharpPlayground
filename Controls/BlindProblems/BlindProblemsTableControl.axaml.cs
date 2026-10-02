@@ -1,9 +1,9 @@
-using System;
 using Avalonia.Controls;
 using Avalonia.Input;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Controls;
+namespace PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems;
 
 public partial class BlindProblemsTableControl : UserControl
 {
