@@ -86,6 +86,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "fileassoc_cs"; Description: "Associate with C# Source Files (.cs)"; GroupDescription: "File Associations:"; Flags: unchecked
 Name: "fileassoc_csx"; Description: "Associate with C# Script Files (.csx)"; GroupDescription: "File Associations:"
 Name: "fileassoc_frycs"; Description: "Associate with FrySharp Workspace Files (.frycs)"; GroupDescription: "File Associations:"
+Name: "fileassoc_notebook"; Description: "Associate with Interactive Notebooks (.frynb, .ipynb, .csnb)"; GroupDescription: "File Associations:"
+Name: "fileassoc_fryserver"; Description: "Associate with FrySharp Server Documents (.fryserver)"; GroupDescription: "File Associations:"
 
 [Files]
 Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -110,6 +112,20 @@ Root: HKA; Subkey: "Software\Classes\.frycs"; ValueType: string; ValueName: ""; 
 Root: HKA; Subkey: "Software\Classes\FrySharp.Workspace"; ValueType: string; ValueName: ""; ValueData: "FrySharp Workspace File"; Flags: uninsdeletekey; Tasks: fileassoc_frycs
 Root: HKA; Subkey: "Software\Classes\FrySharp.Workspace\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"; Flags: uninsdeletekey; Tasks: fileassoc_frycs
 Root: HKA; Subkey: "Software\Classes\FrySharp.Workspace\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: fileassoc_frycs
+
+; .frynb & .ipynb & .csnb Associations (Notebooks)
+Root: HKA; Subkey: "Software\Classes\.frynb"; ValueType: string; ValueName: ""; ValueData: "FrySharp.Notebook"; Flags: uninsdeletevalue; Tasks: fileassoc_notebook
+Root: HKA; Subkey: "Software\Classes\.csnb"; ValueType: string; ValueName: ""; ValueData: "FrySharp.Notebook"; Flags: uninsdeletevalue; Tasks: fileassoc_notebook
+Root: HKA; Subkey: "Software\Classes\.ipynb\OpenWithProgids"; ValueType: string; ValueName: "FrySharp.Notebook"; ValueData: ""; Flags: uninsdeletevalue; Tasks: fileassoc_notebook
+Root: HKA; Subkey: "Software\Classes\FrySharp.Notebook"; ValueType: string; ValueName: ""; ValueData: "Interactive Notebook"; Flags: uninsdeletekey; Tasks: fileassoc_notebook
+Root: HKA; Subkey: "Software\Classes\FrySharp.Notebook\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"; Flags: uninsdeletekey; Tasks: fileassoc_notebook
+Root: HKA; Subkey: "Software\Classes\FrySharp.Notebook\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: fileassoc_notebook
+
+; .fryserver Association
+Root: HKA; Subkey: "Software\Classes\.fryserver"; ValueType: string; ValueName: ""; ValueData: "FrySharp.Server"; Flags: uninsdeletevalue; Tasks: fileassoc_fryserver
+Root: HKA; Subkey: "Software\Classes\FrySharp.Server"; ValueType: string; ValueName: ""; ValueData: "FrySharp Server Document"; Flags: uninsdeletekey; Tasks: fileassoc_fryserver
+Root: HKA; Subkey: "Software\Classes\FrySharp.Server\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"; Flags: uninsdeletekey; Tasks: fileassoc_fryserver
+Root: HKA; Subkey: "Software\Classes\FrySharp.Server\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: fileassoc_fryserver
 
 ; .cs Association (optional)
 Root: HKA; Subkey: "Software\Classes\.cs\OpenWithProgids"; ValueType: string; ValueName: "FrySharp.Source"; ValueData: ""; Flags: uninsdeletevalue; Tasks: fileassoc_cs
