@@ -133,7 +133,7 @@ public sealed class DapAdapterManager
                 catch (SocketException)
                 {
                     attempt.Dispose();
-                    await Task.Delay(100, ct).ConfigureAwait(false);
+                    await Task.WhenAny(managedProcess.Completion, Task.Delay(100, ct)).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -142,7 +142,14 @@ public sealed class DapAdapterManager
                 }
             }
 
-            if (tcpClient == null) throw new TimeoutException($"Timed out connecting to {languageId} DAP adapter on port {port}.");
+            if (tcpClient == null)
+            {
+                if (managedProcess.HasExited)
+                {
+                    throw new InvalidOperationException($"The {languageId} debug adapter exited (code {managedProcess.Completion.Result}) before the debugger could connect to it. Anything it printed is in the Output.");
+                }
+                throw new TimeoutException($"Timed out connecting to {languageId} DAP adapter on port {port}.");
+            }
         }
         catch
         {

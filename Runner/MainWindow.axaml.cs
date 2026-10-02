@@ -36,14 +36,25 @@ public partial class MainWindow : Window
 
     private INotifyPropertyChanged? _monitoredPageVm;
 
-    public MainWindow()
+    public MainWindow() : this(null)
+    {
+    }
+
+    public MainWindow(CSharpStudioHostViewModel? hostVm)
     {
         InitializeComponent();
 
-        var settingsStore = new StandaloneSettingsStore();
-        var sp = new StandaloneServiceProvider(settingsStore);
+        if (hostVm != null)
+        {
+            StudioHostVm = hostVm;
+        }
+        else
+        {
+            var settingsStore = new StandaloneSettingsStore();
+            var sp = new StandaloneServiceProvider(settingsStore);
+            StudioHostVm = new CSharpStudioHostViewModel(sp);
+        }
 
-        StudioHostVm = new CSharpStudioHostViewModel(sp);
         StudioHostVm.RequestClose = () => Close();
         DataContext = StudioHostVm;
         StudioHost.DataContext = StudioHostVm;
@@ -61,7 +72,10 @@ public partial class MainWindow : Window
         HookActivePageEvents();
         UpdateMenuStates();
 
-        InitializeExtensibility();
+        if (hostVm == null)
+        {
+            InitializeExtensibility();
+        }
     }
 
     private void InitializeExtensibility()
@@ -106,17 +120,7 @@ public partial class MainWindow : Window
     }
 
     // ── Context-Aware Native Menu State Synchronization ──
-    private NativeMenu? RootMenu
-    {
-        get
-        {
-            if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-            {
-                return null;
-            }
-            return NativeMenu.GetMenu(this);
-        }
-    }
+    private NativeMenu? RootMenu => NativeMenu.GetMenu(this);
 
     private NativeMenuItem? GetTopMenu(string headerPrefix) =>
         RootMenu?.Items.OfType<NativeMenuItem>()
@@ -187,11 +191,6 @@ public partial class MainWindow : Window
 
     public void UpdateMenuStates()
     {
-        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateMenuStates);
-            return;
-        }
         bool isCode = ActiveCodeStudio != null;
         bool isNotebook = ActiveNotebookStudio != null;
         bool isServer = ActiveServerStudio != null;

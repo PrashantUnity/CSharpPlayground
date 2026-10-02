@@ -87,8 +87,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     public Docs.CSharpDocsViewModel DocsViewModel { get; }
     public BlindProblems.CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
     public Settings.CSharpSettingsViewModel SettingsViewModel { get; }
-    public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
-    public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
+    public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; internal set; }
+    public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; internal set; }
     public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
