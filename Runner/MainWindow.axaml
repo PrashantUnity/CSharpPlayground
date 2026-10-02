@@ -118,5 +118,8 @@
         </NativeMenu>
     </NativeMenu.Menu>
 
-    <views:CSharpStudioHostView x:Name="StudioHost" />
+    <DockPanel>
+        <NativeMenuBar DockPanel.Dock="Top" />
+        <views:CSharpStudioHostView x:Name="StudioHost" />
+    </DockPanel>
 </Window>

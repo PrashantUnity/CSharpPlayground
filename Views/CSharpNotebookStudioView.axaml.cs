@@ -35,6 +35,21 @@ public partial class CSharpNotebookStudioView : UserControl
         Unloaded += OnViewUnloaded;
     }
 
+    public AvaloniaEdit.TextEditor? GetActiveEditor()
+    {
+        var editors = this.GetVisualDescendants().OfType<AvaloniaEdit.TextEditor>().ToList();
+        var focused = editors.FirstOrDefault(ed => ed.IsFocused);
+        if (focused != null) return focused;
+
+        if (DataContext is CSharpNotebookStudioViewModel vm && vm.ActiveTab?.ActiveCell is { } activeCell)
+        {
+            var cellEditor = editors.FirstOrDefault(ed => ed.DataContext == activeCell);
+            if (cellEditor != null) return cellEditor;
+        }
+
+        return editors.FirstOrDefault();
+    }
+
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if (DataContext is not CSharpNotebookStudioViewModel vm) return;

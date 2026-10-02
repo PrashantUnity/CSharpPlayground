@@ -81,6 +81,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     public Action? RequestClose { get; set; }
 
     private readonly Task _initTask;
+    public Task InitTask => _initTask;
 
     public Hub.CSharpManagerViewModel ManagerViewModel { get; }
     public Docs.CSharpDocsViewModel DocsViewModel { get; }

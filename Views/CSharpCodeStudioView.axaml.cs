@@ -60,6 +60,8 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     private ILanguageDefinition? _editorLanguage;
     private IDisposable? _languageAssistant;
 
+    public AvaloniaEdit.TextEditor? GetEditor() => _editor;
+
     public CSharpCodeStudioView()
     {
         InitializeComponent();
