@@ -93,6 +93,12 @@ internal static class Usage
           about                  The About C# Code Studio dialog (AboutWindow).
           update                 The Check for Updates dialog (UpdateDialogWindow).
           app-window             The main application window (MainWindow) with macOS NativeMenu bar.
+          templates              Run and verify all code templates in CodeTemplateLibrary.
+              --template <name>      run only matching template(s) by id or title
+              --language <id>        run only templates for language (csharp, python, cpp, etc.)
+              --category <name>      run only templates in that category
+              --shots                save UI snapshots of any visualizers or plots produced
+              --quiet                don't print output streams
           visualizer [n ...]     Run each problem's script and save steps of every visualizer it shows
                                  (every problem when no numbers are given).
               --steps <s,s,...>      steps to save; negative counts from the end (default: first, 1/3, 2/3, last)

@@ -112,21 +112,15 @@ public class Main {
 
 import (
     ""math""
-    ""fry_display""
+    ""fry""
 )
 
 func main() {
-    var x, y []float64
+    var values []float64
     for i := 0.0; i < 50; i++ {
-        x = append(x, i*0.1)
-        y = append(y, math.Cos(i*0.1))
+        values = append(values, math.Cos(i*0.1))
     }
-    fry_display.Chart(fry_display.ChartOptions{
-        Type: ""line"",
-        Title: ""Cosine Wave"",
-        X: x,
-        Y: y,
-    })
+    fry.Chart(values, fry.Title(""Cosine Wave""))
 }
 "
         },
@@ -145,13 +139,13 @@ func main() {
             CategoryBadge = "Rust • Visuals",
             Tags = new List<string> { "Rust", "Visuals", "Charts" },
             Notes = "# Rust Visuals\nEmit canonical MIME visual specs directly from Rust.",
-            InitialCode = @"use fry_display::prelude::*;
+            InitialCode = @"use fry::prelude::*;
 
 fn main() {
-    let chart = Chart::new()
+    let telemetry = vec![(0.0, 10.0), (1.0, 15.0), (2.0, 12.0), (3.0, 22.0)];
+    line_chart(&telemetry)
         .title(""Telemetry Data"")
-        .line_series(""Sensor A"", vec![(0.0, 10.0), (1.0, 15.0), (2.0, 12.0), (3.0, 22.0)]);
-    Display::show(chart);
+        .show();
 }
 "
         },
@@ -197,10 +191,10 @@ int main() {
             CategoryBadge = "F# • Visuals",
             Tags = new List<string> { "F#", "Charts", "Functional" },
             Notes = "# F# Visuals\nPipeline data charting in F#.",
-            InitialCode = @"open FryDisplay
+            InitialCode = @"open Fry
 
 let points = [ for x in 0.0 .. 0.2 .. 10.0 -> (x, sin x) ]
-Display.chart [ ""Sine"", points ]
+Display.LineChart points
 "
         }
     };

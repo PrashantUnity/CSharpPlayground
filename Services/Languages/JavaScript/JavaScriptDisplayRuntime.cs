@@ -31,6 +31,10 @@ public static class JavaScriptDisplayRuntime
                 "main": "fry.js"
             }
             """, ct);
+        var fryDisplay = Path.Combine(folder, "fry_display.js");
+        if (!File.Exists(fryDisplay)) await File.WriteAllTextAsync(fryDisplay, """
+            module.exports = require('./fry');
+            """, ct);
         return folder;
     }
 }

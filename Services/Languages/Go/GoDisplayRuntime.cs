@@ -65,6 +65,29 @@ public static class GoDisplayRuntime
             func Dump(v any) { fry.Dump(v) }
             """, ct).ConfigureAwait(false);
 
+        // 5. Package fry_display in GOPATH
+        var fryDisplayGopath = Path.Combine(buildDir, "src", "fry_display");
+        Directory.CreateDirectory(fryDisplayGopath);
+        await File.WriteAllTextAsync(Path.Combine(fryDisplayGopath, "display.go"), """
+            package fry_display
+
+            import "fry"
+
+            type ChartOptions struct {
+                Type  string
+                Title string
+                X     []float64
+                Y     []float64
+            }
+
+            func Chart(opts ChartOptions) *fry.DisplayHandle {
+                if len(opts.Y) > 0 {
+                    return fry.Chart(opts.Y, fry.Title(opts.Title))
+                }
+                return fry.Chart(opts.X, fry.Title(opts.Title))
+            }
+            """, ct).ConfigureAwait(false);
+
         return fryDir;
     }
 }
