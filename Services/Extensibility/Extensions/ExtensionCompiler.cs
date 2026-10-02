@@ -44,10 +44,24 @@ public class ExtensionCompiler
 
         string assemblyName = $"FrySharpExt_{Path.GetFileName(extensionDirectory)}_{Guid.NewGuid():N}";
 
+        var allReferences = new List<MetadataReference>(RoslynCompilerService.SharedDefaultReferences);
+        var libDir = Path.Combine(extensionDirectory, "lib");
+        if (Directory.Exists(libDir))
+        {
+            foreach (var dll in Directory.GetFiles(libDir, "*.dll", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    allReferences.Add(MetadataReference.CreateFromFile(dll));
+                }
+                catch { }
+            }
+        }
+
         var compilation = CSharpCompilation.Create(
             assemblyName,
             syntaxTrees: syntaxTrees,
-            references: RoslynCompilerService.SharedDefaultReferences,
+            references: allReferences,
             options: new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 optimizationLevel: OptimizationLevel.Debug,

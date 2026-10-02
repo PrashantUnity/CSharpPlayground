@@ -19,6 +19,18 @@ public interface IHookApi
     /// <summary>Fires when a document is saved to storage.</summary>
     IDisposable OnDocumentSaved(Action<IDocumentContext> hook);
 
+    /// <summary>Fires when text content inside the active editor tab changes.</summary>
+    IDisposable OnEditorTextChanged(Action<IDocumentContext> hook);
+
+    /// <summary>Fires when the cursor / caret position in the active editor moves.</summary>
+    IDisposable OnCaretMoved(Action<(IDocumentContext Document, int Line, int Column)> hook);
+
+    /// <summary>Fires when a project workspace folder is opened.</summary>
+    IDisposable OnWorkspaceOpened(Action<string> hook);
+
+    /// <summary>Fires when the active workspace is closed.</summary>
+    IDisposable OnWorkspaceClosed(Action hook);
+
     /// <summary>Fires when the active theme or a color token changes.</summary>
     IDisposable OnThemeChanged(Action<string> hook);
 

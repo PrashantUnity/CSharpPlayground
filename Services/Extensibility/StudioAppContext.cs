@@ -1,16 +1,22 @@
 using FrySharp.Sdk;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Commands;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Dialogs;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Events;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Hooks;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Results;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.State;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Terminal;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Workspace;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 
 /// <summary>
 /// Root implementation of IStudioApp. Central hub wiring together theming,
-/// commands, editor manipulation, UI contribution points, hooks, and state bag.
+/// commands, editor manipulation, UI contribution points, hooks, state bag,
+/// workspace automation, terminal/CLI execution, results (.Dump), and event bus.
 /// </summary>
 public class StudioAppContext : IStudioApp
 {
@@ -48,6 +54,10 @@ public class StudioAppContext : IStudioApp
     public ExtensibilityUiService UiService { get; }
     public ExtensibilityHookRegistry HookRegistry { get; }
     public InMemoryStateBag StateBag { get; }
+    public ExtensibilityWorkspaceService WorkspaceService { get; }
+    public ExtensibilityTerminalService TerminalService { get; }
+    public ExtensibilityResultsService ResultsService { get; }
+    public ExtensibilityEventBus EventBus { get; }
 
     private CustomizationManager? _customizationManager;
     public CustomizationManager CustomizationManager
@@ -70,6 +80,11 @@ public class StudioAppContext : IStudioApp
     public IUiApi UI => UiService;
     public IHookApi Hooks => HookRegistry;
     public IStateBag State => StateBag;
+    public IWorkspaceApi Workspace => WorkspaceService;
+    public ITerminalApi Terminal => TerminalService;
+    public IResultsApi Results => ResultsService;
+    public IEventBusApi Events => EventBus;
+    public IDialogApi Dialogs => UiService.Dialogs;
 
     public StudioAppContext()
     {
@@ -79,6 +94,10 @@ public class StudioAppContext : IStudioApp
         UiService = new ExtensibilityUiService();
         HookRegistry = new ExtensibilityHookRegistry();
         StateBag = new InMemoryStateBag();
+        WorkspaceService = new ExtensibilityWorkspaceService();
+        TerminalService = new ExtensibilityTerminalService();
+        ResultsService = new ExtensibilityResultsService();
+        EventBus = new ExtensibilityEventBus();
 
         // Forward theme changed events from theme engine to hook registry
         ThemeEngine.ThemeChanged += themeId =>

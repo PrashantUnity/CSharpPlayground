@@ -20,11 +20,15 @@ public partial class CSharpCodeStudioViewModel
 {
     public Func<string>? GetSelectedText { get; set; }
     public Action<string>? SetSelectedText { get; set; }
+    public Action<string>? InsertEditorText { get; set; }
+    public Action<int, int, int, int>? SetEditorSelection { get; set; }
+    public Action<int>? ScrollEditorToLine { get; set; }
 
     public void InitializeExtensibilityBridge()
     {
         var editorService = StudioAppContext.Instance.EditorService;
         editorService.ActiveDocumentResolver = () => new StudioDocumentContextAdapter(this);
+        editorService.OpenDocumentsResolver = () => OpenTabs.Select(_ => (IDocumentContext)new StudioDocumentContextAdapter(this)).ToList();
         editorService.FormatDocumentHandler = () => FormatCode();
         editorService.SaveDocumentHandler = () => _ = SaveAsync();
         editorService.OpenFileHandler = async path => await OpenWorkspaceFileAsync(path);
@@ -32,6 +36,68 @@ public partial class CSharpCodeStudioViewModel
         {
             await CreateNewSourceFileWithContentAsync(langId, initialCode);
         };
+        editorService.CloseActiveDocumentHandler = async () =>
+        {
+            var active = OpenTabs.FirstOrDefault(t => t.IsActive);
+            if (active != null) await CloseTabAsync(active);
+        };
+
+        // Workspace Service Bridge
+        var ws = StudioAppContext.Instance.WorkspaceService;
+        ws.RootPathResolver = () => _storageService.ActiveWorkspaceRootPath;
+        ws.RefreshExplorerHandler = () => _ = RefreshExplorerCommand.ExecuteAsync(null);
+        ws.OpenWorkspaceHandler = async folder => await OpenExternalProjectAsync(folder);
+
+        // Terminal Service Bridge
+        var term = StudioAppContext.Instance.TerminalService;
+        term.OutputWriter = text => _postToUiThread(() =>
+        {
+            var tab = OpenTabs.FirstOrDefault(t => t.Id == Script?.Id);
+            if (tab != null) tab.ConsoleOutput += text;
+            ConsoleOutput += text;
+        });
+        term.ClearHandler = () => _postToUiThread(ClearConsole);
+
+        // Results (.Dump) Bridge
+        var results = StudioAppContext.Instance.ResultsService;
+        results.ClearHandler = () => _postToUiThread(() =>
+        {
+            DumpResults.Clear();
+            RichOutputs.Clear();
+        });
+        results.FocusHandler = () => _postToUiThread(() =>
+        {
+            SelectedBottomTabIndex = 0;
+            IsBottomDeckExpanded = true;
+        });
+        results.ShowTableHandler = (data, title) => _postToUiThread(() =>
+        {
+            if (data is DumpTableResult tableRes)
+            {
+                DumpResults.Add(tableRes);
+            }
+            else
+            {
+                var table = new DumpTableResult(title ?? "Data");
+                DumpResults.Add(table);
+            }
+            SelectedBottomTabIndex = 0;
+            IsBottomDeckExpanded = true;
+        });
+        results.ShowControlHandler = (ctl, title) => _postToUiThread(() =>
+        {
+            if (ctl is Avalonia.Controls.Control avaloniaControl)
+            {
+                RichOutputs.Add(new Services.Display.RichCellOutput
+                {
+                    Kind = Services.Display.CellOutputKind.Control,
+                    InteractiveControl = avaloniaControl,
+                    Text = title ?? string.Empty
+                });
+            }
+            SelectedBottomTabIndex = 0;
+            IsBottomDeckExpanded = true;
+        });
 
         StudioAppContext.Instance.CommandPipeline.CommandsChanged += () =>
         {

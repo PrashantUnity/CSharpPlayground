@@ -50,6 +50,18 @@ public class ActivityBarDescriptor
 }
 
 /// <summary>
+/// Descriptor for contributing a full custom Primary Side Bar panel (Zone 2) activated by Zone 1.
+/// </summary>
+public class SideBarViewDescriptor
+{
+    public string Id { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public string IconKind { get; init; } = "Extension";
+    public Func<object> ContentFactory { get; init; } = null!;
+    public int Order { get; init; } = 50;
+}
+
+/// <summary>
 /// Descriptor for registering a tab into the Bottom Tool Deck (Zone 4).
 /// </summary>
 public class BottomDeckTabDescriptor

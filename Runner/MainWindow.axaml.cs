@@ -66,6 +66,28 @@ public partial class MainWindow : Window
 
     private void InitializeExtensibility()
     {
+        var uiService = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UiService;
+        uiService.ActiveTopLevelResolver = () => this;
+        uiService.MainWindowResolver = () => this;
+        uiService.DialogsService.PickFileHandler = async (title, exts) =>
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false
+            });
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        };
+        uiService.DialogsService.PickFolderHandler = async title =>
+        {
+            var folders = await StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false
+            });
+            return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        };
+
         var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
         PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager = customizationManager;
 

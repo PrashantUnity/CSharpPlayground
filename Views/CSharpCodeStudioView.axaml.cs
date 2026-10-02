@@ -612,6 +612,9 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         _currentVm.PropertyChanged -= OnVmPropertyChanged;
         _currentVm.GetSelectedText = null;
         _currentVm.SetSelectedText = null;
+        _currentVm.InsertEditorText = null;
+        _currentVm.SetEditorSelection = null;
+        _currentVm.ScrollEditorToLine = null;
         _completionController?.Dispose();
         _completionController = null;
         _quickInfoController?.Dispose();
@@ -641,6 +644,26 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
                 {
                     _editor.SelectedText = s ?? string.Empty;
                 }
+            };
+            _currentVm.InsertEditorText = text =>
+            {
+                if (_editor?.Document != null)
+                {
+                    _editor.Document.Insert(_editor.CaretOffset, text ?? string.Empty);
+                }
+            };
+            _currentVm.SetEditorSelection = (sLine, sCol, eLine, eCol) =>
+            {
+                if (_editor?.Document != null)
+                {
+                    int startOffset = _editor.Document.GetOffset(sLine, sCol);
+                    int endOffset = _editor.Document.GetOffset(eLine, eCol);
+                    _editor.Select(startOffset, Math.Max(0, endOffset - startOffset));
+                }
+            };
+            _currentVm.ScrollEditorToLine = line =>
+            {
+                _editor?.ScrollTo(line, 1);
             };
 
             _currentVm.RequestNavigateToCaret += OnNavigateToCaret;

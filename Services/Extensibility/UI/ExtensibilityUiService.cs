@@ -4,22 +4,33 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Threading;
 using FrySharp.Sdk;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Dialogs;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
 
 /// <summary>
-/// Service managing UI contribution points (Activity Bar, Status Bar, Bottom Deck) and toast notifications.
+/// Service managing UI contribution points (Activity Bar, Status Bar, Bottom Deck), modals, and notifications.
 /// </summary>
 public class ExtensibilityUiService : IUiApi
 {
     private readonly ConcurrentDictionary<string, ActivityBarDescriptor> _activityBarItems = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SideBarViewDescriptor> _sideBarViews = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, StatusBarWidgetDescriptor> _statusBarWidgets = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, BottomDeckTabDescriptor> _bottomDeckTabs = new(StringComparer.OrdinalIgnoreCase);
+
+    public ExtensibilityDialogService DialogsService { get; } = new();
+    public IDialogApi Dialogs => DialogsService;
+
+    public Func<object?>? ActiveTopLevelResolver { get; set; }
+    public Func<object?>? MainWindowResolver { get; set; }
+    public object? ActiveTopLevel => ActiveTopLevelResolver?.Invoke();
+    public object? MainWindow => MainWindowResolver?.Invoke();
 
     public event Action<NotificationMessage>? NotificationPosted;
     public event Action? ContributionsChanged;
 
     public IReadOnlyList<ActivityBarDescriptor> ActivityBarItems => _activityBarItems.Values.OrderBy(x => x.Order).ToList();
+    public IReadOnlyList<SideBarViewDescriptor> SideBarViews => _sideBarViews.Values.OrderBy(x => x.Order).ToList();
     public IReadOnlyList<StatusBarWidgetDescriptor> StatusBarWidgets => _statusBarWidgets.Values.OrderByDescending(x => x.Priority).ToList();
     public IReadOnlyList<BottomDeckTabDescriptor> BottomDeckTabs => _bottomDeckTabs.Values.ToList();
 
@@ -34,6 +45,21 @@ public class ExtensibilityUiService : IUiApi
         return new ActionDisposable(() =>
         {
             _activityBarItems.TryRemove(descriptor.Id, out _);
+            NotifyContributionsChanged();
+        });
+    }
+
+    public IDisposable RegisterSideBarView(SideBarViewDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptor.Id);
+
+        _sideBarViews[descriptor.Id] = descriptor;
+        NotifyContributionsChanged();
+
+        return new ActionDisposable(() =>
+        {
+            _sideBarViews.TryRemove(descriptor.Id, out _);
             NotifyContributionsChanged();
         });
     }

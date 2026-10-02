@@ -41,6 +41,42 @@ public class StudioDocumentContextAdapter : IDocumentContext
         set => _vm.SetSelectedText?.Invoke(value ?? string.Empty);
     }
 
+    public int LineCount => string.IsNullOrEmpty(_vm.Code) ? 1 : _vm.Code.Split('\n').Length;
+
+    public string GetLineText(int lineNumber)
+    {
+        if (lineNumber < 1 || string.IsNullOrEmpty(_vm.Code)) return string.Empty;
+        var lines = _vm.Code.Split('\n');
+        return lineNumber <= lines.Length ? lines[lineNumber - 1].TrimEnd('\r') : string.Empty;
+    }
+
+    public void SetCaret(int line, int column)
+    {
+        _vm.SetCaretPosition(line, column);
+    }
+
+    public void SetSelection(int startLine, int startColumn, int endLine, int endColumn)
+    {
+        _vm.SetEditorSelection?.Invoke(startLine, startColumn, endLine, endColumn);
+    }
+
+    public void InsertText(string text)
+    {
+        if (_vm.InsertEditorText != null)
+        {
+            _vm.InsertEditorText(text);
+        }
+        else
+        {
+            SelectedText = text;
+        }
+    }
+
+    public void ScrollToLine(int lineNumber)
+    {
+        _vm.ScrollEditorToLine?.Invoke(lineNumber);
+    }
+
     public void Format()
     {
         _vm.FormatCode();

@@ -14,6 +14,10 @@ public class ExtensibilityHookRegistry : IHookApi
     private readonly List<Action<ExecutionFinishedHookContext>> _afterRunHooks = new();
     private readonly List<Action<IDocumentContext>> _documentOpenedHooks = new();
     private readonly List<Action<IDocumentContext>> _documentSavedHooks = new();
+    private readonly List<Action<IDocumentContext>> _editorTextChangedHooks = new();
+    private readonly List<Action<(IDocumentContext Document, int Line, int Column)>> _caretMovedHooks = new();
+    private readonly List<Action<string>> _workspaceOpenedHooks = new();
+    private readonly List<Action> _workspaceClosedHooks = new();
     private readonly List<Action<string>> _themeChangedHooks = new();
     private readonly object _lock = new();
 
@@ -21,12 +25,29 @@ public class ExtensibilityHookRegistry : IHookApi
     public IDisposable OnAfterScriptRun(Action<ExecutionFinishedHookContext> hook) => AddHook(_afterRunHooks, hook);
     public IDisposable OnDocumentOpened(Action<IDocumentContext> hook) => AddHook(_documentOpenedHooks, hook);
     public IDisposable OnDocumentSaved(Action<IDocumentContext> hook) => AddHook(_documentSavedHooks, hook);
+    public IDisposable OnEditorTextChanged(Action<IDocumentContext> hook) => AddHook(_editorTextChangedHooks, hook);
+    public IDisposable OnCaretMoved(Action<(IDocumentContext Document, int Line, int Column)> hook) => AddHook(_caretMovedHooks, hook);
+    public IDisposable OnWorkspaceOpened(Action<string> hook) => AddHook(_workspaceOpenedHooks, hook);
+    public IDisposable OnWorkspaceClosed(Action hook) => AddHook(_workspaceClosedHooks, hook);
     public IDisposable OnThemeChanged(Action<string> hook) => AddHook(_themeChangedHooks, hook);
 
     public void InvokeBeforeScriptRun(ExecutionHookContext ctx) => InvokeAll(_beforeRunHooks, ctx);
     public void InvokeAfterScriptRun(ExecutionFinishedHookContext ctx) => InvokeAll(_afterRunHooks, ctx);
     public void InvokeDocumentOpened(IDocumentContext ctx) => InvokeAll(_documentOpenedHooks, ctx);
     public void InvokeDocumentSaved(IDocumentContext ctx) => InvokeAll(_documentSavedHooks, ctx);
+    public void InvokeEditorTextChanged(IDocumentContext ctx) => InvokeAll(_editorTextChangedHooks, ctx);
+    public void InvokeCaretMoved(IDocumentContext doc, int line, int col) => InvokeAll(_caretMovedHooks, (doc, line, col));
+    public void InvokeWorkspaceOpened(string rootPath) => InvokeAll(_workspaceOpenedHooks, rootPath);
+    public void InvokeWorkspaceClosed()
+    {
+        List<Action> copy;
+        lock (_lock) { copy = _workspaceClosedHooks.ToList(); }
+        foreach (var hook in copy)
+        {
+            try { hook(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ExtensibilityHookRegistry] Error: {ex.Message}"); }
+        }
+    }
     public void InvokeThemeChanged(string themeId) => InvokeAll(_themeChangedHooks, themeId);
 
     public event Action? HooksChanged;
@@ -37,7 +58,11 @@ public class ExtensibilityHookRegistry : IHookApi
         {
             lock (_lock)
             {
-                return _beforeRunHooks.Count + _afterRunHooks.Count + _documentOpenedHooks.Count + _documentSavedHooks.Count + _themeChangedHooks.Count;
+                return _beforeRunHooks.Count + _afterRunHooks.Count +
+                       _documentOpenedHooks.Count + _documentSavedHooks.Count +
+                       _editorTextChangedHooks.Count + _caretMovedHooks.Count +
+                       _workspaceOpenedHooks.Count + _workspaceClosedHooks.Count +
+                       _themeChangedHooks.Count;
             }
         }
     }

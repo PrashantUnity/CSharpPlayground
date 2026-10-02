@@ -74,10 +74,15 @@ public partial class DocumentationService
             {
                 new() { ReturnType = "IThemeApi", MethodName = "App.Themes", Parameters = "", Description = "Access dynamic runtime theming, color tokens, layout density, and Avalonia resources." },
                 new() { ReturnType = "ICommandApi", MethodName = "App.Commands", Parameters = "", Description = "Register custom commands, assign keyboard shortcuts, and configure middleware." },
-                new() { ReturnType = "IEditorApi", MethodName = "App.Editor", Parameters = "", Description = "Interact with active documents, selections, code formatting, and file opening." },
-                new() { ReturnType = "IUiApi", MethodName = "App.UI", Parameters = "", Description = "Contribute to Activity Bar, Status Bar, Bottom Deck tabs, and show desktop toasts." },
-                new() { ReturnType = "IHookApi", MethodName = "App.Hooks", Parameters = "", Description = "Intercept compiler execution, document save events, and theme changes." },
-                new() { ReturnType = "IStateBag", MethodName = "App.State", Parameters = "", Description = "Thread-safe key-value store that persists data across script hot-reloads." }
+                new() { ReturnType = "IEditorApi", MethodName = "App.Editor", Parameters = "", Description = "Interact with active documents, selections, caret positions, lines, and file opening." },
+                new() { ReturnType = "IUiApi", MethodName = "App.UI", Parameters = "", Description = "Contribute to Activity Bar, Side Bar views, Status Bar, Bottom Deck tabs, and modals." },
+                new() { ReturnType = "IHookApi", MethodName = "App.Hooks", Parameters = "", Description = "Intercept compiler execution, document save, text change, and theme changes." },
+                new() { ReturnType = "IStateBag", MethodName = "App.State", Parameters = "", Description = "Thread-safe key-value store that persists data across script hot-reloads." },
+                new() { ReturnType = "IWorkspaceApi", MethodName = "App.Workspace", Parameters = "", Description = "Active project folder root, file search globbing, text I/O, and explorer refresh." },
+                new() { ReturnType = "ITerminalApi", MethodName = "App.Terminal", Parameters = "", Description = "Write to Studio terminal buffer, clear console, and run CLI tools with real-time output." },
+                new() { ReturnType = "IResultsApi", MethodName = "App.Results", Parameters = "", Description = "Display rich Avalonia controls, interactive data tables, and objects in Results (.Dump)." },
+                new() { ReturnType = "IEventBusApi", MethodName = "App.Events", Parameters = "", Description = "Decoupled publish/subscribe messaging across scripts, extensions, and notebooks." },
+                new() { ReturnType = "IDialogApi", MethodName = "App.Dialogs", Parameters = "", Description = "Native input prompts (PromptAsync), confirmation dialogs, and file/folder pickers." }
             },
             Shortcuts = new List<DocShortcutItem>
             {
