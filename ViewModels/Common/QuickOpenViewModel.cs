@@ -163,7 +163,7 @@ public partial class QuickOpenViewModel : ObservableObject
                     .OrderBy(c => c.Title.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                     .ThenBy(c => c.Title, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var item in matches.Take(30))
+            foreach (var item in matches.Take(60))
             {
                 FilteredItems.Add(item);
             }

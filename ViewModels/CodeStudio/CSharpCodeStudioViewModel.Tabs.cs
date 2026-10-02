@@ -148,6 +148,9 @@ public partial class CSharpCodeStudioViewModel
 
             // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
             await RefreshExplorerIfStaleAsync();
+
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentOpened(
+                new Services.Extensibility.Editor.StudioDocumentContextAdapter(this));
         }
     }
 
@@ -270,6 +273,7 @@ public partial class CSharpCodeStudioViewModel
     public void ShowQuickOpen(string? mode)
     {
         RefreshQuickOpenDocuments();
+        InitializeQuickOpenCommands();
         var qMode = mode?.ToLowerInvariant() switch
         {
             "commands" => QuickOpenMode.Commands,
@@ -340,6 +344,17 @@ public partial class CSharpCodeStudioViewModel
             new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except the active one", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => { var a = OpenTabs.FirstOrDefault(t => t.IsActive); if (a != null) _ = CloseOtherTabsAsync(a); } },
             new() { Title = "File: Close All Tabs", Subtitle = "Close all open script tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => _ = CloseAllTabsAsync() },
             new() { Title = "Format: Format Document", Subtitle = "Format C# code using Roslyn syntax normalizer", Category = "Editor", IconKind = "FormatPaint", IconColorHex = "#75D59A", ShortcutHint = "Shift+Alt+F", ExecuteAction = FormatCode },
+            new() { Title = "Preferences: Open User Customization Script (init.csx)", Subtitle = "Open ~/.frysharp/init.csx in editor tab for live customization", Category = "Preferences", IconKind = "FileCodeOutline", IconColorHex = "#A371F7", ExecuteAction = () => _ = OpenUserInitScriptAsync() },
+            new() { Title = "Preferences: Open Workspace Customization Script (.frysharp/init.csx)", Subtitle = "Open workspace .frysharp/init.csx in editor tab", Category = "Preferences", IconKind = "FileCodeOutline", IconColorHex = "#A371F7", ExecuteAction = () => _ = OpenWorkspaceInitScriptAsync() },
+            new() { Title = "Customization: Apply Active Tab as Customization", Subtitle = "Compile and execute active editor tab live in the studio extensibility engine", Category = "Customization", IconKind = "FlashOutline", IconColorHex = "#A371F7", ShortcutHint = "Ctrl+Alt+R", ExecuteAction = () => _ = ApplyActiveTabAsCustomizationAsync() },
+            new() { Title = "Customization: Reload Customizations (~/.frysharp/init.csx)", Subtitle = "Recompile and apply user customization script and theme tokens", Category = "Customization", IconKind = "Refresh", IconColorHex = "#A371F7", ShortcutHint = "Ctrl+Shift+R", ExecuteAction = () => _ = ReloadCustomizationsAsync() },
+            new() { Title = "Customization: Theme - Dark+ (Default)", Subtitle = "Apply Dark+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#2F81F7", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dark-plus") },
+            new() { Title = "Customization: Theme - Light+ (Default)", Subtitle = "Apply Light+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#0969DA", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("light-plus") },
+            new() { Title = "Customization: Theme - Dracula Pro", Subtitle = "Apply Dracula vibrant purple palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#BD93F9", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dracula") },
+            new() { Title = "Customization: Theme - Cyberpunk Neon", Subtitle = "Apply Cyberpunk electric yellow & neon cyan palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#FFE600", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("cyberpunk") },
+            new() { Title = "Customization: Theme - Monokai Classic", Subtitle = "Apply Monokai high-contrast warm palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#A6E22E", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("monokai") },
+            new() { Title = "Customization: Theme - One Dark Pro", Subtitle = "Apply Atom One Dark iconic balanced dark palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#61AFEF", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("one-dark") },
+            new() { Title = "Customization: Reset Theme to Defaults", Subtitle = "Clear color overrides and reset to active theme defaults", Category = "Customization", IconKind = "Restore", IconColorHex = "#E5534B", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ResetToDefaults() },
             new() { Title = "Editor: Toggle Word Wrap", Subtitle = "Toggle soft line wrapping in editor canvas", Category = "View", IconKind = "Wrap", IconColorHex = "#58A6FF", ShortcutHint = "Alt+Z", ExecuteAction = ToggleWordWrap },
             new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase editor and terminal font size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
             new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease editor and terminal font size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
@@ -359,6 +374,21 @@ public partial class CSharpCodeStudioViewModel
             new() { Title = "Breakpoints: Clear All", Subtitle = "Remove all active breakpoints from current script", Category = "Debug", IconKind = "CloseCircleOutline", IconColorHex = "#E5534B", ExecuteAction = ClearAllBreakpoints },
             new() { Title = "Hub: Return to Workspace Manager", Subtitle = "Navigate back to Hub dashboard", Category = "Navigation", IconKind = "HomeOutline", IconColorHex = "#58A6FF", ExecuteAction = BackToHub }
         };
+
+        foreach (var desc in PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CommandPipeline.Descriptors)
+        {
+            cmds.Add(new QuickOpenItem
+            {
+                Title = $"{desc.Category ?? "Extension"}: {desc.Title}",
+                Subtitle = desc.Id,
+                Category = desc.Category ?? "Extension",
+                IconKind = "ToyBrickOutline",
+                IconColorHex = "#A371F7",
+                ShortcutHint = desc.Shortcut ?? string.Empty,
+                ExecuteAction = desc.Action
+            });
+        }
+
         QuickOpen.RegisterCommands(cmds);
     }
 

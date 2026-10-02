@@ -142,7 +142,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             _languages,
             _languages.StudioSettings,
             backToHubAction: NavigateToManager,
-            backToPreviousAction: NavigateToPreviousPage);
+            backToPreviousAction: NavigateToPreviousPage,
+            openScriptAction: NavigateToCodeStudio);
 
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new Hub.CSharpManagerViewModel(

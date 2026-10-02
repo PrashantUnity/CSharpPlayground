@@ -1,0 +1,89 @@
+using FrySharp.Sdk;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Commands;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Hooks;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.State;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
+
+/// <summary>
+/// Root implementation of IStudioApp. Central hub wiring together theming,
+/// commands, editor manipulation, UI contribution points, hooks, and state bag.
+/// </summary>
+public class StudioAppContext : IStudioApp
+{
+    private static StudioAppContext? _instance;
+    private static readonly object _instanceLock = new();
+
+    /// <summary>
+    /// Global ambient instance accessible as 'App' or 'Studio' in user scripts.
+    /// </summary>
+    public static StudioAppContext Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                lock (_instanceLock)
+                {
+                    _instance ??= new StudioAppContext();
+                }
+            }
+            return _instance;
+        }
+        internal set
+        {
+            lock (_instanceLock)
+            {
+                _instance = value;
+            }
+        }
+    }
+
+    public DynamicThemeEngine ThemeEngine { get; }
+    public ExtensibilityCommandPipeline CommandPipeline { get; }
+    public ExtensibilityEditorService EditorService { get; }
+    public ExtensibilityUiService UiService { get; }
+    public ExtensibilityHookRegistry HookRegistry { get; }
+    public InMemoryStateBag StateBag { get; }
+
+    private CustomizationManager? _customizationManager;
+    public CustomizationManager CustomizationManager
+    {
+        get => _customizationManager ??= new CustomizationManager();
+        set => _customizationManager = value;
+    }
+
+    private Extensions.ExtensionManager? _extensionManager;
+    public Extensions.ExtensionManager ExtensionManager
+    {
+        get => _extensionManager ??= new Extensions.ExtensionManager();
+        set => _extensionManager = value;
+    }
+
+    public IThemeApi Theme => ThemeEngine;
+    public IThemeApi Themes => ThemeEngine;
+    public ICommandApi Commands => CommandPipeline;
+    public IEditorApi Editor => EditorService;
+    public IUiApi UI => UiService;
+    public IHookApi Hooks => HookRegistry;
+    public IStateBag State => StateBag;
+
+    public StudioAppContext()
+    {
+        ThemeEngine = new DynamicThemeEngine();
+        CommandPipeline = new ExtensibilityCommandPipeline();
+        EditorService = new ExtensibilityEditorService();
+        UiService = new ExtensibilityUiService();
+        HookRegistry = new ExtensibilityHookRegistry();
+        StateBag = new InMemoryStateBag();
+
+        // Forward theme changed events from theme engine to hook registry
+        ThemeEngine.ThemeChanged += themeId =>
+        {
+            HookRegistry.InvokeThemeChanged(themeId);
+        };
+    }
+}

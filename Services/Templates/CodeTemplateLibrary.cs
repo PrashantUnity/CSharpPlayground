@@ -16,6 +16,7 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetCharting3DTemplates());
         list.AddRange(GetPolyglotVisualsTemplates());
         list.AddRange(GetDynamicProgrammingTemplates());
+        list.AddRange(GetCustomizationTemplates());
         return list;
     }
 

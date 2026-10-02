@@ -125,6 +125,7 @@ public class NotebookExecutionKernel : INotebookKernel
         loader.RegisterDependency(typeof(Control).Assembly);
         loader.RegisterDependency(typeof(Bitmap).Assembly);
         loader.RegisterDependency(typeof(System.Data.DataTable).Assembly);
+        loader.RegisterDependency(typeof(FrySharp.Sdk.IStudioApp).Assembly);
     }
 
     private static ScriptOptions CreateDefaultScriptOptionsInternal()

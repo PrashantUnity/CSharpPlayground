@@ -60,10 +60,41 @@ public partial class MainWindow : Window
         HookNativeMenuUpdates();
         HookActivePageEvents();
         UpdateMenuStates();
+
+        InitializeExtensibility();
+    }
+
+    private void InitializeExtensibility()
+    {
+        var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager = customizationManager;
+
+        var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
+
+        var globalExtensionsDir = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".frysharp", "extensions");
+        _ = Task.Run(async () =>
+        {
+            await customizationManager.InitializeAsync(enableHotReload: true);
+            if (System.IO.Directory.Exists(globalExtensionsDir))
+            {
+                await extensionManager.DiscoverAndLoadAllAsync(globalExtensionsDir, enableHotReload: true);
+            }
+        });
     }
 
     // ── Context-Aware Native Menu State Synchronization ──
-    private NativeMenu? RootMenu => NativeMenu.GetMenu(this);
+    private NativeMenu? RootMenu
+    {
+        get
+        {
+            if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            {
+                return null;
+            }
+            return NativeMenu.GetMenu(this);
+        }
+    }
 
     private NativeMenuItem? GetTopMenu(string headerPrefix) =>
         RootMenu?.Items.OfType<NativeMenuItem>()
@@ -120,10 +151,25 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnMonitoredPagePropertyChanged(object? sender, PropertyChangedEventArgs e) => UpdateMenuStates();
+    private void OnMonitoredPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateMenuStates);
+        }
+        else
+        {
+            UpdateMenuStates();
+        }
+    }
 
     public void UpdateMenuStates()
     {
+        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateMenuStates);
+            return;
+        }
         bool isCode = ActiveCodeStudio != null;
         bool isNotebook = ActiveNotebookStudio != null;
         bool isServer = ActiveServerStudio != null;
@@ -158,6 +204,7 @@ public partial class MainWindow : Window
         SetItemEnabled("View", "Return to Hub", !isHub);
         SetItemEnabled("View", "Documentation", !isDocs);
         SetItemEnabled("View", "Blind 75", !isBlind);
+        SetItemEnabled("View", "Customization", true);
         SetItemEnabled("View", "Settings", !isSettings);
 
         // Run Menu
@@ -172,6 +219,8 @@ public partial class MainWindow : Window
             SetItemEnabled("Run", "Step Into", code.IsDebugging && code.IsPaused);
             SetItemEnabled("Run", "Toggle Breakpoint", true);
             SetItemEnabled("Run", "Clear All Breakpoints", code.Breakpoints?.Count > 0);
+            SetItemEnabled("Run", "Apply Script as Customization", !isRunning);
+            SetItemEnabled("Run", "Reload Customizations", true);
         }
         else if (isNotebook)
         {
@@ -183,6 +232,8 @@ public partial class MainWindow : Window
             SetItemEnabled("Run", "Step Into", false);
             SetItemEnabled("Run", "Toggle Breakpoint", false);
             SetItemEnabled("Run", "Clear All Breakpoints", false);
+            SetItemEnabled("Run", "Apply Script as Customization", false);
+            SetItemEnabled("Run", "Reload Customizations", true);
         }
         else if (isServer)
         {
@@ -194,6 +245,8 @@ public partial class MainWindow : Window
             SetItemEnabled("Run", "Step Into", false);
             SetItemEnabled("Run", "Toggle Breakpoint", false);
             SetItemEnabled("Run", "Clear All Breakpoints", false);
+            SetItemEnabled("Run", "Apply Script as Customization", false);
+            SetItemEnabled("Run", "Reload Customizations", true);
         }
         else
         {
@@ -204,6 +257,8 @@ public partial class MainWindow : Window
             SetItemEnabled("Run", "Step Into", false);
             SetItemEnabled("Run", "Toggle Breakpoint", false);
             SetItemEnabled("Run", "Clear All Breakpoints", false);
+            SetItemEnabled("Run", "Apply Script as Customization", false);
+            SetItemEnabled("Run", "Reload Customizations", isSettings);
         }
 
         // Help Menu

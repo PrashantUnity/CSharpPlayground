@@ -516,4 +516,89 @@ public class DocumentationServiceTests
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
     }
+
+    [Fact]
+    public void DocumentationService_ExtensibilityCategory_ShouldContain10ChaptersWithComprehensiveContent()
+    {
+        var service = DocumentationService.Instance;
+        var extCat = service.Categories.FirstOrDefault(c => c.Id == "extensibility_customization");
+
+        Assert.NotNull(extCat);
+        Assert.Equal("Extensibility & Customization", extCat.Title);
+        Assert.Equal(10, extCat.Articles.Count);
+
+        var expectedArticles = new[]
+        {
+            "extensibility_ch1_fundamentals",
+            "extensibility_ch2_theming",
+            "extensibility_ch3_spacing",
+            "extensibility_ch4_commands",
+            "extensibility_ch5_middleware",
+            "extensibility_ch6_editor",
+            "extensibility_ch7_hooks",
+            "extensibility_ch8_ui_zones",
+            "extensibility_ch9_state",
+            "extensibility_ch10_extensions"
+        };
+
+        var actualIds = extCat.Articles.Select(a => a.Id).ToList();
+        foreach (var expectedId in expectedArticles)
+        {
+            Assert.Contains(expectedId, actualIds);
+        }
+
+        foreach (var article in extCat.Articles)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(article.Title));
+            Assert.False(string.IsNullOrWhiteSpace(article.Summary));
+            Assert.True(article.Sections.Count >= 3, $"Article '{article.Id}' should have at least 3 sections");
+            Assert.NotEmpty(article.CodeSnippets);
+            Assert.True(article.ApiSignatures.Count >= 2, $"Article '{article.Id}' should have at least 2 API signatures");
+
+            foreach (var snippet in article.CodeSnippets)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(snippet.Id));
+                Assert.False(string.IsNullOrWhiteSpace(snippet.Title));
+                Assert.False(string.IsNullOrWhiteSpace(snippet.Code));
+            }
+
+            foreach (var api in article.ApiSignatures)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(api.MethodName));
+                Assert.False(string.IsNullOrWhiteSpace(api.FullSignature));
+                Assert.False(string.IsNullOrWhiteSpace(api.Description));
+            }
+        }
+    }
+
+    [Fact]
+    public void DocumentationService_Search_ShouldFindExtensibilityChaptersByKeywords()
+    {
+        var service = DocumentationService.Instance;
+
+        var themingResults = service.SearchArticles("dracula");
+        Assert.NotEmpty(themingResults);
+        Assert.Contains(themingResults, a => a.Id == "extensibility_ch2_theming");
+
+        var middlewareResults = service.SearchArticles("middleware");
+        Assert.NotEmpty(middlewareResults);
+        Assert.Contains(middlewareResults, a => a.Id == "extensibility_ch5_middleware");
+
+        var hooksResults = service.SearchArticles("OnBeforeScriptRun");
+        Assert.NotEmpty(hooksResults);
+        Assert.Contains(hooksResults, a => a.Id == "extensibility_ch7_hooks");
+
+        var zonesResults = service.SearchArticles("RegisterActivityBarItem");
+        Assert.NotEmpty(zonesResults);
+        Assert.Contains(zonesResults, a => a.Id == "extensibility_ch8_ui_zones");
+
+        var stateResults = service.SearchArticles("IStateBag");
+        Assert.NotEmpty(stateResults);
+        Assert.Contains(stateResults, a => a.Id == "extensibility_ch9_state");
+
+        var manifestResults = service.SearchArticles("extension.json");
+        Assert.NotEmpty(manifestResults);
+        Assert.Contains(manifestResults, a => a.Id == "extensibility_ch10_extensions");
+    }
 }
+

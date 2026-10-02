@@ -1259,6 +1259,21 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                     IsStatusBannerError = false;
                     HasStatusBannerMessage = true;
 
+                    var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
+                    if (!string.IsNullOrWhiteSpace(workspaceFolder))
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
+                            await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
+                            var workspaceExtDir = System.IO.Path.Combine(workspaceFolder, ".frysharp", "extensions");
+                            if (System.IO.Directory.Exists(workspaceExtDir))
+                            {
+                                await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
+                            }
+                        });
+                    }
+
                     if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                     {
                         if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)

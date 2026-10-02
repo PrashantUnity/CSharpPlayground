@@ -380,6 +380,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         });
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
+        InitializeExtensibilityBridge();
     }
 
     private void OnStudioSettingsChanged(StudioSettings s)
@@ -476,6 +477,9 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
             activeTab.IsDirty = false;
             activeTab.NotifyTitleChanged();
         }
+
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentSaved(
+            new Services.Extensibility.Editor.StudioDocumentContextAdapter(this));
     }
 
     [RelayCommand]

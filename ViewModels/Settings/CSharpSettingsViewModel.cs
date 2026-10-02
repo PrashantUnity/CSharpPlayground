@@ -27,6 +27,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsCustomizationCategoryActive))]
     private string _activeCategory = "Languages";
 
     [ObservableProperty]
@@ -48,6 +49,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     public bool IsEditorCategoryActive => ActiveCategory == "Editor";
     public bool IsExecutionCategoryActive => ActiveCategory == "Execution";
     public bool IsKeymapCategoryActive => ActiveCategory == "Keymap";
+    public bool IsCustomizationCategoryActive => ActiveCategory == "Customization";
 
     public ObservableCollection<SettingsCategoryItem> Categories { get; } = new();
     public ObservableCollection<KeymapShortcutItem> Shortcuts { get; } = new();
@@ -56,18 +58,21 @@ public partial class CSharpSettingsViewModel : ObservableObject
         StudioLanguageServices languageServices,
         StudioSettingsStore? settingsStore = null,
         Action? backToHubAction = null,
-        Action? backToPreviousAction = null)
+        Action? backToPreviousAction = null,
+        Action<ScriptDocumentItem>? openScriptAction = null)
     {
         _languageServices = languageServices;
         _settingsStore = settingsStore ?? languageServices.StudioSettings;
         _backToHubAction = backToHubAction;
         _backToPreviousAction = backToPreviousAction;
+        _openScriptAction = openScriptAction;
 
         PopulateCategories();
         PopulateKeymap();
         InitializeKeymap();
         InitializeEditorSettings();
         InitializeLanguages();
+        InitializeCustomizationSettings();
 
         _settingsStore.SettingsChanged += OnStoreSettingsChanged;
     }
@@ -90,6 +95,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Categories.Add(new SettingsCategoryItem("Editor", "Editor & Formatting", "CodeBraces", "Indentation, font size, line numbers & wrap"));
         Categories.Add(new SettingsCategoryItem("Execution", "Execution & Terminal", "Console", "Execution timeout, stdout buffers & process lifecycle"));
         Categories.Add(new SettingsCategoryItem("Keymap", "Keymap & Shortcuts", "KeyboardOutline", "Visual Studio Code & studio keybindings"));
+        Categories.Add(new SettingsCategoryItem("Customization", "Customization & Extensions", "PuzzleOutline", "C# scripts, dynamic themes, tokens, extensions & hooks"));
     }
 
     private void PopulateKeymap()
@@ -105,6 +111,8 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Shortcuts.Add(new KeymapShortcutItem("Format Document", "Shift+Alt+F / Ctrl+K Ctrl+D", "Editor", "Format code using language standard indentation"));
         Shortcuts.Add(new KeymapShortcutItem("Hover Quick Info", "Ctrl+K Ctrl+I", "Editor", "Display XML doc comments and symbol signature"));
         Shortcuts.Add(new KeymapShortcutItem("Find & Replace", "Ctrl+F / ⌘F", "Editor", "Search text within the active document canvas"));
+        Shortcuts.Add(new KeymapShortcutItem("Apply Customization", "Ctrl+Alt+R", "Customization", "Evaluate active script tab as in-app customization"));
+        Shortcuts.Add(new KeymapShortcutItem("Reload Customizations", "Ctrl+Shift+R", "Customization", "Recompile and apply ~/.frysharp/init.csx and themes"));
         Shortcuts.Add(new KeymapShortcutItem("Zoom In", "Ctrl+= / ⌘+", "Editor", "Increase code canvas and terminal font size"));
         Shortcuts.Add(new KeymapShortcutItem("Zoom Out", "Ctrl+- / ⌘-", "Editor", "Decrease code canvas and terminal font size"));
         Shortcuts.Add(new KeymapShortcutItem("Reset Zoom", "Ctrl+0 / ⌘0", "Editor", "Reset font typography to default 100% (13px)"));
@@ -124,6 +132,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEditorCategoryActive));
         OnPropertyChanged(nameof(IsExecutionCategoryActive));
         OnPropertyChanged(nameof(IsKeymapCategoryActive));
+        OnPropertyChanged(nameof(IsCustomizationCategoryActive));
     }
 
     [RelayCommand]

@@ -45,13 +45,16 @@ public static class ScriptImports
         "PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial",
         "PdfEditorApp.Plugins.CSharpEditor.Charting3D.Layouts",
         "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models",
-        "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services"
+        "PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services",
+        "FrySharp.Sdk",
+        "PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility"
     ];
 
     /// <summary>Types imported with <c>using static</c>: <c>Check(...)</c>, <c>Show(...)</c> and <c>Format(...)</c> need no prefix.</summary>
     public static IReadOnlyList<string> StaticTypes { get; } =
     [
-        "PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers"
+        "PdfEditorApp.Plugins.CSharpEditor.Services.ScriptHelpers",
+        "PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Host.CustomizationScriptGlobals"
     ];
 
     /// <summary>

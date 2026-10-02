@@ -499,6 +499,11 @@
 
                             <Rectangle Width="1" Height="16" Fill="{DynamicResource DsBorderBrush}" Margin="2,0" />
 
+                            <!-- Apply as Studio Customization -->
+                            <Button Command="{Binding ApplyActiveTabAsCustomizationCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Apply Script as Studio Customization (Ctrl+Alt+R)">
+                                <materialIcons:MaterialIcon Kind="Tune" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            </Button>
+
                             <!-- Format Document -->
                             <Button Command="{Binding FormatCodeCommand}" Classes="cs-toolbar-icon" IsVisible="{Binding SupportsFormatting}" ToolTip.Tip="Format Document (Shift+Alt+F)">
                                 <materialIcons:MaterialIcon Kind="FormatAlignLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />

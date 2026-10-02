@@ -41,6 +41,8 @@ public class NativeMenuGesturesTests
     [InlineData("F11")]
     [InlineData("F9")]
     [InlineData("Meta+M")]
+    [InlineData("Alt+Meta+R")]
+    [InlineData("Shift+Meta+R")]
     public void NativeMenuGesture_ParsesSuccessfully(string gesture)
     {
         var parsed = KeyGesture.Parse(gesture);

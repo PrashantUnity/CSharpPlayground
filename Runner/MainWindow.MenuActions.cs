@@ -302,6 +302,7 @@ public partial class MainWindow : Window
     public void OpenDocs_OnClick(object? sender, EventArgs e) => StudioHostVm.NavigateToDocs();
     public void OpenBlind_OnClick(object? sender, EventArgs e) => StudioHostVm.NavigateToBlindProblems();
     public void OpenSettings_OnClick(object? sender, EventArgs e) => StudioHostVm.NavigateToSettings();
+    public void OpenCustomizationSettings_OnClick(object? sender, EventArgs e) => StudioHostVm.NavigateToSettings("Customization");
 
     // ── Run Menu Actions ──
     public async void StartDebugging_OnClick(object? sender, EventArgs e)
@@ -326,6 +327,92 @@ public partial class MainWindow : Window
         else if (ActiveServerStudio is { } srv && !srv.IsServerRunning)
         {
             await srv.StartServerCommand.ExecuteAsync(null);
+        }
+    }
+
+    public async void ApplyCustomization_OnClick(object? sender, EventArgs e)
+    {
+        if (ActiveCodeStudio is { } code)
+        {
+            await code.ApplyActiveTabAsCustomizationCommand.ExecuteAsync(null);
+        }
+    }
+
+    public async void ReloadCustomizations_OnClick(object? sender, EventArgs e)
+    {
+        if (ActiveCodeStudio is { } code)
+        {
+            await code.ReloadCustomizationsCommand.ExecuteAsync(null);
+        }
+        else if (StudioHostVm.SettingsViewModel is { } settings)
+        {
+            await settings.ReloadCustomizationScriptCommand.ExecuteAsync(null);
+        }
+        else if (PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager is { } mgr)
+        {
+            await mgr.ReloadAsync();
+        }
+    }
+
+    public async void OpenUserInitScript_OnClick(object? sender, EventArgs e)
+    {
+        var mgr = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager;
+        var scriptPath = mgr.Storage.GlobalInitScriptPath;
+        await mgr.Storage.EnsureInitScriptExistsAsync();
+
+        if (ActiveCodeStudio is { } code)
+        {
+            await code.OpenWorkspaceFileAsync(scriptPath);
+        }
+        else
+        {
+            var doc = new ScriptDocumentItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = Path.GetFileName(scriptPath),
+                SourceFilePath = scriptPath,
+                Code = File.Exists(scriptPath) ? await File.ReadAllTextAsync(scriptPath) : string.Empty
+            };
+            StudioHostVm.NavigateToCodeStudio(doc);
+        }
+    }
+
+    public async void OpenWorkspaceInitScript_OnClick(object? sender, EventArgs e)
+    {
+        var mgr = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager;
+        var wsPath = mgr.Storage.WorkspaceInitScriptPath;
+        if (string.IsNullOrWhiteSpace(wsPath))
+        {
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UI.ShowWarning("No workspace folder is currently open.");
+            return;
+        }
+
+        var dir = System.IO.Path.GetDirectoryName(wsPath);
+        if (!string.IsNullOrWhiteSpace(dir) && !System.IO.Directory.Exists(dir))
+        {
+            System.IO.Directory.CreateDirectory(dir);
+        }
+
+        if (!System.IO.File.Exists(wsPath))
+        {
+            var starter = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Storage.CustomizationStorageService.GetStarterInitScript();
+            await System.IO.File.WriteAllTextAsync(wsPath, starter);
+        }
+
+        if (ActiveCodeStudio is { } code)
+        {
+            await code.OpenWorkspaceFileAsync(wsPath);
+        }
+        else
+        {
+            var doc = new ScriptDocumentItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = Path.GetFileName(wsPath),
+                SourceFilePath = wsPath,
+                Code = File.Exists(wsPath) ? await File.ReadAllTextAsync(wsPath) : string.Empty
+            };
+            StudioHostVm.NavigateToCodeStudio(doc);
         }
     }
 

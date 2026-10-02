@@ -152,6 +152,12 @@ public partial class CSharpNotebookStudioView : UserControl
     {
         if (DataContext is not CSharpNotebookStudioViewModel vm) return;
 
+        if (vm.TryExecuteExtensibilityShortcut(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Source is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
         {
             if (e.Key == Key.Enter)
@@ -169,6 +175,22 @@ public partial class CSharpNotebookStudioView : UserControl
         }
 
         bool isCmdOrCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+
+        // ── Customization: Apply Active Cell as Customization (Ctrl+Alt+R / Cmd+Alt+R) ──
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key == Key.R)
+        {
+            _ = vm.ApplyActiveCellAsCustomizationAsync();
+            e.Handled = true;
+            return;
+        }
+
+        // ── Customization: Reload Customizations (Ctrl+Shift+R / Cmd+Shift+R) ──
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.R)
+        {
+            _ = vm.ReloadCustomizationsAsync();
+            e.Handled = true;
+            return;
+        }
 
         // ── Typography & Font Zoom (Ctrl+= / Ctrl+- / Ctrl+0) ──
         if (isCmdOrCtrl && (e.Key == Key.OemPlus || e.Key == Key.Add || e.PhysicalKey == PhysicalKey.Equal || e.PhysicalKey == PhysicalKey.NumPadAdd))

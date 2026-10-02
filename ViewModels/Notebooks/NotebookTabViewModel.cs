@@ -316,6 +316,22 @@ public partial class NotebookTabViewModel : ObservableObject
         var kernel = _router.GetOrCreate(language?.Id);
         var console = new CellConsole(cell, () => myRunId == _executionRunId, rich => ApplyRichOutput(cell, rich, myRunId), terminal: kernel != null && !ReferenceEquals(kernel, Kernel));
 
+        var beforeHook = new FrySharp.Sdk.ExecutionHookContext
+        {
+            LanguageId = language?.Id ?? ownLanguage,
+            DocumentPath = null,
+            SourceCode = directives.Code
+        };
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeBeforeScriptRun(beforeHook);
+        if (beforeHook.CancelExecution)
+        {
+            var cancelReason = beforeHook.CancellationReason ?? "Execution cancelled by extension hook.";
+            console.Write($"⚠️ {cancelReason}\n");
+            cell.IsExecuting = false;
+            if (ownsTabExecutingFlag) IsExecuting = false;
+            return;
+        }
+
         try
         {
             KernelExecutionResult result;
@@ -352,6 +368,16 @@ public partial class NotebookTabViewModel : ObservableObject
             {
                 result = await RunInCSharpKernelAsync(cell, directives.Code, console, myRunId, linkedCts.Token);
             }
+
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeAfterScriptRun(new FrySharp.Sdk.ExecutionFinishedHookContext
+            {
+                LanguageId = language?.Id ?? ownLanguage,
+                DocumentPath = null,
+                Success = result.Success,
+                Elapsed = result.Elapsed,
+                Output = result.ConsoleOutput,
+                Error = result.ErrorMessage
+            });
 
             console.Flush();
             if (!result.Success)

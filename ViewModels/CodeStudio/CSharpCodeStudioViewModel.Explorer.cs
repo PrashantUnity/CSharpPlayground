@@ -125,7 +125,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // Go to File: opens any file of the workspace by its path, whether or not the Explorer has drawn it.
-    private async Task OpenWorkspaceFileAsync(string fullPath)
+    public async Task OpenWorkspaceFileAsync(string fullPath)
     {
         using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
         {
@@ -573,6 +573,21 @@ public partial class CSharpCodeStudioViewModel
                 }
 
                 await RefreshExplorerAsync();
+
+                var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
+                if (!string.IsNullOrWhiteSpace(workspaceFolder))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
+                        await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
+                        var workspaceExtDir = Path.Combine(workspaceFolder, ".frysharp", "extensions");
+                        if (Directory.Exists(workspaceExtDir))
+                        {
+                            await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
+                        }
+                    });
+                }
 
                 if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                 {

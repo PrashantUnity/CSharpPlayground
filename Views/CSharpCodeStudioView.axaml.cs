@@ -155,6 +155,12 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     {
         if (_currentVm == null) return;
 
+        if (_currentVm.TryExecuteExtensibilityShortcut(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Source is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
         {
             if (e.Key == Key.Enter)
@@ -205,6 +211,14 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
         {
             _ = _currentVm.SaveCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Alt+R: Apply active tab as in-app studio customization
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key == Key.R)
+        {
+            _ = _currentVm.ApplyActiveTabAsCustomizationCommand.ExecuteAsync(null);
             e.Handled = true;
             return;
         }
@@ -596,6 +610,8 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         _currentVm.RequestExploreVariable -= OpenCollectionView;
         _currentVm.RequestViewVariable -= OpenValueViewer;
         _currentVm.PropertyChanged -= OnVmPropertyChanged;
+        _currentVm.GetSelectedText = null;
+        _currentVm.SetSelectedText = null;
         _completionController?.Dispose();
         _completionController = null;
         _quickInfoController?.Dispose();
@@ -618,6 +634,15 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
 
         if (_currentVm != null && _editor != null)
         {
+            _currentVm.GetSelectedText = () => _editor?.SelectedText ?? string.Empty;
+            _currentVm.SetSelectedText = s =>
+            {
+                if (_editor != null)
+                {
+                    _editor.SelectedText = s ?? string.Empty;
+                }
+            };
+
             _currentVm.RequestNavigateToCaret += OnNavigateToCaret;
             _currentVm.RequestGoToLine += ScrollToAndSelectLine;
             _currentVm.RequestFoldAll += FoldAll;

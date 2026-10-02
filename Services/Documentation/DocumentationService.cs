@@ -24,6 +24,7 @@ public partial class DocumentationService
     private void InitializeDocumentation()
     {
         var appCategory = BuildAppGuideCategory();
+        var extensibilityCategory = BuildExtensibilityAndCustomizationCategory();
         var learnCSharpCategory = BuildLearnCSharpCategory();
         var fundamentalsCategory = BuildFundamentalsCategory();
         var oopCategory = BuildOopCategory();
@@ -48,6 +49,7 @@ public partial class DocumentationService
         var shortcutsCategory = BuildShortcutsCategory();
 
         _categories.Add(appCategory);
+        _categories.Add(extensibilityCategory);
         _categories.Add(learnCSharpCategory);
         _categories.Add(fundamentalsCategory);
         _categories.Add(oopCategory);
@@ -138,6 +140,14 @@ public partial class DocumentationService
                             sc.MacKey.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                             sc.WinKey.Contains(term, StringComparison.OrdinalIgnoreCase))
                             score += 15;
+                    }
+
+                    foreach (var sec in article.Sections)
+                    {
+                        if (sec.Heading.Contains(term, StringComparison.OrdinalIgnoreCase))
+                            score += 10;
+                        if (sec.Content.Contains(term, StringComparison.OrdinalIgnoreCase))
+                            score += 5;
                     }
                 }
 
