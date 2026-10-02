@@ -20,7 +20,7 @@
     <UserControl.Styles>
         <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
         <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/BlindProblemsStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/BlindProblems/BlindProblemsStyles.axaml" />
     </UserControl.Styles>
 
     <Panel>

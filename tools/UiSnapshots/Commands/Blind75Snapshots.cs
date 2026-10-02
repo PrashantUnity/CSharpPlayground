@@ -58,7 +58,7 @@ internal static class Blind75Snapshots
 
         // On the page the panel gets these styles from CSharpBlindProblemsView; shown alone it has to be given them.
         var panel = new BlindProblemDetailFlyoutControl { DataContext = vm };
-        Snapshot.AddPluginStyles(panel, "Controls/SharedStudioStyles.axaml", "Controls/BlindProblemsStyles.axaml");
+        Snapshot.AddPluginStyles(panel, "Controls/SharedStudioStyles.axaml", "Controls/BlindProblems/BlindProblemsStyles.axaml");
 
         var window = Snapshot.Show(panel, options.Int("width", 410), options.Int("height", 2600));
         Snapshot.Save(window, options, $"details_{number}");
