@@ -1,13 +1,12 @@
 using System.Collections.Concurrent;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealFSharp;
+namespace CSharpEditorPlugin.Tests.RealFSharp;
 
 /// <summary>.fsx files executed with real dotnet fsi / fsi: interactive runner and notebook kernel.</summary>
 [Collection(RealFSharpCollection.Name)]

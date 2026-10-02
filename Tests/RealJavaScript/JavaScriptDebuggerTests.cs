@@ -1,11 +1,11 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJavaScript;
+namespace CSharpEditorPlugin.Tests.RealJavaScript;
 
 /// <summary>JavaScript debugged with real Node.js: a breakpoint pauses the program and shows its variables.</summary>
 [Collection(RealJavaScriptCollection.Name)]

@@ -1,13 +1,13 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The host side of the kernel protocol, against a pretend kernel program that answers as the test says: output, rich

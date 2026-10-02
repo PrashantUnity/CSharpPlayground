@@ -1,20 +1,15 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
-using PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
+namespace CSharpEditorPlugin.Tests.RealJava;
 
 [Collection(RealJavaCollection.Name)]
 public class JavaVisualsConformanceTests : IDisposable

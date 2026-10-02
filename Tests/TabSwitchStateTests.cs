@@ -1,8 +1,10 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>What switching tabs must and must not change about the documents.</summary>
 public class TabSwitchStateTests : IDisposable
@@ -27,7 +29,7 @@ public class TabSwitchStateTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(Models.ScriptDocumentItem script) => new(
+    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
         script,
         _storage,
         new RoslynCompilerService(),
@@ -50,7 +52,7 @@ public class TabSwitchStateTests : IDisposable
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == first.Id));
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == second.Id));
 
-        Assert.All(studio.OpenTabs, t => Assert.False(t.IsDirty, $"'{t.Title}' was only looked at, not edited"));
+        Assert.All(studio.OpenTabs, t => Assert.False((bool)t.IsDirty, $"'{t.Title}' was only looked at, not edited"));
     }
 
     [Fact]
@@ -66,8 +68,8 @@ public class TabSwitchStateTests : IDisposable
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == second.Id));
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == first.Id));
 
-        Assert.Equal("// edited alpha", studio.Code);
-        Assert.True(studio.OpenTabs.First(t => t.Id == first.Id).IsDirty);
-        Assert.False(studio.OpenTabs.First(t => t.Id == second.Id).IsDirty);
+        Assert.Equal((string?)"// edited alpha", (string?)studio.Code);
+        Assert.True((bool)studio.OpenTabs.First(t => t.Id == first.Id).IsDirty);
+        Assert.False((bool)studio.OpenTabs.First(t => t.Id == second.Id).IsDirty);
     }
 }

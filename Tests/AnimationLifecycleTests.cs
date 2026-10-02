@@ -1,11 +1,11 @@
-using System;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class AnimationLifecycleTests
 {
@@ -61,7 +61,7 @@ public class AnimationLifecycleTests
         cellVm.DisposeLiveResources();
 
         Assert.True(control.WasDisposed);
-        Assert.False(cellVm.HasInteractiveControl);
+        Assert.False((bool)cellVm.HasInteractiveControl);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class AnimationLifecycleTests
 
         Assert.True(control.WasDisposed);
         Assert.False(cellVm.Model.HadInteractiveControl);
-        Assert.False(cellVm.InteractiveControlPlaceholderVisible);
+        Assert.False((bool)cellVm.InteractiveControlPlaceholderVisible);
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public class AnimationLifecycleTests
         var model = new NotebookCellItem { Type = CellType.Code, Source = "Display.Animate(...)", HadInteractiveControl = true };
         var cellVm = new NotebookCellViewModel(model);
 
-        Assert.True(cellVm.InteractiveControlPlaceholderVisible);
-        Assert.True(cellVm.HasOutput);
+        Assert.True((bool)cellVm.InteractiveControlPlaceholderVisible);
+        Assert.True((bool)cellVm.HasOutput);
     }
 
     [Fact]

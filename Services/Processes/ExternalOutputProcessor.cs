@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Interaction;
 
@@ -30,6 +31,7 @@ public sealed class ExternalOutputProcessor
     private readonly Action<RichCellOutput> _onRichOutput;
     private readonly Action<string, string>? _onShare;
     private readonly ProgramVisuals _visuals;
+    private readonly AsciiTableDetector _tableDetector = new();
 
     /// <param name="visuals">The program's visuals, whose events reach it (<see cref="ExternalVisualSession.Visuals"/>); without
     /// them, its visuals still update in place, but it can't listen to them.</param>
@@ -88,6 +90,15 @@ public sealed class ExternalOutputProcessor
             {
                 ProcessLine(_partialLine.ToString().TrimEnd('\r'), isTrailing: true);
                 _partialLine.Clear();
+            }
+
+            if (_tableDetector.Flush(out var trailingTable) && trailingTable != null)
+            {
+                _onRichOutput(new RichCellOutput
+                {
+                    Kind = CellOutputKind.Table,
+                    TableResult = trailingTable
+                });
             }
         }
     }
@@ -162,6 +173,16 @@ public sealed class ExternalOutputProcessor
         {
             _onConsoleText(line[..at]);
             return;
+        }
+
+        // 3. Detect and emit structured table output for ASCII grid tables (e.g. SQLite -header -table)
+        if (_tableDetector.ProcessLine(line, out var detectedTable) && detectedTable != null)
+        {
+            _onRichOutput(new RichCellOutput
+            {
+                Kind = CellOutputKind.Table,
+                TableResult = detectedTable
+            });
         }
 
         // Regular console text

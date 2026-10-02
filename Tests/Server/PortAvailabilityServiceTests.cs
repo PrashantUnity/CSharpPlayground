@@ -1,10 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Server;
+namespace CSharpEditorPlugin.Tests.Server;
 
 public class PortAvailabilityServiceTests
 {

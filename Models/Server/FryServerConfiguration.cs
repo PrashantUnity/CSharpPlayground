@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+namespace PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 
 /// <summary>
 /// Server configuration settings for a .fryserver document instance.

@@ -1,11 +1,11 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
+namespace CSharpEditorPlugin.Tests.RealPython;
 
 /// <summary>Python scripts debugged with the real interpreter and debugpy; skipped where debugpy isn't installed.</summary>
 [Collection(RealPythonCollection.Name)]

@@ -1,7 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Program output reads the way a terminal would show it.</summary>
 public class TerminalTextBufferTests

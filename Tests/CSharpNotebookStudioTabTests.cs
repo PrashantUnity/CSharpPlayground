@@ -1,11 +1,16 @@
-using System;
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpNotebookStudioTabTests : IDisposable
 {
@@ -74,8 +79,8 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.NotNull(studio.ActiveTab);
         Assert.True(studio.HasActiveTab);
         Assert.False(studio.HasNoTabs);
-        Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab.Title);
-        Assert.True(studio.ActiveTab.IsActive);
+        Assert.Equal((string?)"Document Automation Notebook.frynb", (string?)studio.ActiveTab.Title);
+        Assert.True((bool)studio.ActiveTab.IsActive);
         Assert.NotEmpty(studio.Cells);
     }
 
@@ -90,9 +95,9 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
-        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab.Title);
-        Assert.True(studio.ActiveTab.IsActive);
-        Assert.False(studio.Tabs[0].IsActive);
+        Assert.Equal((string?)"Second_Notebook.frynb", (string?)studio.ActiveTab.Title);
+        Assert.True((bool)studio.ActiveTab.IsActive);
+        Assert.False((bool)studio.Tabs[0].IsActive);
     }
 
     [Fact]
@@ -106,7 +111,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
         await studio.OpenDocumentAsync(docFile);
 
         Assert.Single(studio.Tabs);
-        Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab!.Title);
+        Assert.Equal((string?)"Document Automation Notebook.frynb", (string?)studio.ActiveTab!.Title);
     }
 
     [Fact]
@@ -117,17 +122,17 @@ public class CSharpNotebookStudioTabTests : IDisposable
         var secondFile = EnsureSecondNotebookItem(studio);
         await studio.OpenDocumentAsync(secondFile);
 
-        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
+        Assert.Equal((string?)"Second_Notebook.frynb", (string?)studio.ActiveTab!.Title);
 
         studio.SelectTab(studio.Tabs[0]);
 
-        Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab.Title);
-        Assert.True(studio.Tabs[0].IsActive);
-        Assert.False(studio.Tabs[1].IsActive);
+        Assert.Equal((string?)"Document Automation Notebook.frynb", (string?)studio.ActiveTab.Title);
+        Assert.True((bool)studio.Tabs[0].IsActive);
+        Assert.False((bool)studio.Tabs[1].IsActive);
 
         var firstItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(firstItem);
-        Assert.True(firstItem.IsSelected);
+        Assert.True((bool)firstItem.IsSelected);
     }
 
     [Fact]
@@ -139,14 +144,14 @@ public class CSharpNotebookStudioTabTests : IDisposable
         await studio.OpenDocumentAsync(secondFile);
 
         Assert.Equal(2, studio.Tabs.Count);
-        Assert.Equal("Second_Notebook.frynb", studio.ActiveTab!.Title);
+        Assert.Equal((string?)"Second_Notebook.frynb", (string?)studio.ActiveTab!.Title);
 
         studio.CloseTab(studio.ActiveTab);
 
         Assert.Single(studio.Tabs);
         Assert.NotNull(studio.ActiveTab);
-        Assert.Equal("Document Automation Notebook.frynb", studio.ActiveTab.Title);
-        Assert.True(studio.ActiveTab.IsActive);
+        Assert.Equal((string?)"Document Automation Notebook.frynb", (string?)studio.ActiveTab.Title);
+        Assert.True((bool)studio.ActiveTab.IsActive);
     }
 
     [Fact]
@@ -181,9 +186,9 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal("Library", studio.BreadcrumbFolder);
         Assert.Equal("Document Automation Notebook.frynb", studio.BreadcrumbDocument);
-        Assert.Equal("Markdown: 📓 Polyglot Notebook Demo Copy", activeTab.ActiveCellBadgeText);
-        Assert.Equal("FormatHeaderPound", activeTab.ActiveCellTypeIcon);
-        Assert.Equal("#4EC9B0", activeTab.ActiveCellTypeColor);
+        Assert.Equal((string?)"Markdown: 📓 Polyglot Notebook Demo Copy", (string?)activeTab.ActiveCellBadgeText);
+        Assert.Equal((string?)"FormatHeaderPound", (string?)activeTab.ActiveCellTypeIcon);
+        Assert.Equal((string?)"#4EC9B0", (string?)activeTab.ActiveCellTypeColor);
 
         Assert.DoesNotContain("C# #", studio.BreadcrumbText);
         Assert.DoesNotContain("> C#", studio.BreadcrumbText);
@@ -205,9 +210,9 @@ public class CSharpNotebookStudioTabTests : IDisposable
         activeTab.Cells.Add(codeCellVm);
         activeTab.SelectCell(codeCellVm);
 
-        Assert.Equal("Cell [1]: public class People", activeTab.ActiveCellBadgeText);
-        Assert.Equal("CodeBraces", activeTab.ActiveCellTypeIcon);
-        Assert.Equal("#58A6FF", activeTab.ActiveCellTypeColor);
+        Assert.Equal((string?)"Cell [1]: public class People", (string?)activeTab.ActiveCellBadgeText);
+        Assert.Equal((string?)"CodeBraces", (string?)activeTab.ActiveCellTypeIcon);
+        Assert.Equal((string?)"#58A6FF", (string?)activeTab.ActiveCellTypeColor);
         Assert.Equal("Library › Document Automation Notebook.frynb › Cell [1]: public class People", studio.BreadcrumbText);
     }
 
@@ -218,13 +223,13 @@ public class CSharpNotebookStudioTabTests : IDisposable
         var activeTab = studio.ActiveTab!;
         var firstCell = activeTab.Cells[0];
 
-        Assert.True(firstCell.IsSelected);
+        Assert.True((bool)firstCell.IsSelected);
         Assert.Same(firstCell, activeTab.ActiveCell);
 
         // Re-selecting the already active cell should remain stable
         activeTab.SelectCell(firstCell);
 
-        Assert.True(firstCell.IsSelected);
+        Assert.True((bool)firstCell.IsSelected);
         Assert.Same(firstCell, activeTab.ActiveCell);
     }
 
@@ -238,7 +243,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal(initialCount + 1, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
-        Assert.StartsWith("Notebook_", studio.ActiveTab.Title);
+        Assert.StartsWith((string?)"Notebook_", (string?)studio.ActiveTab.Title);
 
         Assert.Contains(studio.ExplorerRootItems, x => x.Name == studio.ActiveTab.Title);
     }
@@ -268,7 +273,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         var folder = studio.ExplorerRootItems.FirstOrDefault(x => x.IsDirectory);
         Assert.NotNull(folder);
-        Assert.Equal("New Folder", folder.Name);
+        Assert.Equal((string?)"New Folder", (string?)folder.Name);
 
         await studio.RefreshExplorer();
 
@@ -290,8 +295,8 @@ public class CSharpNotebookStudioTabTests : IDisposable
         folder.Name = "Renamed Folder";
         await studio.OnItemRenamedAsync(folder);
 
-        Assert.Equal("Renamed Folder", folder.FullPath);
-        Assert.StartsWith("Renamed Folder/", folder.Children.First().FullPath);
+        Assert.Equal((string?)"Renamed Folder", (string?)folder.FullPath);
+        Assert.StartsWith((string?)"Renamed Folder/", (string?)folder.Children.First().FullPath);
 
         await studio.RefreshExplorer();
 
@@ -630,14 +635,14 @@ Console.WriteLine(""Second chart rendered!"");";
         Assert.NotNull(reloaded);
         var reloadedCellVm = new NotebookCellViewModel(reloaded.Cells[0]);
 
-        Assert.True(reloadedCellVm.HasTableOutput);
-        Assert.Equal("Int32[3]", reloadedCellVm.TableResult!.Title);
+        Assert.True((bool)reloadedCellVm.HasTableOutput);
+        Assert.Equal((string?)"Int32[3]", (string?)reloadedCellVm.TableResult!.Title);
         Assert.Single(reloadedCellVm.TableResult.Rows);
-        Assert.Equal("1", reloadedCellVm.TableResult.Rows[0].Cells[0].DisplayText);
+        Assert.Equal((string?)"1", (string?)reloadedCellVm.TableResult.Rows[0].Cells[0].DisplayText);
 
-        Assert.True(reloadedCellVm.HasInspectorOutput);
-        Assert.Equal("Person", reloadedCellVm.InspectorNode!.HeaderTitle);
-        Assert.Equal("Name", reloadedCellVm.InspectorNode.Properties[0].Name);
+        Assert.True((bool)reloadedCellVm.HasInspectorOutput);
+        Assert.Equal((string?)"Person", (string?)reloadedCellVm.InspectorNode!.HeaderTitle);
+        Assert.Equal((string?)"Name", (string?)reloadedCellVm.InspectorNode.Properties[0].Name);
     }
 
     [Fact]
@@ -733,12 +738,12 @@ Console.WriteLine(""should not be reached"");";
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
-        Assert.Equal("SkiaSharp Graphics & Image Generation Copy.frynb", studio.ActiveTab.Title);
+        Assert.Equal((string?)"SkiaSharp Graphics & Image Generation Copy.frynb", (string?)studio.ActiveTab.Title);
 
         var expItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
         Assert.NotNull(expItem);
-        Assert.True(expItem.IsSelected);
-        Assert.Equal("skiasharp_image_studio", expItem.DocumentId);
+        Assert.True((bool)expItem.IsSelected);
+        Assert.Equal((string?)"skiasharp_image_studio", (string?)expItem.DocumentId);
     }
 
     [Fact]
@@ -773,7 +778,7 @@ Console.WriteLine(""should not be reached"");";
         await studio.OpenDocumentAsync(itemVm);
 
         Assert.Equal(2, studio.Tabs.Count);
-        Assert.Equal($"{uniqueTitle}.frynb", studio.ActiveTab!.Title);
+        Assert.Equal((string?)$"{uniqueTitle}.frynb", (string?)studio.ActiveTab!.Title);
         Assert.Contains(studio.Cells, c => c.Source?.Contains("Persistent Storage Cell") == true);
     }
 
@@ -789,7 +794,7 @@ Console.WriteLine(""should not be reached"");";
         Assert.Contains(studio.ExplorerRootItems, x => x.Name == "Document Automation Notebook Copy.frynb");
         var duplicateItem = studio.ExplorerRootItems.First(x => x.Name == "Document Automation Notebook Copy.frynb");
         Assert.False(string.IsNullOrEmpty(duplicateItem.DocumentId));
-        Assert.Equal("Document Automation Notebook Copy.frynb", studio.ActiveTab!.Title);
+        Assert.Equal((string?)"Document Automation Notebook Copy.frynb", (string?)studio.ActiveTab!.Title);
     }
 
     [Fact]
@@ -868,14 +873,14 @@ Console.WriteLine(""should not be reached"");";
 
         var studio = CreateStudio();
         studio.ActiveTab!.AddCodeCell();
-        Assert.True(studio.ActiveTab.IsModified);
+        Assert.True((bool)studio.ActiveTab.IsModified);
 
         await studio.SaveAsync();
 
         var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
         Assert.Equal(baseline + 1, summaries.Count);
         Assert.Contains(summaries, s => s.Title == "Document Automation Notebook");
-        Assert.False(studio.ActiveTab.IsModified);
+        Assert.False((bool)studio.ActiveTab.IsModified);
     }
 
     [Fact]
@@ -888,16 +893,16 @@ Console.WriteLine(""should not be reached"");";
         // flow (e.g. running a cell auto-adds one below) that first arms IsModified.
         tab.AddCodeCell();
         await studio.SaveAsync();
-        Assert.False(tab.IsModified);
+        Assert.False((bool)tab.IsModified);
 
         // A pure text edit to an existing cell, after that first save, must re-arm IsModified
         // so the next Save doesn't silently no-op and drop the edit.
-        var cell = tab.Cells.First();
+        var cell = Enumerable.First<NotebookCellViewModel>(tab.Cells);
         cell.Source = "// edited after the first save";
-        Assert.True(tab.IsModified);
+        Assert.True((bool)tab.IsModified);
 
         await studio.SaveAsync();
-        Assert.False(tab.IsModified);
+        Assert.False((bool)tab.IsModified);
 
         var reloaded = await _testStorage.LoadNotebookAsync(tab.Notebook.Id);
         Assert.NotNull(reloaded);
@@ -917,8 +922,8 @@ Console.WriteLine(""should not be reached"");";
             var studio = CreateStudio(doc);
 
             var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False(item.IsDirectory);
-            Assert.Equal("External Doc.frynb", item.Name);
+            Assert.False((bool)item.IsDirectory);
+            Assert.Equal((string?)"External Doc.frynb", (string?)item.Name);
         }
         finally
         {
@@ -991,7 +996,7 @@ Console.WriteLine(""should not be reached"");";
 
             // Neither folder is the active workspace root, so only the currently open tab shows.
             var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.Equal("h.frynb", item.Name);
+            Assert.Equal((string?)"h.frynb", (string?)item.Name);
         }
         finally
         {
@@ -1035,7 +1040,7 @@ Console.WriteLine(""should not be reached"");";
             await studio.DeleteExplorerItemAsync(firstItem);
 
             var remaining = Assert.Single(studio.ExplorerRootItems, x => !x.IsDirectory);
-            Assert.Equal("Second.frynb", remaining.Name);
+            Assert.Equal((string?)"Second.frynb", (string?)remaining.Name);
         }
         finally
         {
@@ -1072,7 +1077,7 @@ Console.WriteLine(""should not be reached"");";
             await studio.OpenExternalProjectAsync(externalFile);
 
             Assert.Contains(studio.Tabs, t => t.Notebook.Title == "ImportedNotebook");
-            Assert.Equal("ImportedNotebook", studio.ActiveTab?.Notebook.Title);
+            Assert.Equal((string?)"ImportedNotebook", (string?)studio.ActiveTab?.Notebook.Title);
         }
         finally
         {

@@ -2,13 +2,14 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Docs;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>The Blind 75 page: the problem browser, one problem's details panel, its markdown and its generated code.</summary>
 internal static class Blind75Snapshots
@@ -58,7 +59,7 @@ internal static class Blind75Snapshots
 
         // On the page the panel gets these styles from CSharpBlindProblemsView; shown alone it has to be given them.
         var panel = new BlindProblemDetailFlyoutControl { DataContext = vm };
-        Snapshot.AddPluginStyles(panel, "Controls/SharedStudioStyles.axaml", "Controls/BlindProblemsStyles.axaml");
+        Snapshot.AddPluginStyles(panel, "Controls/SharedStudioStyles.axaml", "Controls/BlindProblems/BlindProblemsStyles.axaml");
 
         var window = Snapshot.Show(panel, options.Int("width", 410), options.Int("height", 2600));
         Snapshot.Save(window, options, $"details_{number}");

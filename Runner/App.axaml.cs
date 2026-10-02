@@ -32,4 +32,39 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    private void AboutMenuItem_OnClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            var about = new AboutWindow();
+            about.OpenDocumentationAction = () =>
+            {
+                if (desktop.MainWindow is MainWindow mw && mw.StudioHostVm is { } host)
+                {
+                    host.NavigateToDocs();
+                }
+            };
+            about.ShowDialog(desktop.MainWindow);
+        }
+    }
+
+    private void SettingsMenuItem_OnClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow is MainWindow mw &&
+            mw.StudioHostVm is { } host)
+        {
+            host.NavigateToSettings();
+        }
+    }
+
+    private async void CheckForUpdatesMenuItem_OnClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            var updateDialog = new UpdateDialogWindow();
+            await updateDialog.ShowDialog(desktop.MainWindow);
+        }
+    }
 }

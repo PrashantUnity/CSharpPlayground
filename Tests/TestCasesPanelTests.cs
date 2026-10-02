@@ -1,13 +1,14 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The Test Cases panel: adding a case writes its Check line into the script, Generate brings in a Blind 75 problem's
@@ -74,9 +75,9 @@ public class TestCasesPanelTests : IDisposable
 
         studio.AddTestCaseCommand.Execute(null);
 
-        Assert.True(studio.IsAddingTestCase);
-        Assert.Equal(Blind75CatalogService.GetProblemByNumber(11)!.Tests[0].Call, studio.NewTestCaseCall);
-        Assert.StartsWith("Case ", studio.NewTestCaseName);
+        Assert.True((bool)studio.IsAddingTestCase);
+        Assert.Equal(Blind75CatalogService.GetProblemByNumber(11)!.Tests[0].Call, (string?)studio.NewTestCaseCall);
+        Assert.StartsWith((string?)"Case ", (string?)studio.NewTestCaseName);
     }
 
     [Fact]
@@ -86,9 +87,9 @@ public class TestCasesPanelTests : IDisposable
         Add(studio, "Two walls", "sol.MaxArea(new[] { 1, 1 })", "1");
         Add(studio, "Wrong on purpose", "sol.MaxArea(new[] { 1, 1 })", "2");
 
-        Assert.False(studio.IsAddingTestCase);
-        Assert.Contains("Check(\"Two walls\", sol.MaxArea(new[] { 1, 1 }), \"1\");", studio.Code);
-        Assert.True(studio.Code.IndexOf("Check(\"Two walls\"", StringComparison.Ordinal) > studio.Code.IndexOf("var sol = new Solution();", StringComparison.Ordinal));
+        Assert.False((bool)studio.IsAddingTestCase);
+        Assert.Contains((string)"Check(\"Two walls\", sol.MaxArea(new[] { 1, 1 }), \"1\");", (string?)studio.Code);
+        Assert.True((bool)(studio.Code.IndexOf("Check(\"Two walls\"", StringComparison.Ordinal) > studio.Code.IndexOf("var sol = new Solution();", StringComparison.Ordinal)));
 
         await studio.RunAllTestCasesCommand.ExecuteAsync(null);
 
@@ -108,19 +109,19 @@ public class TestCasesPanelTests : IDisposable
         int before = studio.TestCases.Count;
 
         Add(studio, "Example 1", "sol.MaxArea(new[] { 1, 1 })", "1");
-        Assert.Contains("already a case", studio.TestCaseFormError);
+        Assert.Contains((string)"already a case", (string?)studio.TestCaseFormError);
 
         studio.NewTestCaseName = "Fresh";
         studio.NewTestCaseCall = "  ";
         studio.ConfirmAddTestCaseCommand.Execute(null);
-        Assert.Contains("C# expression", studio.TestCaseFormError);
+        Assert.Contains((string)"C# expression", (string?)studio.TestCaseFormError);
 
         studio.NewTestCaseCall = "sol.MaxArea(new[] { 1, 1 })";
         studio.NewTestCaseExpected = "";
         studio.ConfirmAddTestCaseCommand.Execute(null);
-        Assert.Contains("answer you expect", studio.TestCaseFormError);
+        Assert.Contains((string)"answer you expect", (string?)studio.TestCaseFormError);
 
-        Assert.True(studio.IsAddingTestCase);
+        Assert.True((bool)studio.IsAddingTestCase);
         Assert.Equal(before, studio.TestCases.Count);
     }
 
@@ -136,15 +137,15 @@ public class TestCasesPanelTests : IDisposable
 
         var expected = problem.Tests.Concat(problem.ExtraTests).Select(t => t.Name).ToList();
         Assert.Equal(expected, studio.TestCases.Select(t => t.Name).ToList());
-        Assert.Equal(codeBefore, studio.Code); // the script already checks all of them
-        Assert.Contains("Added", studio.TestCasesStatus);
+        Assert.Equal(codeBefore, (string?)studio.Code); // the script already checks all of them
+        Assert.Contains((string)"Added", (string?)studio.TestCasesStatus);
 
         await studio.RunAllTestCasesCommand.ExecuteAsync(null);
         Assert.All(studio.TestCases, t => Assert.True(t.IsPassed, $"{t.Name}: {t.ActualOutput}"));
 
         studio.GenerateTestCasesCommand.Execute(null);
         Assert.Equal(expected.Count, studio.TestCases.Count);
-        Assert.Contains("already here", studio.TestCasesStatus);
+        Assert.Contains((string)"already here", (string?)studio.TestCasesStatus);
     }
 
     [Fact]
@@ -181,7 +182,7 @@ public class TestCasesPanelTests : IDisposable
         Assert.Empty(studio.TestCases); // no placeholder case that could only fail
 
         Add(studio, "Square of 7", "Square(7)", "49");
-        Assert.Contains("// ── Test cases", studio.Code);
+        Assert.Contains((string)"// ── Test cases", (string?)studio.Code);
 
         await studio.RunCodeCommand.ExecuteAsync(null);
 
@@ -220,8 +221,8 @@ public class TestCasesPanelTests : IDisposable
         await studio.RunAllTestCasesCommand.ExecuteAsync(null);
 
         Assert.True(studio.TestCases.Single().IsNotRun);
-        Assert.Contains("No case ran", studio.TestCasesStatus);
-        Assert.Contains("Problems", studio.TestCasesStatus);
+        Assert.Contains((string)"No case ran", (string?)studio.TestCasesStatus);
+        Assert.Contains((string)"Problems", (string?)studio.TestCasesStatus);
     }
 
     [Fact]
@@ -266,7 +267,7 @@ public class TestCasesPanelTests : IDisposable
         Assert.Equal("42", waiting.ActualOutput);
         Assert.False(waiting.IsRunning);
         Assert.True(other.IsNotRun); // the tab now showing has a case with the same name: it wasn't run
-        Assert.Equal("Another tab", studio.Script.Title);
+        Assert.Equal((string?)"Another tab", (string?)studio.Script.Title);
     }
 
     // ── The Check lines themselves ────────────────────────────────────────────

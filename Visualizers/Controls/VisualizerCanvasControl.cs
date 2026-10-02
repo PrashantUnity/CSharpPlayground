@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
 

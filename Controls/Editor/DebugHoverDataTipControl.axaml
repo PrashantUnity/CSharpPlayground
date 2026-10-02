@@ -1,0 +1,249 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Editor.DebugHoverDataTipControl">
+
+    <UserControl.Styles>
+        <Style Selector="Border.hover-node-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+        <Style Selector="Border.hover-node-row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
+        </Style>
+        <Style Selector="Button.hover-action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+            <Setter Property="Padding" Value="4,1" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.hover-action-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            BoxShadow="0 8 32 0 #80000000"
+            MinWidth="340"
+            MaxWidth="620"
+            MaxHeight="450"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- 1. Header Bar (Root variable / expression inspection) -->
+            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Left: Root Node (Chevron, Icon, Name, =, Type, Value) -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <!-- Root Expand Chevron -->
+                        <ToggleButton Name="RootExpandToggle"
+                                      Classes="m3-icon-btn"
+                                      Width="18" Height="18"
+                                      Padding="0"
+                                      ToolTip.Tip="Toggle members">
+                            <materialIcons:MaterialIcon Name="RootExpandIcon" Kind="ChevronDown" Width="13" Height="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </ToggleButton>
+
+                        <materialIcons:MaterialIcon Name="RootNodeIcon" Kind="Variable" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+
+                        <TextBlock Name="VariableNameText" Text="variable" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
+                        <TextBlock Text="=" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <TextBlock Name="VariableTypeText" Text="" FontSize="11" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" VerticalAlignment="Center" />
+                        <TextBlock Name="ValueSummaryText" Text="null" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Right: Quick Actions (Explore, View, +Watch, Copy, Close) -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <!-- Explore Table button for collections -->
+                        <Button Name="RootExploreButton"
+                                Classes="hover-action-btn"
+                                IsVisible="False"
+                                ToolTip.Tip="Explore in Collection View (Table grid)">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="Table" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Explore" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- View Text / JSON button for strings -->
+                        <Button Name="RootViewButton"
+                                Classes="hover-action-btn"
+                                IsVisible="False"
+                                ToolTip.Tip="View formatted text / JSON">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="EyeOutline" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="View" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Add to Watch button -->
+                        <Button Name="AddWatchButton"
+                                Classes="m3-tonal-btn"
+                                Height="22" MinHeight="0"
+                                Padding="7,0"
+                                CornerRadius="11"
+                                ToolTip.Tip="Pin expression to Watch expressions">
+                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="EyePlusOutline" Width="11" Height="11" Foreground="{DynamicResource M3OnSecondaryContainerBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="+ Watch" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Copy button -->
+                        <Button Name="CopyButton"
+                                Classes="m3-icon-btn"
+                                Width="22" Height="22"
+                                ToolTip.Tip="Copy value to clipboard">
+                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+
+                        <!-- Close button -->
+                        <Button Name="CloseButton"
+                                Classes="m3-icon-btn"
+                                Width="22" Height="22"
+                                ToolTip.Tip="Dismiss (Esc)">
+                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. Expandable Tree Hierarchy of Children -->
+            <Grid Grid.Row="1" Name="ChildrenContainer" RowDefinitions="Auto,*" Margin="6,3,6,4">
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="300">
+                    <ItemsControl Name="ChildrenItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:DebugVariableItem">
+                                <Border Classes="hover-node-row" Margin="0,1">
+                                    <StackPanel Orientation="Vertical">
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
+                                            <!-- Level 1 Expander toggle -->
+                                            <ToggleButton Grid.Column="0"
+                                                          IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                                          IsVisible="{Binding CanExpand}"
+                                                          Classes="m3-icon-btn"
+                                                          Width="18" Height="18"
+                                                          Padding="0" Margin="0,0,2,0">
+                                                <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="12" Height="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                            </ToggleButton>
+
+                                            <!-- Node Icon -->
+                                            <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+
+                                            <!-- Node Name -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="4,0" VerticalAlignment="Center" />
+
+                                            <!-- Node Type -->
+                                            <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="JetBrains Mono, monospace" Margin="0,0,4,0" VerticalAlignment="Center" />
+
+                                            <!-- Node Value -->
+                                            <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="260" VerticalAlignment="Center" />
+
+                                            <!-- Node Context Actions (Explore / View) -->
+                                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
+                                                <Button Classes="hover-action-btn"
+                                                        IsVisible="{Binding IsCollection}"
+                                                        Click="OnChildExploreClicked"
+                                                        Tag="{Binding}"
+                                                        ToolTip.Tip="Explore in Collection View (Table)">
+                                                    <TextBlock Text="Explore" FontWeight="SemiBold" />
+                                                </Button>
+                                                <Button Classes="hover-action-btn"
+                                                        IsVisible="{Binding IsTextOrStructured}"
+                                                        Click="OnChildViewClicked"
+                                                        Tag="{Binding}"
+                                                        ToolTip.Tip="View full text / JSON">
+                                                    <TextBlock Text="View" FontWeight="SemiBold" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Nested sub-children (Level 2) -->
+                                        <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}" Margin="16,2,0,1">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="models:DebugVariableItem">
+                                                    <Border Classes="hover-node-row" Margin="0,1">
+                                                        <StackPanel Orientation="Vertical">
+                                                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
+                                                                <ToggleButton Grid.Column="0"
+                                                                              IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                                                              IsVisible="{Binding CanExpand}"
+                                                                              Classes="m3-icon-btn"
+                                                                              Width="16" Height="16"
+                                                                              Padding="0" Margin="0,0,2,0">
+                                                                    <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                                                </ToggleButton>
+                                                                <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="JetBrains Mono, monospace" Margin="0,0,3,0" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center" />
+
+                                                                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
+                                                                    <Button Classes="hover-action-btn"
+                                                                            IsVisible="{Binding IsCollection}"
+                                                                            Click="OnChildExploreClicked"
+                                                                            Tag="{Binding}"
+                                                                            ToolTip.Tip="Explore in Collection View (Table)">
+                                                                        <TextBlock Text="Explore" FontWeight="SemiBold" />
+                                                                    </Button>
+                                                                    <Button Classes="hover-action-btn"
+                                                                            IsVisible="{Binding IsTextOrStructured}"
+                                                                            Click="OnChildViewClicked"
+                                                                            Tag="{Binding}"
+                                                                            ToolTip.Tip="View full text / JSON">
+                                                                        <TextBlock Text="View" FontWeight="SemiBold" />
+                                                                    </Button>
+                                                                </StackPanel>
+                                                            </Grid>
+
+                                                            <!-- Level 3 Nested Children -->
+                                                            <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}" Margin="14,2,0,1">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="models:DebugVariableItem">
+                                                                        <Border Classes="hover-node-row" Margin="0,1">
+                                                                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*">
+                                                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="11" Height="11" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="JetBrains Mono, monospace" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="2" Text="=" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="3" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="JetBrains Mono, monospace" Margin="0,0,3,0" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="4" Text="{Binding ValueDisplay}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, monospace" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
+                                                                            </Grid>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 3. Subtle Status / Hint Footer -->
+            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="8,3">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Live Debug Variable Inspector" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

@@ -190,6 +190,15 @@ module private Detail =
                     let tagProp = t.GetProperty("Tag")
                     let isSome = if isNull tagProp then not (isNull o) else (tagProp.GetValue(o) :?> int) = 1
                     if isSome then toJsonVal (valueProp.GetValue(o)) else "null"
+            elif Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(o)
+                let sb = StringBuilder("[")
+                let mutable first = true
+                for f in fields do
+                    if not first then sb.Append(",") |> ignore
+                    first <- false
+                    sb.Append(toJsonVal f) |> ignore
+                sb.Append("]").ToString()
             elif typeof<System.Collections.IEnumerable>.IsAssignableFrom(t) then
                 let items = (o :?> System.Collections.IEnumerable)
                 let sb = StringBuilder("[")
@@ -496,9 +505,39 @@ type Display private () =
     // 1. Line Chart
     static member LineChart(data: seq<'T>, ?title: string) : DisplayHandle =
         let titleStr = defaultArg title ""
-        let sb = StringBuilder("{\"kind\":\"line\",\"series\":[{\"y\":")
-        sb.Append(toJsonArray data) |> ignore
-        sb.Append("}]") |> ignore
+        let sb = StringBuilder("{\"kind\":\"line\",\"series\":[")
+        let mutable isTuple = false
+        let firstOpt = data |> Seq.tryHead
+        match firstOpt with
+        | Some firstItem ->
+            let t = (box firstItem).GetType()
+            if Microsoft.FSharp.Reflection.FSharpType.IsTuple(t) then
+                isTuple <- true
+        | None -> ()
+
+        if isTuple then
+            let xs = StringBuilder("[")
+            let ys = StringBuilder("[")
+            let mutable first = true
+            for pt in data do
+                if not first then
+                    xs.Append(",") |> ignore
+                    ys.Append(",") |> ignore
+                first <- false
+                let fields = Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields(box pt)
+                if fields.Length >= 2 then
+                    xs.Append(toJsonVal fields.[0]) |> ignore
+                    ys.Append(toJsonVal fields.[1]) |> ignore
+                elif fields.Length = 1 then
+                    ys.Append(toJsonVal fields.[0]) |> ignore
+            xs.Append("]") |> ignore
+            ys.Append("]") |> ignore
+            sb.Append(sprintf "{\"x\":%s,\"y\":%s}" (xs.ToString()) (ys.ToString())) |> ignore
+        else
+            sb.Append("{\"y\":") |> ignore
+            sb.Append(toJsonArray data) |> ignore
+            sb.Append("}") |> ignore
+        sb.Append("]") |> ignore
         if not (String.IsNullOrEmpty(titleStr)) then
             sb.Append(",\"title\":") |> ignore
             sb.Append(JsonSerializer.Serialize(titleStr)) |> ignore

@@ -1,10 +1,10 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// The Hub's STUDIO ENVIRONMENT card has a row per language that runs with an installed toolchain, saying what was found
@@ -44,7 +44,7 @@ public class HubToolchainStatusTests : IDisposable
 
         var row = Assert.Single(hub.ToolchainStatuses); // C# runs inside the studio: no row
         Assert.Equal("FakeLang", row.Title);
-        Assert.True(row.IsChecking);
+        Assert.True((bool)row.IsChecking);
         Assert.Equal(0, fake.FakeToolchain.ResolveCount);
     }
 
@@ -56,10 +56,10 @@ public class HubToolchainStatusTests : IDisposable
         await hub.RefreshToolchainStatusesAsync();
 
         var row = hub.ToolchainStatuses[0];
-        Assert.True(row.IsFound);
+        Assert.True((bool)row.IsFound);
         Assert.False(row.IsMissing);
-        Assert.Equal("FakeLang 1.2.3 · Test", row.Status);
-        Assert.Equal("/fake/bin/fakec", row.Detail);
+        Assert.Equal((string?)"FakeLang 1.2.3 · Test", (string?)row.Status);
+        Assert.Equal((string?)"/fake/bin/fakec", (string?)row.Detail);
     }
 
     [Fact]
@@ -75,8 +75,8 @@ public class HubToolchainStatusTests : IDisposable
         await hub.LookAgainForToolchainsCommand.ExecuteAsync(null);
 
         Assert.True(missing.IsMissing);
-        Assert.Equal("FakeLang not found: hover for how to install", missing.Status);
-        Assert.Contains("fakepkg install fakelang", missing.Detail);
-        Assert.True(row.IsFound);
+        Assert.Equal((string?)"FakeLang not found: hover for how to install", (string?)missing.Status);
+        Assert.Contains((string)"fakepkg install fakelang", (string?)missing.Detail);
+        Assert.True((bool)row.IsFound);
     }
 }

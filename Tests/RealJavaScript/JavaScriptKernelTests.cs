@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJavaScript;
+namespace CSharpEditorPlugin.Tests.RealJavaScript;
 
 /// <summary>The notebook's JavaScript kernel with real Node.js: state, output, errors, values, variables.</summary>
 [Collection(RealJavaScriptCollection.Name)]

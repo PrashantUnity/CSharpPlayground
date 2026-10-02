@@ -1,0 +1,311 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.EditorSettingsSectionControl"
+             x:DataType="settings:CSharpSettingsViewModel"
+             Background="Transparent">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- LEFT MAIN COLUMN: EDITOR PREFERENCES                      -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="0" Spacing="16">
+
+                <!-- 1. HERO HEADER CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8"
+                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="24" Height="24"
+                                                        Foreground="{DynamicResource DsPrimaryBrush}"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="Editor &amp; Formatting Preferences" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="AvaloniaEdit code canvas geometry, typography, indentation, and Roslyn compiler options" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="AvaloniaEdit Engine" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- 2. CANVAS TYPOGRAPHY & DISPLAY -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="FormatSize" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="CODE CANVAS &amp; TYPOGRAPHY" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Font Size -->
+                        <Grid ColumnDefinitions="*,130">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Editor Font Size" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Font size in device-independent pixels for AvaloniaEdit code canvas." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1" Value="{Binding FontSize, Mode=TwoWay}" Minimum="9" Maximum="28" Increment="0.5" FormatString="0.0" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Line Numbers -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Line Numbers" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Display sequential line numbers in the left margin gutter of the editor canvas." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLineNumbers, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Word Wrap -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Word Wrap" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Wrap lines that exceed the editor viewport width instead of horizontal scrolling." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding WordWrap, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Syntax Highlighting -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Syntax Highlighting" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Apply language-aware colour themes to keywords, strings, and identifiers. Disable for a plain-text experience." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableSyntaxHighlighting, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Auto Completion -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Auto Completion" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Show IntelliSense completion suggestions while typing. Disable to get more screen space and fewer interruptions." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAutoCompletion, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. INDENTATION & TABS -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="FormatAlignLeft" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="INDENTATION &amp; TABS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Tab Size -->
+                        <Grid ColumnDefinitions="*,130">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Tab Size" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Number of visual spaces each Tab character or indent level represents." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1" Value="{Binding TabSize, Mode=TwoWay}" Minimum="1" Maximum="16" Increment="1" FormatString="0" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Insert Spaces -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Insert Spaces" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Insert spaces when pressing the Tab key instead of a literal tab character." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ConvertTabsToSpaces, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. ROSLYN C# COMPILER OPTIONS -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="Microsoft" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="ROSLYN C# COMPILER OPTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Nullable Reference Checks -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Nullable Reference Types" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Enable nullable static analysis diagnostics (#nullable enable) in Roslyn compilations." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding NullableChecksEnabled, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Language Version -->
+                        <Grid ColumnDefinitions="*,140">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="C# Language Version" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Target C# compiler language specification (e.g. 13.0, preview)." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox Grid.Column="1" Text="{Binding LanguageVersion, Mode=TwoWay}"
+                                     FontFamily="Consolas,Menlo,monospace" FontSize="12"
+                                     HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- RIGHT COLUMN: LIVE CANVAS PREVIEW & CHEATSHEET            -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="1" Spacing="16">
+
+                <!-- 1. LIVE CANVAS PREVIEW CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="EyeOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="LIVE CANVAS PREVIEW" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Simulated Editor Preview -->
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" ClipToBounds="True">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <!-- Line Numbers Gutter -->
+                                <Border Grid.Column="0" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0" Padding="0,0,8,0" Margin="0,0,10,0" IsVisible="{Binding ShowLineNumbers}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="1" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="2" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="3" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="4" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="5" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="6" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="7" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Code Lines -->
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="using " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="System;" /></TextBlock>
+                                    <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsMutedBrush}" Text="// Live editor preview canvas" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="string " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg " /><Run Foreground="{DynamicResource DsMutedBrush}" Text="= " /><Run Foreground="#A5D6FF" Text="&quot;Hello, FryPDF&quot;" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=";" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Console" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="WriteLine" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
+                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Display" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="Dump" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
+                                    <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="Preview automatically updates when adjusting font size, line numbers, or indentation settings."
+                                   FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. QUICK SHORTCUTS CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="EDITOR SHORTCUTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                            <StackPanel Spacing="7">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Format Document" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Shift+Alt+F" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Hover Quick Info" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+K Ctrl+I" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Find &amp; Replace" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+F" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Zoom In / Out" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+= / Ctrl+-" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Reset Zoom (100%)" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Ctrl+0" FontSize="10.5" FontFamily="Consolas,Menlo,monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

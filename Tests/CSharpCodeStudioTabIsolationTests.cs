@@ -1,13 +1,11 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpCodeStudioTabIsolationTests : IDisposable
 {
@@ -62,28 +60,28 @@ public class CSharpCodeStudioTabIsolationTests : IDisposable
 
         // Execute in Tab 2
         await studio.RunCodeCommand.ExecuteAsync(null);
-        Assert.Contains("Output from Script 2", studio.ConsoleOutput);
+        Assert.Contains((string)"Output from Script 2", (string?)studio.ConsoleOutput);
 
         var tab2 = studio.OpenTabs.First(t => t.Id == doc2.Id);
-        Assert.Contains("Output from Script 2", tab2.ConsoleOutput);
+        Assert.Contains((string)"Output from Script 2", (string?)tab2.ConsoleOutput);
 
         // Switch back to Tab 1
         var tab1 = studio.OpenTabs.First(t => t.Id == doc1.Id);
         await studio.SwitchToTabAsync(tab1);
 
         // Tab 1's console output should NOT have Tab 2's output
-        Assert.DoesNotContain("Output from Script 2", studio.ConsoleOutput);
-        Assert.DoesNotContain("Output from Script 2", tab1.ConsoleOutput);
+        Assert.DoesNotContain((string)"Output from Script 2", (string?)studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"Output from Script 2", (string?)tab1.ConsoleOutput);
 
         // Execute in Tab 1
         await studio.RunCodeCommand.ExecuteAsync(null);
-        Assert.Contains("Output from Script 1", studio.ConsoleOutput);
-        Assert.Contains("Output from Script 1", tab1.ConsoleOutput);
+        Assert.Contains((string)"Output from Script 1", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"Output from Script 1", (string?)tab1.ConsoleOutput);
 
         // Switch back to Tab 2 and verify its console output was retained
         await studio.SwitchToTabAsync(tab2);
-        Assert.Contains("Output from Script 2", studio.ConsoleOutput);
-        Assert.DoesNotContain("Output from Script 1", studio.ConsoleOutput);
+        Assert.Contains((string)"Output from Script 2", (string?)studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"Output from Script 1", (string?)studio.ConsoleOutput);
     }
 
     [Fact]

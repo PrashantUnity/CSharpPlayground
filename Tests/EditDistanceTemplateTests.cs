@@ -1,12 +1,11 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Docs;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class EditDistanceTemplateTests
 {
@@ -89,7 +88,7 @@ public class EditDistanceTemplateTests
         Assert.Equal(CellType.Markdown, summaryCell.Type);
         Assert.DoesNotContain(@"\mathcal", summaryCell.Source);
 
-        var markdownView = new PdfEditorApp.Plugins.CSharpEditor.Controls.MarkdownView
+        var markdownView = new MarkdownView
         {
             Markdown = summaryCell.Source
         };

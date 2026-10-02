@@ -1,10 +1,9 @@
 using System.Collections.Concurrent;
 using System.Data;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// #!share with the C# kernel: C# values leave as JSON, and JSON arrives as the C# type that fits it best, declared or

@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpBlindProblemsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems.CSharpBlindProblemsViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 

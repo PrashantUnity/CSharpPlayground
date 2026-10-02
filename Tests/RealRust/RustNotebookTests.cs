@@ -1,13 +1,12 @@
 using System.Text;
 using System.Text.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealRust;
+namespace CSharpEditorPlugin.Tests.RealRust;
 
 /// <summary>Rust notebook cells built with the real Cargo and run: items kept between cells, shown values, sharing, diagnostics and stopping.</summary>
 [Collection(RealRustCollection.Name)]

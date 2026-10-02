@@ -1,10 +1,15 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Source files (main.py) in the Code Studio's Explorer and tabs.</summary>
 public class CodeStudioSourceFileTests : IDisposable
@@ -55,7 +60,7 @@ public class CodeStudioSourceFileTests : IDisposable
 
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "main.py");
 
-        Assert.True(item.IsSourceFile);
+        Assert.True((bool)item.IsSourceFile);
         Assert.Equal("LanguagePython", item.IconKind);
         Assert.Contains(All(studio.ExplorerRootItems), i => i.Name == "Notes.frycs" && !i.IsSourceFile);
     }
@@ -69,8 +74,8 @@ public class CodeStudioSourceFileTests : IDisposable
 
         await studio.SwitchToScriptAsync(item);
 
-        Assert.Equal("main.py", studio.Script.Title);
-        Assert.Equal("print('hi')\n", studio.Code);
+        Assert.Equal((string?)"main.py", (string?)studio.Script.Title);
+        Assert.Equal((string?)"print('hi')\n", (string?)studio.Code);
         Assert.Equal(LanguageIds.Python, studio.ActiveLanguage.Id);
         var tab = studio.OpenTabs.Single(t => t.IsActive);
         Assert.True(tab.HasLanguageIcon);
@@ -119,11 +124,11 @@ public class CodeStudioSourceFileTests : IDisposable
 
         await studio.NewFileOptions.First(o => o.LanguageId == LanguageIds.Python).Command.ExecuteAsync(folder);
 
-        Assert.StartsWith(Path.Combine(_storage.LibraryRootPath, "tools", "script_"), studio.Script.SourceFilePath);
+        Assert.StartsWith(Path.Combine(_storage.LibraryRootPath, "tools", "script_"), (string?)studio.Script.SourceFilePath);
         Assert.True(File.Exists(studio.Script.SourceFilePath));
-        Assert.Contains("print(", studio.Code);
+        Assert.Contains((string)"print(", (string?)studio.Code);
         var item = All(studio.ExplorerRootItems).Single(i => i.DocumentId == studio.Script.Id);
-        Assert.True(item.IsRenaming);
+        Assert.True((bool)item.IsRenaming);
     }
 
     [Fact]
@@ -142,8 +147,8 @@ public class CodeStudioSourceFileTests : IDisposable
         var moved = Path.Combine(_storage.LibraryRootPath, "final.py");
         Assert.True(File.Exists(moved));
         Assert.False(File.Exists(path));
-        Assert.Equal(Path.GetFullPath(moved), studio.Script.SourceFilePath);
-        Assert.Equal(studio.Script.Id, item.DocumentId);
+        Assert.Equal(Path.GetFullPath(moved), (string?)studio.Script.SourceFilePath);
+        Assert.Equal((string?)studio.Script.Id, (string?)item.DocumentId);
         Assert.Equal("final.py", studio.OpenTabs.Single(t => t.IsActive).Title);
     }
 
@@ -155,11 +160,11 @@ public class CodeStudioSourceFileTests : IDisposable
         var item = All(studio.ExplorerRootItems).Single(i => i.Name == "keep.py");
 
         item.RequestDelete();
-        Assert.True(item.IsConfirmingDelete);
+        Assert.True((bool)item.IsConfirmingDelete);
         Assert.True(File.Exists(path));
 
         item.CancelDelete();
-        Assert.False(item.IsConfirmingDelete);
+        Assert.False((bool)item.IsConfirmingDelete);
         Assert.True(File.Exists(path));
 
         item.RequestDelete();
@@ -180,7 +185,7 @@ public class CodeStudioSourceFileTests : IDisposable
 
         var copy = Path.Combine(_storage.LibraryRootPath, "tool_copy.py");
         Assert.Equal("print('v2')\n", File.ReadAllText(copy));
-        Assert.Equal("tool_copy.py", studio.Script.Title);
+        Assert.Equal((string?)"tool_copy.py", (string?)studio.Script.Title);
     }
 
     [Fact]
@@ -211,7 +216,7 @@ public class CodeStudioSourceFileTests : IDisposable
         await studio.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal("print('studio')\n", File.ReadAllText(path));
-        Assert.False(studio.OpenTabs.Single(t => t.IsActive).IsDirty);
+        Assert.False((bool)studio.OpenTabs.Single(t => t.IsActive).IsDirty);
     }
 
     [Fact]

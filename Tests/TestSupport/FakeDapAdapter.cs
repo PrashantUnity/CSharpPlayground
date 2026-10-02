@@ -1,9 +1,9 @@
 using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+using CSharpEditorPlugin.Tests.Debugging;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>Makes a pretend program behave as a debug adapter that talks over its standard streams (netcoredbg, lldb-dap).</summary>
 internal static class FakeDapAdapter

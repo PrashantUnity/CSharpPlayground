@@ -1,17 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// Charts, 3D plots and visualizers as outputs: drawn once, never built as controls on the script's thread, kept when a
@@ -49,8 +47,8 @@ public class VisualOutputRegressionTests
     {
         var (_, cell) = await RunNotebookCell(code);
 
-        Assert.False(cell.HasError, cell.OutputText);
-        Assert.False(cell.HasInteractiveControl);
+        Assert.False((bool)cell.HasError, cell.OutputText);
+        Assert.False((bool)cell.HasInteractiveControl);
         Assert.Equal(1, cell.AvailableOutputCount);
     }
 

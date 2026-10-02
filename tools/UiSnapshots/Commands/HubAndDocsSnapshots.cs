@@ -1,11 +1,13 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary>The Hub (workspace dashboard) and the Docs learning center.</summary>
 internal static class HubAndDocsSnapshots
@@ -110,6 +112,10 @@ internal static class HubAndDocsSnapshots
                 vm.SelectLanguageItem(target);
                 if (target.IsToolchainLanguage) Snapshot.Wait(vm.RefreshLanguageToolchainAsync(target));
             }
+        }
+        if (options.Flag("test-hello-world") && vm.SelectedLanguage is { } selected)
+        {
+            Snapshot.Wait(selected.TestHelloWorldAsync());
         }
         var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         string defaultName = options.Value("name") switch

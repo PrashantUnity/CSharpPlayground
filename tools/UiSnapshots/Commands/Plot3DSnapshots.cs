@@ -1,11 +1,7 @@
-using Avalonia;
-using Avalonia.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 /// <summary><c>plot3d [surface|scatter|graph|trajectory|voxel]</c>: renders off-screen interactive 3D visualizations.</summary>
 internal static class Plot3DSnapshots

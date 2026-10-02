@@ -1,17 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+namespace CSharpEditorPlugin.Tests.Debugging;
 
 public class DapClientTests
 {

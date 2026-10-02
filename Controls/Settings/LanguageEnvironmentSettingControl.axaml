@@ -1,0 +1,399 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:toolchains="using:PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:local="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.LanguageEnvironmentSettingControl"
+             x:DataType="settings:LanguageSettingItemViewModel"
+             Background="Transparent">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- LEFT MAIN COLUMN: CONFIGURATION, INTROSPECTION & ACTIONS   -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="0" Spacing="16">
+
+                <!-- 1. HERO HEADER CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Language Icon -->
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24" Foreground="{Binding AccentHex}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- Title, Version & Storage Pill -->
+                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" Height="20" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ActiveVersion}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
+                                </Border>
+                                <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" Height="20" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StorageBadge}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding RuntimeDescription}" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" />
+                        </StackPanel>
+
+                        <!-- Quick Test & Status Badge -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{Binding TestHelloWorldCommand}"
+                                    IsEnabled="{Binding !IsTestingHelloWorld}"
+                                    Classes="snippet-action-btn"
+                                    ToolTip.Tip="Run Hello World verification test with active runtime">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsGreenBrush}" />
+                                    <TextBlock Text="{Binding TestButtonLabel}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                    <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" />
+                                    <TextBlock Text="{Binding StatusBadge}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 2. MISSING TOOLCHAIN BANNER (ONE-CLICK DOWNLOAD & SETUP) -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="#F85149" BorderThickness="1" CornerRadius="10" Padding="18,16" IsVisible="{Binding IsMissing}">
+                    <StackPanel Spacing="12">
+                        <!-- Header with Status and Action Buttons -->
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="22" Height="22" Foreground="#F85149" />
+                                <TextBlock Text="{Binding MissingTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <!-- One-Click Download Installer -->
+                                <Button Click="OnDownloadInstallerClick" Classes="snippet-action-btn" IsVisible="{Binding HasDownloadUrl}"
+                                        ToolTip.Tip="Open official download website in default browser">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                        <TextBlock Text="Download Installer ↗" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- One-Click Quick Setup -->
+                                <Button Click="OnPrimaryQuickSetupClick" Classes="cs-toolbar-filled" IsVisible="{Binding HasQuickSetup}"
+                                        ToolTip.Tip="Run automated installation command">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="LightningBolt" Width="14" Height="14" />
+                                        <TextBlock Text="One-Click Setup" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Scan Again -->
+                                <Button Click="OnCheckAgainClick" Classes="snippet-action-btn" ToolTip.Tip="Scan again for installed compiler/runtime">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
+                                        <TextBlock Text="Check Again" FontSize="11" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="{Binding MissingSummary}" FontSize="12.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+
+                        <!-- Interactive Setup Step Cards with Copy and Run buttons -->
+                        <ItemsControl ItemsSource="{Binding SetupSteps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="settings:ToolchainSetupStepItem">
+                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,3">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                <SelectableTextBlock Text="{Binding Subtitle}" FontFamily="Consolas,Menlo,monospace" FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding HasSubtitle}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Button Click="OnCopyStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding CanCopy}" ToolTip.Tip="Copy to clipboard">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" /><TextBlock Text="{Binding CopyButtonLabel}" FontSize="10.5" /></StackPanel>
+                                                </Button>
+                                                <Button Click="OnRunStepCommandClick" Classes="snippet-action-btn" IsVisible="{Binding IsRunnable}" ToolTip.Tip="Execute setup command">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="12" Height="12" /><TextBlock Text="Install / Run" FontSize="10.5" /></StackPanel>
+                                                </Button>
+                                                <Button Click="OnOpenStepUrlClick" Classes="snippet-action-btn" IsVisible="{Binding HasUrl}" ToolTip.Tip="Open website link">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"><materialIcons:MaterialIcon Kind="OpenInNew" Width="12" Height="12" /><TextBlock Text="Open Link" FontSize="10.5" /></StackPanel>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. C# ROSLYN COMPILER OPTIONS (WHEN C#) -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16" IsVisible="{Binding IsCSharp}">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="Microsoft" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="C# EXECUTION ENGINE &amp; COMPILER OPTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Execution Engine Selection -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2" Margin="0,0,16,0">
+                                <TextBlock Text="Default Execution Engine" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="In-Process Roslyn (.NET 10) for instant compilation &amp; debugging; External .NET SDK for CLI projects." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <RadioButton GroupName="CSharpEngineGroup" Content="In-Process Roslyn" IsChecked="{Binding IsInProcessRoslynSelected, Mode=OneWay}" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="internal" FontSize="12" />
+                                <RadioButton GroupName="CSharpEngineGroup" Content="External .NET SDK" IsChecked="{Binding IsExternalDotNetSelected, Mode=OneWay}" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectCSharpEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="external" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Nullable Reference Checks -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Nullable Reference Types" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Enable nullable static analysis diagnostics (#nullable enable)." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ParentSettings.NullableChecksEnabled, FallbackValue=True, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Language Version -->
+                        <Grid ColumnDefinitions="*,140">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="C# Language Version" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Target C# compiler language specification (e.g. 13.0, preview)." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            </StackPanel>
+                            <TextBox Grid.Column="1" Text="{Binding ParentSettings.LanguageVersion, FallbackValue='13.0', Mode=TwoWay}" FontFamily="Consolas,Menlo,monospace" FontSize="12" HorizontalContentAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. INTERPRETER / TOOLCHAIN CONFIGURATION (LANGUAGES & .NET SDK) -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16" IsVisible="{Binding HasToolchainConfiguration}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="{Binding ToolchainSectionTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" />
+
+                        <!-- Mode Toggle -->
+                        <StackPanel Orientation="Horizontal" Spacing="24">
+                            <RadioButton GroupName="ToolchainMode" Content="{Binding ToolchainAutoDetectLabel}" IsChecked="{Binding IsAutoDetect, Mode=TwoWay}" FontSize="12.5" />
+                            <RadioButton GroupName="ToolchainMode" Content="Custom Executable Path" IsChecked="{Binding !IsAutoDetect, Mode=OneWay}" Click="OnCustomModeRadioClick" FontSize="12.5" />
+                        </StackPanel>
+
+                        <!-- Discovered Toolchains List -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsAutoDetect}">
+                            <TextBlock Text="{Binding ToolchainDetectedRuntimesLabel}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                                <ItemsControl ItemsSource="{Binding DiscoveredToolchains}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="toolchains:ToolchainInfo">
+                                            <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="12,9">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                        <TextBlock Text="{Binding Label}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                        <SelectableTextBlock Text="{Binding ExecutablePath}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" FontFamily="Consolas,Menlo,monospace" />
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding Source}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                    <Button Grid.Column="3" Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).SelectDiscoveredToolchainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Classes="snippet-action-btn" VerticalAlignment="Center" ToolTip.Tip="Use this runtime">
+                                                        <TextBlock Text="Select" FontSize="10.5" />
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Custom Path Input -->
+                        <StackPanel Spacing="8" IsVisible="{Binding !IsAutoDetect}">
+                            <TextBlock Text="{Binding ToolchainExecutablePathLabel}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding CustomPath, Mode=TwoWay}" PlaceholderText="{Binding ToolchainPlaceholderText}" FontFamily="Consolas,Menlo,monospace" FontSize="12" />
+                                <Button Grid.Column="1" Click="OnBrowseExecutableClick" Classes="cs-toolbar-outlined" Margin="8,0,0,0" ToolTip.Tip="Browse filesystem for executable">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" />
+                                        <TextBlock Text="Browse…" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. RUNTIME HEALTH & HELLO WORLD CHECK CARD -->
+                <local:RuntimeVerificationCardControl />
+
+                <!-- 6. ENVIRONMENT ACTIONS & SETUP CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16"
+                        IsVisible="{Binding AvailableActions.Count}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="ENVIRONMENT ACTIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" />
+                        <ItemsControl ItemsSource="{Binding AvailableActions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="toolchains:ToolchainAction">
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            <TextBlock Text="{Binding Description}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1"
+                                                Click="OnRunActionClick"
+                                                Classes="snippet-action-btn"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="15" Height="15" />
+                                                <TextBlock Text="Execute" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Real-Time Output Drawer -->
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12"
+                                IsVisible="{Binding ActionOutputLog.Length}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding ActionStatusMessage}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <SelectableTextBlock Text="{Binding ActionOutputLog}"
+                                                     FontFamily="Consolas,Menlo,monospace"
+                                                     FontSize="11" Foreground="{DynamicResource DsTextBrush}"
+                                                     TextWrapping="Wrap" MaxHeight="140" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 6. ENVIRONMENT INTROSPECTION TABLE -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="ENVIRONMENT INTROSPECTION &amp; RUNTIME PROPERTIES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" />
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                            <ItemsControl ItemsSource="{Binding EnvironmentDetails}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="settings:EnvironmentPropertyItem">
+                                        <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+                                            <Grid ColumnDefinitions="190,*">
+                                                <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                                <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11.5" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- RIGHT COLUMN: CAPABILITIES MATRIX, PROFILE & TIPS         -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="1" Spacing="16">
+
+                <!-- 1. STUDIO CAPABILITIES MATRIX -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="FeatureSearchOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="STUDIO CAPABILITIES MATRIX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                            <ItemsControl ItemsSource="{Binding CapabilityItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="settings:CapabilityItem">
+                                        <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="10,7">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <TextBlock Text="{Binding Description}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <Border Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0">
+                                                    <Panel>
+                                                        <materialIcons:MaterialIcon Kind="CheckCircle" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding IsSupported}" />
+                                                        <materialIcons:MaterialIcon Kind="MinusCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.5" IsVisible="{Binding !IsSupported}" />
+                                                    </Panel>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. FILE ASSOCIATIONS & STORAGE ARCHITECTURE -->
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="FileTreeOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="FILE ASSOCIATIONS &amp; STORAGE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="10">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Supported File Extensions" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <SelectableTextBlock Text="{Binding FileExtensionsDisplay}" FontFamily="Consolas,Menlo,monospace" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                </StackPanel>
+
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Persistence Architecture" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="{Binding StorageBadge}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <TextBlock Text="{Binding StorageExplanation}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Line Comment Prefix" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding CommentPrefix}" FontFamily="Consolas,Menlo,monospace" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

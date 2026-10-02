@@ -1,12 +1,12 @@
-using System;
-using System.IO;
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
 {
@@ -53,8 +53,8 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
         var studio = CreateStudio();
 
         Assert.Equal(0, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
-        Assert.Equal("EXPLORER", studio.SideBarTitle);
+        Assert.True((bool)studio.IsSideBarVisible);
+        Assert.Equal((string?)"EXPLORER", (string?)studio.SideBarTitle);
         Assert.True(studio.IsExplorerActive);
         Assert.False(studio.IsOutlineActive);
         Assert.False(studio.IsVariablesActive);
@@ -81,8 +81,8 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
         studio.SelectActivityBarItem(index);
 
         Assert.Equal(index, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
-        Assert.Equal(expectedTitle, studio.SideBarTitle);
+        Assert.True((bool)studio.IsSideBarVisible);
+        Assert.Equal(expectedTitle, (string?)studio.SideBarTitle);
         Assert.Equal(isExplorer, studio.IsExplorerActive);
         Assert.Equal(isOutline, studio.IsOutlineActive);
         Assert.Equal(isVariables, studio.IsVariablesActive);
@@ -93,17 +93,17 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
     public void SelectActivityBarItem_WhenAlreadyActive_TogglesVisibility()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
         Assert.Equal(0, studio.SelectedActivityBarIndex);
 
         // Clicking the already active tool toggles the side bar closed
         studio.SelectActivityBarItem(0);
-        Assert.False(studio.IsSideBarVisible);
-        Assert.Equal(0, studio.SideBarGridLength.Value);
+        Assert.False((bool)studio.IsSideBarVisible);
+        Assert.Equal<double>(0, studio.SideBarGridLength.Value);
 
         // Clicking it again re-opens the side bar
         studio.SelectActivityBarItem(0);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
         Assert.True(studio.SideBarGridLength.Value > 0);
     }
 
@@ -113,33 +113,33 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
         var studio = CreateStudio();
 
         // XAML passes string command parameters like "1", "2", "3"
-        Assert.True(studio.SelectActivityBarItemCommand.CanExecute("1"));
+        Assert.True((bool)studio.SelectActivityBarItemCommand.CanExecute("1"));
         studio.SelectActivityBarItemCommand.Execute("1");
 
         Assert.Equal(1, studio.SelectedActivityBarIndex);
         Assert.True(studio.IsOutlineActive);
-        Assert.Equal("OUTLINE", studio.SideBarTitle);
+        Assert.Equal((string?)"OUTLINE", (string?)studio.SideBarTitle);
 
-        Assert.True(studio.SelectActivityBarItemCommand.CanExecute("2"));
+        Assert.True((bool)studio.SelectActivityBarItemCommand.CanExecute("2"));
         studio.SelectActivityBarItemCommand.Execute("2");
 
         Assert.Equal(2, studio.SelectedActivityBarIndex);
         Assert.True(studio.IsVariablesActive);
-        Assert.Equal("LIVE VARIABLES", studio.SideBarTitle);
+        Assert.Equal((string?)"LIVE VARIABLES", (string?)studio.SideBarTitle);
     }
 
     [Fact]
     public void ToggleSideBar_TogglesVisibilityAndGridLength()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
 
         studio.ToggleSideBar();
-        Assert.False(studio.IsSideBarVisible);
-        Assert.Equal(0, studio.SideBarGridLength.Value);
+        Assert.False((bool)studio.IsSideBarVisible);
+        Assert.Equal<double>(0, studio.SideBarGridLength.Value);
 
         studio.ToggleSideBar();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
         Assert.True(studio.SideBarGridLength.Value > 0);
     }
 
@@ -152,17 +152,17 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
         studio.ToggleOutline();
         Assert.Equal(1, studio.SelectedActivityBarIndex);
         Assert.True(studio.IsOutlineActive);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
 
         // Toggle again collapses
         studio.ToggleOutline();
-        Assert.False(studio.IsSideBarVisible);
+        Assert.False((bool)studio.IsSideBarVisible);
 
         // Toggle Variable Inspector delegates to Activity Bar index 2
         studio.ToggleVariableInspector();
         Assert.Equal(2, studio.SelectedActivityBarIndex);
         Assert.True(studio.IsVariablesActive);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
         var tab = studio.ActiveTab!;
         tab.AddCodeCell();
         tab.AddCodeCell();
-        var targetCell = tab.Cells.Last();
+        var targetCell = Enumerable.Last<NotebookCellViewModel>(tab.Cells);
 
         NotebookCellViewModel? scrolledCell = null;
         studio.RequestScrollToCell += cell => scrolledCell = cell;
@@ -197,7 +197,7 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
 
         Assert.Equal(initialCount + 1, tab.Cells.Count);
         Assert.Equal(initialCell, tab.Cells[0]);
-        Assert.True(tab.Cells[1].IsCodeCell);
+        Assert.True((bool)tab.Cells[1].IsCodeCell);
         Assert.Same(tab.Cells[1], tab.ActiveCell);
     }
 
@@ -215,7 +215,7 @@ public class CSharpNotebookStudioVsCodeLayoutTests : IDisposable
 
         Assert.Equal(initialCount + 1, tab.Cells.Count);
         Assert.Equal(initialCell, tab.Cells[0]);
-        Assert.True(tab.Cells[1].IsMarkdownCell);
+        Assert.True((bool)tab.Cells[1].IsMarkdownCell);
         Assert.Same(tab.Cells[1], tab.ActiveCell);
     }
 

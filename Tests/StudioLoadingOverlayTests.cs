@@ -1,13 +1,18 @@
-using System;
-using Avalonia.Controls;
 using Material.Icons;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpManagerViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class StudioLoadingOverlayTests
 {
@@ -59,16 +64,16 @@ public class StudioLoadingOverlayTests
     {
         var host = new CSharpStudioHostViewModel(blindProgress: new LocalBlindProgressService());
         Assert.IsAssignableFrom<IStudioLoadingState>(host);
-        Assert.False(host.IsLoading);
+        Assert.False((bool)host.IsLoading);
 
         using (host.BeginLoading("Opening Studio...", "Roslyn"))
         {
-            Assert.True(host.IsLoading);
-            Assert.Equal("Opening Studio...", host.LoadingTitle);
-            Assert.Equal("Roslyn", host.LoadingSubtitle);
+            Assert.True((bool)host.IsLoading);
+            Assert.Equal((string?)"Opening Studio...", (string?)host.LoadingTitle);
+            Assert.Equal((string?)"Roslyn", (string?)host.LoadingSubtitle);
         }
 
-        Assert.False(host.IsLoading);
+        Assert.False((bool)host.IsLoading);
     }
 
     [Fact]
@@ -85,12 +90,12 @@ public class StudioLoadingOverlayTests
 
         using (manager.BeginLoading("Opening Project...", "Workspace1"))
         {
-            Assert.True(manager.IsLoading);
-            Assert.Equal("Opening Project...", manager.LoadingTitle);
-            Assert.Equal("Workspace1", manager.LoadingSubtitle);
+            Assert.True((bool)manager.IsLoading);
+            Assert.Equal((string?)"Opening Project...", (string?)manager.LoadingTitle);
+            Assert.Equal((string?)"Workspace1", (string?)manager.LoadingSubtitle);
         }
 
-        Assert.False(manager.IsLoading);
+        Assert.False((bool)manager.IsLoading);
     }
 
     [Fact]
@@ -152,7 +157,7 @@ public class StudioLoadingOverlayTests
 
             Assert.True(wasLoadingDuringOpen, "NotebookStudio should set IsLoading=true during OpenDocumentAsync");
             Assert.Equal("Opening File...", capturedTitle);
-            Assert.False(studio.IsLoading, "IsLoading should be false after OpenDocumentAsync completes");
+            Assert.False((bool)studio.IsLoading, "IsLoading should be false after OpenDocumentAsync completes");
         }
         finally
         {
@@ -208,7 +213,7 @@ public class StudioLoadingOverlayTests
 
             Assert.True(wasLoadingDuringSwitch, "CodeStudio should set IsLoading=true during SwitchToScriptAsync");
             Assert.Equal("Loading File...", capturedTitle);
-            Assert.False(studio.IsLoading, "IsLoading should be false after SwitchToScriptAsync completes");
+            Assert.False((bool)studio.IsLoading, "IsLoading should be false after SwitchToScriptAsync completes");
         }
         finally
         {

@@ -14,11 +14,18 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation.CSharp;
 using AvaloniaEdit.Search;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
+using StudioTabItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.StudioTabItemViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -52,6 +59,8 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     // C# completion and hover apply. A language with editor help of its own attaches it here.
     private ILanguageDefinition? _editorLanguage;
     private IDisposable? _languageAssistant;
+
+    public AvaloniaEdit.TextEditor? GetEditor() => _editor;
 
     public CSharpCodeStudioView()
     {

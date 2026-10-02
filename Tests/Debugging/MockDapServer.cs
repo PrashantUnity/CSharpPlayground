@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+namespace CSharpEditorPlugin.Tests.Debugging;
 
 /// <summary>A pretend debug adapter on the other end of a <see cref="DapClient"/>: it records the requests it gets and answers as each test says.</summary>
 internal sealed class MockDapServer : IAsyncDisposable

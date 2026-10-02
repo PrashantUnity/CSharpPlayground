@@ -7,6 +7,7 @@
              xmlns:serverControls="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Server"
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:server="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Server"
+             xmlns:server1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models.Server"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="900"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.Server.FryServerStudioView"
              x:DataType="vm:FryServerStudioViewModel"
@@ -395,7 +396,7 @@
                                          Classes="server-traffic-list"
                                          Background="Transparent">
                                     <ListBox.ItemTemplate>
-                                        <DataTemplate DataType="models:FryServerTrafficLogItem">
+                                        <DataTemplate DataType="server1:FryServerTrafficLogItem">
                                             <Border BorderBrush="{DynamicResource DsBorderBrush}"
                                                     BorderThickness="0,0,0,1"
                                                     Padding="4,5">
@@ -883,7 +884,7 @@
                                          BorderThickness="0"
                                          Padding="4,2">
                                     <ListBox.ItemTemplate>
-                                        <DataTemplate DataType="models:FryServerTrafficLogItem">
+                                        <DataTemplate DataType="server1:FryServerTrafficLogItem">
                                             <Grid ColumnDefinitions="75,60,*,70,75,140" Margin="4,2">
                                                 <!-- Timestamp -->
                                                 <TextBlock Grid.Column="0"

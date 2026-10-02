@@ -1,6 +1,4 @@
-using System.IO;
-
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>Files checked into the repository, found from wherever the tests run.</summary>
 internal static class RepositoryPaths

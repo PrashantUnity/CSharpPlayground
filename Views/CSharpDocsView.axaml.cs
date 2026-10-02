@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CSharpDocsViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 

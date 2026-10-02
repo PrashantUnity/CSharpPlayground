@@ -1,12 +1,11 @@
 using System.Collections.Concurrent;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
+namespace CSharpEditorPlugin.Tests.RealPython;
 
 /// <summary>.py files run with the real Python: output, exit code, tracebacks, input and Stop.</summary>
 [Collection(RealPythonCollection.Name)]

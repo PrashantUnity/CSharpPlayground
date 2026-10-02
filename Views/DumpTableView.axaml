@@ -21,14 +21,15 @@
                     BorderThickness="0,0,0,1"
                     CornerRadius="5,5,0,0"
                     Padding="10,6">
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <!-- Collapse Toggle Button & Type Title -->
                     <Button Grid.Column="0"
                             Command="{Binding ToggleCollapseCommand}"
                             Background="Transparent"
                             BorderThickness="0"
                             Padding="0"
-                            Cursor="Hand">
+                            Cursor="Hand"
+                            ToolTip.Tip="Toggle collapse table">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CollapseIcon}"
                                        FontSize="11" FontWeight="Bold"
@@ -46,8 +47,52 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- Spacer -->
+                    <Panel Grid.Column="1" />
+
+                    <!-- Live Filter / Search Input -->
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource M3SurfaceContainerLowestBrush}"
+                            BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Height="24"
+                            Margin="8,0"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="Filter table rows in real-time">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <materialIcons:MaterialIcon Grid.Column="0"
+                                                        Kind="Magnify"
+                                                        Width="13" Height="13"
+                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                                                        Margin="6,0,2,0"
+                                                        VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding FilterText, Mode=TwoWay}"
+                                     PlaceholderText="Filter rows..."
+                                     FontSize="11"
+                                     Width="130"
+                                     Height="22"
+                                     Padding="2,1"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     VerticalContentAlignment="Center" />
+                            <Button Grid.Column="2"
+                                    Command="{Binding ClearFilterCommand}"
+                                    IsVisible="{Binding FilterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="2"
+                                    Margin="0,0,4,0"
+                                    Cursor="Hand"
+                                    ToolTip.Tip="Clear filter">
+                                <materialIcons:MaterialIcon Kind="Close" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
                     <!-- Actions Menu (•••) -->
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="3"
                             Width="28" Height="22"
                             Background="Transparent"
                             BorderThickness="0"
@@ -72,6 +117,19 @@
                                           Command="{Binding CopyJsonCommand}">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="CodeJson" Width="16" Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Copy as Markdown Table"
+                                          Command="{Binding CopyMarkdownCommand}">
+                                    <MenuItem.Icon>
+                                        <materialIcons:MaterialIcon Kind="LanguageMarkdown" Width="16" Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem Header="Reset Filters &amp; Sorting"
+                                          Command="{Binding ResetAllCommand}">
+                                    <MenuItem.Icon>
+                                        <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                             </MenuFlyout>

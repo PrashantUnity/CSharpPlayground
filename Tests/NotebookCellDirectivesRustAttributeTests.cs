@@ -2,7 +2,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Rust's <c>#![allow(unused)]</c> starts with <c>#!</c> but is code, not one of the notebook's <c>#!</c> directives.</summary>
 public class NotebookCellDirectivesRustAttributeTests

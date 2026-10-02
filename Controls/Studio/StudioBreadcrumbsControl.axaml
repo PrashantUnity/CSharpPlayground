@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="24"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioBreadcrumbsControl"
+             x:CompileBindings="False">
+
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource DsBgBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="14,2">
+        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="scripts" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+            <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding RuntimeLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="6,0,0,0" IsVisible="{Binding SupportsExecutionModes}">
+                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+            </Border>
+        </StackPanel>
+    </Border>
+</UserControl>

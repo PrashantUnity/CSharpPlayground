@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis.CSharp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 

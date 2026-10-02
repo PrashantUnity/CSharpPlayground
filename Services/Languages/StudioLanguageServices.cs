@@ -1,4 +1,6 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
@@ -8,6 +10,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages;

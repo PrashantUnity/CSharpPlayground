@@ -1,8 +1,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class SqlPackageManagerTests
 {

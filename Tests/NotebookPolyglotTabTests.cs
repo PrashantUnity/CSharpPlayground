@@ -1,12 +1,15 @@
 using System.Text.Json;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A notebook of C# and another language, as in Polyglot Notebooks: each cell runs in its language's kernel, with the
@@ -52,10 +55,10 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunAllCellsAsync();
 
-        Assert.Contains("42", tab.Cells[0].OutputText);
-        Assert.Equal("hello\n", tab.Cells[1].OutputText);
+        Assert.Contains((string)"42", (string?)tab.Cells[0].OutputText);
+        Assert.Equal((string?)"hello\n", (string?)tab.Cells[1].OutputText);
         Assert.Equal(new[] { "print hello" }, OnlyKernel(fake).Executed);
-        Assert.Equal(".NET (C#) · FakeLang 1.2.3", tab.KernelName);
+        Assert.Equal((string?)".NET (C#) · FakeLang 1.2.3", (string?)tab.KernelName);
         Assert.Equal(_baseDir, OnlyKernel(fake).Context.WorkingDirectory());
     }
 
@@ -67,7 +70,7 @@ public class NotebookPolyglotTabTests : IDisposable
         await tab.RunSingleCellAsync(tab.Cells[0]);
 
         Assert.Empty(fake.Kernels.Created);
-        Assert.Equal(".NET (C#) · FakeLang", tab.KernelName); // the language's name until its kernel says more
+        Assert.Equal((string?)".NET (C#) · FakeLang", (string?)tab.KernelName); // the language's name until its kernel says more
     }
 
     [Fact]
@@ -81,7 +84,7 @@ public class NotebookPolyglotTabTests : IDisposable
         Assert.Equal(FakeLanguage.LanguageId, cell.EffectiveLanguage);
         Assert.Equal("FK", cell.LanguageTag);
         Assert.Equal(new[] { "\nprint hi" }, OnlyKernel(fake).Executed); // line numbers still match the editor
-        Assert.Equal("hi\n", cell.OutputText);
+        Assert.Equal((string?)"hi\n", (string?)cell.OutputText);
     }
 
     [Fact]
@@ -93,9 +96,9 @@ public class NotebookPolyglotTabTests : IDisposable
         await tab.RunSingleCellAsync(cell);
 
         Assert.Equal(new[] { "install left-pad" }, fake.FakePackages.Ran);
-        Assert.Contains("fakepkg install left-pad: done", cell.OutputText);
-        Assert.EndsWith("ok\n", cell.OutputText);
-        Assert.False(cell.HasError);
+        Assert.Contains((string)"fakepkg install left-pad: done", (string?)cell.OutputText);
+        Assert.EndsWith((string?)"ok\n", (string?)cell.OutputText);
+        Assert.False((bool)cell.HasError);
     }
 
     [Fact]
@@ -106,8 +109,8 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunSingleCellAsync(cell);
 
-        Assert.True(cell.HasError);
-        Assert.Contains("\"#!wat\" isn't a directive", cell.OutputText);
+        Assert.True((bool)cell.HasError);
+        Assert.Contains((string)"\"#!wat\" isn't a directive", (string?)cell.OutputText);
         Assert.Empty(fake.Kernels.Created.SelectMany(k => k.Executed));
     }
 
@@ -126,10 +129,10 @@ public class NotebookPolyglotTabTests : IDisposable
         await tab.RunSingleCellAsync(tab.Cells[2]);
         await tab.RunSingleCellAsync(tab.Cells[3]);
 
-        Assert.Contains("No FakeLang cell has run yet", beforeFakeRan);
-        Assert.Contains("no notebook language called \"cobol\"", tab.Cells[2].OutputText);
-        Assert.Contains("already a FakeLang value", tab.Cells[3].OutputText);
-        Assert.All(new[] { tab.Cells[0], tab.Cells[2], tab.Cells[3] }, c => Assert.True(c.HasError));
+        Assert.Contains((string)"No FakeLang cell has run yet", (string?)beforeFakeRan);
+        Assert.Contains((string)"no notebook language called \"cobol\"", (string?)tab.Cells[2].OutputText);
+        Assert.Contains((string)"already a FakeLang value", (string?)tab.Cells[3].OutputText);
+        Assert.All(new[] { tab.Cells[0], tab.Cells[2], tab.Cells[3] }, c => Assert.True((bool)c.HasError));
     }
 
     [Fact]
@@ -143,9 +146,9 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunAllCellsAsync();
 
-        Assert.All(tab.Cells, c => Assert.False(c.HasError, c.OutputText));
-        Assert.Equal("[3,1,4]\n", tab.Cells[1].OutputText);
-        Assert.Contains("16", tab.Cells[3].OutputText);
+        Assert.All(tab.Cells, c => Assert.False((bool)c.HasError, c.OutputText));
+        Assert.Equal((string?)"[3,1,4]\n", (string?)tab.Cells[1].OutputText);
+        Assert.Contains((string)"16", (string?)tab.Cells[3].OutputText);
     }
 
     [Fact]
@@ -155,9 +158,9 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunAllCellsAsync();
 
-        Assert.True(tab.Cells[1].HasError);
-        Assert.Contains("'twice' is a function", tab.Cells[1].OutputText);
-        Assert.DoesNotContain("never", tab.Cells[1].OutputText);
+        Assert.True((bool)tab.Cells[1].HasError);
+        Assert.Contains((string)"'twice' is a function", (string?)tab.Cells[1].OutputText);
+        Assert.DoesNotContain((string)"never", (string?)tab.Cells[1].OutputText);
     }
 
     [Fact]
@@ -168,8 +171,8 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunSingleCellAsync(cell);
 
-        Assert.True(cell.HasMissingVariableError);
-        Assert.Equal("total", cell.MissingVariableName);
+        Assert.True((bool)cell.HasMissingVariableError);
+        Assert.Equal((string?)"total", (string?)cell.MissingVariableName);
     }
 
     [Fact]
@@ -180,15 +183,15 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunSingleCellAsync(cell);
         Assert.True(cell.HasMissingDependency);
-        Assert.Equal("fake-widgets", cell.MissingDependency);
+        Assert.Equal((string?)"fake-widgets", (string?)cell.MissingDependency);
         Assert.Equal("Install fake-widgets", cell.InstallMissingDependencyLabel);
 
         await cell.InstallMissingDependencyCommand.ExecuteAsync(null);
 
         Assert.Equal(new[] { "install fake-widgets" }, fake.FakePackages.Ran);
-        Assert.False(cell.HasError);
+        Assert.False((bool)cell.HasError);
         Assert.False(cell.HasMissingDependency);
-        Assert.Equal("ready\n", cell.OutputText);
+        Assert.Equal((string?)"ready\n", (string?)cell.OutputText);
     }
 
     [Fact]
@@ -198,14 +201,14 @@ public class NotebookPolyglotTabTests : IDisposable
         var cell = tab.Cells[0];
 
         var run = tab.RunSingleCellAsync(cell);
-        Assert.True(cell.IsAwaitingInput);
-        Assert.Equal("Name?", cell.InputPrompt);
+        Assert.True((bool)cell.IsAwaitingInput);
+        Assert.Equal((string?)"Name?", (string?)cell.InputPrompt);
         cell.InputText = "Ada";
         cell.SubmitInput();
         await run.WaitAsync(TimeSpan.FromSeconds(10));
 
-        Assert.False(cell.IsAwaitingInput);
-        Assert.Equal("answer: Ada\n", cell.OutputText);
+        Assert.False((bool)cell.IsAwaitingInput);
+        Assert.Equal((string?)"answer: Ada\n", (string?)cell.OutputText);
     }
 
     [Fact]
@@ -218,8 +221,8 @@ public class NotebookPolyglotTabTests : IDisposable
         tab.InterruptExecution();
         await run.WaitAsync(TimeSpan.FromSeconds(10));
 
-        Assert.False(cell.IsAwaitingInput);
-        Assert.Contains("answer: <eof>", cell.OutputText);
+        Assert.False((bool)cell.IsAwaitingInput);
+        Assert.Contains((string)"answer: <eof>", (string?)cell.OutputText);
     }
 
     [Fact]
@@ -280,7 +283,7 @@ public class NotebookPolyglotTabTests : IDisposable
         cell.LanguageChoices.Single(c => c.LanguageId == FakeLanguage.LanguageId).Command.Execute(null);
         Assert.Equal(FakeLanguage.LanguageId, cell.Language);
         Assert.Equal("FK", cell.LanguageTag);
-        Assert.True(tab.IsModified);
+        Assert.True((bool)tab.IsModified);
 
         cell.SetLanguage(LanguageIds.CSharp);
         Assert.Null(cell.Language); // the notebook's default needs no language of its own
@@ -297,9 +300,9 @@ public class NotebookPolyglotTabTests : IDisposable
         var csharpCell = tab.Cells[1];
 
         Assert.Equal(FakeLanguage.LanguageId, fakeCell.Language);
-        Assert.Equal("-- FakeLang Code Block\n", fakeCell.Source);
+        Assert.Equal((string?)"-- FakeLang Code Block\n", (string?)fakeCell.Source);
         Assert.Null(csharpCell.Language);
-        Assert.Equal("// C# Code Block\n", csharpCell.Source);
+        Assert.Equal((string?)"// C# Code Block\n", (string?)csharpCell.Source);
     }
 
     [Fact]
@@ -309,13 +312,13 @@ public class NotebookPolyglotTabTests : IDisposable
 
         tab.SetDefaultLanguage(FakeLanguage.LanguageId);
 
-        Assert.Equal(FakeLanguage.LanguageId, tab.Notebook.Kernel);
+        Assert.Equal((string?)FakeLanguage.LanguageId, (string?)tab.Notebook.Kernel);
         Assert.Equal(LanguageIds.CSharp, tab.Cells[0].Language);
         Assert.Equal(LanguageIds.CSharp, tab.Cells[0].EffectiveLanguage);
         Assert.Null(tab.Cells[1].Language);
         Assert.Equal(FakeLanguage.LanguageId, tab.Cells[1].EffectiveLanguage);
         Assert.Contains(tab.DefaultLanguageChoices, c => c is { LanguageId: FakeLanguage.LanguageId, IsSelected: true });
-        Assert.StartsWith("FakeLang", tab.KernelName);
+        Assert.StartsWith((string?)"FakeLang", (string?)tab.KernelName);
     }
 
     [Fact]
@@ -339,8 +342,8 @@ public class NotebookPolyglotTabTests : IDisposable
 
         await tab.RunSingleCellAsync(cell);
 
-        Assert.True(cell.HasError);
-        Assert.Contains("written in \"cobol\"", cell.OutputText);
+        Assert.True((bool)cell.HasError);
+        Assert.Contains((string)"written in \"cobol\"", (string?)cell.OutputText);
     }
 
     [Fact]

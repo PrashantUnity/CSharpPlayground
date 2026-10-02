@@ -1,14 +1,11 @@
-using System.Diagnostics;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using Xunit;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealJava;
+namespace CSharpEditorPlugin.Tests.RealJava;
 
 /// <summary>A notebook of C# and Java cells with real Java: each runs in its own kernel, from the notebook's UI.</summary>
 [Collection(RealJavaCollection.Name)]
@@ -68,11 +65,11 @@ public class JavaNotebookTests : IDisposable
 
         await tab.RunAllCellsAsync().WaitAsync(Patience);
 
-        Assert.All(tab.Cells, c => Assert.False(c.HasError, c.OutputText));
-        Assert.Contains("2", tab.Cells[0].OutputText);
-        Assert.Equal("42\n", tab.Cells[1].OutputText);
-        Assert.Contains("1", tab.Cells[2].OutputText); // C#'s x, not Java's
-        Assert.Equal("Java: 40\n", tab.Cells[3].OutputText);
+        Assert.All(tab.Cells, c => Assert.False((bool)c.HasError, c.OutputText));
+        Assert.Contains((string)"2", (string?)tab.Cells[0].OutputText);
+        Assert.Equal((string?)"42\n", (string?)tab.Cells[1].OutputText);
+        Assert.Contains((string)"1", (string?)tab.Cells[2].OutputText); // C#'s x, not Java's
+        Assert.Equal((string?)"Java: 40\n", (string?)tab.Cells[3].OutputText);
         Assert.Contains(tab.Variables, v => v is { Name: "x", Kernel: "Java", ValueDisplay: "40" });
     }
 
@@ -95,8 +92,8 @@ public class JavaNotebookTests : IDisposable
 
         await tab.RunAllCellsAsync().WaitAsync(Patience);
 
-        Assert.All(tab.Cells, c => Assert.False(c.HasError, c.OutputText));
-        Assert.Equal("8\n", tab.Cells[1].OutputText);
-        Assert.Contains("80", tab.Cells[2].OutputText);
+        Assert.All(tab.Cells, c => Assert.False((bool)c.HasError, c.OutputText));
+        Assert.Equal((string?)"8\n", (string?)tab.Cells[1].OutputText);
+        Assert.Contains((string)"80", (string?)tab.Cells[2].OutputText);
     }
 }

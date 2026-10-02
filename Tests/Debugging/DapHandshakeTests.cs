@@ -4,7 +4,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Dap;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Debugging;
+namespace CSharpEditorPlugin.Tests.Debugging;
 
 /// <summary>
 /// The requests that start a debug session, in the order each adapter needs. lldb-dap (C++ and Rust) follows the DAP

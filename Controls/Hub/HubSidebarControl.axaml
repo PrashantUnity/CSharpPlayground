@@ -1,0 +1,322 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
+             mc:Ignorable="d"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubSidebarControl"
+             x:DataType="hub:CSharpManagerViewModel">
+
+            <Border Grid.Column="0"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="0,0,1,0"
+                    ZIndex="20">
+                <Grid RowDefinitions="64,*,Auto">
+
+                    <!-- Sidebar Header: Brand Logo & Title -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="11">
+                            <!-- Official Brand Logo Container (Circular) -->
+                            <Border Width="34" Height="34" CornerRadius="17"
+                                    Background="#FFFFFF"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1"
+                                    ClipToBounds="True">
+                                <Image Source="avares://CSharpEditorPlugin/Assets/app-logo.png"
+                                       Width="32" Height="32"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+                            </Border>
+
+                            <!-- Brand Identity -->
+                            <StackPanel VerticalAlignment="Center" Spacing="1">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="5">
+                                    <TextBlock Text="C#" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Code Studio" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                </StackPanel>
+                                <TextBlock Text="FrySharp • .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Sidebar Main Nav Items -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="2" Margin="10,12,10,16">
+
+                            <!-- MENU Section Label -->
+                            <TextBlock Text="MENU"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       LetterSpacing="1.2"
+                                       Foreground="{DynamicResource DsMutedBrush}"
+                                       Margin="10,4,10,8" />
+
+                            <!-- Home / Workspace Overview -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="All"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsWorkspaceAllNavActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavHomeBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="Home" Width="16" Height="16" Foreground="{DynamicResource NavHomeFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Home" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- All Projects -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="All"
+                                    Classes="nexus-nav-item">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavProjectsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="16" Height="16" Foreground="{DynamicResource NavProjectsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="All Projects" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Jupyter / C# Notebooks -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Notebooks"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsNotebooksNavActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavNotebooksBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="NotebookOutline" Width="16" Height="16" Foreground="{DynamicResource NavNotebooksFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Notebooks" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavNotebooksBgBrush}" BorderBrush="{DynamicResource NavNotebooksFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding TotalNotebooks}" Foreground="{DynamicResource NavNotebooksFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- LINQ / C# Scripts -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Scripts"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsScriptsNavActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavScriptsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource NavScriptsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="C# Scripts" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavScriptsBgBrush}" BorderBrush="{DynamicResource NavScriptsFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding TotalScripts}" Foreground="{DynamicResource NavScriptsFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- API Servers (.fryserver) -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Servers"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsServersNavActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="#1A009688">
+                                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="#009688" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="API Servers" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="#1A009688" BorderBrush="#009688" BorderThickness="1">
+                                        <TextBlock Text="{Binding TotalServers}" Foreground="#009688" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Pinned Workspaces -->
+                            <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="Pinned"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsPinnedFilterActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavPinnedBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="PinOutline" Width="16" Height="16" Foreground="{DynamicResource NavPinnedFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Pinned" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavPinnedBgBrush}" BorderBrush="{DynamicResource NavPinnedFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding PinnedCount}" Foreground="{DynamicResource NavPinnedFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Starter Templates -->
+                            <Button Command="{Binding SetSelectedNavSectionCommand}" CommandParameter="Templates"
+                                    Classes="nexus-nav-item"
+                                    Classes.active="{Binding IsTemplatesSectionActive}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavTemplatesBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource NavTemplatesFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Templates" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavTemplatesBgBrush}" BorderBrush="{DynamicResource NavTemplatesFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding StarterTemplates.Count}" Foreground="{DynamicResource NavTemplatesFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Open Existing Project from Disk -->
+                            <Button Click="OnOpenProjectFileClick"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Open existing project or document from disk (Ctrl+O / ⌘O)">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavOpenBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" Foreground="{DynamicResource NavOpenFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Open Project..." Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Blind 75 Algorithm Hub -->
+                            <Button Command="{Binding NavigateToBlindProblemsCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Blind 75 Coding Interview Track">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavBlind75BgBrush}">
+                                        <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="{DynamicResource NavBlind75FgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Blind 75" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavBlind75BgBrush}" BorderBrush="{DynamicResource NavBlind75FgBrush}" BorderThickness="1">
+                                        <TextBlock Text="76" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Documentation & Learning Center -->
+                            <Button Command="{Binding NavigateToDocsCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Documentation, App Guides &amp; VisualizerRecorder API (F1)">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavDocsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="16" Height="16" Foreground="{DynamicResource NavDocsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Documentation" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavDocsBgBrush}" BorderBrush="{DynamicResource NavDocsFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="Docs" Foreground="{DynamicResource NavDocsFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Light/Dark Theme Toggle -->
+                            <Button Command="{Binding ToggleThemeCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Toggle Light/Dark Theme">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavThemeBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="16" Height="16" Foreground="{DynamicResource NavThemeFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding ThemeToggleLabel}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Section Divider -->
+                            <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" Margin="8,14,8,10" Opacity="0.6" />
+
+                            <!-- ENVIRONMENTS Section Label -->
+                            <TextBlock Text="ENVIRONMENTS"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       LetterSpacing="1.2"
+                                       Foreground="{DynamicResource DsMutedBrush}"
+                                       Margin="10,0,10,8" />
+
+                            <!-- Toolchains & Environment Setup -->
+                            <Button Command="{Binding NavigateToSettingsCommand}"
+                                    CommandParameter="Languages"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Configure language interpreters, SDKs, and environments">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavToolchainsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="TuneVariant" Width="16" Height="16" Foreground="{DynamicResource NavToolchainsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Toolchains &amp; SDKs" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavToolchainsBgBrush}" BorderBrush="{DynamicResource NavToolchainsFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="Setup" Foreground="{DynamicResource NavToolchainsFgBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+
+                            <!-- Roslyn .NET 10 Kernel -->
+                            <Button Classes="nexus-nav-item" IsHitTestVisible="False">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavKernelsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="16" Height="16" Foreground="{DynamicResource NavKernelsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text=".NET 10 Kernels" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Sidebar Bottom Actions: Settings, Return to FryPDF & User Profile -->
+                    <Border Grid.Row="2"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="14,14">
+                        <StackPanel Spacing="8">
+                            <!-- Settings & Preferences -->
+                            <Button Command="{Binding NavigateToSettingsCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Settings &amp; Environment Setup (Ctrl+, / ⌘,)">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavSettingsBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="CogOutline" Width="16" Height="16" Foreground="{DynamicResource NavSettingsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="Settings" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Return to FryPDF Home -->
+                            <Button Command="{Binding NavigateToHomeCommand}"
+                                    Classes="nexus-nav-item"
+                                    ToolTip.Tip="Return to FryPDF Studio Home (Esc / ⌘W)">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavFrySharpBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="HomeOutline" Width="16" Height="16" Foreground="{DynamicResource NavFrySharpFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="FrySharp" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- User Profile Row -->
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="10,8"
+                                    Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <!-- User Avatar Circle with Gradient -->
+                                    <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Offset="0" Color="#2F81F7" />
+                                                <GradientStop Offset="1" Color="#7C3AED" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <!-- User Text -->
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
+                                        <TextBlock Text="Developer" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                        <TextBlock Text=".NET 10" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Online Status Indicator -->
+                                    <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4"
+                                            Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center"
+                                            ToolTip.Tip="Studio connected" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+</UserControl>

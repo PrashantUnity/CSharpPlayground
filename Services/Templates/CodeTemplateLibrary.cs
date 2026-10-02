@@ -1,0 +1,657 @@
+using Material.Icons;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
+
+public static partial class CodeTemplateLibrary
+{
+    public static IReadOnlyList<CodeTemplate> GetTemplates()
+    {
+        var list = new List<CodeTemplate>(GetCoreTemplates());
+        list.AddRange(GetVisualizerTemplates());
+        list.AddRange(GetTreeTemplates());
+        list.AddRange(GetGraphTemplates());
+        list.AddRange(GetLinkedListTemplates());
+        list.AddRange(GetRecursionTemplates());
+        list.AddRange(GetCharting3DTemplates());
+        list.AddRange(GetPolyglotVisualsTemplates());
+        list.AddRange(GetDynamicProgrammingTemplates());
+        return list;
+    }
+
+    private static IEnumerable<CodeTemplate> GetCoreTemplates() => new List<CodeTemplate>
+    {
+        new()
+        {
+            Id = "leetcode_two_sum",
+            Title = "1. Two Sum (Algorithm Workspace)",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Classic Two-Sum problem workspace with test cases, scratchpad notes, and Roslyn execution.",
+            IconKind = MaterialIconKind.CodeBraces,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "LeetCode • Easy",
+            Tags = new List<string> { "Algorithms", "Two-Sum", "Roslyn" },
+            Notes = @"# 1. Two Sum
+
+**Difficulty**: Easy | **Tags**: Array, Hash Table
+
+Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.
+
+You may assume that each input would have **exactly one solution**, and you may not use the same element twice. You can return the answer in any order.
+
+### Example 1:
+- **Input**: `nums = [2,7,11,15], target = 9`
+- **Output**: `[0,1]`
+- **Explanation**: Because `nums[0] + nums[1] == 9`, we return `[0, 1]`.
+
+### Example 2:
+- **Input**: `nums = [3,2,4], target = 6`
+- **Output**: `[1,2]`
+
+### Constraints:
+- `2 <= nums.Length <= 10^4`
+- `-10^9 <= nums[i] <= 10^9`
+- Only one valid answer exists.",
+            InitialCode = @"using System;
+using System.Collections.Generic;
+
+public class Solution 
+{
+    public int[] TwoSum(int[] nums, int target) 
+    {
+        var map = new Dictionary<int, int>();
+        for (int i = 0; i < nums.Length; i++) 
+        {
+            int complement = target - nums[i];
+            if (map.TryGetValue(complement, out int index)) 
+            {
+                return new int[] { index, i };
+            }
+            map[nums[i]] = i;
+        }
+        return Array.Empty<int>();
+    }
+}
+
+// Execute test cases
+var sol = new Solution();
+
+int[] test1 = sol.TwoSum(new int[] { 2, 7, 11, 15 }, 9);
+test1.Dump(""Test Case 1 (Target = 9)"");
+
+int[] test2 = sol.TwoSum(new int[] { 3, 2, 4 }, 6);
+test2.Dump(""Test Case 2 (Target = 6)"");
+
+Console.WriteLine(""All test cases evaluated successfully."");",
+            TestCases = new List<TestCaseItem>
+            {
+                new() { Name = "Case 1", Input = "nums = [2,7,11,15], target = 9", ExpectedOutput = "[0, 1]" },
+                new() { Name = "Case 2", Input = "nums = [3,2,4], target = 6", ExpectedOutput = "[1, 2]" },
+                new() { Name = "Case 3", Input = "nums = [3,3], target = 6", ExpectedOutput = "[0, 1]" }
+            }
+        },
+        new()
+        {
+            Id = "csharp_scratchpad",
+            Title = "C# Interactive Scratchpad",
+            Category = "Scratchpad",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Fast expression & statements scratchpad with instant .Dump() inspection and zero boilerplate.",
+            IconKind = MaterialIconKind.LightningBoltOutline,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Scratchpad • Instant",
+            Tags = new List<string> { "LINQ", ".Dump()", "Top-level" },
+            Notes = @"# Interactive C# Scratchpad
+
+Write instant C# statements without `class Program` or `Main()`.
+Call `.Dump()` on any object, collection, or calculation to format output immediately.",
+            InitialCode = @"// C# Top-Level Statements with Interactive .Dump()
+using System;
+using System.Linq;
+
+// Inspect runtime environment and application metadata
+var environment = new {
+    Application = ""FryPDF Document Studio"",
+    Version = ""2026.1"",
+    Runtime = "".NET 10 (C# 13)"",
+    Compiler = ""Microsoft.CodeAnalysis.CSharp (Roslyn)"",
+    Modules = new[] { ""PDF Rendering"", ""Document Automation"", ""C# Studio"", ""Vector Canvas"" }
+};
+
+environment.Dump(""Studio Environment Metadata"");
+
+// LINQ sequence projections and calculations
+var calculations = Enumerable.Range(1, 8)
+    .Select(n => new { Number = n, Square = n * n, Cube = n * n * n })
+    .ToList();
+
+calculations.Dump(""Calculated Power Sequences"");
+
+Console.WriteLine(""Script evaluation completed successfully."");"
+        },
+        new()
+        {
+            Id = "polyglot_notebook",
+            Title = "Polyglot Notebook Demo",
+            Category = "Notebook",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Multi-cell notebook workflow with Markdown explanations and interactive C# cells.",
+            IconKind = MaterialIconKind.NotebookOutline,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Notebook • Interactive",
+            Tags = new List<string> { "Markdown", "Multi-cell", "Interactive" },
+            InitialCode = @"// [Code Cell 1]
+string docTitle = ""Q3 Financial Overview & Audit.pdf"";
+int totalPages = 28;
+Console.WriteLine($""Pipeline active for '{docTitle}' ({totalPages} pages)"");
+new { Title = docTitle, Pages = totalPages, Status = ""Ready"" }.Dump();"
+        },
+        new()
+        {
+            Id = "skiasharp_image_studio",
+            Title = "SkiaSharp Graphics & Image Generation",
+            Category = "Graphics",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Generate 2D vector graphics, charts, and visual renderings using SkiaSharp (#r) and Display.Image.",
+            IconKind = MaterialIconKind.ImageOutline,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "SkiaSharp • Visual",
+            Tags = new List<string> { "SkiaSharp", "Images", "#r nuget", "Graphics" },
+            InitialCode = @"#r ""nuget: SkiaSharp, 3.119.4""
+using SkiaSharp;
+
+var info = new SKImageInfo(480, 240);
+var surface = SKSurface.Create(info);
+var canvas = surface.Canvas;
+
+// Draw gradient background
+var bgPaint = new SKPaint
+{
+    Shader = SKShader.CreateLinearGradient(
+        new SKPoint(0, 0),
+        new SKPoint(480, 240),
+        new[] { new SKColor(20, 26, 38), new SKColor(32, 45, 72) },
+        SKShaderTileMode.Clamp)
+};
+canvas.DrawRect(0, 0, 480, 240, bgPaint);
+
+// Draw stylized circular emblem
+var circlePaint = new SKPaint { Color = new SKColor(102, 157, 246), IsAntialias = true };
+canvas.DrawCircle(100, 120, 50, circlePaint);
+
+var innerCircle = new SKPaint { Color = new SKColor(168, 199, 250), IsAntialias = true };
+canvas.DrawCircle(100, 120, 28, innerCircle);
+
+// Draw bar accents
+var barPaint = new SKPaint { Color = new SKColor(234, 134, 143), IsAntialias = true };
+for (int i = 0; i < 5; i++)
+{
+    canvas.DrawRoundRect(200 + i * 45, 170 - (i * 22), 30, (i + 1) * 22, 6, 6, barPaint);
+}
+
+// Display the rendered image directly in the cell output!
+Display.Image(surface.Snapshot());
+Console.WriteLine(""Rendered SkiaSharp graphics successfully."");"
+        },
+        new()
+        {
+            Id = "cpp_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Cpp,
+            Title = "C++20 Algorithms & Visual Dumps",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Modern C++20 workspace with STL algorithms, ranges, interactive table dumps, and compiler diagnostics.",
+            IconKind = MaterialIconKind.LanguageCpp,
+            AccentColor = "#659AD2",
+            AccentBackground = "#1A2634",
+            AccentBorder = "#2D425A",
+            CategoryBadge = "C++20 • Native",
+            Tags = new List<string> { "C++20", "STL", "Display::table", "Native" },
+            Notes = @"# C++20 Algorithms & Interactive Visual Dumps
+
+This script compiles natively using your system's C++ toolchain (Clang, GCC, or MSVC) with `-std=c++20`.
+
+### Key Features:
+- **Zero Configuration Display Runtime**: `<fry/display.hpp>` is staged automatically.
+- **Interactive Tables**: Call `fry::display::table(...)` or `Display::table(...)` on `std::vector`, `std::map`, or nested structures.
+- **Instant .DUMP**: Call `fry::dump(data, ""Title"")` to inspect collections inline in the Results deck.
+- **Native DAP Debugging**: Set breakpoints in the gutter and press F5 to debug with `lldb-dap`.",
+            InitialCode = @"// C++20 Algorithm Workspace with Interactive Visual Dumps
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <fry/display.hpp>
+
+int main() {
+    std::cout << ""=== C++20 Algorithm Pipeline ===\n"";
+
+    // Initialize Fibonacci sequence
+    std::vector<long long> fib = { 0, 1 };
+    for (int i = 2; i < 20; ++i) {
+        fib.push_back(fib[i - 1] + fib[i - 2]);
+    }
+
+    std::cout << ""Generated "" << fib.size() << "" Fibonacci numbers.\n"";
+
+    // Visualize interactive data table in the Results (.DUMP) deck
+    Display::table(fib, ""Fibonacci Sequence (20 terms)"");
+
+    // Cumulative sum using std::accumulate
+    long long total = std::accumulate(fib.begin(), fib.end(), 0LL);
+    std::cout << ""Sum of sequence: "" << total << ""\n"";
+
+    return 0;
+}"
+        },
+        new()
+        {
+            Id = "go_algorithms_starter",
+            LanguageId = Languages.LanguageIds.Go,
+            Title = "Go Concurrency & Channels",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Modern Go workspace with goroutines, channels, sync primitives, and native compiler execution.",
+            IconKind = MaterialIconKind.LanguageGo,
+            AccentColor = "#00ADD8",
+            AccentBackground = "#162832",
+            AccentBorder = "#1E4153",
+            CategoryBadge = "Go • Native",
+            Tags = new List<string> { "Go", "Goroutines", "Channels", "Native" },
+            Notes = @"# Go Concurrency & Pipeline Workspace
+
+This script compiles and executes natively using your system's Go toolchain (`go build`).
+
+### Key Features:
+- **Native Two-Phase Execution**: Compiles via `go build` with structured diagnostic parsing in Problems.
+- **Goroutines & Channels**: High-performance lightweight concurrent pipelines.
+- **Native DAP Debugging**: Set breakpoints and inspect goroutines and variables with Delve (`dlv dap`).",
+            InitialCode = @"// Go Concurrency & Pipeline Workspace
+package main
+
+import (
+	""fmt""
+	""sync""
+	""time""
+)
+
+func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		fmt.Printf(""Worker %d started job %d\n"", id, j)
+		time.Sleep(10 * time.Millisecond)
+		results <- j * 2
+	}
+}
+
+func main() {
+	fmt.Println(""=== Go Concurrent Worker Pool ==="")
+
+	const numJobs = 5
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+	var wg sync.WaitGroup
+
+	for w := 1; w <= 3; w++ {
+		wg.Add(1)
+		go worker(w, jobs, results, &wg)
+	}
+
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	for res := range results {
+		fmt.Printf(""Result: %d\n"", res)
+	}
+	fmt.Println(""All jobs completed successfully!"")
+}"
+        },
+        new()
+        {
+            Id = "fsharp_functional_starter",
+            LanguageId = Languages.LanguageIds.FSharp,
+            Title = "F# Functional Pipelines",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Idiomatic F# script with pipe forward operators, pattern matching, discriminated unions, and interactive fsi execution.",
+            IconKind = MaterialIconKind.FunctionVariant,
+            AccentColor = "#30B9DB",
+            AccentBackground = "#1A2B35",
+            AccentBorder = "#234354",
+            CategoryBadge = "F# • Functional",
+            Tags = new List<string> { "F#", "Functional", "Pipelines", "Interactive" },
+            Notes = @"# F# Functional Pipelines & Pattern Matching
+
+This script executes interactively using your system's .NET SDK (`dotnet fsi`).
+
+### Key Features:
+- **Interactive Script Execution**: Runs `.fsx` scripts via `dotnet fsi` with instant execution.
+- **Type-Safe Pipelines**: Chain functional transformations with `|>`.
+- **Discriminated Unions & Pattern Matching**: Exhaustive type checking and expressive data modeling.",
+            InitialCode = @"// F# Functional Pipelines & Pattern Matching
+open System
+
+printfn ""=== F# Functional Pipelines ===""
+
+type Shape =
+    | Circle of radius: float
+    | Rectangle of width: float * height: float
+    | Triangle of baseLength: float * height: float
+
+let area shape =
+    match shape with
+    | Circle r -> Math.PI * r * r
+    | Rectangle (w, h) -> w * h
+    | Triangle (b, h) -> 0.5 * b * h
+
+let shapes = [
+    Circle 5.0
+    Rectangle (4.0, 6.0)
+    Triangle (3.0, 8.0)
+]
+
+shapes
+|> List.iter (fun s ->
+    let a = area s
+    printfn ""Area of %A = %.2f"" s a)
+
+let totalArea = shapes |> List.map area |> List.sum
+printfn ""\nTotal combined area: %.2f"" totalArea
+"
+        },
+        new()
+        {
+            Id = "rust_iterators_starter",
+            Title = "Rust Iterators & Visual Dumps",
+            Category = "Algorithms",
+            Kind = WorkspaceItemKind.Script,
+            LanguageId = Languages.LanguageIds.Rust,
+            Description = "A Rust starter with structs, iterator adapters, collections and interactive table dumps, built with Cargo.",
+            IconKind = MaterialIconKind.LanguageRust,
+            AccentColor = "#DEA584",
+            AccentBackground = "#2A211C",
+            AccentBorder = "#4A3A2F",
+            CategoryBadge = "Rust • Native",
+            Tags = new List<string> { "Rust", "Iterators", "fry::table", "Native" },
+            Notes = @"# Rust Iterators & Interactive Visual Dumps
+
+This file builds with Cargo (`cargo build`) and runs natively with the Rust toolchain installed on this computer.
+
+### Key Features:
+- **Zero Configuration Display Crate**: `fry` is added to the build automatically; `use fry::prelude::*;` brings it in.
+- **Interactive Tables**: `table(&value, ""Title"")` shows a list of structs with a column per field, a map as key and value, a list of lists as a grid.
+- **Instant Dump**: `dump!(expression)` prints a value titled with its own source text.
+- **Crates**: add one with a comment such as `// #crate: rand = ""0.8""`; it is downloaded once and reused by every script.
+- **Native Debugging**: set breakpoints in the gutter and press F5 to debug with `lldb-dap`.",
+            InitialCode = """
+// Rust: iterators, structs and visual dumps.
+// Add a crate with a comment such as:  // #crate: rand = "0.8"
+use fry::prelude::*;
+use std::collections::BTreeMap;
+
+#[derive(Debug, Clone)]
+struct Planet {
+    name: &'static str,
+    moons: u32,
+    gravity: f64,
+}
+
+fn main() {
+    println!("=== Rust iterators ===");
+
+    // A list of structs becomes a table with a column per field in the Results deck.
+    let planets = vec![
+        Planet { name: "Earth", moons: 1, gravity: 9.81 },
+        Planet { name: "Mars", moons: 2, gravity: 3.72 },
+        Planet { name: "Jupiter", moons: 95, gravity: 24.79 },
+    ];
+    table(&planets, "Planets");
+
+    // Iterator adapters: filter, map, collect.
+    let with_moons: Vec<&str> = planets.iter().filter(|p| p.moons > 1).map(|p| p.name).collect();
+    println!("Planets with more than one moon: {:?}", with_moons);
+
+    // Fold the whole list into one number.
+    let total_moons: u32 = planets.iter().map(|p| p.moons).sum();
+    dump!(total_moons);
+
+    // A map is a two-column table.
+    let gravity: BTreeMap<&str, f64> = planets.iter().map(|p| (p.name, p.gravity)).collect();
+    table(&gravity, "Surface gravity (m/s²)");
+}
+"""
+        },
+        new()
+        {
+            Id = "animation_studio",
+            Title = "Live Animation Studio",
+            Category = "Animation",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Live, self-animating visuals via Display.Animate, plus the cancellable frame-loop pattern for short bounded sequences.",
+            IconKind = MaterialIconKind.MotionOutline,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Animation • Live",
+            Tags = new List<string> { "Animation", "Display.Animate", "DrawingContext" },
+            InitialCode = @"using System;
+using Avalonia;
+using Avalonia.Media;
+
+double canvasWidth = 380, canvasHeight = 220;
+double ballRadius = 16;
+var ballBrush = new SolidColorBrush(Color.Parse(""#F472B6""));
+var trackBrush = new SolidColorBrush(Color.Parse(""#151B2B""));
+
+Display.Animate((ctx, elapsed) =>
+{
+    ctx.FillRectangle(trackBrush, new Rect(0, 0, canvasWidth, canvasHeight));
+
+    double t = elapsed.TotalSeconds;
+    double x = ballRadius + (canvasWidth - 2 * ballRadius) * (0.5 + 0.5 * Math.Sin(t * 1.7));
+    double y = ballRadius + (canvasHeight - 2 * ballRadius) * Math.Abs(Math.Sin(t * 2.3));
+
+    ctx.DrawEllipse(ballBrush, null, new Point(x, y), ballRadius, ballRadius);
+}, width: canvasWidth, height: canvasHeight);
+
+Console.WriteLine(""Animating at ~60fps. Try opening another tab or running another cell - this never blocks."");"
+        },
+        new()
+        {
+            Id = "rich_html_reports",
+            Title = "Rich Text & Markdown Reports",
+            Category = "Reporting",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Format notebook output as headings, bold/italic text, links, and lists via Display.Markdown and Display.Html.",
+            IconKind = MaterialIconKind.LanguageMarkdownOutline,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Reporting • Markdown",
+            Tags = new List<string> { "Markdown", "Html", "Reports" },
+            InitialCode = @"Display.Markdown(@""# Quarterly Report
+## Revenue Summary
+
+**Total revenue** increased by *18%* this quarter, driven by the new automation pipeline.
+
+Key figures were pulled via `PdfDocument.GetMetadata()`.
+
+See the [full methodology](https://example.com/methodology) for details."");
+
+Console.WriteLine(""Rendered via Display.Markdown -> Display.Html -> RichHtmlView."");"
+        },
+        new()
+        {
+            Id = "nuget_charting_scottplot",
+            Title = "Charting with ScottPlot (NuGet)",
+            Category = "Charting",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Resolve ScottPlot.Avalonia via #r nuget and display a live, interactive chart control with Display.Control.",
+            IconKind = MaterialIconKind.ChartLine,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "ScottPlot • #r nuget",
+            Tags = new List<string> { "ScottPlot", "#r nuget", "Charts" },
+            InitialCode = @"#r ""nuget: ScottPlot.Avalonia, 5.1.59""
+using ScottPlot.Avalonia;
+
+var avaPlot = new AvaPlot { Width = 520, Height = 300 };
+var plot = avaPlot.Plot;
+
+double[] months = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+double[] revenue = { 12, 15, 14, 18, 22, 26, 24, 28, 31, 29, 34, 38 };
+
+var scatter = plot.Add.Scatter(months, revenue);
+scatter.LineWidth = 2;
+scatter.MarkerSize = 6;
+
+plot.Title(""Monthly Revenue (Thousands, USD)"");
+plot.XLabel(""Month"");
+plot.YLabel(""Revenue ($K)"");
+
+Display.Control(avaPlot);
+Console.WriteLine(""Live, interactive ScottPlot chart rendered via #r nuget + Display.Control."");"
+        },
+        new()
+        {
+            Id = "nuget_dataframe_analysis",
+            Title = "Data Science with DataFrame (NuGet)",
+            Category = "Data Science",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Resolve Microsoft.Data.Analysis via #r nuget, construct a DataFrame, filter and manipulate columns, and visualize interactive tables natively.",
+            IconKind = MaterialIconKind.TableLarge,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "Data Science • DataFrame",
+            Tags = new List<string> { "DataFrame", "#r nuget", "Data Science", "Table" },
+            InitialCode = @"#r ""nuget: Microsoft.Data.Analysis""
+using System;
+using System.Collections.Generic;
+using Microsoft.Data.Analysis;
+
+// 1. Build DataFrame columns with strongly-typed data
+var productCol = new StringDataFrameColumn(""Product"", new[] { ""Espresso Pro"", ""Coffee Beans (1kg)"", ""Milk Frother"", ""Grinder Core"", ""Ceramic Mug"" });
+var categoryCol = new StringDataFrameColumn(""Category"", new[] { ""Equipment"", ""Consumables"", ""Accessories"", ""Equipment"", ""Accessories"" });
+var priceCol = new SingleDataFrameColumn(""Unit Price ($)"", new[] { 549.99f, 24.50f, 39.99f, 189.00f, 14.50f });
+var stockCol = new Int32DataFrameColumn(""Stock Qty"", new[] { 12, 150, 45, 28, 200 });
+
+// 2. Create the DataFrame
+var df = new DataFrame(productCol, categoryCol, priceCol, stockCol);
+
+// 3. Simply evaluate 'df' or call Display.Table(df) to view the rich interactive table!
+df"
+        },
+        new()
+        {
+            Id = "html5_webapp_studio",
+            Title = "HTML5 Canvas & Web App Studio",
+            Category = "Web",
+            Kind = WorkspaceItemKind.Notebook,
+            Description = "Render interactive HTML5 web applications, games, and canvas scripts directly via Display.Html.",
+            IconKind = MaterialIconKind.LanguageHtml5,
+            AccentColor = "#9BA1AD",
+            AccentBackground = "#252C36",
+            AccentBorder = "#3D4450",
+            CategoryBadge = "HTML5 • Interactive",
+            Tags = new List<string> { "HTML5", "Canvas", "JavaScript", "Display.Html" },
+            InitialCode = @"// Render full interactive HTML5 canvas apps, games, or dashboards via Display.Html
+Display.Html(@""<!DOCTYPE html>
+<html>
+<head>
+<title>Interactive Canvas Demo</title>
+<style>
+  body { background: #0b0f19; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .card { background: #131927; padding: 24px; border-radius: 14px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  h2 { margin: 0 0 12px 0; color: #20c477; font-size: 1.25rem; }
+  canvas { border-radius: 8px; background: #0e121e; display: block; }
+</style>
+</head>
+<body>
+<div class='card'>
+  <h2>Interactive HTML5 Canvas</h2>
+  <canvas id='c' width='360' height='200'></canvas>
+</div>
+<script>
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+  let t = 0;
+  function loop() {
+    ctx.fillStyle = '#0e121e';
+    ctx.fillRect(0, 0, 360, 200);
+    for (let i = 0; i < 6; i++) {
+      const x = 180 + Math.cos(t + i * 0.8) * 80;
+      const y = 100 + Math.sin(t * 1.4 + i * 0.8) * 45;
+      ctx.fillStyle = i % 2 === 0 ? '#20c477' : '#7C9CFF';
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    t += 0.04;
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>"");
+
+Console.WriteLine(""Live HTML5 canvas rendering in NativeWebView via Display.Html."");"
+        },
+        new()
+        {
+            Id = "sql_database_starter",
+            LanguageId = Languages.LanguageIds.Sql,
+            Title = "SQLite Database & Schema Starter",
+            Category = "Database",
+            Kind = WorkspaceItemKind.Script,
+            Description = "Create SQLite tables, populate sample data, and run structured aggregation and join queries.",
+            IconKind = MaterialIconKind.Database,
+            AccentColor = "#F29111",
+            AccentBackground = "#2A2215",
+            AccentBorder = "#5A4422",
+            CategoryBadge = "SQL • Database",
+            Tags = new List<string> { "SQL", "SQLite", "Schema", "Tables", "Queries" },
+            InitialCode = @"-- SQLite Database Starter (.sql)
+-- :database :memory:
+
+CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    lead TEXT NOT NULL,
+    budget REAL NOT NULL,
+    status TEXT DEFAULT 'Planning'
+);
+
+INSERT INTO projects (title, lead, budget, status) VALUES
+    ('Cloud Migration', 'Alex Chen', 45000.0, 'Active'),
+    ('Security Audit', 'Sarah Connor', 18500.0, 'Completed'),
+    ('AI Assistant Integration', 'Antigravity', 72000.0, 'Active'),
+    ('Mobile UI Refresh', 'Dev Team', 28000.0, 'Planning');
+
+SELECT 
+    id,
+    title,
+    lead,
+    printf('$%,.2f', budget) AS formatted_budget,
+    status
+FROM projects
+ORDER BY budget DESC;
+"
+        }
+    };
+}

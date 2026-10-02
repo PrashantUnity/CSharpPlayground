@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 
 public static partial class Blind75CatalogService
 {

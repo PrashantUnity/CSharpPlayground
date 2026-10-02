@@ -6,9 +6,12 @@
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
+             xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
+             xmlns:hub1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Hub"
+             xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              mc:Ignorable="d" d:DesignWidth="1380" d:DesignHeight="880"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpManagerView"
-             x:DataType="vm:CSharpManagerViewModel"
+             x:DataType="hub:CSharpManagerViewModel"
              Background="{DynamicResource DsBgBrush}">
 
     <UserControl.Resources>
@@ -36,7 +39,7 @@
             <!-- ============================================================ -->
             <!-- 1. LEFT SIDEBAR (w-64 bg-ds-surface border-r border-ds-border) -->
             <!-- ============================================================ -->
-            <controls:HubSidebarControl Grid.Column="0" />
+            <hub1:HubSidebarControl Grid.Column="0" />
 
             <!-- ============================================================ -->
             <!-- 2. MAIN CONTENT (Center canvas, dynamic width)               -->
@@ -44,7 +47,7 @@
             <Grid Grid.Column="1" RowDefinitions="64,*">
 
                 <!-- Top Header: Search & Sync Bar -->
-                <controls:HubTopHeaderControl Grid.Row="0" />
+                <hub1:HubTopHeaderControl Grid.Row="0" />
 
                 <!-- Dashboard Content Area (ScrollViewer + Floating Overlay) -->
                 <Panel Grid.Row="1">
@@ -85,13 +88,13 @@
                                 </Border>
 
                                 <!-- SECTION 1: WELCOME & HERO BANNER -->
-                                <controls:HubWelcomeSectionControl />
+                                <hub1:HubWelcomeSectionControl />
 
                                 <!-- SECTION 2: PINNED WORKSPACES -->
-                                <controls:HubPinnedWorkspacesControl IsVisible="{Binding IsWorkspacesTabActive}" />
+                                <hub1:HubPinnedWorkspacesControl IsVisible="{Binding IsWorkspacesTabActive}" />
 
                                 <!-- SECTION 3: RECENT WORKSPACES / STARTER TEMPLATES GALLERY -->
-                                <controls:HubWorkspacesPanelControl />
+                                <hub1:HubWorkspacesPanelControl />
 
                             </StackPanel>
                         </Panel>
@@ -199,7 +202,7 @@
 
                     <!-- Sticky Rail Body (Independent Scroll) -->
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,20,20,32">
-                        <controls:HubSystemStatusPanelControl />
+                        <hub1:HubSystemStatusPanelControl />
                     </ScrollViewer>
                 </Grid>
             </Border>
@@ -209,12 +212,12 @@
         <!-- ================================================================ -->
         <!-- "New Script" / "New Notebook" location dialog                    -->
         <!-- ================================================================ -->
-        <controls:HubCreateItemDialogControl />
+        <hub1:HubCreateItemDialogControl />
 
         <!-- ================================================================ -->
         <!-- STUDIO LOADING OVERLAY POPUP                                     -->
         <!-- ================================================================ -->
-        <controls:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
+        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
                                               LoadingTitle="{Binding LoadingTitle}"
                                               LoadingSubtitle="{Binding LoadingSubtitle}"
                                               ZIndex="1000"

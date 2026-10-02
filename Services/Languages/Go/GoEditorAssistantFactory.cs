@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;

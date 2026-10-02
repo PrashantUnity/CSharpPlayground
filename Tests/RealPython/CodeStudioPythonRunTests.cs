@@ -1,11 +1,14 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
+namespace CSharpEditorPlugin.Tests.RealPython;
 
 /// <summary>The Code Studio running .py files with the real Python, as the user sees it: Terminal, Problems, input, Stop.</summary>
 [Collection(RealPythonCollection.Name)]
@@ -48,9 +51,9 @@ public class CodeStudioPythonRunTests : IDisposable
 
         await studio.RunCodeCommand.ExecuteAsync(null).WaitAsync(Patience);
 
-        Assert.Contains("hello 3", studio.ConsoleOutput);
-        Assert.Contains("exited with code 0", studio.ConsoleOutput);
-        Assert.Equal("Completed", studio.CompilerStatusText);
+        Assert.Contains((string)"hello 3", (string?)studio.ConsoleOutput);
+        Assert.Contains((string)"exited with code 0", (string?)studio.ConsoleOutput);
+        Assert.Equal((string?)"Completed", (string?)studio.CompilerStatusText);
         Assert.StartsWith("Python 3.", studio.RuntimeLabel);
     }
 
@@ -64,7 +67,7 @@ public class CodeStudioPythonRunTests : IDisposable
         var problem = Assert.Single(studio.Diagnostics);
         Assert.Equal("IndexError", problem.Id);
         Assert.Equal(3, problem.Line);
-        Assert.Equal("Exited with code 1", studio.CompilerStatusText);
+        Assert.Equal((string?)"Exited with code 1", (string?)studio.CompilerStatusText);
     }
 
     [PythonFact]
@@ -88,7 +91,7 @@ public class CodeStudioPythonRunTests : IDisposable
         await studio.SendProgramInputCommand.ExecuteAsync(null);
         await run.WaitAsync(Patience);
 
-        Assert.Contains("Hi Linus", studio.ConsoleOutput);
+        Assert.Contains((string)"Hi Linus", (string?)studio.ConsoleOutput);
     }
 
     [PythonFact]
@@ -101,8 +104,8 @@ public class CodeStudioPythonRunTests : IDisposable
         studio.StopCommand.Execute(null);
         await run.WaitAsync(Patience);
 
-        Assert.Equal("🛑 Cancelled", studio.CompilerStatusText);
-        Assert.False(studio.IsExecuting);
+        Assert.Equal((string?)"🛑 Cancelled", (string?)studio.CompilerStatusText);
+        Assert.False((bool)studio.IsExecuting);
     }
 
     private static async Task WaitUntil(Func<bool> condition)

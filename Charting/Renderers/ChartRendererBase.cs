@@ -7,6 +7,7 @@ using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 

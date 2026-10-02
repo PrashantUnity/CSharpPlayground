@@ -1,10 +1,10 @@
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>An exported .ipynb names its language by name (<c>java</c>), with the MIME type (<c>text/x-java-source</c>) in its own field.</summary>
 public class JupyterLanguageInfoTests

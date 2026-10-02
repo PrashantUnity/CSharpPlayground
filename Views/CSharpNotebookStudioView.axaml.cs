@@ -9,9 +9,14 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using PdfEditorApp.Plugins.CSharpEditor.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
@@ -28,6 +33,21 @@ public partial class CSharpNotebookStudioView : UserControl
         AddHandler(InteractiveVisualizerControl.StepSourceLineChangedEvent, OnVisualizerStepLine);
         Loaded += (_, _) => HookNotebookCanvas();
         Unloaded += OnViewUnloaded;
+    }
+
+    public AvaloniaEdit.TextEditor? GetActiveEditor()
+    {
+        var editors = this.GetVisualDescendants().OfType<AvaloniaEdit.TextEditor>().ToList();
+        var focused = editors.FirstOrDefault(ed => ed.IsFocused);
+        if (focused != null) return focused;
+
+        if (DataContext is CSharpNotebookStudioViewModel vm && vm.ActiveTab?.ActiveCell is { } activeCell)
+        {
+            var cellEditor = editors.FirstOrDefault(ed => ed.DataContext == activeCell);
+            if (cellEditor != null) return cellEditor;
+        }
+
+        return editors.FirstOrDefault();
     }
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)

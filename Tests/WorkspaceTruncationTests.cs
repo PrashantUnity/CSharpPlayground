@@ -1,8 +1,11 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>A folder with more files than the Explorer lists must be reported as cut off, never silently look complete.</summary>
 public class WorkspaceTruncationTests : IDisposable
@@ -119,7 +122,7 @@ public class WorkspaceTruncationTests : IDisposable
     {
         var storage = new LocalScriptStorageService(Path.Combine(_dir, "studio"), workspaceFileLimit: 10);
         Files(storage.LibraryRootPath, 25);
-        var script = new Models.ScriptDocumentItem { Title = "Open" };
+        var script = new PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem { Title = "Open" };
         var studio = new CSharpCodeStudioViewModel(
             script,
             storage,
@@ -130,7 +133,7 @@ public class WorkspaceTruncationTests : IDisposable
 
         await studio.RefreshExplorerAsync();
 
-        Assert.True(studio.IsExplorerTruncated);
+        Assert.True((bool)studio.IsExplorerTruncated);
         Assert.Contains("10", studio.ExplorerTruncationText);
     }
 }

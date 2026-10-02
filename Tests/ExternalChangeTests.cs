@@ -1,8 +1,11 @@
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Files changed outside the studio (git, another editor) show up by themselves, and the studio's own writes don't.</summary>
 public class ExternalChangeTests : IDisposable
@@ -27,7 +30,7 @@ public class ExternalChangeTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(Models.ScriptDocumentItem script) => new(
+    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
         script,
         _storage,
         new RoslynCompilerService(),
@@ -98,7 +101,7 @@ public class ExternalChangeTests : IDisposable
 
         await studio.RefreshExplorerAsync();
 
-        Assert.True(studio.ExplorerRootItems.Single(i => i.IsDirectory).IsExpanded);
+        Assert.True((bool)studio.ExplorerRootItems.Single(i => i.IsDirectory).IsExpanded);
         Assert.Contains(studio.ExplorerRows.Rows, r => r.Name == "Inside.frycs");
     }
 }

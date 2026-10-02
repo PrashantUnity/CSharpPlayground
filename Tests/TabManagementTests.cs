@@ -1,13 +1,12 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class TabManagementTests : IDisposable
 {
@@ -57,7 +56,7 @@ public class TabManagementTests : IDisposable
 
         Assert.Single(studio.OpenTabs);
         Assert.Equal("Script 2", studio.OpenTabs[0].Title);
-        Assert.Equal("Script 2", studio.Script.Title);
+        Assert.Equal((string?)"Script 2", (string?)studio.Script.Title);
     }
 
     [Fact]
@@ -112,7 +111,7 @@ public class TabManagementTests : IDisposable
         // Never leaves editor empty: creates a fresh untitled scratchpad
         Assert.Single(studio.OpenTabs);
         Assert.Equal("Untitled Script", studio.OpenTabs[0].Title);
-        Assert.Equal("Untitled Script", studio.Script.Title);
+        Assert.Equal((string?)"Untitled Script", (string?)studio.Script.Title);
     }
 
     [Fact]
@@ -144,7 +143,7 @@ public class TabManagementTests : IDisposable
         studio.CloseOtherTabs(targetTab);
 
         Assert.Single(studio.Tabs);
-        Assert.Equal("Notebook 2", studio.Tabs[0].Title);
+        Assert.Equal((string?)"Notebook 2", (string?)studio.Tabs[0].Title);
         Assert.Equal(targetTab, studio.ActiveTab);
     }
 
@@ -178,5 +177,45 @@ public class TabManagementTests : IDisposable
 
         Assert.Equal(2, studio.Tabs.Count);
         Assert.DoesNotContain(studio.Tabs, t => t.Title == "Last");
+    }
+
+    [Fact]
+    public async Task CSharpCodeStudio_CopyTabPath_SetsCompilerStatus()
+    {
+        var doc = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            doc,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            () => { },
+            () => { });
+
+        var activeTab = studio.OpenTabs.First();
+        studio.CopyTabPath(activeTab);
+
+        Assert.Contains("Copied path to clipboard", studio.CompilerStatusText);
+    }
+
+    [Fact]
+    public async Task CSharpCodeStudio_RevealTabInExplorer_FocusesExplorerSideBar()
+    {
+        var doc = await _testStorage.CreateNewScriptAsync("ExplorerTarget");
+        var studio = new CSharpCodeStudioViewModel(
+            doc,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            () => { },
+            () => { });
+
+        studio.SelectedActivityBarIndex = 2; // e.g. Debug
+        studio.IsSideBarVisible = false;
+
+        var activeTab = studio.OpenTabs.First();
+        studio.RevealTabInExplorer(activeTab);
+
+        Assert.Equal(0, studio.SelectedActivityBarIndex);
+        Assert.True(studio.IsSideBarVisible);
     }
 }

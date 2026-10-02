@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+namespace CSharpEditorPlugin.Tests.TestSupport;
 
 /// <summary>
 /// Starts pretend programs: each one runs <see cref="Behavior"/>, which writes output, reads input and exits as the test

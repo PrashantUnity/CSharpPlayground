@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="60"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsTopBarControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
+
+    <Border Background="{DynamicResource DsSurfaceBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="16,10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MaxWidth="444" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 1. Back to Hub -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Command="{Binding BackToHubCommand}"
+                        Classes="nexus-btn-surface"
+                        Height="34" Padding="12,0"
+                        ToolTip.Tip="Return to Hub (Esc)">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="Hub" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12.5" />
+                    </StackPanel>
+                </Button>
+                <Rectangle Width="1" Height="20" Fill="{DynamicResource DsBorderBrush}" Margin="4,0,8,0" />
+            </StackPanel>
+
+            <!-- 2. Page Title (Matches Manager Category Style) -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,16,0">
+                <Border Width="30" Height="30" CornerRadius="8"
+                        Background="{DynamicResource NavBlind75BgBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1">
+                    <materialIcons:MaterialIcon Kind="TrophyOutline" Width="17" Height="17"
+                                                Foreground="{DynamicResource NavBlind75FgBrush}"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="1">
+                    <TextBlock Text="Blind 75" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    <TextBlock Text="LeetCode Interview Track • 76 Problems" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 3. Search: number, title, category or tag (Matches Manager Search Bar) -->
+            <Border Grid.Column="2"
+                    Classes="search-box"
+                    Height="36"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    Margin="8,0,16,0"
+                    Padding="10,0">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16"
+                                                Foreground="{DynamicResource DsMutedBrush}"
+                                                Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1"
+                             Text="{Binding SearchQuery, Mode=TwoWay}"
+                             PlaceholderText="Search by number, title or topic (Ctrl+F)"
+                             FontSize="12.5"
+                             MinHeight="0" Height="26" Padding="0"
+                             Foreground="{DynamicResource DsTextWhiteBrush}"
+                             VerticalAlignment="Center"
+                             VerticalContentAlignment="Center" />
+                    <Button Grid.Column="2"
+                            Classes="row-action"
+                            Width="24" Height="24"
+                            Command="{Binding ClearSearchCommand}"
+                            IsVisible="{Binding HasSearchQuery}"
+                            ToolTip.Tip="Clear search">
+                        <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
+                    </Button>
+                    <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" CornerRadius="4" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <TextBlock Text="Ctrl" FontSize="9.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="F" FontSize="9.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 4. Difficulty filter (Segmented Pill Group) -->
+            <Border Grid.Column="4" Classes="segmented" Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyAll}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="All"
+                            ToolTip.Tip="Every difficulty">
+                        <TextBlock Text="All" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyEasy}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Easy">
+                        <TextBlock Text="Easy" Foreground="#22C55E" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyMedium}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Med"
+                            ToolTip.Tip="Medium">
+                        <TextBlock Text="Med" Foreground="#F59E0B" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsDifficultyHard}"
+                            Command="{Binding SetDifficultyCommand}" CommandParameter="Hard">
+                        <TextBlock Text="Hard" Foreground="#FB7185" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- 5. Random "Pick One" (Shuffle) Button -->
+            <Button Grid.Column="5" Command="{Binding PickRandomUnsolvedProblemCommand}"
+                    Classes="nexus-btn-surface" Height="34" Padding="12,0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="Open a random unsolved problem">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                    <TextBlock Text="Pick One" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" />
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

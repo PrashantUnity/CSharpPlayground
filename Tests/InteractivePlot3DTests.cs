@@ -1,21 +1,20 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Avalonia;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Layouts;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Renderers;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using Xunit;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
 using Vector3D = PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial.Vector3D;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class InteractivePlot3DTests
 {
@@ -318,7 +317,7 @@ public class InteractivePlot3DTests
     [Fact]
     public void NotebookCellViewModel_ShouldSupportPlot3DOutputTab()
     {
-        var item = new Models.NotebookCellItem { Type = Models.CellType.Code, Source = "Display.Plot3D(...);" };
+        var item = new PdfEditorApp.Plugins.CSharpEditor.Models.NotebookCellItem { Type = PdfEditorApp.Plugins.CSharpEditor.Models.CellType.Code, Source = "Display.Plot3D(...);" };
         var vm = new NotebookCellViewModel(item);
         vm.AddVisual(VisualOutput.Create(new Plot3DSpec { Title = "Cell 3D Output" }));
 
@@ -353,7 +352,7 @@ public class InteractivePlot3DTests
     public void InteractivePlot3DControl_ShouldInitializeWithOptionsAndControls()
     {
         var opts = new Plot3DOptions { Title = "Interactive Test Plot", Height = 420 };
-        var control = new Charting3D.Controls.InteractivePlot3DControl(opts);
+        var control = new PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DControl(opts);
 
         Assert.Same(opts, control.Options);
     }
@@ -364,7 +363,7 @@ public class InteractivePlot3DTests
         var opts = new Plot3DOptions { Title = "Immersive Chaos Attractor" };
         try
         {
-            var win = new Charting3D.Controls.InteractivePlot3DWindow(opts);
+            var win = new PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DWindow(opts);
             Assert.Contains("Immersive Chaos Attractor", win.Title);
             Assert.Equal(Avalonia.Controls.WindowState.Normal, win.WindowState);
         }

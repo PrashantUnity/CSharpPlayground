@@ -1,12 +1,11 @@
 using System.Collections.Concurrent;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealCpp;
+namespace CSharpEditorPlugin.Tests.RealCpp;
 
 /// <summary>.cpp files compiled and run with real C++ compiler (clang++ / g++): build step, binary execution, and diagnostics.</summary>
 [Collection(RealCppCollection.Name)]

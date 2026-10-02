@@ -1,9 +1,10 @@
 using System.Text;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Plain source files (main.py) in the workspace: listed, opened, saved safely, created, renamed and deleted.</summary>
 public class SourceFileStorageTests : IDisposable
@@ -226,5 +227,29 @@ public class SourceFileStorageTests : IDisposable
         Write("main.py", "print('hi')\n");
 
         Assert.DoesNotContain(await _storage.LoadScriptsAsync(), s => s.Title.Contains("main"));
+    }
+
+    [Fact]
+    public async Task SaveScriptAsync_ForUnsavedSourceFileDocument_SavesAsSourceFileAndNotFrycs()
+    {
+        var unsaved = new ScriptDocumentItem
+        {
+            Title = "3D Voxel Matrix Topography",
+            LanguageId = LanguageIds.Cpp,
+            Code = "#include <fry_display.hpp>\nint main() { return 0; }",
+            SourceFilePath = null
+        };
+
+        var saved = await _storage.SaveScriptAsync(unsaved);
+        Assert.True(saved);
+        Assert.NotNull(unsaved.SourceFilePath);
+        Assert.True(File.Exists(unsaved.SourceFilePath));
+        Assert.EndsWith(".cpp", unsaved.SourceFilePath, StringComparison.OrdinalIgnoreCase);
+        Assert.False(unsaved.SourceFilePath.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
+
+        // Check file on disk
+        var files = Directory.GetFiles(_library, "*.*");
+        Assert.Contains(files, f => f.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(files, f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
     }
 }

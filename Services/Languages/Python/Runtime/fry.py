@@ -266,10 +266,21 @@ def _table(obj, title):
 
 # ----------------------------------------------------------------------------------------------------------- charts
 
-def chart(data, title=None, kind="line", x=None, y=None, chart_type=None, chartType=None, **options):
+def chart(data=None, title=None, kind="line", x=None, y=None, chart_type=None, chartType=None, **options):
     """A chart of data (kind: line, area, bar, scatter, pie, donut, histogram); x and y pick the fields of records."""
+    x_field = x if isinstance(x, str) else None
+    y_field = y if isinstance(y, str) else None
+    if data is None:
+        if y is not None and x is not None and not isinstance(x, str) and not isinstance(y, str):
+            data = [[xv, yv] for xv, yv in zip(x, y)]
+        elif y is not None and not isinstance(y, str):
+            data = y
+        elif x is not None and not isinstance(x, str):
+            data = x
+        else:
+            data = []
     resolved_kind = chart_type or chartType or kind
-    mime, spec = fry_specs.chart_spec(data, resolved_kind, x=x, y=y)
+    mime, spec = fry_specs.chart_spec(data, resolved_kind, x=x_field, y=y_field)
     return _show(mime, spec, dict(options, title=title))
 
 

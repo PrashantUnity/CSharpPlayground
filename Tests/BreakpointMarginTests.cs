@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia;
 using Avalonia.Rendering;
-using PdfEditorApp.Plugins.CSharpEditor.Controls;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class BreakpointMarginTests
 {

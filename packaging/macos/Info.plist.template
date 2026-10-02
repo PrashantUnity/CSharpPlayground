@@ -32,11 +32,14 @@
     <string>Copyright © 2026 Code Fry Dev. All rights reserved.</string>
     <key>CFBundleDocumentTypes</key>
     <array>
+        <!-- C# Source Files -->
         <dict>
             <key>CFBundleTypeName</key>
             <string>C# Source File</string>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>cs</string>
@@ -44,11 +47,14 @@
             <key>LSHandlerRank</key>
             <string>Alternate</string>
         </dict>
+        <!-- C# Script Files -->
         <dict>
             <key>CFBundleTypeName</key>
             <string>C# Script File</string>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>csx</string>
@@ -56,17 +62,211 @@
             <key>LSHandlerRank</key>
             <string>Owner</string>
         </dict>
+        <!-- FrySharp Documents -->
         <dict>
             <key>CFBundleTypeName</key>
-            <string>FrySharp Project</string>
+            <string>FrySharp Document</string>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>frycs</string>
             </array>
             <key>LSHandlerRank</key>
             <string>Owner</string>
+        </dict>
+        <!-- FrySharp & C# Project Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>FrySharp Project</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>frycsproj</string>
+                <string>frynbproj</string>
+                <string>csproj</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+        </dict>
+        <!-- FrySharp Notebooks -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>FrySharp Interactive Notebook</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>frynb</string>
+                <string>csnb</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+        </dict>
+        <!-- Jupyter Notebooks -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Jupyter Notebook</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>ipynb</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- FrySharp Server Documents -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>FrySharp Server Document</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>fryserver</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+        </dict>
+        <!-- Python Scripts -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Python Script</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>py</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- JavaScript Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>JavaScript File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>js</string>
+                <string>mjs</string>
+                <string>cjs</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- Java Source Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Java Source File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>java</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- C / C++ Source & Header Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>C/C++ Source File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>cpp</string>
+                <string>cc</string>
+                <string>cxx</string>
+                <string>c</string>
+                <string>hpp</string>
+                <string>h</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- Go Source Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Go Source File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>go</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- Rust Source Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Rust Source File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>rs</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- F# Scripts and Source Files -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>F# Source File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>fsx</string>
+                <string>fs</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+        <!-- SQL Scripts -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>SQL Script</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleTypeIconFile</key>
+            <string>AppIcon.icns</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>sql</string>
+            </array>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
         </dict>
     </array>
 </dict>

@@ -6,6 +6,7 @@ using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using Vector3D = PdfEditorApp.Plugins.CSharpEditor.Charting3D.Spatial.Vector3D;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting3D.Renderers;

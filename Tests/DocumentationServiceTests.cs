@@ -1,12 +1,14 @@
-using System;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
+using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CSharpDocsViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class DocumentationServiceTests
 {
@@ -238,17 +240,17 @@ public class DocumentationServiceTests
 
         // Navigate to a specific topic
         vm.SelectTopic("dump_api");
-        Assert.Equal("dump_api", vm.SelectedArticle.Id);
-        Assert.Equal("display_apis", vm.SelectedCategory.Id);
-        Assert.Contains("dump", vm.ActiveBreadcrumb.ToLowerInvariant());
+        Assert.Equal((string?)"dump_api", (string?)vm.SelectedArticle.Id);
+        Assert.Equal((string?)"display_apis", (string?)vm.SelectedCategory.Id);
+        Assert.Contains((string)"dump", (string?)vm.ActiveBreadcrumb.ToLowerInvariant());
 
         // Test search
         vm.SearchQuery = "matrix";
-        Assert.True(vm.HasSearchQuery);
+        Assert.True((bool)vm.HasSearchQuery);
         Assert.NotEmpty(vm.FilteredArticles);
 
         vm.ClearSearch();
-        Assert.False(vm.HasSearchQuery);
+        Assert.False((bool)vm.HasSearchQuery);
         Assert.Empty(vm.FilteredArticles);
 
         // Next / Previous article
@@ -258,7 +260,7 @@ public class DocumentationServiceTests
             vm.NextArticle();
             Assert.NotEqual(currentId, vm.SelectedArticle.Id);
             vm.PreviousArticle();
-            Assert.Equal(currentId, vm.SelectedArticle.Id);
+            Assert.Equal((string?)currentId, (string?)vm.SelectedArticle.Id);
         }
 
         // Try in Studio command
@@ -421,5 +423,97 @@ public class DocumentationServiceTests
         Assert.Contains(template.Cells, c => c.Type == CellType.Markdown && c.Source.Contains("3D Spatial Grid & BFS Pathfinding"));
         Assert.Contains(template.Cells, c => c.Type == CellType.Code && c.Source.Contains("VoxelBar3D"));
         Assert.Contains(template.Cells, c => c.Type == CellType.Code && c.Source.Contains("Scatter3D"));
+    }
+
+    [Fact]
+    public void DocumentationService_CleanSnippetTitle_CleansCodesPrefix()
+    {
+        Assert.Equal("3D Voxel Matrix Topography", DocumentationService.CleanSnippetTitle("Codes [C++ | Java | Python3 | C#] : 3D Voxel Matrix Topography"));
+        Assert.Equal("Grid & Island Diagram", DocumentationService.CleanSnippetTitle("Codes [C++ | Java | Python3 | C#] : Grid & Island Diagram"));
+        Assert.Equal("Matrix Algorithm", DocumentationService.CleanSnippetTitle("Matrix Algorithm"));
+        Assert.Equal("Codes [C++ | Java | Python3 | C#]", DocumentationService.CleanSnippetTitle("Codes [C++ | Java | Python3 | C#]"));
+    }
+
+    [Fact]
+    public void CreateScriptFromSnippet_WithCppVariant_CreatesCppExtensionNotFrycs()
+    {
+        var service = DocumentationService.Instance;
+        var snippet = new DocCodeSnippet
+        {
+            Id = "snip_voxel",
+            Title = "Codes [C++ | Java | Python3 | C#] : 3D Voxel Matrix Topography",
+            Description = "3D Voxel Topography",
+            TargetKind = WorkspaceItemKind.Script
+        }
+        .AddVariant("cpp", "C++", "#include <fry_display.hpp>\nint main() { return 0; }")
+        .AddVariant("python", "Python3", "import fry_display\nprint('hello')");
+
+        // C++ variant is selected by default (first variant)
+        Assert.Equal("cpp", snippet.Language);
+        var cppScript = service.CreateScriptFromSnippet(snippet);
+        Assert.Equal("cpp", cppScript.LanguageId);
+        Assert.Equal("3D Voxel Matrix Topography.cpp", cppScript.Title);
+        Assert.False(cppScript.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
+        Assert.EndsWith(".cpp", cppScript.Title, StringComparison.OrdinalIgnoreCase);
+
+        // Switch to Python variant
+        var pyVariant = snippet.Variants.First(v => v.Language == "python");
+        snippet.SelectVariant(pyVariant);
+        Assert.Equal("python", snippet.Language);
+        var pyScript = service.CreateScriptFromSnippet(snippet);
+        Assert.Equal("python", pyScript.LanguageId);
+        Assert.Equal("3D Voxel Matrix Topography.py", pyScript.Title);
+        Assert.False(pyScript.Title.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
+        Assert.EndsWith(".py", pyScript.Title, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task TryInStudio_WithMultiLanguageSnippetAndStorage_CreatesLanguageSpecificSourceFileNotFrycs()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"frydocs_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var languages = new StudioLanguageServices(tempDir);
+            var storage = new LocalScriptStorageService(tempDir, languages.Registry);
+            ScriptDocumentItem? launchedScript = null;
+
+            var vm = new CSharpDocsViewModel(
+                docService: DocumentationService.Instance,
+                openScriptAction: s => launchedScript = s,
+                storageService: storage,
+                languages: languages);
+
+            var snippet = new DocCodeSnippet
+            {
+                Id = "snip_3d_voxel",
+                Title = "Codes [C++ | Java | Python3 | C#] : 3D Voxel Matrix Topography",
+                Description = "Render a 3D matrix as an interactive voxel bar grid",
+                TargetKind = WorkspaceItemKind.Script
+            }
+            .AddVariant("cpp", "C++", "#include <fry_display.hpp>\nint main() { return 0; }")
+            .AddVariant("python", "Python3", "import fry_display\nprint('py')");
+
+            // Select C++
+            snippet.SelectVariant(snippet.Variants.First(v => v.Language == "cpp"));
+            await vm.TryInStudioAsync(snippet);
+
+            Assert.NotNull(launchedScript);
+            Assert.Equal("cpp", launchedScript.LanguageId);
+            Assert.NotNull(launchedScript.SourceFilePath);
+            Assert.True(File.Exists(launchedScript.SourceFilePath));
+            Assert.EndsWith(".cpp", launchedScript.SourceFilePath, StringComparison.OrdinalIgnoreCase);
+            Assert.False(launchedScript.SourceFilePath.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains("#include <fry_display.hpp>", File.ReadAllText(launchedScript.SourceFilePath));
+
+            // Verify no .frycs file was created
+            var files = Directory.GetFiles(tempDir, "*.*", SearchOption.AllDirectories);
+            Assert.DoesNotContain(files, f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(files, f => f.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
     }
 }

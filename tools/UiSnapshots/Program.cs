@@ -1,6 +1,7 @@
 // UiSnapshots: renders C# Code Studio's real views off-screen (Avalonia headless platform + Skia) and saves PNG files.
 // How it works and how to add a snapshot: docs/headless-ui-snapshots.md.
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
+using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
 var options = new Options(args);
 if (options.Command is null or "help" or "-h")
@@ -33,6 +34,10 @@ try
         case "perf": PerfSnapshots.Run(options); break;
         case "server": StudioSnapshots.ServerStudio(options); break;
         case "diagrams": DiagramSnapshots.Run(options); break;
+        case "about": AppSnapshots.About(options); break;
+        case "update": AppSnapshots.Update(options); break;
+        case "app-window" or "mainwindow": AppSnapshots.MainWindow(options); break;
+        case "templates": TemplateSnapshots.Run(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

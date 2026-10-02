@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 

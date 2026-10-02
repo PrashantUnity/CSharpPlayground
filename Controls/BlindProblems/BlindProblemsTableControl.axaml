@@ -1,0 +1,238 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsTableControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
+
+    <!-- Header and rows share their column widths through Columns (BlindProblemTableColumns): Status and the actions are
+         fixed, Title takes the rest, and the dividers in the header resize Category, Acceptance and Difficulty (Category
+         steps aside when the table is too narrow). The right padding keeps the action buttons clear of the scrollbar. -->
+    <Grid RowDefinitions="34,*">
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 1. STICKY HEADER: click a title to sort, drag a divider to resize -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,0,20,0">
+            <Grid x:Name="HeaderGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding Columns.StatusColumn}" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="{Binding Columns.CategoryColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.AcceptanceColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.DifficultyColumn}" />
+                    <ColumnDefinition Width="{Binding Columns.ActionsColumn}" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Classes="column-label" Text="Status" />
+
+                <!-- Sort buttons: a label trims, keeping its arrow, when its column is dragged narrower than the text. -->
+                <Button Grid.Column="1" Classes="column-header" Classes.sorted="{Binding IsSortedByTitle}"
+                        Command="{Binding SortByCommand}" CommandParameter="Title"
+                        Padding="0,0,12,0" ToolTip.Tip="Sort by problem number">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Title" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByTitle}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="2" Classes="column-header" Classes.sorted="{Binding IsSortedByCategory}"
+                        IsVisible="{Binding Columns.IsCategoryVisible}"
+                        Command="{Binding SortByCommand}" CommandParameter="Category"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by category">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Category" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByCategory}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="3" Classes="column-header" Classes.sorted="{Binding IsSortedByAcceptance}"
+                        Command="{Binding SortByCommand}" CommandParameter="Acceptance"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by acceptance rate">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Acceptance" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByAcceptance}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <Button Grid.Column="4" Classes="column-header" Classes.sorted="{Binding IsSortedByDifficulty}"
+                        Command="{Binding SortByCommand}" CommandParameter="Difficulty"
+                        Padding="12,0,8,0" ToolTip.Tip="Sort by difficulty">
+                    <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                        <TextBlock Classes="column-label" Text="Difficulty" TextTrimming="CharacterEllipsis" />
+                        <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding SortIcon}" Width="12" Height="12" Margin="4,0,0,0"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    IsVisible="{Binding IsSortedByDifficulty}" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <!-- Dividers sit on the left edge of Category, Acceptance and Difficulty; Tag is the divider's number.
+                     Drag one to resize the columns beside it, double-click to put every width back. -->
+                <Border Grid.Column="2" Classes="column-divider" Tag="1"
+                        IsVisible="{Binding Columns.IsCategoryVisible}"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
+                <Border Grid.Column="3" Classes="column-divider" Tag="2"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
+                <Border Grid.Column="4" Classes="column-divider" Tag="3"
+                        PointerPressed="OnDividerPressed" PointerMoved="OnDividerMoved"
+                        PointerReleased="OnDividerReleased" PointerCaptureLost="OnDividerCaptureLost">
+                    <Border />
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 2. SCROLLABLE PROBLEM LIST                                      -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- Virtualized: only the rows on screen are built (each row is a heavy control). The ScrollViewer is in the
+             template so that the VirtualizingStackPanel is its direct content, which is what lets it virtualize. -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding FilteredProblems}">
+            <ItemsControl.Template>
+                <ControlTemplate>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:BlindProblemItem">
+                        <Border Classes="problem-row" Classes.selected="{Binding IsHighlighted}" Height="44" Padding="16,0,20,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.StatusColumn}" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.CategoryColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.AcceptanceColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.DifficultyColumn}" />
+                                    <ColumnDefinition Width="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.ActionsColumn}" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Status: solved toggle, plus a lock for LeetCode Premium problems -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="-5,0,0,0">
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).ToggleSolvedCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{Binding SolvedTooltip}">
+                                        <Panel>
+                                            <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsSolved}" />
+                                            <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsSolved}" />
+                                        </Panel>
+                                    </Button>
+                                    <materialIcons:MaterialIcon Kind="LockOutline" Width="13" Height="13"
+                                                                Foreground="#F59E0B" VerticalAlignment="Center"
+                                                                IsVisible="{Binding IsPremium}"
+                                                                ToolTip.Tip="LeetCode Premium on leetcode.com; free to solve here" />
+                                </StackPanel>
+
+                                <!-- Title: opens the problem in Script Studio -->
+                                <Button Grid.Column="1" Classes="title-link" Margin="0,0,12,0"
+                                        Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip.Tip="Open in Script Studio">
+                                    <TextBlock Text="{Binding FullTitle}" />
+                                </Button>
+
+                                <Border Grid.Column="2" Classes="category-pill" Margin="12,0,8,0"
+                                        IsVisible="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).Columns.IsCategoryVisible}">
+                                    <TextBlock Text="{Binding Category}" />
+                                </Border>
+
+                                <TextBlock Grid.Column="3" Text="{Binding AcceptanceRateText}" Margin="12,0,8,0"
+                                           FontSize="12" Foreground="{DynamicResource DsMutedBrush}"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                                <Border Grid.Column="4" Margin="12,0,8,0"
+                                        Background="{Binding DifficultyBackground}"
+                                        Height="20" MinHeight="20"
+                                        CornerRadius="10" Padding="8,0"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DifficultyBadgeText}"
+                                               FontSize="11" FontWeight="SemiBold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                               Margin="0,1,0,0"
+                                               Foreground="{Binding DifficultyColor}" />
+                                </Border>
+
+                                <!-- Actions: Script, Notebook, LeetCode, details, save -->
+                                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenScriptStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="Open in Script Studio (run with F5)">
+                                        <materialIcons:MaterialIcon Kind="CodeBraces" Foreground="{DynamicResource NavScriptsFgBrush}" />
+                                    </Button>
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenNotebookStudioCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="Open as a step-by-step notebook">
+                                        <materialIcons:MaterialIcon Kind="NotebookOutline" Foreground="{DynamicResource NavNotebooksFgBrush}" />
+                                    </Button>
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{Binding LeetCodeTooltip}">
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Foreground="#FFA116" />
+                                    </Button>
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="Problem, approaches and test cases">
+                                        <materialIcons:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                    <Button Classes="row-action"
+                                            Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).ToggleBookmarkCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{Binding BookmarkTooltip}">
+                                        <Panel>
+                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="#F59E0B" IsVisible="{Binding IsBookmarked}" />
+                                            <materialIcons:MaterialIcon Kind="BookmarkOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsBookmarked}" />
+                                        </Panel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Nothing matches: say so, and offer the way back -->
+        <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding HasNoResults}">
+            <materialIcons:MaterialIcon Kind="FilterRemoveOutline" Width="32" Height="32"
+                                        Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="No problems match these filters" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+            <Button Classes="nexus-btn-surface" Command="{Binding ClearFiltersCommand}" HorizontalAlignment="Center" Padding="12,6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <materialIcons:MaterialIcon Kind="FilterOffOutline" Width="14" Height="14" />
+                    <TextBlock Text="Clear filters" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

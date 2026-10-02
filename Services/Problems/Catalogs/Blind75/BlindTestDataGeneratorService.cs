@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Services;
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 
 /// <summary>
 /// "Generate test data" for a Blind 75 problem: the statement's examples plus its edge cases (empty input, duplicates,

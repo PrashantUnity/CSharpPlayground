@@ -1,9 +1,13 @@
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A workspace with more files than the listing limit is not cut off: the Explorer lists its top folder and each folder when it
@@ -131,7 +135,7 @@ public class LazyExplorerTests : IDisposable
         var folders = studio.ExplorerRootItems.Where(i => i.IsDirectory).ToList();
         Assert.Equal(5, folders.Count);
         // The two files of the folder, and the open document that is not part of it (listed at the top).
-        Assert.Equal(new[] { "Open.frycs", "top00.py", "top01.py" }, studio.ExplorerRootItems.Where(i => !i.IsDirectory).Select(i => i.Name).OrderBy(n => n));
+        Assert.Equal(new[] { "Open.frycs", "top00.py", "top01.py" }, studio.ExplorerRootItems.Where(i => !i.IsDirectory).Select<ExplorerItemViewModel, string>(i => i.Name).OrderBy(n => n));
         Assert.All(folders, f =>
         {
             Assert.False(f.ChildrenLoaded);
@@ -139,7 +143,7 @@ public class LazyExplorerTests : IDisposable
             Assert.True(f.Children[0].IsPlaceholder);
         });
         Assert.Equal(8, studio.ExplorerRows.Rows.Count);
-        Assert.False(studio.IsExplorerTruncated);
+        Assert.False((bool)studio.IsExplorerTruncated);
     }
 
     [Fact]
@@ -156,9 +160,9 @@ public class LazyExplorerTests : IDisposable
 
         Assert.Equal(5, folder.Children.Count);
         Assert.All(folder.Children, c => Assert.False(c.IsPlaceholder));
-        Assert.Equal(new[] { "f3_00.py", "f3_01.py", "f3_02.py", "f3_03.py", "f3_04.py" }, folder.Children.Select(c => c.Name));
+        Assert.Equal(new[] { "f3_00.py", "f3_01.py", "f3_02.py", "f3_03.py", "f3_04.py" }, folder.Children.Select<ExplorerItemViewModel, string>(c => c.Name));
         Assert.Equal(5 + 3 + 5, studio.ExplorerRows.Rows.Count);
-        Assert.All(folder.Children, c => Assert.Equal("folder3/" + c.Name, c.FullPath));
+        Assert.All(folder.Children, c => Assert.Equal("folder3/" + c.Name, (string?)c.FullPath));
         // The other folders were not listed.
         Assert.All(studio.ExplorerRootItems.Where(i => i.IsDirectory && i != folder), f => Assert.False(f.ChildrenLoaded));
         Assert.Equal(scansBefore, _storage.WorkspaceScanCount);
@@ -208,7 +212,7 @@ public class LazyExplorerTests : IDisposable
             && newFolder2.Children.FirstOrDefault(c => c.Name == "inner") is { IsExpanded: true, ChildrenLoaded: true } newInner
             && newInner.Children.FirstOrDefault(c => c.Name == "deeper") is { IsExpanded: true, ChildrenLoaded: true });
         Assert.Contains(studio.ExplorerRows.Rows, r => r.Name == "deep00.py");
-        Assert.False(studio.ExplorerRootItems.First(i => i.Name == "folder4").IsExpanded);
+        Assert.False((bool)studio.ExplorerRootItems.First(i => i.Name == "folder4").IsExpanded);
     }
 
     [Fact]
@@ -225,9 +229,9 @@ public class LazyExplorerTests : IDisposable
 
         await WaitUntil(() => studio.ExplorerRootItems.SelectMany(Flatten).FirstOrDefault(i => i.DocumentId == doc.Id) is { IsSelected: true });
         var item = studio.ExplorerRootItems.SelectMany(Flatten).First(i => i.DocumentId == doc.Id);
-        Assert.Equal("folder4/inner/Buried.frycs", item.FullPath);
-        Assert.True(item.Parent!.IsExpanded);
-        Assert.True(item.Parent.Parent!.IsExpanded);
+        Assert.Equal((string?)"folder4/inner/Buried.frycs", (string?)item.FullPath);
+        Assert.True((bool)item.Parent!.IsExpanded);
+        Assert.True((bool)item.Parent.Parent!.IsExpanded);
         Assert.Contains(item, studio.ExplorerRows.Rows);
         // An open document inside the workspace is not listed as an outsider at the top.
         Assert.DoesNotContain(studio.ExplorerRootItems, i => i.DocumentId == doc.Id);
@@ -244,10 +248,10 @@ public class LazyExplorerTests : IDisposable
         await studio.NewFolderUnderItemAsync(folder);
 
         Assert.True(folder.ChildrenLoaded);
-        Assert.True(folder.IsExpanded);
+        Assert.True((bool)folder.IsExpanded);
         var created = folder.Children.Where(c => c.IsDirectory).ToList();
         Assert.Single(created);
-        Assert.True(created[0].IsRenaming);
+        Assert.True((bool)created[0].IsRenaming);
         Assert.Equal(5, folder.Children.Count(c => !c.IsDirectory));
     }
 
@@ -265,8 +269,8 @@ public class LazyExplorerTests : IDisposable
         folder = studio.ExplorerRootItems.First(i => i.Name == "folder2");
         await WaitUntil(() => folder.ChildrenLoaded);
         var created = folder.Children.Single(c => c.FullPath.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
-        Assert.True(created.IsRenaming);
-        Assert.Equal(studio.Script.Id, created.DocumentId);
+        Assert.True((bool)created.IsRenaming);
+        Assert.Equal((string?)studio.Script.Id, (string?)created.DocumentId);
     }
 
     [Fact]
@@ -283,7 +287,7 @@ public class LazyExplorerTests : IDisposable
 
         Assert.Equal(Limit, data.Children.Count(c => !c.IsPlaceholder));
         var note = Assert.Single(data.Children, c => c.IsPlaceholder);
-        Assert.Contains("More files", note.Name);
+        Assert.Contains((string)"More files", (string?)note.Name);
     }
 
     [Fact]
@@ -326,7 +330,7 @@ public class LazyExplorerTests : IDisposable
         await WaitUntil(() => folder.ChildrenLoaded);
 
         Assert.Equal(5, folder.Children.Count);
-        Assert.False(studio.IsExplorerTruncated);
+        Assert.False((bool)studio.IsExplorerTruncated);
     }
 
     [Fact]
@@ -342,8 +346,8 @@ public class LazyExplorerTests : IDisposable
 
         await WaitUntil(() => studio.ExplorerRootItems.SelectMany(Flatten).FirstOrDefault(i => i.DocumentId == notebook.Id) is { IsSelected: true });
         var item = studio.ExplorerRootItems.SelectMany(Flatten).First(i => i.DocumentId == notebook.Id);
-        Assert.Equal("folder2/notebooks/Analysis.frynb", item.FullPath);
-        Assert.True(item.Parent!.IsExpanded);
+        Assert.Equal((string?)"folder2/notebooks/Analysis.frynb", (string?)item.FullPath);
+        Assert.True((bool)item.Parent!.IsExpanded);
         Assert.DoesNotContain(studio.ExplorerRootItems, i => i.DocumentId == notebook.Id);
     }
 
@@ -361,7 +365,7 @@ public class LazyExplorerTests : IDisposable
         await WaitUntil(() => folder.ChildrenLoaded);
         var created = folder.Children.Where(c => c.FullPath.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)).ToList();
         Assert.Single(created);
-        Assert.True(created[0].IsRenaming);
+        Assert.True((bool)created[0].IsRenaming);
     }
 
     private static IEnumerable<ExplorerItemViewModel> Flatten(ExplorerItemViewModel item) =>

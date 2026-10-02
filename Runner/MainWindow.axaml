@@ -12,5 +12,114 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource M3SurfaceBrush}">
 
-    <views:CSharpStudioHostView x:Name="StudioHost" />
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <!-- File Menu -->
+            <NativeMenuItem Header="File">
+                <NativeMenu>
+                    <NativeMenuItem Header="New Script" Gesture="Meta+N" Click="NewScript_OnClick" />
+                    <NativeMenuItem Header="New Notebook" Gesture="Shift+Meta+N" Click="NewNotebook_OnClick" />
+                    <NativeMenuItem Header="New API Server" Click="NewServer_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Open File..." Gesture="Meta+O" Click="OpenFile_OnClick" />
+                    <NativeMenuItem Header="Open Folder / Workspace..." Gesture="Shift+Meta+O" Click="OpenFolder_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Save" Gesture="Meta+S" Click="Save_OnClick" />
+                    <NativeMenuItem Header="Save As..." Gesture="Shift+Meta+S" Click="SaveAs_OnClick" />
+                    <NativeMenuItem Header="Save All" Gesture="Alt+Meta+S" Click="SaveAll_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Close Tab" Gesture="Meta+W" Click="CloseTab_OnClick" />
+                    <NativeMenuItem Header="Close Window" Gesture="Shift+Meta+W" Click="CloseWindow_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+
+            <!-- Edit Menu -->
+            <NativeMenuItem Header="Edit">
+                <NativeMenu>
+                    <NativeMenuItem Header="Undo" Gesture="Meta+Z" Click="Undo_OnClick" />
+                    <NativeMenuItem Header="Redo" Gesture="Shift+Meta+Z" Click="Redo_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Cut" Gesture="Meta+X" Click="Cut_OnClick" />
+                    <NativeMenuItem Header="Copy" Gesture="Meta+C" Click="Copy_OnClick" />
+                    <NativeMenuItem Header="Paste" Gesture="Meta+V" Click="Paste_OnClick" />
+                    <NativeMenuItem Header="Select All" Gesture="Meta+A" Click="SelectAll_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Find..." Gesture="Meta+F" Click="Find_OnClick" />
+                    <NativeMenuItem Header="Replace..." Gesture="Alt+Meta+F" Click="Replace_OnClick" />
+                    <NativeMenuItem Header="Find in Files" Gesture="Shift+Meta+F" Click="FindInFiles_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Format Document" Gesture="Shift+Alt+F" Click="FormatDocument_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+
+            <!-- View Menu -->
+            <NativeMenuItem Header="View">
+                <NativeMenu>
+                    <NativeMenuItem Header="Command Palette..." Gesture="Shift+Meta+P" Click="CommandPalette_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Explorer" Gesture="Shift+Meta+E" Click="ViewExplorer_OnClick" />
+                    <NativeMenuItem Header="Search" Gesture="Shift+Meta+F" Click="ViewSearch_OnClick" />
+                    <NativeMenuItem Header="Run &amp; Debug" Gesture="Shift+Meta+D" Click="ViewRunDebug_OnClick" />
+                    <NativeMenuItem Header="Dependencies &amp; Packages" Gesture="Shift+Meta+X" Click="ViewNuGet_OnClick" />
+                    <NativeMenuItem Header="Problems" Gesture="Shift+Meta+M" Click="ViewProblems_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Toggle Primary Side Bar" Gesture="Meta+B" Click="ToggleSideBar_OnClick" />
+                    <NativeMenuItem Header="Toggle Bottom Panel" Gesture="Meta+J" Click="ToggleBottomDeck_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Zoom In" Click="ZoomIn_OnClick" />
+                    <NativeMenuItem Header="Zoom Out" Click="ZoomOut_OnClick" />
+                    <NativeMenuItem Header="Reset Zoom" Click="ResetZoom_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Return to Hub" Gesture="Meta+H" Click="ReturnToHub_OnClick" />
+                    <NativeMenuItem Header="Documentation &amp; Learning" Click="OpenDocs_OnClick" />
+                    <NativeMenuItem Header="Blind 75 Algorithm Hub" Click="OpenBlind_OnClick" />
+                    <NativeMenuItem Header="Settings..." Click="OpenSettings_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+
+            <!-- Run Menu -->
+            <NativeMenuItem Header="Run">
+                <NativeMenu>
+                    <NativeMenuItem Header="Start Debugging" Gesture="F5" Click="StartDebugging_OnClick" />
+                    <NativeMenuItem Header="Run Without Debugging" Gesture="Control+F5" Click="RunWithoutDebugging_OnClick" />
+                    <NativeMenuItem Header="Stop Execution" Gesture="Shift+F5" Click="StopExecution_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Step Over" Gesture="F10" Click="StepOver_OnClick" />
+                    <NativeMenuItem Header="Step Into" Gesture="F11" Click="StepInto_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Toggle Breakpoint" Gesture="F9" Click="ToggleBreakpoint_OnClick" />
+                    <NativeMenuItem Header="Clear All Breakpoints" Click="ClearAllBreakpoints_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+
+            <!-- Window Menu -->
+            <NativeMenuItem Header="Window">
+                <NativeMenu>
+                    <NativeMenuItem Header="Minimize" Gesture="Meta+M" Click="Minimize_OnClick" />
+                    <NativeMenuItem Header="Zoom" Click="ToggleMaximize_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Bring All to Front" Click="BringAllToFront_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+
+            <!-- Help Menu -->
+            <NativeMenuItem Header="Help">
+                <NativeMenu>
+                    <NativeMenuItem Header="Welcome / Hub" Click="ReturnToHub_OnClick" />
+                    <NativeMenuItem Header="Documentation &amp; Tutorials" Click="OpenDocs_OnClick" />
+                    <NativeMenuItem Header="Blind 75 Practice" Click="OpenBlind_OnClick" />
+                    <NativeMenuItem Header="Keyboard Shortcuts Reference" Click="KeyboardShortcuts_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Report an Issue..." Click="ReportIssue_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="About C# Code Studio" Click="About_OnClick" />
+                </NativeMenu>
+            </NativeMenuItem>
+        </NativeMenu>
+    </NativeMenu.Menu>
+
+    <DockPanel>
+        <NativeMenuBar DockPanel.Dock="Top" />
+        <views:CSharpStudioHostView x:Name="StudioHost" />
+    </DockPanel>
 </Window>

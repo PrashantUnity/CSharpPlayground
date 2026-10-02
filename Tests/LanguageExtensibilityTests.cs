@@ -1,12 +1,15 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// A language the studio has never heard of works once it's registered: nothing else in the studio names languages.
@@ -66,8 +69,8 @@ public class LanguageExtensibilityTests : IDisposable
         await option.Command.ExecuteAsync(null);
 
         Assert.Equal("New FakeLang File", option.Label);
-        Assert.EndsWith(".fake", studio.Script.SourceFilePath);
-        Assert.Equal("print hello from fakelang\n", studio.Code);
+        Assert.EndsWith((string?)".fake", (string?)studio.Script.SourceFilePath);
+        Assert.Equal((string?)"print hello from fakelang\n", (string?)studio.Code);
         Assert.Equal(FakeLanguage.LanguageId, studio.ActiveLanguage.Id);
     }
 

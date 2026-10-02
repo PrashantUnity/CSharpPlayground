@@ -1,13 +1,13 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
+using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
-using PdfEditorApp.Plugins.CSharpEditor.Tests.TestSupport;
 using Xunit;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests.RealPython;
+namespace CSharpEditorPlugin.Tests.RealPython;
 
 /// <summary>The notebook's Python kernel with the real Python: state, output, errors, Stop, crashes, input, values.</summary>
 [Collection(RealPythonCollection.Name)]

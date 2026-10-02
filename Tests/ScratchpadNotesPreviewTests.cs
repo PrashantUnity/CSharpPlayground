@@ -1,13 +1,12 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>The Scratchpad & Notes side bar shows a script's notes rendered as markdown, with Edit / Done to switch.</summary>
 public class ScratchpadNotesPreviewTests : IDisposable
@@ -39,9 +38,9 @@ public class ScratchpadNotesPreviewTests : IDisposable
     {
         var studio = Studio(Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(1)!));
 
-        Assert.True(studio.IsNotesPreviewMode);
+        Assert.True((bool)studio.IsNotesPreviewMode);
         Assert.False(studio.IsEditingNotes);
-        Assert.StartsWith("# 1. Two Sum", studio.Notes);
+        Assert.StartsWith((string?)"# 1. Two Sum", (string?)studio.Notes);
     }
 
     [Fact]
@@ -49,7 +48,7 @@ public class ScratchpadNotesPreviewTests : IDisposable
     {
         var studio = Studio(Script(string.Empty));
 
-        Assert.False(studio.IsNotesPreviewMode);
+        Assert.False((bool)studio.IsNotesPreviewMode);
         Assert.True(studio.IsEditingNotes);
     }
 
@@ -66,9 +65,9 @@ public class ScratchpadNotesPreviewTests : IDisposable
 
         studio.Notes += "\n- then sort";
         studio.ToggleNotesPreviewCommand.Execute(null); // Done
-        Assert.True(studio.IsNotesPreviewMode);
+        Assert.True((bool)studio.IsNotesPreviewMode);
         Assert.Equal(1, focusRequests);
-        Assert.EndsWith("- then sort", studio.Script.Notes);
+        Assert.EndsWith((string?)"- then sort", (string?)studio.Script.Notes);
     }
 
     [Fact]
@@ -84,8 +83,8 @@ public class ScratchpadNotesPreviewTests : IDisposable
         Assert.True(studio.IsEditingNotes);
 
         await studio.SwitchToTabAsync(studio.OpenTabs.First(t => t.Id == withNotes.Id));
-        Assert.True(studio.IsNotesPreviewMode);
-        Assert.Equal("## Requirements\n\nReturn the indices.", studio.Notes);
+        Assert.True((bool)studio.IsNotesPreviewMode);
+        Assert.Equal((string?)"## Requirements\n\nReturn the indices.", (string?)studio.Notes);
     }
 
     [Fact]
@@ -96,8 +95,8 @@ public class ScratchpadNotesPreviewTests : IDisposable
 
         studio.InsertTemplate(template);
 
-        Assert.True(studio.IsNotesPreviewMode);
-        Assert.Contains("Move the ends inward.", studio.Notes);
+        Assert.True((bool)studio.IsNotesPreviewMode);
+        Assert.Contains((string)"Move the ends inward.", (string?)studio.Notes);
     }
 
     [Fact]
@@ -109,6 +108,6 @@ public class ScratchpadNotesPreviewTests : IDisposable
         studio.InsertTemplate(new CodeTemplate { Title = "Sliding window", InitialCode = "// window", Notes = "# Sliding window" });
 
         Assert.True(studio.IsEditingNotes);
-        Assert.Equal("my own notes\n\n# Sliding window", studio.Notes);
+        Assert.Equal((string?)"my own notes\n\n# Sliding window", (string?)studio.Notes);
     }
 }

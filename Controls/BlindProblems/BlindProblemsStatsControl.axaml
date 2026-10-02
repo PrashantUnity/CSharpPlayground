@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
+             xmlns:blindProblems="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.BlindProblems"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="54"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.BlindProblems.BlindProblemsStatsControl"
+             x:DataType="blindProblems:CSharpBlindProblemsViewModel">
+
+    <Border Background="{DynamicResource DsSurfaceBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="16,8">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+            <!-- 1. Progress Summary Text -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="#22C55E" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding ProgressSummaryText}"
+                           FontSize="12.5" FontWeight="Bold"
+                           Foreground="{DynamicResource DsTextWhiteBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- 2. Breakdown Badges -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="24,0,0,0">
+                <!-- Easy -->
+                <Border Background="#1A22C55E" BorderBrush="#3322C55E" BorderThickness="1"
+                        Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="#22C55E" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="#22C55E" VerticalAlignment="Center" Margin="0,1,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Medium -->
+                <Border Background="#1AF59E0B" BorderBrush="#33F59E0B" BorderThickness="1"
+                        Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Med:" FontSize="10.5" Foreground="#F59E0B" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="#F59E0B" VerticalAlignment="Center" Margin="0,1,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Hard -->
+                <Border Background="#1AE11D48" BorderBrush="#33E11D48" BorderThickness="1"
+                        Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="#FB7185" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="#FB7185" VerticalAlignment="Center" Margin="0,1,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- 3. Mini Progress Bar -->
+            <ProgressBar Grid.Column="2"
+                         Minimum="0" Maximum="100"
+                         Value="{Binding ProgressPercentage}"
+                         Height="5"
+                         CornerRadius="2.5"
+                         Foreground="#22C55E"
+                         Background="{DynamicResource DsSurfaceHighBrush}"
+                         VerticalAlignment="Center"
+                         Margin="24,0" />
+
+            <!-- 4. Status filter: All, Solved, Unsolved, Saved (bookmarked) -->
+            <Border Grid.Column="3" Classes="segmented">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusAll}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="All">
+                        <TextBlock Text="All" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusSolved}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Solved">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="#22C55E" VerticalAlignment="Center" />
+                            <TextBlock Text="Solved" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusUnsolved}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Unsolved">
+                        <TextBlock Text="Unsolved" />
+                    </Button>
+                    <Button Classes="segment" Classes.selected="{Binding IsStatusBookmarked}"
+                            Command="{Binding SetStatusFilterCommand}" CommandParameter="Bookmarked"
+                            ToolTip.Tip="Problems you saved for later">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <materialIcons:MaterialIcon Kind="Bookmark" Width="13" Height="13" Foreground="#F59E0B" VerticalAlignment="Center" />
+                            <TextBlock Text="Saved" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,11 +1,13 @@
 using System.Text;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>What the editor gives up, and keeps, for a document with tens of thousands of blocks or a couple of megabytes of text.</summary>
 public class LargeDocumentTests : IDisposable
@@ -102,11 +104,11 @@ public class LargeDocumentTests : IDisposable
         // ... a huge one is not, and what was found before no longer describes it.
         studio.Code = string.Concat(Enumerable.Repeat("// filler line of a generated file\n", CSharpCodeStudioViewModel.LargeDocumentLength / 30));
         Assert.True(studio.Code.Length > CSharpCodeStudioViewModel.LargeDocumentLength);
-        Assert.Equal(CSharpCodeStudioViewModel.LargeDocumentStatus, studio.CompilerStatusText);
+        Assert.Equal((string?)CSharpCodeStudioViewModel.LargeDocumentStatus, (string?)studio.CompilerStatusText);
         Assert.Equal(0, studio.ErrorCount);
         Assert.Empty(studio.Diagnostics);
         await Task.Delay(1_000);
-        Assert.Equal(CSharpCodeStudioViewModel.LargeDocumentStatus, studio.CompilerStatusText);
+        Assert.Equal((string?)CSharpCodeStudioViewModel.LargeDocumentStatus, (string?)studio.CompilerStatusText);
 
         // Cutting it down brings the analysis back.
         studio.Code = "System.Console.WriteLine(1);\n";

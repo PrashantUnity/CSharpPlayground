@@ -5,6 +5,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="38"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Server.FryServerMasterBarControl"
              x:DataType="vm:FryServerStudioViewModel">
@@ -83,7 +84,7 @@
     </UserControl.Styles>
 
     <!-- Professional 38px VS Code Master Bar with Responsive Collapse -->
-    <Border controls:CompactWhenCrowded.IsEnabled="True"
+    <Border common:CompactWhenCrowded.IsEnabled="True"
             Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
             BorderThickness="0,0,0,1"

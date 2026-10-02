@@ -1,13 +1,12 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 {
@@ -56,8 +55,8 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         var studio = CreateStudio();
 
         Assert.Equal(0, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
-        Assert.Equal("EXPLORER", studio.SideBarTitle);
+        Assert.True((bool)studio.IsSideBarVisible);
+        Assert.Equal((string?)"EXPLORER", (string?)studio.SideBarTitle);
     }
 
     [Theory]
@@ -75,37 +74,37 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         studio.SelectActivityBarItem(index);
 
         Assert.Equal(index, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
-        Assert.Equal(expectedTitle, studio.SideBarTitle);
+        Assert.True((bool)studio.IsSideBarVisible);
+        Assert.Equal(expectedTitle, (string?)studio.SideBarTitle);
     }
 
     [Fact]
     public void SelectActivityBarItem_WhenAlreadyActive_TogglesVisibility()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
         Assert.Equal(0, studio.SelectedActivityBarIndex);
 
         // Clicking the already active item toggles the sidebar closed
         studio.SelectActivityBarItem(0);
-        Assert.False(studio.IsSideBarVisible);
+        Assert.False((bool)studio.IsSideBarVisible);
 
         // Clicking it again re-opens the sidebar
         studio.SelectActivityBarItem(0);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
     }
 
     [Fact]
     public void ToggleSideBarCommand_TogglesSideBarVisibility()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
 
         studio.ToggleSideBarCommand.Execute(null);
-        Assert.False(studio.IsSideBarVisible);
+        Assert.False((bool)studio.IsSideBarVisible);
 
         studio.ToggleSideBarCommand.Execute(null);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
     }
 
     [Fact]
@@ -116,17 +115,17 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         // LeftTab 0 -> Scratchpad (4)
         studio.SelectedLeftTabIndex = 0;
         Assert.Equal(4, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
 
         // LeftTab 1 -> References / Dependencies (3)
         studio.SelectedLeftTabIndex = 1;
         Assert.Equal(3, studio.SelectedActivityBarIndex);
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
 
         // LeftTab 2 -> Testcases in bottom deck (3)
         studio.SelectedLeftTabIndex = 2;
         Assert.Equal(3, studio.SelectedBottomTabIndex);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
     }
 
     [Fact]
@@ -142,7 +141,7 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         Assert.Equal(1, studio.SearchMatches[0].Column);
         Assert.Equal(2, studio.SearchMatches[1].LineNumber);
         Assert.Equal(3, studio.SearchMatches[2].LineNumber);
-        Assert.Equal("3 results", studio.SearchStatusText);
+        Assert.Equal((string?)"3 results", (string?)studio.SearchStatusText);
     }
 
     [Fact]
@@ -156,8 +155,8 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         studio.ReplaceNextCommand.Execute(null);
 
-        Assert.Contains("long first = 1;", studio.Code);
-        Assert.Contains("int second = 2;", studio.Code);
+        Assert.Contains((string)"long first = 1;", (string?)studio.Code);
+        Assert.Contains((string)"int second = 2;", (string?)studio.Code);
     }
 
     [Fact]
@@ -171,7 +170,7 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         studio.ReplaceAllCommand.Execute(null);
 
-        Assert.Equal("bar(1); bar(2); bar(3);", studio.Code);
+        Assert.Equal((string?)"bar(1); bar(2); bar(3);", (string?)studio.Code);
     }
 
     [Fact]
@@ -200,8 +199,8 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         var template = CodeTemplateLibrary.GetTemplates().First();
         studio.InsertTemplateCommand.Execute(template);
 
-        Assert.Contains("// Existing Code", studio.Code);
-        Assert.Contains(template.InitialCode, studio.Code);
+        Assert.Contains((string)"// Existing Code", (string?)studio.Code);
+        Assert.Contains(template.InitialCode, (string?)studio.Code);
     }
 
     [Fact]
@@ -212,31 +211,31 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         // Show Problems (Tab 2)
         studio.ShowProblemsTabCommand.Execute(null);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.Equal(2, studio.SelectedBottomTabIndex);
 
         // Show Console (Tab 1)
         studio.IsBottomDeckExpanded = false;
         studio.ShowConsoleTabCommand.Execute(null);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.Equal(1, studio.SelectedBottomTabIndex);
 
         // Show Dump Results (Tab 0)
         studio.IsBottomDeckExpanded = false;
         studio.ShowDumpResultsTabCommand.Execute(null);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.Equal(0, studio.SelectedBottomTabIndex);
 
         // Show Test Cases (Tab 3)
         studio.IsBottomDeckExpanded = false;
         studio.ShowTestCasesTabCommand.Execute(null);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.Equal(3, studio.SelectedBottomTabIndex);
 
         // Show Debugger (Tab 4)
         studio.IsBottomDeckExpanded = false;
         studio.ShowDebuggerTabCommand.Execute(null);
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.Equal(4, studio.SelectedBottomTabIndex);
     }
 
@@ -247,9 +246,9 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         Assert.Single(studio.OpenTabs);
         var tab = studio.OpenTabs[0];
-        Assert.True(tab.IsActive);
-        Assert.Equal(studio.Script.Id, tab.Id);
-        Assert.Equal(studio.Script.Title, tab.Title);
+        Assert.True((bool)tab.IsActive);
+        Assert.Equal((string?)studio.Script.Id, tab.Id);
+        Assert.Equal((string?)studio.Script.Title, tab.Title);
     }
 
     [Fact]
@@ -266,9 +265,9 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         await studio.UpdateActiveScriptAsync(secondDoc);
 
         Assert.Equal(2, studio.OpenTabs.Count);
-        Assert.Equal("doc-2", studio.Script.Id);
-        Assert.False(studio.OpenTabs[0].IsActive);
-        Assert.True(studio.OpenTabs[1].IsActive);
+        Assert.Equal((string?)"doc-2", (string?)studio.Script.Id);
+        Assert.False((bool)studio.OpenTabs[0].IsActive);
+        Assert.True((bool)studio.OpenTabs[1].IsActive);
         Assert.Equal("Secondary Script", studio.OpenTabs[1].Title);
     }
 
@@ -290,8 +289,8 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         var firstTab = studio.OpenTabs[0];
         await studio.SwitchToTabAsync(firstTab);
 
-        Assert.True(firstTab.IsActive);
-        Assert.Equal("// Code in Document 1 (modified)", studio.Code);
+        Assert.True((bool)firstTab.IsActive);
+        Assert.Equal((string?)"// Code in Document 1 (modified)", (string?)studio.Code);
     }
 
     [Fact]
@@ -312,19 +311,19 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
         await studio.CloseTabAsync(secondTab);
 
         Assert.Single(studio.OpenTabs);
-        Assert.True(studio.OpenTabs[0].IsActive);
-        Assert.Equal(studio.OpenTabs[0].Id, studio.Script.Id);
+        Assert.True((bool)studio.OpenTabs[0].IsActive);
+        Assert.Equal(studio.OpenTabs[0].Id, (string?)studio.Script.Id);
     }
 
     [Fact]
     public void BottomDeckGridLength_UpdatesDynamicallyOnExpandAndCollapse()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsBottomDeckExpanded);
+        Assert.True((bool)studio.IsBottomDeckExpanded);
         Assert.True(studio.BottomDeckGridLength.Value > 0);
 
         studio.IsBottomDeckExpanded = false;
-        Assert.Equal(0, studio.BottomDeckGridLength.Value);
+        Assert.Equal<double>(0, studio.BottomDeckGridLength.Value);
 
         studio.IsBottomDeckExpanded = true;
         Assert.True(studio.BottomDeckGridLength.Value >= 280);
@@ -334,7 +333,7 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
     public void DeckPosition_TogglesBetweenBottomAndRight_AndManagesGridLengths()
     {
         var studio = CreateStudio();
-        Assert.False(studio.IsDeckDockedToRight);
+        Assert.False((bool)studio.IsDeckDockedToRight);
         Assert.True(studio.ShowBottomDeck);
         Assert.True(studio.ShowBottomDeckSplitter);
         Assert.False(studio.ShowRightDeckSplitter);
@@ -342,17 +341,17 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         // Toggle to Right Dock
         studio.ToggleDeckPositionCommand.Execute(null);
-        Assert.True(studio.IsDeckDockedToRight);
+        Assert.True((bool)studio.IsDeckDockedToRight);
         Assert.False(studio.ShowBottomDeck);
         Assert.False(studio.ShowBottomDeckSplitter);
         Assert.True(studio.ShowRightDeckSplitter);
-        Assert.Equal(0, studio.BottomDeckGridLength.Value);
+        Assert.Equal<double>(0, studio.BottomDeckGridLength.Value);
         Assert.True(studio.RightDeckGridLength.Value >= 400);
         Assert.Equal("Dock Panel to Bottom", studio.DeckPositionTooltip);
 
         // Collapse while right docked
         studio.IsBottomDeckExpanded = false;
-        Assert.Equal(0, studio.RightDeckGridLength.Value);
+        Assert.Equal<double>(0, studio.RightDeckGridLength.Value);
         Assert.False(studio.ShowRightDeckSplitter);
 
         // Expand again
@@ -362,7 +361,7 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
 
         // Toggle back to Bottom Dock
         studio.ToggleDeckPositionCommand.Execute(null);
-        Assert.False(studio.IsDeckDockedToRight);
+        Assert.False((bool)studio.IsDeckDockedToRight);
         Assert.True(studio.ShowBottomDeck);
         Assert.True(studio.BottomDeckGridLength.Value >= 280);
     }
@@ -371,11 +370,11 @@ public class CSharpCodeStudioVsCodeLayoutTests : IDisposable
     public void SideBarGridLength_UpdatesDynamicallyOnExpandAndCollapse()
     {
         var studio = CreateStudio();
-        Assert.True(studio.IsSideBarVisible);
+        Assert.True((bool)studio.IsSideBarVisible);
         Assert.True(studio.SideBarGridLength.Value >= 280);
 
         studio.IsSideBarVisible = false;
-        Assert.Equal(0, studio.SideBarGridLength.Value);
+        Assert.Equal<double>(0, studio.SideBarGridLength.Value);
 
         studio.IsSideBarVisible = true;
         Assert.True(studio.SideBarGridLength.Value >= 280);

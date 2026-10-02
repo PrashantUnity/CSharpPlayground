@@ -1,14 +1,14 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpNotebookStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.CSharpNotebookStudioViewModel;
+using NotebookCellViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookCellViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 public class NotebookCellCollapseTests : IDisposable
 {
@@ -79,9 +79,9 @@ public class NotebookCellCollapseTests : IDisposable
         };
         var vm = new NotebookCellViewModel(cell);
 
-        Assert.False(vm.IsInputCollapsed);
-        Assert.False(vm.IsOutputCollapsed);
-        Assert.False(vm.IsOutputScrolled);
+        Assert.False((bool)vm.IsInputCollapsed);
+        Assert.False((bool)vm.IsOutputCollapsed);
+        Assert.False((bool)vm.IsOutputScrolled);
         Assert.True(vm.IsInputVisible);
         Assert.False(vm.IsEntireCellCollapsed);
         Assert.Equal("Collapse Input", vm.ToggleInputCollapseText);
@@ -98,11 +98,11 @@ public class NotebookCellCollapseTests : IDisposable
         var vm = new NotebookCellViewModel(cell);
 
         Assert.True(vm.IsInputVisible);
-        Assert.False(vm.IsInputCollapsed);
+        Assert.False((bool)vm.IsInputCollapsed);
 
         vm.ToggleInputCollapseCommand.Execute(null);
 
-        Assert.True(vm.IsInputCollapsed);
+        Assert.True((bool)vm.IsInputCollapsed);
         Assert.False(vm.IsInputVisible);
         Assert.Equal("Expand Input", vm.ToggleInputCollapseText);
         Assert.Equal("ChevronRight", vm.InputCollapseIcon);
@@ -111,7 +111,7 @@ public class NotebookCellCollapseTests : IDisposable
 
         vm.ToggleInputCollapseCommand.Execute(null);
 
-        Assert.False(vm.IsInputCollapsed);
+        Assert.False((bool)vm.IsInputCollapsed);
         Assert.True(vm.IsInputVisible);
         Assert.Equal("Collapse Input", vm.ToggleInputCollapseText);
         Assert.Equal("ChevronDown", vm.InputCollapseIcon);
@@ -128,14 +128,14 @@ public class NotebookCellCollapseTests : IDisposable
         };
         var vm = new NotebookCellViewModel(cell);
 
-        Assert.True(vm.HasOutput);
-        Assert.False(vm.IsOutputCollapsed);
+        Assert.True((bool)vm.HasOutput);
+        Assert.False((bool)vm.IsOutputCollapsed);
         Assert.True(vm.IsOutputVisible);
         Assert.False(vm.IsOutputCollapsedBarVisible);
 
         vm.ToggleOutputCollapseCommand.Execute(null);
 
-        Assert.True(vm.IsOutputCollapsed);
+        Assert.True((bool)vm.IsOutputCollapsed);
         Assert.False(vm.IsOutputVisible);
         Assert.True(vm.IsOutputCollapsedBarVisible);
         Assert.Equal("Expand Output", vm.ToggleOutputCollapseText);
@@ -144,7 +144,7 @@ public class NotebookCellCollapseTests : IDisposable
 
         vm.ToggleOutputCollapseCommand.Execute(null);
 
-        Assert.False(vm.IsOutputCollapsed);
+        Assert.False((bool)vm.IsOutputCollapsed);
         Assert.True(vm.IsOutputVisible);
         Assert.False(vm.IsOutputCollapsedBarVisible);
         Assert.Equal("Collapse Output", vm.ToggleOutputCollapseText);
@@ -161,17 +161,17 @@ public class NotebookCellCollapseTests : IDisposable
         };
         var vm = new NotebookCellViewModel(cell);
 
-        Assert.False(vm.IsOutputScrolled);
+        Assert.False((bool)vm.IsOutputScrolled);
         Assert.Equal("Enable Scrolled Output", vm.ToggleOutputScrolledText);
 
         vm.ToggleOutputScrolledCommand.Execute(null);
 
-        Assert.True(vm.IsOutputScrolled);
+        Assert.True((bool)vm.IsOutputScrolled);
         Assert.Equal("Disable Scrolled Output", vm.ToggleOutputScrolledText);
 
         vm.ToggleOutputScrolledCommand.Execute(null);
 
-        Assert.False(vm.IsOutputScrolled);
+        Assert.False((bool)vm.IsOutputScrolled);
     }
 
     [Fact]
@@ -189,15 +189,15 @@ public class NotebookCellCollapseTests : IDisposable
 
         vm.ToggleCellCollapseCommand.Execute(null);
 
-        Assert.True(vm.IsInputCollapsed);
-        Assert.True(vm.IsOutputCollapsed);
+        Assert.True((bool)vm.IsInputCollapsed);
+        Assert.True((bool)vm.IsOutputCollapsed);
         Assert.True(vm.IsEntireCellCollapsed);
         Assert.Equal("Expand Entire Cell", vm.ToggleCellCollapseText);
 
         vm.ToggleCellCollapseCommand.Execute(null);
 
-        Assert.False(vm.IsInputCollapsed);
-        Assert.False(vm.IsOutputCollapsed);
+        Assert.False((bool)vm.IsInputCollapsed);
+        Assert.False((bool)vm.IsOutputCollapsed);
         Assert.False(vm.IsEntireCellCollapsed);
         Assert.Equal("Collapse Entire Cell", vm.ToggleCellCollapseText);
     }
@@ -214,12 +214,12 @@ public class NotebookCellCollapseTests : IDisposable
         var vm = new NotebookCellViewModel(cell);
         vm.CollapseOutput();
 
-        Assert.True(vm.IsOutputCollapsed);
+        Assert.True((bool)vm.IsOutputCollapsed);
 
         vm.ClearOutput();
 
-        Assert.False(vm.HasOutput);
-        Assert.False(vm.IsOutputCollapsed);
+        Assert.False((bool)vm.HasOutput);
+        Assert.False((bool)vm.IsOutputCollapsed);
         Assert.False(vm.IsOutputCollapsedBarVisible);
     }
 
@@ -260,31 +260,31 @@ public class NotebookCellCollapseTests : IDisposable
 
         // 1. Collapse all inputs
         tab.CollapseAllInputsCommand.Execute(null);
-        Assert.All(tab.Cells, c => Assert.True(c.IsInputCollapsed));
+        Assert.All(tab.Cells, c => Assert.True((bool)c.IsInputCollapsed));
 
         // 2. Expand all inputs
         tab.ExpandAllInputsCommand.Execute(null);
-        Assert.All(tab.Cells, c => Assert.False(c.IsInputCollapsed));
+        Assert.All(tab.Cells, c => Assert.False((bool)c.IsInputCollapsed));
 
         // 3. Collapse all outputs
         tab.CollapseAllOutputsCommand.Execute(null);
         var cellsWithOutput = tab.Cells.Where(c => c.HasOutput).ToList();
         Assert.Equal(2, cellsWithOutput.Count);
-        Assert.All(cellsWithOutput, c => Assert.True(c.IsOutputCollapsed));
+        Assert.All(cellsWithOutput, c => Assert.True((bool)c.IsOutputCollapsed));
 
         // 4. Expand all outputs
         tab.ExpandAllOutputsCommand.Execute(null);
-        Assert.All(cellsWithOutput, c => Assert.False(c.IsOutputCollapsed));
+        Assert.All(cellsWithOutput, c => Assert.False((bool)c.IsOutputCollapsed));
 
         // 5. Collapse all cells
         tab.CollapseAllCellsCommand.Execute(null);
-        Assert.All(tab.Cells, c => Assert.True(c.IsInputCollapsed));
-        Assert.All(cellsWithOutput, c => Assert.True(c.IsOutputCollapsed));
+        Assert.All(tab.Cells, c => Assert.True((bool)c.IsInputCollapsed));
+        Assert.All(cellsWithOutput, c => Assert.True((bool)c.IsOutputCollapsed));
 
         // 6. Expand all cells
         tab.ExpandAllCellsCommand.Execute(null);
-        Assert.All(tab.Cells, c => Assert.False(c.IsInputCollapsed));
-        Assert.All(cellsWithOutput, c => Assert.False(c.IsOutputCollapsed));
+        Assert.All(tab.Cells, c => Assert.False((bool)c.IsInputCollapsed));
+        Assert.All(cellsWithOutput, c => Assert.False((bool)c.IsOutputCollapsed));
     }
 
     [Fact]
@@ -296,19 +296,19 @@ public class NotebookCellCollapseTests : IDisposable
 
         // Bulk collapse inputs through studio
         studio.CollapseAllInputsCommand.Execute(null);
-        Assert.All(studio.Cells, c => Assert.True(c.IsInputCollapsed));
+        Assert.All(studio.Cells, c => Assert.True((bool)c.IsInputCollapsed));
 
         // Bulk expand inputs through studio
         studio.ExpandAllInputsCommand.Execute(null);
-        Assert.All(studio.Cells, c => Assert.False(c.IsInputCollapsed));
+        Assert.All(studio.Cells, c => Assert.False((bool)c.IsInputCollapsed));
 
         // Bulk collapse cells through studio
         studio.CollapseAllCellsCommand.Execute(null);
-        Assert.All(studio.Cells, c => Assert.True(c.IsInputCollapsed));
+        Assert.All(studio.Cells, c => Assert.True((bool)c.IsInputCollapsed));
 
         // Bulk expand cells through studio
         studio.ExpandAllCellsCommand.Execute(null);
-        Assert.All(studio.Cells, c => Assert.False(c.IsInputCollapsed));
+        Assert.All(studio.Cells, c => Assert.False((bool)c.IsInputCollapsed));
     }
 
     [Fact]
@@ -328,12 +328,12 @@ public class NotebookCellCollapseTests : IDisposable
         Assert.Contains(studio.ExplorerRootItems, x => x.Name == "Collapsible Studio Test Copy.frynb");
         var duplicatedTab = studio.ActiveTab;
         Assert.NotNull(duplicatedTab);
-        Assert.Equal("Collapsible Studio Test Copy.frynb", duplicatedTab.Title);
+        Assert.Equal((string?)"Collapsible Studio Test Copy.frynb", (string?)duplicatedTab.Title);
 
         var duplicatedFirstCell = duplicatedTab.Cells[0];
-        Assert.True(duplicatedFirstCell.IsInputCollapsed);
-        Assert.True(duplicatedFirstCell.IsOutputCollapsed);
-        Assert.True(duplicatedFirstCell.IsOutputScrolled);
+        Assert.True((bool)duplicatedFirstCell.IsInputCollapsed);
+        Assert.True((bool)duplicatedFirstCell.IsOutputCollapsed);
+        Assert.True((bool)duplicatedFirstCell.IsOutputScrolled);
     }
 
     [Fact]
@@ -398,9 +398,9 @@ public class NotebookCellCollapseTests : IDisposable
 
         vm.FormatCodeCommand.Execute(null);
         Assert.True(formatFired);
-        Assert.Contains("class Test", vm.Source);
-        Assert.Contains("void M()", vm.Source);
-        Assert.Contains("int a = 1;", vm.Source);
+        Assert.Contains((string)"class Test", (string?)vm.Source);
+        Assert.Contains((string)"void M()", (string?)vm.Source);
+        Assert.Contains((string)"int a = 1;", (string?)vm.Source);
     }
 
     [Fact]
@@ -435,9 +435,9 @@ public class NotebookCellCollapseTests : IDisposable
         Assert.Equal(2, unfoldCount);
 
         tab.FormatAllCodeCellsCommand.Execute(null);
-        Assert.Equal("int a = 1;", tab.Cells[0].Source.Trim());
-        Assert.Equal("int b = 2;", tab.Cells[1].Source.Trim());
-        Assert.Equal("# Note\nUnchanged", tab.Cells[2].Source);
+        Assert.Equal((string?)"int a = 1;", (string?)tab.Cells[0].Source.Trim());
+        Assert.Equal((string?)"int b = 2;", (string?)tab.Cells[1].Source.Trim());
+        Assert.Equal((string?)"# Note\nUnchanged", (string?)tab.Cells[2].Source);
     }
 
     [Fact]
@@ -456,6 +456,6 @@ public class NotebookCellCollapseTests : IDisposable
         Assert.Equal(1, foldCount);
 
         studio.FormatAllCodeCellsCommand.Execute(null);
-        Assert.Contains("var x = 42;", studio.Cells[0].Source);
+        Assert.Contains((string)"var x = 42;", (string?)studio.Cells[0].Source);
     }
 }

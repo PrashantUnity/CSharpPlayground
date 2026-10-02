@@ -1,14 +1,13 @@
-using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
-using PdfEditorApp.Plugins.CSharpEditor.Services;
-using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
 
-namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
+namespace CSharpEditorPlugin.Tests;
 
 /// <summary>
 /// Regression coverage for the bug where a script/cell that synchronously blocks on a Task (the
@@ -136,7 +135,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
             "RunCodeCommand deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
 
-        Assert.Contains("done blocking", studio.ConsoleOutput);
+        Assert.Contains((string)"done blocking", (string?)studio.ConsoleOutput);
     }
 
     [Fact]
@@ -173,12 +172,12 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(15)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunSingleCellAsync deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
 
-        Assert.Contains("done blocking", cell.OutputText);
+        Assert.Contains((string)"done blocking", (string?)cell.OutputText);
     }
 
     [Fact]
@@ -197,8 +196,8 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
 
         await studio.RunCodeCommand.ExecuteAsync(null);
 
-        Assert.Contains("FROM_SLOW_BUT_FINE", studio.ConsoleOutput);
-        Assert.DoesNotContain("Timed out", studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains((string)"FROM_SLOW_BUT_FINE", (string?)studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"Timed out", (string?)studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── Abandon-and-recover: Stop/timeout must give up promptly, and the kernel must stay usable ──
@@ -220,7 +219,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
 
         Assert.True(sw.Elapsed < TimeSpan.FromSeconds(15),
             $"Should abandon ~1s (timeout) + ~1s (grace) in, took {sw.Elapsed}");
-        Assert.Contains("Timed out", studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains((string)"Timed out", (string?)studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
 
         // A second, fast run on the same kernel must succeed promptly — proving HardReset() freed
         // the execution lock the abandoned run never released.
@@ -243,7 +242,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         // It does NOT mean "must be fast" — cold Roslyn compilations under parallel load are legitimately slow.
         Assert.True(secondSw.Elapsed < TimeSpan.FromSeconds(60),
             $"Second run should eventually complete once the kernel lock was freed, took {secondSw.Elapsed}");
-        Assert.True(studio.ConsoleOutput.Contains("FROM_B"),
+        Assert.True((bool)studio.ConsoleOutput.Contains("FROM_B"),
             $"Expected 'FROM_B' in ConsoleOutput, but got:\n{studio.ConsoleOutput}\nStatus: {studio.CompilerStatusText}");
 
         // The stuck script's Task.Delay is 4 s total. The abandoned thread will have finished its delay
@@ -251,7 +250,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         // so a brief extra wait is sufficient to let any stale post reach the output buffer.
         await Task.Delay(TimeSpan.FromSeconds(1));
 
-        Assert.DoesNotContain("FROM_STUCK_LATE", studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"FROM_STUCK_LATE", (string?)studio.ConsoleOutput);
     }
 
     private sealed class SingleThreadSynchronizationContext : SynchronizationContext

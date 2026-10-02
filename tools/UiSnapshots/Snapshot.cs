@@ -23,7 +23,7 @@ internal static class Snapshot
 
     public static void Start(Options options)
     {
-        AppBuilder.Configure<SnapshotApp>()
+        AppBuilder.Configure<PdfEditorApp.Plugins.CSharpEditor.Runner.App>()
             .UseSkia()
             // Draw real pixels with Skia; headless drawing would render nothing worth saving.
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
