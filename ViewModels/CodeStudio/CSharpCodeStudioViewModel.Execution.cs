@@ -858,17 +858,10 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // How a running script's output reaches the UI thread unless the constructor was given another way: queued when it
-    // comes from another thread, right away on the UI thread or with no app at all (unit tests).
+    // comes from another thread in a live UI app, right away on the UI thread or in unit tests.
     private static void RunOnUiThread(Action action)
     {
-        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(action);
-        }
-        else
-        {
-            action();
-        }
+        Services.Common.UiDispatchHelper.RunOnUi(action);
     }
 
     [RelayCommand]

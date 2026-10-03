@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
@@ -255,15 +256,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             EngineStatus = "Roslyn .NET 10 Engine Active";
         }
 
-        // Without an Avalonia app (unit tests) there is no UI thread to hand over to.
-        if (Avalonia.Application.Current != null)
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(Publish);
-        }
-        else
-        {
-            Publish();
-        }
+        // In a live desktop/single-view application, post to UI thread; in unit tests, run inline.
+        UiDispatchHelper.RunOnUi(Publish);
     }
 
 

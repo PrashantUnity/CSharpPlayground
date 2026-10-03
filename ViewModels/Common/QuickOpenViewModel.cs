@@ -14,6 +14,7 @@ public enum QuickOpenMode
 
 public partial class QuickOpenViewModel : ObservableObject
 {
+    private readonly object _lock = new();
     private readonly List<QuickOpenItem> _commandItems = new();
     private readonly List<QuickOpenItem> _documentItems = new();
 
@@ -55,14 +56,20 @@ public partial class QuickOpenViewModel : ObservableObject
 
     public void RegisterCommands(IEnumerable<QuickOpenItem> commands)
     {
-        _commandItems.Clear();
-        _commandItems.AddRange(commands);
+        lock (_lock)
+        {
+            _commandItems.Clear();
+            _commandItems.AddRange(commands);
+        }
     }
 
     public void RegisterDocuments(IEnumerable<QuickOpenItem> documents)
     {
-        _documentItems.Clear();
-        _documentItems.AddRange(documents);
+        lock (_lock)
+        {
+            _documentItems.Clear();
+            _documentItems.AddRange(documents);
+        }
     }
 
     public void Show(QuickOpenMode mode = QuickOpenMode.Files)
@@ -154,9 +161,15 @@ public partial class QuickOpenViewModel : ObservableObject
             Placeholder = "Type a command to run...";
             var cmdQuery = query.Length > 1 ? query[1..].Trim() : string.Empty;
 
+            List<QuickOpenItem> cmdList;
+            lock (_lock)
+            {
+                cmdList = _commandItems.ToList();
+            }
+
             IEnumerable<QuickOpenItem> matches = string.IsNullOrEmpty(cmdQuery)
-                ? _commandItems
-                : _commandItems
+                ? cmdList
+                : cmdList
                     .Where(c => c.Title.Contains(cmdQuery, StringComparison.OrdinalIgnoreCase) ||
                                 c.Category.Contains(cmdQuery, StringComparison.OrdinalIgnoreCase) ||
                                 c.Subtitle.Contains(cmdQuery, StringComparison.OrdinalIgnoreCase))
@@ -204,9 +217,16 @@ public partial class QuickOpenViewModel : ObservableObject
         else
         {
             Placeholder = "Search files by name ('>' for commands, ':' for line)...";
+
+            List<QuickOpenItem> docList;
+            lock (_lock)
+            {
+                docList = _documentItems.ToList();
+            }
+
             IEnumerable<QuickOpenItem> matches = string.IsNullOrEmpty(query)
-                ? _documentItems
-                : _documentItems
+                ? docList
+                : docList
                     .Where(d => d.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                 d.Subtitle.Contains(query, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(d => d.Title.StartsWith(query, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
