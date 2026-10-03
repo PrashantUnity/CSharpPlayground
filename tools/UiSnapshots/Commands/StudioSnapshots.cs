@@ -17,6 +17,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
@@ -168,6 +169,34 @@ internal static class StudioSnapshots
         }
     }
 
+    private static void EnsureExtensionsLoaded(StudioLanguageServices languages, Options options)
+    {
+        var app = StudioAppContext.Instance;
+        app.LanguageServices = languages;
+
+        if (options.Value("extension") is { } extDir && Directory.Exists(extDir))
+        {
+            if (File.Exists(Path.Combine(extDir, "extension.json")))
+            {
+                Snapshot.Wait(app.ExtensionManager.LoadExtensionAsync(extDir, enableHotReload: false));
+            }
+            else
+            {
+                Snapshot.Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(extDir, enableHotReload: false));
+            }
+        }
+
+        var samplesExt = Path.Combine(Directory.GetCurrentDirectory(), "samples", "extensions");
+        if (!Directory.Exists(samplesExt))
+        {
+            samplesExt = Path.Combine(AppContext.BaseDirectory, "samples", "extensions");
+        }
+        if (Directory.Exists(samplesExt))
+        {
+            Snapshot.Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(samplesExt, enableHotReload: false));
+        }
+    }
+
     /// <summary><c>studio n</c> or <c>studio --file path</c>: Code Studio with that script open.</summary>
     public static void CodeStudio(Options options)
     {
@@ -176,6 +205,7 @@ internal static class StudioSnapshots
         // Languages over a throwaway folder: the toolchains found are the machine's own, but nothing chosen or created
         // here reaches the user's settings. --python picks the interpreter for .py files.
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        EnsureExtensionsLoaded(languages, options);
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
         if (options.Value("dotnet") is { } dotnetPath) languages.ToolchainSettings.SetSelectedPath(LanguageIds.CSharp, dotnetPath);
         if (options.Value("csharp-engine") is { } csharpEngine)
@@ -191,7 +221,7 @@ internal static class StudioSnapshots
         if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
         if (options.Flag("demo-files")) Snapshot.Wait(SeedDemoWorkspaceFiles(storage));
 
-        var script = Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem())!);
+        var script = Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem(file != null ? 1 : 0))!);
 
         // Throwaway progress too: --run-tests marks a Blind 75 problem solved when all its cases pass.
         var vm = new CSharpCodeStudioViewModel(
@@ -480,8 +510,10 @@ internal static class StudioSnapshots
     {
         // Languages over a throwaway folder, as for Code Studio: --python picks the interpreter Python cells run with.
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        EnsureExtensionsLoaded(languages, options);
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
 
+        var dartDemo = options.Flag("dart-demo");
         var pyDemo = options.Flag("python-demo");
         var jsDemo = options.Flag("js-demo") || options.Flag("polyglot-demo");
         var javaShare = options.Flag("java-share");
@@ -501,21 +533,38 @@ internal static class StudioSnapshots
                 t.Title.Contains(templateQuery, StringComparison.OrdinalIgnoreCase));
         }
 
-        int number = (template != null || pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
+        string? file = options.Value("file");
+        NotebookDocumentItem? fileNotebook = null;
+        if (!string.IsNullOrWhiteSpace(file) && File.Exists(file))
+        {
+            try
+            {
+                var content = File.ReadAllText(file);
+                fileNotebook = System.Text.Json.JsonSerializer.Deserialize<NotebookDocumentItem>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[UiSnapshots] Failed to read notebook '{file}': {ex.Message}");
+            }
+        }
+
+        int number = (fileNotebook != null || template != null || dartDemo || pyDemo || jsDemo || javaShare || javaException || javaTable || cppDemo || goDemo || fsharpDemo || sqlDemo || rustDemo) ? 0 : options.Problem();
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("notebooks"), languages.Registry);
-        var notebookDoc = template != null
-            ? Snapshot.Wait(storage.CreateNewNotebookAsync(template.Title, template.Id))
-            : rustDemo ? RustDemoNotebook()
-            : sqlDemo ? SqlDemoNotebook()
-            : fsharpDemo ? FSharpDemoNotebook()
-            : goDemo ? GoDemoNotebook()
-            : cppDemo ? CppDemoNotebook()
-            : javaException ? JavaExceptionDemoNotebook()
-            : javaTable ? JavaTableDemoNotebook()
-            : javaShare ? JavaShareDemoNotebook()
-            : jsDemo ? PolyglotDemoNotebook()
-            : pyDemo ? PythonDemoNotebook()
-            : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!);
+        var notebookDoc = fileNotebook
+            ?? (template != null
+                ? Snapshot.Wait(storage.CreateNewNotebookAsync(template.Title, template.Id))
+                : dartDemo ? DartDemoNotebook()
+                : rustDemo ? RustDemoNotebook()
+                : sqlDemo ? SqlDemoNotebook()
+                : fsharpDemo ? FSharpDemoNotebook()
+                : goDemo ? GoDemoNotebook()
+                : cppDemo ? CppDemoNotebook()
+                : javaException ? JavaExceptionDemoNotebook()
+                : javaTable ? JavaTableDemoNotebook()
+                : javaShare ? JavaShareDemoNotebook()
+                : jsDemo ? PolyglotDemoNotebook()
+                : pyDemo ? PythonDemoNotebook()
+                : Blind75CatalogService.ConvertToNotebook(Blind75CatalogService.GetProblemByNumber(number)!));
 
         var vm = new CSharpNotebookStudioViewModel(
             notebookDoc,
@@ -552,7 +601,7 @@ internal static class StudioSnapshots
         ShowQuickOpen(vm.QuickOpen, options);
         try
         {
-            var name = options.Value("name") ?? (template != null ? $"notebook_{template.Id}" : sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : $"notebook_{number}");
+            var name = options.Value("name") ?? (template != null ? $"notebook_{template.Id}" : dartDemo ? "notebook_dart_demo" : sqlDemo ? "notebook_sql_demo" : fsharpDemo ? "notebook_fsharp_demo" : goDemo ? "notebook_go_demo" : cppDemo ? "notebook_cpp_demo" : javaException ? "notebook_java_exception" : javaTable ? "notebook_java_table" : javaShare ? "notebook_java_share_test" : jsDemo ? "notebook_polyglot_demo" : pyDemo ? "notebook_python_demo" : (file != null ? Path.GetFileNameWithoutExtension(file) : $"notebook_{number}"));
             if (options.Flag("run") && RunAll(vm, window, options, name)) return;
 
             // --cell <n>: the n-th cell (from 1) is selected, as a click would, so its toolbar shows.
@@ -997,6 +1046,117 @@ internal static class StudioSnapshots
             }
         }
     };
+
+    private static NotebookDocumentItem DartDemoNotebook()
+    {
+        var samplePath = Path.Combine(Directory.GetCurrentDirectory(), "samples", "extensions", "dart-support", "samples", "dart_notebook_demo.csnb");
+        if (!File.Exists(samplePath))
+        {
+            samplePath = Path.Combine(AppContext.BaseDirectory, "samples", "extensions", "dart-support", "samples", "dart_notebook_demo.csnb");
+        }
+        if (File.Exists(samplePath))
+        {
+            try
+            {
+                var nb = System.Text.Json.JsonSerializer.Deserialize<NotebookDocumentItem>(File.ReadAllText(samplePath), new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (nb != null) return nb;
+            }
+            catch
+            {
+            }
+        }
+
+        return new NotebookDocumentItem
+        {
+            Title = "Dart Polyglot Notebook Showcase",
+            Kernel = "dart",
+            Cells =
+            {
+                new NotebookCellItem
+                {
+                    Type = CellType.Markdown,
+                    Source = "# 🎯 Dart in FrySharp Interactive Notebooks\n\nThis notebook demonstrates interactive Dart 3 execution with persistent domain models, 2D charts, 3D parametric surfaces, algorithm visualizers, and interactive tables."
+                },
+                new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Language = "dart",
+                    Source = """
+                        class Item {
+                          final String name;
+                          final double price;
+                          Item(this.name, this.price);
+                          @override
+                          String toString() => '$name (\$${price.toStringAsFixed(2)})';
+                        }
+                        List<Item> cart = [
+                          Item('Dart Gopher Book', 29.99),
+                          Item('Flutter Mug', 14.50),
+                          Item('Mechanical Keyboard', 129.00),
+                          Item('4K Monitor', 349.99),
+                          Item('Wireless Mouse', 49.95)
+                        ];
+                        var total = cart.map((i) => i.price).reduce((a, b) => a + b);
+                        print('Initialized cart with ${cart.length} items. Total: \$${total.toStringAsFixed(2)}');
+                        """
+                },
+                new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Language = "dart",
+                    Source = """
+                        // 1. 2D Bar Chart of Product Pricing
+                        Display.barChart(
+                          cart.map((i) => {'Item': i.name, 'Price': i.price}).toList(),
+                          'Product Pricing Overview'
+                        );
+                        """
+                },
+                new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Language = "dart",
+                    Source = """
+                        // 2. 3D Parametric Mathematical Surface
+                        Display.surface(
+                          (x, y) => sin(sqrt(x * x + y * y)) / (sqrt(x * x + y * y) + 0.1) * 3,
+                          'Ripple Waveform (3D Surface)',
+                          {'xMin': -6, 'xMax': 6, 'yMin': -6, 'yMax': 6, 'resolution': 28, 'colorMap': 'plasma'}
+                        );
+                        """
+                },
+                new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Language = "dart",
+                    Source = """
+                        // 3. Algorithm Array Visualizer with Pointers
+                        Visualizer.array(
+                          [14.50, 29.99, 49.95, 129.00, 349.99],
+                          {'low': 0, 'mid': 2, 'high': 4},
+                          'Binary Search Range Partition'
+                        );
+                        """
+                },
+                new NotebookCellItem
+                {
+                    Type = CellType.Code,
+                    Language = "dart",
+                    Source = """
+                        // 4. Rich Interactive Data Table
+                        Display.table(
+                          cart.map((i) => {
+                            'Product': i.name,
+                            'Price': i.price,
+                            'Category': i.price > 100 ? 'Hardware' : 'Merchandise'
+                          }).toList(),
+                          'Inventory Catalog'
+                        );
+                        """
+                }
+            }
+        };
+    }
 
     private static NotebookDocumentItem RustDemoNotebook() => new()
     {
