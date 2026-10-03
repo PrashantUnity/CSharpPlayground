@@ -89,9 +89,62 @@ internal static class AppSnapshots
                 break;
         }
 
+        if (options.Flag("ai") || options.Flag("composer"))
+        {
+            window.StudioHostVm.AiComposer.IsVisible = true;
+            if (options.Flag("minimized"))
+            {
+                window.StudioHostVm.AiComposer.IsMinimized = true;
+            }
+            if (options.Flag("demo-chat"))
+            {
+                var userMsg = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ChatMessageItem
+                {
+                    Role = Microsoft.Extensions.AI.ChatRole.User,
+                    Content = "Please refactor Calculator.cs to modern C# 13 expression-bodied members and verify compilation."
+                };
+                var assistantMsg = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ChatMessageItem
+                {
+                    Role = Microsoft.Extensions.AI.ChatRole.Assistant,
+                    Content = "I've inspected Calculator.cs, refactored the members into clean expression bodies, added Multiply, and confirmed compilation with Roslyn (0 errors).",
+                    ReasoningContent = "1. Inspect Calculator.cs with read_file.\n2. Refactor Add method into modern C# 13 expression body.\n3. Add Multiply method.\n4. Run compile_and_get_diagnostics with Roslyn to verify 0 errors.",
+                    IsReasoningExpanded = true
+                };
+                assistantMsg.Steps.Add(new PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepItem
+                {
+                    ToolName = "read_file",
+                    Title = "Read Calculator.cs",
+                    Status = PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepStatus.Completed
+                });
+                assistantMsg.Steps.Add(new PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepItem
+                {
+                    ToolName = "compile_and_get_diagnostics",
+                    Title = "Roslyn compile check (0 errors)",
+                    Status = PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepStatus.Completed
+                });
+
+                var modifiedFile = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ModifiedFileItem
+                {
+                    FilePath = "Calculator.cs",
+                    RelativePath = "Calculator.cs",
+                    OriginalContent = "public class Calculator\n{\n    public int Add(int a, int b)\n    {\n        return a + b;\n    }\n}\n",
+                    ModifiedContent = "public class Calculator\n{\n    public int Add(int a, int b) => a + b;\n    public int Multiply(int a, int b) => a * b;\n}\n",
+                    IsDiffExpanded = true
+                };
+                modifiedFile.CalculateLineMetrics();
+                assistantMsg.ModifiedFiles.Add(modifiedFile);
+                window.StudioHostVm.AiComposer.SessionModifiedFiles.Add(modifiedFile);
+
+                window.StudioHostVm.AiComposer.Messages.Add(userMsg);
+                window.StudioHostVm.AiComposer.Messages.Add(assistantMsg);
+            }
+        }
+
         window.UpdateMenuStates();
         Snapshot.Settle(15);
-        var shotName = string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}";
+        var shotName = options.Flag("ai") || options.Flag("composer")
+            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : "mainwindow_ai_composer")
+            : (string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}");
         Snapshot.Save(window, options, shotName);
     }
 

@@ -28,6 +28,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsCustomizationCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsAiCategoryActive))]
     private string _activeCategory = "Languages";
 
     [ObservableProperty]
@@ -50,6 +51,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     public bool IsExecutionCategoryActive => ActiveCategory == "Execution";
     public bool IsKeymapCategoryActive => ActiveCategory == "Keymap";
     public bool IsCustomizationCategoryActive => ActiveCategory == "Customization";
+    public bool IsAiCategoryActive => ActiveCategory == "AI";
 
     public ObservableCollection<SettingsCategoryItem> Categories { get; } = new();
     public ObservableCollection<KeymapShortcutItem> Shortcuts { get; } = new();
@@ -73,6 +75,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeEditorSettings();
         InitializeLanguages();
         InitializeCustomizationSettings();
+        InitializeAiSettings();
 
         _settingsStore.SettingsChanged += OnStoreSettingsChanged;
     }
@@ -96,6 +99,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Categories.Add(new SettingsCategoryItem("Execution", "Execution & Terminal", "Console", "Execution timeout, stdout buffers & process lifecycle"));
         Categories.Add(new SettingsCategoryItem("Keymap", "Keymap & Shortcuts", "KeyboardOutline", "Visual Studio Code & studio keybindings"));
         Categories.Add(new SettingsCategoryItem("Customization", "Customization & Extensions", "PuzzleOutline", "C# scripts, dynamic themes, tokens, extensions & hooks"));
+        Categories.Add(new SettingsCategoryItem("AI", "AI Agent & Local LLM", "RobotOutline", "Ollama endpoints, models, autonomous tools & keys"));
     }
 
     private void PopulateKeymap()
@@ -103,6 +107,8 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Shortcuts.Add(new KeymapShortcutItem("Open Settings", "Ctrl+, / ⌘,", "General", "Open this settings & environments page"));
         Shortcuts.Add(new KeymapShortcutItem("Toggle Side Bar", "Ctrl+B / ⌘B", "Layout", "Show or hide primary tool side bar"));
         Shortcuts.Add(new KeymapShortcutItem("Toggle Bottom Panel", "Ctrl+J / ⌘J", "Layout", "Show or hide output, problems & terminal deck"));
+        Shortcuts.Add(new KeymapShortcutItem("Toggle AI Composer", "Ctrl+I / ⌘I", "AI", "Show or hide floating AI Composer"));
+        Shortcuts.Add(new KeymapShortcutItem("Accept All AI Edits", "Ctrl+Enter / ⌘Enter", "AI", "Accept and persist all proposed file modifications"));
         Shortcuts.Add(new KeymapShortcutItem("Start Debugging / Run", "F5", "Execution", "Start debugging active C# script or run script"));
         Shortcuts.Add(new KeymapShortcutItem("Run without Debugging", "Ctrl+F5", "Execution", "Execute active script in fast runner"));
         Shortcuts.Add(new KeymapShortcutItem("Stop Execution", "Shift+F5", "Execution", "Halt running script or active debug session"));
@@ -133,6 +139,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsExecutionCategoryActive));
         OnPropertyChanged(nameof(IsKeymapCategoryActive));
         OnPropertyChanged(nameof(IsCustomizationCategoryActive));
+        OnPropertyChanged(nameof(IsAiCategoryActive));
     }
 
     [RelayCommand]

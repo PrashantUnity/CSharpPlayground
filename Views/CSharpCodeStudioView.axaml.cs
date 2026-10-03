@@ -286,6 +286,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             return;
         }
 
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.I)
+        {
+            _currentVm.ToggleAiComposerCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.E)
         {
             _currentVm.SelectActivityBarItem(0); // Explorer

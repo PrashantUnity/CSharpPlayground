@@ -79,6 +79,7 @@ public partial class CSharpSettingsViewModel
             NullableChecksEnabled = NullableChecksEnabled,
             LanguageVersion = LanguageVersion
         };
+        SaveAiSettings(settings);
         _settingsStore.SaveSettings(settings);
     }
 
@@ -97,6 +98,7 @@ public partial class CSharpSettingsViewModel
         MaxTerminalOutputLines = def.MaxTerminalOutputLines;
         NullableChecksEnabled = def.NullableChecksEnabled;
         LanguageVersion = def.LanguageVersion;
+        ResetAiSettingsToDefaults();
     }
 
     partial void OnTabSizeChanged(int value) => HasPendingChanges = true;

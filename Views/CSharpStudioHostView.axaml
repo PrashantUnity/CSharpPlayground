@@ -7,6 +7,7 @@
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              xmlns:common1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:ai="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.AI"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
              x:DataType="common:CSharpStudioHostViewModel"
@@ -24,6 +25,10 @@
         <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
              shows which view model), then only shown or hidden. -->
         <common1:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
+
+        <!-- App-Wide Floating AI Agent & Composer Overlay (Available throughout all pages) -->
+        <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
+                                          ZIndex="998" />
 
         <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
         <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"

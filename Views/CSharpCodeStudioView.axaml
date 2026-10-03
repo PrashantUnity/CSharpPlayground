@@ -551,6 +551,11 @@
                             <Button Command="{Binding SaveCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Save Script (Ctrl+S)">
                                 <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
+
+                            <!-- AI Composer / Agent (Cmd+I) -->
+                            <Button Command="{Binding ToggleAiComposerCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Toggle AI Composer &amp; Agent (Cmd+I / Ctrl+I)">
+                                <materialIcons:MaterialIcon Kind="AutoFix" Width="15" Height="15" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Border>

@@ -198,6 +198,16 @@
                                     <TextBlock Grid.Column="1" Text="Customization &amp; Extensions" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
+
+                            <!-- Category: AI Agent & Local LLM -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="AI"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsAiCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="RobotOutline" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="AI Agent &amp; Local LLM" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -230,6 +240,10 @@
                     <!-- Detail for Customization & Extensions -->
                     <settings1:CustomizationSettingsSectionControl
                         IsVisible="{Binding IsCustomizationCategoryActive}" />
+
+                    <!-- Detail for AI Agent & Local LLM -->
+                    <settings1:AiSettingsSectionControl
+                        IsVisible="{Binding IsAiCategoryActive}" />
                 </Panel>
             </Border>
         </Grid>

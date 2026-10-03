@@ -431,4 +431,105 @@ public class CSharpSettingsViewModelTests : IDisposable
             regToken.Dispose();
         }
     }
+
+    [Fact]
+    public void Settings_InitializesAiSettingsWithDefaults()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiProviderKind.Ollama, vm.AiProvider);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultOllamaEndpoint, vm.AiEndpointUrl);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultModelName, vm.AiModelName);
+        Assert.Contains(vm.Categories, c => c.Id == "AI");
+        Assert.False(vm.IsAiCategoryActive);
+    }
+
+    [Fact]
+    public void Settings_CanSelectAiCategory()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        vm.SelectCategory("AI");
+
+        Assert.Equal("AI", vm.ActiveCategory);
+        Assert.True(vm.IsAiCategoryActive);
+        Assert.False(vm.IsLanguagesCategoryActive);
+    }
+
+    [Fact]
+    public void Settings_CanModifyAndPersistAiSettingsViaApply()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        vm.AiProvider = PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiProviderKind.OpenAiCompatible;
+        vm.AiEndpointUrl = "http://localhost:11443";
+        vm.AiModelName = "deepseek-r1";
+        vm.AiTemperature = 0.5f;
+        vm.AiMaxOutputTokens = 8192;
+        vm.AiAutoApproveEdits = true;
+        vm.Apply();
+
+        var reloadedVm = new CSharpSettingsViewModel(_services, _settingsStore);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiProviderKind.OpenAiCompatible, reloadedVm.AiProvider);
+        Assert.Equal("http://localhost:11443", reloadedVm.AiEndpointUrl);
+        Assert.Equal("deepseek-r1", reloadedVm.AiModelName);
+        Assert.Equal(0.5f, reloadedVm.AiTemperature);
+        Assert.Equal(8192, reloadedVm.AiMaxOutputTokens);
+        Assert.True(reloadedVm.AiAutoApproveEdits);
+    }
+
+    [Fact]
+    public void Settings_ResetDefaults_RestoresDefaultAiSettings()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        vm.AiEndpointUrl = "http://custom:9999";
+        vm.AiModelName = "custom-model";
+        vm.Apply();
+
+        vm.ResetDefaults();
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultOllamaEndpoint, vm.AiEndpointUrl);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultModelName, vm.AiModelName);
+    }
+
+    [Fact]
+    public void Settings_AiPromptPresets_CanBeSelectedAndApplied()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        Assert.Equal("Agent", vm.AiPromptPresetName);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultSystemPrompt, vm.AiSystemPrompt);
+        Assert.True(vm.AiSystemPromptLength > 50);
+
+        // Switch to Concise
+        vm.SetConcisePromptPreset();
+        Assert.Equal("Concise", vm.AiPromptPresetName);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.ConciseSystemPrompt, vm.AiSystemPrompt);
+
+        // Switch to Reviewer
+        vm.SetReviewerPromptPreset();
+        Assert.Equal("Reviewer", vm.AiPromptPresetName);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.ReviewerSystemPrompt, vm.AiSystemPrompt);
+
+        // Switch to TDD
+        vm.SetTddPromptPreset();
+        Assert.Equal("TDD", vm.AiPromptPresetName);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.TddArchitectSystemPrompt, vm.AiSystemPrompt);
+
+        // Custom modification
+        vm.AiSystemPrompt = "Custom instructions for this project.";
+        Assert.Equal("Custom", vm.AiPromptPresetName);
+        Assert.Equal("Custom instructions for this project.".Length, vm.AiSystemPromptLength);
+
+        vm.Apply();
+
+        // Reload to verify persistence
+        var reloaded = new CSharpSettingsViewModel(_services, _settingsStore);
+        Assert.Equal("Custom", reloaded.AiPromptPresetName);
+        Assert.Equal("Custom instructions for this project.", reloaded.AiSystemPrompt);
+
+        // Reset default
+        reloaded.ResetAiPromptToDefault();
+        Assert.Equal("Agent", reloaded.AiPromptPresetName);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultSystemPrompt, reloaded.AiSystemPrompt);
+    }
 }

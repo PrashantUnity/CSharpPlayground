@@ -68,6 +68,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Toggle Primary Side Bar" Gesture="Meta+B" Click="ToggleSideBar_OnClick" />
                     <NativeMenuItem Header="Toggle Bottom Panel" Gesture="Meta+J" Click="ToggleBottomDeck_OnClick" />
+                    <NativeMenuItem Header="Toggle AI Composer" Gesture="Meta+I" Click="ToggleAiComposer_OnClick" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Zoom In" Click="ZoomIn_OnClick" />
                     <NativeMenuItem Header="Zoom Out" Click="ZoomOut_OnClick" />
