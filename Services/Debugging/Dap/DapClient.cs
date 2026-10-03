@@ -34,7 +34,7 @@ public sealed class DapClient : IAsyncDisposable
     // Events are handled one at a time, in the order the adapter sent them: "exited" before "terminated", output lines in
     // order. Handling one may wait for a response (stopped asks for the stack), so it can't run on the loop that reads
     // responses; a queue with its own consumer keeps both true.
-    private readonly Channel<DapEvent> _events = Channel.CreateUnbounded<DapEvent>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+    private readonly Channel<object> _events = Channel.CreateUnbounded<object>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
 
     private Task? _readLoopTask;
     private Task? _eventLoopTask;
@@ -211,12 +211,33 @@ public sealed class DapClient : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Waits until all events that have arrived in the client up to this point have finished being dispatched.
+    /// </summary>
+    public Task WaitForPendingEventsAsync()
+    {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (_events.Writer.TryWrite(tcs))
+        {
+            return tcs.Task;
+        }
+        return Task.CompletedTask;
+    }
+
     private async Task EventLoopAsync()
     {
         try
         {
-            await foreach (var dapEvent in _events.Reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (var item in _events.Reader.ReadAllAsync().ConfigureAwait(false))
             {
+                if (item is TaskCompletionSource drain)
+                {
+                    drain.TrySetResult();
+                    continue;
+                }
+
+                if (item is not DapEvent dapEvent) continue;
+
                 var handler = EventReceived;
                 if (handler == null) continue;
 

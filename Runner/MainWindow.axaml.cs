@@ -98,11 +98,12 @@ public partial class MainWindow : Window
             try
             {
                 await customizationManager.InitializeAsync(enableHotReload: true);
-                await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: activeWorkspace, enableHotReload: true);
+                var results = await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: activeWorkspace, enableHotReload: true);
+                Console.WriteLine($"[MainWindow] Extensibility loaded {results.Count(r => r.Success)} extensions: {string.Join(", ", results.Where(r => r.Success).Select(r => r.ExtensionId))}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] Extensibility initialization error: {ex.Message}");
+                Console.Error.WriteLine($"[MainWindow] Extensibility initialization error: {ex.Message}");
             }
         });
     }

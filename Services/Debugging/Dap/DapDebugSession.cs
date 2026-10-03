@@ -194,6 +194,7 @@ public sealed class DapDebugSession : IDebugSession
     {
         int threadId = _lastThreadId ?? 1;
         await _client.SendRequestAsync("continue", new { threadId }, ct).ConfigureAwait(false);
+        await _client.WaitForPendingEventsAsync().ConfigureAwait(false);
         SetRunningState();
     }
 
@@ -201,6 +202,7 @@ public sealed class DapDebugSession : IDebugSession
     {
         int threadId = _lastThreadId ?? 1;
         await _client.SendRequestAsync("next", new { threadId }, ct).ConfigureAwait(false);
+        await _client.WaitForPendingEventsAsync().ConfigureAwait(false);
         SetRunningState();
     }
 
@@ -208,6 +210,7 @@ public sealed class DapDebugSession : IDebugSession
     {
         int threadId = _lastThreadId ?? 1;
         await _client.SendRequestAsync("stepIn", new { threadId }, ct).ConfigureAwait(false);
+        await _client.WaitForPendingEventsAsync().ConfigureAwait(false);
         SetRunningState();
     }
 
@@ -215,6 +218,7 @@ public sealed class DapDebugSession : IDebugSession
     {
         int threadId = _lastThreadId ?? 1;
         await _client.SendRequestAsync("stepOut", new { threadId }, ct).ConfigureAwait(false);
+        await _client.WaitForPendingEventsAsync().ConfigureAwait(false);
         SetRunningState();
     }
 

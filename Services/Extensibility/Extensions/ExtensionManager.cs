@@ -253,8 +253,12 @@ public class ExtensionManager : IDisposable
 
         if (!compileSuccess || peBytes == null)
         {
+            var diagDetails = string.Join("; ", diags.Select(d => d.Message));
             result.Success = false;
-            result.ErrorMessage = "Compilation of extension source files failed.";
+            result.ErrorMessage = string.IsNullOrEmpty(diagDetails)
+                ? "Compilation of extension source files failed."
+                : $"Compilation failed: {diagDetails}";
+            Console.Error.WriteLine($"[ExtensionManager] Failed to compile extension '{manifest.Id}': {result.ErrorMessage}");
             await loadedExt.UnloadAsync();
             ExtensionLoaded?.Invoke(result);
             return result;

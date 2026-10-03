@@ -45,6 +45,25 @@ public class ExtensionCompiler
         string assemblyName = $"FrySharpExt_{Path.GetFileName(extensionDirectory)}_{Guid.NewGuid():N}";
 
         var allReferences = new List<MetadataReference>(RoslynCompilerService.SharedDefaultReferences);
+        var existingPaths = new HashSet<string>(allReferences.OfType<PortableExecutableReference>().Select(r => r.FilePath).Where(p => p != null)!, StringComparer.OrdinalIgnoreCase);
+
+        // Include any assemblies from the host application directory (e.g. Material.Icons, AvaloniaEdit)
+        var hostDir = AppContext.BaseDirectory;
+        if (!string.IsNullOrEmpty(hostDir) && Directory.Exists(hostDir))
+        {
+            foreach (var dll in Directory.GetFiles(hostDir, "*.dll"))
+            {
+                try
+                {
+                    if (existingPaths.Add(dll))
+                    {
+                        allReferences.Add(MetadataReference.CreateFromFile(dll));
+                    }
+                }
+                catch { }
+            }
+        }
+
         var libDir = Path.Combine(extensionDirectory, "lib");
         if (Directory.Exists(libDir))
         {
@@ -52,7 +71,10 @@ public class ExtensionCompiler
             {
                 try
                 {
-                    allReferences.Add(MetadataReference.CreateFromFile(dll));
+                    if (existingPaths.Add(dll))
+                    {
+                        allReferences.Add(MetadataReference.CreateFromFile(dll));
+                    }
                 }
                 catch { }
             }
