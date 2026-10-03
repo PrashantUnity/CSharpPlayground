@@ -45,34 +45,6 @@ dotnet test CSharpEditorPlugin.slnx
 
 ---
 
-## 📦 Solution Structure
-
-```
-CSharpPlayground/
-├── CSharpEditorPlugin.slnx         # Modern XML solution (Engine + Runner + Tests)
-├── CSharpEditorPlugin.csproj       # Core Studio & Plugin library (.NET 10)
-├── CSharpEditorPlugin.cs           # IFryPlugin entrypoint
-├── plugin.json                     # FryPDF marketplace manifest
-├── Controls/                       # VS Code activity bar, status bar, tabs, editor
-├── Models/                         # POCO models for scripts, cells, diagnostics
-├── Services/                       # Roslyn compiler, kernel, completion, debugger
-│   ├── Languages/                  # Language registry and one module per language (Python/Kernel: the kernel program; Rust: Cargo, fry, lldb-dap)
-│   ├── Toolchains/ Processes/      # Finding installed toolchains; running programs (stdin, Stop, cleanup)
-│   └── Kernels/ Packages/          # Notebook kernels per language, #!share, the kernel protocol; pip
-├── ViewModels/                     # Reactive MVVM view models
-├── Views/                          # Avalonia XAML views (Studio, Notebook, Manager)
-├── Runner/                         # Standalone desktop executable (FrySharp)
-│   ├── CSharpEditorPlugin.Runner.csproj
-│   ├── Program.cs / App.axaml
-│   └── MainWindow.axaml
-├── Tests/                          # Comprehensive xUnit test suite (2,100+ tests; Real*/ folders need each real toolchain: Python, Rust, Go, Delve, netcoredbg…)
-│   └── CSharpEditorPlugin.Tests.csproj
-├── tools/UiSnapshots/              # Headless renderer: real views to PNG, for checking UI changes
-├── docs/                           # Developer guides: headless UI snapshots, adding a language, the kernel protocol
-└── packaging/                      # macOS DMG & Windows MSIX/Inno packaging assets
-```
-
----
 
 ## 🏗 Architecture: Stateful Notebook Execution
 

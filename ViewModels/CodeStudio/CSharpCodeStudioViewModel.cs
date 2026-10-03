@@ -365,6 +365,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         _isSyntaxHighlightingEnabled = initialSettings.EnableSyntaxHighlighting;
         _isAutoCompletionEnabled = initialSettings.EnableAutoCompletion;
         _languages.StudioSettings.SettingsChanged += OnStudioSettingsChanged;
+        _languages.Registry.Changed += OnLanguagesRegistryChanged;
 
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
@@ -383,6 +384,20 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
         InitializeExtensibilityBridge();
+    }
+
+    private void OnLanguagesRegistryChanged()
+    {
+        _postToUiThread(() =>
+        {
+            _newFileOptions = null;
+            OnPropertyChanged(nameof(NewFileOptions));
+
+            if (Script.SourceFilePath != null)
+            {
+                OnActiveLanguageChanged();
+            }
+        });
     }
 
     private void OnStudioSettingsChanged(StudioSettings s)

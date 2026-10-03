@@ -128,6 +128,7 @@ public partial class NotebookTabViewModel : ObservableObject
 
         PopulateCells();
         RefreshKernelName();
+        _languages.Registry.Changed += OnLanguagesRegistryChanged;
     }
 
     partial void OnActiveCellChanged(NotebookCellViewModel? value)
@@ -156,6 +157,7 @@ public partial class NotebookTabViewModel : ObservableObject
     [RelayCommand]
     public void CloseTab()
     {
+        _languages.Registry.Changed -= OnLanguagesRegistryChanged;
         _onCloseTab?.Invoke(this);
     }
 

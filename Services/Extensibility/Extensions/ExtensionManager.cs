@@ -100,6 +100,38 @@ public class ExtensionManager : IDisposable
         // 1. Unload old version if already loaded
         await UnloadExtensionAsync(manifest.Id);
 
+        var csFiles = manifest.SourceFiles.Count > 0
+            ? manifest.SourceFiles.Select(f => Path.IsPathRooted(f) ? f : Path.Combine(extensionDirectory, f)).Where(File.Exists).ToList()
+            : Directory.GetFiles(extensionDirectory, "*.cs", SearchOption.AllDirectories).ToList();
+
+        var alc = new ExtensionLoadContext($"Ext_{manifest.Id}");
+        var regBag = new LifetimeRegistrationBag();
+        var loadedExt = new LoadedExtension(StudioAppContext.Instance, extensionDirectory, manifest, alc, regBag);
+
+        // Register any declarative language contributions
+        foreach (var langContrib in manifest.Languages)
+        {
+            var langDef = new DeclarativeLanguageDefinition(langContrib, extensionDirectory);
+            var regToken = StudioAppContext.Instance.Languages.Register(langDef);
+            regBag.Track(regToken);
+        }
+
+        // If this is a purely declarative extension (no C# source files), activate directly without compilation
+        if (csFiles.Count == 0 && manifest.Languages.Count > 0)
+        {
+            _loadedExtensions[manifest.Id] = loadedExt;
+            result.Success = true;
+            result.Extension = loadedExt;
+
+            if (enableHotReload)
+            {
+                WatchExtensionDirectory(extensionDirectory, manifest.Id);
+            }
+
+            ExtensionLoaded?.Invoke(result);
+            return result;
+        }
+
         // 2. Compile directory
         var (compileSuccess, peBytes, pdbBytes, diags) = await Task.Run(() =>
         {
@@ -113,14 +145,10 @@ public class ExtensionManager : IDisposable
         {
             result.Success = false;
             result.ErrorMessage = "Compilation of extension source files failed.";
+            await loadedExt.UnloadAsync();
             ExtensionLoaded?.Invoke(result);
             return result;
         }
-
-        // 3. Load into isolated collectible ALC
-        var alc = new ExtensionLoadContext($"Ext_{manifest.Id}");
-        var regBag = new LifetimeRegistrationBag();
-        var loadedExt = new LoadedExtension(StudioAppContext.Instance, extensionDirectory, manifest, alc, regBag);
 
         try
         {
