@@ -8,13 +8,14 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 
-public partial class LocalScriptStorageService : IScriptStorageService
+public partial class LocalScriptStorageService : IScriptStorageService, IDisposable
 {
     private readonly string _baseDir;
     private readonly string _libraryRoot;
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private volatile bool _initialized;
+    private bool _disposed;
 
     private readonly string _workspaceStatePath;
     private string? _activeWorkspaceRootPath;
@@ -1287,5 +1288,19 @@ public partial class LocalScriptStorageService : IScriptStorageService
         {
             return new OpenProjectResult(false, $"Failed to import C# file: {ex.Message}");
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        lock (_watcherGate)
+        {
+            _watcher?.Dispose();
+            _watcher = null;
+        }
+
+        _initLock?.Dispose();
     }
 }

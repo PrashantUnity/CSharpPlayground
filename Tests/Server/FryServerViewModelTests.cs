@@ -180,7 +180,7 @@ public class FryServerViewModelTests
         System.IO.Directory.CreateDirectory(tempDir);
         try
         {
-            var storage = new LocalScriptStorageService(tempDir);
+            using var storage = new LocalScriptStorageService(tempDir);
             FryServerDocumentItem? openedServer = null;
 
             var manager = new CSharpManagerViewModel(
@@ -225,7 +225,7 @@ public class FryServerViewModelTests
         System.IO.Directory.CreateDirectory(tempDir);
         try
         {
-            var storage = new LocalScriptStorageService(tempDir);
+            using var storage = new LocalScriptStorageService(tempDir);
             var host = new CSharpStudioHostViewModel(storageService: storage);
 
             var serverDoc = new FryServerDocumentItem

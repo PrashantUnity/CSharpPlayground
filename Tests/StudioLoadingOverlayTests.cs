@@ -124,7 +124,7 @@ public class StudioLoadingOverlayTests
         System.IO.Directory.CreateDirectory(tempDir);
         try
         {
-            var storage = new LocalScriptStorageService(tempDir);
+            using var storage = new LocalScriptStorageService(tempDir);
             var initial = new NotebookDocumentItem { Title = "Initial Notebook" };
             var studio = new CSharpNotebookStudioViewModel(
                 initial,
@@ -175,7 +175,7 @@ public class StudioLoadingOverlayTests
         System.IO.Directory.CreateDirectory(tempDir);
         try
         {
-            var storage = new LocalScriptStorageService(tempDir);
+            using var storage = new LocalScriptStorageService(tempDir);
             var script = new ScriptDocumentItem { Title = "Script 1", Code = "// code" };
             await storage.SaveScriptAsync(script);
 
