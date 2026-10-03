@@ -96,24 +96,19 @@
                             <!-- Explorer Tools (View 0) -->
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center"
                                         IsVisible="{Binding IsExplorerActive}">
-                                <Button Command="{Binding NewScriptCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Script">
+                                <Button Classes="explorer-tool-btn" ToolTip.Tip="New File...">
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnNewFileFlyoutOpening">
+                                            <MenuItem Header="New C# Script (.csx)" Command="{Binding NewScriptCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="14" Height="14" Foreground="#9B72CF" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
                                     <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>
-                                <!-- "New Python File" and one button per other source-file language. -->
-                                <ItemsControl ItemsSource="{Binding NewFileOptions}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="1" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="common:NewFileOption">
-                                            <Button Command="{Binding Command}" Classes="explorer-tool-btn" ToolTip.Tip="{Binding Label}">
-                                                <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{Binding AccentHex}" />
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
                                 <Button Command="{Binding NewFolderCommand}" Classes="explorer-tool-btn" ToolTip.Tip="New Folder">
                                     <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>

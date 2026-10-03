@@ -138,6 +138,14 @@ public class ExtensionManager : IDisposable
             return results;
         }
 
+        string rootManifest = Path.Combine(extensionsRootDirectory, "extension.json");
+        if (File.Exists(rootManifest))
+        {
+            var result = await LoadExtensionAsync(extensionsRootDirectory, enableHotReload, ct);
+            results.Add(result);
+            return results;
+        }
+
         foreach (var subDir in Directory.GetDirectories(extensionsRootDirectory))
         {
             string manifestFile = Path.Combine(subDir, "extension.json");
@@ -190,6 +198,17 @@ public class ExtensionManager : IDisposable
 
         // 1. Unload old version if already loaded
         await UnloadExtensionAsync(manifest.Id);
+
+        // Ensure lingering language registrations from this extension or previous runs are cleaned up
+        StudioAppContext.Instance.Languages.Unregister(manifest.Id);
+        if (manifest.Id.EndsWith("-support", StringComparison.OrdinalIgnoreCase))
+        {
+            StudioAppContext.Instance.Languages.Unregister(manifest.Id[..^8]);
+        }
+        foreach (var lang in manifest.Languages)
+        {
+            StudioAppContext.Instance.Languages.Unregister(lang.Id);
+        }
 
         var csFiles = manifest.SourceFiles.Count > 0
             ? manifest.SourceFiles.Select(f => Path.IsPathRooted(f) ? f : Path.Combine(extensionDirectory, f)).Where(File.Exists).ToList()
@@ -388,11 +407,16 @@ public class ExtensionManager : IDisposable
             }
             _debounceTimers.Clear();
 
-            foreach (var ext in _loadedExtensions.Values)
-            {
-                _ = ext.UnloadAsync();
-            }
+            var loaded = _loadedExtensions.Values.ToList();
             _loadedExtensions.Clear();
+            foreach (var ext in loaded)
+            {
+                try
+                {
+                    ext.UnloadAsync().GetAwaiter().GetResult();
+                }
+                catch { }
+            }
         }
     }
 }

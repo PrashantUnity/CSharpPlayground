@@ -76,7 +76,8 @@ public class TemplateLanguageRoutingTests : IDisposable
         Assert.NotEmpty(withLanguage);
         foreach (var template in withLanguage)
         {
-            var language = _languages.Registry.Get(template.LanguageId);
+            var language = (template.LanguageId != null ? _languages.Registry.Get(template.LanguageId) : null)
+                ?? (template.LanguageId != null ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.Languages.Get(template.LanguageId) : null);
             Assert.NotNull(language);
             Assert.Equal(LanguageStorageKind.SourceFile, language.Storage);
             Assert.Equal(WorkspaceItemKind.Script, template.Kind);

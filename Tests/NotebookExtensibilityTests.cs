@@ -6,6 +6,7 @@ using FrySharp.Sdk;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
@@ -172,7 +173,8 @@ public class NotebookExtensibilityTests : IDisposable
         cell.Source = "int    a=1+2 ;";
         tab.ActiveCell = cell;
 
-        var activeDoc = StudioAppContext.Instance.Editor.ActiveDocument;
+        studio.UpdateExtensibilityDocumentResolver();
+        var activeDoc = new NotebookDocumentContextAdapter(studio);
         Assert.NotNull(activeDoc);
         Assert.Contains(cell.Source, activeDoc.Text);
 

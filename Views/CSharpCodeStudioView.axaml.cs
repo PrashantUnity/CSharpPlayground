@@ -1195,6 +1195,30 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         }
     }
 
+    private void OnNewFileFlyoutOpening(object? sender, EventArgs e)
+    {
+        if (sender is not MenuFlyout menu || _currentVm == null) return;
+
+        while (menu.Items.Count > 2)
+        {
+            menu.Items.RemoveAt(2);
+        }
+
+        foreach (var option in _currentVm.NewFileOptions)
+        {
+            var icon = new Material.Icons.Avalonia.MaterialIcon { Width = 14, Height = 14 };
+            if (Enum.TryParse<Material.Icons.MaterialIconKind>(option.IconKind, out var kind)) icon.Kind = kind;
+            if (Color.TryParse(option.AccentHex, out var color)) icon.Foreground = new SolidColorBrush(color);
+
+            menu.Items.Add(new MenuItem
+            {
+                Header = option.Label,
+                Icon = icon,
+                Command = option.Command
+            });
+        }
+    }
+
     public async void OnOpenProjectClick(object? sender, RoutedEventArgs e)
     {
         await OpenProjectOrFileDialogAsync();

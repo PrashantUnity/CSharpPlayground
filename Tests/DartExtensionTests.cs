@@ -20,6 +20,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection("ExtensionTests")]
 public class DartExtensionTests : IDisposable
 {
     private readonly string _extensionPath;
@@ -27,6 +28,8 @@ public class DartExtensionTests : IDisposable
     public DartExtensionTests()
     {
         try { StudioAppContext.Instance.Languages.Unregister("dart"); } catch { }
+        try { PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.UnregisterTemplate("dart_visuals_starter"); } catch { }
+        try { PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.UnregisterTemplate("dart_script_starter"); } catch { }
 
         _extensionPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../samples/extensions/dart-support"));
         if (!Directory.Exists(_extensionPath))
@@ -39,7 +42,9 @@ public class DartExtensionTests : IDisposable
     public void Dispose()
     {
         // Ensure cleanly unloaded if left registered
-        StudioAppContext.Instance.Languages.Unregister("dart");
+        try { StudioAppContext.Instance.Languages.Unregister("dart"); } catch { }
+        try { PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.UnregisterTemplate("dart_visuals_starter"); } catch { }
+        try { PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.UnregisterTemplate("dart_script_starter"); } catch { }
     }
 
     [Fact]
@@ -102,7 +107,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -133,7 +138,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -161,7 +166,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -187,7 +192,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -221,7 +226,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -250,7 +255,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -285,7 +290,7 @@ public class DartExtensionTests : IDisposable
         {
             using var manager = new ExtensionManager();
             var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-            Assert.True(loadResult.Success);
+            Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
             Assert.Equal(1, registeredEvents);
             Assert.Contains(app.Languages.All, l => l.Id == "dart");
@@ -358,7 +363,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -449,7 +454,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -510,7 +515,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);
@@ -542,7 +547,7 @@ public class DartExtensionTests : IDisposable
     {
         using var manager = new ExtensionManager();
         var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
-        Assert.True(loadResult.Success);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
 
         var dartLang = StudioAppContext.Instance.Languages.Get("dart");
         Assert.NotNull(dartLang);

@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
@@ -8,6 +11,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
 public partial class CSharpSettingsViewModel
 {
+    private int _isRefreshingAll;
+
     [ObservableProperty]
     private LanguageSettingItemViewModel? _selectedLanguage;
 
@@ -18,12 +23,24 @@ public partial class CSharpSettingsViewModel
     {
         SynchronizeLanguagesFromRegistry();
         _languageServices.Registry.Changed += OnLanguagesRegistryChanged;
-        _ = RefreshAllLanguagesAsync();
+        _ = SafeRefreshAllLanguagesAsync();
+    }
+
+    private async Task SafeRefreshAllLanguagesAsync()
+    {
+        try
+        {
+            await RefreshAllLanguagesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Settings] Background language initialization failed: {ex.Message}");
+        }
     }
 
     private void OnLanguagesRegistryChanged()
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             SynchronizeLanguagesFromRegistry();
         });
@@ -102,12 +119,31 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task RefreshAllLanguagesAsync()
     {
-        foreach (var item in Languages)
+        if (Interlocked.CompareExchange(ref _isRefreshingAll, 1, 0) != 0) return;
+
+        try
         {
-            if (item.IsToolchainLanguage || item.IsCSharp)
+            var targets = Languages.ToArray();
+            foreach (var item in targets)
             {
-                await RefreshLanguageToolchainAsync(item);
+                if (!Languages.Contains(item)) continue;
+
+                if (item.IsToolchainLanguage || item.IsCSharp)
+                {
+                    try
+                    {
+                        await RefreshLanguageToolchainAsync(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[Settings] Failed to refresh toolchain for {item.Language.Id}: {ex.Message}");
+                    }
+                }
             }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isRefreshingAll, 0);
         }
     }
 
@@ -117,9 +153,12 @@ public partial class CSharpSettingsViewModel
         var provider = item.Provider ?? item.DotNetProvider;
         if (provider == null) return;
 
-        item.IsChecking = true;
-        item.StatusBadge = "Scanning…";
-        item.StatusColor = "#E3B341";
+        UiDispatchHelper.RunOnUi(() =>
+        {
+            item.IsChecking = true;
+            item.StatusBadge = "Scanning…";
+            item.StatusColor = "#E3B341";
+        });
 
         var query = new ToolchainQuery(null, null);
         try
@@ -128,16 +167,22 @@ public partial class CSharpSettingsViewModel
             var allFound = await Task.Run(() => provider.ListAsync(query));
             var resolution = await Task.Run(() => provider.ResolveAsync(query));
 
-            item.UpdateResolution(resolution, allFound);
+            UiDispatchHelper.RunOnUi(() =>
+            {
+                item.UpdateResolution(resolution, allFound);
+            });
         }
         catch (Exception ex)
         {
-            item.IsChecking = false;
-            item.IsFound = item.IsCSharp;
-            item.StatusBadge = "Scan failed";
-            item.StatusColor = "#F85149";
-            item.MissingTitle = "Failed to inspect environment";
-            item.MissingSummary = ex.Message;
+            UiDispatchHelper.RunOnUi(() =>
+            {
+                item.IsChecking = false;
+                item.IsFound = item.IsCSharp;
+                item.StatusBadge = "Scan failed";
+                item.StatusColor = "#F85149";
+                item.MissingTitle = "Failed to inspect environment";
+                item.MissingSummary = ex.Message;
+            });
         }
     }
 
@@ -223,7 +268,7 @@ public partial class CSharpSettingsViewModel
 
     private void SaveLanguageSettings()
     {
-        foreach (var item in Languages)
+        foreach (var item in Languages.ToArray())
         {
             var provider = item.Provider ?? item.DotNetProvider;
             if (provider != null)
@@ -243,7 +288,7 @@ public partial class CSharpSettingsViewModel
 
     private void ResetLanguageSettingsToDefaults()
     {
-        foreach (var item in Languages)
+        foreach (var item in Languages.ToArray())
         {
             var provider = item.Provider ?? item.DotNetProvider;
             if (provider != null)
@@ -265,7 +310,7 @@ public partial class CSharpSettingsViewModel
     {
         FilteredLanguages.Clear();
         var trimmed = query?.Trim() ?? string.Empty;
-        foreach (var item in Languages)
+        foreach (var item in Languages.ToArray())
         {
             if (string.IsNullOrEmpty(trimmed) ||
                 item.DisplayName.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||

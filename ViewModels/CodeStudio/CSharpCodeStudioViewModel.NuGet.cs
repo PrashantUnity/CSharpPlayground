@@ -341,9 +341,8 @@ public partial class CSharpCodeStudioViewModel
             Services.Languages.LanguageIds.Go => $"// #go: {package.Id}",
             Services.Languages.LanguageIds.Rust => Services.Languages.Rust.RustPackageMap.CrateLine(package.Id, package.Version),
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
-            Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
-            _ => (ActiveLanguage?.Packages?.ToolName.Contains("pub", StringComparison.OrdinalIgnoreCase) == true)
-                ? $"// #dart: {package.Id}"
+            _ => ActiveLanguage?.Packages is { } customPm
+                ? customPm.InstallCommand(package.Id).Text
                 : $"#r \"nuget: {package.Id}, {package.Version}\""
         };
 
