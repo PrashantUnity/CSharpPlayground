@@ -29,13 +29,13 @@ public class AiAgentToolTests : IDisposable
     }
 
     [Fact]
-    public void BuildToolList_ReturnsAllEighteenTools()
+    public void BuildToolList_ReturnsAllTools()
     {
         var registry = new AiAgentToolRegistry();
         var tools = registry.BuildToolList();
 
         Assert.NotNull(tools);
-        Assert.Equal(18, tools.Count);
+        Assert.Equal(22, tools.Count);
         Assert.Contains(tools, t => t.Name == "read_file");
         Assert.Contains(tools, t => t.Name == "write_file");
         Assert.Contains(tools, t => t.Name == "modify_file");
@@ -48,6 +48,10 @@ public class AiAgentToolTests : IDisposable
         Assert.Contains(tools, t => t.Name == "compile_and_get_diagnostics");
         Assert.Contains(tools, t => t.Name == "apply_studio_customization");
         Assert.Contains(tools, t => t.Name == "get_active_file_context");
+        Assert.Contains(tools, t => t.Name == "get_studio_api_metadata");
+        Assert.Contains(tools, t => t.Name == "get_runtime_extension_points");
+        Assert.Contains(tools, t => t.Name == "inspect_studio_ui");
+        Assert.Contains(tools, t => t.Name == "inject_studio_widget");
     }
 
     [Fact]

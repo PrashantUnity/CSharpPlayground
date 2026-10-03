@@ -42,6 +42,9 @@ public interface IStudioApp
     /// <summary>Language registration, queries, and file-type associations.</summary>
     ILanguagesApi Languages { get; }
 
+    /// <summary>Runtime API reflection, live command enumeration, UI slot discovery, and schema catalog.</summary>
+    IApiMetadataApi Metadata { get; }
+
     /// <summary>Convenience alias for UI.Dialogs (modals, prompts, and file pickers).</summary>
     IDialogApi Dialogs => UI.Dialogs;
 }

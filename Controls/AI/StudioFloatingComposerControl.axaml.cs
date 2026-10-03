@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls.AI;
@@ -26,6 +27,58 @@ public partial class StudioFloatingComposerControl : UserControl
             header.PointerReleased += OnHeaderPointerReleased;
             header.PointerCaptureLost += OnHeaderPointerCaptureLost;
         }
+
+        AttachedToVisualTree += (_, _) =>
+        {
+            StudioAppContext.Instance.UI.ContributionsChanged += RefreshDynamicActions;
+            RefreshDynamicActions();
+        };
+
+        DetachedFromVisualTree += (_, _) =>
+        {
+            StudioAppContext.Instance.UI.ContributionsChanged -= RefreshDynamicActions;
+        };
+    }
+
+    private void RefreshDynamicActions()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var host = this.FindControl<StackPanel>("DynamicActionsHost");
+            if (host == null) return;
+
+            host.Children.Clear();
+            var actions = StudioAppContext.Instance.UI.ComposerActions;
+
+            foreach (var action in actions)
+            {
+                if (!action.IsVisible) continue;
+
+                if (action.CustomContentFactory != null)
+                {
+                    var content = action.CustomContentFactory();
+                    if (content is Control ctrl) host.Children.Add(ctrl);
+                    else host.Children.Add(new ContentControl { Content = content });
+                }
+                else
+                {
+                    var btn = new Button
+                    {
+                        Classes = { "composer-btn" },
+                        Padding = new Thickness(5, 2),
+                        Content = new TextBlock
+                        {
+                            Text = action.Title,
+                            FontSize = 10.5,
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                        }
+                    };
+                    ToolTip.SetTip(btn, action.Tooltip ?? action.Title);
+                    btn.Click += (_, _) => action.OnClick?.Invoke();
+                    host.Children.Add(btn);
+                }
+            }
+        });
     }
 
     private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs e)

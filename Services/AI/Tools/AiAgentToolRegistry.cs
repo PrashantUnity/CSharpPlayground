@@ -83,7 +83,11 @@ public partial class AiAgentToolRegistry
             AIFunctionFactory.Create(GetDiagnostics, "get_diagnostics", "Retrieves active compiler errors and warnings from the Problems panel."),
             AIFunctionFactory.Create(CompileAndGetDiagnostics, "compile_and_get_diagnostics", "Compiles C# code using the in-memory Roslyn compiler and returns any diagnostic errors."),
             AIFunctionFactory.Create(ApplyStudioCustomization, "apply_studio_customization", "Applies an init.csx customization script to dynamically alter the running studio (add Activity Bar icons, bottom tabs, or custom commands)."),
-            AIFunctionFactory.Create(QueryStudioApiDocs, "query_studio_api_docs", "Searches studio API documentation, SDK guides, and extensibility manuals.")
+            AIFunctionFactory.Create(QueryStudioApiDocs, "query_studio_api_docs", "Searches studio API documentation, SDK guides, and extensibility manuals."),
+            AIFunctionFactory.Create(GetStudioApiMetadata, "get_studio_api_metadata", "Retrieves structured API documentation and method signatures for App.UI, App.Theme, App.Commands, App.Editor, App.Hooks, and App.State."),
+            AIFunctionFactory.Create(GetRuntimeExtensionPoints, "get_runtime_extension_points", "Discovers active UI contribution slots, registered commands, active theme tokens, and mounted items in the running application."),
+            AIFunctionFactory.Create(InspectStudioUi, "inspect_studio_ui", "Inspects the live Avalonia visual tree of the running studio window, returning visible control hierarchy, names, types, and bounds."),
+            AIFunctionFactory.Create(InjectStudioWidget, "inject_studio_widget", "Dynamically injects a custom widget or declarative XAML control into a studio slot ('EditorToolbar', 'FloatingOverlay', 'ComposerAction', 'BottomDeck', 'SideBar').")
         };
 
         return tools;

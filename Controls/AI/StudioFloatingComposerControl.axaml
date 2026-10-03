@@ -118,10 +118,14 @@
                             </Button>
                         </StackPanel>
 
-                        <!-- Clear Chat Button -->
-                        <Button Grid.Column="3" Command="{Binding ClearChatCommand}" Classes="composer-btn" ToolTip.Tip="Clear Conversation" Margin="4,0,0,0">
-                            <materialIcons:MaterialIcon Kind="Broom" Width="14" Height="14" Foreground="#94A3B8" />
-                        </Button>
+                        <!-- Clear Chat & Dynamic Injected Actions -->
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <StackPanel Name="DynamicActionsHost" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" />
+
+                            <Button Command="{Binding ClearChatCommand}" Classes="composer-btn" ToolTip.Tip="Clear Conversation" Margin="4,0,0,0">
+                                <materialIcons:MaterialIcon Kind="Broom" Width="14" Height="14" Foreground="#94A3B8" />
+                            </Button>
+                        </StackPanel>
 
                         <!-- Window Controls (Minimize, Close) -->
                         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
