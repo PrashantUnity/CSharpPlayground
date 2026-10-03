@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
+             xmlns:codeStudio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioMarkdownPreviewControl"
+             x:DataType="codeStudio:CSharpCodeStudioViewModel">
+
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource DsBgBrush}">
+        <!-- 1. Top Preview Action Header Bar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource DsSurfaceBrush}"
+                BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Height="38"
+                Padding="14,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Preview Mode Indicator & Document Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Background="#238636" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="PREVIEW" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                    </Border>
+                    <TextBlock Text="{Binding Script.Title}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DsTextWhiteBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Markdown Document"
+                               FontSize="11"
+                               Foreground="{DynamicResource DsMutedBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Right: Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Copy Raw Markdown -->
+                    <Button Command="{Binding CopyMarkdownSourceCommand}"
+                            Classes="cs-toolbar-tonal"
+                            Height="26"
+                            Padding="8,0"
+                            CornerRadius="4"
+                            ToolTip.Tip="Copy Markdown Source to Clipboard">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy Markdown" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Edit Source Toggle -->
+                    <Button Command="{Binding ToggleDocumentPreviewModeCommand}"
+                            Classes="cs-toolbar-tonal"
+                            Height="26"
+                            Padding="8,0"
+                            CornerRadius="4"
+                            ToolTip.Tip="Switch to Source Editor (Ctrl+Shift+V)">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Edit Source" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Rendered Markdown Canvas -->
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <Border Padding="32,24" HorizontalAlignment="Stretch">
+                <docs:MarkdownView Markdown="{Binding Code}"
+                                   MaxWidth="960"
+                                   HorizontalAlignment="Left" />
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

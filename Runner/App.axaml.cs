@@ -59,6 +59,16 @@ public partial class App : Application
         }
     }
 
+    private void CustomizationMenuItem_OnClick(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow is MainWindow mw &&
+            mw.StudioHostVm is { } host)
+        {
+            host.NavigateToSettings("Customization");
+        }
+    }
+
     private async void CheckForUpdatesMenuItem_OnClick(object? sender, EventArgs e)
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)

@@ -51,6 +51,9 @@
                                 <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" Height="20" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding StorageBadge}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                                 </Border>
+                                <Border Background="#251833" BorderBrush="#8A2BE2" BorderThickness="1" Height="20" CornerRadius="4" Padding="6,0" VerticalAlignment="Center" IsVisible="{Binding IsExtensionLanguage}">
+                                    <TextBlock Text="Extension" FontSize="10.5" FontWeight="SemiBold" Foreground="#CB88FF" VerticalAlignment="Center" Margin="0,1,0,0" />
+                                </Border>
                             </StackPanel>
                             <TextBlock Text="{Binding RuntimeDescription}" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>

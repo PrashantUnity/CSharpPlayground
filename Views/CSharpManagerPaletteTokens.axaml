@@ -20,6 +20,8 @@
             <SolidColorBrush x:Key="DsPrimaryBrush" Color="#2F81F7" />
             <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#1F6FEB" />
             <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A2F81F7" />
+            <SolidColorBrush x:Key="DsSelectionBrush" Color="#992F81F7" />
+            <SolidColorBrush x:Key="DsFocusBorderBrush" Color="#8C2F81F7" />
             <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#332F81F7" />
             <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
             <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
@@ -72,6 +74,8 @@
             <SolidColorBrush x:Key="DsPrimaryBrush" Color="#0969DA" />
             <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#0860CA" />
             <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A0969DA" />
+            <SolidColorBrush x:Key="DsSelectionBrush" Color="#880969DA" />
+            <SolidColorBrush x:Key="DsFocusBorderBrush" Color="#590969DA" />
             <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#330969DA" />
             <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
             <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />

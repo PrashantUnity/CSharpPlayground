@@ -64,12 +64,42 @@ public partial class CSharpDocsViewModel : ObservableObject
         _languages = languages;
 
         LoadDocumentation();
+        _docService.Changed += OnDocumentationChanged;
+    }
+
+    private void OnDocumentationChanged()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var curCatId = SelectedCategory?.Id;
+            var curArtId = SelectedArticle?.Id;
+
+            Categories.Clear();
+            foreach (var category in _docService.Categories)
+            {
+                Categories.Add(category);
+            }
+
+            if (curCatId != null)
+            {
+                SelectedCategory = Categories.FirstOrDefault(c => string.Equals(c.Id, curCatId, StringComparison.OrdinalIgnoreCase));
+            }
+            SelectedCategory ??= Categories.FirstOrDefault();
+
+            if (curArtId != null && SelectedCategory != null)
+            {
+                SelectedArticle = SelectedCategory.Articles.FirstOrDefault(a => string.Equals(a.Id, curArtId, StringComparison.OrdinalIgnoreCase));
+            }
+            SelectedArticle ??= SelectedCategory?.Articles.FirstOrDefault();
+
+            UpdateBreadcrumb();
+        });
     }
 
     private void LoadDocumentation()
     {
         Categories.Clear();
-        foreach (var category in _docService.Categories)
+        foreach (var category in _docService.Categories.ToList())
         {
             Categories.Add(category);
         }

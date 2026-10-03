@@ -8,13 +8,14 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 
-public partial class LocalScriptStorageService : IScriptStorageService
+public partial class LocalScriptStorageService : IScriptStorageService, IDisposable
 {
     private readonly string _baseDir;
     private readonly string _libraryRoot;
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private volatile bool _initialized;
+    private bool _disposed;
 
     private readonly string _workspaceStatePath;
     private string? _activeWorkspaceRootPath;
@@ -64,7 +65,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
     /// <summary>Raised (on a background thread) once a burst of changes made outside the studio has settled.</summary>
     public event Action? ExternalChangeDetected;
 
-    private const long OwnChangeEchoMilliseconds = 4000;
+    private const long OwnChangeEchoMilliseconds = 10000;
     private readonly object _watcherGate = new();
     private WorkspaceWatcher? _watcher;
     private bool _watchingEnabled;
@@ -101,6 +102,9 @@ public partial class LocalScriptStorageService : IScriptStorageService
     public string ActiveWorkspaceRootPath => EffectiveWorkspaceRoot;
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
     public event Action? ActiveWorkspaceChanged;
+
+    private readonly RecentWorkspaceService _recentWorkspaces;
+    public IRecentWorkspaceService RecentWorkspaces => _recentWorkspaces;
 
     // Walking a folder stops after this many files (or folders); see IsWorkspaceTruncated.
     private readonly int _workspaceFileLimit;
@@ -160,6 +164,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _libraryRoot = Path.Combine(_baseDir, "library");
         _workspaceStatePath = Path.Combine(_baseDir, "workspace_state.json");
+        _recentWorkspaces = new RecentWorkspaceService(Path.Combine(_baseDir, "recent_workspaces.json"));
 
         Directory.CreateDirectory(_libraryRoot);
     }
@@ -199,6 +204,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (state?.ActiveRootPath != null && Directory.Exists(state.ActiveRootPath))
             {
                 _activeWorkspaceRootPath = state.ActiveRootPath;
+                _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(state.ActiveRootPath, RecentWorkspaceKind.ProjectWorkspace);
             }
         }
         catch (Exception ex)
@@ -378,10 +384,49 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         foreach (var file in files)
         {
-            if (_languages.FindSourceFileLanguage(file) is { } language) list.Add(SourceFileSummary(file, language, root));
+            if (file.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
+                file.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+                file.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (_languages.FindSourceFileLanguage(file) is { } language && language.Id != LanguageIds.Text)
+            {
+                list.Add(SourceFileSummary(file, language, root));
+            }
+            else
+            {
+                list.Add(GenericFileSummary(file, root));
+            }
         }
 
         return list.OrderByDescending(x => x.LastModified).ToList();
+    }
+
+    private static readonly HashSet<string> KnownImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg", ".tiff", ".tif"
+    };
+
+    private WorkspaceItemSummary GenericFileSummary(string file, string root)
+    {
+        var ext = Path.GetExtension(file);
+        var isImg = KnownImageExtensions.Contains(ext);
+        return new WorkspaceItemSummary
+        {
+            Id = RegisterSourceFile(file),
+            Title = Path.GetFileNameWithoutExtension(file),
+            Description = isImg ? "Image asset" : (string.IsNullOrEmpty(ext) ? "File" : $"{ext.TrimStart('.').ToUpperInvariant()} file"),
+            Category = isImg ? "Images" : "Files",
+            Kind = WorkspaceItemKind.Script,
+            LanguageId = LanguageIds.Text,
+            LanguageName = isImg ? "Image" : (string.IsNullOrEmpty(ext) ? "File" : ext.TrimStart('.').ToUpperInvariant()),
+            FileExtension = ext,
+            IsSourceFile = false,
+            LastModified = LastWriteTimeUtc(file),
+            FolderPath = GetFolderPath(file),
+            IsExternalRoot = IsExternalWorkspaceActive,
+            WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
+        };
     }
 
     /// <summary>
@@ -476,6 +521,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null)
     {
+        if (script.IsEphemeral) return false;
+
         // A source file is saved as its text, and only when that's safe without asking (see SaveSourceFileAsync).
         if (script.SourceFilePath != null || IsSourceFileId(script.Id))
         {
@@ -557,6 +604,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook, string? folderPath = null)
     {
+        if (notebook.IsEphemeral) return false;
+
         try
         {
             notebook.LastModified = DateTime.UtcNow;
@@ -899,7 +948,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
     {
         var summaries = await LoadWorkspaceSummariesAsync();
         var results = new List<ScriptProjectItem>();
-        foreach (var s in summaries.Where(x => !x.IsSourceFile))
+        foreach (var s in summaries.Where(x => !x.IsSourceFile && !IsSourceFileId(x.Id)))
         {
             if (s.IsNotebook)
             {
@@ -976,6 +1025,41 @@ public partial class LocalScriptStorageService : IScriptStorageService
         }
     }
 
+    private static string ResolveProjectRoot(string folder)
+    {
+        try
+        {
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var current = new DirectoryInfo(folder);
+            var candidate = folder;
+
+            while (current != null && current.Parent != null)
+            {
+                if (string.Equals(current.FullName, userHome, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                if (Directory.Exists(Path.Combine(current.FullName, ".frysharp")) ||
+                    Directory.Exists(Path.Combine(current.FullName, ".git")) ||
+                    Directory.GetFiles(current.FullName, "*.csproj").Length > 0 ||
+                    Directory.GetFiles(current.FullName, "*.frycsproj").Length > 0 ||
+                    Directory.GetFiles(current.FullName, "*.sln").Length > 0)
+                {
+                    return current.FullName;
+                }
+
+                current = current.Parent;
+            }
+
+            return candidate;
+        }
+        catch
+        {
+            return folder;
+        }
+    }
+
     public async Task<OpenProjectResult> OpenExternalProjectAsync(string rawPath)
     {
         await EnsureInitializedAsync();
@@ -1018,6 +1102,34 @@ public partial class LocalScriptStorageService : IScriptStorageService
             return new OpenProjectResult(false, $"File or directory not found: '{path}'");
         }
 
+        var parentFolder = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(parentFolder) && Directory.Exists(parentFolder))
+        {
+            var hasProjectMarker = Directory.Exists(Path.Combine(parentFolder, ".frysharp")) ||
+                                   Directory.Exists(Path.Combine(parentFolder, ".git")) ||
+                                   Directory.GetFiles(parentFolder, "*.csproj").Length > 0 ||
+                                   Directory.GetFiles(parentFolder, "*.frycsproj").Length > 0;
+
+            if (hasProjectMarker)
+            {
+                var currentRoot = _activeWorkspaceRootPath;
+                var isInsideCurrentWorkspace = !string.IsNullOrWhiteSpace(currentRoot) &&
+                    (string.Equals(parentFolder, currentRoot, StringComparison.OrdinalIgnoreCase) ||
+                     parentFolder.StartsWith(currentRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+
+                if (!isInsideCurrentWorkspace)
+                {
+                    var resolvedRoot = ResolveProjectRoot(parentFolder);
+                    _activeWorkspaceRootPath = string.Equals(resolvedRoot, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : resolvedRoot;
+                    await SaveWorkspaceStateAsync().ConfigureAwait(false);
+                    await _recentWorkspaces.RecordWorkspaceOpenedAsync(resolvedRoot, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
+                    MarkChanged();
+                    RestartWatcher();
+                    ActiveWorkspaceChanged?.Invoke();
+                }
+            }
+        }
+
         var ext = Path.GetExtension(path).ToLowerInvariant();
 
         // Legacy .frycsproj/.frynbproj files from older versions: just open their containing folder —
@@ -1053,6 +1165,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
         if (_languages.FindSourceFileLanguage(path) is { } sourceLanguage)
         {
             var id = RegisterSourceFile(path);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(path, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
             return new OpenProjectResult(
                 Success: true,
                 Message: $"Opened {sourceLanguage.DisplayName} file '{Path.GetFileName(path)}'",
@@ -1070,6 +1183,18 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
         }
 
+        if (File.Exists(path))
+        {
+            var id = RegisterSourceFile(path);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(path, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
+            return new OpenProjectResult(
+                Success: true,
+                Message: $"Opened file '{Path.GetFileName(path)}'",
+                PrimaryDocumentId: id,
+                PrimaryDocumentKind: WorkspaceItemKind.Script,
+                DocumentsLoadedCount: 1);
+        }
+
         var sourceExtensions = string.Concat(_languages.SourceFileLanguages.SelectMany(l => l.FileExtensions).Select(e => ", " + e));
         return new OpenProjectResult(false, $"Unsupported project file format: '{ext}'. Supported formats: .frycsproj, .frynbproj, .frycs, .frynb, .fryserver, .cs, .csx, .csproj, .zip{sourceExtensions}");
     }
@@ -1084,6 +1209,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
         await SaveWorkspaceStateAsync();
+        await _recentWorkspaces.RecordWorkspaceOpenedAsync(full, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
         MarkChanged();
         RestartWatcher();
         ActiveWorkspaceChanged?.Invoke();
@@ -1112,6 +1238,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
 
             _knownFileLocations[nb.Id] = filePath;
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneNotebook).ConfigureAwait(false);
 
             return new OpenProjectResult(
                 Success: true,
@@ -1164,6 +1291,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
 
             _knownFileLocations[script.Id] = filePath;
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
 
             return new OpenProjectResult(
                 Success: true,
@@ -1225,5 +1353,19 @@ public partial class LocalScriptStorageService : IScriptStorageService
         {
             return new OpenProjectResult(false, $"Failed to import C# file: {ex.Message}");
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        lock (_watcherGate)
+        {
+            _watcher?.Dispose();
+            _watcher = null;
+        }
+
+        _initLock?.Dispose();
     }
 }

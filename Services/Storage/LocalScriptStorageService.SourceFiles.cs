@@ -43,11 +43,114 @@ public partial class LocalScriptStorageService
         return SourceFileIdPrefix + Convert.ToHexString(hash, 0, 12).ToLowerInvariant();
     }
 
-    private bool IsWorkspaceFile(string path) =>
-        path.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
-        path.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
-        path.EndsWith(".fryserver", StringComparison.OrdinalIgnoreCase) ||
-        _languages.FindSourceFileLanguage(path) != null;
+    private static readonly HashSet<string> IgnoredFileNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".DS_Store",
+        "Thumbs.db",
+        "desktop.ini",
+        "fry_display.zig",
+        "fry_display.dart",
+        "fry_display.py",
+        "fry_display.js",
+        "fry_display.hpp",
+        "fry_display.cs"
+    };
+
+    private static readonly HashSet<string> IgnoredExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".frycsproj",
+        ".frynbproj"
+    };
+
+    private static readonly HashSet<string> KnownBinaryExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".tiff", ".tif",
+        ".pdf", ".exe", ".dll", ".so", ".dylib", ".bin", ".dat", ".zip", ".tar",
+        ".gz", ".7z", ".rar", ".mp3", ".wav", ".mp4", ".mov", ".avi", ".mkv"
+    };
+
+    private static bool IsIgnoredFile(string path)
+    {
+        var name = Path.GetFileName(path);
+        if (string.IsNullOrEmpty(name) || IgnoredFileNames.Contains(name)) return true;
+        if (name.StartsWith("fry_display.", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("fry_channel.", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        var ext = Path.GetExtension(path);
+        return !string.IsNullOrEmpty(ext) && IgnoredExtensions.Contains(ext);
+    }
+
+    private bool IsWorkspaceFile(string path) => !IsIgnoredFile(path);
+
+    private static bool IsBinaryFile(string path, byte[] bytes)
+    {
+        var ext = Path.GetExtension(path);
+        if (KnownBinaryExtensions.Contains(ext)) return true;
+        var checkLen = Math.Min(bytes.Length, 8192);
+        return Array.IndexOf(bytes, (byte)0, 0, checkLen) >= 0;
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F2} MB";
+    }
+
+    private string GenerateBinaryFileSnippet(string path, long fileSize)
+    {
+        var fileName = Path.GetFileName(path);
+        var rel = GetFolderPath(path);
+        var relativePath = string.IsNullOrEmpty(rel) ? fileName : $"{rel}/{fileName}";
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var sizeText = FormatFileSize(fileSize);
+        var isImage = ext is ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg";
+
+        if (isImage)
+        {
+            return $$"""
+                // ==============================================================================
+                //  Image Asset: {{fileName}} ({{sizeText}})
+                //  Relative Path: {{relativePath}}
+                //  Full Path: {{path}}
+                // ==============================================================================
+                //
+                // [C# / SkiaSharp]
+                // using SkiaSharp;
+                // using var bitmap = SKBitmap.Decode("{{relativePath}}");
+                //
+                // [C# / Raw File Bytes]
+                // byte[] bytes = System.IO.File.ReadAllBytes("{{relativePath}}");
+                //
+                // [C# / Avalonia Bitmap]
+                // using var stream = System.IO.File.OpenRead("{{relativePath}}");
+                // var avaloniaBitmap = new Avalonia.Media.Imaging.Bitmap(stream);
+                //
+                // [Python / PIL (Pillow)]
+                // from PIL import Image
+                // img = Image.open("{{relativePath}}")
+                // ==============================================================================
+                """;
+        }
+
+        return $$"""
+            // ==============================================================================
+            //  Binary Asset: {{fileName}} ({{sizeText}})
+            //  Relative Path: {{relativePath}}
+            //  Full Path: {{path}}
+            // ==============================================================================
+            //
+            // [C# / Read All Bytes]
+            // byte[] bytes = System.IO.File.ReadAllBytes("{{relativePath}}");
+            //
+            // [Python / Read Binary File]
+            // with open("{{relativePath}}", "rb") as f:
+            //     data = f.read()
+            // ==============================================================================
+            """;
+    }
 
     private string RegisterSourceFile(string path)
     {
@@ -79,7 +182,7 @@ public partial class LocalScriptStorageService
         if (_knownFileLocations.TryGetValue(id, out var known) && File.Exists(known)) return known;
 
         var root = EffectiveWorkspaceRoot;
-        var files = await Task.Run(() => WorkspaceWalker.Files(root, f => _languages.FindSourceFileLanguage(f) != null)).ConfigureAwait(false);
+        var files = await Task.Run(() => WorkspaceWalker.Files(root, IsWorkspaceFile)).ConfigureAwait(false);
         foreach (var file in files)
         {
             if (RegisterSourceFile(file) == id) return _knownFileLocations[id];
@@ -91,15 +194,29 @@ public partial class LocalScriptStorageService
     private async Task<ScriptDocumentItem?> LoadSourceFileAsync(string id)
     {
         var path = await FindSourceFilePathAsync(id);
-        var language = path == null ? null : _languages.FindSourceFileLanguage(path);
-        if (path == null || language == null) return null;
+        if (path == null) return null;
+        var language = _languages.FindSourceFileLanguage(path) ?? _languages.Get(LanguageIds.Text);
+        if (language == null) return null;
 
         try
         {
             var bytes = await File.ReadAllBytesAsync(path);
-            var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-            var text = new UTF8Encoding(false).GetString(bytes, hasBom ? 3 : 0, bytes.Length - (hasBom ? 3 : 0));
+            var isBinary = IsBinaryFile(path, bytes);
             var info = new FileInfo(path);
+
+            string text;
+            bool hasBom = false;
+
+            if (isBinary)
+            {
+                text = GenerateBinaryFileSnippet(path, bytes.LongLength);
+            }
+            else
+            {
+                hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+                text = new UTF8Encoding(false).GetString(bytes, hasBom ? 3 : 0, bytes.Length - (hasBom ? 3 : 0));
+            }
+
             lock (_sourceGate)
             {
                 _sourceFiles[id] = new SourceFileState
@@ -115,10 +232,10 @@ public partial class LocalScriptStorageService
             {
                 Id = id,
                 Title = Path.GetFileName(path),
-                Description = $"{language.DisplayName} file",
-                Category = language.DisplayName,
+                Description = isBinary ? $"Binary asset ({FormatFileSize(bytes.Length)})" : $"{language.DisplayName} file",
+                Category = isBinary ? "Assets" : language.DisplayName,
                 Code = text,
-                Notes = string.Empty,
+                Notes = isBinary ? "[Binary File - Read Only Preview & Script References]" : string.Empty,
                 LanguageId = language.Id,
                 SourceFilePath = path,
                 Created = info.CreationTimeUtc,
@@ -141,6 +258,12 @@ public partial class LocalScriptStorageService
     {
         var path = document.SourceFilePath ?? await FindSourceFilePathAsync(document.Id);
         if (path == null) return false;
+
+        if (IsBinaryFile(path, Array.Empty<byte>()))
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Skipping save on binary file '{path}' to prevent file corruption.");
+            return true;
+        }
 
         SourceFileState? state;
         lock (_sourceGate) _sourceFiles.TryGetValue(document.Id, out state);
@@ -195,7 +318,10 @@ public partial class LocalScriptStorageService
         var folder = string.IsNullOrEmpty(folderPath) ? root : Path.Combine(root, folderPath);
         Directory.CreateDirectory(folder);
 
-        var extension = language.DefaultExtension();
+        var explicitExt = Path.GetExtension(fileName?.Trim() ?? string.Empty);
+        var extension = !string.IsNullOrEmpty(explicitExt) && (language.FileExtensions.Contains(explicitExt, StringComparer.OrdinalIgnoreCase) || language.Id == LanguageIds.Text)
+            ? explicitExt
+            : language.DefaultExtension();
         var baseName = SanitizeName(
             string.IsNullOrWhiteSpace(fileName) ? $"script_{DateTime.Now:HHmmss}" : Path.GetFileNameWithoutExtension(fileName.Trim()),
             "script");
@@ -220,9 +346,8 @@ public partial class LocalScriptStorageService
             throw new FileNotFoundException("That file no longer exists.", path);
         }
 
-        var language = _languages.FindSourceFileLanguage(path);
         var name = SanitizeName(Path.GetFileName(newFileName.Trim()), Path.GetFileName(path));
-        if (language != null && !language.FileExtensions.Contains(Path.GetExtension(name), StringComparer.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(Path.GetExtension(name)) && Path.HasExtension(path))
         {
             name += Path.GetExtension(path);
         }

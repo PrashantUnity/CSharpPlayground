@@ -252,4 +252,81 @@ public class SourceFileStorageTests : IDisposable
         Assert.Contains(files, f => f.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(files, f => f.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public async Task GenericFiles_SuchAsImagesAndCsv_AreListedInWorkspace()
+    {
+        Write("data/sales.csv", """
+            id,product,price
+            1,Widget,19.99
+            2,Gadget,29.99
+            """);
+        Write("assets/logo.png", "not real png text for name test");
+        Write("README.md", "# Project Readme");
+
+        var summaries = await _storage.LoadWorkspaceSummariesAsync();
+        Assert.Contains(summaries, s => s.Title == "sales" && s.FileExtension == ".csv" && s.FolderPath == "data");
+        Assert.Contains(summaries, s => s.Title == "logo" && s.FileExtension == ".png" && s.FolderPath == "assets");
+        Assert.Contains(summaries, s => s.Title == "README" && s.FileExtension == ".md");
+
+        var listing = await _storage.LoadExplorerListingAsync();
+        Assert.Contains(listing.Items, s => s.Title == "sales" && s.FileExtension == ".csv");
+        Assert.Contains(listing.Items, s => s.Title == "logo" && s.FileExtension == ".png");
+    }
+
+    [Fact]
+    public async Task ImageAndBinaryFiles_LoadFriendlySnippet_AndNeverCorruptOnSave()
+    {
+        var rawPng = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52 };
+        var pngPath = Path.Combine(_library, "assets", "test.png");
+        Directory.CreateDirectory(Path.GetDirectoryName(pngPath)!);
+        await File.WriteAllBytesAsync(pngPath, rawPng);
+
+        var summaries = await _storage.LoadWorkspaceSummariesAsync();
+        var item = Assert.Single(summaries, s => s.Title == "test" && s.FileExtension == ".png");
+
+        var doc = await _storage.LoadScriptAsync(item.Id);
+        Assert.NotNull(doc);
+        Assert.Equal("test.png", doc.Title);
+        Assert.Contains("SKBitmap.Decode", doc.Code);
+        Assert.Contains("File.ReadAllBytes", doc.Code);
+        Assert.Contains("assets/test.png", doc.Code);
+
+        // Attempting to save informational text back over the binary file must be guarded
+        doc.Code = "// accidentally modified text in editor";
+        var saveResult = await _storage.SaveSourceFileAsync(doc, overwriteChangesOnDisk: true);
+        Assert.True(saveResult);
+
+        // Verify the binary file on disk was preserved completely intact
+        var onDiskBytes = await File.ReadAllBytesAsync(pngPath);
+        Assert.Equal(rawPng, onDiskBytes);
+    }
+
+    [Fact]
+    public void ExplorerItemViewModel_MapsIconsAndColorsForImagesAndData()
+    {
+        var imgItem = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel
+        {
+            Name = "chart.png",
+            FileExtension = ".png"
+        };
+        Assert.Equal("ImageOutline", imgItem.IconKind);
+        Assert.Equal("#C586C0", imgItem.IconColor);
+
+        var csvItem = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel
+        {
+            Name = "dataset.csv",
+            FileExtension = ".csv"
+        };
+        Assert.Equal("Table", csvItem.IconKind);
+        Assert.Equal("#75D59A", csvItem.IconColor);
+
+        var pdfItem = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel
+        {
+            Name = "document.pdf",
+            FileExtension = ".pdf"
+        };
+        Assert.Equal("FilePdfBox", pdfItem.IconKind);
+        Assert.Equal("#F14C4C", pdfItem.IconColor);
+    }
 }

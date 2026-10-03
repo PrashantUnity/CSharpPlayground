@@ -82,14 +82,19 @@
                                             ToolTip.Tip="Open existing project, file, or folder from disk (Ctrl+O / ⌘O)">
                                         <Button.Flyout>
                                             <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                                <MenuItem Header="Open Project / Document File..." Click="OnOpenProjectFileClick">
+                                                <MenuItem Header="New Workspace Folder..." Click="OnNewWorkspaceClick">
                                                     <MenuItem.Icon>
-                                                        <materialIcons:MaterialIcon Kind="FileDocumentOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                        <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="16" Height="16" Foreground="#4CAF50" />
                                                     </MenuItem.Icon>
                                                 </MenuItem>
                                                 <MenuItem Header="Open Project Folder..." Click="OnOpenProjectFolderClick">
                                                     <MenuItem.Icon>
                                                         <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" Foreground="#E3B341" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Open Project / Document File..." Click="OnOpenProjectFileClick">
+                                                    <MenuItem.Icon>
+                                                        <materialIcons:MaterialIcon Kind="FileDocumentOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                     </MenuItem.Icon>
                                                 </MenuItem>
                                             </MenuFlyout>

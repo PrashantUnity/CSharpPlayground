@@ -16,16 +16,15 @@
     <Version>2.0.2</Version>
     <Company>Code Fry Dev</Company>
     <Description>Full-featured interactive C# Code Studio and Script Automation Workspace for FryPDF</Description>
-    <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**;samples/**</DefaultItemExcludes>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
-    <!-- NuGet packaging -->
-    <PackageTags>frypdf;plugin;csharp;roslyn;avalonia;ide;scripting</PackageTags>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedAllSources>true</EmbedAllSources>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="samples/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The words of the visual contract (ChartType, ElementState, ...): charts, 3D plots and visualizers all use them. -->
@@ -34,6 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="Markdig" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>

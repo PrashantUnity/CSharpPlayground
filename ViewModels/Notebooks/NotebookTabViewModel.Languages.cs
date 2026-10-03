@@ -403,4 +403,18 @@ public partial class NotebookTabViewModel
             });
         }
     }
+
+    private void OnLanguagesRegistryChanged()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(DefaultLanguageChoices));
+            OnPropertyChanged(nameof(HasLanguageChoices));
+            foreach (var cell in Cells)
+            {
+                cell.UseLanguages(_languages.Registry, () => DefaultLanguage);
+            }
+        });
+    }
 }
+

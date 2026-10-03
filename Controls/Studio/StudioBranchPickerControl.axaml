@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;assembly=CSharpEditorPlugin"
+             xmlns:git="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models.Git;assembly=CSharpEditorPlugin"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="360"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioBranchPickerControl"
+             x:DataType="vm:CSharpCodeStudioViewModel"
+             Width="290" MaxHeight="380"
+             Background="{DynamicResource DsSurfaceBrush}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.branch-item-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="Button.branch-item-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6"
+            Background="{DynamicResource DsSurfaceBrush}" Padding="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+            <!-- Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                <TextBlock Grid.Column="0" Text="SWITCH BRANCH" FontSize="10.5" FontWeight="Bold"
+                           Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Command="{Binding RefreshBranchesCommand}" Classes="git-tool-btn"
+                        Width="22" Height="22" ToolTip.Tip="Refresh branches">
+                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                </Button>
+            </Grid>
+
+            <!-- Search / Filter Box -->
+            <Border Grid.Row="1" Background="{DynamicResource DsBgBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                    CornerRadius="4" Padding="6,2" Margin="0,0,0,6">
+                <Grid ColumnDefinitions="Auto,*">
+                    <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="13" Height="13"
+                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBox Grid.Column="1" Text="{Binding BranchFilterText, Mode=TwoWay}"
+                             PlaceholderText="Filter or type branch name..."
+                             FontSize="11" Background="Transparent" BorderThickness="0"
+                             VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- Create Branch Prompt (Visible when filter is entered) -->
+            <Border Grid.Row="2" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4"
+                    Padding="6,4" Margin="0,0,0,6"
+                    IsVisible="{Binding BranchFilterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding BranchFilterText, StringFormat='Create branch \'{0}\''}"
+                               FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Command="{Binding CreateAndCheckoutBranchCommand}"
+                            Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}"
+                            Height="22" Padding="6,0" CornerRadius="3"
+                            ToolTip.Tip="Create and checkout branch">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="#FFFFFF" />
+                            <TextBlock Text="Create" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Branch List -->
+            <ScrollViewer Grid.Row="3" MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding FilteredBranches}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="git:GitBranchItem">
+                            <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).CheckoutBranchCommand}"
+                                    CommandParameter="{Binding}" Classes="branch-item-btn">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                    <!-- Branch Icon -->
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="SourceBranch" Width="13" Height="13"
+                                                                Foreground="{DynamicResource DsPrimaryBrush}"
+                                                                VerticalAlignment="Center" Margin="0,0,6,0" />
+
+                                    <!-- Branch Name -->
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="11"
+                                               Foreground="{DynamicResource DsTextWhiteBrush}"
+                                               FontWeight="{Binding IsCurrent, Converter={x:Static ObjectConverters.IsNull}}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+
+                                    <!-- Remote Badge -->
+                                    <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
+                                            CornerRadius="2" Padding="4,1" Margin="4,0"
+                                            IsVisible="{Binding IsRemote}">
+                                        <TextBlock Text="remote" FontSize="9" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Border>
+
+                                    <!-- Checkmark if Current -->
+                                    <materialIcons:MaterialIcon Grid.Column="3" Kind="Check" Width="13" Height="13"
+                                                                Foreground="#22C55E" VerticalAlignment="Center"
+                                                                IsVisible="{Binding IsCurrent}" Margin="4,0,0,0" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Footer Strip -->
+            <Border Grid.Row="4" Margin="0,6,0,0" Padding="0,4,0,0"
+                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0">
+                <TextBlock Text="{Binding CurrentGitBranch, StringFormat='Current checkout: {0}'}"
+                           FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Left" />
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

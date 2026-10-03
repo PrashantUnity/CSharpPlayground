@@ -89,7 +89,6 @@
                     <!-- Multiple Output Kinds: Sleek Segmented Tab Strip -->
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                                   BringIntoViewOnFocusChange="False"
-                                  ScrollViewer.BringIntoViewOnFocusChange="False"
                                   IsVisible="{Binding HasMultipleOutputKinds}">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Tab: Table (.Dump) -->
@@ -256,8 +255,7 @@
             <!-- Output Elements -->
             <ScrollViewer Classes="notebook-output-scroll"
                           Classes.scrolled="{Binding IsOutputScrolled}"
-                          BringIntoViewOnFocusChange="False"
-                          ScrollViewer.BringIntoViewOnFocusChange="False">
+                          BringIntoViewOnFocusChange="False">
                 <StackPanel Spacing="6">
                     <!-- Missing Variable Smart Hint (CS0103) -->
                     <Border IsVisible="{Binding HasMissingVariableError}"

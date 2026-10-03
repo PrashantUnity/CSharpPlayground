@@ -64,19 +64,30 @@ public class RoslynCompilerService
             typeof(Regex).Assembly.Location,                                   // System.Text.RegularExpressions
             typeof(System.Diagnostics.Stopwatch).Assembly.Location,            // System.Diagnostics.Stopwatch
             typeof(Task).Assembly.Location,                                    // System.Threading.Tasks
-            typeof(HttpClient).Assembly.Location,              // System.Net.Http
+            typeof(HttpClient).Assembly.Location,                              // System.Net.Http
             typeof(Uri).Assembly.Location,                                     // System.Private.Uri (required transitively by System.Net.Http types)
             typeof(System.Net.HttpStatusCode).Assembly.Location,               // System.Net.Primitives (required transitively by System.Net.Http types)
-            typeof(Display.Display).Assembly.Location,                                 // Plugin Assembly (Display, DumpExtensions)
+            typeof(Display.Display).Assembly.Location,                         // Plugin Assembly (Display, DumpExtensions)
             typeof(Avalonia.Controls.Control).Assembly.Location,               // Avalonia Controls
             typeof(Avalonia.Media.Imaging.Bitmap).Assembly.Location,           // Avalonia Media
             typeof(System.Data.DataTable).Assembly.Location,                   // System.Data.Common
+            typeof(System.Threading.SendOrPostCallback).Assembly.Location,     // System.Threading (CS0012 SendOrPostCallback)
+            typeof(System.ComponentModel.INotifyPropertyChanged).Assembly.Location, // System.ObjectModel (CS0012 INotifyPropertyChanged)
+            typeof(System.ComponentModel.Component).Assembly.Location,         // System.ComponentModel.Primitives
+            typeof(Avalonia.AvaloniaObject).Assembly.Location,                 // Avalonia.Base
+            typeof(FrySharp.Sdk.IStudioApp).Assembly.Location,                 // FrySharp.Sdk
             Path.Combine(coreDir, "System.Runtime.dll"),                       // System.Runtime
             Path.Combine(coreDir, "System.Collections.dll"),                   // System.Collections
             Path.Combine(coreDir, "System.Collections.NonGeneric.dll"),        // System.Collections.NonGeneric
             Path.Combine(coreDir, "System.Data.Common.dll"),                   // System.Data.Common
             Path.Combine(coreDir, "System.Linq.dll"),                          // System.Linq
             Path.Combine(coreDir, "System.Text.Json.dll"),                     // System.Text.Json
+            Path.Combine(coreDir, "System.Threading.dll"),                     // System.Threading
+            Path.Combine(coreDir, "System.Threading.Thread.dll"),              // System.Threading.Thread
+            Path.Combine(coreDir, "System.ObjectModel.dll"),                   // System.ObjectModel
+            Path.Combine(coreDir, "System.ComponentModel.dll"),                // System.ComponentModel
+            Path.Combine(coreDir, "System.ComponentModel.Primitives.dll"),     // System.ComponentModel.Primitives
+            Path.Combine(coreDir, "System.ComponentModel.TypeConverter.dll"),  // System.ComponentModel.TypeConverter
             Path.Combine(coreDir, "netstandard.dll")                           // netstandard
         };
 
@@ -87,7 +98,7 @@ public class RoslynCompilerService
                 try
                 {
                     var name = Path.GetFileNameWithoutExtension(path);
-                    if (!items.Any(r => r.Name == name))
+                    if (!items.Any(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                     {
                         references.Add(MetadataReference.CreateFromFile(path));
                         items.Add(new AssemblyReferenceItem
@@ -95,6 +106,34 @@ public class RoslynCompilerService
                             Name = name,
                             AssemblyPath = path,
                             Description = "Standard .NET runtime assembly",
+                            IsEnabled = true,
+                            IsSystem = true
+                        });
+                    }
+                }
+                catch
+                {
+                    // Ignore unresolvable reference
+                }
+            }
+        }
+
+        // Add any assemblies already loaded in the host AppDomain (Avalonia, FrySharp plugins)
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (!asm.IsDynamic && !string.IsNullOrEmpty(asm.Location) && File.Exists(asm.Location))
+            {
+                try
+                {
+                    var name = Path.GetFileNameWithoutExtension(asm.Location);
+                    if (!items.Any(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        references.Add(MetadataReference.CreateFromFile(asm.Location));
+                        items.Add(new AssemblyReferenceItem
+                        {
+                            Name = name,
+                            AssemblyPath = asm.Location,
+                            Description = "Runtime loaded assembly",
                             IsEnabled = true,
                             IsSystem = true
                         });
@@ -282,14 +321,19 @@ public class RoslynCompilerService
             options: new CSharpCompilationOptions(
                 OutputKind.ConsoleApplication,
                 optimizationLevel: OptimizationLevel.Debug,
-                allowUnsafe: false));
+                allowUnsafe: false,
+                specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                {
+                    ["CS0105"] = ReportDiagnostic.Suppress,
+                    ["CS8933"] = ReportDiagnostic.Suppress
+                }));
 
         var diagnostics = compilation.GetDiagnostics();
         var results = new List<DiagnosticItem>();
 
         foreach (var diag in diagnostics)
         {
-            if (diag.Severity == DiagnosticSeverity.Hidden)
+            if (diag.Severity == DiagnosticSeverity.Hidden || diag.Id == "CS0105" || diag.Id == "CS8933")
             {
                 continue;
             }
@@ -340,13 +384,18 @@ public class RoslynCompilerService
             options: new CSharpCompilationOptions(
                 OutputKind.ConsoleApplication,
                 optimizationLevel: OptimizationLevel.Release,
-                allowUnsafe: false));
+                allowUnsafe: false,
+                specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                {
+                    ["CS0105"] = ReportDiagnostic.Suppress,
+                    ["CS8933"] = ReportDiagnostic.Suppress
+                }));
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
 
         var diagnostics = emitResult.Diagnostics
-            .Where(d => d.Severity != DiagnosticSeverity.Hidden)
+            .Where(d => d.Severity != DiagnosticSeverity.Hidden && d.Id != "CS0105" && d.Id != "CS8933")
             .Where(d =>
             {
                 var mapped = d.Location.GetMappedLineSpan();

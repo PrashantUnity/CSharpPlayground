@@ -33,6 +33,7 @@ public class CSharpProblemLanguageAdapter
             Title = $"{problem.Number}. {problem.Title}",
             Code = BuildScriptCode(problem),
             Notes = notes.ToString(),
+            IsEphemeral = true,
             TestCases = problem.TestCases.Select(t => new TestCaseItem
             {
                 Name = t.Name,
@@ -46,7 +47,8 @@ public class CSharpProblemLanguageAdapter
     {
         var notebook = new NotebookDocumentItem
         {
-            Title = $"{problem.Number}. {problem.Title} (Notebook)"
+            Title = $"{problem.Number}. {problem.Title} (Notebook)",
+            IsEphemeral = true
         };
 
         void Markdown(string source) => notebook.Cells.Add(new NotebookCellItem { Type = CellType.Markdown, Source = source.Trim(), IsMarkdownPreviewMode = true });

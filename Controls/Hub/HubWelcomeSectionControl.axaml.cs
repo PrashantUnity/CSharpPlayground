@@ -12,6 +12,14 @@ public partial class HubWelcomeSectionControl : UserControl
         InitializeComponent();
     }
 
+    private async void OnNewWorkspaceClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is CSharpManagerViewModel vm)
+        {
+            await HubFilePickerActions.CreateNewWorkspaceFolderAsync(this, vm);
+        }
+    }
+
     private async void OnOpenProjectFileClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is CSharpManagerViewModel vm)

@@ -52,6 +52,8 @@ internal static class Usage
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
               --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           notebook <n>           Notebook Studio with problem n's notebook.
+              --file <path>          open a notebook file (.csnb / .frynb) directly
+              --dart-demo            a notebook of Dart cells (classes, collections, persistency across cells)
               --polyglot-demo        a notebook of C#, Python, JavaScript, Java, and C++ cells sharing data across kernels
               --go-demo              a notebook of Go cells (goroutines, channels, and variables)
               --fsharp-demo          a notebook of F# cells (pipelines, pattern matching, records)

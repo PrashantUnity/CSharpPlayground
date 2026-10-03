@@ -23,6 +23,8 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Open File..." Gesture="Meta+O" Click="OpenFile_OnClick" />
                     <NativeMenuItem Header="Open Folder / Workspace..." Gesture="Shift+Meta+O" Click="OpenFolder_OnClick" />
+                    <NativeMenuItem Header="Open User Customization Script (init.csx)" Click="OpenUserInitScript_OnClick" />
+                    <NativeMenuItem Header="Open Workspace Customization Script" Click="OpenWorkspaceInitScript_OnClick" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Save" Gesture="Meta+S" Click="Save_OnClick" />
                     <NativeMenuItem Header="Save As..." Gesture="Shift+Meta+S" Click="SaveAs_OnClick" />
@@ -59,6 +61,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Explorer" Gesture="Shift+Meta+E" Click="ViewExplorer_OnClick" />
                     <NativeMenuItem Header="Search" Gesture="Shift+Meta+F" Click="ViewSearch_OnClick" />
+                    <NativeMenuItem Header="Source Control" Gesture="Shift+Meta+G" Click="ViewSourceControl_OnClick" />
                     <NativeMenuItem Header="Run &amp; Debug" Gesture="Shift+Meta+D" Click="ViewRunDebug_OnClick" />
                     <NativeMenuItem Header="Dependencies &amp; Packages" Gesture="Shift+Meta+X" Click="ViewNuGet_OnClick" />
                     <NativeMenuItem Header="Problems" Gesture="Shift+Meta+M" Click="ViewProblems_OnClick" />
@@ -73,6 +76,7 @@
                     <NativeMenuItem Header="Return to Hub" Gesture="Meta+H" Click="ReturnToHub_OnClick" />
                     <NativeMenuItem Header="Documentation &amp; Learning" Click="OpenDocs_OnClick" />
                     <NativeMenuItem Header="Blind 75 Algorithm Hub" Click="OpenBlind_OnClick" />
+                    <NativeMenuItem Header="Customization &amp; Extensions..." Click="OpenCustomizationSettings_OnClick" />
                     <NativeMenuItem Header="Settings..." Click="OpenSettings_OnClick" />
                 </NativeMenu>
             </NativeMenuItem>
@@ -83,6 +87,9 @@
                     <NativeMenuItem Header="Start Debugging" Gesture="F5" Click="StartDebugging_OnClick" />
                     <NativeMenuItem Header="Run Without Debugging" Gesture="Control+F5" Click="RunWithoutDebugging_OnClick" />
                     <NativeMenuItem Header="Stop Execution" Gesture="Shift+F5" Click="StopExecution_OnClick" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="Apply Script as Customization" Gesture="Alt+Meta+R" Click="ApplyCustomization_OnClick" />
+                    <NativeMenuItem Header="Reload Customizations" Gesture="Shift+Meta+R" Click="ReloadCustomizations_OnClick" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Step Over" Gesture="F10" Click="StepOver_OnClick" />
                     <NativeMenuItem Header="Step Into" Gesture="F11" Click="StepInto_OnClick" />

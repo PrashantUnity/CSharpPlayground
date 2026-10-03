@@ -288,7 +288,13 @@ public partial class CSharpCodeStudioViewModel
 
                 if (Script.Id == targetScriptId)
                 {
-                    CompilerStatusText = "Analyzing...";
+                    RunOnUiThread(() =>
+                    {
+                        if (Script.Id == targetScriptId)
+                        {
+                            CompilerStatusText = "Analyzing...";
+                        }
+                    });
                 }
                 var items = _compilerService.CheckDiagnostics(codeSnapshot, mode);
 
@@ -414,6 +420,11 @@ public partial class CSharpCodeStudioViewModel
     {
         if (IsExecuting) return;
 
+        if (ActiveLanguage.Id == LanguageIds.Text || ActiveLanguage.Capabilities == LanguageCapabilities.None)
+        {
+            CompilerStatusText = $"ℹ️ '{Script?.Title ?? "File"}' is a text/asset file and cannot be executed directly.";
+            return;
+        }
         if (ActiveLanguage.ScriptRunner != null)
         {
             await RunWithScriptRunnerAsync(OpenTabs.FirstOrDefault(t => t.Id == Script.Id), ActiveLanguage);
@@ -429,9 +440,27 @@ public partial class CSharpCodeStudioViewModel
         }
 
         var runningTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+
+        var beforeHook = new FrySharp.Sdk.ExecutionHookContext
+        {
+            LanguageId = ActiveLanguage.Id,
+            DocumentPath = Script.SourceFilePath,
+            SourceCode = Code
+        };
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeBeforeScriptRun(beforeHook);
+        if (beforeHook.CancelExecution)
+        {
+            var cancelReason = beforeHook.CancellationReason ?? "Execution cancelled by extension hook.";
+            var cancelMsg = $"⚠️ {cancelReason}\n";
+            if (runningTab != null) runningTab.ConsoleOutput = cancelMsg;
+            ConsoleOutput = cancelMsg;
+            CompilerStatusText = "Cancelled by Hook";
+            return;
+        }
+
         // Every run checks the script's test cases; their results land on them even if another tab is active by the end.
         var runningCases = TestCases.ToList();
-        var runningCode = Code;
+        var runningCode = beforeHook.SourceCode;
         bool completed = false;
         foreach (var testCase in runningCases) testCase.IsRunning = true;
         var csharpHeader = "🚀 Running C# code (.Dump enabled)...\n";
@@ -815,21 +844,24 @@ public partial class CSharpCodeStudioViewModel
                 IsAcceptingProgramInput = false;
             }
             UpdateTestCaseResults(runningCases, runningCode, runningTab?.ConsoleOutput ?? ConsoleOutput, completed);
+            
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeAfterScriptRun(
+                new FrySharp.Sdk.ExecutionFinishedHookContext
+                {
+                    LanguageId = ActiveLanguage.Id,
+                    DocumentPath = Script.SourceFilePath,
+                    Success = completed,
+                    Output = runningTab?.ConsoleOutput ?? ConsoleOutput,
+                    Error = completed ? string.Empty : (CompilerStatusText ?? "Execution failed")
+                });
         }
     }
 
     // How a running script's output reaches the UI thread unless the constructor was given another way: queued when it
-    // comes from another thread, right away on the UI thread or with no app at all (unit tests).
+    // comes from another thread in a live UI app, right away on the UI thread or in unit tests.
     private static void RunOnUiThread(Action action)
     {
-        if (Avalonia.Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(action);
-        }
-        else
-        {
-            action();
-        }
+        Services.Common.UiDispatchHelper.RunOnUi(action);
     }
 
     [RelayCommand]

@@ -5,6 +5,52 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 
 public static partial class CodeTemplateLibrary
 {
+    private static readonly List<CodeTemplate> _registeredTemplates = new();
+    private static readonly object _templateLock = new();
+
+    /// <summary>
+    /// Raised whenever a template is registered or unregistered dynamically.
+    /// </summary>
+    public static event Action? Changed;
+
+    public static IDisposable RegisterTemplate(CodeTemplate template)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        lock (_templateLock)
+        {
+            _registeredTemplates.RemoveAll(t => t.Id == template.Id);
+            _registeredTemplates.Add(template);
+        }
+        Changed?.Invoke();
+        return new TemplateRegistrationToken(template.Id);
+    }
+
+    public static bool UnregisterTemplate(string templateId)
+    {
+        if (string.IsNullOrWhiteSpace(templateId)) return false;
+        bool removed;
+        lock (_templateLock)
+        {
+            removed = _registeredTemplates.RemoveAll(t => t.Id == templateId) > 0;
+        }
+        if (removed)
+        {
+            Changed?.Invoke();
+        }
+        return removed;
+    }
+
+    private sealed class TemplateRegistrationToken(string templateId) : IDisposable
+    {
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            UnregisterTemplate(templateId);
+        }
+    }
+
     public static IReadOnlyList<CodeTemplate> GetTemplates()
     {
         var list = new List<CodeTemplate>(GetCoreTemplates());
@@ -16,6 +62,11 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetCharting3DTemplates());
         list.AddRange(GetPolyglotVisualsTemplates());
         list.AddRange(GetDynamicProgrammingTemplates());
+        list.AddRange(GetCustomizationTemplates());
+        lock (_templateLock)
+        {
+            list.AddRange(_registeredTemplates);
+        }
         return list;
     }
 

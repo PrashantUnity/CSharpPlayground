@@ -67,7 +67,15 @@ public class PortAvailabilityService : IPortAvailabilityService
 
             // Perform direct socket bind check on Loopback
             using var listener = new TcpListener(IPAddress.Loopback, port);
-            listener.ExclusiveAddressUse = true;
+            if (OperatingSystem.IsWindows())
+            {
+                listener.ExclusiveAddressUse = true;
+            }
+            else
+            {
+                listener.ExclusiveAddressUse = false;
+                listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            }
             listener.Start();
             listener.Stop();
             return true;

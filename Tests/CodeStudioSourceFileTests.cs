@@ -49,6 +49,27 @@ public class CodeStudioSourceFileTests : IDisposable
         return path;
     }
 
+    private string CopyOrWriteImage(string relativePath)
+    {
+        var path = Path.Combine(_storage.LibraryRootPath, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var sample = Path.Combine(AppContext.BaseDirectory, "Assets", "app-logo.png");
+        if (!File.Exists(sample))
+        {
+            sample = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../..", "Assets", "app-logo.png"));
+        }
+        if (File.Exists(sample))
+        {
+            File.Copy(sample, path, overwrite: true);
+        }
+        else
+        {
+            var pngBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            File.WriteAllBytes(path, pngBytes);
+        }
+        return path;
+    }
+
     private static IEnumerable<ExplorerItemViewModel> All(IEnumerable<ExplorerItemViewModel> items) =>
         items.SelectMany(i => new[] { i }.Concat(All(i.Children)));
 
@@ -235,6 +256,128 @@ public class CodeStudioSourceFileTests : IDisposable
         Assert.Equal("main.py", opened?.Title);
         Assert.Equal(LanguageIds.Python, opened?.LanguageId);
         Assert.DoesNotContain(notebooks.Tabs, t => t.Title.Contains("main"));
+    }
+
+    [Fact]
+    public async Task OpeningAnImageFile_ActivatesVisualImageViewer_WithAccurateMetadata()
+    {
+        CopyOrWriteImage("assets/app-logo.png");
+        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "app-logo.png");
+
+        await studio.SwitchToScriptAsync(item);
+
+        Assert.True(studio.IsActiveDocumentImage);
+        Assert.False(studio.ShowCodeEditor);
+        Assert.Equal("PNG Image", studio.ImageFormatText);
+        Assert.False(string.IsNullOrEmpty(studio.ImageFileSizeText));
+        Assert.Contains("PNG Image", studio.RuntimeLabel);
+
+        // Zoom commands
+        Assert.True(studio.ImageFitToWindow);
+        studio.ImageZoomInCommand.Execute(null);
+        Assert.False(studio.ImageFitToWindow);
+        Assert.True(studio.ImageZoomFactor > 1.0);
+
+        studio.ImageResetZoomCommand.Execute(null);
+        Assert.Equal(1.0, studio.ImageZoomFactor);
+
+        studio.ImageToggleFitCommand.Execute(null);
+        Assert.True(studio.ImageFitToWindow);
+
+        // Code drawer toggle
+        Assert.False(studio.ShowImageCodeDrawer);
+        studio.ToggleImageCodeDrawerCommand.Execute(null);
+        Assert.True(studio.ShowImageCodeDrawer);
+    }
+
+    [Fact]
+    public async Task OpeningAMarkdownFile_TogglesBetweenPreviewAndEditModes()
+    {
+        var mdPath = WriteSource("docs/guide.md", "# Guide\n\nWelcome to **C# Studio**.\n");
+        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "guide.md");
+
+        await studio.SwitchToScriptAsync(item);
+
+        Assert.True(studio.IsActiveDocumentMarkdown);
+        Assert.True(studio.HasPreviewMode);
+        Assert.True(studio.IsDocumentPreviewMode);
+        Assert.True(studio.ShowMarkdownPreview);
+        Assert.False(studio.ShowTextEditor);
+        Assert.Equal("Edit Raw", studio.DocumentPreviewToggleText);
+        Assert.Equal("Markdown (Preview)", studio.RuntimeLabel);
+
+        // Toggle to Edit mode
+        studio.ToggleDocumentPreviewModeCommand.Execute(null);
+
+        Assert.False(studio.IsDocumentPreviewMode);
+        Assert.False(studio.ShowMarkdownPreview);
+        Assert.True(studio.ShowTextEditor);
+        Assert.Equal("Preview", studio.DocumentPreviewToggleText);
+        Assert.Equal("Markdown (Source)", studio.RuntimeLabel);
+
+        // Toggle back to Preview mode
+        studio.ToggleDocumentPreviewModeCommand.Execute(null);
+
+        Assert.True(studio.IsDocumentPreviewMode);
+        Assert.True(studio.ShowMarkdownPreview);
+        Assert.False(studio.ShowTextEditor);
+        Assert.Equal("Edit Raw", studio.DocumentPreviewToggleText);
+        Assert.Equal("Markdown (Preview)", studio.RuntimeLabel);
+    }
+
+    [Fact]
+    public async Task OpeningACsvFile_TogglesBetweenTablePreviewAndRawTextModes()
+    {
+        var csvContent = """
+            Id,City,Score,Active
+            1,"San Francisco, CA",98.5,true
+            2,"New York, NY",94.2,false
+            3,"Austin, TX",89.0,true
+            """;
+        WriteSource("data/cities.csv", csvContent);
+        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "cities.csv");
+
+        await studio.SwitchToScriptAsync(item);
+
+        Assert.True(studio.IsActiveDocumentCsv);
+        Assert.True(studio.HasPreviewMode);
+        Assert.True(studio.IsDocumentPreviewMode);
+        Assert.True(studio.ShowCsvPreview);
+        Assert.False(studio.ShowTextEditor);
+        Assert.Equal("Edit Raw CSV", studio.DocumentPreviewToggleText);
+        Assert.Contains("3 rows × 4 cols", studio.RuntimeLabel);
+
+        // Verify parsed table structure
+        Assert.NotNull(studio.ActiveCsvTable);
+        Assert.Equal(4, studio.ActiveCsvTable.Columns.Count);
+        Assert.Equal(3, studio.ActiveCsvTable.Rows.Count);
+        Assert.Equal("City", studio.ActiveCsvTable.Columns[1].Header);
+        Assert.False(studio.ActiveCsvTable.Columns[1].IsNumeric);
+        Assert.Equal("Score", studio.ActiveCsvTable.Columns[2].Header);
+        Assert.True(studio.ActiveCsvTable.Columns[2].IsNumeric);
+
+        // Quoted cell with comma correctly parsed without splitting
+        var row0 = studio.ActiveCsvTable.Rows[0];
+        Assert.Equal("San Francisco, CA", row0.Cells[1].DisplayText);
+
+        // Toggle to Edit mode
+        studio.ToggleDocumentPreviewModeCommand.Execute(null);
+
+        Assert.False(studio.IsDocumentPreviewMode);
+        Assert.False(studio.ShowCsvPreview);
+        Assert.True(studio.ShowTextEditor);
+        Assert.Equal("Preview Table", studio.DocumentPreviewToggleText);
+        Assert.Equal("CSV (Source Text)", studio.RuntimeLabel);
+
+        // Toggle back to Preview mode
+        studio.ToggleDocumentPreviewModeCommand.Execute(null);
+
+        Assert.True(studio.IsDocumentPreviewMode);
+        Assert.True(studio.ShowCsvPreview);
+        Assert.False(studio.ShowTextEditor);
     }
 
     private static async Task WaitUntil(Func<bool> condition)

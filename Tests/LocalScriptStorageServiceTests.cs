@@ -682,4 +682,39 @@ public class LocalScriptStorageServiceTests : IDisposable
         Assert.False(result.Success);
         Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task OpenExternalProjectAsync_WithLooseFileOutsideWorkspace_SwitchesActiveWorkspaceRoot_AndScopesExplorer()
+    {
+        var initialWorkspace = Path.Combine(Path.GetTempPath(), "FryPDF_InitialWs_" + Guid.NewGuid().ToString("N"));
+        var newWorkspace = Path.Combine(Path.GetTempPath(), "FryPDF_NewWs_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(initialWorkspace);
+        Directory.CreateDirectory(newWorkspace);
+
+        try
+        {
+            var storage = new LocalScriptStorageService(_baseDir);
+            await storage.OpenExternalProjectAsync(initialWorkspace);
+            Assert.Equal(initialWorkspace, storage.ActiveWorkspaceRootPath);
+
+            Directory.CreateDirectory(Path.Combine(newWorkspace, ".frysharp"));
+            var looseScript = Path.Combine(newWorkspace, "IsolatedScript.zig");
+            await File.WriteAllTextAsync(looseScript, "const std = @import(\"std\");");
+
+            var result = await storage.OpenExternalProjectAsync(looseScript);
+            Assert.True(result.Success);
+            Assert.Equal(newWorkspace, storage.ActiveWorkspaceRootPath);
+
+            var listing = await storage.LoadExplorerListingAsync();
+            Assert.Contains(listing.Items, item => item.Title == "IsolatedScript");
+
+            var recents = await storage.RecentWorkspaces.LoadRecentWorkspacesAsync();
+            Assert.Contains(recents, r => string.Equals(r.Path, newWorkspace, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            if (Directory.Exists(initialWorkspace)) Directory.Delete(initialWorkspace, recursive: true);
+            if (Directory.Exists(newWorkspace)) Directory.Delete(newWorkspace, recursive: true);
+        }
+    }
 }

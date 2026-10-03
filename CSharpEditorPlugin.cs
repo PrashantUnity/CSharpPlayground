@@ -8,6 +8,7 @@ using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using PdfEditorApp.Core.Plugins.Manifests;
 using PdfEditorApp.Core.Plugins.Settings;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
@@ -115,6 +116,63 @@ public class CSharpEditorPlugin : IFryPlugin
             Shortcut = "Ctrl+Alt+E",
             Order = 85,
             Action = NavigateToStudio
+        });
+
+        var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager = customizationManager;
+
+        var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
+
+        _ = Task.Run(async () =>
+        {
+            var ws = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPath;
+            await customizationManager.InitializeAsync(enableHotReload: true, ct);
+            await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: ws, enableHotReload: true, ct);
+        }, ct);
+
+        var reloadCustomizationsCmd = ctx.RegisterCommand(new CommandPaletteDescriptor
+        {
+            Id = "cmd.studio.reload_customizations",
+            Title = "Reload Customizations & Themes",
+            Subtitle = "Recompile and apply ~/.frysharp/init.csx and active themes in real time",
+            Category = "Developer Tools",
+            IconKind = "Refresh",
+            Shortcut = "Ctrl+Shift+R",
+            Order = 86,
+            Action = sp => { _ = customizationManager.ReloadAsync(); }
+        });
+
+        var openInitScriptCmd = ctx.RegisterCommand(new CommandPaletteDescriptor
+        {
+            Id = "cmd.studio.open_init_script",
+            Title = "Open Customization Script (init.csx)",
+            Subtitle = "Edit in-app startup script, colors, themes, commands, and hooks",
+            Category = "Developer Tools",
+            IconKind = "Tune",
+            Order = 87,
+            Action = sp =>
+            {
+                NavigateToStudio(sp);
+                _ = customizationManager.Storage.EnsureInitScriptExistsAsync().ContinueWith(async t =>
+                {
+                    if (activeHost?.CodeStudioViewModel != null)
+                    {
+                        var item = new ScriptDocumentItem
+                        {
+                            Id = "init.csx",
+                            Title = "init.csx",
+                            Code = await t,
+                            LanguageId = "csharp",
+                            SourceFilePath = customizationManager.Storage.GlobalInitScriptPath
+                        };
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            activeHost.NavigateToCodeStudio(item);
+                        });
+                    }
+                });
+            }
         });
 
         var statusReg = ctx.RegisterStatusBarWidget(new StatusBarWidgetDescriptor
@@ -449,6 +507,18 @@ public class CSharpEditorPlugin : IFryPlugin
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ResetZoomCommand.Execute(null);
                     else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ResetZoomCommand.Execute(null);
                 }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.studio.reload_customizations",
+                Title = "Reload Customizations & Themes",
+                Description = "Recompile and apply in-app customization scripts and theme tokens.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+Shift+R",
+                MacGesture = "Cmd+Shift+R",
+                Scope = ShortcutScope.Global,
+                Action = sp => { _ = customizationManager.ReloadAsync(); }
             })
         };
 
@@ -462,6 +532,10 @@ public class CSharpEditorPlugin : IFryPlugin
             ProcessRegistry.KillAll();
             navReg.Dispose();
             cmdReg.Dispose();
+            reloadCustomizationsCmd.Dispose();
+            openInitScriptCmd.Dispose();
+            customizationManager.Dispose();
+            extensionManager.Dispose();
             statusReg.Dispose();
             ribbonActionReg.Dispose();
             foreach (var s in shortcuts) s.Dispose();

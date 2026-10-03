@@ -22,6 +22,7 @@ internal static class HubAndDocsSnapshots
         // Languages over a throwaway folder: the STUDIO ENVIRONMENT rows show the machine's own Python (or --python's),
         // or with --nothing-installed what the Hub says when there's none.
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("hub"), languages.Registry);
         if (!options.Flag("empty"))
@@ -40,11 +41,28 @@ internal static class HubAndDocsSnapshots
             File.WriteAllText(Path.Combine(libRoot, "data_pipeline.py"), "# Python demo\nfor x in range(10):\n    print(x)\n");
             File.WriteAllText(Path.Combine(libRoot, "HelloWorld.java"),  "// Java demo\npublic class HelloWorld { }\n");
             File.WriteAllText(Path.Combine(libRoot, "fetch_api.js"),     "// JS demo\nfetch('/api').then(r => r.json());\n");
-        }
+            File.WriteAllText(Path.Combine(libRoot, "chart_demo.dart"),  "// Dart demo\nvoid main() {\n    print('Dart demo');\n}\n");
 
+            var projectsDir = Snapshot.TempFolder("projects");
+            Directory.CreateDirectory(projectsDir);
+            var proj1 = Path.Combine(projectsDir, "CSharpPlayground");
+            var proj2 = Path.Combine(projectsDir, "FrysharpAlgorithms");
+            var nbFile = Path.Combine(projectsDir, "DeepLearningExploration.ipynb");
+            Directory.CreateDirectory(proj1);
+            Directory.CreateDirectory(proj2);
+            File.WriteAllText(nbFile, "{}");
+            var git1 = Path.Combine(proj1, ".git");
+            Directory.CreateDirectory(git1);
+            File.WriteAllText(Path.Combine(git1, "HEAD"), "ref: refs/heads/main\n");
+
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(proj1));
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(proj2));
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(nbFile));
+        }
 
         var vm = new CSharpManagerViewModel(storage, openScriptAction: _ => { }, openNotebookAction: _ => { }, languages: languages);
         Snapshot.Wait(vm.LoadWorkspaceItemsAsync());
+        if (vm.RecentWorkspaces.FirstOrDefault() is { } firstWs) Snapshot.Wait(vm.TogglePinRecentWorkspaceAsync(firstWs));
         if (vm.AllItems.FirstOrDefault() is { } first) Snapshot.Wait(vm.TogglePinAsync(first));
 
         if (options.Flag("templates") || options.Value("template") != null || options.Value("category") != null || string.Equals(options.Value("tab"), "templates", StringComparison.OrdinalIgnoreCase))
@@ -76,6 +94,8 @@ internal static class HubAndDocsSnapshots
     /// <summary><c>docs</c>: the learning center, on the first article or the one whose title contains <c>--article</c>.</summary>
     public static void Docs(Options options)
     {
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpDocsViewModel();
         if (options.Value("article") is { } wanted)
         {
@@ -102,8 +122,17 @@ internal static class HubAndDocsSnapshots
     public static void Settings(Options options)
     {
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpSettingsViewModel(languages);
         if (options.Value("category") is { } cat) vm.SelectCategory(cat);
+        if (options.Flag("import-package") || options.Value("package-url") is not null)
+        {
+            vm.IsImportPackageFormVisible = true;
+            if (options.Value("package-url") is { } url)
+            {
+                vm.PackageGitUrl = url;
+            }
+        }
         if (options.Value("language") is { } lang)
         {
             var target = vm.Languages.FirstOrDefault(l => l.Language.Id.Equals(lang, StringComparison.OrdinalIgnoreCase) || l.DisplayName.Equals(lang, StringComparison.OrdinalIgnoreCase));

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
@@ -72,6 +73,46 @@ public class ScriptImportsTests
 
         Assert.Contains(new RoslynCompilerService().CheckDiagnostics(code), d => d.Severity == DiagnosticSeverity.Error);
         Assert.False((await new NotebookExecutionKernel().ExecuteCellAsync(code)).Success);
+    }
+
+    [Fact]
+    public void ExtensibilityScript_WithDispatcherAndDuplicateUsings_CompilesCleanlyWithNoErrors()
+    {
+        const string scriptCode = """
+            using System;
+            using System.Collections.Generic;
+            using Avalonia.Controls;
+            using Avalonia.Threading;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                var win = new Window { Title = "Test" };
+                win.Show();
+            });
+            """;
+
+        var compiler = new RoslynCompilerService();
+        var diags = compiler.CheckDiagnostics(scriptCode);
+        var errors = diags.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+        var warnings = diags.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
+
+        Assert.Empty(errors);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void SnakeShowcaseScript_CompilesCleanlyWithNoErrors()
+    {
+        var docService = DocumentationService.Instance;
+        var extensibilityCat = docService.Categories.First(c => c.Id == "extensibility_customization");
+        var ch10 = extensibilityCat.Articles.First(a => a.Id == "extensibility_ch10_extensions");
+        var snakeSnippet = ch10.CodeSnippets.First(s => s.Id == "ch10_snake_app_script");
+
+        var compiler = new RoslynCompilerService();
+        var diags = compiler.CheckDiagnostics(snakeSnippet.Code);
+        var errors = diags.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => $"{d.Id}: {d.Message} (Line {d.Line})").ToList();
+
+        Assert.True(errors.Count == 0, string.Join("\n", errors));
     }
 
     private static void AssertNoErrors(System.Collections.Generic.IEnumerable<DiagnosticItem> diagnostics)

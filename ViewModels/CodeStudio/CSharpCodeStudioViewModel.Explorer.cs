@@ -125,7 +125,7 @@ public partial class CSharpCodeStudioViewModel
     }
 
     // Go to File: opens any file of the workspace by its path, whether or not the Explorer has drawn it.
-    private async Task OpenWorkspaceFileAsync(string fullPath)
+    public async Task OpenWorkspaceFileAsync(string fullPath)
     {
         using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
         {
@@ -419,7 +419,8 @@ public partial class CSharpCodeStudioViewModel
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -444,7 +445,8 @@ public partial class CSharpCodeStudioViewModel
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -573,6 +575,21 @@ public partial class CSharpCodeStudioViewModel
                 }
 
                 await RefreshExplorerAsync();
+
+                var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
+                if (!string.IsNullOrWhiteSpace(workspaceFolder))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
+                        await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
+                        var workspaceExtDir = Path.Combine(workspaceFolder, ".frysharp", "extensions");
+                        if (Directory.Exists(workspaceExtDir))
+                        {
+                            await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
+                        }
+                    });
+                }
 
                 if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                 {
@@ -905,8 +922,19 @@ public partial class CSharpCodeStudioViewModel
     public void CopyItemPath(Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
-        var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
-        CompilerStatusText = $"Path: {path}";
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        var abs = Path.GetFullPath(Path.Combine(_storageService.ActiveWorkspaceRootPath, rel.Replace('/', Path.DirectorySeparatorChar)));
+        _ = CopyTextToClipboardAsync(abs);
+        CompilerStatusText = $"Copied full path: {abs}";
+    }
+
+    [RelayCommand]
+    public void CopyItemRelativePath(Explorer.ExplorerItemViewModel item)
+    {
+        if (item == null) return;
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        _ = CopyTextToClipboardAsync(rel);
+        CompilerStatusText = $"Copied relative path: {rel}";
     }
 
     [RelayCommand]

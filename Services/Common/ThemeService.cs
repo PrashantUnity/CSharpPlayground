@@ -9,12 +9,31 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 /// </summary>
 public static class ThemeService
 {
-    public static bool IsDark => Application.Current?.ActualThemeVariant != ThemeVariant.Light;
+    public static bool IsDark
+    {
+        get
+        {
+            var app = Application.Current;
+            if (app == null) return true;
+            if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            {
+                return true;
+            }
+            try
+            {
+                return app.ActualThemeVariant != ThemeVariant.Light;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+    }
 
     public static bool ToggleTheme()
     {
         var app = Application.Current;
-        if (app == null) return IsDark;
+        if (app == null || !Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) return IsDark;
 
         var goingDark = !IsDark;
         app.RequestedThemeVariant = goingDark ? ThemeVariant.Dark : ThemeVariant.Light;

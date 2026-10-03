@@ -7,7 +7,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 /// <summary>The command line: a command, then problem numbers and <c>--name value</c> / <c>--flag</c> options in any order.</summary>
 internal sealed class Options
 {
-    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test", "while-running", "python-demo", "nothing-installed", "unique", "timestamp", "js-demo", "polyglot-demo", "java-share", "java-exception", "java-table", "cpp-demo", "go-demo", "fsharp-demo", "sql-demo", "rust-demo", "shots" };
+    private static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase) { "light", "quiet", "run", "edit-notes", "empty", "templates", "list", "generate-tests", "run-tests", "add-test", "while-running", "python-demo", "dart-demo", "nothing-installed", "unique", "timestamp", "js-demo", "polyglot-demo", "java-share", "java-exception", "java-table", "cpp-demo", "go-demo", "fsharp-demo", "sql-demo", "rust-demo", "shots" };
 
     private readonly Dictionary<string, string?> _named = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _positional = new();
@@ -50,8 +50,8 @@ internal sealed class Options
     public IEnumerable<int> Numbers(string name) => List(name).Select(n => CheckedProblem(ParseInt(n, $"--{name}")));
 
     /// <summary>The one problem number a command needs (<c>studio 1</c>).</summary>
-    public int Problem() =>
-        _positional.Count > 0 ? CheckedProblem(ParseInt(_positional[0], "the problem number")) : throw new ArgumentException($"`{Command}` needs a Blind 75 problem number, e.g. `{Command} 1`.");
+    public int Problem(int fallback = 0) =>
+        _positional.Count > 0 ? CheckedProblem(ParseInt(_positional[0], "the problem number")) : (fallback > 0 ? fallback : throw new ArgumentException($"`{Command}` needs a Blind 75 problem number, e.g. `{Command} 1`."));
 
     /// <summary>Every problem number given, or all of them when none are.</summary>
     public IReadOnlyList<int> Problems() =>

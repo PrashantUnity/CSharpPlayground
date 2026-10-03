@@ -155,6 +155,12 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     {
         if (_currentVm == null) return;
 
+        if (_currentVm.TryExecuteExtensibilityShortcut(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Source is TextBox tb && tb.DataContext is ExplorerItemViewModel itemVm && itemVm.IsRenaming)
         {
             if (e.Key == Key.Enter)
@@ -207,6 +213,25 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             _ = _currentVm.SaveCommand.ExecuteAsync(null);
             e.Handled = true;
             return;
+        }
+
+        // Ctrl+Alt+R: Apply active tab as in-app studio customization
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key == Key.R)
+        {
+            _ = _currentVm.ApplyActiveTabAsCustomizationCommand.ExecuteAsync(null);
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Shift+V / Cmd+Shift+V: Toggle Preview Mode (Markdown / CSV)
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.V)
+        {
+            if (_currentVm.HasPreviewMode)
+            {
+                _currentVm.ToggleDocumentPreviewModeCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
         }
 
         if (e.Key == Key.F5 && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)) &&
@@ -271,6 +296,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.F)
         {
             _currentVm.SelectActivityBarItem(1); // Search
+            e.Handled = true;
+            return;
+        }
+
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.G)
+        {
+            _currentVm.SelectActivityBarItem(6); // Source Control / Git
             e.Handled = true;
             return;
         }
@@ -596,6 +628,11 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         _currentVm.RequestExploreVariable -= OpenCollectionView;
         _currentVm.RequestViewVariable -= OpenValueViewer;
         _currentVm.PropertyChanged -= OnVmPropertyChanged;
+        _currentVm.GetSelectedText = null;
+        _currentVm.SetSelectedText = null;
+        _currentVm.InsertEditorText = null;
+        _currentVm.SetEditorSelection = null;
+        _currentVm.ScrollEditorToLine = null;
         _completionController?.Dispose();
         _completionController = null;
         _quickInfoController?.Dispose();
@@ -618,6 +655,35 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
 
         if (_currentVm != null && _editor != null)
         {
+            _currentVm.GetSelectedText = () => _editor?.SelectedText ?? string.Empty;
+            _currentVm.SetSelectedText = s =>
+            {
+                if (_editor != null)
+                {
+                    _editor.SelectedText = s ?? string.Empty;
+                }
+            };
+            _currentVm.InsertEditorText = text =>
+            {
+                if (_editor?.Document != null)
+                {
+                    _editor.Document.Insert(_editor.CaretOffset, text ?? string.Empty);
+                }
+            };
+            _currentVm.SetEditorSelection = (sLine, sCol, eLine, eCol) =>
+            {
+                if (_editor?.Document != null)
+                {
+                    int startOffset = _editor.Document.GetOffset(sLine, sCol);
+                    int endOffset = _editor.Document.GetOffset(eLine, eCol);
+                    _editor.Select(startOffset, Math.Max(0, endOffset - startOffset));
+                }
+            };
+            _currentVm.ScrollEditorToLine = line =>
+            {
+                _editor?.ScrollTo(line, 1);
+            };
+
             _currentVm.RequestNavigateToCaret += OnNavigateToCaret;
             _currentVm.RequestGoToLine += ScrollToAndSelectLine;
             _currentVm.RequestFoldAll += FoldAll;
@@ -1133,6 +1199,30 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         catch
         {
             // Ignore invalid line index if text modified
+        }
+    }
+
+    private void OnNewFileFlyoutOpening(object? sender, EventArgs e)
+    {
+        if (sender is not MenuFlyout menu || _currentVm == null) return;
+
+        while (menu.Items.Count > 2)
+        {
+            menu.Items.RemoveAt(2);
+        }
+
+        foreach (var option in _currentVm.NewFileOptions)
+        {
+            var icon = new Material.Icons.Avalonia.MaterialIcon { Width = 14, Height = 14 };
+            if (Enum.TryParse<Material.Icons.MaterialIconKind>(option.IconKind, out var kind)) icon.Kind = kind;
+            if (Color.TryParse(option.AccentHex, out var color)) icon.Foreground = new SolidColorBrush(color);
+
+            menu.Items.Add(new MenuItem
+            {
+                Header = option.Label,
+                Icon = icon,
+                Command = option.Command
+            });
         }
     }
 

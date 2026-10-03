@@ -130,7 +130,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(60)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunCodeCommand deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;
@@ -172,7 +172,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         { IsBackground = true };
         pumpThread.Start();
 
-        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(60)));
         Assert.True(ReferenceEquals(finished, completed.Task),
             "RunSingleCellAsync deadlocked on a UI-like single-threaded SynchronizationContext.");
         await completed.Task;

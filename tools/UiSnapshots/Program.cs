@@ -38,6 +38,7 @@ try
         case "update": AppSnapshots.Update(options); break;
         case "app-window" or "mainwindow": AppSnapshots.MainWindow(options); break;
         case "templates": TemplateSnapshots.Run(options); break;
+        case "snake": AppSnapshots.Snake(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

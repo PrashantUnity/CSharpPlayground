@@ -94,4 +94,16 @@ internal static class AppSnapshots
         var shotName = string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}";
         Snapshot.Save(window, options, shotName);
     }
+
+    public static void Snake(Options options)
+    {
+        var window = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI.SnakeGameWindow
+        {
+            Width = options.Int("width", 360),
+            Height = options.Int("height", 440)
+        };
+        window.Show();
+        Snapshot.Settle();
+        Snapshot.Save(window, options, "snake");
+    }
 }

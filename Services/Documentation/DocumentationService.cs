@@ -11,7 +11,16 @@ public partial class DocumentationService
     private readonly List<DocCategory> _categories;
     private readonly Dictionary<string, DocArticle> _articlesById;
 
-    public IReadOnlyList<DocCategory> Categories => _categories;
+    public IReadOnlyList<DocCategory> Categories
+    {
+        get
+        {
+            lock (_categories)
+            {
+                return _categories.ToList();
+            }
+        }
+    }
 
     public DocumentationService()
     {
@@ -24,6 +33,7 @@ public partial class DocumentationService
     private void InitializeDocumentation()
     {
         var appCategory = BuildAppGuideCategory();
+        var extensibilityCategory = BuildExtensibilityAndCustomizationCategory();
         var learnCSharpCategory = BuildLearnCSharpCategory();
         var fundamentalsCategory = BuildFundamentalsCategory();
         var oopCategory = BuildOopCategory();
@@ -48,6 +58,7 @@ public partial class DocumentationService
         var shortcutsCategory = BuildShortcutsCategory();
 
         _categories.Add(appCategory);
+        _categories.Add(extensibilityCategory);
         _categories.Add(learnCSharpCategory);
         _categories.Add(fundamentalsCategory);
         _categories.Add(oopCategory);
@@ -81,24 +92,94 @@ public partial class DocumentationService
         }
     }
 
+    public event Action? Changed;
+
+    public IDisposable RegisterCategory(DocCategory category)
+    {
+        ArgumentNullException.ThrowIfNull(category);
+        lock (_categories)
+        {
+            var existing = _categories.FirstOrDefault(c => string.Equals(c.Id, category.Id, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                _categories.Remove(existing);
+                foreach (var art in existing.Articles)
+                {
+                    _articlesById.Remove(art.Id);
+                }
+            }
+
+            _categories.Add(category);
+            foreach (var article in category.Articles)
+            {
+                article.CategoryId = category.Id;
+                _articlesById[article.Id] = article;
+            }
+        }
+
+        Changed?.Invoke();
+        return new RegistrationToken(() => UnregisterCategory(category.Id));
+    }
+
+    public bool UnregisterCategory(string categoryId)
+    {
+        if (string.IsNullOrWhiteSpace(categoryId)) return false;
+        bool removed = false;
+        lock (_categories)
+        {
+            var existing = _categories.FirstOrDefault(c => string.Equals(c.Id, categoryId, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                _categories.Remove(existing);
+                foreach (var art in existing.Articles)
+                {
+                    _articlesById.Remove(art.Id);
+                }
+                removed = true;
+            }
+        }
+
+        if (removed)
+        {
+            Changed?.Invoke();
+        }
+        return removed;
+    }
+
+    private sealed class RegistrationToken : IDisposable
+    {
+        private Action? _dispose;
+        public RegistrationToken(Action dispose) => _dispose = dispose;
+        public void Dispose() => System.Threading.Interlocked.Exchange(ref _dispose, null)?.Invoke();
+    }
+
     public DocArticle? GetArticle(string articleId)
     {
         if (string.IsNullOrWhiteSpace(articleId)) return null;
-        _articlesById.TryGetValue(articleId, out var article);
-        return article;
+        lock (_categories)
+        {
+            _articlesById.TryGetValue(articleId, out var article);
+            return article;
+        }
     }
 
     public List<DocArticle> SearchArticles(string query)
     {
+        List<DocCategory> categoriesSnapshot;
+        lock (_categories)
+        {
+            categoriesSnapshot = _categories.ToList();
+        }
+
         if (string.IsNullOrWhiteSpace(query))
         {
-            return _categories.SelectMany(c => c.Articles).ToList();
+            return categoriesSnapshot.SelectMany(c => c.Articles).ToList();
         }
 
         var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var results = new List<(DocArticle Article, int Score)>();
 
-        foreach (var category in _categories)
+        foreach (var category in categoriesSnapshot)
         {
             foreach (var article in category.Articles)
             {
@@ -138,6 +219,14 @@ public partial class DocumentationService
                             sc.MacKey.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                             sc.WinKey.Contains(term, StringComparison.OrdinalIgnoreCase))
                             score += 15;
+                    }
+
+                    foreach (var sec in article.Sections)
+                    {
+                        if (sec.Heading.Contains(term, StringComparison.OrdinalIgnoreCase))
+                            score += 10;
+                        if (sec.Content.Contains(term, StringComparison.OrdinalIgnoreCase))
+                            score += 5;
                     }
                 }
 

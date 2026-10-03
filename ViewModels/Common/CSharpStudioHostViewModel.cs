@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
@@ -87,8 +88,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     public Docs.CSharpDocsViewModel DocsViewModel { get; }
     public BlindProblems.CSharpBlindProblemsViewModel BlindProblemsViewModel { get; }
     public Settings.CSharpSettingsViewModel SettingsViewModel { get; }
-    public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; private set; }
-    public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; private set; }
+    public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; internal set; }
+    public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; internal set; }
     public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
@@ -114,6 +115,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         {
             _storageService = storageService;
         }
+
+        // Bridge to the ambient extensibility context
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.LanguageServices = _languages;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPathResolver = () => _storageService.ActiveWorkspaceRootPath;
+
+
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -142,7 +149,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             _languages,
             _languages.StudioSettings,
             backToHubAction: NavigateToManager,
-            backToPreviousAction: NavigateToPreviousPage);
+            backToPreviousAction: NavigateToPreviousPage,
+            openScriptAction: NavigateToCodeStudio);
 
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new Hub.CSharpManagerViewModel(
@@ -208,7 +216,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             {
                 Title = "1. Two Sum (Algorithm Workspace)",
                 Code = CodeTemplateLibrary.GetTemplates()[0].InitialCode,
-                Notes = CodeTemplateLibrary.GetTemplates()[0].Notes
+                Notes = CodeTemplateLibrary.GetTemplates()[0].Notes,
+                IsEphemeral = true
             };
 
             codeVm = new CodeStudio.CSharpCodeStudioViewModel(
@@ -228,7 +237,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
 
             var initialNotebook = new NotebookDocumentItem
             {
-                Title = "Interactive C# Notebook"
+                Title = "Interactive C# Notebook",
+                IsEphemeral = true
             };
 
             notebookVm = new Notebooks.CSharpNotebookStudioViewModel(
@@ -254,15 +264,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             EngineStatus = "Roslyn .NET 10 Engine Active";
         }
 
-        // Without an Avalonia app (unit tests) there is no UI thread to hand over to.
-        if (Avalonia.Application.Current != null)
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(Publish);
-        }
-        else
-        {
-            Publish();
-        }
+        // In a live desktop/single-view application, post to UI thread; in unit tests, run inline.
+        UiDispatchHelper.RunOnUi(Publish);
     }
 
 

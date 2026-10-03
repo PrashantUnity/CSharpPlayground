@@ -70,6 +70,7 @@ public sealed class StudioLanguageServices
             Registry.Register(new FSharpLanguage(this));
             Registry.Register(new SqlLanguage(this));
             Registry.Register(new RustLanguage(this));
+            Registry.Register(new Text.TextLanguage());
         }
 
         configure?.Invoke(this, Registry);
@@ -86,7 +87,19 @@ public sealed class StudioLanguageServices
     public ILanguageDefinition CSharp => Registry.Get(LanguageIds.CSharp) ?? throw new InvalidOperationException("C# isn't registered.");
 
     /// <summary>The language of a document; C# when it names none the registry knows.</summary>
-    public ILanguageDefinition LanguageOf(ScriptDocumentItem document) => Registry.Get(document.LanguageId) ?? CSharp;
+    public ILanguageDefinition LanguageOf(ScriptDocumentItem document)
+    {
+        if (!string.IsNullOrEmpty(document.LanguageId) && Registry.Get(document.LanguageId) is { } lang)
+            return lang;
+
+        if (document.SourceFilePath != null && Registry.FindSourceFileLanguage(document.SourceFilePath) is { } sourceLang)
+            return sourceLang;
+
+        if (document.SourceFilePath != null && Registry.Get(LanguageIds.Text) is { } textLang)
+            return textLang;
+
+        return CSharp;
+    }
 
     /// <summary>The plugin's own data folder, e.g. ~/Library/Application Support/FryPDF/Plugins/com.frypdf.plugin.csharpeditor.</summary>
     public static string DefaultBaseDirectory() => Path.Combine(

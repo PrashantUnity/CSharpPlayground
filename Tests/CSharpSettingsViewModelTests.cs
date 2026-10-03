@@ -394,4 +394,41 @@ public class CSharpSettingsViewModelTests : IDisposable
         Assert.True(csharp.IsInProcessRoslynSelected);
         Assert.True((bool)csharp.IsAutoDetect);
     }
+
+    private sealed class TestDummyLanguage : LanguageDefinition
+    {
+        public override string Id => "testdummy";
+        public override string DisplayName => "TestDummy";
+        public override IReadOnlyList<string> FileExtensions => [".dummy"];
+        public override IReadOnlyList<string> Aliases => ["dummy"];
+        public override string AccentHex => "#987654";
+    }
+
+    [Fact]
+    public async Task RefreshAllLanguagesAsync_DoesNotThrow_WhenLanguagesCollectionModifiedConcurrently()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        // Start RefreshAllLanguagesAsync
+        var refreshTask = vm.RefreshAllLanguagesAsync();
+
+        // Concurrently mutate the Languages collection (simulating extension registration during scan)
+        var dummy = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.LanguageSettingItemViewModel(new TestDummyLanguage(), parent: vm);
+        vm.Languages.Add(dummy);
+        vm.FilteredLanguages.Add(dummy);
+
+        // Also trigger registry sync
+        var regToken = _services.Registry.Register(new TestDummyLanguage());
+        try
+        {
+            vm.SynchronizeLanguagesFromRegistry();
+
+            // Must complete without throwing InvalidOperationException: Collection was modified
+            await refreshTask;
+        }
+        finally
+        {
+            regToken.Dispose();
+        }
+    }
 }

@@ -64,8 +64,16 @@ public class LazyExplorerTests : IDisposable
     private static async Task WaitUntil(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(30);
-        while (!condition())
+        while (true)
         {
+            try
+            {
+                if (condition()) break;
+            }
+            catch (InvalidOperationException)
+            {
+                // Transient concurrent modification while background explorer tasks update rows
+            }
             Assert.True(DateTime.UtcNow < deadline, "the condition never became true");
             await Task.Delay(20);
         }

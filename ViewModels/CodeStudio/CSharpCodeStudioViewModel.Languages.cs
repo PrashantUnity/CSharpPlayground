@@ -54,9 +54,33 @@ public partial class CSharpCodeStudioViewModel
     }
 
     /// <summary>The breadcrumbs' runtime: the toolchain in use, or how the language runs (C#: "C# (.NET 10 Roslyn)").</summary>
-    public string RuntimeLabel => HasToolchain
-        ? ToolchainLabel ?? ActiveLanguage.DisplayName
-        : (UseExternalDotNetRunner ? "C# (.NET SDK CLI)" : ActiveLanguage.RuntimeDescription);
+    public string RuntimeLabel
+    {
+        get
+        {
+            if (IsActiveDocumentImage)
+            {
+                return string.IsNullOrEmpty(ImageDimensionsText)
+                    ? ImageFormatText
+                    : $"{ImageFormatText} ({ImageDimensionsText})";
+            }
+            if (IsActiveDocumentMarkdown)
+            {
+                return IsDocumentPreviewMode ? "Markdown (Preview)" : "Markdown (Source)";
+            }
+            if (IsActiveDocumentCsv)
+            {
+                return IsDocumentPreviewMode
+                    ? (string.IsNullOrEmpty(CsvDimensionsSummary) ? "CSV Data Table" : $"CSV Table ({CsvDimensionsSummary})")
+                    : "CSV (Source Text)";
+            }
+            if (HasToolchain)
+            {
+                return ToolchainLabel ?? ActiveLanguage.DisplayName;
+            }
+            return UseExternalDotNetRunner ? "C# (.NET SDK CLI)" : ActiveLanguage.RuntimeDescription;
+        }
+    }
 
     /// <summary>The status bar's language item: C#'s execution mode, or the toolchain in use.</summary>
     public string LanguageStatusText => SupportsExecutionModes ? LanguageModeStatusText : ToolchainLabel ?? ActiveLanguage.DisplayName;
