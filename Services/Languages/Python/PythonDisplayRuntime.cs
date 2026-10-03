@@ -5,7 +5,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
 
 /// <summary>
-/// Provides zero-configuration runtime support for Python scripts in C# Code Studio,
+/// Provides zero-configuration runtime support for Python scripts in FrySharp,
 /// injecting <c>dump()</c>, <c>display()</c>, and <c>Display</c> into Python scripts via
 /// <c>sitecustomize.py</c> on <c>PYTHONPATH</c>.
 /// </summary>

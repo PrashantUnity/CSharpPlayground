@@ -5,7 +5,7 @@ using System.Text;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
 
 /// <summary>
-/// Provides zero-configuration runtime support for C++ scripts and algorithms in C# Code Studio,
+/// Provides zero-configuration runtime support for C++ scripts and algorithms in FrySharp,
 /// staging <c>&lt;fry/display.hpp&gt;</c> and <c>"display.hpp"</c> into the compiler include path.
 /// User scripts can call canonical visuals (<c>fry::line_chart</c>, <c>fry::tree</c>, etc.),
 /// tables, HTML, images, and handles with interactive Results (.DUMP) deck rendering.

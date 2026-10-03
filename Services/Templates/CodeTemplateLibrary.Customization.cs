@@ -164,7 +164,7 @@ public static partial class CodeTemplateLibrary
             Tags = new List<string> { "Extensibility", "Extensions", "Manifest", "Plugin", "Modular" },
             Notes = """
                 # Modular Extensions & Plugins
-                Extensions in C# Code Studio are multi-file bundles loaded from `~/.frysharp/extensions/<id>/` or `.frysharp/extensions/<id>/`:
+                Extensions in FrySharp are multi-file bundles loaded from `~/.frysharp/extensions/<id>/` or `.frysharp/extensions/<id>/`:
                 - `extension.json`: Declares extension ID, name, version, main entry class, and settings schema.
                 - `IExtensionEntryPoint`: Lifecycle entry point receiving `IExtensionContext`.
                 - Isolated state storage and automatic disposable cleanup on reload/unload.

@@ -60,7 +60,7 @@ public sealed class FSharpLanguage : LanguageDefinition
     public override string NewFileTemplate =>
         "// Runs with F# Interactive (.NET SDK dotnet fsi) on this computer (F5).\n" +
         "open System\n\n" +
-        "printfn \"🚀 Hello from F# in C# Code Studio!\"\n\n" +
+        "printfn \"🚀 Hello from F# in FrySharp!\"\n\n" +
         "let numbers = [ 1 .. 10 ]\n" +
         "let sumOfSquares =\n" +
         "    numbers\n" +

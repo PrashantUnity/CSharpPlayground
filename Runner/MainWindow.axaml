@@ -5,7 +5,7 @@
         xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.MainWindow"
-        Title="C# Code Studio"
+        Title="FrySharp"
         Icon="/Assets/app-logo.ico"
         Width="1200" Height="820"
         MinWidth="900" MinHeight="600"
@@ -120,7 +120,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Report an Issue..." Click="ReportIssue_OnClick" />
                     <NativeMenuItemSeparator />
-                    <NativeMenuItem Header="About C# Code Studio" Click="About_OnClick" />
+                    <NativeMenuItem Header="About FrySharp" Click="About_OnClick" />
                 </NativeMenu>
             </NativeMenuItem>
         </NativeMenu>

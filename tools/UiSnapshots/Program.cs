@@ -1,4 +1,4 @@
-// UiSnapshots: renders C# Code Studio's real views off-screen (Avalonia headless platform + Skia) and saves PNG files.
+// UiSnapshots: renders FrySharp's real views off-screen (Avalonia headless platform + Skia) and saves PNG files.
 // How it works and how to add a snapshot: docs/headless-ui-snapshots.md.
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;

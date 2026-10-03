@@ -45,7 +45,7 @@ public sealed class CppDebuggerProvider : IDebuggerProvider, IDapAdapterRegistra
 
         var missing = new MissingToolchainGuidance(
             "C++ Debugger (lldb-dap) not found",
-            "C# Code Studio uses lldb-dap for interactive C++ debugging with breakpoints, locals and expression evaluation.",
+            "FrySharp uses lldb-dap for interactive C++ debugging with breakpoints, locals and expression evaluation.",
             [
                 _host.IsMacOS ? "brew install llvm" : _host.IsWindows ? "winget install LLVM.LLVM" : "sudo apt install lldb"
             ],

@@ -5,7 +5,7 @@
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.AboutWindow"
-        Title="About C# Code Studio"
+        Title="About FrySharp"
         Icon="/Assets/app-logo.ico"
         Width="490" Height="580"
         MinWidth="490" MinHeight="580"
@@ -46,7 +46,7 @@
                                        Foreground="{DynamicResource M3PrimaryBrush}" />
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="C# Code Studio &amp; Polyglot Workspace"
+                    <TextBlock Text="FrySharp Polyglot Workspace"
                                FontSize="13"
                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                HorizontalAlignment="Center" />

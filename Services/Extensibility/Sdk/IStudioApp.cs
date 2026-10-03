@@ -1,7 +1,7 @@
 namespace FrySharp.Sdk;
 
 /// <summary>
-/// Root ambient facade for the C# Code Studio and FrySharp extensibility system.
+/// Root ambient facade for the FrySharp extensibility system.
 /// Available as global 'App' or 'Studio' in customization scripts and extensions.
 /// </summary>
 public interface IStudioApp

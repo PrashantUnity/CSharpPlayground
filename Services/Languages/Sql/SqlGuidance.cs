@@ -34,7 +34,7 @@ public static class SqlGuidance
             steps.Add("Install via pacman (Arch): sudo pacman -S sqlite");
         }
 
-        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart C# Code Studio.");
+        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart FrySharp.");
 
         return new MissingToolchainGuidance(
             Title: "SQLite 3 CLI (sqlite3) isn't installed",

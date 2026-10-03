@@ -187,7 +187,7 @@ public partial class CSharpCodeStudioViewModel
             var freshScript = new ScriptDocumentItem
             {
                 Title = "Untitled Script",
-                Code = "// Welcome to C# Code Studio\nConsole.WriteLine(\"Hello, World!\");\n",
+                Code = "// Welcome to FrySharp\nConsole.WriteLine(\"Hello, World!\");\n",
                 Notes = string.Empty
             };
             var freshTab = CreateTab(freshScript, isActive: true);
@@ -248,7 +248,7 @@ public partial class CSharpCodeStudioViewModel
         var freshScript = new ScriptDocumentItem
         {
             Title = "Untitled Script",
-            Code = "// Welcome to C# Code Studio\nConsole.WriteLine(\"Hello, World!\");\n",
+            Code = "// Welcome to FrySharp\nConsole.WriteLine(\"Hello, World!\");\n",
             Notes = string.Empty
         };
         var freshTab = CreateTab(freshScript, isActive: true);

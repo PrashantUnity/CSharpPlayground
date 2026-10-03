@@ -22,7 +22,7 @@ public class DocumentExportServiceTests
         var csSource = DocumentExportService.ExportScriptToCs(script);
 
         Assert.NotNull(csSource);
-        Assert.Contains("This code was exported from FryPDF C# Code Studio.", csSource);
+        Assert.Contains("This code was exported from FrySharp.", csSource);
         Assert.Contains("Invoice Generator", csSource);
         Assert.Contains("System.Text.Json", csSource);
         Assert.Contains("Console.WriteLine(\"Generating invoice...\");", csSource);

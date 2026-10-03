@@ -12,7 +12,7 @@ public partial class DocumentationService
             Title = "Interactive 3D Visualizations & Charts",
             Subtitle = "Render 3D surfaces, scatter point clouds, force-directed graphs, and chaotic trajectories with orbit camera controls.",
             ReadingTime = "4 min read",
-            Summary = "C# Code Studio features a pure managed, zero-dependency 3D vector graphics engine for exploring high-dimensional data, mathematical surfaces, and graph topologies.",
+            Summary = "FrySharp features a pure managed, zero-dependency 3D vector graphics engine for exploring high-dimensional data, mathematical surfaces, and graph topologies.",
             Keywords = new List<string> { "3d", "surface", "scatter", "graph3d", "lorenz", "orbit", "camera", "three.js", "display.plot3d" },
             Sections = new List<DocSection>
             {

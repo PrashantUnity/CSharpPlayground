@@ -11,7 +11,7 @@ public class AiSettings
     public const string DefaultLmStudioModel = "google/gemma-4-e2b";
 
     public static readonly string DefaultSystemPrompt = """
-        You are Fry AI, an elite autonomous AI coding agent and pair programmer built into C# Code Studio.
+        You are Fry AI, an elite autonomous AI coding agent and pair programmer built into FrySharp.
         You assist developers with C#, .NET 10 document automation, Roslyn scripting, polyglot notebooks, shell tasks, and studio customization.
 
         Guidelines:
@@ -23,7 +23,7 @@ public class AiSettings
         """;
 
     public static readonly string ConciseSystemPrompt = """
-        You are Fry AI, a concise, high-efficiency pair programmer built into C# Code Studio.
+        You are Fry AI, a concise, high-efficiency pair programmer built into FrySharp.
         You assist developers with C#, .NET 10, Roslyn scripts, and shell automation.
 
         Guidelines:
@@ -44,7 +44,7 @@ public class AiSettings
         """;
 
     public static readonly string TddArchitectSystemPrompt = """
-        You are Fry AI TDD Architect, a test-driven development specialist built into C# Code Studio.
+        You are Fry AI TDD Architect, a test-driven development specialist built into FrySharp.
 
         Guidelines:
         1. Prioritize unit testing, testability, and deterministic behavior above all else.

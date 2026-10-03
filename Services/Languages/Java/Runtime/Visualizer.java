@@ -1,8 +1,8 @@
-// Companion to public class Display for FryPDF C# Code Studio
+// Companion to public class Display for FrySharp
 import java.util.*;
 
 /**
- * Interactive Visualizer API for FryPDF C# Code Studio (Java).
+ * Interactive Visualizer API for FrySharp (Java).
  * Provides fluent builders for trees, graphs, grids, island traversals, and custom vector canvases.
  */
 public class Visualizer {

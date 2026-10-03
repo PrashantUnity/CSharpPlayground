@@ -180,7 +180,7 @@
                     <!-- Back to Hub Button -->
                     <Button Command="{Binding BackToHubCommand}"
                             Classes="nexus-nav-item"
-                            ToolTip.Tip="Return to C# Code Studio Hub (Esc)">
+                            ToolTip.Tip="Return to FrySharp Hub (Esc)">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavFrySharpBgBrush}">
                                 <materialIcons:MaterialIcon Kind="ArrowLeft" Width="16" Height="16" Foreground="{DynamicResource NavFrySharpFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />

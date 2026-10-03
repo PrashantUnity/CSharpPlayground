@@ -15,7 +15,7 @@
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
     <Version>2.0.2</Version>
     <Company>Code Fry Dev</Company>
-    <Description>Full-featured interactive C# Code Studio and Script Automation Workspace for FryPDF</Description>
+    <Description>Full-featured interactive FrySharp Script Automation and Polyglot Workspace for FryPDF</Description>
     <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**;samples/**</DefaultItemExcludes>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

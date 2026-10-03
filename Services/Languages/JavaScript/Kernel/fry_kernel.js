@@ -1,5 +1,5 @@
 /**
- * The JavaScript (Node.js) kernel of FryPDF's C# Code Studio notebooks.
+ * The JavaScript (Node.js) kernel of FrySharp notebooks.
  * Speaks the Fry kernel protocol over stdin/stdout pipes: one JSON object per line.
  */
 
