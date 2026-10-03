@@ -6,10 +6,12 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Events;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Hooks;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Results;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.State;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Terminal;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Workspace;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 
@@ -58,6 +60,14 @@ public class StudioAppContext : IStudioApp
     public ExtensibilityTerminalService TerminalService { get; }
     public ExtensibilityResultsService ResultsService { get; }
     public ExtensibilityEventBus EventBus { get; }
+    public ExtensibilityLanguagesService LanguagesService { get; }
+
+    private StudioLanguageServices? _languageServices;
+    public StudioLanguageServices LanguageServices
+    {
+        get => _languageServices ?? StudioLanguageServices.Default;
+        set => _languageServices = value;
+    }
 
     private CustomizationManager? _customizationManager;
     public CustomizationManager CustomizationManager
@@ -84,6 +94,7 @@ public class StudioAppContext : IStudioApp
     public ITerminalApi Terminal => TerminalService;
     public IResultsApi Results => ResultsService;
     public IEventBusApi Events => EventBus;
+    public ILanguagesApi Languages => LanguagesService;
     public IDialogApi Dialogs => UiService.Dialogs;
 
     public StudioAppContext()
@@ -98,6 +109,7 @@ public class StudioAppContext : IStudioApp
         TerminalService = new ExtensibilityTerminalService();
         ResultsService = new ExtensibilityResultsService();
         EventBus = new ExtensibilityEventBus();
+        LanguagesService = new ExtensibilityLanguagesService(() => LanguageServices.Registry);
 
         // Forward theme changed events from theme engine to hook registry
         ThemeEngine.ThemeChanged += themeId =>
