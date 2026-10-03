@@ -19,8 +19,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub;
 public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
 {
     private readonly IScriptStorageService _storageService;
-    private readonly Action<ScriptDocumentItem> _openScriptAction;
-    private readonly Action<NotebookDocumentItem> _openNotebookAction;
+    private readonly Action<ScriptDocumentItem>? _openScriptAction;
+    private readonly Action<NotebookDocumentItem>? _openNotebookAction;
     private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly IFryServerRegistry _serverRegistry;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
@@ -147,6 +147,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     public bool IsCreatingScript => PendingCreateKind == WorkspaceItemKind.Script;
     public string SelectedFolderDisplay => string.IsNullOrEmpty(SelectedFolderPath) ? "Workspace root" : SelectedFolderPath;
 
+    public ObservableCollection<Services.Languages.ILanguageDefinition> AvailableCreateLanguages { get; } = new();
+
+    [ObservableProperty]
+    private Services.Languages.ILanguageDefinition? _selectedCreateLanguage;
+
     public string LibraryRootPath => _storageService.LibraryRootPath;
     public string ActiveWorkspaceRootPath => _storageService.ActiveWorkspaceRootPath;
 
@@ -253,7 +258,77 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     /// <summary>A STUDIO ENVIRONMENT row per language that runs with an installed toolchain (Python): found, or how to install it.</summary>
     public ObservableCollection<Common.ToolchainStatusItem> ToolchainStatuses { get; } = new();
 
+    private readonly Services.Languages.LanguageRegistry _languagesRegistry;
     private Task? _toolchainCheck;
+
+    private void OnLanguagesRegistryChanged()
+    {
+        void Sync()
+        {
+            SyncToolchainStatuses();
+            SyncCreateLanguages();
+            _ = CheckToolchainsAsync(lookAgain: false);
+        }
+
+        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Sync();
+        else Dispatcher.UIThread.Post(Sync);
+    }
+
+    private void SyncCreateLanguages()
+    {
+        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.Id == "csharp").ToList();
+        var existing = AvailableCreateLanguages.Select(l => l.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var toRemove = AvailableCreateLanguages.Where(l => !allLangs.Any(a => a.IsNamed(l.Id))).ToList();
+        foreach (var r in toRemove) AvailableCreateLanguages.Remove(r);
+
+        foreach (var l in allLangs)
+        {
+            if (!existing.Contains(l.Id)) AvailableCreateLanguages.Add(l);
+        }
+
+        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+    }
+
+    private void ReloadTemplates()
+    {
+        void Sync()
+        {
+            var existingIds = StarterTemplates.Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var all = CodeTemplateLibrary.GetTemplates();
+            var toRemove = StarterTemplates.Where(t => !all.Any(a => a.Id == t.Id)).ToList();
+            foreach (var r in toRemove) StarterTemplates.Remove(r);
+            foreach (var t in all)
+            {
+                if (!existingIds.Contains(t.Id)) StarterTemplates.Add(t);
+            }
+            OnPropertyChanged(nameof(ScriptTemplates));
+            OnPropertyChanged(nameof(NotebookTemplates));
+        }
+
+        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Sync();
+        else Dispatcher.UIThread.Post(Sync);
+    }
+
+    private void SyncToolchainStatuses()
+    {
+        var existing = ToolchainStatuses.Select(t => t.Language.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var registered = _languagesRegistry.All.Where(l => l.Toolchain != null).ToList();
+
+        // Remove any no longer registered
+        var toRemove = ToolchainStatuses.Where(t => !registered.Any(r => r.IsNamed(t.Language.Id))).ToList();
+        foreach (var item in toRemove) ToolchainStatuses.Remove(item);
+
+        // Add newly registered
+        foreach (var language in registered)
+        {
+            if (existing.Contains(language.Id)) continue;
+            if (language.Toolchain is { } provider)
+            {
+                ToolchainStatuses.Add(new Common.ToolchainStatusItem(language, provider));
+            }
+        }
+    }
 
     /// <summary>
     /// Looks for each language's toolchain in the background (the Hub calls this when it's shown). <paramref name="lookAgain"/>
@@ -593,8 +668,8 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     public CSharpManagerViewModel(
         IScriptStorageService storageService,
-        Action<ScriptDocumentItem> openScriptAction,
-        Action<NotebookDocumentItem> openNotebookAction,
+        Action<ScriptDocumentItem>? openScriptAction = null,
+        Action<NotebookDocumentItem>? openNotebookAction = null,
         Action? navigateToHomeAction = null,
         Action? navigateToDocsAction = null,
         Action? navigateToBlindProblemsAction = null,
@@ -606,11 +681,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         _storageService = storageService;
         _serverRegistry = serverRegistry ?? FryServerRegistry.Shared;
         _serverRegistry.RunningServersChanged += OnRunningServersChanged;
-        var registry = (languages ?? StudioLanguageServices.Default).Registry;
-        foreach (var language in registry.All)
-        {
-            if (language.Toolchain is { } provider) ToolchainStatuses.Add(new Common.ToolchainStatusItem(language, provider));
-        }
+        _languagesRegistry = (languages ?? StudioLanguageServices.Default).Registry;
+        SyncToolchainStatuses();
+        SyncCreateLanguages();
+        _languagesRegistry.Changed += OnLanguagesRegistryChanged;
+        CodeTemplateLibrary.Changed += ReloadTemplates;
         _openScriptAction = openScriptAction;
         _openNotebookAction = openNotebookAction;
         _openServerAction = openServerAction;
@@ -1056,7 +1131,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                 var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.Id));
                 if (nb != null)
                 {
-                    _openNotebookAction.Invoke(nb);
+                    _openNotebookAction?.Invoke(nb);
                 }
             }
             else
@@ -1064,7 +1139,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                 var sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.Id));
                 if (sc != null)
                 {
-                    _openScriptAction.Invoke(sc);
+                    _openScriptAction?.Invoke(sc);
                 }
             }
         }
@@ -1091,6 +1166,14 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         NewItemName = template?.Title ?? defaultName;
         SelectedFolderPath = null;
         LocationWarning = null;
+        if (kind == WorkspaceItemKind.Script)
+        {
+            if (!string.IsNullOrEmpty(template?.LanguageId))
+            {
+                SelectedCreateLanguage = AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(template.LanguageId));
+            }
+            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+        }
         PendingCreateKind = kind;
         return Task.CompletedTask;
     }
@@ -1128,7 +1211,23 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                 }
                 else
                 {
-                    await CreateNewScriptCoreAsync(_pendingTemplateId, folderPath, title);
+                    if (SelectedCreateLanguage != null && !SelectedCreateLanguage.IsNamed("csharp"))
+                    {
+                        var lang = SelectedCreateLanguage;
+                        var ext = lang.FileExtensions.FirstOrDefault() ?? ".txt";
+                        var rawName = string.IsNullOrWhiteSpace(NewItemName) ? $"New {lang.DisplayName} Script" : NewItemName.Trim();
+                        var fileName = rawName.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? rawName : rawName + ext;
+                        var newScript = await _storageService.CreateNewSourceFileAsync(lang.Id, fileName, folderPath, lang.NewFileTemplate);
+                        if (newScript != null)
+                        {
+                            await LoadWorkspaceItemsAsync();
+                            _openScriptAction?.Invoke(newScript);
+                        }
+                    }
+                    else
+                    {
+                        await CreateNewScriptCoreAsync(_pendingTemplateId, folderPath, title);
+                    }
                 }
             }
             finally
@@ -1151,7 +1250,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
         var newScript = await _storageService.CreateNewScriptAsync(title, templateId, folderPath);
         await LoadWorkspaceItemsAsync();
-        _openScriptAction.Invoke(newScript);
+        _openScriptAction?.Invoke(newScript);
     }
 
     private async Task CreateNewNotebookCoreAsync(string? templateId, string? folderPath = null, string? explicitTitle = null)
@@ -1166,7 +1265,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
         var newNb = await _storageService.CreateNewNotebookAsync(title, templateId, folderPath);
         await LoadWorkspaceItemsAsync();
-        _openNotebookAction.Invoke(newNb);
+        _openNotebookAction?.Invoke(newNb);
     }
 
     [RelayCommand]
@@ -1289,7 +1388,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                             var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId));
                             if (nb != null)
                             {
-                                _openNotebookAction.Invoke(nb);
+                                _openNotebookAction?.Invoke(nb);
                             }
                         }
                         else
@@ -1297,7 +1396,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                             var sc = await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId));
                             if (sc != null)
                             {
-                                _openScriptAction.Invoke(sc);
+                                _openScriptAction?.Invoke(sc);
                             }
                         }
                     }

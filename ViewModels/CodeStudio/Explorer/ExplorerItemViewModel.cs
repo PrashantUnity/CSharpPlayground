@@ -99,24 +99,42 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public static (string IconKind, string IconColor) IconForExtension(string ext)
     {
-        return ext.ToLowerInvariant() switch
+        var lower = ext.ToLowerInvariant();
+
+        // 1. Check known specific non-language or special file formats first
+        switch (lower)
         {
-            ".frynb" or ".ipynb" => ("NotebookOutline", NotebookAmberHex),
-            ".cs" or ".frycs" => ("LanguageCsharp", "#58A6FF"),
-            ".json" => ("CodeJson", "#E5C07B"),
-            ".md" => ("FormatHeaderPound", "#4EC9B0"),
-            ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif" => ("ImageOutline", "#C586C0"),
-            ".csv" or ".tsv" => ("Table", "#75D59A"),
-            ".pdf" => ("FilePdfBox", "#F14C4C"),
-            ".xml" or ".xaml" or ".axaml" or ".html" or ".htm" => ("Xml", "#E5C07B"),
-            ".yaml" or ".yml" => ("FileCodeOutline", "#CB88FF"),
-            ".sql" => ("DatabaseOutline", "#DCDCAA"),
-            ".zip" or ".tar" or ".gz" or ".7z" or ".rar" => ("ZipBoxOutline", "#CE9178"),
-            ".mp3" or ".wav" or ".ogg" or ".flac" => ("MusicNote", "#4EC9B0"),
-            ".mp4" or ".mov" or ".avi" or ".mkv" or ".webm" => ("VideoOutline", "#4EC9B0"),
-            ".txt" or ".log" or ".ini" or ".env" or ".config" => ("FileDocumentOutline", "#8B949E"),
-            _ => ("FileOutline", "#8B949E")
-        };
+            case ".frynb" or ".ipynb": return ("NotebookOutline", NotebookAmberHex);
+            case ".cs" or ".frycs": return ("LanguageCsharp", "#58A6FF");
+            case ".json": return ("CodeJson", "#E5C07B");
+            case ".md": return ("FormatHeaderPound", "#4EC9B0");
+            case ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif": return ("ImageOutline", "#C586C0");
+            case ".csv" or ".tsv": return ("Table", "#75D59A");
+            case ".pdf": return ("FilePdfBox", "#F14C4C");
+            case ".xml" or ".xaml" or ".axaml" or ".html" or ".htm": return ("Xml", "#E5C07B");
+            case ".yaml" or ".yml": return ("FileCodeOutline", "#CB88FF");
+            case ".sql": return ("DatabaseOutline", "#DCDCAA");
+            case ".zip" or ".tar" or ".gz" or ".7z" or ".rar": return ("ZipBoxOutline", "#CE9178");
+            case ".mp3" or ".wav" or ".ogg" or ".flac": return ("MusicNote", "#4EC9B0");
+            case ".mp4" or ".mov" or ".avi" or ".mkv" or ".webm": return ("VideoOutline", "#4EC9B0");
+            case ".txt" or ".log" or ".ini" or ".env" or ".config": return ("FileDocumentOutline", "#8B949E");
+        }
+
+        // 2. Dynamically consult LanguageRegistry for registered languages (Dart, Python, JS, Go, Rust, C++, etc.)
+        try
+        {
+            var registry = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.LanguageServices?.Registry;
+            if (registry != null && registry.FindByExtension(lower) is { } lang)
+            {
+                return (lang.IconKind, lang.AccentHex);
+            }
+        }
+        catch
+        {
+            // Fallback safely if ambient registry is unavailable
+        }
+
+        return ("FileOutline", "#8B949E");
     }
 
     public string IconKind

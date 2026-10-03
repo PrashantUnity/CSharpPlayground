@@ -22,6 +22,7 @@ internal static class HubAndDocsSnapshots
         // Languages over a throwaway folder: the STUDIO ENVIRONMENT rows show the machine's own Python (or --python's),
         // or with --nothing-installed what the Hub says when there's none.
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         if (options.Value("python") is { } python) languages.Registry.Get(LanguageIds.Python)?.Toolchain?.Select(python);
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("hub"), languages.Registry);
         if (!options.Flag("empty"))
@@ -40,6 +41,7 @@ internal static class HubAndDocsSnapshots
             File.WriteAllText(Path.Combine(libRoot, "data_pipeline.py"), "# Python demo\nfor x in range(10):\n    print(x)\n");
             File.WriteAllText(Path.Combine(libRoot, "HelloWorld.java"),  "// Java demo\npublic class HelloWorld { }\n");
             File.WriteAllText(Path.Combine(libRoot, "fetch_api.js"),     "// JS demo\nfetch('/api').then(r => r.json());\n");
+            File.WriteAllText(Path.Combine(libRoot, "chart_demo.dart"),  "// Dart demo\nvoid main() {\n    print('Dart demo');\n}\n");
         }
 
 
@@ -76,6 +78,8 @@ internal static class HubAndDocsSnapshots
     /// <summary><c>docs</c>: the learning center, on the first article or the one whose title contains <c>--article</c>.</summary>
     public static void Docs(Options options)
     {
+        var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpDocsViewModel();
         if (options.Value("article") is { } wanted)
         {
@@ -102,6 +106,7 @@ internal static class HubAndDocsSnapshots
     public static void Settings(Options options)
     {
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"), host: options.Flag("nothing-installed") ? new NothingInstalledHost() : null);
+        Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpSettingsViewModel(languages);
         if (options.Value("category") is { } cat) vm.SelectCategory(cat);
         if (options.Value("language") is { } lang)

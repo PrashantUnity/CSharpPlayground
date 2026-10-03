@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
@@ -114,6 +115,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         {
             _storageService = storageService;
         }
+
+        // Bridge to the ambient extensibility context
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.LanguageServices = _languages;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPathResolver = () => _storageService.ActiveWorkspaceRootPath;
+
+
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
@@ -255,15 +262,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             EngineStatus = "Roslyn .NET 10 Engine Active";
         }
 
-        // Without an Avalonia app (unit tests) there is no UI thread to hand over to.
-        if (Avalonia.Application.Current != null)
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(Publish);
-        }
-        else
-        {
-            Publish();
-        }
+        // In a live desktop/single-view application, post to UI thread; in unit tests, run inline.
+        UiDispatchHelper.RunOnUi(Publish);
     }
 
 

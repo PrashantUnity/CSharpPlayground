@@ -102,27 +102,41 @@ public class WorkspaceItemSummary : ObservableObject
         Title.Contains("Image", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Language-specific icon. Non-C# source files use their own language icon; C# uses category heuristics.</summary>
-    public MaterialIconKind IconKind => LanguageId switch
+    public MaterialIconKind IconKind
     {
-        Services.Languages.LanguageIds.Python => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguagePython,
-        Services.Languages.LanguageIds.Java => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJava,
-        Services.Languages.LanguageIds.JavaScript => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageJavascript,
-        Services.Languages.LanguageIds.Cpp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageCpp,
-        Services.Languages.LanguageIds.Go => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageGo,
-        Services.Languages.LanguageIds.FSharp => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.FunctionVariant,
-        Services.Languages.LanguageIds.Sql => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.Database,
-        Services.Languages.LanguageIds.Rust => IsNotebook ? MaterialIconKind.NotebookOutline : MaterialIconKind.LanguageRust,
-        _ => Kind switch
+        get
         {
-            WorkspaceItemKind.Server => MaterialIconKind.ServerNetwork,
-            WorkspaceItemKind.Notebook => IsGraphics ? MaterialIconKind.ImageOutline : MaterialIconKind.NotebookOutline,
-            _ => IsAlgorithms ? MaterialIconKind.CodeBraces
-                : IsScratchpad ? MaterialIconKind.LightningBoltOutline
-                : IsAutomation ? MaterialIconKind.FilePdfBox
-                : IsGraphics ? MaterialIconKind.ImageOutline
-                : MaterialIconKind.CodeBraces
+            if (IsNotebook) return MaterialIconKind.NotebookOutline;
+            if (Kind == WorkspaceItemKind.Server) return MaterialIconKind.ServerNetwork;
+
+            try
+            {
+                var lang = Services.Extensibility.StudioAppContext.Instance.LanguageServices?.Registry.Get(LanguageId);
+                if (lang != null && Enum.TryParse<MaterialIconKind>(lang.IconKind, out var parsed))
+                {
+                    return parsed;
+                }
+            }
+            catch { }
+
+            return LanguageId switch
+            {
+                Services.Languages.LanguageIds.Python => MaterialIconKind.LanguagePython,
+                Services.Languages.LanguageIds.Java => MaterialIconKind.LanguageJava,
+                Services.Languages.LanguageIds.JavaScript => MaterialIconKind.LanguageJavascript,
+                Services.Languages.LanguageIds.Cpp => MaterialIconKind.LanguageCpp,
+                Services.Languages.LanguageIds.Go => MaterialIconKind.LanguageGo,
+                Services.Languages.LanguageIds.FSharp => MaterialIconKind.FunctionVariant,
+                Services.Languages.LanguageIds.Sql => MaterialIconKind.Database,
+                Services.Languages.LanguageIds.Rust => MaterialIconKind.LanguageRust,
+                _ => IsAlgorithms ? MaterialIconKind.CodeBraces
+                    : IsScratchpad ? MaterialIconKind.LightningBoltOutline
+                    : IsAutomation ? MaterialIconKind.FilePdfBox
+                    : IsGraphics ? MaterialIconKind.ImageOutline
+                    : MaterialIconKind.CodeBraces
+            };
         }
-    };
+    }
 
     // Language-specific accent palettes
     private const string ServerAccentHex   = "#009688";   // teal   — Server
@@ -137,18 +151,37 @@ public class WorkspaceItemSummary : ObservableObject
     private const string SqlAccentHex      = "#F29111";   // orange/gold — SQL
     private const string RustAccentHex     = "#DEA584";   // tan — Rust
 
-    private string AccentHex => Kind == WorkspaceItemKind.Server ? ServerAccentHex : LanguageId switch
+    private string AccentHex
     {
-        Services.Languages.LanguageIds.Python     => IsNotebook ? NotebookAccentHex : PythonAccentHex,
-        Services.Languages.LanguageIds.Java       => IsNotebook ? NotebookAccentHex : JavaAccentHex,
-        Services.Languages.LanguageIds.JavaScript => IsNotebook ? NotebookAccentHex : JsAccentHex,
-        Services.Languages.LanguageIds.Cpp        => IsNotebook ? NotebookAccentHex : CppAccentHex,
-        Services.Languages.LanguageIds.Go         => IsNotebook ? NotebookAccentHex : GoAccentHex,
-        Services.Languages.LanguageIds.FSharp     => IsNotebook ? NotebookAccentHex : FSharpAccentHex,
-        Services.Languages.LanguageIds.Sql        => IsNotebook ? NotebookAccentHex : SqlAccentHex,
-        Services.Languages.LanguageIds.Rust       => IsNotebook ? NotebookAccentHex : RustAccentHex,
-        _ => IsNotebook ? NotebookAccentHex : CSharpAccentHex
-    };
+        get
+        {
+            if (Kind == WorkspaceItemKind.Server) return ServerAccentHex;
+            if (IsNotebook) return NotebookAccentHex;
+
+            try
+            {
+                var lang = Services.Extensibility.StudioAppContext.Instance.LanguageServices?.Registry.Get(LanguageId);
+                if (lang != null && !string.IsNullOrWhiteSpace(lang.AccentHex))
+                {
+                    return lang.AccentHex;
+                }
+            }
+            catch { }
+
+            return LanguageId switch
+            {
+                Services.Languages.LanguageIds.Python     => PythonAccentHex,
+                Services.Languages.LanguageIds.Java       => JavaAccentHex,
+                Services.Languages.LanguageIds.JavaScript => JsAccentHex,
+                Services.Languages.LanguageIds.Cpp        => CppAccentHex,
+                Services.Languages.LanguageIds.Go         => GoAccentHex,
+                Services.Languages.LanguageIds.FSharp     => FSharpAccentHex,
+                Services.Languages.LanguageIds.Sql        => SqlAccentHex,
+                Services.Languages.LanguageIds.Rust       => RustAccentHex,
+                _ => CSharpAccentHex
+            };
+        }
+    }
 
     public string IconForeground => AccentHex;
     public string IconBackground => "#33" + AccentHex.TrimStart('#');

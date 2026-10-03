@@ -1,0 +1,46 @@
+{
+  "SchemaVersion": "1.0",
+  "Type": "notebook",
+  "Id": "dart-demo-notebook-01",
+  "Title": "Dart Polyglot Notebook Showcase",
+  "Description": "Demonstration of interactive Dart cells in FrySharp with 2D charts, 3D plots, visualizers, and data tables.",
+  "Category": "Interactive",
+  "Kernel": "dart",
+  "Cells": [
+    {
+      "Id": "cell-md-1",
+      "Type": 1,
+      "Source": "# 🎯 Dart in FrySharp Interactive Notebooks\n\nThis notebook demonstrates interactive Dart 3 execution with persistent domain models, 2D charts, 3D parametric surfaces, algorithm visualizers, and interactive tables."
+    },
+    {
+      "Id": "cell-code-1",
+      "Type": 0,
+      "Language": "dart",
+      "Source": "// Cell 1: Persistent domain model and computational setup\nclass Item {\n  final String name;\n  final double price;\n  Item(this.name, this.price);\n\n  @override\n  String toString() => '$name (\\$${price.toStringAsFixed(2)})';\n}\n\nList<Item> cart = [\n  Item('Dart Gopher Book', 29.99),\n  Item('Flutter Mug', 14.50),\n  Item('Mechanical Keyboard', 129.00),\n  Item('4K Monitor', 349.99),\n  Item('Wireless Mouse', 49.95)\n];\n\nvar total = cart.map((i) => i.price).reduce((a, b) => a + b);\nprint('Initialized cart with ${cart.length} items. Total: \\$${total.toStringAsFixed(2)}');"
+    },
+    {
+      "Id": "cell-code-2",
+      "Type": 0,
+      "Language": "dart",
+      "Source": "// Cell 2: 2D Bar Chart of Product Pricing\nDisplay.barChart(\n  cart.map((i) => {'Item': i.name, 'Price': i.price}).toList(),\n  'Product Pricing Overview'\n);"
+    },
+    {
+      "Id": "cell-code-3",
+      "Type": 0,
+      "Language": "dart",
+      "Source": "// Cell 3: 3D Parametric Mathematical Surface\nDisplay.surface(\n  (x, y) => sin(sqrt(x * x + y * y)) / (sqrt(x * x + y * y) + 0.1) * 3,\n  'Ripple Waveform (3D Surface)',\n  {'xMin': -6, 'xMax': 6, 'yMin': -6, 'yMax': 6, 'resolution': 28, 'colorMap': 'plasma'}\n);"
+    },
+    {
+      "Id": "cell-code-4",
+      "Type": 0,
+      "Language": "dart",
+      "Source": "// Cell 4: Algorithm Array Visualizer with Pointers\nVisualizer.array(\n  [14.50, 29.99, 49.95, 129.00, 349.99],\n  {'low': 0, 'mid': 2, 'high': 4},\n  'Binary Search Range Partition'\n);"
+    },
+    {
+      "Id": "cell-code-5",
+      "Type": 0,
+      "Language": "dart",
+      "Source": "// Cell 5: Rich Interactive Data Table\nDisplay.table(\n  cart.map((i) => {\n    'Product': i.name,\n    'Price': i.price,\n    'Category': i.price > 100 ? 'Hardware' : 'Merchandise'\n  }).toList(),\n  'Inventory Catalog'\n);"
+    }
+  ]
+}

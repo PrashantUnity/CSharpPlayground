@@ -124,14 +124,11 @@ public class CSharpEditorPlugin : IFryPlugin
         var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
         PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
 
-        var globalExtensionsDir = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".frysharp", "extensions");
         _ = Task.Run(async () =>
         {
+            var ws = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPath;
             await customizationManager.InitializeAsync(enableHotReload: true, ct);
-            if (System.IO.Directory.Exists(globalExtensionsDir))
-            {
-                await extensionManager.DiscoverAndLoadAllAsync(globalExtensionsDir, enableHotReload: true, ct);
-            }
+            await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: ws, enableHotReload: true, ct);
         }, ct);
 
         var reloadCustomizationsCmd = ctx.RegisterCommand(new CommandPaletteDescriptor

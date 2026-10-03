@@ -16,11 +16,37 @@ public partial class CSharpSettingsViewModel
 
     private void InitializeLanguages()
     {
-        Languages.Clear();
-        FilteredLanguages.Clear();
+        SynchronizeLanguagesFromRegistry();
+        _languageServices.Registry.Changed += OnLanguagesRegistryChanged;
+        _ = RefreshAllLanguagesAsync();
+    }
 
-        foreach (var language in _languageServices.Registry.All)
+    private void OnLanguagesRegistryChanged()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            SynchronizeLanguagesFromRegistry();
+        });
+    }
+
+    public void SynchronizeLanguagesFromRegistry()
+    {
+        var registered = _languageServices.Registry.All;
+        var existingIds = Languages.Select(l => l.Language.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Remove any that are no longer registered
+        var toRemove = Languages.Where(l => !registered.Any(r => r.IsNamed(l.Language.Id))).ToList();
+        foreach (var item in toRemove)
+        {
+            Languages.Remove(item);
+            FilteredLanguages.Remove(item);
+        }
+
+        // Add any newly registered
+        foreach (var language in registered)
+        {
+            if (existingIds.Contains(language.Id)) continue;
+
             IToolchainProvider? dotNetProvider = null;
             if (language.Id == LanguageIds.CSharp)
             {
@@ -36,11 +62,18 @@ public partial class CSharpSettingsViewModel
 
             Languages.Add(item);
             FilteredLanguages.Add(item);
+
+            if (item.IsToolchainLanguage)
+            {
+                _ = RefreshLanguageToolchainAsync(item);
+            }
         }
 
-        SelectedLanguage = Languages.FirstOrDefault();
-        if (SelectedLanguage != null) SelectedLanguage.IsSelected = true;
-        _ = RefreshAllLanguagesAsync();
+        if (SelectedLanguage == null || !Languages.Contains(SelectedLanguage))
+        {
+            SelectedLanguage = Languages.FirstOrDefault();
+            if (SelectedLanguage != null) SelectedLanguage.IsSelected = true;
+        }
     }
 
     partial void OnSelectedLanguageChanged(LanguageSettingItemViewModel? oldValue, LanguageSettingItemViewModel? newValue)

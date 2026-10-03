@@ -35,7 +35,7 @@ public partial class DocumentationService
             Subtitle = "One canonical API, MIME bundle protocol, and universal visual chrome across 8 languages.",
             ReadingTime = "4 min read",
             Summary = "C# Code Studio provides first-class visual output in every supported language through a unified runtime protocol. Calling Display.Chart, Display.Plot3D, or Display.Visualizer produces rich interactive controls with zoom, pan, CSV export, spec copying, and live two-way interaction.",
-            Keywords = new List<string> { "polyglot", "visuals", "chart", "3d", "visualizer", "python", "javascript", "java", "go", "rust", "cpp", "fsharp" },
+            Keywords = new List<string> { "polyglot", "visuals", "chart", "3d", "visualizer", "python", "javascript", "java", "go", "rust", "cpp", "fsharp", "dart" },
             Sections = new List<DocSection>
             {
                 new()
@@ -48,7 +48,7 @@ public partial class DocumentationService
                 new()
                 {
                     Heading = "Supported Language SDKs",
-                    Content = "The unified visual runtime is built into all toolchains:\n• C#: Display.Chart(), Display.Plot3D(), Display.Visualizer()\n• Python: import fry_display as display\n• JavaScript: const { Display } = require('fry_display')\n• Java: import com.frypdf.display.Display\n• Go: import \"fry_display\"\n• Rust: use fry_display::prelude::*\n• C++: #include <fry_display.hpp>\n• F#: open FryDisplay"
+                    Content = "The unified visual runtime is built into all toolchains:\n• C#: Display.Chart(), Display.Plot3D(), Display.Visualizer()\n• Python: import fry_display as display\n• JavaScript: const { Display } = require('fry_display')\n• Java: import com.frypdf.display.Display\n• Go: import \"fry_display\"\n• Rust: use fry_display::prelude::*\n• C++: #include <fry_display.hpp>\n• F#: open FryDisplay\n• Dart: Display.barChart(), Display.plot3D(), Display.arrayVisualizer()"
                 }
             }
         };

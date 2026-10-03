@@ -30,4 +30,40 @@ public class ExtensionManifest
     public string? MainEntryClass { get; set; }
     public List<string> SourceFiles { get; set; } = new();
     public Dictionary<string, ExtensionSettingDefinition> Settings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<DeclarativeLanguageContribution> Languages { get; set; } = new();
 }
+
+/// <summary>
+/// Language Server Protocol (LSP) configuration for external language intelligence.
+/// </summary>
+public class DeclarativeLspContribution
+{
+    /// <summary>Executable name or relative path of the language server (e.g. "zls", "gopls", "clangd").</summary>
+    public string Command { get; set; } = string.Empty;
+
+    /// <summary>Command-line arguments passed to the language server (e.g. ["--stdio"]).</summary>
+    public List<string> Args { get; set; } = new();
+}
+
+/// <summary>
+/// Declarative language specification contributed via extension.json.
+/// </summary>
+public class DeclarativeLanguageContribution
+{
+    public string Id { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string? ShortName { get; set; }
+    public List<string> Extensions { get; set; } = new();
+    public List<string> Aliases { get; set; } = new();
+    public string IconKind { get; set; } = "CodeBraces";
+    public string AccentHex { get; set; } = "#8B949E";
+    public string LineCommentPrefix { get; set; } = "//";
+    public string? SyntaxFile { get; set; }
+    public string? NewFileTemplate { get; set; }
+    public string? RuntimeDescription { get; set; }
+    public string? RunCommand { get; set; }
+    public string? BuildCommand { get; set; }
+    public bool IsCompiled { get; set; }
+    public DeclarativeLspContribution? Lsp { get; set; }
+}
+

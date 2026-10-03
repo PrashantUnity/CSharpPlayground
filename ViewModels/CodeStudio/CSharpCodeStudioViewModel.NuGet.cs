@@ -94,6 +94,32 @@ public partial class CSharpCodeStudioViewModel
         new("fastrand", "2", "A simple and fast random number generator", "Stjepan Glavina", 150000000),
     ];
 
+    private static readonly NuGetPackageItem[] PopularDartPackages =
+    [
+        new("http", "1.2.0", "A composable, multi-platform, Future-based library for making HTTP requests", "dart.dev", 50000000),
+        new("dio", "5.4.0", "A powerful HTTP package for Dart/Flutter supporting interceptors, global configuration, FormData, request cancellation, file downloading, and timeout", "flutterchina.club", 40000000),
+        new("path", "1.9.0", "A comprehensive, cross-platform path manipulation library for Dart", "dart.dev", 45000000),
+        new("collection", "1.18.0", "Collections and utility functions and classes related to collections in Dart", "dart.dev", 55000000),
+        new("intl", "0.19.0", "Contains code to deal with internationalized/localized messages, date and number formatting and parsing, bi-directional text, and other internationalization issues", "dart.dev", 40000000),
+        new("crypto", "3.0.3", "Implementations of SHA, MD5, and HMAC cryptographic functions in Dart", "dart.dev", 30000000),
+        new("args", "2.5.0", "Parses raw command-line arguments into a set of options and flags", "dart.dev", 35000000),
+        new("yaml", "3.1.2", "A parser for YAML in pure Dart", "dart.dev", 25000000),
+        new("meta", "1.12.0", "Annotations that determine how your code is used in Dart", "dart.dev", 50000000),
+        new("uuid", "4.4.0", "RFC4122 (v1, v4, v5) UUID generator and parser in Dart", "daegalus", 20000000)
+    ];
+
+    private static readonly NuGetPackageItem[] PopularPythonPackages =
+    [
+        new("numpy", "2.1.0", "Fundamental package for array computing in Python", "NumPy Developers", 500000000),
+        new("pandas", "2.2.0", "Powerful data structures for data analysis, time series, and statistics", "Pandas Development Team", 400000000),
+        new("requests", "2.32.0", "Python HTTP for Humans", "Kenneth Reitz", 600000000),
+        new("matplotlib", "3.9.0", "Python plotting package for 2D and 3D graphs", "Matplotlib Development Team", 300000000),
+        new("scipy", "1.14.0", "Scientific Library for Python", "SciPy Developers", 250000000),
+        new("scikit-learn", "1.5.0", "A set of python modules for machine learning and data mining", "scikit-learn developers", 200000000),
+        new("torch", "2.4.0", "Tensors and Dynamic neural networks in Python with strong GPU acceleration", "PyTorch Team", 150000000),
+        new("seaborn", "0.13.0", "Statistical data visualization in Python", "Michael Waskom", 120000000)
+    ];
+
     public string ActivePackageManagerName => ActiveLanguage?.Packages?.ToolName ?? "NuGet";
     public string ActivePackageManagerTitle => $"{ActivePackageManagerName.ToUpperInvariant()} PACKAGES";
     public string ActivePackageSearchPlaceholder => $"Search {ActivePackageManagerName} packages...";
@@ -115,6 +141,10 @@ public partial class CSharpCodeStudioViewModel
     public NuGetPackageItem[] GetPopularPackagesForActiveLanguage()
     {
         var id = ActiveLanguage?.Id;
+        if (string.Equals(id, "dart", StringComparison.OrdinalIgnoreCase) || ActiveLanguage?.Packages?.ToolName.Contains("pub", StringComparison.OrdinalIgnoreCase) == true)
+            return PopularDartPackages;
+        if (string.Equals(id, Services.Languages.LanguageIds.Python, StringComparison.OrdinalIgnoreCase))
+            return PopularPythonPackages;
         if (string.Equals(id, Services.Languages.LanguageIds.Java, StringComparison.OrdinalIgnoreCase))
             return PopularJavaPackages;
         if (string.Equals(id, Services.Languages.LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase))
@@ -153,6 +183,26 @@ public partial class CSharpCodeStudioViewModel
                 NuGetSearchResults.Add(p);
             }
             NuGetStatusMessage = "Displaying popular packages";
+            return;
+        }
+
+        // Dart package search
+        if (string.Equals(ActiveLanguage?.Id, "dart", StringComparison.OrdinalIgnoreCase) || ActiveLanguage?.Packages?.ToolName.Contains("pub", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularDartPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
+            return;
+        }
+
+        // Python package search
+        if (string.Equals(ActiveLanguage?.Id, Services.Languages.LanguageIds.Python, StringComparison.OrdinalIgnoreCase))
+        {
+            NuGetSearchResults.Clear();
+            var filtered = Array.FindAll(PopularPythonPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || p.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+            foreach (var p in filtered) NuGetSearchResults.Add(p);
+            NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found in catalog";
             return;
         }
 
@@ -285,13 +335,16 @@ public partial class CSharpCodeStudioViewModel
         var langId = ActiveLanguage?.Id;
         string directive = langId switch
         {
+            "dart" => $"// #dart: {package.Id}",
             Services.Languages.LanguageIds.Java => $"//DEPS {package.Id}:{package.Version}",
             Services.Languages.LanguageIds.Cpp => $"// #vcpkg: {package.Id}",
             Services.Languages.LanguageIds.Go => $"// #go: {package.Id}",
             Services.Languages.LanguageIds.Rust => Services.Languages.Rust.RustPackageMap.CrateLine(package.Id, package.Version),
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
             Services.Languages.LanguageIds.JavaScript => $"%npm install {package.Id}",
-            _ => $"#r \"nuget: {package.Id}, {package.Version}\""
+            _ => (ActiveLanguage?.Packages?.ToolName.Contains("pub", StringComparison.OrdinalIgnoreCase) == true)
+                ? $"// #dart: {package.Id}"
+                : $"#r \"nuget: {package.Id}, {package.Version}\""
         };
 
         if (Code.Contains(directive, StringComparison.OrdinalIgnoreCase))

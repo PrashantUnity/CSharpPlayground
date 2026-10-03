@@ -22,7 +22,16 @@ public sealed class LanguageRegistry
     public IReadOnlyList<ILanguageDefinition> NotebookLanguages =>
         All.Where(l => l.NotebookKernels != null && l.Has(LanguageCapabilities.NotebookCells)).ToArray();
 
-    public void Register(ILanguageDefinition language)
+    /// <summary>Fired when a new language is registered.</summary>
+    public event Action<ILanguageDefinition>? LanguageRegistered;
+
+    /// <summary>Fired when an existing language is unregistered.</summary>
+    public event Action<ILanguageDefinition>? LanguageUnregistered;
+
+    /// <summary>Fired whenever languages are registered or unregistered.</summary>
+    public event Action? Changed;
+
+    public IDisposable Register(ILanguageDefinition language)
     {
         ArgumentNullException.ThrowIfNull(language);
         lock (_gate)
@@ -43,6 +52,57 @@ public sealed class LanguageRegistry
             }
 
             _languages.Add(language);
+        }
+
+        LanguageRegistered?.Invoke(language);
+        Changed?.Invoke();
+        return new RegistrationToken(this, language.Id);
+    }
+
+    /// <summary>Unregisters a language by its ID or alias. Returns true if it was found and removed.</summary>
+    public bool Unregister(string? idOrAlias)
+    {
+        if (string.IsNullOrWhiteSpace(idOrAlias)) return false;
+
+        ILanguageDefinition? removed = null;
+        lock (_gate)
+        {
+            var existing = _languages.FirstOrDefault(l => l.IsNamed(idOrAlias));
+            if (existing != null)
+            {
+                _languages.Remove(existing);
+                removed = existing;
+            }
+        }
+
+        if (removed != null)
+        {
+            LanguageUnregistered?.Invoke(removed);
+            Changed?.Invoke();
+            return true;
+        }
+
+        return false;
+    }
+
+    private sealed class RegistrationToken : IDisposable
+    {
+        private readonly LanguageRegistry _registry;
+        private readonly string _id;
+        private int _disposed;
+
+        public RegistrationToken(LanguageRegistry registry, string id)
+        {
+            _registry = registry;
+            _id = id;
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            {
+                _registry.Unregister(_id);
+            }
         }
     }
 

@@ -39,6 +39,9 @@ public interface IStudioApp
     /// <summary>Cross-script, cross-extension decoupled publish-subscribe event bus.</summary>
     IEventBusApi Events { get; }
 
+    /// <summary>Language registration, queries, and file-type associations.</summary>
+    ILanguagesApi Languages { get; }
+
     /// <summary>Convenience alias for UI.Dialogs (modals, prompts, and file pickers).</summary>
     IDialogApi Dialogs => UI.Dialogs;
 }

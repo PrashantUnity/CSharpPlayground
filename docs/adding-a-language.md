@@ -97,10 +97,56 @@ Most debuggers speak the Debug Adapter Protocol; `DapAdapterManager` starts one 
 
 ## 7. Register it
 
+### Option A: Built-in Language (Compile-Time)
 Add one line to the `StudioLanguageServices` constructor (`Services/Languages/StudioLanguageServices.cs`):
 
 ```csharp
 Registry.Register(new PythonLanguage(this));
+```
+
+### Option B: Dynamic C# Extension (`App.Languages.Register`)
+In a multi-file extension (`.frysharp/extensions/<name>/`), register the language through the SDK inside `InitializeAsync`:
+
+```csharp
+public class MyLanguageExtension : IExtensionEntryPoint
+{
+    public Task InitializeAsync(IExtensionContext context)
+    {
+        // Automatically tracked and cleanly unregistered on extension unload / hot-reload:
+        context.TrackDisposable(context.App.Languages.Register(new MyCustomLanguage()));
+        return Task.CompletedTask;
+    }
+
+    public Task DeactivateAsync() => Task.CompletedTask;
+}
+```
+
+### Option C: Declarative Extension (`extension.json` — No C# Code Required)
+Lightweight languages can be declared directly in `extension.json` without compiling C# code, complete with an AvaloniaEdit `.xshd` syntax file, process-based runner, and optional LSP client:
+
+```json
+{
+  "id": "zig-support",
+  "name": "Zig Language Extension",
+  "version": "1.0.0",
+  "languages": [
+    {
+      "id": "zig",
+      "displayName": "Zig",
+      "shortName": "ZIG",
+      "extensions": [".zig"],
+      "iconKind": "CodeBraces",
+      "accentHex": "#F7A41D",
+      "lineCommentPrefix": "//",
+      "syntaxFile": "syntaxes/zig.xshd",
+      "runCommand": "zig run \"{file}\"",
+      "lsp": {
+        "command": "zls",
+        "args": ["--stdio"]
+      }
+    }
+  ]
+}
 ```
 
 `LanguageRegistry.Register` refuses an id, alias or extension that's already taken.

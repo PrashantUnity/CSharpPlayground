@@ -19,27 +19,13 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 public class NativeMenuContextualTests
 {
     private static readonly object InitLock = new();
-    private static MainWindow? _sharedWindow;
+    private static MainWindowMenuCoordinator? _sharedCoordinator;
 
-    private static MainWindow GetWindow()
+    private static MainWindowMenuCoordinator GetWindow()
     {
         lock (InitLock)
         {
-            if (_sharedWindow != null) return _sharedWindow;
-
-            if (Application.Current == null)
-            {
-                try
-                {
-                    AppBuilder.Configure<App>()
-                        .UseSkia()
-                        .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true })
-                        .SetupWithoutStarting();
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            }
+            if (_sharedCoordinator != null) return _sharedCoordinator;
 
             var tempDir = Path.Combine(Path.GetTempPath(), "NativeMenuTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
@@ -68,10 +54,11 @@ public class NativeMenuContextualTests
                 backToHomeAction: hostVm.NavigateToHome,
                 languages: hostVm.Languages);
 
-            var window = new MainWindow(hostVm);
-            window.UpdateMenuStates();
-            _sharedWindow = window;
-            return _sharedWindow;
+            var menu = MainWindowMenuCoordinator.CreateDefaultMenu();
+            var coordinator = new MainWindowMenuCoordinator(menu, hostVm);
+            coordinator.UpdateMenuStates();
+            _sharedCoordinator = coordinator;
+            return _sharedCoordinator;
         }
     }
 
