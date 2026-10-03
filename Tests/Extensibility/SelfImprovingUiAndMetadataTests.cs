@@ -223,21 +223,22 @@ public class SelfImprovingUiAndMetadataTests
     {
         var registry = new AiAgentToolRegistry();
 
-        // 1. GetStudioApiMetadata
+        // 1. GetStudioApiMetadata — returns markdown catalog containing App.UI section
         var apiMeta = registry.GetStudioApiMetadata("ui");
         Assert.False(string.IsNullOrWhiteSpace(apiMeta));
         Assert.Contains("App.UI", apiMeta);
 
-        // 2. GetRuntimeExtensionPoints
+        // 2. GetRuntimeExtensionPoints — returns JSON catalog with expected top-level keys
         var extensionPoints = registry.GetRuntimeExtensionPoints();
         Assert.False(string.IsNullOrWhiteSpace(extensionPoints));
         Assert.Contains("UiSlots", extensionPoints);
+        Assert.Contains("ThemeTokens", extensionPoints);
 
-        // 3. InspectStudioUi (returns summary or fallback if headless)
+        // 3. InspectStudioUi (returns summary or "unavailable" fallback in headless test environment)
         var visualTree = registry.InspectStudioUi(3);
         Assert.False(string.IsNullOrWhiteSpace(visualTree));
 
-        // 4. InjectStudioWidget with invalid slot returns error message
+        // 4. InjectStudioWidget with invalid slot returns a descriptive error message
         var invalidResult = registry.InjectStudioWidget("UnknownSlot", "id1", "Title", "<Border />");
         Assert.Contains("Unknown slot 'UnknownSlot'", invalidResult);
     }
