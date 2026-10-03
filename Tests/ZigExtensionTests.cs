@@ -277,6 +277,123 @@ public class ZigExtensionTests : IDisposable
     }
 
     [Fact]
+    public async Task ZigNotebookKernel_ExecutesUserLegacyStdIoSnippet_WithCompatibilityShim()
+    {
+        await EnsureZigLoadedAsync();
+        var zig = StudioAppContext.Instance.Languages.Get("zig");
+        Assert.NotNull(zig);
+        Assert.NotNull(zig.NotebookKernels);
+
+        using var kernel = zig.NotebookKernels.Create(new KernelCreationContext(() => Path.GetTempPath()));
+        Assert.NotNull(kernel);
+
+        var output = new System.Text.StringBuilder();
+        var request = new KernelExecutionRequest
+        {
+            Code = """
+                const std = @import("std");
+
+                pub fn main() !void {
+                    const stdout = std.io.getStdOut().writer();
+                    try stdout.print("Hello from FrySharp Zig!\n", .{});
+                }
+                """,
+            OnConsole = text => output.Append(text)
+        };
+
+        var result = await kernel.ExecuteAsync(request, CancellationToken.None);
+        Assert.True(result.Success, $"Execution failed: {result.ErrorMessage}");
+        Assert.Contains("Hello from FrySharp Zig!", output.ToString());
+    }
+
+    [Fact]
+    public async Task ZigScriptRunner_ExecutesUserLegacyStdIoSnippet_WithCompatibilityShim()
+    {
+        await EnsureZigLoadedAsync();
+        var zig = StudioAppContext.Instance.Languages.Get("zig");
+        Assert.NotNull(zig);
+        Assert.NotNull(zig.ScriptRunner);
+        Assert.NotNull(zig.Toolchain);
+        Assert.NotNull(zig.RunDiagnostics);
+
+        var tempDir = Path.Combine(Path.GetTempPath(), "FryStudio_ZigLegacyScript_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var scriptPath = Path.Combine(tempDir, "script.zig");
+            string scriptCode = """
+                const std = @import("std");
+
+                pub fn main() !void {
+                    const stdout = std.io.getStdOut().writer();
+                    try stdout.print("Hello from FrySharp Zig Legacy Script!\n", .{});
+                }
+                """;
+            await File.WriteAllTextAsync(scriptPath, scriptCode);
+
+            var query = new ToolchainQuery(tempDir);
+            var resolution = await zig.Toolchain.ResolveAsync(query, CancellationToken.None);
+
+            if (resolution.IsFound && resolution.Toolchain != null)
+            {
+                var runContext = new ScriptRunContext(scriptPath, tempDir, resolution.Toolchain);
+                var plan = await zig.ScriptRunner.PlanAsync(runContext);
+
+                var outputQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                var processes = new ProcessLauncher();
+                var executor = new ScriptRunExecutor(processes);
+                var session = executor.Start(plan, scriptPath, zig.RunDiagnostics, text => outputQueue.Enqueue(text));
+
+                var result = await session.Completion;
+                string allOutput = string.Join("", outputQueue);
+
+                Assert.True(result.Succeeded, $"Script execution failed. Output: {allOutput}");
+                Assert.Contains("Hello from FrySharp Zig Legacy Script!", allOutput);
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task ZigNotebookKernel_ExecutesModernBufferedStdout_WithProcessInit()
+    {
+        await EnsureZigLoadedAsync();
+        var zig = StudioAppContext.Instance.Languages.Get("zig");
+        Assert.NotNull(zig);
+        Assert.NotNull(zig.NotebookKernels);
+
+        using var kernel = zig.NotebookKernels.Create(new KernelCreationContext(() => Path.GetTempPath()));
+        Assert.NotNull(kernel);
+
+        var output = new System.Text.StringBuilder();
+        var request = new KernelExecutionRequest
+        {
+            Code = """
+                const std = @import("std");
+
+                pub fn main(init: std.process.Init) !void {
+                    const io = init.io;
+                    var stdout_buf: [1024]u8 = undefined;
+                    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buf);
+                    const stdout = &stdout_writer.interface;
+
+                    try stdout.print("Hello from Modern Zig ProcessInit!\n", .{});
+                    try stdout.flush();
+                }
+                """,
+            OnConsole = text => output.Append(text)
+        };
+
+        var result = await kernel.ExecuteAsync(request, CancellationToken.None);
+        Assert.True(result.Success, $"Execution failed: {result.ErrorMessage}");
+        Assert.Contains("Hello from Modern Zig ProcessInit!", output.ToString());
+    }
+
+    [Fact]
     public async Task ZigNotebookKernel_HandlesCompilationErrors_Gracefully()
     {
         await EnsureZigLoadedAsync();
