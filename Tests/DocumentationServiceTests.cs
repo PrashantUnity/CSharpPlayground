@@ -10,6 +10,7 @@ using CSharpDocsViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.CS
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class DocumentationServiceTests
 {
     [Fact]

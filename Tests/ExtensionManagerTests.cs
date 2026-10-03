@@ -9,6 +9,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class ExtensionManagerTests : IDisposable
 {
     private readonly string _tempRoot;

@@ -11,7 +11,16 @@ public partial class DocumentationService
     private readonly List<DocCategory> _categories;
     private readonly Dictionary<string, DocArticle> _articlesById;
 
-    public IReadOnlyList<DocCategory> Categories => _categories;
+    public IReadOnlyList<DocCategory> Categories
+    {
+        get
+        {
+            lock (_categories)
+            {
+                return _categories.ToList();
+            }
+        }
+    }
 
     public DocumentationService()
     {
@@ -147,21 +156,30 @@ public partial class DocumentationService
     public DocArticle? GetArticle(string articleId)
     {
         if (string.IsNullOrWhiteSpace(articleId)) return null;
-        _articlesById.TryGetValue(articleId, out var article);
-        return article;
+        lock (_categories)
+        {
+            _articlesById.TryGetValue(articleId, out var article);
+            return article;
+        }
     }
 
     public List<DocArticle> SearchArticles(string query)
     {
+        List<DocCategory> categoriesSnapshot;
+        lock (_categories)
+        {
+            categoriesSnapshot = _categories.ToList();
+        }
+
         if (string.IsNullOrWhiteSpace(query))
         {
-            return _categories.SelectMany(c => c.Articles).ToList();
+            return categoriesSnapshot.SelectMany(c => c.Articles).ToList();
         }
 
         var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var results = new List<(DocArticle Article, int Score)>();
 
-        foreach (var category in _categories)
+        foreach (var category in categoriesSnapshot)
         {
             foreach (var article in category.Articles)
             {

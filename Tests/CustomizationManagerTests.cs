@@ -8,6 +8,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class CustomizationManagerTests : IDisposable
 {
     private readonly string _tempDir;

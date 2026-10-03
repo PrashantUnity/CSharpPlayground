@@ -14,6 +14,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class DynamicLanguageExtensibilityTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "FrySharp_LangExtTests_" + Guid.NewGuid().ToString("N"));

@@ -310,7 +310,7 @@ public class ExtensionManager : IDisposable
         catch (Exception ex)
         {
             result.Success = false;
-            result.ErrorMessage = $"Failed to initialize extension: {ex.Message}";
+            result.ErrorMessage = $"Failed to initialize extension: {ex}";
             await loadedExt.UnloadAsync();
         }
 

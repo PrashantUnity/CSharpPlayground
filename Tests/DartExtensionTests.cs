@@ -591,7 +591,8 @@ public class DartExtensionTests : IDisposable
     [Fact]
     public async Task DartExtension_PopulatesInSettingsViewModel_WhenLoaded()
     {
-        var services = new StudioLanguageServices(Path.GetTempPath());
+        var tempBase = Path.Combine(Path.GetTempPath(), "FrySharp_DartSettings_" + Guid.NewGuid().ToString("N"));
+        var services = new StudioLanguageServices(tempBase);
         var app = new StudioAppContext(services);
         using var manager = new ExtensionManager(app);
         var settingsVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel(services);
@@ -647,7 +648,8 @@ public class DartExtensionTests : IDisposable
     [Fact]
     public async Task DartExtension_PopulatesInHubStudioEnvironment_WhenLoaded()
     {
-        var services = new StudioLanguageServices(Path.GetTempPath());
+        var tempBase = Path.Combine(Path.GetTempPath(), "FrySharp_DartHub_" + Guid.NewGuid().ToString("N"));
+        var services = new StudioLanguageServices(tempBase);
         var app = new StudioAppContext(services);
         using var manager = new ExtensionManager(app);
 

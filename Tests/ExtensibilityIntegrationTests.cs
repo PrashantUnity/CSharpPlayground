@@ -12,6 +12,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class ExtensibilityIntegrationTests : IDisposable
 {
     private readonly string _tempDir;
@@ -99,7 +100,7 @@ public class ExtensibilityIntegrationTests : IDisposable
     [Fact]
     public void EditorApi_DocumentLifecycleHooks_DispatchedProperly()
     {
-        var app = StudioAppContext.Instance;
+        var app = new StudioAppContext();
         IDocumentContext? opened = null;
         IDocumentContext? saved = null;
 

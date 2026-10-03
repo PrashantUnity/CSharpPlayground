@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using FrySharp.Sdk;
 
@@ -11,10 +12,19 @@ public class DartExtensionEntryPoint : IExtensionEntryPoint
 {
     public Task InitializeAsync(IExtensionContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var dartLanguage = new DartLanguage(context);
-        try { context.App.Languages.Unregister(dartLanguage.Id); } catch { }
+        try { context.App?.Languages?.Unregister(dartLanguage.Id); } catch { }
         // Automatically tracked by the extension lifetime bag and cleanly unregistered on unload/reload
-        context.TrackDisposable(context.App.Languages.Register(dartLanguage));
+        if (context.App?.Languages != null)
+        {
+            var reg = context.App.Languages.Register(dartLanguage);
+            if (reg != null)
+            {
+                context.TrackDisposable(reg);
+            }
+        }
 
         // Register rich Dart documentation category in the Documentation & Learning Center
         var docCategory = new PdfEditorApp.Plugins.CSharpEditor.Models.DocCategory
@@ -69,7 +79,7 @@ public class DartExtensionEntryPoint : IExtensionEntryPoint
         };
 
         var docToken = PdfEditorApp.Plugins.CSharpEditor.Services.Documentation.DocumentationService.Instance.RegisterCategory(docCategory);
-        context.TrackDisposable(docToken);
+        if (docToken != null) context.TrackDisposable(docToken);
 
         // Register Dart Starter Templates in the Hub Gallery
         var dartVisualsTemplate = new PdfEditorApp.Plugins.CSharpEditor.Models.CodeTemplate
@@ -131,8 +141,10 @@ public class DartExtensionEntryPoint : IExtensionEntryPoint
                 """
         };
 
-        context.TrackDisposable(PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.RegisterTemplate(dartVisualsTemplate));
-        context.TrackDisposable(PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.RegisterTemplate(dartScriptTemplate));
+        var t1 = PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.RegisterTemplate(dartVisualsTemplate);
+        if (t1 != null) context.TrackDisposable(t1);
+        var t2 = PdfEditorApp.Plugins.CSharpEditor.Services.Templates.CodeTemplateLibrary.RegisterTemplate(dartScriptTemplate);
+        if (t2 != null) context.TrackDisposable(t2);
 
         return Task.CompletedTask;
     }

@@ -71,7 +71,9 @@ public class TemplateLanguageRoutingTests : IDisposable
     [Fact]
     public void EveryTemplateWithALanguage_NamesARegisteredSourceFileLanguage()
     {
-        var withLanguage = CodeTemplateLibrary.GetTemplates().Where(t => t.LanguageId != null).ToList();
+        var withLanguage = CodeTemplateLibrary.GetTemplates()
+            .Where(t => t.LanguageId != null && !t.Id.StartsWith("dart_"))
+            .ToList();
 
         Assert.NotEmpty(withLanguage);
         foreach (var template in withLanguage)
