@@ -20,6 +20,14 @@ public partial class HubWorkspacesPanelControl : UserControl
         }
     }
 
+    private async void OnNewWorkspaceClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is CSharpManagerViewModel vm)
+        {
+            await HubFilePickerActions.CreateNewWorkspaceFolderAsync(this, vm);
+        }
+    }
+
     private async void OnOpenFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is CSharpManagerViewModel vm)

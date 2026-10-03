@@ -43,6 +43,9 @@ public sealed class GitPackageService
     }
 
     public string GlobalCacheRoot => _globalCacheRoot;
+    public string GlobalExtensionsDirectory => Path.Combine(_host.HomeDirectory, ".frysharp");
+    public string GlobalManifestPath => Path.Combine(GlobalExtensionsDirectory, "extensions.json");
+    public string GlobalLockfilePath => Path.Combine(GlobalExtensionsDirectory, "extensions-lock.json");
 
     /// <summary>
     /// Resolves and acquires a package from a Git URL using Git CLI or GitHub archive fallback.
@@ -248,7 +251,103 @@ public sealed class GitPackageService
         };
         await lockfile.SaveAsync(lockfilePath, ct);
 
+        // Also record in global lockfile so the extension is preserved across all workspaces and app restarts
+        try
+        {
+            var globalLockfile = await WorkspaceExtensionLockfile.LoadAsync(GlobalLockfilePath, ct);
+            globalLockfile.Dependencies[res.Manifest.Id] = new LockedGitPackage
+            {
+                PackageId = res.Manifest.Id,
+                Url = url.RepositoryUrl,
+                ResolvedRef = url.Revision,
+                CommitSha = res.CommitSha,
+                SubPath = url.SubPath,
+                CacheDirectory = res.ExtensionDirectory,
+                Version = res.Manifest.Version,
+                InstalledAtUtc = DateTimeOffset.UtcNow
+            };
+            await globalLockfile.SaveAsync(GlobalLockfilePath, ct);
+        }
+        catch { }
+
         return res;
+    }
+
+    /// <summary>
+    /// Adds a Git package dependency to the user's global extensions and locks it.
+    /// </summary>
+    public async Task<GitPackageResolutionResult> InstallGlobalPackageAsync(
+        string gitUrlString,
+        CancellationToken ct = default)
+    {
+        if (!GitPackageUrl.TryParse(gitUrlString, out var url) || url == null)
+        {
+            return new GitPackageResolutionResult
+            {
+                Success = false,
+                ErrorMessage = $"Invalid Git package URL: '{gitUrlString}'"
+            };
+        }
+
+        var res = await ResolveAndDownloadAsync(url, forceRefresh: false, ct);
+        if (!res.Success || res.Manifest == null)
+        {
+            return res;
+        }
+
+        var manifest = await WorkspaceExtensionManifest.LoadAsync(GlobalManifestPath, ct);
+        var lockfile = await WorkspaceExtensionLockfile.LoadAsync(GlobalLockfilePath, ct);
+
+        manifest.Dependencies[res.Manifest.Id] = gitUrlString;
+        await manifest.SaveAsync(GlobalManifestPath, ct);
+
+        lockfile.Dependencies[res.Manifest.Id] = new LockedGitPackage
+        {
+            PackageId = res.Manifest.Id,
+            Url = url.RepositoryUrl,
+            ResolvedRef = url.Revision,
+            CommitSha = res.CommitSha,
+            SubPath = url.SubPath,
+            CacheDirectory = res.ExtensionDirectory,
+            Version = res.Manifest.Version,
+            InstalledAtUtc = DateTimeOffset.UtcNow
+        };
+        await lockfile.SaveAsync(GlobalLockfilePath, ct);
+
+        return res;
+    }
+
+    /// <summary>
+    /// Removes a package dependency from the global extensions manifest and lockfile.
+    /// </summary>
+    public async Task<bool> UninstallGlobalPackageAsync(
+        string packageId,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(packageId)) return false;
+
+        bool modified = false;
+        if (File.Exists(GlobalManifestPath))
+        {
+            var manifest = await WorkspaceExtensionManifest.LoadAsync(GlobalManifestPath, ct);
+            if (manifest.Dependencies.Remove(packageId))
+            {
+                await manifest.SaveAsync(GlobalManifestPath, ct);
+                modified = true;
+            }
+        }
+
+        if (File.Exists(GlobalLockfilePath))
+        {
+            var lockfile = await WorkspaceExtensionLockfile.LoadAsync(GlobalLockfilePath, ct);
+            if (lockfile.Dependencies.Remove(packageId))
+            {
+                await lockfile.SaveAsync(GlobalLockfilePath, ct);
+                modified = true;
+            }
+        }
+
+        return modified;
     }
 
     /// <summary>

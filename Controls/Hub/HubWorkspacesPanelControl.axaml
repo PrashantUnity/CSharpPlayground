@@ -141,18 +141,28 @@
 
                 <!-- Quick Action Buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Click="OnNewWorkspaceClick"
+                            Classes="nexus-btn-primary" Height="36"
+                            ToolTip.Tip="Create or select a new isolated workspace folder">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="15" Height="15" VerticalAlignment="Center" />
+                            <TextBlock Text="New Workspace..." VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </Button>
                     <Button Click="OnOpenFolderClick"
-                            Classes="nexus-btn-surface" Height="36">
+                            Classes="nexus-btn-surface" Height="36"
+                            ToolTip.Tip="Open an existing folder as workspace">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" VerticalAlignment="Center" />
                             <TextBlock Text="Open Folder..." VerticalAlignment="Center" FontSize="12" />
                         </StackPanel>
                     </Button>
                     <Button Click="OnOpenProjectFileClick"
-                            Classes="nexus-btn-primary" Height="36">
+                            Classes="nexus-btn-surface" Height="36"
+                            ToolTip.Tip="Open a script, notebook, or project file">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="15" Height="15" VerticalAlignment="Center" />
-                            <TextBlock Text="Open Project..." VerticalAlignment="Center" FontSize="12" />
+                            <TextBlock Text="Open File..." VerticalAlignment="Center" FontSize="12" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

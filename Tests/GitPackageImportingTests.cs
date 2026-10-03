@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Packages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
@@ -165,5 +166,64 @@ public class GitPackageImportingTests : IDisposable
         Assert.Equal(expectedDir, result.ExtensionDirectory);
         Assert.NotNull(result.Manifest);
         Assert.Equal("Zig Language Support", result.Manifest.Name);
+    }
+
+    [Fact]
+    public async Task GitPackageService_InstallGlobalPackageAsync_PersistsToGlobalLockfile_AndUninstallsCleanly()
+    {
+        string fakeHome = Path.Combine(_tempDir, "fake-home");
+        string cacheRoot = Path.Combine(fakeHome, ".frysharp", "cache", "packages", "git");
+        Directory.CreateDirectory(fakeHome);
+
+        var mockHost = new MockHostEnvironment(fakeHome);
+        var pkgService = new GitPackageService(host: mockHost, customCacheRoot: cacheRoot);
+
+        var url = GitPackageUrl.Parse("https://github.com/CodeFryDev/FrySharp.Zig.git#v1.0.0");
+        string expectedDir = Path.Combine(cacheRoot, url.CacheKey, "v1.0.0");
+        Directory.CreateDirectory(expectedDir);
+
+        string manifestJson = """
+            {
+              "id": "frysharp.zig",
+              "name": "Zig Language Support",
+              "version": "1.0.0"
+            }
+            """;
+        await File.WriteAllTextAsync(Path.Combine(expectedDir, "extension.json"), manifestJson);
+
+        var installResult = await pkgService.InstallGlobalPackageAsync("https://github.com/CodeFryDev/FrySharp.Zig.git#v1.0.0");
+        Assert.True(installResult.Success);
+        Assert.Equal("frysharp.zig", installResult.PackageId);
+
+        // Verify saved to global lockfile and manifest
+        Assert.True(File.Exists(pkgService.GlobalLockfilePath));
+        Assert.True(File.Exists(pkgService.GlobalManifestPath));
+
+        var lockfile = await WorkspaceExtensionLockfile.LoadAsync(pkgService.GlobalLockfilePath);
+        Assert.True(lockfile.Dependencies.ContainsKey("frysharp.zig"));
+        Assert.Equal(expectedDir, lockfile.Dependencies["frysharp.zig"].CacheDirectory);
+
+        // Test uninstall
+        bool uninstalled = await pkgService.UninstallGlobalPackageAsync("frysharp.zig");
+        Assert.True(uninstalled);
+
+        var lockfileAfter = await WorkspaceExtensionLockfile.LoadAsync(pkgService.GlobalLockfilePath);
+        Assert.False(lockfileAfter.Dependencies.ContainsKey("frysharp.zig"));
+    }
+
+    private sealed class MockHostEnvironment : IHostEnvironment
+    {
+        public MockHostEnvironment(string home) => HomeDirectory = home;
+        public bool IsWindows => false;
+        public bool IsMacOS => true;
+        public bool IsLinux => false;
+        public string HomeDirectory { get; }
+        public string? GetEnvironmentVariable(string name) => null;
+        public bool FileExists(string path) => File.Exists(path);
+        public bool DirectoryExists(string path) => Directory.Exists(path);
+        public IReadOnlyList<string> GetDirectories(string path) => Directory.Exists(path) ? Directory.GetDirectories(path) : Array.Empty<string>();
+        public Task<string?> GetLoginShellPathAsync(System.Threading.CancellationToken ct = default) => Task.FromResult<string?>(null);
+        public Task<PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains.CommandResult> RunAsync(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, System.Threading.CancellationToken ct = default)
+            => Task.FromResult(new PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains.CommandResult(0, "", "", false));
     }
 }

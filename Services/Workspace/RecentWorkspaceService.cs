@@ -74,13 +74,12 @@ public class RecentWorkspaceService : IRecentWorkspaceService
                 _loaded = true;
             }
 
-            var isNotebook = fullPath.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
-                             fullPath.EndsWith(".ipynb", StringComparison.OrdinalIgnoreCase);
+            var isDirectory = Directory.Exists(fullPath);
+            var isNotebook = !isDirectory && (
+                             fullPath.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+                             fullPath.EndsWith(".ipynb", StringComparison.OrdinalIgnoreCase));
 
-            var isScript = !isNotebook && (
-                fullPath.EndsWith(".frycs", StringComparison.OrdinalIgnoreCase) ||
-                fullPath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
-                fullPath.EndsWith(".csx", StringComparison.OrdinalIgnoreCase));
+            var isScript = !isDirectory && !isNotebook && (File.Exists(fullPath) || Path.HasExtension(fullPath));
 
             var kind = explicitKind ?? (isNotebook ? RecentWorkspaceKind.StandaloneNotebook : (isScript ? RecentWorkspaceKind.StandaloneScript : RecentWorkspaceKind.ProjectWorkspace));
 

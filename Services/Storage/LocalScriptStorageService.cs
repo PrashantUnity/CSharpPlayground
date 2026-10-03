@@ -1025,6 +1025,41 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         }
     }
 
+    private static string ResolveProjectRoot(string folder)
+    {
+        try
+        {
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var current = new DirectoryInfo(folder);
+            var candidate = folder;
+
+            while (current != null && current.Parent != null)
+            {
+                if (string.Equals(current.FullName, userHome, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                if (Directory.Exists(Path.Combine(current.FullName, ".frysharp")) ||
+                    Directory.Exists(Path.Combine(current.FullName, ".git")) ||
+                    Directory.GetFiles(current.FullName, "*.csproj").Length > 0 ||
+                    Directory.GetFiles(current.FullName, "*.frycsproj").Length > 0 ||
+                    Directory.GetFiles(current.FullName, "*.sln").Length > 0)
+                {
+                    return current.FullName;
+                }
+
+                current = current.Parent;
+            }
+
+            return candidate;
+        }
+        catch
+        {
+            return folder;
+        }
+    }
+
     public async Task<OpenProjectResult> OpenExternalProjectAsync(string rawPath)
     {
         await EnsureInitializedAsync();
@@ -1067,6 +1102,34 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             return new OpenProjectResult(false, $"File or directory not found: '{path}'");
         }
 
+        var parentFolder = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(parentFolder) && Directory.Exists(parentFolder))
+        {
+            var hasProjectMarker = Directory.Exists(Path.Combine(parentFolder, ".frysharp")) ||
+                                   Directory.Exists(Path.Combine(parentFolder, ".git")) ||
+                                   Directory.GetFiles(parentFolder, "*.csproj").Length > 0 ||
+                                   Directory.GetFiles(parentFolder, "*.frycsproj").Length > 0;
+
+            if (hasProjectMarker)
+            {
+                var currentRoot = _activeWorkspaceRootPath;
+                var isInsideCurrentWorkspace = !string.IsNullOrWhiteSpace(currentRoot) &&
+                    (string.Equals(parentFolder, currentRoot, StringComparison.OrdinalIgnoreCase) ||
+                     parentFolder.StartsWith(currentRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+
+                if (!isInsideCurrentWorkspace)
+                {
+                    var resolvedRoot = ResolveProjectRoot(parentFolder);
+                    _activeWorkspaceRootPath = string.Equals(resolvedRoot, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : resolvedRoot;
+                    await SaveWorkspaceStateAsync().ConfigureAwait(false);
+                    await _recentWorkspaces.RecordWorkspaceOpenedAsync(resolvedRoot, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
+                    MarkChanged();
+                    RestartWatcher();
+                    ActiveWorkspaceChanged?.Invoke();
+                }
+            }
+        }
+
         var ext = Path.GetExtension(path).ToLowerInvariant();
 
         // Legacy .frycsproj/.frynbproj files from older versions: just open their containing folder —
@@ -1102,6 +1165,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         if (_languages.FindSourceFileLanguage(path) is { } sourceLanguage)
         {
             var id = RegisterSourceFile(path);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(path, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
             return new OpenProjectResult(
                 Success: true,
                 Message: $"Opened {sourceLanguage.DisplayName} file '{Path.GetFileName(path)}'",
@@ -1122,6 +1186,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         if (File.Exists(path))
         {
             var id = RegisterSourceFile(path);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(path, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
             return new OpenProjectResult(
                 Success: true,
                 Message: $"Opened file '{Path.GetFileName(path)}'",
@@ -1144,7 +1209,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
 
         _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
         await SaveWorkspaceStateAsync();
-        _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(full, RecentWorkspaceKind.ProjectWorkspace);
+        await _recentWorkspaces.RecordWorkspaceOpenedAsync(full, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
         MarkChanged();
         RestartWatcher();
         ActiveWorkspaceChanged?.Invoke();
@@ -1173,7 +1238,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             }
 
             _knownFileLocations[nb.Id] = filePath;
-            _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneNotebook);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneNotebook).ConfigureAwait(false);
 
             return new OpenProjectResult(
                 Success: true,
@@ -1226,7 +1291,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             }
 
             _knownFileLocations[script.Id] = filePath;
-            _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneScript);
+            await _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneScript).ConfigureAwait(false);
 
             return new OpenProjectResult(
                 Success: true,

@@ -385,15 +385,8 @@ public partial class CSharpSettingsViewModel
             }
             else
             {
-                if (!GitPackageUrl.TryParse(PackageGitUrl.Trim(), out var parsed) || parsed == null)
-                {
-                    PackageImportHasError = true;
-                    PackageImportStatus = $"Invalid Git URL: '{PackageGitUrl}'";
-                    return;
-                }
-
-                PackageImportStatus = "Downloading and caching package...";
-                res = await gitService.ResolveAndDownloadAsync(parsed, forceRefresh: false);
+                PackageImportStatus = "Downloading and registering global package...";
+                res = await gitService.InstallGlobalPackageAsync(PackageGitUrl.Trim());
             }
 
             if (!res.Success)
@@ -449,6 +442,7 @@ public partial class CSharpSettingsViewModel
             {
                 await app.GitPackageService.UninstallPackageFromWorkspaceAsync(wsRoot, item.Id);
             }
+            await app.GitPackageService.UninstallGlobalPackageAsync(item.Id);
 
             RefreshCustomizationData();
             ShowNotification($"Uninstalled extension: {item.Name}", isError: false);

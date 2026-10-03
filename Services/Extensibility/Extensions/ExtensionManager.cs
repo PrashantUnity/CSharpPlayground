@@ -114,8 +114,49 @@ public class ExtensionManager : IDisposable
         // 2. Application bundled extensions
         AddIfValid(Path.Combine(AppContext.BaseDirectory, "extensions"));
 
-        // 3. User global extensions (~/.frysharp/extensions)
-        AddIfValid(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".frysharp", "extensions"));
+        // 3. User global extensions (~/.frysharp/extensions, global lockfile, and package cache)
+        var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        AddIfValid(Path.Combine(userHome, ".frysharp", "extensions"));
+
+        string globalLockPath = Path.Combine(userHome, ".frysharp", "extensions-lock.json");
+        if (File.Exists(globalLockPath))
+        {
+            try
+            {
+                string json = File.ReadAllText(globalLockPath);
+                var lockfile = JsonSerializer.Deserialize<Packages.WorkspaceExtensionLockfile>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (lockfile?.Dependencies != null)
+                {
+                    foreach (var pkg in lockfile.Dependencies.Values)
+                    {
+                        if (!string.IsNullOrEmpty(pkg.CacheDirectory))
+                        {
+                            AddIfValid(pkg.CacheDirectory);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        string globalGitCache = Path.Combine(userHome, ".frysharp", "cache", "packages", "git");
+        if (Directory.Exists(globalGitCache))
+        {
+            try
+            {
+                foreach (var repoDir in Directory.GetDirectories(globalGitCache))
+                {
+                    foreach (var versionDir in Directory.GetDirectories(repoDir))
+                    {
+                        if (File.Exists(Path.Combine(versionDir, "extension.json")))
+                        {
+                            AddIfValid(versionDir);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
 
         // 4. Development & sample extensions (repo paths & upward directory traversal)
         string? cur = AppContext.BaseDirectory;
