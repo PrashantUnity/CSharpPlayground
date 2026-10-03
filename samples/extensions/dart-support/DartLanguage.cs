@@ -61,10 +61,21 @@ public sealed class DartLanguage : LanguageDefinition
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var host = new HostEnvironment();
-        var launcher = new ProcessLauncher();
-        var settingsPath = Path.Combine(host.HomeDirectory, ".frysharp", "toolchains.json");
-        var settings = new ToolchainSettingsStore(settingsPath);
+        IHostEnvironment host = new HostEnvironment();
+        IProcessLauncher launcher = new ProcessLauncher();
+        ToolchainSettingsStore settings;
+
+        if (context.App is PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext studioApp)
+        {
+            host = studioApp.LanguageServices.Host;
+            launcher = studioApp.LanguageServices.Processes;
+            settings = studioApp.LanguageServices.ToolchainSettings;
+        }
+        else
+        {
+            var settingsPath = Path.Combine(host.HomeDirectory, ".frysharp", "toolchains.json");
+            settings = new ToolchainSettingsStore(settingsPath);
+        }
 
         _toolchain = new DartToolchainProvider(host, launcher, settings);
         _runner = new DartScriptRunner(_toolchain);

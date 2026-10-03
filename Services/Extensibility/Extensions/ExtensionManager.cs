@@ -32,6 +32,12 @@ public class ExtensionManager : IDisposable
     private readonly ConcurrentDictionary<string, FileSystemWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, System.Threading.Timer> _debounceTimers = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _lock = new();
+    private readonly IStudioApp _app;
+
+    public ExtensionManager(IStudioApp? app = null)
+    {
+        _app = app ?? StudioAppContext.Instance;
+    }
 
     public IReadOnlyList<LoadedExtension> LoadedExtensions => _loadedExtensions.Values.ToList();
 
@@ -200,14 +206,14 @@ public class ExtensionManager : IDisposable
         await UnloadExtensionAsync(manifest.Id);
 
         // Ensure lingering language registrations from this extension or previous runs are cleaned up
-        StudioAppContext.Instance.Languages.Unregister(manifest.Id);
+        _app.Languages.Unregister(manifest.Id);
         if (manifest.Id.EndsWith("-support", StringComparison.OrdinalIgnoreCase))
         {
-            StudioAppContext.Instance.Languages.Unregister(manifest.Id[..^8]);
+            _app.Languages.Unregister(manifest.Id[..^8]);
         }
         foreach (var lang in manifest.Languages)
         {
-            StudioAppContext.Instance.Languages.Unregister(lang.Id);
+            _app.Languages.Unregister(lang.Id);
         }
 
         var csFiles = manifest.SourceFiles.Count > 0
@@ -216,13 +222,13 @@ public class ExtensionManager : IDisposable
 
         var alc = new ExtensionLoadContext($"Ext_{manifest.Id}");
         var regBag = new LifetimeRegistrationBag();
-        var loadedExt = new LoadedExtension(StudioAppContext.Instance, extensionDirectory, manifest, alc, regBag);
+        var loadedExt = new LoadedExtension(_app, extensionDirectory, manifest, alc, regBag);
 
         // Register any declarative language contributions
         foreach (var langContrib in manifest.Languages)
         {
             var langDef = new DeclarativeLanguageDefinition(langContrib, extensionDirectory);
-            var regToken = StudioAppContext.Instance.Languages.Register(langDef);
+            var regToken = _app.Languages.Register(langDef);
             regBag.Track(regToken);
         }
 

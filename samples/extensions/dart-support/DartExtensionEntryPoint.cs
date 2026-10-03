@@ -12,6 +12,7 @@ public class DartExtensionEntryPoint : IExtensionEntryPoint
     public Task InitializeAsync(IExtensionContext context)
     {
         var dartLanguage = new DartLanguage(context);
+        try { context.App.Languages.Unregister(dartLanguage.Id); } catch { }
         // Automatically tracked by the extension lifetime bag and cleanly unregistered on unload/reload
         context.TrackDisposable(context.App.Languages.Register(dartLanguage));
 

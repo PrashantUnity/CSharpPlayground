@@ -70,7 +70,7 @@ public sealed class DartToolchainProvider : IToolchainProvider
 
     public async Task<ToolchainResolution> ResolveAsync(ToolchainQuery query, CancellationToken ct = default)
     {
-        var candidates = GetCandidates(query);
+        var candidates = await GetCandidatesAsync(query, ct).ConfigureAwait(false);
 
         foreach (var path in candidates)
         {
@@ -107,7 +107,7 @@ public sealed class DartToolchainProvider : IToolchainProvider
 
     public async Task<IReadOnlyList<ToolchainInfo>> ListAsync(ToolchainQuery query, CancellationToken ct = default)
     {
-        var candidates = GetCandidates(query);
+        var candidates = await GetCandidatesAsync(query, ct).ConfigureAwait(false);
         var list = new List<ToolchainInfo>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -153,10 +153,15 @@ public sealed class DartToolchainProvider : IToolchainProvider
 
     private List<string> GetCandidates(ToolchainQuery query)
     {
+        return GetCandidatesAsync(query, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    private async Task<List<string>> GetCandidatesAsync(ToolchainQuery query, CancellationToken ct)
+    {
         var list = new List<string>();
 
         var selected = SelectedPath;
-        if (!string.IsNullOrWhiteSpace(selected) && File.Exists(selected))
+        if (!string.IsNullOrWhiteSpace(selected) && _host.FileExists(selected))
         {
             list.Add(selected);
         }
@@ -178,15 +183,17 @@ public sealed class DartToolchainProvider : IToolchainProvider
             list.Add("/usr/lib/dart/bin/dart");
         }
 
-        // 2. PATH resolution
-        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        // 2. PATH resolution (including login shell path for macOS / Linux)
+        var pathEnv = _host.GetEnvironmentVariable("PATH") ?? string.Empty;
+        var loginPath = await _host.GetLoginShellPathAsync(ct).ConfigureAwait(false);
         var separator = _host.IsWindows ? ';' : ':';
         var binaryName = _host.IsWindows ? "dart.exe" : "dart";
 
-        foreach (var dir in pathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries))
+        var combined = string.IsNullOrEmpty(loginPath) ? pathEnv : $"{pathEnv}{separator}{loginPath}";
+        foreach (var dir in combined.Split(separator, StringSplitOptions.RemoveEmptyEntries))
         {
             var full = Path.Combine(dir.Trim(), binaryName);
-            if (File.Exists(full))
+            if (_host.FileExists(full))
             {
                 list.Add(full);
             }
@@ -195,36 +202,45 @@ public sealed class DartToolchainProvider : IToolchainProvider
         return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    private Task<ProbeResult?> ProbeAsync(string executable, CancellationToken ct)
+    private async Task<ProbeResult?> ProbeAsync(string executable, CancellationToken ct)
     {
-        return _probes.GetOrAdd(executable, p => new Lazy<Task<ProbeResult?>>(() => RunProbeAsync(p, ct))).Value;
+        var probe = _probes.GetOrAdd(executable, p => new Lazy<Task<ProbeResult?>>(() => RunProbeAsync(p, ct)));
+        try
+        {
+            return await probe.Value.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            _probes.TryRemove(new KeyValuePair<string, Lazy<Task<ProbeResult?>>>(executable, probe));
+            throw;
+        }
     }
 
     private async Task<ProbeResult?> RunProbeAsync(string executable, CancellationToken ct)
     {
-        if (!File.Exists(executable)) return null;
+        if (!_host.FileExists(executable)) return null;
 
-        var output = new System.Text.StringBuilder();
         try
         {
-            using var proc = _launcher.Start(new ProcessStartSpec
-            {
-                FileName = executable,
-                Arguments = ["--version"],
-                WorkingDirectory = _host.HomeDirectory
-            },
-            s => output.Append(s),
-            s => output.Append(s));
+            var result = await _host.RunAsync(executable, ["--version"], TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
 
-            var exit = await proc.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
-            var text = output.ToString();
+            if (result.ExitCode != 0 && string.IsNullOrWhiteSpace(result.StandardOutput) && string.IsNullOrWhiteSpace(result.StandardError))
+            {
+                return null;
+            }
+
+            var text = (result.StandardOutput + " " + result.StandardError).Trim();
             var match = VersionRegex.Match(text);
             if (match.Success && Version.TryParse(match.Groups["version"].Value, out var ver))
             {
                 return new ProbeResult(executable, ver);
             }
         }
-        catch { }
+        catch
+        {
+            return null;
+        }
 
         return null;
     }

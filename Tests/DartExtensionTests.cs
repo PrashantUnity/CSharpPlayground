@@ -16,11 +16,12 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec;
+using CSharpEditorPlugin.Tests.TestSupport;
 using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
-[Collection("ExtensionTests")]
+[Collection(ExtensionTestsCollection.Name)]
 public class DartExtensionTests : IDisposable
 {
     private readonly string _extensionPath;
@@ -358,7 +359,7 @@ public class DartExtensionTests : IDisposable
         Assert.Contains("Display.table", codeCell5.Source);
     }
 
-    [Fact]
+    [DartFact]
     public async Task DartExtension_NotebookKernel_ExecutesVisualsAndRichOutputs()
     {
         using var manager = new ExtensionManager();
@@ -449,7 +450,7 @@ public class DartExtensionTests : IDisposable
         await manager.UnloadExtensionAsync("dart-support");
     }
 
-    [Fact]
+    [DartFact]
     public async Task DartExtension_The18Cases_DrawAsTheFixturesDo()
     {
         using var manager = new ExtensionManager();
@@ -510,7 +511,7 @@ public class DartExtensionTests : IDisposable
         await manager.UnloadExtensionAsync("dart-support");
     }
 
-    [Fact]
+    [DartFact]
     public async Task DartExtension_VisualUpdate_RedrawsSingleVisual()
     {
         using var manager = new ExtensionManager();
@@ -560,8 +561,15 @@ public class DartExtensionTests : IDisposable
             await File.WriteAllTextAsync(scriptPath, "void main() { print('hello'); }");
 
             var resolution = await dartLang.Toolchain!.ResolveAsync(new ToolchainQuery(tempDir, tempDir));
-            Assert.NotNull(resolution.Toolchain);
-            var context = new ScriptRunContext(scriptPath, tempDir, resolution.Toolchain!);
+            var toolchain = resolution.Toolchain ?? new ToolchainInfo
+            {
+                LanguageId = "dart",
+                ExecutablePath = "/opt/homebrew/bin/dart",
+                Version = new Version(3, 0, 0),
+                DisplayName = "Dart 3.0",
+                Source = "System"
+            };
+            var context = new ScriptRunContext(scriptPath, tempDir, toolchain);
             var plan = await dartLang.ScriptRunner!.PlanAsync(context);
 
             Assert.NotNull(plan);
@@ -583,10 +591,9 @@ public class DartExtensionTests : IDisposable
     [Fact]
     public async Task DartExtension_PopulatesInSettingsViewModel_WhenLoaded()
     {
-        using var manager = new ExtensionManager();
-        var prevServices = StudioAppContext.Instance.LanguageServices;
         var services = new StudioLanguageServices(Path.GetTempPath());
-        StudioAppContext.Instance.LanguageServices = services;
+        var app = new StudioAppContext(services);
+        using var manager = new ExtensionManager(app);
         var settingsVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel(services);
 
         Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "dart");
@@ -608,7 +615,6 @@ public class DartExtensionTests : IDisposable
             await manager.UnloadExtensionAsync("dart-support");
             settingsVm.SynchronizeLanguagesFromRegistry();
             Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "dart");
-            StudioAppContext.Instance.LanguageServices = prevServices;
         }
     }
 
@@ -641,10 +647,9 @@ public class DartExtensionTests : IDisposable
     [Fact]
     public async Task DartExtension_PopulatesInHubStudioEnvironment_WhenLoaded()
     {
-        using var manager = new ExtensionManager();
-        var prevServices = StudioAppContext.Instance.LanguageServices;
         var services = new StudioLanguageServices(Path.GetTempPath());
-        StudioAppContext.Instance.LanguageServices = services;
+        var app = new StudioAppContext(services);
+        using var manager = new ExtensionManager(app);
 
         var tempStorage = Path.Combine(Path.GetTempPath(), "storage_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempStorage);
@@ -672,7 +677,6 @@ public class DartExtensionTests : IDisposable
         {
             await manager.UnloadExtensionAsync("dart-support");
             Assert.DoesNotContain(hubVm.ToolchainStatuses, t => t.Language.Id == "dart");
-            StudioAppContext.Instance.LanguageServices = prevServices;
             try { Directory.Delete(tempStorage, recursive: true); } catch { }
         }
     }

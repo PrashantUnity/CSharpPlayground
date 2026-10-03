@@ -79,7 +79,7 @@ public class StudioAppContext : IStudioApp
     private Extensions.ExtensionManager? _extensionManager;
     public Extensions.ExtensionManager ExtensionManager
     {
-        get => _extensionManager ??= new Extensions.ExtensionManager();
+        get => _extensionManager ??= new Extensions.ExtensionManager(this);
         set => _extensionManager = value;
     }
 
@@ -98,7 +98,13 @@ public class StudioAppContext : IStudioApp
     public IDialogApi Dialogs => UiService.Dialogs;
 
     public StudioAppContext()
+        : this(null)
     {
+    }
+
+    public StudioAppContext(StudioLanguageServices? languageServices)
+    {
+        _languageServices = languageServices;
         ThemeEngine = new DynamicThemeEngine();
         CommandPipeline = new ExtensibilityCommandPipeline();
         EditorService = new ExtensibilityEditorService();
