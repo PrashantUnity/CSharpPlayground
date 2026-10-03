@@ -138,12 +138,16 @@ internal static class AppSnapshots
                 window.StudioHostVm.AiComposer.Messages.Add(userMsg);
                 window.StudioHostVm.AiComposer.Messages.Add(assistantMsg);
             }
+            if (options.Flag("prompt-drawer"))
+            {
+                window.StudioHostVm.AiComposer.IsPromptEditorOpen = true;
+            }
         }
 
         window.UpdateMenuStates();
         Snapshot.Settle(15);
         var shotName = options.Flag("ai") || options.Flag("composer")
-            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : "mainwindow_ai_composer")
+            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : (options.Flag("prompt-drawer") ? "mainwindow_ai_prompt_drawer" : "mainwindow_ai_composer"))
             : (string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}");
         Snapshot.Save(window, options, shotName);
     }

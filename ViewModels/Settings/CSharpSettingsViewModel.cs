@@ -46,12 +46,12 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasPendingChanges;
 
-    public bool IsLanguagesCategoryActive => ActiveCategory == "Languages";
-    public bool IsEditorCategoryActive => ActiveCategory == "Editor";
-    public bool IsExecutionCategoryActive => ActiveCategory == "Execution";
-    public bool IsKeymapCategoryActive => ActiveCategory == "Keymap";
-    public bool IsCustomizationCategoryActive => ActiveCategory == "Customization";
-    public bool IsAiCategoryActive => ActiveCategory == "AI";
+    public bool IsLanguagesCategoryActive => string.Equals(ActiveCategory, "Languages", StringComparison.OrdinalIgnoreCase);
+    public bool IsEditorCategoryActive => string.Equals(ActiveCategory, "Editor", StringComparison.OrdinalIgnoreCase);
+    public bool IsExecutionCategoryActive => string.Equals(ActiveCategory, "Execution", StringComparison.OrdinalIgnoreCase);
+    public bool IsKeymapCategoryActive => string.Equals(ActiveCategory, "Keymap", StringComparison.OrdinalIgnoreCase);
+    public bool IsCustomizationCategoryActive => string.Equals(ActiveCategory, "Customization", StringComparison.OrdinalIgnoreCase);
+    public bool IsAiCategoryActive => string.Equals(ActiveCategory, "AI", StringComparison.OrdinalIgnoreCase);
 
     public ObservableCollection<SettingsCategoryItem> Categories { get; } = new();
     public ObservableCollection<KeymapShortcutItem> Shortcuts { get; } = new();
