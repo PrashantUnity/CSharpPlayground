@@ -38,7 +38,7 @@
                                 <!-- Script Badge -->
                                 <Border Background="{DynamicResource DsLinqSubtleBrush}" CornerRadius="8"
                                         IsVisible="{Binding IsCreatingScript}">
-                                    <TextBlock Text="C#" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}"
+                                    <TextBlock Text="{Binding SelectedCreateLanguage.ShortName, FallbackValue='CS'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <!-- Server Badge -->
@@ -77,6 +77,24 @@
                                 <KeyBinding Gesture="Enter" Command="{Binding ConfirmCreateCommand}" />
                             </TextBox.KeyBindings>
                         </TextBox>
+                    </StackPanel>
+
+                    <!-- Field 2: Script Language (Visible only when creating a script) -->
+                    <StackPanel Spacing="6" IsVisible="{Binding IsCreatingScript}">
+                        <TextBlock Text="SCRIPT LANGUAGE &amp; RUNTIME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <ComboBox ItemsSource="{Binding AvailableCreateLanguages}"
+                                  SelectedItem="{Binding SelectedCreateLanguage, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="15" Height="15" Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding RuntimeDescription, StringFormat='({0})'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
 
                     <!-- Field 2: Workspace Location -->

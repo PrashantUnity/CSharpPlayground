@@ -62,10 +62,7 @@ public partial class MainWindow : Window
         _menuCoordinator.HookActivePageEvents();
         _menuCoordinator.UpdateMenuStates();
 
-        if (hostVm == null)
-        {
-            InitializeExtensibility();
-        }
+        InitializeExtensibility();
     }
 
     private void InitializeExtensibility()
@@ -92,19 +89,20 @@ public partial class MainWindow : Window
             return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
         };
 
-        var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
-        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager = customizationManager;
+        var customizationManager = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager;
+        var extensionManager = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager;
+        var activeWorkspace = StudioHostVm?.StorageService?.ActiveWorkspaceRootPath;
 
-        var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
-        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
-
-        var globalExtensionsDir = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".frysharp", "extensions");
         _ = Task.Run(async () =>
         {
-            await customizationManager.InitializeAsync(enableHotReload: true);
-            if (System.IO.Directory.Exists(globalExtensionsDir))
+            try
             {
-                await extensionManager.DiscoverAndLoadAllAsync(globalExtensionsDir, enableHotReload: true);
+                await customizationManager.InitializeAsync(enableHotReload: true);
+                await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: activeWorkspace, enableHotReload: true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainWindow] Extensibility initialization error: {ex.Message}");
             }
         });
     }

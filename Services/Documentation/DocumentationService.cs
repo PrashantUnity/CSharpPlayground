@@ -83,6 +83,67 @@ public partial class DocumentationService
         }
     }
 
+    public event Action? Changed;
+
+    public IDisposable RegisterCategory(DocCategory category)
+    {
+        ArgumentNullException.ThrowIfNull(category);
+        lock (_categories)
+        {
+            var existing = _categories.FirstOrDefault(c => string.Equals(c.Id, category.Id, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                _categories.Remove(existing);
+                foreach (var art in existing.Articles)
+                {
+                    _articlesById.Remove(art.Id);
+                }
+            }
+
+            _categories.Add(category);
+            foreach (var article in category.Articles)
+            {
+                article.CategoryId = category.Id;
+                _articlesById[article.Id] = article;
+            }
+        }
+
+        Changed?.Invoke();
+        return new RegistrationToken(() => UnregisterCategory(category.Id));
+    }
+
+    public bool UnregisterCategory(string categoryId)
+    {
+        if (string.IsNullOrWhiteSpace(categoryId)) return false;
+        bool removed = false;
+        lock (_categories)
+        {
+            var existing = _categories.FirstOrDefault(c => string.Equals(c.Id, categoryId, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                _categories.Remove(existing);
+                foreach (var art in existing.Articles)
+                {
+                    _articlesById.Remove(art.Id);
+                }
+                removed = true;
+            }
+        }
+
+        if (removed)
+        {
+            Changed?.Invoke();
+        }
+        return removed;
+    }
+
+    private sealed class RegistrationToken : IDisposable
+    {
+        private Action? _dispose;
+        public RegistrationToken(Action dispose) => _dispose = dispose;
+        public void Dispose() => System.Threading.Interlocked.Exchange(ref _dispose, null)?.Invoke();
+    }
+
     public DocArticle? GetArticle(string articleId)
     {
         if (string.IsNullOrWhiteSpace(articleId)) return null;

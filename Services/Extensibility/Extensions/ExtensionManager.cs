@@ -38,6 +38,97 @@ public class ExtensionManager : IDisposable
     public event Action<ExtensionLoadResult>? ExtensionLoaded;
     public event Action<string>? ExtensionUnloaded;
 
+    /// <summary>
+    /// Gets all standard directories where extensions may reside, in priority order:
+    /// 1. Workspace extensions (if provided): &lt;workspace&gt;/.frysharp/extensions
+    /// 2. Application bundled extensions: &lt;AppBase&gt;/extensions
+    /// 3. User profile global extensions: ~/.frysharp/extensions
+    /// 4. Repository sample extensions (for local execution): samples/extensions
+    /// </summary>
+    public static IReadOnlyList<string> GetDefaultExtensionSearchDirectories(string? workspacePath = null)
+    {
+        var dirs = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddIfValid(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            try
+            {
+                var full = Path.GetFullPath(path);
+                if (Directory.Exists(full) && seen.Add(full))
+                {
+                    dirs.Add(full);
+                }
+            }
+            catch
+            {
+                // Ignore invalid paths
+            }
+        }
+
+        // Fall back to workspace service if not explicitly specified
+        workspacePath ??= StudioAppContext.Instance.WorkspaceService.RootPath;
+
+        // 1. Workspace-level extensions
+        if (!string.IsNullOrWhiteSpace(workspacePath))
+        {
+            AddIfValid(Path.Combine(workspacePath, ".frysharp", "extensions"));
+            AddIfValid(Path.Combine(workspacePath, "extensions"));
+            AddIfValid(Path.Combine(workspacePath, "samples", "extensions"));
+            if (File.Exists(Path.Combine(workspacePath, "extension.json")))
+            {
+                var parent = Path.GetDirectoryName(Path.GetFullPath(workspacePath));
+                if (!string.IsNullOrEmpty(parent)) AddIfValid(parent);
+            }
+        }
+
+        // 2. Application bundled extensions
+        AddIfValid(Path.Combine(AppContext.BaseDirectory, "extensions"));
+
+        // 3. User global extensions (~/.frysharp/extensions)
+        AddIfValid(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".frysharp", "extensions"));
+
+        // 4. Development & sample extensions (repo paths & upward directory traversal)
+        string? cur = AppContext.BaseDirectory;
+        for (int i = 0; i < 6 && !string.IsNullOrEmpty(cur); i++)
+        {
+            AddIfValid(Path.Combine(cur, "samples", "extensions"));
+            AddIfValid(Path.Combine(cur, "extensions"));
+            cur = Path.GetDirectoryName(cur);
+        }
+
+        cur = Directory.GetCurrentDirectory();
+        for (int i = 0; i < 6 && !string.IsNullOrEmpty(cur); i++)
+        {
+            AddIfValid(Path.Combine(cur, "samples", "extensions"));
+            AddIfValid(Path.Combine(cur, "extensions"));
+            cur = Path.GetDirectoryName(cur);
+        }
+
+        return dirs;
+    }
+
+    /// <summary>
+    /// Discovers and loads extensions from all default search directories.
+    /// </summary>
+    public async Task<IReadOnlyList<ExtensionLoadResult>> DiscoverAndLoadFromDefaultLocationsAsync(
+        string? workspacePath = null,
+        bool enableHotReload = true,
+        CancellationToken ct = default)
+    {
+        var allResults = new List<ExtensionLoadResult>();
+        var searchDirs = GetDefaultExtensionSearchDirectories(workspacePath);
+
+        foreach (var dir in searchDirs)
+        {
+            var results = await DiscoverAndLoadAllAsync(dir, enableHotReload, ct);
+            allResults.AddRange(results);
+        }
+
+        return allResults;
+    }
+
     public async Task<IReadOnlyList<ExtensionLoadResult>> DiscoverAndLoadAllAsync(string extensionsRootDirectory, bool enableHotReload = true, CancellationToken ct = default)
     {
         var results = new List<ExtensionLoadResult>();

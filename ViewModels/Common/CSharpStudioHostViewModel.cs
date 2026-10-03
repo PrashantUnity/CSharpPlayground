@@ -115,6 +115,12 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         {
             _storageService = storageService;
         }
+
+        // Bridge to the ambient extensibility context
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.LanguageServices = _languages;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPathResolver = () => _storageService.ActiveWorkspaceRootPath;
+
+
         _blindProgress = blindProgress ?? new LocalBlindProgressService();
         // Prefer an explicitly-passed store (how the real plugin host wires it, via
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but

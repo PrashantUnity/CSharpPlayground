@@ -300,5 +300,163 @@ public class DynamicLanguageExtensibilityTests : IDisposable
         Assert.NotNull(langDef.EditorAssistants);
         Assert.IsType<PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Lsp.GenericLspEditorAssistantFactory>(langDef.EditorAssistants);
     }
+
+    [Fact]
+    public void SettingsViewModel_ReactivelyUpdatesLanguages_WhenRegisteredAndUnregistered()
+    {
+        var services = new StudioLanguageServices(_tempDir);
+        var settingsVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel(services);
+
+        Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "samplelang");
+        Assert.DoesNotContain(settingsVm.FilteredLanguages, l => l.Language.Id == "samplelang");
+
+        // Register language
+        var lang = new SamplePluginLanguage();
+        var token = services.Registry.Register(lang);
+
+        try
+        {
+            settingsVm.SynchronizeLanguagesFromRegistry();
+            Assert.Contains(settingsVm.Languages, l => l.Language.Id == "samplelang");
+            Assert.Contains(settingsVm.FilteredLanguages, l => l.Language.Id == "samplelang");
+            var item = settingsVm.Languages.First(l => l.Language.Id == "samplelang");
+            Assert.True(item.IsExtensionLanguage);
+            Assert.Equal("SampleLang", item.DisplayName);
+            Assert.Equal("#123456", item.AccentHex);
+        }
+        finally
+        {
+            token.Dispose();
+            settingsVm.SynchronizeLanguagesFromRegistry();
+            Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "samplelang");
+            Assert.DoesNotContain(settingsVm.FilteredLanguages, l => l.Language.Id == "samplelang");
+        }
+    }
+
+    [Fact]
+    public void ExplorerItemViewModel_DynamicallyResolvesIconAndAccent_ForExtensionLanguage()
+    {
+        var app = StudioAppContext.Instance;
+        var lang = new SamplePluginLanguage();
+        var token = app.Languages.Register(lang);
+
+        try
+        {
+            var (icon, color) = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel.IconForExtension(".sml");
+            Assert.Equal("FileCodeOutline", icon);
+            Assert.Equal("#123456", color);
+        }
+        finally
+        {
+            token.Dispose();
+        }
+    }
+
+    [Fact]
+    public void WorkspaceItemSummary_DynamicallyResolvesAccentAndIcon_ForExtensionLanguage()
+    {
+        var app = StudioAppContext.Instance;
+        var lang = new SamplePluginLanguage();
+        var token = app.Languages.Register(lang);
+
+        try
+        {
+            var summary = new WorkspaceItemSummary
+            {
+                Id = "test-sml",
+                Title = "Script.sml",
+                LanguageId = "samplelang"
+            };
+
+            Assert.Equal("#123456", summary.IconForeground);
+            Assert.Equal("#123456", summary.AccentColor);
+        }
+        finally
+        {
+            token.Dispose();
+        }
+    }
+
+    [Fact]
+    public void DocumentationService_CanRegisterAndUnregisterCategory_AndNotifiesChanged()
+    {
+        var docService = PdfEditorApp.Plugins.CSharpEditor.Services.Documentation.DocumentationService.Instance;
+        bool changedFired = false;
+        docService.Changed += () => changedFired = true;
+
+        var category = new DocCategory
+        {
+            Id = "sample_category",
+            Title = "Sample Extension Category",
+            Articles = new System.Collections.Generic.List<DocArticle>
+            {
+                new()
+                {
+                    Id = "sample_art_1",
+                    Title = "Sample Article 1",
+                    Summary = "Summary of sample article"
+                }
+            }
+        };
+
+        var token = docService.RegisterCategory(category);
+        try
+        {
+            Assert.True(changedFired);
+            Assert.NotNull(docService.GetArticle("sample_art_1"));
+            Assert.Contains(docService.Categories, c => c.Id == "sample_category");
+        }
+        finally
+        {
+            changedFired = false;
+            token.Dispose();
+            Assert.True(changedFired);
+            Assert.Null(docService.GetArticle("sample_art_1"));
+            Assert.DoesNotContain(docService.Categories, c => c.Id == "sample_category");
+        }
+    }
+
+    [Fact]
+    public void ExtensionManager_GetDefaultExtensionSearchDirectories_IncludesMultipleTiers()
+    {
+        var workspaceExt = Path.Combine(_tempDir, ".frysharp", "extensions");
+        Directory.CreateDirectory(workspaceExt);
+
+        var dirs = ExtensionManager.GetDefaultExtensionSearchDirectories(_tempDir);
+        Assert.NotEmpty(dirs);
+        // Workspace directory included
+        Assert.Contains(dirs, d => d.Contains(_tempDir, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void HubManagerViewModel_ReactivelyUpdatesStudioEnvironmentToolchains_WhenLanguageRegistered()
+    {
+        var services = new StudioLanguageServices(_tempDir);
+        var storage = new PdfEditorApp.Plugins.CSharpEditor.Services.Storage.LocalScriptStorageService(
+            Path.Combine(_tempDir, "storage"),
+            services.Registry);
+
+        var hubVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel(
+            storage,
+            languages: services);
+
+        Assert.DoesNotContain(hubVm.ToolchainStatuses, t => t.Language.Id == CSharpEditorPlugin.Tests.TestSupport.FakeLanguage.LanguageId);
+
+        // Register fake language with toolchain
+        var fakeLang = new CSharpEditorPlugin.Tests.TestSupport.FakeLanguage();
+        var token = services.Registry.Register(fakeLang);
+
+        try
+        {
+            Assert.Contains(hubVm.ToolchainStatuses, t => t.Language.Id == CSharpEditorPlugin.Tests.TestSupport.FakeLanguage.LanguageId);
+            var item = hubVm.ToolchainStatuses.First(t => t.Language.Id == CSharpEditorPlugin.Tests.TestSupport.FakeLanguage.LanguageId);
+            Assert.Equal("FakeLang", item.Title);
+        }
+        finally
+        {
+            token.Dispose();
+            Assert.DoesNotContain(hubVm.ToolchainStatuses, t => t.Language.Id == CSharpEditorPlugin.Tests.TestSupport.FakeLanguage.LanguageId);
+        }
+    }
 }
 

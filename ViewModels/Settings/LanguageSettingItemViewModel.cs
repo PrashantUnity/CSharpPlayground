@@ -48,12 +48,32 @@ public sealed partial class LanguageSettingItemViewModel : ObservableObject
             ? "Compiler Executable / Binary Path:"
             : "Executable / Binary Path:";
 
-    public string ToolchainPlaceholderText => IsCSharp
-        ? "/usr/local/share/dotnet/dotnet"
-        : IsCompiled
-            ? (Language.Id == LanguageIds.Rust ? "~/.cargo/bin/cargo" : Language.Id == LanguageIds.Go ? "/usr/local/go/bin/go" : (Language.Id == LanguageIds.Cpp ? "/usr/bin/clang++" : "/usr/bin/javac"))
-            : (Language.Id == LanguageIds.FSharp ? "/usr/local/share/dotnet/dotnet" :
-               Language.Id == LanguageIds.Sql ? "/usr/bin/sqlite3" : "/path/to/executable");
+    public bool IsExtensionLanguage => !string.Equals(Language.Id, LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Python, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.JavaScript, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Java, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Go, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.FSharp, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Sql, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Rust, StringComparison.OrdinalIgnoreCase) &&
+                                       !string.Equals(Language.Id, LanguageIds.Text, StringComparison.OrdinalIgnoreCase);
+
+    public string ToolchainPlaceholderText
+    {
+        get
+        {
+            if (IsCSharp) return "/usr/local/share/dotnet/dotnet";
+            if (string.Equals(Language.Id, LanguageIds.Rust, StringComparison.OrdinalIgnoreCase)) return "~/.cargo/bin/cargo";
+            if (string.Equals(Language.Id, LanguageIds.Go, StringComparison.OrdinalIgnoreCase)) return "/usr/local/go/bin/go";
+            if (string.Equals(Language.Id, LanguageIds.Cpp, StringComparison.OrdinalIgnoreCase)) return "/usr/bin/clang++";
+            if (string.Equals(Language.Id, LanguageIds.Java, StringComparison.OrdinalIgnoreCase)) return "/usr/bin/javac";
+            if (string.Equals(Language.Id, LanguageIds.FSharp, StringComparison.OrdinalIgnoreCase)) return "/usr/local/share/dotnet/dotnet";
+            if (string.Equals(Language.Id, LanguageIds.Sql, StringComparison.OrdinalIgnoreCase)) return "/usr/bin/sqlite3";
+            if (string.Equals(Language.Id, "dart", StringComparison.OrdinalIgnoreCase)) return "/usr/local/bin/dart";
+            return $"/path/to/{Language.Id}";
+        }
+    }
 
     public string DisplayName => Language.DisplayName;
     public string IconKind => Language.IconKind;

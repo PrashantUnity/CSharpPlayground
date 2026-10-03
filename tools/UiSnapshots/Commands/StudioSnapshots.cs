@@ -169,33 +169,8 @@ internal static class StudioSnapshots
         }
     }
 
-    private static void EnsureExtensionsLoaded(StudioLanguageServices languages, Options options)
-    {
-        var app = StudioAppContext.Instance;
-        app.LanguageServices = languages;
-
-        if (options.Value("extension") is { } extDir && Directory.Exists(extDir))
-        {
-            if (File.Exists(Path.Combine(extDir, "extension.json")))
-            {
-                Snapshot.Wait(app.ExtensionManager.LoadExtensionAsync(extDir, enableHotReload: false));
-            }
-            else
-            {
-                Snapshot.Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(extDir, enableHotReload: false));
-            }
-        }
-
-        var samplesExt = Path.Combine(Directory.GetCurrentDirectory(), "samples", "extensions");
-        if (!Directory.Exists(samplesExt))
-        {
-            samplesExt = Path.Combine(AppContext.BaseDirectory, "samples", "extensions");
-        }
-        if (Directory.Exists(samplesExt))
-        {
-            Snapshot.Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(samplesExt, enableHotReload: false));
-        }
-    }
+    private static void EnsureExtensionsLoaded(StudioLanguageServices languages, Options options) =>
+        Snapshot.EnsureExtensionsLoaded(languages, options);
 
     /// <summary><c>studio n</c> or <c>studio --file path</c>: Code Studio with that script open.</summary>
     public static void CodeStudio(Options options)

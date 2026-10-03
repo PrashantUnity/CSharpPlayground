@@ -26,6 +26,8 @@ public class DartExtensionTests : IDisposable
 
     public DartExtensionTests()
     {
+        try { StudioAppContext.Instance.Languages.Unregister("dart"); } catch { }
+
         _extensionPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../samples/extensions/dart-support"));
         if (!Directory.Exists(_extensionPath))
         {
@@ -570,6 +572,103 @@ public class DartExtensionTests : IDisposable
         {
             Directory.Delete(tempDir, recursive: true);
             await manager.UnloadExtensionAsync("dart-support");
+        }
+    }
+
+    [Fact]
+    public async Task DartExtension_PopulatesInSettingsViewModel_WhenLoaded()
+    {
+        using var manager = new ExtensionManager();
+        var prevServices = StudioAppContext.Instance.LanguageServices;
+        var services = new StudioLanguageServices(Path.GetTempPath());
+        StudioAppContext.Instance.LanguageServices = services;
+        var settingsVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings.CSharpSettingsViewModel(services);
+
+        Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "dart");
+
+        var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
+
+        try
+        {
+            settingsVm.SynchronizeLanguagesFromRegistry();
+            Assert.Contains(settingsVm.Languages, l => l.Language.Id == "dart");
+            var item = settingsVm.Languages.First(l => l.Language.Id == "dart");
+            Assert.True(item.IsExtensionLanguage);
+            Assert.Equal("Dart", item.DisplayName);
+            Assert.Equal("#0175C2", item.AccentHex);
+        }
+        finally
+        {
+            await manager.UnloadExtensionAsync("dart-support");
+            settingsVm.SynchronizeLanguagesFromRegistry();
+            Assert.DoesNotContain(settingsVm.Languages, l => l.Language.Id == "dart");
+            StudioAppContext.Instance.LanguageServices = prevServices;
+        }
+    }
+
+    [Fact]
+    public async Task DartExtension_RegistersDocumentationCategory_WithInteractiveSnippets()
+    {
+        using var manager = new ExtensionManager();
+        var docService = PdfEditorApp.Plugins.CSharpEditor.Services.Documentation.DocumentationService.Instance;
+
+        Assert.Null(docService.GetArticle("dart_getting_started"));
+
+        var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
+
+        try
+        {
+            var article = docService.GetArticle("dart_getting_started");
+            Assert.NotNull(article);
+            Assert.Equal("Dart 3 Interactive Scripting", article.Title);
+            Assert.NotEmpty(article.CodeSnippets);
+            Assert.Contains(article.CodeSnippets, s => s.Language == "dart");
+        }
+        finally
+        {
+            await manager.UnloadExtensionAsync("dart-support");
+            Assert.Null(docService.GetArticle("dart_getting_started"));
+        }
+    }
+
+    [Fact]
+    public async Task DartExtension_PopulatesInHubStudioEnvironment_WhenLoaded()
+    {
+        using var manager = new ExtensionManager();
+        var prevServices = StudioAppContext.Instance.LanguageServices;
+        var services = new StudioLanguageServices(Path.GetTempPath());
+        StudioAppContext.Instance.LanguageServices = services;
+
+        var tempStorage = Path.Combine(Path.GetTempPath(), "storage_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempStorage);
+        var storage = new PdfEditorApp.Plugins.CSharpEditor.Services.Storage.LocalScriptStorageService(
+            tempStorage,
+            services.Registry);
+
+        var hubVm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub.CSharpManagerViewModel(
+            storage,
+            languages: services);
+
+        Assert.DoesNotContain(hubVm.ToolchainStatuses, t => t.Language.Id == "dart");
+
+        var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
+
+        try
+        {
+            Assert.Contains(hubVm.ToolchainStatuses, t => t.Language.Id == "dart");
+            var item = hubVm.ToolchainStatuses.First(t => t.Language.Id == "dart");
+            Assert.Equal("Dart", item.Title);
+            Assert.Equal("#0175C2", item.AccentHex);
+        }
+        finally
+        {
+            await manager.UnloadExtensionAsync("dart-support");
+            Assert.DoesNotContain(hubVm.ToolchainStatuses, t => t.Language.Id == "dart");
+            StudioAppContext.Instance.LanguageServices = prevServices;
+            try { Directory.Delete(tempStorage, recursive: true); } catch { }
         }
     }
 }
