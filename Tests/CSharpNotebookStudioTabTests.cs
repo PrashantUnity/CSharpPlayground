@@ -243,7 +243,9 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal(initialCount + 1, studio.Tabs.Count);
         Assert.NotNull(studio.ActiveTab);
-        Assert.StartsWith((string?)"Notebook_", (string?)studio.ActiveTab.Title);
+        // New tabs are ephemeral in-memory documents — not written to disk — until renamed or saved.
+        Assert.True(studio.ActiveTab.Notebook.IsEphemeral, "A freshly created notebook tab must be ephemeral (not yet saved to disk).");
+        Assert.Equal("New Notebook.frynb", studio.ActiveTab.Title);
 
         Assert.Contains(studio.ExplorerRootItems, x => x.Name == studio.ActiveTab.Title);
     }

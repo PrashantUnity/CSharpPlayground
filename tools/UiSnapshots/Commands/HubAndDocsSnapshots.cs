@@ -42,11 +42,27 @@ internal static class HubAndDocsSnapshots
             File.WriteAllText(Path.Combine(libRoot, "HelloWorld.java"),  "// Java demo\npublic class HelloWorld { }\n");
             File.WriteAllText(Path.Combine(libRoot, "fetch_api.js"),     "// JS demo\nfetch('/api').then(r => r.json());\n");
             File.WriteAllText(Path.Combine(libRoot, "chart_demo.dart"),  "// Dart demo\nvoid main() {\n    print('Dart demo');\n}\n");
-        }
 
+            var projectsDir = Snapshot.TempFolder("projects");
+            Directory.CreateDirectory(projectsDir);
+            var proj1 = Path.Combine(projectsDir, "CSharpPlayground");
+            var proj2 = Path.Combine(projectsDir, "FrysharpAlgorithms");
+            var nbFile = Path.Combine(projectsDir, "DeepLearningExploration.ipynb");
+            Directory.CreateDirectory(proj1);
+            Directory.CreateDirectory(proj2);
+            File.WriteAllText(nbFile, "{}");
+            var git1 = Path.Combine(proj1, ".git");
+            Directory.CreateDirectory(git1);
+            File.WriteAllText(Path.Combine(git1, "HEAD"), "ref: refs/heads/main\n");
+
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(proj1));
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(proj2));
+            Snapshot.Wait(storage.RecentWorkspaces.RecordWorkspaceOpenedAsync(nbFile));
+        }
 
         var vm = new CSharpManagerViewModel(storage, openScriptAction: _ => { }, openNotebookAction: _ => { }, languages: languages);
         Snapshot.Wait(vm.LoadWorkspaceItemsAsync());
+        if (vm.RecentWorkspaces.FirstOrDefault() is { } firstWs) Snapshot.Wait(vm.TogglePinRecentWorkspaceAsync(firstWs));
         if (vm.AllItems.FirstOrDefault() is { } first) Snapshot.Wait(vm.TogglePinAsync(first));
 
         if (options.Flag("templates") || options.Value("template") != null || options.Value("category") != null || string.Equals(options.Value("tab"), "templates", StringComparison.OrdinalIgnoreCase))

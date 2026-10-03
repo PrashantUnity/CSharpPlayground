@@ -102,6 +102,9 @@ public partial class LocalScriptStorageService : IScriptStorageService
     public bool IsExternalWorkspaceActive => _activeWorkspaceRootPath != null;
     public event Action? ActiveWorkspaceChanged;
 
+    private readonly RecentWorkspaceService _recentWorkspaces;
+    public IRecentWorkspaceService RecentWorkspaces => _recentWorkspaces;
+
     // Walking a folder stops after this many files (or folders); see IsWorkspaceTruncated.
     private readonly int _workspaceFileLimit;
     private volatile bool _filesTruncated;
@@ -160,6 +163,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _libraryRoot = Path.Combine(_baseDir, "library");
         _workspaceStatePath = Path.Combine(_baseDir, "workspace_state.json");
+        _recentWorkspaces = new RecentWorkspaceService(Path.Combine(_baseDir, "recent_workspaces.json"));
 
         Directory.CreateDirectory(_libraryRoot);
     }
@@ -199,6 +203,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             if (state?.ActiveRootPath != null && Directory.Exists(state.ActiveRootPath))
             {
                 _activeWorkspaceRootPath = state.ActiveRootPath;
+                _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(state.ActiveRootPath, RecentWorkspaceKind.ProjectWorkspace);
             }
         }
         catch (Exception ex)
@@ -515,6 +520,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<bool> SaveScriptAsync(ScriptDocumentItem script, string? folderPath = null)
     {
+        if (script.IsEphemeral) return false;
+
         // A source file is saved as its text, and only when that's safe without asking (see SaveSourceFileAsync).
         if (script.SourceFilePath != null || IsSourceFileId(script.Id))
         {
@@ -596,6 +603,8 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
     public async Task<bool> SaveNotebookAsync(NotebookDocumentItem notebook, string? folderPath = null)
     {
+        if (notebook.IsEphemeral) return false;
+
         try
         {
             notebook.LastModified = DateTime.UtcNow;
@@ -1134,6 +1143,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
 
         _activeWorkspaceRootPath = string.Equals(full, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : full;
         await SaveWorkspaceStateAsync();
+        _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(full, RecentWorkspaceKind.ProjectWorkspace);
         MarkChanged();
         RestartWatcher();
         ActiveWorkspaceChanged?.Invoke();
@@ -1162,6 +1172,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
 
             _knownFileLocations[nb.Id] = filePath;
+            _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneNotebook);
 
             return new OpenProjectResult(
                 Success: true,
@@ -1214,6 +1225,7 @@ public partial class LocalScriptStorageService : IScriptStorageService
             }
 
             _knownFileLocations[script.Id] = filePath;
+            _ = _recentWorkspaces.RecordWorkspaceOpenedAsync(filePath, RecentWorkspaceKind.StandaloneScript);
 
             return new OpenProjectResult(
                 Success: true,

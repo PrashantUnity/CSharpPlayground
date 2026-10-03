@@ -33,4 +33,8 @@ public class ScriptDocumentItem
     /// <summary>The plain source file this document is (e.g. /work/main.py), or null for a .frycs document.</summary>
     [JsonIgnore]
     public string? SourceFilePath { get; set; }
+
+    /// <summary>True when this document is an unsaved scratchpad, starter template, or practice problem that should not auto-save to disk on execution.</summary>
+    [JsonIgnore]
+    public bool IsEphemeral { get; set; }
 }

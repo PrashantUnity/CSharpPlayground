@@ -190,13 +190,38 @@ internal static class StudioSnapshots
             languages.StudioSettings.SaveSettings(settings);
         }
         // --file-limit n: list at most n files, to see what the Explorer says about a folder that has more.
-        var storage = new LocalScriptStorageService(Snapshot.TempFolder("scripts"), languages.Registry, options.Int("file-limit", 20_000));
+        string? wsOpt = options.Value("workspace");
+        var storage = new LocalScriptStorageService(Snapshot.TempFolder("studio_app_data"), languages.Registry, options.Int("file-limit", 20_000));
 
-        // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
-        if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
-        if (options.Flag("demo-files")) Snapshot.Wait(SeedDemoWorkspaceFiles(storage));
+        if (wsOpt != null && Directory.Exists(wsOpt))
+        {
+            Snapshot.Wait(storage.OpenExternalProjectAsync(wsOpt));
+        }
+        else
+        {
+            // --tree n: n folders (scripts and a nested folder in each) plus a few loose scripts, so the Explorer shows a real tree.
+            if (options.Int("tree", 0) is > 0 and var treeFolders) Snapshot.Wait(SeedTree(storage, treeFolders));
+            if (options.Flag("demo-files")) Snapshot.Wait(SeedDemoWorkspaceFiles(storage));
+        }
 
-        var script = Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem(file != null ? 1 : 0))!);
+        ScriptDocumentItem script;
+        if (wsOpt != null && Directory.Exists(wsOpt))
+        {
+            var summaries = Snapshot.Wait(storage.LoadWorkspaceSummariesAsync());
+            var first = summaries.FirstOrDefault();
+            if (first != null)
+            {
+                script = Snapshot.Wait(storage.LoadScriptAsync(first.Id)) ?? new ScriptDocumentItem { Title = first.Title, IsEphemeral = true };
+            }
+            else
+            {
+                script = new ScriptDocumentItem { Title = "Empty Workspace", IsEphemeral = true };
+            }
+        }
+        else
+        {
+            script = Blind75CatalogService.ConvertToScript(Blind75CatalogService.GetProblemByNumber(options.Problem(file != null ? 1 : 0))!);
+        }
 
         // Throwaway progress too: --run-tests marks a Blind 75 problem solved when all its cases pass.
         var vm = new CSharpCodeStudioViewModel(
@@ -220,8 +245,8 @@ internal static class StudioSnapshots
             Snapshot.Wait(vm.RefreshExplorerAsync());
         }
 
-        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : file != null || options.Flag("demo-files") || options.Int("tree", 0) > 0 ? "explorer" : "notes"), "--sidebar");
-        if (options.Int("tree", 0) > 0 || options.Flag("demo-files")) ExpandAll(vm.ExplorerRootItems);
+        vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : file != null || options.Flag("demo-files") || options.Int("tree", 0) > 0 || wsOpt != null ? "explorer" : "notes"), "--sidebar");
+        if (options.Int("tree", 0) > 0 || options.Flag("demo-files") || wsOpt != null) ExpandAll(vm.ExplorerRootItems);
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
         if (options.Flag("image-code")) vm.ShowImageCodeDrawer = true;
         if (options.Flag("edit-raw"))

@@ -216,7 +216,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             {
                 Title = "1. Two Sum (Algorithm Workspace)",
                 Code = CodeTemplateLibrary.GetTemplates()[0].InitialCode,
-                Notes = CodeTemplateLibrary.GetTemplates()[0].Notes
+                Notes = CodeTemplateLibrary.GetTemplates()[0].Notes,
+                IsEphemeral = true
             };
 
             codeVm = new CodeStudio.CSharpCodeStudioViewModel(
@@ -236,7 +237,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
 
             var initialNotebook = new NotebookDocumentItem
             {
-                Title = "Interactive C# Notebook"
+                Title = "Interactive C# Notebook",
+                IsEphemeral = true
             };
 
             notebookVm = new Notebooks.CSharpNotebookStudioViewModel(

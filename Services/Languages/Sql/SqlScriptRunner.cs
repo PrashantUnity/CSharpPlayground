@@ -25,7 +25,7 @@ public sealed partial class SqlScriptRunner : IScriptRunner
         {
             "-header",
             "-table",
-            dbPath,
+            string.Equals(dbPath, ":memory:", StringComparison.OrdinalIgnoreCase) ? "\"\"" : dbPath,
             $".read {context.SourceFilePath}"
         };
 

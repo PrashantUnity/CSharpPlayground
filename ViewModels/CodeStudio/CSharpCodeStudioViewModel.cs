@@ -470,6 +470,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     /// </summary>
     private async Task SaveDocumentAsync(bool userAsked)
     {
+        if (userAsked)
+        {
+            Script.IsEphemeral = false;
+        }
+
         Script.Code = Code;
         Script.Notes = Notes;
         Script.TestCases = TestCases.ToList();

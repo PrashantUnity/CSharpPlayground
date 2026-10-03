@@ -578,34 +578,43 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [RelayCommand]
     public async Task NewNotebookTab()
     {
-        var timestamp = DateTime.Now.ToString("HHmmss");
-        var title = $"Notebook_{timestamp}";
+        await Task.Yield();
 
-        using (BeginLoading("Creating Notebook...", $"{title}.frynb"))
+        // Create an ephemeral (in-memory only) notebook — nothing is written to disk until the user
+        // renames it (which triggers OnItemRenamedAsync → first save) or presses Ctrl+S.
+        // This prevents "Notebook_065959.frynb" clutter from accumulating in the workspace folder.
+        var newDoc = new NotebookDocumentItem
         {
-            await Task.Yield();
-            NotebookDocumentItem newDoc;
-            try
-            {
-                newDoc = await Task.Run(async () => await _storageService.CreateNewNotebookAsync(title));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to create new notebook: {ex.Message}");
-                newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
-            }
+            Id = Guid.NewGuid().ToString("N"),
+            Title = "New Notebook",
+            Description = "Interactive cell-based notebook",
+            Category = "Interactive",
+            Created = DateTime.UtcNow,
+            LastModified = DateTime.UtcNow,
+            IsEphemeral = true
+        };
+        newDoc.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Markdown,
+            Source = "# 📓 New Notebook\nWrite documentation or notes in this cell.",
+            IsMarkdownPreviewMode = true
+        });
+        newDoc.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Code,
+            Source = "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
+        });
 
-            var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
+        var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
 
-            ConfigureNotebookTab(newTab);
-            Tabs.Add(newTab);
-            SelectTab(newTab);
-            RefreshQuickOpenDocuments();
+        ConfigureNotebookTab(newTab);
+        Tabs.Add(newTab);
+        SelectTab(newTab);
+        RefreshQuickOpenDocuments();
 
-            var newExpItem = EnsureDocumentInExplorer(newDoc);
-            HighlightExplorerItem(newExpItem.Name);
-            newExpItem.StartRename();
-        }
+        var newExpItem = EnsureDocumentInExplorer(newDoc);
+        HighlightExplorerItem(newExpItem.Name);
+        newExpItem.StartRename();
     }
 
     // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
@@ -1123,8 +1132,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [RelayCommand]
     public async Task SaveAsync()
     {
-        if (ActiveTab != null && ActiveTab.IsModified)
+        if (ActiveTab == null) return;
+
+        // An ephemeral notebook must be saved even when not yet modified (user pressed Ctrl+S on a fresh tab).
+        if (ActiveTab.IsModified || ActiveTab.Notebook.IsEphemeral)
         {
+            ActiveTab.Notebook.IsEphemeral = false;
             ActiveTab.Notebook.LastModified = DateTime.UtcNow;
             var saved = await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
             ActiveTab.IsModified = !saved;
@@ -1912,6 +1925,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             openTab.Title = item.Name;
             openTab.Notebook.Title = newTitle;
+            // An ephemeral notebook is saved for the very first time on rename — clear the flag so SaveNotebookAsync writes it.
+            openTab.Notebook.IsEphemeral = false;
             await _storageService.SaveNotebookAsync(openTab.Notebook);
         }
         else
@@ -1920,6 +1935,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             if (doc != null)
             {
                 doc.Title = newTitle;
+                doc.IsEphemeral = false;
                 await _storageService.SaveNotebookAsync(doc);
             }
         }

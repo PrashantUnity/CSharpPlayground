@@ -99,7 +99,7 @@ public partial class CSharpDocsViewModel : ObservableObject
     private void LoadDocumentation()
     {
         Categories.Clear();
-        foreach (var category in _docService.Categories)
+        foreach (var category in _docService.Categories.ToList())
         {
             Categories.Add(category);
         }

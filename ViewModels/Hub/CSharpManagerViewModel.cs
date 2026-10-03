@@ -166,7 +166,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     public ObservableCollection<string> TypeFilters { get; } = new()
     {
-        "All", "Notebooks", "Scripts", "Servers", "Pinned"
+        "All", "Workspaces", "Notebooks", "Scripts", "Servers", "Pinned"
     };
 
     public ObservableCollection<string> SortOptions { get; } = new()
@@ -346,7 +346,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     private async Task CheckToolchainsAsync(bool lookAgain)
     {
         var workspace = _storageService.ActiveWorkspaceRootPath;
-        foreach (var item in ToolchainStatuses)
+        foreach (var item in ToolchainStatuses.ToList())
         {
             if (lookAgain) item.ShowChecking();
             ToolchainResolution resolution;
@@ -786,6 +786,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             UpdateStats();
             await UpdateDiskStorageAsync();
             await LoadPinnedStateAsync();
+            await LoadRecentWorkspacesAsync();
             ApplyFilter();
             _loadedContentVersion = version;
         }
@@ -828,6 +829,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     partial void OnSearchQueryChanged(string value)
     {
         _visibleItemLimit = ItemPageSize;
+        ApplyRecentWorkspacesFilter();
         _filterPause?.Cancel();
         if (AllItems.Count <= 300)
         {
@@ -843,6 +845,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     {
         _visibleItemLimit = ItemPageSize;
         OnPropertyChanged(nameof(IsAllFilterActive));
+        OnPropertyChanged(nameof(IsWorkspacesFilterActive));
         OnPropertyChanged(nameof(IsNotebooksFilterActive));
         OnPropertyChanged(nameof(IsScriptsFilterActive));
         OnPropertyChanged(nameof(IsServersFilterActive));
@@ -851,6 +854,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         OnPropertyChanged(nameof(IsScriptsNavActive));
         OnPropertyChanged(nameof(IsNotebooksNavActive));
         OnPropertyChanged(nameof(IsServersNavActive));
+        ApplyRecentWorkspacesFilter();
         ApplyFilter();
     }
     partial void OnSelectedSortOptionChanged(string value)
