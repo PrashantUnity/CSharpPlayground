@@ -1105,28 +1105,24 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         var parentFolder = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(parentFolder) && Directory.Exists(parentFolder))
         {
-            var hasProjectMarker = Directory.Exists(Path.Combine(parentFolder, ".frysharp")) ||
-                                   Directory.Exists(Path.Combine(parentFolder, ".git")) ||
-                                   Directory.GetFiles(parentFolder, "*.csproj").Length > 0 ||
-                                   Directory.GetFiles(parentFolder, "*.frycsproj").Length > 0;
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var isUserHomeOrRoot = string.Equals(parentFolder, userHome, StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(Path.GetPathRoot(parentFolder), parentFolder, StringComparison.OrdinalIgnoreCase);
 
-            if (hasProjectMarker)
+            var currentRoot = _activeWorkspaceRootPath;
+            var isInsideCurrentWorkspace = !string.IsNullOrWhiteSpace(currentRoot) &&
+                (string.Equals(parentFolder, currentRoot, StringComparison.OrdinalIgnoreCase) ||
+                 parentFolder.StartsWith(currentRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+
+            if (!isInsideCurrentWorkspace && !isUserHomeOrRoot)
             {
-                var currentRoot = _activeWorkspaceRootPath;
-                var isInsideCurrentWorkspace = !string.IsNullOrWhiteSpace(currentRoot) &&
-                    (string.Equals(parentFolder, currentRoot, StringComparison.OrdinalIgnoreCase) ||
-                     parentFolder.StartsWith(currentRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
-
-                if (!isInsideCurrentWorkspace)
-                {
-                    var resolvedRoot = ResolveProjectRoot(parentFolder);
-                    _activeWorkspaceRootPath = string.Equals(resolvedRoot, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : resolvedRoot;
-                    await SaveWorkspaceStateAsync().ConfigureAwait(false);
-                    await _recentWorkspaces.RecordWorkspaceOpenedAsync(resolvedRoot, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
-                    MarkChanged();
-                    RestartWatcher();
-                    ActiveWorkspaceChanged?.Invoke();
-                }
+                var resolvedRoot = ResolveProjectRoot(parentFolder);
+                _activeWorkspaceRootPath = string.Equals(resolvedRoot, _libraryRoot, StringComparison.OrdinalIgnoreCase) ? null : resolvedRoot;
+                await SaveWorkspaceStateAsync().ConfigureAwait(false);
+                await _recentWorkspaces.RecordWorkspaceOpenedAsync(resolvedRoot, RecentWorkspaceKind.ProjectWorkspace).ConfigureAwait(false);
+                MarkChanged();
+                RestartWatcher();
+                ActiveWorkspaceChanged?.Invoke();
             }
         }
 

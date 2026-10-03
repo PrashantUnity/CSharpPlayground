@@ -100,6 +100,8 @@ internal static class Snapshot
         var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
         app.LanguageServices = languages;
 
+        Wait(app.ExtensionManager.DiscoverAndLoadFromDefaultLocationsAsync(enableHotReload: false));
+
         if (options.Value("extension") is { } extDir && Directory.Exists(extDir))
         {
             if (File.Exists(Path.Combine(extDir, "extension.json")))

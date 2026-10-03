@@ -191,6 +191,10 @@ internal static class StudioSnapshots
         }
         // --file-limit n: list at most n files, to see what the Explorer says about a folder that has more.
         string? wsOpt = options.Value("workspace");
+        if (wsOpt == null && file != null && Path.IsPathRooted(file) && File.Exists(file))
+        {
+            wsOpt = Path.GetDirectoryName(file);
+        }
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("studio_app_data"), languages.Registry, options.Int("file-limit", 20_000));
 
         if (wsOpt != null && Directory.Exists(wsOpt))

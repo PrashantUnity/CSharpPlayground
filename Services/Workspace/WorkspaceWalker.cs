@@ -17,7 +17,7 @@ internal static class WorkspaceWalker
 
     private static readonly HashSet<string> SkippedFolders = new(StringComparer.OrdinalIgnoreCase)
     {
-        "__pycache__", "site-packages", "node_modules", ".git", ".hg", ".svn", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".ipynb_checkpoints", ".vs", ".idea"
+        "__pycache__", "site-packages", "node_modules", ".git", ".hg", ".svn", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".ipynb_checkpoints", ".vs", ".idea", ".frysharp"
     };
 
     private static readonly HashSet<string> EnvironmentFolderNames = new(StringComparer.OrdinalIgnoreCase) { ".venv", "venv", "env" };
