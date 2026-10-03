@@ -274,10 +274,10 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
-        <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource DsSelectionBrush}" />
     </Style>
     <Style Selector="TextBox.nexus-input:focus">
-        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsFocusBorderBrush}" />
         <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
     </Style>
     <Style Selector="TextBox.nexus-input:pointerover">

@@ -28,6 +28,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#2F81F7",
             ["DsPrimaryHoverBrush"] = "#1F6FEB",
             ["DsPrimarySubtleBrush"] = "#1A2F81F7",
+            ["DsSelectionBrush"] = "#992F81F7",
+            ["DsFocusBorderBrush"] = "#8C2F81F7",
             ["DsPrimaryBorderSubtleBrush"] = "#332F81F7",
             ["M3PrimaryBrush"] = "#2F81F7"
         }
@@ -53,6 +55,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#0969DA",
             ["DsPrimaryHoverBrush"] = "#0854B0",
             ["DsPrimarySubtleBrush"] = "#1A0969DA",
+            ["DsSelectionBrush"] = "#880969DA",
+            ["DsFocusBorderBrush"] = "#8C0969DA",
             ["DsPrimaryBorderSubtleBrush"] = "#330969DA",
             ["M3PrimaryBrush"] = "#0969DA"
         }
@@ -78,6 +82,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#BD93F9",
             ["DsPrimaryHoverBrush"] = "#D6ACFF",
             ["DsPrimarySubtleBrush"] = "#1ABD93F9",
+            ["DsSelectionBrush"] = "#99BD93F9",
+            ["DsFocusBorderBrush"] = "#8CBD93F9",
             ["DsPrimaryBorderSubtleBrush"] = "#33BD93F9",
             ["M3PrimaryBrush"] = "#BD93F9"
         }
@@ -103,6 +109,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#00FFCC",
             ["DsPrimaryHoverBrush"] = "#33FFD6",
             ["DsPrimarySubtleBrush"] = "#1A00FFCC",
+            ["DsSelectionBrush"] = "#9900FFCC",
+            ["DsFocusBorderBrush"] = "#8C00FFCC",
             ["DsPrimaryBorderSubtleBrush"] = "#3300FFCC",
             ["M3PrimaryBrush"] = "#00FFCC"
         }
@@ -128,6 +136,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#A6E22E",
             ["DsPrimaryHoverBrush"] = "#B8EA4E",
             ["DsPrimarySubtleBrush"] = "#1AA6E22E",
+            ["DsSelectionBrush"] = "#99A6E22E",
+            ["DsFocusBorderBrush"] = "#8CA6E22E",
             ["DsPrimaryBorderSubtleBrush"] = "#33A6E22E",
             ["M3PrimaryBrush"] = "#A6E22E"
         }
@@ -153,6 +163,8 @@ public static class BuiltInThemes
             ["DsPrimaryBrush"] = "#61AFEF",
             ["DsPrimaryHoverBrush"] = "#74B9F0",
             ["DsPrimarySubtleBrush"] = "#1A61AFEF",
+            ["DsSelectionBrush"] = "#9961AFEF",
+            ["DsFocusBorderBrush"] = "#8C61AFEF",
             ["DsPrimaryBorderSubtleBrush"] = "#3361AFEF",
             ["M3PrimaryBrush"] = "#61AFEF"
         }
