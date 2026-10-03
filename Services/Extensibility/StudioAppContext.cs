@@ -7,6 +7,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Hooks;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Results;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.State;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Metadata;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Terminal;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
@@ -61,6 +62,7 @@ public class StudioAppContext : IStudioApp
     public ExtensibilityResultsService ResultsService { get; }
     public ExtensibilityEventBus EventBus { get; }
     public ExtensibilityLanguagesService LanguagesService { get; }
+    public StudioApiMetadataService MetadataService { get; }
 
     private StudioLanguageServices? _languageServices;
     public StudioLanguageServices LanguageServices
@@ -103,6 +105,7 @@ public class StudioAppContext : IStudioApp
     public IEventBusApi Events => EventBus;
     public ILanguagesApi Languages => LanguagesService;
     public IDialogApi Dialogs => UiService.Dialogs;
+    public IApiMetadataApi Metadata => MetadataService;
 
     public StudioAppContext()
         : this(null)
@@ -123,6 +126,7 @@ public class StudioAppContext : IStudioApp
         ResultsService = new ExtensibilityResultsService();
         EventBus = new ExtensibilityEventBus();
         LanguagesService = new ExtensibilityLanguagesService(() => LanguageServices.Registry);
+        MetadataService = new StudioApiMetadataService(this);
 
         // Forward theme changed events from theme engine to hook registry
         ThemeEngine.ThemeChanged += themeId =>

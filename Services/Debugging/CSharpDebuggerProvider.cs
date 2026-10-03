@@ -202,7 +202,7 @@ public sealed class CSharpDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
         _host.IsWindows ? "Download netcoredbg-win64.zip from the latest release on GitHub." :
         "Download netcoredbg-linux-amd64.tar.gz (or netcoredbg-linux-arm64.tar.gz) from the latest release on GitHub.",
         $"Unpack it into {(_host.IsWindows ? @"%USERPROFILE%\" : "~/")}{HomeFolderName} so that the netcoredbg program sits directly in that folder, or put its folder on your PATH.",
-        "Click Refresh in the toolchain picker or restart C# Code Studio."
+        "Click Refresh in the toolchain picker or restart FrySharp."
     ];
 
     private async Task<string?> FindNetCoreDbgAsync(CancellationToken ct)

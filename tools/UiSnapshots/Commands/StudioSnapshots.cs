@@ -137,7 +137,7 @@ internal static class StudioSnapshots
         string guideContent = """
             # Analytics Dashboard Guide
 
-            Welcome to the **C# Code Studio** workspace documentation.
+            Welcome to the **FrySharp** workspace documentation.
 
             ## Overview
             This workspace includes integrated script automation, polyglot notebooks, and raw data assets:

@@ -53,7 +53,7 @@ public partial class DocumentationService
             Title = "The .Dump() Extension Method",
             Subtitle = "Inspect any variable, array, collection, or object in the interactive results deck.",
             ReadingTime = "3 min read",
-            Summary = ".Dump() is the primary exploratory method in C# Code Studio. It turns any C# object into an interactive visual table and prints structured representation to the console.",
+            Summary = ".Dump() is the primary exploratory method in FrySharp. It turns any C# object into an interactive visual table and prints structured representation to the console.",
             Keywords = new List<string> { "dump", "table", "inspect", "linq", "console", "results" },
             Sections = new List<DocSection>
             {
@@ -284,14 +284,14 @@ public partial class DocumentationService
             Title = "Visual Displays in Java, Python, and JavaScript",
             Subtitle = "Use Display.table(), Display.show(), Display.html(), and Display.image() across all languages.",
             ReadingTime = "3 min read",
-            Summary = "C# Code Studio provides zero-configuration visual output for Java, Python, and JavaScript. Call Display.dump() or dump() to inspect arrays, collections, matrices, dataframes, and objects in rich interactive tables.",
+            Summary = "FrySharp provides zero-configuration visual output for Java, Python, and JavaScript. Call Display.dump() or dump() to inspect arrays, collections, matrices, dataframes, and objects in rich interactive tables.",
             Keywords = new List<string> { "java", "python", "javascript", "display", "polyglot", "results", "table", "html", "image" },
             Sections = new List<DocSection>
             {
                 new()
                 {
                     Heading = "Polyglot Visual Displays",
-                    Content = "Just like C#'s .Dump() method, Java, Python, and JavaScript scripts running in Code Studio can emit interactive tables, formatted HTML, and images directly into the Results (.Dump) dock tab.",
+                    Content = "Just like C#'s .Dump() method, Java, Python, and JavaScript scripts running in FrySharp can emit interactive tables, formatted HTML, and images directly into the Results (.Dump) dock tab.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "In Java and Python, Display and dump() are automatically available with zero imports required in your scripts!"
                 }
@@ -385,7 +385,7 @@ public partial class DocumentationService
         {
             Id = "shortcuts_reference",
             Title = "VS Code Shortcuts Cheat Sheet",
-            Subtitle = "Complete cross-platform keybindings reference for C# Code Studio.",
+            Subtitle = "Complete cross-platform keybindings reference for FrySharp.",
             ReadingTime = "2 min read",
             Summary = "Standard Visual Studio Code keyboard shortcuts across macOS and Windows/Linux.",
             Keywords = new List<string> { "shortcuts", "keybindings", "f5", "f10", "cmd+b", "ctrl+b", "ctrl+j", "mac", "windows" },

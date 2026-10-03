@@ -59,7 +59,7 @@ public partial class DocumentationService
                         if (doc != null && !doc.Text.StartsWith("// <copyright"))
                         {
                             string header = "// <copyright file=\"Generated.cs\" company=\"FryPDF\">\n" +
-                                            "// All rights reserved. Built with C# Code Studio.\n" +
+                                            "// All rights reserved. Built with FrySharp.\n" +
                                             "// </copyright>\n\n";
                             doc.Text = header + doc.Text;
                             doc.Format();
@@ -295,7 +295,7 @@ public partial class DocumentationService
                 new()
                 {
                     Heading = "Core Philosophy: In-App Scripting & Custom Apps",
-                    Content = "C# Code Studio is a live, programmable C# execution platform powered by Roslyn and Avalonia. Any developer can build full interactive desktop apps, floating tools, custom monitors, or games right inside the IDE using standard C# and Avalonia controls.",
+                    Content = "FrySharp is a live, programmable C# execution platform powered by Roslyn and Avalonia. Any developer can build full interactive desktop apps, floating tools, custom monitors, or games right inside the IDE using standard C# and Avalonia controls.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "You can prototype any window or app in an active tab or script and evaluate it instantly into the live studio runtime using Ctrl+Alt+R (Cmd+Alt+R on macOS)."
                 },

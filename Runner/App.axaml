@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.App"
-             Name="C# Code Studio"
+             Name="FrySharp"
              RequestedThemeVariant="Dark">
 
     <Application.Resources>
@@ -22,7 +22,7 @@
 
     <NativeMenu.Menu>
         <NativeMenu>
-            <NativeMenuItem Header="About C# Code Studio" Click="AboutMenuItem_OnClick" />
+            <NativeMenuItem Header="About FrySharp" Click="AboutMenuItem_OnClick" />
             <NativeMenuItem Header="Check for Updates..." Click="CheckForUpdatesMenuItem_OnClick" />
             <NativeMenuItemSeparator />
             <NativeMenuItem Header="Settings..." Gesture="Meta+OemComma" Click="SettingsMenuItem_OnClick" />

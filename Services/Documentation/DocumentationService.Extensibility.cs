@@ -49,7 +49,7 @@ public partial class DocumentationService
                 new()
                 {
                     Heading = "Core Philosophy: In-Process Scripting",
-                    Content = "Unlike traditional IDEs where plugins require external compilation, bundling, and restarts, C# Code Studio provides first-class in-process Roslyn scripting. You write standard modern C# 13 code that compiles and takes effect immediately.",
+                    Content = "Unlike traditional IDEs where plugins require external compilation, bundling, and restarts, FrySharp provides first-class in-process Roslyn scripting. You write standard modern C# 13 code that compiles and takes effect immediately.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "You have full access to .NET 10 BCL, Avalonia visual controls, NuGet packages, and the open FrySharp SDK."
                 },
@@ -101,7 +101,7 @@ public partial class DocumentationService
                         using FrySharp.Sdk;
 
                         // 1. Show a welcoming desktop toast
-                        App.UI.ShowSuccess("Welcome to customized C# Code Studio!");
+                        App.UI.ShowSuccess("Welcome to customized FrySharp!");
 
                         // 2. Register a quick action with a keyboard shortcut
                         App.Commands.Register("quick.hello", "Say Hello", () =>
@@ -135,7 +135,7 @@ public partial class DocumentationService
                 new()
                 {
                     Heading = "Live Color System",
-                    Content = "C# Code Studio uses a dynamic tokenized resource system. The DynamicThemeEngine modifies Avalonia Application resources on the fly, immediately updating all open tabs, margins, syntax themes, and toolbars.",
+                    Content = "FrySharp uses a dynamic tokenized resource system. The DynamicThemeEngine modifies Avalonia Application resources on the fly, immediately updating all open tabs, margins, syntax themes, and toolbars.",
                     CalloutType = DocCalloutType.Info,
                     CalloutText = "Setting a token like 'DsPrimaryBrush' automatically creates and syncs the corresponding 'DsPrimaryColor' Color struct for controls requiring raw colors."
                 },

@@ -1,6 +1,6 @@
 # Dart Language Support Extension (`dart-support`)
 
-A full-featured C# Extension Package for **FrySharp** and **C# Code Studio** bringing **Dart 3** into the multi-language IDE ecosystem with 100% feature parity.
+A full-featured C# Extension Package for **FrySharp** bringing **Dart 3** into the multi-language IDE ecosystem with 100% feature parity.
 
 ---
 

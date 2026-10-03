@@ -35,7 +35,7 @@ public static class FSharpGuidance
             steps.Add("Or download the installer script from https://dot.net/v1/dotnet-install.sh");
         }
 
-        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart C# Code Studio.");
+        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart FrySharp.");
 
         return new MissingToolchainGuidance(
             Title: "F# Interactive (.NET SDK) isn't installed",

@@ -25,7 +25,7 @@ double calculateArea(Shape shape) => switch (shape) {
 
 Future<void> main() async {
   print('==============================================');
-  print('🚀 Welcome to Dart in FrySharp Code Studio!');
+  print('🚀 Welcome to Dart in FrySharp!');
   print('==============================================');
 
   var scores = [42, 88, 15, 99, 73, 105];

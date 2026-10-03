@@ -87,7 +87,7 @@
                                 </Button>
                                 <Button Command="{Binding OpenGlobalScriptCommand}"
                                         Classes="cs-toolbar-filled"
-                                        ToolTip.Tip="Open init.csx directly in Code Studio">
+                                        ToolTip.Tip="Open init.csx directly in FrySharp">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="OpenInApp" Width="14" Height="14" />
                                         <TextBlock Text="Edit Script" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />

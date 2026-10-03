@@ -1,4 +1,4 @@
-// UiSnapshots: renders C# Code Studio's real views off-screen (Avalonia headless platform + Skia) and saves PNG files.
+// UiSnapshots: renders FrySharp's real views off-screen (Avalonia headless platform + Skia) and saves PNG files.
 // How it works and how to add a snapshot: docs/headless-ui-snapshots.md.
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
@@ -37,6 +37,7 @@ try
         case "about": AppSnapshots.About(options); break;
         case "update": AppSnapshots.Update(options); break;
         case "app-window" or "mainwindow": AppSnapshots.MainWindow(options); break;
+        case "ai" or "composer": AppSnapshots.MainWindow(new Options(args.Append("--ai").Append("--demo-chat").ToArray())); break;
         case "templates": TemplateSnapshots.Run(options); break;
         case "snake": AppSnapshots.Snake(options); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");

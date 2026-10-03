@@ -11,7 +11,7 @@ using FrySharp.Sdk;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
 
 /// <summary>
-/// A sleek, floating Snake Game window built as an extensibility showcase for C# Code Studio.
+/// A sleek, floating Snake Game window built as an extensibility showcase for FrySharp.
 /// Demonstrates custom Avalonia floating windows, keybindings, DispatcherTimer, and persistent state.
 /// </summary>
 public class SnakeGameWindow : Window

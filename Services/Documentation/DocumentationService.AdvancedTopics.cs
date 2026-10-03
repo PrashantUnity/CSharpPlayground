@@ -59,7 +59,7 @@ public partial class DocumentationService
                     Heading = "Roslyn Compiler",
                     Content = "Roslyn is Microsoft's open-source C#/VB compiler platform — it doesn't just turn source into IL, it exposes that entire process (syntax trees, semantic analysis, emitted assemblies) as an API. Roslyn is what powers live features like IntelliSense and analyzers in the IDE, and it's also what makes C# scripting possible: compiling and running a snippet of code on the fly, with no separate build step.",
                     CalloutType = DocCalloutType.Info,
-                    CalloutText = "Fun aside: this very app — C# Code Studio — uses Roslyn's scripting APIs (Microsoft.CodeAnalysis.CSharp.Scripting) under the hood to compile and execute the code you write in its editor, on a background thread so the UI stays responsive."
+                    CalloutText = "Fun aside: this very app — FrySharp — uses Roslyn's scripting APIs (Microsoft.CodeAnalysis.CSharp.Scripting) under the hood to compile and execute the code you write in its editor, on a background thread so the UI stays responsive."
                 },
                 new()
                 {

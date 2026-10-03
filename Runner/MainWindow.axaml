@@ -5,7 +5,7 @@
         xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.MainWindow"
-        Title="C# Code Studio"
+        Title="FrySharp"
         Icon="/Assets/app-logo.ico"
         Width="1200" Height="820"
         MinWidth="900" MinHeight="600"
@@ -68,6 +68,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Toggle Primary Side Bar" Gesture="Meta+B" Click="ToggleSideBar_OnClick" />
                     <NativeMenuItem Header="Toggle Bottom Panel" Gesture="Meta+J" Click="ToggleBottomDeck_OnClick" />
+                    <NativeMenuItem Header="Toggle AI Composer" Gesture="Meta+I" Click="ToggleAiComposer_OnClick" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Zoom In" Click="ZoomIn_OnClick" />
                     <NativeMenuItem Header="Zoom Out" Click="ZoomOut_OnClick" />
@@ -119,7 +120,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Report an Issue..." Click="ReportIssue_OnClick" />
                     <NativeMenuItemSeparator />
-                    <NativeMenuItem Header="About C# Code Studio" Click="About_OnClick" />
+                    <NativeMenuItem Header="About FrySharp" Click="About_OnClick" />
                 </NativeMenu>
             </NativeMenuItem>
         </NativeMenu>

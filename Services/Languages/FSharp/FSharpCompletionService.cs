@@ -165,7 +165,7 @@ public sealed partial class FSharpCompletionService : ILanguageCompletionService
         Add(list, prefix, "Seq", "module Microsoft.FSharp.Collections.Seq", "Operations on lazy enumerations (IEnumerable<'T>).", CompletionItemKind.Class);
         Add(list, prefix, "Option", "module Microsoft.FSharp.Core.Option", "Operations on option values.", CompletionItemKind.Class);
         Add(list, prefix, "Result", "module Microsoft.FSharp.Core.Result", "Operations on Result<'T, 'TError> values.", CompletionItemKind.Class);
-        Add(list, prefix, "Display", "module Fry.Display", "C# Code Studio visual inspector deck helpers.", CompletionItemKind.Class);
+        Add(list, prefix, "Display", "module Fry.Display", "FrySharp visual inspector deck helpers.", CompletionItemKind.Class);
 
         // Parse declarations in document
         var seen = new HashSet<string>(StringComparer.Ordinal);

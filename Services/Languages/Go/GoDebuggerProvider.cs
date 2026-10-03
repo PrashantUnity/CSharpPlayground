@@ -113,14 +113,14 @@ public sealed class GoDebuggerProvider : IDebuggerProvider, IDapAdapterRegistrat
 
         var missing = new MissingToolchainGuidance(
             "Go Debugger (dlv / Delve) not found",
-            "C# Code Studio uses Delve (dlv dap) for interactive Go debugging with breakpoints, call stacks, and variable inspection.",
+            "FrySharp uses Delve (dlv dap) for interactive Go debugging with breakpoints, call stacks, and variable inspection.",
             [
                 "Install Delve via Go: go install github.com/go-delve/delve/cmd/dlv@latest",
                 _host.IsMacOS ? "Install via Homebrew: brew install delve" :
                 _host.IsWindows ? "Install via Chocolatey: choco install delve" :
                 "Install via package manager: sudo apt install delve",
                 "Ensure '$GOPATH/bin' or '~/go/bin' is included in your PATH.",
-                "Click Refresh in the toolchain picker or restart C# Code Studio."
+                "Click Refresh in the toolchain picker or restart FrySharp."
             ],
             DownloadUrl: "https://github.com/go-delve/delve");
 

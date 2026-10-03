@@ -7,7 +7,7 @@ public class InteractiveGreeter {
         System.out.print("Please enter your name: ");
         String name = scanner.nextLine();
 
-        System.out.println("Welcome to C# Code Studio, " + name + "!");
+        System.out.println("Welcome to FrySharp, " + name + "!");
         System.out.println("Java JDK " + System.getProperty("java.version") + " is running your program.");
     }
 }

@@ -19,14 +19,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 public class NativeMenuContextualTests
 {
     private static readonly object InitLock = new();
-    private static MainWindowMenuCoordinator? _sharedCoordinator;
 
     private static MainWindowMenuCoordinator GetWindow()
     {
         lock (InitLock)
         {
-            if (_sharedCoordinator != null) return _sharedCoordinator;
-
             var tempDir = Path.Combine(Path.GetTempPath(), "NativeMenuTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var storage = new LocalScriptStorageService(tempDir);
@@ -57,8 +54,7 @@ public class NativeMenuContextualTests
             var menu = MainWindowMenuCoordinator.CreateDefaultMenu();
             var coordinator = new MainWindowMenuCoordinator(menu, hostVm);
             coordinator.UpdateMenuStates();
-            _sharedCoordinator = coordinator;
-            return _sharedCoordinator;
+            return coordinator;
         }
     }
 

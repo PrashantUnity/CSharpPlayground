@@ -36,7 +36,7 @@ public static class GoGuidance
             steps.Add("Or download official tarball from https://go.dev/dl/ and unpack into /usr/local/go");
         }
 
-        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart C# Code Studio.");
+        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart FrySharp.");
 
         return new MissingToolchainGuidance(
             Title: "Go toolchain isn't installed",

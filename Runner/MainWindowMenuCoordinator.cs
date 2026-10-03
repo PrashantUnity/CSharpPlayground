@@ -302,7 +302,7 @@ public sealed class MainWindowMenuCoordinator
         helpMenu.Items.Add(new NativeMenuItem("Documentation & Learning"));
         helpMenu.Items.Add(new NativeMenuItem("Blind 75 Algorithm Hub"));
         helpMenu.Items.Add(new NativeMenuItemSeparator());
-        helpMenu.Items.Add(new NativeMenuItem("About C# Code Studio"));
+        helpMenu.Items.Add(new NativeMenuItem("About FrySharp"));
         root.Items.Add(new NativeMenuItem("Help") { Menu = helpMenu });
 
         return root;

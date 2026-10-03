@@ -43,7 +43,7 @@ public static class RustGuidance
             steps.Add("Rust needs a C linker: sudo apt install build-essential (or your distribution's gcc).");
         }
 
-        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart C# Code Studio.");
+        steps.Add("After installing, click 'Refresh' in the toolchain picker or restart FrySharp.");
 
         return new MissingToolchainGuidance(
             Title: "Rust isn't installed",

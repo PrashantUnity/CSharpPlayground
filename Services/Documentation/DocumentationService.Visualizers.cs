@@ -533,9 +533,9 @@ Display.Visualizer(calls);"
                 new()
                 {
                     Heading = "Checking Answers with Check",
-                    Content = "Check(\"Example 1\", sol.TwoSum(nums, 9), \"[0,1]\") compares your answer with the expected one written the way LeetCode prints it (lists as [0,1], strings quoted, true/false, linked lists as [1,2,3], trees in level order) and prints ✅ or ❌ with both values. Add anyOrder: true when the order of the items doesn't matter. Show(value) prints a value in the same style and Format(value) gives it as text. All three work in any script or notebook cell without setup, and the Code Studio Test Cases panel reads the ✅/❌ lines.",
+                    Content = "Check(\"Example 1\", sol.TwoSum(nums, 9), \"[0,1]\") compares your answer with the expected one written the way LeetCode prints it (lists as [0,1], strings quoted, true/false, linked lists as [1,2,3], trees in level order) and prints ✅ or ❌ with both values. Add anyOrder: true when the order of the items doesn't matter. Show(value) prints a value in the same style and Format(value) gives it as text. All three work in any script or notebook cell without setup, and the FrySharp Test Cases panel reads the ✅/❌ lines.",
                     CalloutType = DocCalloutType.Info,
-                    CalloutText = "Each case prints a ✅ or ❌ line; the Code Studio Test Cases panel reads that line, so a case passes only when its own answer matches."
+                    CalloutText = "Each case prints a ✅ or ❌ line; the FrySharp Test Cases panel reads that line, so a case passes only when its own answer matches."
                 }
             },
             ApiSignatures = new List<DocApiSignature>
@@ -758,7 +758,7 @@ Display.Visualizer(recorder);"
                 new()
                 {
                     Heading = "Display Extension Methods",
-                    Content = "You don't always need to build a manual recorder. C# Code Studio provides instant one-line helpers:",
+                    Content = "You don't always need to build a manual recorder. FrySharp provides instant one-line helpers:",
                     BulletPoints = new List<string>
                     {
                         "Display.Islands(grid) or grid.DisplayIslands() — Runs automated island detection with flood-fill playback.",

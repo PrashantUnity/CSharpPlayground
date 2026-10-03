@@ -3,7 +3,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 internal static class Usage
 {
     public const string Text = """
-        UiSnapshots: save PNGs of C# Code Studio's real views without opening a window.
+        UiSnapshots: save PNGs of FrySharp's real views without opening a window.
 
           dotnet run --project tools/UiSnapshots -- <command> [problem numbers] [options]
 
@@ -92,7 +92,7 @@ internal static class Usage
               --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
-          about                  The About C# Code Studio dialog (AboutWindow).
+          about                  The About FrySharp dialog (AboutWindow).
           update                 The Check for Updates dialog (UpdateDialogWindow).
           app-window             The main application window (MainWindow) with macOS NativeMenu bar.
           templates              Run and verify all code templates in CodeTemplateLibrary.

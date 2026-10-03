@@ -95,7 +95,7 @@ public class CustomizationStorageService
     public static string GetStarterInitScript()
     {
         return """
-            // ~/.frysharp/init.csx - C# Code Studio Customization Script
+            // ~/.frysharp/init.csx - FrySharp Customization Script
             // This script runs automatically on studio startup and reloads live when saved.
             using FrySharp.Sdk;
 
@@ -121,7 +121,7 @@ public class CustomizationStorageService
             // =========================================================================
             App.Commands.Register("custom.welcome", "Show Welcome Notification", () =>
             {
-                App.UI.ShowSuccess("Welcome to customized C# Code Studio!");
+                App.UI.ShowSuccess("Welcome to customized FrySharp!");
             }, gesture: "Ctrl+Alt+H");
 
             // =========================================================================
