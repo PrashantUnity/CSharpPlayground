@@ -1,7 +1,9 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls.AI;
@@ -22,42 +24,83 @@ public partial class StudioFloatingComposerControl : UserControl
             header.PointerPressed += OnHeaderPointerPressed;
             header.PointerMoved += OnHeaderPointerMoved;
             header.PointerReleased += OnHeaderPointerReleased;
+            header.PointerCaptureLost += OnHeaderPointerCaptureLost;
         }
     }
 
     private void OnHeaderPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        // Don't drag if clicking buttons, toggles, comboboxes or other interactive controls in header
+        if (e.Source is Visual visual &&
+            (visual.FindAncestorOfType<Button>(includeSelf: true) != null ||
+             visual.FindAncestorOfType<ToggleButton>(includeSelf: true) != null ||
+             visual.FindAncestorOfType<ComboBox>(includeSelf: true) != null ||
+             visual.FindAncestorOfType<TextBox>(includeSelf: true) != null))
+        {
+            return;
+        }
+
         var container = this.FindControl<Border>("ComposerContainer");
         if (container != null && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             _isDragging = true;
             _dragStartPoint = e.GetPosition(this);
             _startMargin = container.Margin;
+            e.Pointer.Capture(sender as IInputElement);
             e.Handled = true;
         }
     }
 
     private void OnHeaderPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_isDragging)
+        if (!_isDragging) return;
+
+        // If mouse button is no longer pressed, abort drag immediately
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            var container = this.FindControl<Border>("ComposerContainer");
-            if (container != null)
+            _isDragging = false;
+            e.Pointer.Capture(null);
+            return;
+        }
+
+        var container = this.FindControl<Border>("ComposerContainer");
+        if (container != null)
+        {
+            var current = e.GetPosition(this);
+            var deltaX = current.X - _dragStartPoint.X;
+            var deltaY = current.Y - _dragStartPoint.Y;
+
+            // Smooth, clamped positioning
+            var newRight = Math.Max(0, _startMargin.Right - deltaX);
+            var newTop = Math.Max(24, _startMargin.Top + deltaY);
+
+            if (Bounds.Width > 0 && container.Bounds.Width > 0)
             {
-                var current = e.GetPosition(this);
-                var deltaX = current.X - _dragStartPoint.X;
-                var deltaY = current.Y - _dragStartPoint.Y;
-
-                // Adjust right and top margin for fluid dragging
-                var newRight = Math.Max(0, _startMargin.Right - deltaX);
-                var newTop = Math.Max(24, _startMargin.Top + deltaY);
-
-                container.Margin = new Thickness(0, newTop, newRight, 0);
+                var maxRight = Math.Max(0, Bounds.Width - container.Bounds.Width);
+                newRight = Math.Clamp(newRight, 0, maxRight);
             }
+            if (Bounds.Height > 0)
+            {
+                var maxTop = Math.Max(24, Bounds.Height - 60);
+                newTop = Math.Clamp(newTop, 24, maxTop);
+            }
+
+            container.Margin = new Thickness(0, newTop, newRight, 0);
+            e.Handled = true;
         }
     }
 
     private void OnHeaderPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _isDragging = false;
+            e.Pointer.Capture(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OnHeaderPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
         _isDragging = false;
     }
