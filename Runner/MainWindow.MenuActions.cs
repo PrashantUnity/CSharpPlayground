@@ -265,6 +265,7 @@ public partial class MainWindow : Window
         else if (ActiveNotebookStudio is { } nb) nb.SelectActivityBarItem(3);
     }
 
+    public void ViewSourceControl_OnClick(object? sender, EventArgs e) => ActiveCodeStudio?.SelectActivityBarItem(6);
     public void ViewRunDebug_OnClick(object? sender, EventArgs e) => ActiveCodeStudio?.SelectActivityBarItem(2);
     public void ViewNuGet_OnClick(object? sender, EventArgs e) => ActiveCodeStudio?.SelectActivityBarItem(3);
     public void ViewProblems_OnClick(object? sender, EventArgs e) => ActiveCodeStudio?.SelectActivityBarItem(5);

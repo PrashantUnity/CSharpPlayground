@@ -62,6 +62,13 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public string DeleteConfirmationText => $"Delete {Name} from disk?";
 
+    /// <summary>Git status letter (M, U, D, A) shown in Explorer tree for uncommitted files.</summary>
+    [ObservableProperty]
+    private string? _gitStatusLetter;
+
+    [ObservableProperty]
+    private string? _gitStatusColorHex;
+
     /// <summary>The paths of the folders that are open in a tree, so a rebuilt tree can open the same ones again.</summary>
     public static HashSet<string> ExpandedFolderPaths(IEnumerable<ExplorerItemViewModel> roots)
     {

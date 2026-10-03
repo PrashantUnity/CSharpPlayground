@@ -35,6 +35,25 @@
                     <materialIcons:MaterialIcon Kind="Magnify" Width="20" Height="20" />
                 </Button>
 
+                <!-- Source Control (6) -->
+                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="6"
+                        Classes="activity-bar-btn"
+                        Classes.active="{Binding IsSourceControlActive}"
+                        ToolTip.Tip="Source Control (Ctrl+Shift+G / ⌘Shift+G)">
+                    <Grid>
+                        <materialIcons:MaterialIcon Kind="SourceCommit" Width="20" Height="20" />
+                        <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="7"
+                                Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
+                                IsVisible="{Binding UncommittedChangesCount}">
+                            <TextBlock Text="{Binding UncommittedChangesCount}" FontSize="8.5" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                       Margin="0,1,0,0"
+                                       Foreground="#FFFFFF" />
+                        </Border>
+                    </Grid>
+                </Button>
+
                 <!-- Run and Debug (2) -->
                 <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="2"
                         Classes="activity-bar-btn"

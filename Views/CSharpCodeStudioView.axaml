@@ -393,6 +393,9 @@
                             </StackPanel>
                         </ScrollViewer>
 
+                        <!-- Page 6: Source Control (Git) -->
+                        <studio:StudioSourceControlPanelControl />
+
                     </Carousel>
                 </Grid>
             </Border>
@@ -585,6 +588,9 @@
 
                         <!-- Interactive CSV / TSV Data Table Surface -->
                         <studio:StudioCsvPreviewControl IsVisible="{Binding ShowCsvPreview}" />
+
+                        <!-- Authentic VS Code Git Diff Viewer Surface -->
+                        <studio:StudioDiffViewerControl IsVisible="{Binding ShowDiffViewer}" />
 
                         <!-- Live Debug Hover Data Tip Card -->
                         <editor:DebugHoverDataTipControl Name="DebugHoverTip"

@@ -214,6 +214,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     public bool IsDependenciesActive => SelectedActivityBarIndex == 3;
     public bool IsScratchpadActive => SelectedActivityBarIndex == 4;
     public bool IsProblemsActive => SelectedActivityBarIndex == 5;
+    public bool IsSourceControlActive => SelectedActivityBarIndex == 6;
 
     private void UpdateSideBarTitle()
     {
@@ -233,6 +234,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
                 3 => "DEPENDENCIES & NUGET",
                 4 => "SCRATCHPAD & NOTES",
                 5 => "PROBLEMS",
+                6 => GetSourceControlSideBarTitle(),
                 _ => "EXPLORER"
             };
         }
@@ -248,6 +250,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnPropertyChanged(nameof(IsDependenciesActive));
         OnPropertyChanged(nameof(IsScratchpadActive));
         OnPropertyChanged(nameof(IsProblemsActive));
+        OnPropertyChanged(nameof(IsSourceControlActive));
+
+        if (value == 6)
+        {
+            _ = RefreshGitStatusAsync();
+        }
     }
 
     partial void OnSelectedLeftTabIndexChanged(int value)
@@ -403,6 +411,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
         InitializeExtensibilityBridge();
+        InitializeGitSupport();
     }
 
     private void OnLanguagesRegistryChanged()
