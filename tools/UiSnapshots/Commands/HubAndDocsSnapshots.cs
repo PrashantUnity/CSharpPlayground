@@ -125,6 +125,14 @@ internal static class HubAndDocsSnapshots
         Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpSettingsViewModel(languages);
         if (options.Value("category") is { } cat) vm.SelectCategory(cat);
+        if (options.Flag("import-package") || options.Value("package-url") is not null)
+        {
+            vm.IsImportPackageFormVisible = true;
+            if (options.Value("package-url") is { } url)
+            {
+                vm.PackageGitUrl = url;
+            }
+        }
         if (options.Value("language") is { } lang)
         {
             var target = vm.Languages.FirstOrDefault(l => l.Language.Id.Equals(lang, StringComparison.OrdinalIgnoreCase) || l.DisplayName.Equals(lang, StringComparison.OrdinalIgnoreCase));

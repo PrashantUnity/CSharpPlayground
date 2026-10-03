@@ -294,13 +294,16 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     {
         void Sync()
         {
-            var existingIds = StarterTemplates.Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var existingIds = StarterTemplates
+                .Where(t => t?.Id != null)
+                .Select(t => t.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var all = CodeTemplateLibrary.GetTemplates();
-            var toRemove = StarterTemplates.Where(t => !all.Any(a => a.Id == t.Id)).ToList();
+            var toRemove = StarterTemplates.Where(t => t == null || !all.Any(a => a?.Id == t.Id)).ToList();
             foreach (var r in toRemove) StarterTemplates.Remove(r);
             foreach (var t in all)
             {
-                if (!existingIds.Contains(t.Id)) StarterTemplates.Add(t);
+                if (t?.Id != null && !existingIds.Contains(t.Id)) StarterTemplates.Add(t);
             }
             OnPropertyChanged(nameof(ScriptTemplates));
             OnPropertyChanged(nameof(NotebookTemplates));

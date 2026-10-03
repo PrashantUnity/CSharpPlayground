@@ -61,6 +61,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="Explorer" Gesture="Shift+Meta+E" Click="ViewExplorer_OnClick" />
                     <NativeMenuItem Header="Search" Gesture="Shift+Meta+F" Click="ViewSearch_OnClick" />
+                    <NativeMenuItem Header="Source Control" Gesture="Shift+Meta+G" Click="ViewSourceControl_OnClick" />
                     <NativeMenuItem Header="Run &amp; Debug" Gesture="Shift+Meta+D" Click="ViewRunDebug_OnClick" />
                     <NativeMenuItem Header="Dependencies &amp; Packages" Gesture="Shift+Meta+X" Click="ViewNuGet_OnClick" />
                     <NativeMenuItem Header="Problems" Gesture="Shift+Meta+M" Click="ViewProblems_OnClick" />

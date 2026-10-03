@@ -122,6 +122,7 @@ public partial class CSharpCodeStudioViewModel
 
             UpdateImageStateForDocument(tab.Document);
             UpdatePreviewStateForDocument(tab.Document, tab.IsDocumentPreviewMode);
+            UpdateDiffStateForTab(tab);
 
             IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
             SelectedLanguageModeIndex = tab.Document.ExecutionMode switch

@@ -300,6 +300,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             return;
         }
 
+        if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.G)
+        {
+            _currentVm.SelectActivityBarItem(6); // Source Control / Git
+            e.Handled = true;
+            return;
+        }
+
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.D)
         {
             _currentVm.SelectActivityBarItem(2); // Debug

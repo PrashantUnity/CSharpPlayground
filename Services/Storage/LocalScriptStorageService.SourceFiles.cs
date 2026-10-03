@@ -47,7 +47,13 @@ public partial class LocalScriptStorageService
     {
         ".DS_Store",
         "Thumbs.db",
-        "desktop.ini"
+        "desktop.ini",
+        "fry_display.zig",
+        "fry_display.dart",
+        "fry_display.py",
+        "fry_display.js",
+        "fry_display.hpp",
+        "fry_display.cs"
     };
 
     private static readonly HashSet<string> IgnoredExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -67,6 +73,11 @@ public partial class LocalScriptStorageService
     {
         var name = Path.GetFileName(path);
         if (string.IsNullOrEmpty(name) || IgnoredFileNames.Contains(name)) return true;
+        if (name.StartsWith("fry_display.", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("fry_channel.", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
         var ext = Path.GetExtension(path);
         return !string.IsNullOrEmpty(ext) && IgnoredExtensions.Contains(ext);
     }

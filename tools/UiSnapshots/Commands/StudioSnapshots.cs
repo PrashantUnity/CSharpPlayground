@@ -31,7 +31,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 internal static class StudioSnapshots
 {
     // Activity Bar order: CSharpCodeStudioViewModel.SelectedActivityBarIndex.
-    private static readonly string[] SideBarViews = { "explorer", "search", "debug", "nuget", "notes", "problems" };
+    private static readonly string[] SideBarViews = { "explorer", "search", "debug", "nuget", "notes", "problems", "sourcecontrol" };
 
     // Bottom panel tab order: CSharpCodeStudioViewModel.SelectedBottomTabIndex.
     private static readonly string[] PanelTabs = { "results", "terminal", "problems", "tests", "debug" };
@@ -191,6 +191,10 @@ internal static class StudioSnapshots
         }
         // --file-limit n: list at most n files, to see what the Explorer says about a folder that has more.
         string? wsOpt = options.Value("workspace");
+        if (wsOpt == null && file != null && Path.IsPathRooted(file) && File.Exists(file))
+        {
+            wsOpt = Path.GetDirectoryName(file);
+        }
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("studio_app_data"), languages.Registry, options.Int("file-limit", 20_000));
 
         if (wsOpt != null && Directory.Exists(wsOpt))
@@ -247,6 +251,64 @@ internal static class StudioSnapshots
 
         vm.SelectedActivityBarIndex = IndexOf(SideBarViews, options.Value("sidebar") ?? (options.Value("search-text") != null ? "search" : file != null || options.Flag("demo-files") || options.Int("tree", 0) > 0 || wsOpt != null ? "explorer" : "notes"), "--sidebar");
         if (options.Int("tree", 0) > 0 || options.Flag("demo-files") || wsOpt != null) ExpandAll(vm.ExplorerRootItems);
+
+        if (options.Flag("git-demo") || options.Flag("diff") || options.Value("sidebar") == "sourcecontrol")
+        {
+            var root = storage.ActiveWorkspaceRootPath;
+            Snapshot.Wait(vm.GitService.InitRepositoryAsync(root));
+            var dummyFile = Path.Combine(root, "Calculator.cs");
+            File.WriteAllText(dummyFile, "public class Calculator\n{\n}\n");
+            Snapshot.Wait(vm.GitService.StageFileAsync(root, "Calculator.cs"));
+            Snapshot.Wait(vm.GitService.CommitAsync(root, "Initial commit"));
+            File.AppendAllText(dummyFile, "    public int Add(int a, int b) => a + b;\n");
+            var untracked = Path.Combine(root, "NewFeature.cs");
+            File.WriteAllText(untracked, "// New feature code\n");
+            Snapshot.Wait(vm.RefreshGitStatusAsync());
+            vm.GitCommitMessage = "feat(calculator): implement Add method and new feature";
+            vm.GitAheadCount = 1;
+
+            if (options.Flag("diff"))
+            {
+                string sampleDiff = """
+                    diff --git a/Services/Workspace/Git/GitService.cs b/Services/Workspace/Git/GitService.cs
+                    --- a/Services/Workspace/Git/GitService.cs
+                    +++ b/Services/Workspace/Git/GitService.cs
+                    @@ -218,6 +218,12 @@ public async Task<GitCommandResult> InitRepositoryAsync
+                         return RunGitAsync(workspaceRoot, ["init"], DefaultTimeout, ct);
+                     }
+                    +
+                    +    public async Task<string?> GetFileHeadContentAsync(string workspaceRoot, string relativePath)
+                    +    {
+                    +        var res = await RunGitAsync(workspaceRoot, ["show", $"HEAD:{relativePath}"]);
+                    +        return res.Success ? res.Output : null;
+                    +    }
+                    """;
+                var diffDoc = PdfEditorApp.Plugins.CSharpEditor.Services.Workspace.Git.GitDiffParser.Parse(
+                    "Services/Workspace/Git/GitService.cs",
+                    isStaged: false,
+                    sampleDiff,
+                    null,
+                    null);
+
+                var syntheticDoc = new ScriptDocumentItem
+                {
+                    Id = "git-diff:Services/Workspace/Git/GitService.cs:working",
+                    Title = "GitService.cs (Working Tree)",
+                    SourceFilePath = Path.Combine(storage.ActiveWorkspaceRootPath, "Services/Workspace/Git/GitService.cs"),
+                    IsEphemeral = true
+                };
+                var tab = new StudioTabItemViewModel(syntheticDoc, isActive: true)
+                {
+                    IsDiffTab = true,
+                    DiffDocument = diffDoc,
+                    LanguageIconKind = "SourceCommit",
+                    LanguageIconColor = "#E2C08D"
+                };
+                vm.OpenTabs.Add(tab);
+                Snapshot.Wait(vm.SwitchToTabAsync(tab));
+            }
+        }
+
         if (options.Flag("edit-notes") && vm.IsNotesPreviewMode) vm.ToggleNotesPreviewCommand.Execute(null);
         if (options.Flag("image-code")) vm.ShowImageCodeDrawer = true;
         if (options.Flag("edit-raw"))

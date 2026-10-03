@@ -116,6 +116,9 @@ public partial class StudioTabItemViewModel : ObservableObject
     public string CsvDimensionsSummary { get; set; } = string.Empty;
     public string CsvDelimiterSummary { get; set; } = "Comma (,)";
 
+    public bool IsDiffTab { get; set; }
+    public Models.Git.GitDiffDocument? DiffDocument { get; set; }
+
     public Action<StudioTabItemViewModel>? OnSelect { get; set; }
     public Action<StudioTabItemViewModel>? OnClose { get; set; }
     public Action<StudioTabItemViewModel>? OnCloseOthers { get; set; }

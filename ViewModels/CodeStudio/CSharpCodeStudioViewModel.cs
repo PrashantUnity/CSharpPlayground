@@ -214,18 +214,35 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     public bool IsDependenciesActive => SelectedActivityBarIndex == 3;
     public bool IsScratchpadActive => SelectedActivityBarIndex == 4;
     public bool IsProblemsActive => SelectedActivityBarIndex == 5;
+    public bool IsSourceControlActive => SelectedActivityBarIndex == 6;
+
+    private void UpdateSideBarTitle()
+    {
+        if (SelectedActivityBarIndex == 0)
+        {
+            var wsName = _storageService.IsExternalWorkspaceActive
+                ? Path.GetFileName(_storageService.ActiveWorkspaceRootPath.TrimEnd('/', '\\'))
+                : null;
+            SideBarTitle = string.IsNullOrWhiteSpace(wsName) ? "EXPLORER" : $"EXPLORER: {wsName.ToUpperInvariant()}";
+        }
+        else
+        {
+            SideBarTitle = SelectedActivityBarIndex switch
+            {
+                1 => "SEARCH",
+                2 => "RUN AND DEBUG",
+                3 => "DEPENDENCIES & NUGET",
+                4 => "SCRATCHPAD & NOTES",
+                5 => "PROBLEMS",
+                6 => GetSourceControlSideBarTitle(),
+                _ => "EXPLORER"
+            };
+        }
+    }
 
     partial void OnSelectedActivityBarIndexChanged(int value)
     {
-        SideBarTitle = value switch
-        {
-            1 => "SEARCH",
-            2 => "RUN AND DEBUG",
-            3 => "DEPENDENCIES & NUGET",
-            4 => "SCRATCHPAD & NOTES",
-            5 => "PROBLEMS",
-            _ => "EXPLORER"
-        };
+        UpdateSideBarTitle();
 
         OnPropertyChanged(nameof(IsExplorerActive));
         OnPropertyChanged(nameof(IsSearchActive));
@@ -233,6 +250,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnPropertyChanged(nameof(IsDependenciesActive));
         OnPropertyChanged(nameof(IsScratchpadActive));
         OnPropertyChanged(nameof(IsProblemsActive));
+        OnPropertyChanged(nameof(IsSourceControlActive));
+
+        if (value == 6)
+        {
+            _ = RefreshGitStatusAsync();
+        }
     }
 
     partial void OnSelectedLeftTabIndexChanged(int value)
@@ -370,7 +393,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         TriggerDiagnosticsCheck();
         PopulateExplorerTree();
 
-        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorerAsync());
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() =>
+        {
+            UpdateSideBarTitle();
+            _ = RefreshExplorerAsync();
+        });
         // What a workspace search listed belongs to the folder that was open: search the new one for the same text.
         _storageService.ActiveWorkspaceChanged += () => _postToUiThread(() =>
         {
@@ -384,6 +411,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnActiveLanguageChanged();
         InitializeNuGetPackages();
         InitializeExtensibilityBridge();
+        InitializeGitSupport();
     }
 
     private void OnLanguagesRegistryChanged()

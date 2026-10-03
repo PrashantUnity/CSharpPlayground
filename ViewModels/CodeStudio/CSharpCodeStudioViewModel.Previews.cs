@@ -59,7 +59,7 @@ public partial class CSharpCodeStudioViewModel
 
     public bool ShowCsvPreview => IsActiveDocumentCsv && IsDocumentPreviewMode;
 
-    public bool ShowTextEditor => !IsActiveDocumentImage && !ShowMarkdownPreview && !ShowCsvPreview;
+    public bool ShowTextEditor => !IsActiveDocumentImage && !ShowMarkdownPreview && !ShowCsvPreview && !ShowDiffViewer;
 
     [ObservableProperty]
     private DumpTableResult? _activeCsvTable;
