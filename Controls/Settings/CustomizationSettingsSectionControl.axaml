@@ -287,10 +287,111 @@
                         CornerRadius="10"
                         Padding="18,16">
                     <StackPanel Spacing="14">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <materialIcons:MaterialIcon Kind="PackageVariantClosed" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="LOADED WORKSPACE EXTENSIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <!-- Header with Action Button -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="PackageVariantClosed" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="WORKSPACE EXTENSIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" CornerRadius="10" Padding="6,1" VerticalAlignment="Center" Margin="2,0,0,0">
+                                    <TextBlock Text="{Binding LoadedExtensionsCount}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                </Border>
+                            </StackPanel>
+
+                            <Button Grid.Column="1"
+                                    Command="{Binding ToggleImportPackageFormCommand}"
+                                    ToolTip.Tip="Import package directly from Git URL"
+                                    Padding="10,4"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource DsPrimaryBrush}"
+                                    Foreground="White">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <materialIcons:MaterialIcon Kind="Git" Width="14" Height="14" />
+                                    <TextBlock Text="+ Git Package" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Expandable Git Package Import Panel -->
+                        <Border IsVisible="{Binding IsImportPackageFormVisible}"
+                                Background="{DynamicResource DsBgBrush}"
+                                BorderBrush="{DynamicResource DsPrimaryBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14,12">
+                            <StackPanel Spacing="10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                        <TextBlock Text="IMPORT PACKAGE FROM GIT URL" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" LetterSpacing="0.5" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Command="{Binding ToggleImportPackageFormCommand}" Background="Transparent" BorderThickness="0" Padding="4" ToolTip.Tip="Close">
+                                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                    </Button>
+                                </Grid>
+
+                                <TextBlock Text="Enter a Git repository URL (e.g. https://github.com/owner/repo.git#v1.0.0 or owner/repo). FrySharp will resolve, download, cache, and activate the extension dynamically."
+                                           FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+
+                                <!-- URL Input & Install Button Row -->
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding PackageGitUrl, Mode=TwoWay}"
+                                             PlaceholderText="https://github.com/owner/repo.git#v1.0.0"
+                                             FontSize="11"
+                                             FontFamily="Consolas, Menlo, monospace"
+                                             Height="32"
+                                             Padding="8,6"
+                                             CornerRadius="6,0,0,6"
+                                             BorderBrush="{DynamicResource DsBorderBrush}" />
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding ImportGitPackageCommand}"
+                                            IsEnabled="{Binding !IsImportingPackage}"
+                                            Background="{DynamicResource DsPrimaryBrush}"
+                                            Foreground="White"
+                                            Height="32"
+                                            Padding="12,0"
+                                            CornerRadius="0,6,6,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <materialIcons:MaterialIcon Kind="DownloadOutline" Width="14" Height="14" />
+                                            <TextBlock Text="{Binding ImportButtonText}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Quick Try Sample Button -->
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="Quick Try:" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <Button Command="{Binding UseSampleGitPackageCommand}"
+                                            CommandParameter="https://github.com/PrashantUnity/FrySharp.Zig.git#v1.0.0"
+                                            Background="{DynamicResource DsPrimarySubtleBrush}"
+                                            BorderThickness="0"
+                                            Padding="6,2"
+                                            CornerRadius="4"
+                                            ToolTip.Tip="Fill with Zig Support Extension from GitHub">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="LightningBolt" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                            <TextBlock Text="PrashantUnity/FrySharp.Zig (v1.0.0)" FontSize="10" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Live Status Notification / Feedback -->
+                                <Border IsVisible="{Binding HasPackageImportStatus}"
+                                        Background="{DynamicResource DsSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DsBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressBar IsIndeterminate="True" Width="14" Height="14" IsVisible="{Binding IsImportingPackage}" />
+                                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="#3FB950" IsVisible="{Binding PackageImportSuccess}" />
+                                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#F85149" IsVisible="{Binding PackageImportHasError}" />
+                                        <TextBlock Text="{Binding PackageImportStatus}" FontSize="11" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
 
                         <!-- Extensions List -->
                         <ItemsControl ItemsSource="{Binding InstalledExtensions}">
@@ -299,13 +400,28 @@
                                     <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,3">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <StackPanel Grid.Column="0" Spacing="2">
-                                                <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <Border Background="#26384C" CornerRadius="3" Padding="4,1" IsVisible="{Binding IsGitPackage}">
+                                                        <TextBlock Text="git" FontSize="9.5" FontWeight="Bold" Foreground="#58A6FF" FontFamily="Consolas, Menlo, monospace" />
+                                                    </Border>
+                                                </StackPanel>
                                                 <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                                                 <TextBlock Text="{Binding Author, StringFormat='by {0}'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
                                             </StackPanel>
-                                            <Border Grid.Column="1" Background="{DynamicResource DsPrimarySubtleBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Top">
-                                                <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            </Border>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                </Border>
+                                                <Button Command="{Binding $parent[ItemsControl].((settings:CSharpSettingsViewModel)DataContext).RemoveExtensionCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Uninstall extension"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        Padding="4">
+                                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -313,12 +429,24 @@
                         </ItemsControl>
 
                         <!-- Empty state when no extensions loaded -->
-                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,14"
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,16"
                                 IsVisible="{Binding !LoadedExtensionsCount}">
-                            <StackPanel HorizontalAlignment="Center" Spacing="4">
-                                <materialIcons:MaterialIcon Kind="PackageVariant" Width="24" Height="24" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="No workspace extensions loaded" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="Create extensions in the extensions/ directory with extension.json to load multi-file plugins." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                            <StackPanel HorizontalAlignment="Center" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="PackageVariant" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="No workspace extensions loaded" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="Install extensions from Git repositories or create them in extensions/ with extension.json." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320" />
+                                <Button Command="{Binding ToggleImportPackageFormCommand}"
+                                        HorizontalAlignment="Center"
+                                        Background="{DynamicResource DsPrimaryBrush}"
+                                        Foreground="White"
+                                        CornerRadius="6"
+                                        Padding="12,5"
+                                        Margin="0,4,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <materialIcons:MaterialIcon Kind="Git" Width="14" Height="14" />
+                                        <TextBlock Text="Import Git Package..." FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </Border>
                     </StackPanel>

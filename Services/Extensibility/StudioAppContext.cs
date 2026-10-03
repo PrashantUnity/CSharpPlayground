@@ -83,6 +83,13 @@ public class StudioAppContext : IStudioApp
         set => _extensionManager = value;
     }
 
+    private Packages.GitPackageService? _gitPackageService;
+    public Packages.GitPackageService GitPackageService
+    {
+        get => _gitPackageService ??= new Packages.GitPackageService();
+        set => _gitPackageService = value;
+    }
+
     public IThemeApi Theme => ThemeEngine;
     public IThemeApi Themes => ThemeEngine;
     public ICommandApi Commands => CommandPipeline;

@@ -87,6 +87,28 @@ public class ExtensionManager : IDisposable
                 var parent = Path.GetDirectoryName(Path.GetFullPath(workspacePath));
                 if (!string.IsNullOrEmpty(parent)) AddIfValid(parent);
             }
+
+            // Check locked git packages in .frysharp/extensions-lock.json
+            string lockPath = Path.Combine(workspacePath, ".frysharp", "extensions-lock.json");
+            if (File.Exists(lockPath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(lockPath);
+                    var lockfile = JsonSerializer.Deserialize<Packages.WorkspaceExtensionLockfile>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (lockfile?.Dependencies != null)
+                    {
+                        foreach (var pkg in lockfile.Dependencies.Values)
+                        {
+                            if (!string.IsNullOrEmpty(pkg.CacheDirectory))
+                            {
+                                AddIfValid(pkg.CacheDirectory);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
         }
 
         // 2. Application bundled extensions
@@ -113,6 +135,34 @@ public class ExtensionManager : IDisposable
         }
 
         return dirs;
+    }
+
+    /// <summary>
+    /// Restores any Git packages declared in workspace .frysharp/extensions.json
+    /// and dynamically loads them into the studio.
+    /// </summary>
+    public async Task<IReadOnlyList<ExtensionLoadResult>> RestoreAndLoadWorkspacePackagesAsync(
+        string? workspacePath = null,
+        Packages.GitPackageService? packageService = null,
+        CancellationToken ct = default)
+    {
+        workspacePath ??= _app.Workspace.RootPath;
+        if (string.IsNullOrWhiteSpace(workspacePath)) return Array.Empty<ExtensionLoadResult>();
+
+        packageService ??= (_app as StudioAppContext)?.GitPackageService ?? new Packages.GitPackageService();
+        var resolutionResults = await packageService.RestoreWorkspacePackagesAsync(workspacePath, ct);
+
+        var loadResults = new List<ExtensionLoadResult>();
+        foreach (var res in resolutionResults)
+        {
+            if (res.Success && !string.IsNullOrEmpty(res.ExtensionDirectory))
+            {
+                var loadResult = await LoadExtensionAsync(res.ExtensionDirectory, enableHotReload: false, ct);
+                loadResults.Add(loadResult);
+            }
+        }
+
+        return loadResults;
     }
 
     /// <summary>
