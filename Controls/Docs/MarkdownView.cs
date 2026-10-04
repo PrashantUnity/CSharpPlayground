@@ -1,16 +1,23 @@
-using System.Text.RegularExpressions;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Markdig;
+using Markdig.Extensions.Tables;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
+using AvaloniaInline = Avalonia.Controls.Documents.Inline;
+using MdInline = Markdig.Syntax.Inlines.Inline;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Docs;
 
 /// <summary>
-/// Renders the Markdown the app writes (problem statements, hints, notebook notes): headings, paragraphs, **bold**,
-/// *italic*, `code`, bullet and numbered lists (nested by indentation), &gt; quotes, ``` code blocks and --- rules.
-/// Anything else is shown as plain text, so nothing written is ever lost.
+/// Renders standard CommonMark and GitHub-Flavored Markdown (GFM) powered by Markdig:
+/// headings (H1-H6), paragraphs, **bold**, *italic*, ~~strikethrough~~, `code`,
+/// bullet and numbered lists, &gt; blockquotes, ``` fenced code blocks, GFM pipe tables,
+/// and horizontal rules.
 /// </summary>
 public class MarkdownView : UserControl
 {
@@ -19,18 +26,15 @@ public class MarkdownView : UserControl
 
     private static readonly FontFamily Monospace = new("Cascadia Code, Consolas, Menlo, monospace");
 
-    // Translucent so they sit well on both the light and the dark theme.
     private static readonly IBrush CodeBrush = new SolidColorBrush(Color.FromArgb(46, 128, 128, 128));
     private static readonly IBrush CodeBlockBrush = new SolidColorBrush(Color.FromArgb(30, 128, 128, 128));
     private static readonly IBrush QuoteBrush = new SolidColorBrush(Color.FromArgb(22, 88, 166, 255));
     private static readonly IBrush QuoteAccentBrush = new SolidColorBrush(Color.FromArgb(170, 88, 166, 255));
     private static readonly IBrush RuleBrush = new SolidColorBrush(Color.FromArgb(70, 128, 128, 128));
 
-    private static readonly Regex Heading = new(@"^(#{1,6})\s+(.*)$", RegexOptions.Compiled);
-    private static readonly Regex ListItem = new(@"^(\s*)([-*+]|\d+[.)])\s+(.*)$", RegexOptions.Compiled);
-    private static readonly Regex InlineToken = new(
-        @"(`[^`]+`)|(\*\*(?=\S)(.+?)(?<=\S)\*\*)|((?<![\*\w])\*(?=[^\s*])(.+?)(?<=[^\s*])\*(?![\*\w]))|(\[([^\]]+)\]\(([^)\s]+)\))",
-        RegexOptions.Compiled);
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
 
     public string? Markdown
     {
@@ -47,202 +51,280 @@ public class MarkdownView : UserControl
     private void Rebuild()
     {
         var panel = new StackPanel { Spacing = 7 };
-        foreach (var block in Blocks(Markdown ?? string.Empty))
+        var raw = Markdown ?? string.Empty;
+
+        try
         {
-            panel.Children.Add(block);
+            var document = Markdig.Markdown.Parse(raw, Pipeline);
+            foreach (var block in RenderBlocks(document))
+            {
+                panel.Children.Add(block);
+            }
         }
+        catch
+        {
+            panel.Children.Add(new SelectableTextBlock { Text = raw, TextWrapping = TextWrapping.Wrap });
+        }
+
         Content = panel;
     }
 
-    private IEnumerable<Control> Blocks(string markdown)
+    private IEnumerable<Control> RenderBlocks(IEnumerable<Block> blocks)
     {
-        var lines = markdown.Replace("\r\n", "\n").Split('\n');
-        var paragraph = new List<string>();
-
-        IEnumerable<Control> Flush()
+        foreach (var block in blocks)
         {
-            if (paragraph.Count == 0) yield break;
-            yield return Text(string.Join(" ", paragraph), FontSize, FontWeight.Normal);
-            paragraph.Clear();
+            switch (block)
+            {
+                case HeadingBlock heading:
+                {
+                    int level = heading.Level;
+                    double size = FontSize * (level switch { 1 => 1.55, 2 => 1.32, 3 => 1.16, _ => 1.05 });
+                    var text = RenderInlines(heading.Inline, size, FontWeight.Bold);
+                    text.Margin = new Thickness(0, level <= 2 ? 8 : 4, 0, 2);
+                    yield return text;
+                    break;
+                }
+
+                case ParagraphBlock paragraph:
+                {
+                    yield return RenderInlines(paragraph.Inline, FontSize, FontWeight.Normal);
+                    break;
+                }
+
+                case FencedCodeBlock fenced:
+                {
+                    var lines = fenced.Lines.Lines
+                        .Take(fenced.Lines.Count)
+                        .Select(l => l.ToString());
+                    yield return CodeBlock(string.Join("\n", lines));
+                    break;
+                }
+
+                case CodeBlock code:
+                {
+                    var lines = code.Lines.Lines
+                        .Take(code.Lines.Count)
+                        .Select(l => l.ToString());
+                    yield return CodeBlock(string.Join("\n", lines));
+                    break;
+                }
+
+                case QuoteBlock quote:
+                {
+                    var quotePanel = new StackPanel { Spacing = 6 };
+                    foreach (var inner in RenderBlocks(quote))
+                    {
+                        quotePanel.Children.Add(inner);
+                    }
+                    yield return new Border
+                    {
+                        Background = QuoteBrush,
+                        BorderBrush = QuoteAccentBrush,
+                        BorderThickness = new Thickness(3, 0, 0, 0),
+                        CornerRadius = new CornerRadius(0, 6, 6, 0),
+                        Padding = new Thickness(12, 8),
+                        Margin = new Thickness(0, 4, 0, 4),
+                        Child = quotePanel
+                    };
+                    break;
+                }
+
+                case ListBlock list:
+                {
+                    yield return RenderList(list);
+                    break;
+                }
+
+                case Table table:
+                {
+                    yield return RenderTable(table);
+                    break;
+                }
+
+                case ThematicBreakBlock:
+                {
+                    yield return new Border
+                    {
+                        Height = 1,
+                        Background = RuleBrush,
+                        Margin = new Thickness(0, 6)
+                    };
+                    break;
+                }
+            }
+        }
+    }
+
+    private Control RenderList(ListBlock list)
+    {
+        var panel = new StackPanel { Spacing = 4 };
+        int itemIndex = 1;
+
+        foreach (var item in list)
+        {
+            if (item is ListItemBlock listItem)
+            {
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+                var marker = list.IsOrdered ? $"{itemIndex++}." : "•";
+                var bullet = new TextBlock
+                {
+                    Text = marker,
+                    FontSize = FontSize,
+                    FontWeight = list.IsOrdered ? FontWeight.SemiBold : FontWeight.Normal,
+                    MinWidth = list.IsOrdered ? 22 : 14,
+                    LineHeight = FontSize * 1.45,
+                    VerticalAlignment = VerticalAlignment.Top
+                };
+
+                var itemPanel = new StackPanel { Spacing = 4 };
+                foreach (var inner in RenderBlocks(listItem))
+                {
+                    itemPanel.Children.Add(inner);
+                }
+
+                Grid.SetColumn(itemPanel, 1);
+                row.Children.Add(bullet);
+                row.Children.Add(itemPanel);
+                panel.Children.Add(row);
+            }
+        }
+        return panel;
+    }
+
+    private Control RenderTable(Table table)
+    {
+        var headers = new List<string>();
+        var alignments = new List<TextAlignment>();
+        var rows = new List<string[]>();
+
+        if (table.ColumnDefinitions != null)
+        {
+            foreach (var col in table.ColumnDefinitions)
+            {
+                alignments.Add(col.Alignment switch
+                {
+                    TableColumnAlign.Center => TextAlignment.Center,
+                    TableColumnAlign.Right => TextAlignment.Right,
+                    _ => TextAlignment.Left
+                });
+            }
         }
 
-        for (int i = 0; i < lines.Length; i++)
+        foreach (var block in table)
         {
-            string line = lines[i];
-            string trimmed = line.Trim();
-
-            if (trimmed.StartsWith("```", StringComparison.Ordinal))
+            if (block is TableRow row)
             {
-                foreach (var block in Flush()) yield return block;
-                var code = new List<string>();
-                while (++i < lines.Length && !lines[i].Trim().StartsWith("```", StringComparison.Ordinal)) code.Add(lines[i]);
-                yield return CodeBlock(string.Join("\n", code));
-                continue;
-            }
-
-            if (trimmed.Length == 0)
-            {
-                foreach (var block in Flush()) yield return block;
-                continue;
-            }
-
-            if (Heading.Match(trimmed) is { Success: true } heading)
-            {
-                foreach (var block in Flush()) yield return block;
-                int level = heading.Groups[1].Value.Length;
-                double size = FontSize * (level switch { 1 => 1.55, 2 => 1.32, 3 => 1.16, _ => 1.05 });
-                var text = Text(heading.Groups[2].Value, size, FontWeight.Bold);
-                text.Margin = new Thickness(0, level <= 2 ? 6 : 4, 0, 0);
-                yield return text;
-                continue;
-            }
-
-            if (trimmed is "---" or "***" or "___")
-            {
-                foreach (var block in Flush()) yield return block;
-                yield return new Border { Height = 1, Background = RuleBrush, Margin = new Thickness(0, 4) };
-                continue;
-            }
-
-            if (trimmed.StartsWith(">", StringComparison.Ordinal))
-            {
-                foreach (var block in Flush()) yield return block;
-                var quote = new List<string>();
-                for (; i < lines.Length && lines[i].TrimStart().StartsWith(">", StringComparison.Ordinal); i++)
+                var cellTexts = new List<string>();
+                foreach (var cellObj in row)
                 {
-                    string inner = lines[i].TrimStart()[1..];
-                    quote.Add(inner.StartsWith(' ') ? inner[1..] : inner);
-                }
-                i--;
-                yield return Quote(string.Join("\n", quote));
-                continue;
-            }
-
-            if (ListItem.IsMatch(line))
-            {
-                foreach (var block in Flush()) yield return block;
-                var items = new List<(int Indent, string Marker, string Text)>();
-                for (; i < lines.Length; i++)
-                {
-                    var match = ListItem.Match(lines[i]);
-                    if (match.Success)
+                    if (cellObj is TableCell cell)
                     {
-                        items.Add((match.Groups[1].Value.Length, match.Groups[2].Value, match.Groups[3].Value.Trim()));
-                    }
-                    else if (lines[i].Trim().Length > 0 && lines[i].StartsWith("  ", StringComparison.Ordinal) && items.Count > 0)
-                    {
-                        // An indented line continues the previous item.
-                        var last = items[^1];
-                        items[^1] = (last.Indent, last.Marker, $"{last.Text} {lines[i].Trim()}");
-                    }
-                    else
-                    {
-                        break;
+                        var cellStr = new StringBuilder();
+                        foreach (var inner in cell)
+                        {
+                            if (inner is ParagraphBlock p && p.Inline != null)
+                            {
+                                foreach (var inline in p.Inline)
+                                {
+                                    ExtractInlineText(inline, cellStr);
+                                }
+                            }
+                        }
+                        cellTexts.Add(cellStr.ToString().Trim());
                     }
                 }
-                i--;
-                yield return List(items);
-                continue;
-            }
 
-            if (trimmed.Contains('|') && i + 1 < lines.Length && IsTableSeparator(lines[i + 1]))
-            {
-                foreach (var block in Flush()) yield return block;
-                var headers = SplitTableRow(line);
-                var separators = SplitTableRow(lines[i + 1]);
-                var alignments = separators.Select(ParseAlignment).ToArray();
-                var rows = new List<string[]>();
-                i += 2;
-                for (; i < lines.Length; i++)
+                if (row.IsHeader)
                 {
-                    string rowLine = lines[i].Trim();
-                    if (string.IsNullOrWhiteSpace(rowLine) || !rowLine.Contains('|'))
-                    {
-                        break;
-                    }
-                    rows.Add(SplitTableRow(rowLine));
+                    headers.AddRange(cellTexts);
                 }
-                i--;
-                yield return Table(headers, alignments, rows);
-                continue;
+                else
+                {
+                    rows.Add(cellTexts.ToArray());
+                }
             }
-
-            paragraph.Add(trimmed);
         }
 
-        foreach (var block in Flush()) yield return block;
+        return TableControl(headers.ToArray(), alignments.ToArray(), rows);
     }
 
-    private static string[] SplitTableRow(string line)
+    private static void ExtractInlineText(Markdig.Syntax.Inlines.Inline inline, StringBuilder sb)
     {
-        var trimmed = line.Trim();
-        if (trimmed.StartsWith('|')) trimmed = trimmed[1..];
-        if (trimmed.EndsWith('|')) trimmed = trimmed[..^1];
-        return trimmed.Split('|').Select(c => c.Trim()).ToArray();
+        switch (inline)
+        {
+            case LiteralInline lit:
+                sb.Append(lit.Content);
+                break;
+            case CodeInline code:
+                sb.Append(code.Content);
+                break;
+            case ContainerInline container:
+                foreach (var child in container) ExtractInlineText(child, sb);
+                break;
+            default:
+                var s = inline.ToString();
+                if (!string.IsNullOrEmpty(s)) sb.Append(s);
+                break;
+        }
     }
 
-    private static bool IsTableSeparator(string line)
+    private Control TableControl(string[] headers, TextAlignment[] alignments, List<string[]> rows)
     {
-        var cols = SplitTableRow(line);
-        return cols.Length > 0 && cols.All(c => Regex.IsMatch(c, @"^:?-+:?$"));
-    }
+        if (headers.Length == 0 && rows.Count == 0) return new Panel();
 
-    private static TextAlignment ParseAlignment(string col)
-    {
-        col = col.Trim();
-        bool left = col.StartsWith(':');
-        bool right = col.EndsWith(':');
-        if (left && right) return TextAlignment.Center;
-        if (right) return TextAlignment.Right;
-        return TextAlignment.Left;
-    }
-
-    private Control Table(string[] headers, TextAlignment[] alignments, List<string[]> rows)
-    {
-        if (headers.Length == 0) return new Panel();
+        int colCount = Math.Max(headers.Length, rows.Count > 0 ? rows.Max(r => r.Length) : 0);
+        if (colCount == 0) return new Panel();
 
         var grid = new Grid();
-        for (int c = 0; c < headers.Length; c++)
+        for (int c = 0; c < colCount; c++)
         {
             grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         }
 
-        grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-
-        // Header Background
-        var headerBg = new Border
+        int totalRows = (headers.Length > 0 ? 1 : 0) + rows.Count;
+        for (int r = 0; r < totalRows; r++)
         {
-            Background = CodeBlockBrush,
-            BorderThickness = new Thickness(0, 0, 0, 1),
-            BorderBrush = RuleBrush
-        };
-        Grid.SetRow(headerBg, 0);
-        Grid.SetColumnSpan(headerBg, Math.Max(1, headers.Length));
-        grid.Children.Add(headerBg);
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        }
 
-        for (int c = 0; c < headers.Length; c++)
+        int rowIndex = 0;
+        if (headers.Length > 0)
         {
-            var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
-            var text = Text(headers[c], FontSize, FontWeight.SemiBold);
-            text.TextAlignment = align;
-
-            var cell = new Border
+            var headerBg = new Border
             {
-                Padding = new Thickness(12, 7),
-                BorderThickness = new Thickness(0, 0, c < headers.Length - 1 ? 1 : 0, 0),
-                BorderBrush = RuleBrush,
-                Child = text
+                Background = CodeBlockBrush,
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                BorderBrush = RuleBrush
             };
-            Grid.SetRow(cell, 0);
-            Grid.SetColumn(cell, c);
-            grid.Children.Add(cell);
+            Grid.SetRow(headerBg, 0);
+            Grid.SetColumnSpan(headerBg, colCount);
+            grid.Children.Add(headerBg);
+
+            for (int c = 0; c < headers.Length; c++)
+            {
+                var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
+                var text = Text(headers[c], FontSize, FontWeight.SemiBold);
+                text.TextAlignment = align;
+
+                var cell = new Border
+                {
+                    Padding = new Thickness(12, 7),
+                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? 1 : 0, 0),
+                    BorderBrush = RuleBrush,
+                    Child = text
+                };
+                Grid.SetRow(cell, 0);
+                Grid.SetColumn(cell, c);
+                grid.Children.Add(cell);
+            }
+            rowIndex++;
         }
 
         for (int r = 0; r < rows.Count; r++)
         {
-            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
             var rowData = rows[r];
             bool isLastRow = (r == rows.Count - 1);
+            int curGridRow = rowIndex + r;
 
             if (r % 2 == 1)
             {
@@ -250,12 +332,12 @@ public class MarkdownView : UserControl
                 {
                     Background = new SolidColorBrush(Color.FromArgb(14, 128, 128, 128))
                 };
-                Grid.SetRow(zebraBg, r + 1);
-                Grid.SetColumnSpan(zebraBg, Math.Max(1, headers.Length));
+                Grid.SetRow(zebraBg, curGridRow);
+                Grid.SetColumnSpan(zebraBg, colCount);
                 grid.Children.Add(zebraBg);
             }
 
-            for (int c = 0; c < headers.Length; c++)
+            for (int c = 0; c < colCount; c++)
             {
                 string cellText = c < rowData.Length ? rowData[c] : string.Empty;
                 var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
@@ -265,11 +347,11 @@ public class MarkdownView : UserControl
                 var cell = new Border
                 {
                     Padding = new Thickness(12, 6),
-                    BorderThickness = new Thickness(0, 0, c < headers.Length - 1 ? 1 : 0, isLastRow ? 0 : 1),
+                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? 1 : 0, isLastRow ? 0 : 1),
                     BorderBrush = new SolidColorBrush(Color.FromArgb(35, 128, 128, 128)),
                     Child = text
                 };
-                Grid.SetRow(cell, r + 1);
+                Grid.SetRow(cell, curGridRow);
                 Grid.SetColumn(cell, c);
                 grid.Children.Add(cell);
             }
@@ -287,52 +369,12 @@ public class MarkdownView : UserControl
         };
     }
 
-    private Control List(List<(int Indent, string Marker, string Text)> items)
-    {
-        var panel = new StackPanel { Spacing = 4 };
-        var levels = items.Select(i => i.Indent).Distinct().OrderBy(i => i).ToList();
-        foreach (var (indent, marker, text) in items)
-        {
-            int depth = levels.IndexOf(indent);
-            bool numbered = char.IsDigit(marker[0]);
-            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(depth * 18, 0, 0, 0) };
-            var bullet = new TextBlock
-            {
-                Text = numbered ? marker : depth == 0 ? "•" : "◦",
-                FontSize = FontSize,
-                FontWeight = numbered ? FontWeight.SemiBold : FontWeight.Normal,
-                MinWidth = numbered ? 22 : 14,
-                LineHeight = FontSize * 1.45, // same as the item text, so the marker sits on its first line
-                VerticalAlignment = VerticalAlignment.Top
-            };
-            var content = Text(text, FontSize, FontWeight.Normal);
-            Grid.SetColumn(content, 1);
-            row.Children.Add(bullet);
-            row.Children.Add(content);
-            panel.Children.Add(row);
-        }
-        return panel;
-    }
-
-    private Control Quote(string markdown)
-    {
-        var inner = new MarkdownView { Markdown = markdown, FontSize = FontSize };
-        return new Border
-        {
-            Background = QuoteBrush,
-            BorderBrush = QuoteAccentBrush,
-            BorderThickness = new Thickness(3, 0, 0, 0),
-            CornerRadius = new CornerRadius(0, 6, 6, 0),
-            Padding = new Thickness(10, 7),
-            Child = inner
-        };
-    }
-
     private Control CodeBlock(string code) => new Border
     {
         Background = CodeBlockBrush,
         CornerRadius = new CornerRadius(6),
-        Padding = new Thickness(10, 8),
+        Padding = new Thickness(12, 10),
+        Margin = new Thickness(0, 4, 0, 4),
         Child = new SelectableTextBlock
         {
             Text = code,
@@ -342,47 +384,95 @@ public class MarkdownView : UserControl
         }
     };
 
-    private static SelectableTextBlock Text(string markdown, double fontSize, FontWeight weight)
+    private SelectableTextBlock RenderInlines(ContainerInline? inlines, double fontSize, FontWeight weight)
     {
-        var block = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, FontSize = fontSize, FontWeight = weight, LineHeight = fontSize * 1.45 };
-        block.Inlines!.AddRange(Inlines(markdown));
+        var block = new SelectableTextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = fontSize,
+            FontWeight = weight,
+            LineHeight = fontSize * 1.45
+        };
+
+        if (inlines != null)
+        {
+            foreach (var inline in inlines)
+            {
+                foreach (var avaloniaInline in ConvertInline(inline))
+                {
+                    block.Inlines!.Add(avaloniaInline);
+                }
+            }
+        }
+
         return block;
     }
 
-    // `code`, **bold**, *italic* and [text](link); bold and italic may contain the others.
-    private static IEnumerable<Inline> Inlines(string text)
+    private IEnumerable<AvaloniaInline> ConvertInline(MdInline inline)
     {
-        int position = 0;
-        foreach (Match match in InlineToken.Matches(text))
+        switch (inline)
         {
-            if (match.Index > position) yield return new Run(text[position..match.Index]);
+            case LiteralInline lit:
+                yield return new Run(lit.Content.ToString());
+                break;
 
-            if (match.Groups[1].Success)
-            {
-                yield return new Run(match.Value[1..^1]) { FontFamily = Monospace, Background = CodeBrush };
-            }
-            else if (match.Groups[2].Success)
-            {
-                var bold = new Bold();
-                bold.Inlines.AddRange(Inlines(match.Groups[3].Value));
-                yield return bold;
-            }
-            else if (match.Groups[4].Success)
-            {
-                var italic = new Italic();
-                italic.Inlines.AddRange(Inlines(match.Groups[5].Value));
-                yield return italic;
-            }
-            else
-            {
-                var link = new Underline();
-                link.Inlines.Add(new Run(match.Groups[7].Value));
-                yield return link;
-            }
+            case CodeInline code:
+                yield return new Run(code.Content) { FontFamily = Monospace, Background = CodeBrush };
+                break;
 
-            position = match.Index + match.Length;
+            case EmphasisInline emp:
+                if (emp.DelimiterCount == 2)
+                {
+                    var bold = new Bold();
+                    foreach (var child in emp)
+                        foreach (var inner in ConvertInline(child))
+                            bold.Inlines.Add(inner);
+                    yield return bold;
+                }
+                else
+                {
+                    var italic = new Italic();
+                    foreach (var child in emp)
+                        foreach (var inner in ConvertInline(child))
+                            italic.Inlines.Add(inner);
+                    yield return italic;
+                }
+                break;
+
+            case LinkInline link:
+                var underline = new Underline();
+                foreach (var child in link)
+                    foreach (var inner in ConvertInline(child))
+                        underline.Inlines.Add(inner);
+                yield return underline;
+                break;
+
+            case LineBreakInline:
+                yield return new LineBreak();
+                break;
+
+            case ContainerInline container:
+                foreach (var child in container)
+                    foreach (var inner in ConvertInline(child))
+                        yield return inner;
+                break;
+
+            default:
+                var str = inline.ToString();
+                if (!string.IsNullOrEmpty(str)) yield return new Run(str);
+                break;
         }
+    }
 
-        if (position < text.Length) yield return new Run(text[position..]);
+    private static SelectableTextBlock Text(string text, double fontSize, FontWeight weight)
+    {
+        return new SelectableTextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = fontSize,
+            FontWeight = weight,
+            LineHeight = fontSize * 1.45
+        };
     }
 }

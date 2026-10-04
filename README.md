@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/PrashantUnity)
 
 **CSharpPlayground** (standalone executable: **FrySharp**) is an interactive multi-language code studio, polyglot Jupyter-style notebook environment for .NET 10, Python, Rust, and extensible language toolchains built with Avalonia UI.
 
@@ -45,34 +46,6 @@ dotnet test CSharpEditorPlugin.slnx
 
 ---
 
-## 📦 Solution Structure
-
-```
-CSharpPlayground/
-├── CSharpEditorPlugin.slnx         # Modern XML solution (Engine + Runner + Tests)
-├── CSharpEditorPlugin.csproj       # Core Studio & Plugin library (.NET 10)
-├── CSharpEditorPlugin.cs           # IFryPlugin entrypoint
-├── plugin.json                     # FryPDF marketplace manifest
-├── Controls/                       # VS Code activity bar, status bar, tabs, editor
-├── Models/                         # POCO models for scripts, cells, diagnostics
-├── Services/                       # Roslyn compiler, kernel, completion, debugger
-│   ├── Languages/                  # Language registry and one module per language (Python/Kernel: the kernel program; Rust: Cargo, fry, lldb-dap)
-│   ├── Toolchains/ Processes/      # Finding installed toolchains; running programs (stdin, Stop, cleanup)
-│   └── Kernels/ Packages/          # Notebook kernels per language, #!share, the kernel protocol; pip
-├── ViewModels/                     # Reactive MVVM view models
-├── Views/                          # Avalonia XAML views (Studio, Notebook, Manager)
-├── Runner/                         # Standalone desktop executable (FrySharp)
-│   ├── CSharpEditorPlugin.Runner.csproj
-│   ├── Program.cs / App.axaml
-│   └── MainWindow.axaml
-├── Tests/                          # Comprehensive xUnit test suite (2,100+ tests; Real*/ folders need each real toolchain: Python, Rust, Go, Delve, netcoredbg…)
-│   └── CSharpEditorPlugin.Tests.csproj
-├── tools/UiSnapshots/              # Headless renderer: real views to PNG, for checking UI changes
-├── docs/                           # Developer guides: headless UI snapshots, adding a language, the kernel protocol
-└── packaging/                      # macOS DMG & Windows MSIX/Inno packaging assets
-```
-
----
 
 ## 🏗 Architecture: Stateful Notebook Execution
 
@@ -112,6 +85,20 @@ flowchart TD
     S1 --> Out2
     S2 --> Out3
 ```
+
+---
+
+## 💖 Sponsor & Support
+
+[![How Your Sponsorship Works: A Scientific Flowchart](Assets/sponsorship-flowchart.jpg)](https://github.com/sponsors/PrashantUnity)
+
+> **The Scientific Sponsorship Loop:**
+> 1. **You Fund** 💸 ➔ 2. **I Buy Food** 🍕 ➔ 3. **Eat & Stay Healthy** 🍜 ➔ 4. **Code & Ship Features** 🚀
+> *(Alternative timeline: No food ➔ Dev dies 💀 ➔ Zero commits 🪦)*
+
+If you find **FrySharp** (CSharpPlayground) helpful, consider keeping the developer fueled and alive:
+
+👉 **[Sponsor @PrashantUnity on GitHub](https://github.com/sponsors/PrashantUnity)**
 
 ---
 

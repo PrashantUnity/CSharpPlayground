@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -462,6 +463,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
         });
+
+        InitializeExtensibilityBridge();
     }
 
     private void OnStudioSettingsChanged(StudioSettings s)
@@ -542,6 +545,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
         ActiveTab = tab;
         HighlightExplorerItem(tab.Title);
+
+        var adapter = new Services.Extensibility.Editor.NotebookDocumentContextAdapter(this);
+        Services.Extensibility.StudioAppContext.Instance.EditorService.ActiveDocumentResolver = () => adapter;
+        Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentOpened(adapter);
     }
 
     [RelayCommand]
@@ -571,34 +578,43 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [RelayCommand]
     public async Task NewNotebookTab()
     {
-        var timestamp = DateTime.Now.ToString("HHmmss");
-        var title = $"Notebook_{timestamp}";
+        await Task.Yield();
 
-        using (BeginLoading("Creating Notebook...", $"{title}.frynb"))
+        // Create an ephemeral (in-memory only) notebook — nothing is written to disk until the user
+        // renames it (which triggers OnItemRenamedAsync → first save) or presses Ctrl+S.
+        // This prevents "Notebook_065959.frynb" clutter from accumulating in the workspace folder.
+        var newDoc = new NotebookDocumentItem
         {
-            await Task.Yield();
-            NotebookDocumentItem newDoc;
-            try
-            {
-                newDoc = await Task.Run(async () => await _storageService.CreateNewNotebookAsync(title));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to create new notebook: {ex.Message}");
-                newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
-            }
+            Id = Guid.NewGuid().ToString("N"),
+            Title = "New Notebook",
+            Description = "Interactive cell-based notebook",
+            Category = "Interactive",
+            Created = DateTime.UtcNow,
+            LastModified = DateTime.UtcNow,
+            IsEphemeral = true
+        };
+        newDoc.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Markdown,
+            Source = "# 📓 New Notebook\nWrite documentation or notes in this cell.",
+            IsMarkdownPreviewMode = true
+        });
+        newDoc.Cells.Add(new NotebookCellItem
+        {
+            Type = CellType.Code,
+            Source = "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
+        });
 
-            var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
+        var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
 
-            ConfigureNotebookTab(newTab);
-            Tabs.Add(newTab);
-            SelectTab(newTab);
-            RefreshQuickOpenDocuments();
+        ConfigureNotebookTab(newTab);
+        Tabs.Add(newTab);
+        SelectTab(newTab);
+        RefreshQuickOpenDocuments();
 
-            var newExpItem = EnsureDocumentInExplorer(newDoc);
-            HighlightExplorerItem(newExpItem.Name);
-            newExpItem.StartRename();
-        }
+        var newExpItem = EnsureDocumentInExplorer(newDoc);
+        HighlightExplorerItem(newExpItem.Name);
+        newExpItem.StartRename();
     }
 
     // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
@@ -701,6 +717,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public void ShowQuickOpen(string? mode = null)
     {
         RefreshQuickOpenDocuments();
+        InitializeQuickOpenCommands();
         var qMode = mode?.ToLowerInvariant() switch
         {
             "commands" => QuickOpenMode.Commands,
@@ -770,6 +787,17 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             new() { Title = "File: Close Active Tab", Subtitle = "Close the current notebook tab", Category = "Tabs", IconKind = "Close", IconColorHex = "#E5534B", ShortcutHint = "Ctrl+W", ExecuteAction = () => CloseTab(ActiveTab) },
             new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except active", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => CloseOtherTabs(ActiveTab) },
             new() { Title = "File: Close All Tabs", Subtitle = "Close all open notebook tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = CloseAllTabs },
+            new() { Title = "Preferences: Open User Customization Script (init.csx)", Subtitle = "Open ~/.frysharp/init.csx to configure themes, shortcuts, and startup logic", Category = "Preferences", IconKind = "CogOutline", IconColorHex = "#A371F7", ExecuteAction = () => { _ = OpenUserInitScriptAsync(); } },
+            new() { Title = "Preferences: Open Workspace Customization Script (.frysharp/init.csx)", Subtitle = "Open workspace .frysharp/init.csx for project-specific customization", Category = "Preferences", IconKind = "FolderCogOutline", IconColorHex = "#A371F7", ExecuteAction = () => { _ = OpenWorkspaceInitScriptAsync(); } },
+            new() { Title = "Customization: Apply Active Cell as Customization", Subtitle = "Directly execute active cell code to hot-reload customization state", Category = "Customization", IconKind = "PlayCircleOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Alt+R", ExecuteAction = () => { _ = ApplyActiveCellAsCustomizationAsync(); } },
+            new() { Title = "Customization: Reload Customizations (~/.frysharp/init.csx)", Subtitle = "Recompile and apply user customization script and theme tokens", Category = "Customization", IconKind = "Refresh", IconColorHex = "#A371F7", ShortcutHint = "Ctrl+Shift+R", ExecuteAction = () => { _ = ReloadCustomizationsAsync(); } },
+            new() { Title = "Customization: Theme - Dark+ (Default)", Subtitle = "Apply Dark+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#2F81F7", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dark-plus") },
+            new() { Title = "Customization: Theme - Light+ (Default)", Subtitle = "Apply Light+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#0969DA", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("light-plus") },
+            new() { Title = "Customization: Theme - Dracula Pro", Subtitle = "Apply Dracula vibrant purple palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#BD93F9", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dracula") },
+            new() { Title = "Customization: Theme - Cyberpunk Neon", Subtitle = "Apply Cyberpunk electric yellow & neon cyan palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#FFE600", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("cyberpunk") },
+            new() { Title = "Customization: Theme - Monokai Classic", Subtitle = "Apply Monokai high-contrast warm palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#A6E22E", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("monokai") },
+            new() { Title = "Customization: Theme - One Dark Pro", Subtitle = "Apply Atom One Dark iconic balanced dark palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#61AFEF", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("one-dark") },
+            new() { Title = "Customization: Reset Theme to Defaults", Subtitle = "Clear color overrides and reset to active theme defaults", Category = "Customization", IconKind = "Restore", IconColorHex = "#E5534B", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ResetToDefaults() },
             new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase notebook cell typography size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
             new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease notebook cell typography size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
             new() { Title = "View: Reset Font Zoom", Subtitle = "Reset typography to default 100% (13px)", Category = "View", IconKind = "MagnifyScan", IconColorHex = "#D97706", ShortcutHint = "Ctrl+0", ExecuteAction = ResetZoom },
@@ -779,6 +807,21 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             new() { Title = "View: Show Live Variables", Subtitle = "Inspect session state and memory values", Category = "Navigation", IconKind = "VariableBox", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Shift+V", ExecuteAction = () => SelectActivityBarItem(2) },
             new() { Title = "Hub: Return to Workspace Manager", Subtitle = "Navigate back to Hub dashboard", Category = "Navigation", IconKind = "HomeOutline", IconColorHex = "#58A6FF", ExecuteAction = BackToHub }
         };
+
+        foreach (var desc in Services.Extensibility.StudioAppContext.Instance.CommandPipeline.Descriptors)
+        {
+            cmds.Add(new QuickOpenItem
+            {
+                Title = $"{desc.Category ?? "Extension"}: {desc.Title}",
+                Subtitle = desc.Id,
+                Category = desc.Category ?? "Extension",
+                IconKind = "ToyBrickOutline",
+                IconColorHex = "#A371F7",
+                ShortcutHint = desc.Shortcut ?? string.Empty,
+                ExecuteAction = desc.Action
+            });
+        }
+
         QuickOpen.RegisterCommands(cmds);
     }
 
@@ -840,10 +883,9 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
                 }
             }
 
-            // Scripts, and source files of any language (main.py), open in the Code Studio.
-            if (item.FileExtension.Equals(".frycs", StringComparison.OrdinalIgnoreCase) ||
-                item.FileExtension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
-                _storageService.Languages.FindSourceFileLanguage(item.Name) != null)
+            // Non-notebook documents (scripts, plain source files, text and data files) open in the Code Studio.
+            if (!item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) &&
+                !item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))
             {
                 if (_openScriptAction != null)
                 {
@@ -1090,8 +1132,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [RelayCommand]
     public async Task SaveAsync()
     {
-        if (ActiveTab != null && ActiveTab.IsModified)
+        if (ActiveTab == null) return;
+
+        // An ephemeral notebook must be saved even when not yet modified (user pressed Ctrl+S on a fresh tab).
+        if (ActiveTab.IsModified || ActiveTab.Notebook.IsEphemeral)
         {
+            ActiveTab.Notebook.IsEphemeral = false;
             ActiveTab.Notebook.LastModified = DateTime.UtcNow;
             var saved = await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
             ActiveTab.IsModified = !saved;
@@ -1319,8 +1365,19 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public void CopyItemPath(CodeStudio.Explorer.ExplorerItemViewModel item)
     {
         if (item == null) return;
-        var path = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
-        CompilerStatusText = $"Path: {path}";
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        var abs = Path.GetFullPath(Path.Combine(_storageService.ActiveWorkspaceRootPath, rel.Replace('/', Path.DirectorySeparatorChar)));
+        _ = CopyTextToClipboardAsync(abs);
+        CompilerStatusText = $"Copied full path: {abs}";
+    }
+
+    [RelayCommand]
+    public void CopyItemRelativePath(CodeStudio.Explorer.ExplorerItemViewModel item)
+    {
+        if (item == null) return;
+        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
+        _ = CopyTextToClipboardAsync(rel);
+        CompilerStatusText = $"Copied relative path: {rel}";
     }
 
     [RelayCommand]
@@ -1452,6 +1509,21 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
                 await RefreshExplorer();
 
+                var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
+                if (!string.IsNullOrWhiteSpace(workspaceFolder))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var app = Services.Extensibility.StudioAppContext.Instance;
+                        await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
+                        var workspaceExtDir = Path.Combine(workspaceFolder, ".frysharp", "extensions");
+                        if (Directory.Exists(workspaceExtDir))
+                        {
+                            await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
+                        }
+                    });
+                }
+
                 if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                 {
                     var loaded = await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId));
@@ -1514,6 +1586,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public void OnActivated()
     {
         _isPageActive = true;
+        UpdateExtensibilityDocumentResolver();
         _ = RefreshExplorerIfStaleAsync();
 
         // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
@@ -1521,7 +1594,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     }
 
     // Go to File: opens any file of the workspace by its path. A notebook opens here, anything else in the Code Studio.
-    private async Task OpenWorkspaceFileAsync(string fullPath)
+    public async Task OpenWorkspaceFileAsync(string fullPath)
     {
         using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
         {
@@ -1748,7 +1821,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -1769,7 +1843,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath
+            OnCopyPathRequested = CopyItemPath,
+            OnCopyRelativePathRequested = CopyItemRelativePath
         };
     }
 
@@ -1850,6 +1925,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         {
             openTab.Title = item.Name;
             openTab.Notebook.Title = newTitle;
+            // An ephemeral notebook is saved for the very first time on rename — clear the flag so SaveNotebookAsync writes it.
+            openTab.Notebook.IsEphemeral = false;
             await _storageService.SaveNotebookAsync(openTab.Notebook);
         }
         else
@@ -1858,6 +1935,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             if (doc != null)
             {
                 doc.Title = newTitle;
+                doc.IsEphemeral = false;
                 await _storageService.SaveNotebookAsync(doc);
             }
         }

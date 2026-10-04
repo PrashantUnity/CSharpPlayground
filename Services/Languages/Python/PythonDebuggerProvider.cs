@@ -82,7 +82,7 @@ public sealed class PythonDebuggerProvider : IDebuggerProvider, IDapAdapterRegis
 
         var missingGuidance = new MissingToolchainGuidance(
             "debugpy isn't installed in this Python environment",
-            "C# Code Studio uses debugpy for interactive Python debugging with breakpoints, locals and expression evaluation.",
+            "FrySharp uses debugpy for interactive Python debugging with breakpoints, locals and expression evaluation.",
             [
                 $"{pythonExe} -m pip install debugpy",
                 "Or run in bottom panel terminal: pip install debugpy"

@@ -1,0 +1,286 @@
+using System.Collections.Concurrent;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using Xunit;
+using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
+using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
+
+namespace CSharpEditorPlugin.Tests;
+
+/// <summary>
+/// Regression coverage for the bug where a script/cell that synchronously blocks on a Task (the
+/// natural-looking way to call e.g. HttpClient without async/await) deadlocked the whole app, and
+/// for the "abandon a stuck execution" recovery path that replaces it.
+/// </summary>
+public class ExecutionDeadlockAndAbandonmentTests : IDisposable
+{
+    private readonly string _testBaseDir;
+    private readonly LocalScriptStorageService _testStorage;
+
+    public ExecutionDeadlockAndAbandonmentTests()
+    {
+        _testBaseDir = Path.Combine(Path.GetTempPath(), "FryPDF_DeadlockTests_" + Guid.NewGuid().ToString("N"));
+        _testStorage = new LocalScriptStorageService(_testBaseDir);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_testBaseDir))
+            {
+                Directory.Delete(_testBaseDir, recursive: true);
+            }
+        }
+        catch { }
+    }
+
+    private CSharpCodeStudioViewModel CreateStudio(ScriptDocumentItem initialScript, Func<int>? getTimeoutSeconds = null)
+    {
+        return new CSharpCodeStudioViewModel(
+            initialScript,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            backToHomeAction: () => { },
+            getTimeoutSeconds: getTimeoutSeconds);
+    }
+
+    // ── ExecutionAbandonment.WaitWithGraceAsync — fast, isolated unit tests ──
+
+    [Fact]
+    public async Task WaitWithGraceAsync_TaskCompletesBeforeCancellation_ReturnsTrue()
+    {
+        using var cts = new CancellationTokenSource();
+        var task = Task.Delay(10);
+
+        var completed = await ExecutionAbandonment.WaitWithGraceAsync(task, cts.Token);
+
+        Assert.True(completed);
+    }
+
+    [Fact]
+    public async Task WaitWithGraceAsync_CancelledButTaskFinishesWithinGracePeriod_ReturnsTrue()
+    {
+        using var cts = new CancellationTokenSource();
+        var task = Task.Delay(50); // finishes in 50ms, well within the 3s GracePeriod even under heavy load
+        cts.CancelAfter(5);
+
+        var completed = await ExecutionAbandonment.WaitWithGraceAsync(task, cts.Token);
+
+        Assert.True(completed);
+    }
+
+    [Fact]
+    public async Task WaitWithGraceAsync_TaskNeverFinishes_GivesUpAfterGracePeriodInsteadOfHangingForever()
+    {
+        using var cts = new CancellationTokenSource();
+        var neverCompletes = new TaskCompletionSource<bool>().Task;
+        cts.CancelAfter(10);
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var completed = await ExecutionAbandonment.WaitWithGraceAsync(neverCompletes, cts.Token);
+        sw.Stop();
+
+        Assert.False(completed);
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(20), $"Should give up shortly after the grace period, took {sw.Elapsed}");
+    }
+
+    // ── Deadlock regression: a script that blocks synchronously must not freeze a UI-like thread ──
+
+    [Fact]
+    public async Task RunCodeCommand_ScriptBlocksSynchronouslyOnATask_DoesNotDeadlockUiThread()
+    {
+        // This is the exact shape of bug users hit with `httpClient.GetStringAsync(url).Result`:
+        // a non-async top-level statement that blocks on a Task. Before the fix, running this
+        // inline on a captured UI SynchronizationContext deadlocked forever.
+        var script = await _testStorage.CreateNewScriptAsync("Blocking Script");
+        script.Code = "System.Threading.Tasks.Task.Delay(150).Wait();\nConsole.WriteLine(\"done blocking\");";
+        await _testStorage.SaveScriptAsync(script);
+
+        var studio = CreateStudio(script);
+
+        var pump = new SingleThreadSynchronizationContext();
+        var completed = new TaskCompletionSource<bool>();
+
+        var pumpThread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(pump);
+            pump.Post(async _ =>
+            {
+                try
+                {
+                    await studio.RunCodeCommand.ExecuteAsync(null);
+                    completed.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    completed.SetException(ex);
+                }
+                finally
+                {
+                    pump.Complete();
+                }
+            }, null);
+            pump.RunOnCurrentThread();
+        })
+        { IsBackground = true };
+        pumpThread.Start();
+
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(60)));
+        Assert.True(ReferenceEquals(finished, completed.Task),
+            "RunCodeCommand deadlocked on a UI-like single-threaded SynchronizationContext.");
+        await completed.Task;
+
+        Assert.Contains((string)"done blocking", (string?)studio.ConsoleOutput);
+    }
+
+    [Fact]
+    public async Task RunSingleCellAsync_CellBlocksSynchronouslyOnATask_DoesNotDeadlockUiThread()
+    {
+        var tab = new NotebookTabViewModel(new NotebookDocumentItem { Title = "Deadlock Test" });
+        var cell = tab.Cells[0];
+        cell.Source = "System.Threading.Tasks.Task.Delay(150).Wait();\nConsole.WriteLine(\"done blocking\");";
+
+        var pump = new SingleThreadSynchronizationContext();
+        var completed = new TaskCompletionSource<bool>();
+
+        var pumpThread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(pump);
+            pump.Post(async _ =>
+            {
+                try
+                {
+                    await tab.RunSingleCellAsync(cell);
+                    completed.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    completed.SetException(ex);
+                }
+                finally
+                {
+                    pump.Complete();
+                }
+            }, null);
+            pump.RunOnCurrentThread();
+        })
+        { IsBackground = true };
+        pumpThread.Start();
+
+        var finished = await Task.WhenAny(completed.Task, Task.Delay(TimeSpan.FromSeconds(60)));
+        Assert.True(ReferenceEquals(finished, completed.Task),
+            "RunSingleCellAsync deadlocked on a UI-like single-threaded SynchronizationContext.");
+        await completed.Task;
+
+        Assert.Contains((string)"done blocking", (string?)cell.OutputText);
+    }
+
+    [Fact]
+    public async Task RunCodeCommand_DefaultTimeoutSetting_RunsPastTenSecondsWithoutBeingAutoCancelled()
+    {
+        // The execution timeout defaults to 0 (no automatic limit) — a script/notebook cell now runs
+        // until Stop is clicked, matching Jupyter, instead of being silently cut off after a fixed
+        // ceiling. Regression guard for that specific default: intentionally runs past the *old*
+        // hardcoded 10s default to prove nothing auto-cancels it anymore.
+        var script = await _testStorage.CreateNewScriptAsync("Slow But Fine Script");
+        script.Code = "System.Threading.Tasks.Task.Delay(10500).Wait();\nConsole.WriteLine(\"FROM_SLOW_BUT_FINE\");";
+        await _testStorage.SaveScriptAsync(script);
+
+        // No getTimeoutSeconds passed — exercises the constructor's default fallback.
+        var studio = CreateStudio(script);
+
+        await studio.RunCodeCommand.ExecuteAsync(null);
+
+        Assert.Contains((string)"FROM_SLOW_BUT_FINE", (string?)studio.ConsoleOutput);
+        Assert.DoesNotContain((string)"Timed out", (string?)studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── Abandon-and-recover: Stop/timeout must give up promptly, and the kernel must stay usable ──
+
+    [Fact]
+    public async Task RunCodeCommand_TrulyStuckScript_AbandonsPromptlyAndKernelRecoversForNextRun()
+    {
+        var script = await _testStorage.CreateNewScriptAsync("Stuck Script");
+        // Blocks far longer than timeout (1s) + grace period (1s) — must be abandoned, not awaited.
+        script.Code = "System.Threading.Tasks.Task.Delay(4000).Wait();\nConsole.WriteLine(\"FROM_STUCK_LATE\");";
+        await _testStorage.SaveScriptAsync(script);
+
+        var timeoutSeconds = 1;
+        var studio = CreateStudio(script, getTimeoutSeconds: () => timeoutSeconds);
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await studio.RunCodeCommand.ExecuteAsync(null);
+        sw.Stop();
+
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(15),
+            $"Should abandon ~1s (timeout) + ~1s (grace) in, took {sw.Elapsed}");
+        Assert.Contains((string)"Timed out", (string?)studio.CompilerStatusText, StringComparison.OrdinalIgnoreCase);
+
+        // A second, fast run on the same kernel must succeed promptly — proving HardReset() freed
+        // the execution lock the abandoned run never released.
+        var second = await _testStorage.CreateNewScriptAsync("Fast Script");
+        second.Code = "Console.WriteLine(\"FROM_B\");";
+        await _testStorage.SaveScriptAsync(second);
+        await studio.UpdateActiveScriptAsync(second);
+
+        // Only the first run is meant to time out. The second compiles a script from cold, which on a busy machine
+        // under parallel test load can take 20-40 s; it must not be cut short, or "FROM_B" never prints and the test
+        // fails for the wrong reason. The assertion here guards that the kernel lock was freed (so the run eventually
+        // completes), NOT that Roslyn compiles in under a second — use 60 s as the upper bound so this is robust
+        // even on a heavily loaded machine or a slow first-compile under the global CompileGate.
+        timeoutSeconds = 60;
+        var secondSw = System.Diagnostics.Stopwatch.StartNew();
+        await studio.RunCodeCommand.ExecuteAsync(null);
+        secondSw.Stop();
+
+        // 60 s: the kernel lock recovery assertion. If this fires, the lock truly was NOT freed (a real regression).
+        // It does NOT mean "must be fast" — cold Roslyn compilations under parallel load are legitimately slow.
+        Assert.True(secondSw.Elapsed < TimeSpan.FromSeconds(60),
+            $"Second run should eventually complete once the kernel lock was freed, took {secondSw.Elapsed}");
+        Assert.True((bool)studio.ConsoleOutput.Contains("FROM_B"),
+            $"Expected 'FROM_B' in ConsoleOutput, but got:\n{studio.ConsoleOutput}\nStatus: {studio.CompilerStatusText}");
+
+        // The stuck script's Task.Delay is 4 s total. The abandoned thread will have finished its delay
+        // and attempted its Console.WriteLine by now (we already waited secondSw.Elapsed >> 4 s),
+        // so a brief extra wait is sufficient to let any stale post reach the output buffer.
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        Assert.DoesNotContain((string)"FROM_STUCK_LATE", (string?)studio.ConsoleOutput);
+    }
+
+    private sealed class SingleThreadSynchronizationContext : SynchronizationContext
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = new();
+
+        // A background continuation from the awaited Task.Run (e.g. a trailing continuation still
+        // unwinding after this test's own outcome is already decided) can race with Complete() and
+        // try to post afterward — harmless at that point, so drop it instead of crashing the process.
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            try
+            {
+                _queue.Add((d, state));
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        public override void Send(SendOrPostCallback d, object? state) => d(state);
+
+        public void RunOnCurrentThread()
+        {
+            foreach (var workItem in _queue.GetConsumingEnumerable())
+            {
+                workItem.Callback(workItem.State);
+            }
+        }
+
+        public void Complete() => _queue.CompleteAdding();
+    }
+}

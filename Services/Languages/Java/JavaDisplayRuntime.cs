@@ -3,7 +3,7 @@ using System.IO;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 
 /// <summary>
-/// Provides zero-configuration runtime support for Java scripts in C# Code Studio,
+/// Provides zero-configuration runtime support for Java scripts in FrySharp,
 /// generating the <c>Display</c> helper class so user scripts can call <c>Display.dump(data)</c>,
 /// <c>Display.table(data)</c>, <c>Display.html(...)</c>, and <c>Display.image(...)</c> out of the box.
 /// </summary>
@@ -104,7 +104,7 @@ public static class JavaDisplayRuntime
         return VisualizerJavaFallback;
     }
 
-    private const string VisualizerJavaFallback = "// Companion to public class Display for FryPDF C# Code Studio\npublic class Visualizer { }";
+    private const string VisualizerJavaFallback = "// Companion to public class Display for FrySharp\npublic class Visualizer { }";
 
     private static string GetBaseDisplaySource()
     {
@@ -136,7 +136,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * Interactive Display and Visual Dump API for FryPDF C# Code Studio.
+ * Interactive Display and Visual Dump API for FrySharp.
  * Allows Java scripts to emit interactive tables, charts, HTML, and images
  * directly to the studio's Results (.Dump) deck.
  */

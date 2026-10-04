@@ -1,4 +1,4 @@
-//! Display helpers for C# Code Studio: what a Rust script calls to put charts, 3D plots,
+//! Display helpers for FrySharp: what a Rust script calls to put charts, 3D plots,
 //! visualizers, tables, images, and HTML in the Results deck.
 
 use std::collections::HashMap;

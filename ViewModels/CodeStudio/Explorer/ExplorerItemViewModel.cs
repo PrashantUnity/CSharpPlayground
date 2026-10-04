@@ -62,6 +62,13 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public string DeleteConfirmationText => $"Delete {Name} from disk?";
 
+    /// <summary>Git status letter (M, U, D, A) shown in Explorer tree for uncommitted files.</summary>
+    [ObservableProperty]
+    private string? _gitStatusLetter;
+
+    [ObservableProperty]
+    private string? _gitStatusColorHex;
+
     /// <summary>The paths of the folders that are open in a tree, so a rebuilt tree can open the same ones again.</summary>
     public static HashSet<string> ExpandedFolderPaths(IEnumerable<ExplorerItemViewModel> roots)
     {
@@ -97,6 +104,46 @@ public partial class ExplorerItemViewModel : ObservableObject
 
     public Thickness IndentPadding => new Thickness(Math.Max(4, (Depth * 14) + 4), 0, 4, 0);
 
+    public static (string IconKind, string IconColor) IconForExtension(string ext)
+    {
+        var lower = ext.ToLowerInvariant();
+
+        // 1. Check known specific non-language or special file formats first
+        switch (lower)
+        {
+            case ".frynb" or ".ipynb": return ("NotebookOutline", NotebookAmberHex);
+            case ".cs" or ".frycs": return ("LanguageCsharp", "#58A6FF");
+            case ".json": return ("CodeJson", "#E5C07B");
+            case ".md": return ("FormatHeaderPound", "#4EC9B0");
+            case ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif": return ("ImageOutline", "#C586C0");
+            case ".csv" or ".tsv": return ("Table", "#75D59A");
+            case ".pdf": return ("FilePdfBox", "#F14C4C");
+            case ".xml" or ".xaml" or ".axaml" or ".html" or ".htm": return ("Xml", "#E5C07B");
+            case ".yaml" or ".yml": return ("FileCodeOutline", "#CB88FF");
+            case ".sql": return ("DatabaseOutline", "#DCDCAA");
+            case ".zip" or ".tar" or ".gz" or ".7z" or ".rar": return ("ZipBoxOutline", "#CE9178");
+            case ".mp3" or ".wav" or ".ogg" or ".flac": return ("MusicNote", "#4EC9B0");
+            case ".mp4" or ".mov" or ".avi" or ".mkv" or ".webm": return ("VideoOutline", "#4EC9B0");
+            case ".txt" or ".log" or ".ini" or ".env" or ".config": return ("FileDocumentOutline", "#8B949E");
+        }
+
+        // 2. Dynamically consult LanguageRegistry for registered languages (Dart, Python, JS, Go, Rust, C++, etc.)
+        try
+        {
+            var registry = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.LanguageServices?.Registry;
+            if (registry != null && registry.FindByExtension(lower) is { } lang)
+            {
+                return (lang.IconKind, lang.AccentHex);
+            }
+        }
+        catch
+        {
+            // Fallback safely if ambient registry is unavailable
+        }
+
+        return ("FileOutline", "#8B949E");
+    }
+
     public string IconKind
     {
         get
@@ -107,16 +154,7 @@ public partial class ExplorerItemViewModel : ObservableObject
             }
 
             if (LanguageIconKind != null) return LanguageIconKind;
-
-            return FileExtension.ToLowerInvariant() switch
-            {
-                ".frynb" or ".ipynb" => "NotebookOutline",
-                ".cs" or ".frycs" => "LanguageCsharp",
-                ".json" => "CodeJson",
-                ".md" => "FormatHeaderPound",
-                ".png" or ".jpg" or ".jpeg" or ".svg" => "ImageOutline",
-                _ => "FileOutline"
-            };
+            return IconForExtension(FileExtension).IconKind;
         }
     }
 
@@ -126,16 +164,7 @@ public partial class ExplorerItemViewModel : ObservableObject
         {
             if (IsDirectory) return NotebookAmberHex;
             if (LanguageIconColor != null) return LanguageIconColor;
-
-            return FileExtension.ToLowerInvariant() switch
-            {
-                ".frynb" or ".ipynb" => NotebookAmberHex,
-                ".cs" or ".frycs" => "#58A6FF",
-                ".json" => "#E5C07B",
-                ".md" => "#4EC9B0",
-                ".png" or ".jpg" or ".jpeg" or ".svg" => "#C586C0",
-                _ => "#8B949E"
-            };
+            return IconForExtension(FileExtension).IconColor;
         }
     }
 
@@ -150,6 +179,7 @@ public partial class ExplorerItemViewModel : ObservableObject
     public Action<ExplorerItemViewModel>? OnRenameCommitted { get; set; }
     public Action<ExplorerItemViewModel>? OnDuplicateRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnCopyPathRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnCopyRelativePathRequested { get; set; }
 
     partial void OnDepthChanged(int value)
     {
@@ -272,5 +302,11 @@ public partial class ExplorerItemViewModel : ObservableObject
     public void RequestCopyPath()
     {
         OnCopyPathRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestCopyRelativePath()
+    {
+        OnCopyRelativePathRequested?.Invoke(this);
     }
 }

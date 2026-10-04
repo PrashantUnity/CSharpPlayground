@@ -43,7 +43,7 @@ internal sealed class FakeInspector : IAsyncDisposable
             }
         }
 
-        _serving = Task.Run(ServeAsync);
+        _serving = ServeAsync();
     }
 
     public int Port { get; }
@@ -97,24 +97,35 @@ internal sealed class FakeInspector : IAsyncDisposable
                 return;
             }
 
-            if (context.Request.IsWebSocketRequest)
+            _ = Task.Run(async () =>
             {
-                var socket = (await context.AcceptWebSocketAsync(null)).WebSocket;
-                _connected.TrySetResult(socket);
-                _ = Task.Run(() => ReadAsync(socket));
-            }
-            else if (context.Request.Url?.AbsolutePath == "/json/list")
-            {
-                var body = Encoding.UTF8.GetBytes($"[{{\"id\":\"abc\",\"webSocketDebuggerUrl\":\"ws://127.0.0.1:{Port}/abc\"}}]");
-                context.Response.ContentType = "application/json";
-                await context.Response.OutputStream.WriteAsync(body);
-                context.Response.Close();
-            }
-            else
-            {
-                context.Response.StatusCode = 404;
-                context.Response.Close();
-            }
+                try
+                {
+                    if (context.Request.IsWebSocketRequest)
+                    {
+                        var socket = (await context.AcceptWebSocketAsync(null)).WebSocket;
+                        _connected.TrySetResult(socket);
+                        _ = Task.Run(() => ReadAsync(socket));
+                    }
+                    else if (context.Request.Url?.AbsolutePath == "/json/list")
+                    {
+                        var body = Encoding.UTF8.GetBytes($"[{{\"id\":\"abc\",\"webSocketDebuggerUrl\":\"ws://127.0.0.1:{Port}/abc\"}}]");
+                        context.Response.ContentType = "application/json";
+                        context.Response.ContentLength64 = body.Length;
+                        await context.Response.OutputStream.WriteAsync(body);
+                        context.Response.Close();
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        context.Response.Close();
+                    }
+                }
+                catch
+                {
+                    try { context.Response.Abort(); } catch { }
+                }
+            });
         }
     }
 
@@ -148,6 +159,11 @@ internal sealed class FakeInspector : IAsyncDisposable
         }
         catch (Exception ex) when (ex is ObjectDisposedException or HttpListenerException)
         {
+        }
+
+        if (_connected.Task.IsCompletedSuccessfully)
+        {
+            try { _connected.Task.Result.Dispose(); } catch { }
         }
 
         await Task.WhenAny(_serving, Task.Delay(1000));

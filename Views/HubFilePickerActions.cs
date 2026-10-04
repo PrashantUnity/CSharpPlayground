@@ -85,6 +85,33 @@ internal static class HubFilePickerActions
         }
     }
 
+    public static async Task CreateNewWorkspaceFolderAsync(Visual owner, CSharpManagerViewModel vm)
+    {
+        var topLevel = TopLevel.GetTopLevel(owner);
+        if (topLevel?.StorageProvider is not { } storageProvider) return;
+
+        var folders = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select or Create New Workspace Folder",
+            AllowMultiple = false
+        });
+
+        if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } folderPath)
+        {
+            try
+            {
+                var frysharpDir = Path.Combine(folderPath, ".frysharp");
+                if (!Directory.Exists(frysharpDir))
+                {
+                    Directory.CreateDirectory(frysharpDir);
+                }
+            }
+            catch { }
+
+            await vm.OpenExistingProjectAsync(folderPath);
+        }
+    }
+
     public static async Task BrowseFolderAsync(Visual owner, CSharpManagerViewModel vm)
     {
         var topLevel = TopLevel.GetTopLevel(owner);

@@ -33,14 +33,14 @@
                                FontFamily="{DynamicResource M3FontFamily}"
                                FontSize="17" FontWeight="Bold"
                                Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                    <TextBlock Text="FrySharp C# Code Studio v1.0.6"
+                    <TextBlock Text="FrySharp v1.0.6"
                                FontSize="12.5"
                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                 </StackPanel>
             </StackPanel>
 
             <TextBlock Grid.Row="1"
-                       Text="You are currently running the latest release of C# Code Studio. All Roslyn compiler services and polyglot runtime modules are ready."
+                       Text="You are currently running the latest release of FrySharp. All Roslyn compiler services and polyglot runtime modules are ready."
                        TextWrapping="Wrap"
                        FontSize="12"
                        LineHeight="18"

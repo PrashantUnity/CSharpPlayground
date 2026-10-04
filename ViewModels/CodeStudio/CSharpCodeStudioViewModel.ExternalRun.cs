@@ -66,6 +66,22 @@ public partial class CSharpCodeStudioViewModel
         }
 
         var folder = Path.GetDirectoryName((string?)sourceFile)!;
+
+        var beforeHook = new FrySharp.Sdk.ExecutionHookContext
+        {
+            LanguageId = language.Id,
+            DocumentPath = sourceFile,
+            SourceCode = Code
+        };
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeBeforeScriptRun(beforeHook);
+        if (beforeHook.CancelExecution)
+        {
+            var cancelReason = beforeHook.CancellationReason ?? "Execution cancelled by extension hook.";
+            CompilerStatusText = "Cancelled by Hook";
+            ConsoleOutput = $"⚠️ {cancelReason}\n";
+            return;
+        }
+
         var cts = new CancellationTokenSource();
         var timeoutSeconds = _getTimeoutSeconds();
         using var timeoutCts = timeoutSeconds > 0 ? new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)) : new CancellationTokenSource();
@@ -291,6 +307,17 @@ public partial class CSharpCodeStudioViewModel
                 ExecutionTimeText = timeText;
                 CompilerStatusText = status;
             }
+
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeAfterScriptRun(
+                new FrySharp.Sdk.ExecutionFinishedHookContext
+                {
+                    LanguageId = language.Id,
+                    DocumentPath = sourceFile,
+                    Success = exitCode == 0,
+                    Elapsed = elapsed,
+                    Output = buffer.Text,
+                    Error = exitCode != 0 ? footer : string.Empty
+                });
 
             cts.Dispose();
         }

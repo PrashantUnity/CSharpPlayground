@@ -25,6 +25,9 @@ public sealed class StudioSettings
     public string LanguageVersion { get; set; } = "13.0";
     public string CSharpExecutionEngine { get; set; } = "internal"; // "internal" (Roslyn) or "external" (dotnet CLI)
 
+    // AI Agent & Local LLM Preferences
+    public PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings Ai { get; set; } = new();
+
     public StudioSettings Clone() => new()
     {
         TabSize = TabSize,
@@ -39,6 +42,7 @@ public sealed class StudioSettings
         MaxTerminalOutputLines = MaxTerminalOutputLines,
         NullableChecksEnabled = NullableChecksEnabled,
         LanguageVersion = LanguageVersion,
-        CSharpExecutionEngine = CSharpExecutionEngine
+        CSharpExecutionEngine = CSharpExecutionEngine,
+        Ai = Ai.Clone()
     };
 }

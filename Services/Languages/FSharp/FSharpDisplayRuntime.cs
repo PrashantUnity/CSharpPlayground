@@ -5,7 +5,7 @@ using System.Text;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
 
 /// <summary>
-/// Provides display and inspection runtime support for F# scripts and notebooks in C# Code Studio,
+/// Provides display and inspection runtime support for F# scripts and notebooks in FrySharp,
 /// emitting rich display MIME bundles for interactive visuals, charts, HTML, images, and tables in Results (.DUMP).
 /// </summary>
 public static class FSharpDisplayRuntime

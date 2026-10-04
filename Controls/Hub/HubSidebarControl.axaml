@@ -37,11 +37,11 @@
 
                             <!-- Brand Identity -->
                             <StackPanel VerticalAlignment="Center" Spacing="1">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock Text="C#" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                    <TextBlock Text="Code Studio" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="0">
+                                    <TextBlock Text="Fry" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Sharp" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </StackPanel>
-                                <TextBlock Text="FrySharp • .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="Polyglot IDE • .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -104,7 +104,7 @@
                                     <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavScriptsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource NavScriptsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
-                                    <TextBlock Grid.Column="1" Text="C# Scripts" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Scripts" Margin="10,0,0,0" VerticalAlignment="Center" />
                                     <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavScriptsBgBrush}" BorderBrush="{DynamicResource NavScriptsFgBrush}" BorderThickness="1">
                                         <TextBlock Text="{Binding TotalScripts}" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                     </Border>

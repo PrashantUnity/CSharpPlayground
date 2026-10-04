@@ -8,6 +8,7 @@ using PdfEditorApp.Core.Plugins;
 using PdfEditorApp.Core.Plugins.Descriptors;
 using PdfEditorApp.Core.Plugins.Manifests;
 using PdfEditorApp.Core.Plugins.Settings;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels;
@@ -18,14 +19,14 @@ using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.C
 namespace PdfEditorApp.Plugins.CSharpEditor;
 
 /// <summary>
-/// FryPDF plugin entry point for C# Code Studio.
+/// FryPDF plugin entry point for FrySharp.
 /// Mounts as a full-viewport Workspace Studio Navigation page, Status Bar widget,
 /// Command Palette action, and Dynamic Ribbon action (No floating shell overlay).
 /// </summary>
 public class CSharpEditorPlugin : IFryPlugin
 {
     public string Id => "com.frypdf.plugin.csharpeditor";
-    public string Name => "C# Code Studio";
+    public string Name => "FrySharp";
     public Version Version => new(1, 0, 0);
     public bool AutoOpenOverlay => false;
     public IReadOnlyList<Type> RequiredServices => Array.Empty<Type>();
@@ -88,7 +89,7 @@ public class CSharpEditorPlugin : IFryPlugin
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
         {
             Id = "CSharpStudio",
-            Title = "C# Code Studio",
+            Title = "FrySharp",
             Group = "Overview",
             IconKind = "CodeBraces",
             BadgeText = "Studio",
@@ -108,7 +109,7 @@ public class CSharpEditorPlugin : IFryPlugin
         var cmdReg = ctx.RegisterCommand(new CommandPaletteDescriptor
         {
             Id = "cmd.studio.csharpeditor",
-            Title = "Open C# Code Studio",
+            Title = "Open FrySharp",
             Subtitle = "Launch in-app C# development studio with project manager, editor, and Roslyn runner",
             Category = "Developer Tools",
             IconKind = "CodeBraces",
@@ -117,15 +118,72 @@ public class CSharpEditorPlugin : IFryPlugin
             Action = NavigateToStudio
         });
 
+        var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager = customizationManager;
+
+        var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
+
+        _ = Task.Run(async () =>
+        {
+            var ws = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPath;
+            await customizationManager.InitializeAsync(enableHotReload: true, ct);
+            await extensionManager.DiscoverAndLoadFromDefaultLocationsAsync(workspacePath: ws, enableHotReload: true, ct);
+        }, ct);
+
+        var reloadCustomizationsCmd = ctx.RegisterCommand(new CommandPaletteDescriptor
+        {
+            Id = "cmd.studio.reload_customizations",
+            Title = "Reload Customizations & Themes",
+            Subtitle = "Recompile and apply ~/.frysharp/init.csx and active themes in real time",
+            Category = "Developer Tools",
+            IconKind = "Refresh",
+            Shortcut = "Ctrl+Shift+R",
+            Order = 86,
+            Action = sp => { _ = customizationManager.ReloadAsync(); }
+        });
+
+        var openInitScriptCmd = ctx.RegisterCommand(new CommandPaletteDescriptor
+        {
+            Id = "cmd.studio.open_init_script",
+            Title = "Open Customization Script (init.csx)",
+            Subtitle = "Edit in-app startup script, colors, themes, commands, and hooks",
+            Category = "Developer Tools",
+            IconKind = "Tune",
+            Order = 87,
+            Action = sp =>
+            {
+                NavigateToStudio(sp);
+                _ = customizationManager.Storage.EnsureInitScriptExistsAsync().ContinueWith(async t =>
+                {
+                    if (activeHost?.CodeStudioViewModel != null)
+                    {
+                        var item = new ScriptDocumentItem
+                        {
+                            Id = "init.csx",
+                            Title = "init.csx",
+                            Code = await t,
+                            LanguageId = "csharp",
+                            SourceFilePath = customizationManager.Storage.GlobalInitScriptPath
+                        };
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            activeHost.NavigateToCodeStudio(item);
+                        });
+                    }
+                });
+            }
+        });
+
         var statusReg = ctx.RegisterStatusBarWidget(new StatusBarWidgetDescriptor
         {
             WidgetId = "frypdf.status.csharpeditor",
             Alignment = StatusBarAlignment.Right,
             Order = 14,
-            ToolTip = "C# Code Studio & Automation Hub",
+            ToolTip = "FrySharp & Automation Hub",
             Factory = _ => new Button
             {
-                Content = "{ } C# Studio",
+                Content = "{ } FrySharp",
                 Classes = { "m3-tonal-btn" }
             }
         });
@@ -135,7 +193,7 @@ public class CSharpEditorPlugin : IFryPlugin
             Id = "frypdf.ribbon.action.csharpeditor",
             TabId = "plugins",
             GroupId = "tools",
-            Label = "C# Studio",
+            Label = "FrySharp",
             Tooltip = "Open full-featured C# development studio and script automation workspace",
             IconKind = "CodeBraces",
             Order = 30,
@@ -147,7 +205,7 @@ public class CSharpEditorPlugin : IFryPlugin
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.studio.launch",
-                Title = "Launch C# Code Studio",
+                Title = "Launch FrySharp",
                 Description = "Open in-app C# development studio and script automation workspace.",
                 Category = "Editor",
                 DefaultGesture = "Ctrl+Alt+E",
@@ -449,6 +507,18 @@ public class CSharpEditorPlugin : IFryPlugin
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ResetZoomCommand.Execute(null);
                     else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ResetZoomCommand.Execute(null);
                 }
+            }),
+
+            ctx.RegisterShortcut(new ShortcutDescriptor
+            {
+                Id = "csharp.studio.reload_customizations",
+                Title = "Reload Customizations & Themes",
+                Description = "Recompile and apply in-app customization scripts and theme tokens.",
+                Category = "Editor",
+                DefaultGesture = "Ctrl+Shift+R",
+                MacGesture = "Cmd+Shift+R",
+                Scope = ShortcutScope.Global,
+                Action = sp => { _ = customizationManager.ReloadAsync(); }
             })
         };
 
@@ -462,6 +532,10 @@ public class CSharpEditorPlugin : IFryPlugin
             ProcessRegistry.KillAll();
             navReg.Dispose();
             cmdReg.Dispose();
+            reloadCustomizationsCmd.Dispose();
+            openInitScriptCmd.Dispose();
+            customizationManager.Dispose();
+            extensionManager.Dispose();
             statusReg.Dispose();
             ribbonActionReg.Dispose();
             foreach (var s in shortcuts) s.Dispose();

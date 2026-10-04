@@ -14,6 +14,9 @@ public interface IScriptStorageService
     bool IsExternalWorkspaceActive { get; }
     event Action? ActiveWorkspaceChanged;
 
+    /// <summary>Persistent store of recent workspaces, projects, and standalone notebooks.</summary>
+    IRecentWorkspaceService RecentWorkspaces { get; }
+
     /// <summary>
     /// Moves whenever the set or arrangement of items changes (one created, deleted, renamed or moved, or another folder
     /// opened). A consumer that remembers the value it loaded at can skip reloading the workspace while it hasn't moved.

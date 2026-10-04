@@ -16,4 +16,8 @@ public class NotebookDocumentItem
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public int ExecutionCount { get; set; }
+
+    /// <summary>True when this notebook is an unsaved scratchpad, starter template, or practice problem that should not auto-save to disk on execution.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsEphemeral { get; set; }
 }

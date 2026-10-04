@@ -1,0 +1,19 @@
+{
+  "id": "dart-support",
+  "name": "Dart Language Support",
+  "version": "1.0.0",
+  "description": "Full-featured Dart 3 language support extension for FrySharp, providing interactive polyglot notebooks, problems diagnostic parsing, toolchains, packages, and syntax themes.",
+  "author": "Code Fry Dev",
+  "mainEntryClass": "DartSupportExtension.DartExtensionEntryPoint",
+  "sourceFiles": [
+    "DartExtensionEntryPoint.cs",
+    "DartLanguage.cs",
+    "DartNotebookKernel.cs",
+    "DartToolchainProvider.cs",
+    "DartDiagnosticParser.cs",
+    "DartPackageManager.cs",
+    "DartScriptRunner.cs",
+    "DartSyntaxHighlighting.cs",
+    "DartDisplayRuntime.cs"
+  ]
+}

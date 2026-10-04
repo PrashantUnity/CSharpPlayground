@@ -262,7 +262,7 @@
         <Setter Property="Padding" Value="5,1" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
-        <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource DsSelectionBrush}" />
     </Style>
     <Style Selector="TextBox.explorer-rename-box /template/ Border#PART_BorderElement">
         <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />

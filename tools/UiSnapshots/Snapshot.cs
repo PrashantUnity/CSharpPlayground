@@ -95,6 +95,36 @@ internal static class Snapshot
         return task.Result;
     }
 
+    public static void EnsureExtensionsLoaded(PdfEditorApp.Plugins.CSharpEditor.Services.Languages.StudioLanguageServices languages, Options options)
+    {
+        var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
+        app.LanguageServices = languages;
+
+        Wait(app.ExtensionManager.DiscoverAndLoadFromDefaultLocationsAsync(enableHotReload: false));
+
+        if (options.Value("extension") is { } extDir && Directory.Exists(extDir))
+        {
+            if (File.Exists(Path.Combine(extDir, "extension.json")))
+            {
+                Wait(app.ExtensionManager.LoadExtensionAsync(extDir, enableHotReload: false));
+            }
+            else
+            {
+                Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(extDir, enableHotReload: false));
+            }
+        }
+
+        var samplesExt = Path.Combine(Directory.GetCurrentDirectory(), "samples", "extensions");
+        if (!Directory.Exists(samplesExt))
+        {
+            samplesExt = Path.Combine(AppContext.BaseDirectory, "samples", "extensions");
+        }
+        if (Directory.Exists(samplesExt))
+        {
+            Wait(app.ExtensionManager.DiscoverAndLoadAllAsync(samplesExt, enableHotReload: false));
+        }
+    }
+
     /// <summary>
     /// Applies <c>--hover</c>, then saves what the window drew as <c>{--name or defaultName}.png</c> and prints its path.
     /// Supports <c>--timestamp</c> to append a date-time stamp and <c>--unique</c> to avoid overriding existing files.

@@ -9,7 +9,7 @@
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor.Runner</RootNamespace>
     <PackageId>CodeFryDev.FrySharp</PackageId>
     <Product>FrySharp</Product>
-    <Title>FrySharp - C# Code Studio</Title>
+    <Title>FrySharp</Title>
     <Version>1.0.6</Version>
     <Company>Code Fry Dev</Company>
     <Copyright>Copyright © 2026 Code Fry Dev</Copyright>

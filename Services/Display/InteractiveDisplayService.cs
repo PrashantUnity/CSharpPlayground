@@ -108,11 +108,45 @@ public static partial class Display
         // Handle SkiaSharp SKBitmap, SKImage, SKData, SKSurface via reflection
         var typeName = anyImage.GetType().FullName ?? string.Empty;
 
-        if (typeName.Contains("SkiaSharp.SKBitmap") || typeName.Contains("SkiaSharp.SKImage"))
+        if (typeName.Contains("SkiaSharp.SKBitmap"))
         {
             try
             {
-                // SKImage.FromBitmap(...) or skImage.Encode()
+                // 1. Try SKImage.FromBitmap(skBitmap) -> skImage.Encode()
+                var skImageType = anyImage.GetType().Assembly.GetType("SkiaSharp.SKImage");
+                var fromBitmapMethod = skImageType?.GetMethod("FromBitmap", new[] { anyImage.GetType() })
+                    ?? skImageType?.GetMethods().FirstOrDefault(m => m.Name == "FromBitmap" && m.GetParameters().Length == 1);
+                if (fromBitmapMethod?.Invoke(null, new[] { anyImage }) is object skImage)
+                {
+                    Image(skImage);
+                    return;
+                }
+
+                // 2. Try skBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                var formatEnum = anyImage.GetType().Assembly.GetType("SkiaSharp.SKEncodedImageFormat");
+                if (formatEnum != null && Enum.TryParse(formatEnum, "Png", out var pngVal))
+                {
+                    var formatEncodeMethod = anyImage.GetType().GetMethod("Encode", new[] { formatEnum, typeof(int) });
+                    if (formatEncodeMethod?.Invoke(anyImage, new[] { pngVal, 100 }) is object dataObj)
+                    {
+                        var toArrayMethod = dataObj.GetType().GetMethod("ToArray");
+                        if (toArrayMethod?.Invoke(dataObj, null) is byte[] skBytes)
+                        {
+                            Image(skBytes, "PNG");
+                            return;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback
+            }
+        }
+        else if (typeName.Contains("SkiaSharp.SKImage"))
+        {
+            try
+            {
                 var encodeMethod = anyImage.GetType().GetMethod("Encode", Type.EmptyTypes);
                 if (encodeMethod != null)
                 {

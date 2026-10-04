@@ -7,6 +7,7 @@
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              xmlns:common1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:ai="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.AI"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
              x:DataType="common:CSharpStudioHostViewModel"
@@ -14,6 +15,9 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
@@ -21,9 +25,71 @@
     </UserControl.Resources>
 
     <Panel>
-        <!-- Studio Host Active Page: each page's view is built once, on first visit (see the code-behind for which view
-             shows which view model), then only shown or hidden. -->
-        <common1:KeepAlivePageHost x:Name="PageHost" Page="{Binding CurrentPage}" />
+        <!-- Main Studio Workspace with dynamic Right Panel and Bottom Deck docking slots for AI Assistant -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="{Binding AiComposer.BottomDockGridLength, Mode=TwoWay}" MinHeight="0" />
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Center PageHost + Right Docked AI SideBar -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="200" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding AiComposer.SideBarDockGridLength, Mode=TwoWay}" MinWidth="0" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Main Studio Pages (Home, Studio, Notebooks, Settings, Docs, etc.) -->
+                <common1:KeepAlivePageHost x:Name="PageHost" Grid.Column="0" Page="{Binding CurrentPage}" />
+
+                <!-- GridSplitter between PageHost and Right Docked AI SideBar -->
+                <GridSplitter Grid.Column="1" Width="4"
+                              Background="{DynamicResource DsBorderBrush}"
+                              Classes="studio-sash"
+                              ResizeDirection="Columns"
+                              Cursor="SizeWestEast"
+                              IsVisible="{Binding AiComposer.IsSideBarDocked}" />
+
+                <!-- Right Docked AI Assistant Panel (Dedicated Secondary Side Bar) -->
+                <Border Grid.Column="2"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1,0,0,0"
+                        IsVisible="{Binding AiComposer.IsSideBarDocked}">
+                    <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
+                                                      HorizontalAlignment="Stretch"
+                                                      VerticalAlignment="Stretch" />
+                </Border>
+            </Grid>
+
+            <!-- Row 1: GridSplitter between Workspace and Bottom Docked AI Deck -->
+            <GridSplitter Grid.Row="1" Height="4"
+                          Background="{DynamicResource DsBorderBrush}"
+                          Classes="studio-sash"
+                          ResizeDirection="Rows"
+                          Cursor="SizeNorthSouth"
+                          IsVisible="{Binding AiComposer.IsBottomDocked}" />
+
+            <!-- Row 2: Bottom Docked AI Assistant Deck -->
+            <Border Grid.Row="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0"
+                    IsVisible="{Binding AiComposer.IsBottomDocked}">
+                <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
+                                                  HorizontalAlignment="Stretch"
+                                                  VerticalAlignment="Stretch" />
+            </Border>
+        </Grid>
+
+        <!-- App-Wide Floating AI Agent & Composer Overlay (Used when DockMode == FloatingOverlay) -->
+        <Border IsVisible="{Binding AiComposer.IsOverlayVisible}" ZIndex="998">
+            <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}" />
+        </Border>
 
         <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
         <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"

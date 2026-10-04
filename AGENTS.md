@@ -124,3 +124,12 @@ The studio runs C# in-process (Roslyn) and other languages (Python today, JavaSc
 
 ## 8. Seeing the UI: Headless Snapshots
 To check a UI change without launching the app, render the real views to PNG with `tools/UiSnapshots` (`dotnet build tools/UiSnapshots`, then `dotnet tools/UiSnapshots/bin/Debug/net10.0/UiSnapshots.dll help`) and open the image it prints. `tools/UiSnapshots/images.py` zooms, overlays coordinates and diffs before/after renders. Guide: [`docs/headless-ui-snapshots.md`](docs/headless-ui-snapshots.md).
+
+---
+
+## 9. Modern C# Language Standards: Raw String Literals Mandate
+The codebase targets modern .NET 10 (C# 13). All contributors and AI agents must actively leverage modern C# language features:
+- **Raw String Literals (`""" ... """`)**: Always use C# 11+ raw string literals for multi-line strings, complex strings, embedded code snippets (C#, Python, Rust, C++, Java, JS), JSON payloads, XML/HTML, regex patterns, scripts, and unit tests.
+- **Strictly Avoid Clumsy Verbatim Escapes**: Never author embedded code or multi-line strings using old verbatim string literals (`@"..."`) with ugly escaped double quotes (`""`) or concatenation chains (`+ "\n" +`).
+- **Interpolated Raw Strings (`$$"""..."""`)**: Use multi-dollar interpolated raw string literals whenever the embedded payload contains curly braces (e.g. JSON, code blocks, dictionary initializers, or regex `{n,m}`), ensuring clean interpolation without backslash escapes.
+

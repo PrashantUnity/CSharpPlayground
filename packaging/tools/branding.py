@@ -1,4 +1,4 @@
-"""Shared brand constants and visual helpers for FrySharp (C# Code Studio).
+"""Shared brand constants and visual helpers for FrySharp.
 
 Used by asset generators, Inno Setup wizard branding, and DMG packaging.
 """
@@ -20,8 +20,8 @@ MASTER_PNG = RUNNER_DIR / "Assets" / "app-logo.png"
 
 # Identity
 APP_NAME = "FrySharp"
-APP_TITLE = "FryPDF C# Code Studio"
-TAGLINE = "Interactive C# Code Studio"
+APP_TITLE = "FrySharp"
+TAGLINE = "Interactive Multi-Language Studio"
 SUBTITLE = "High-Performance Roslyn Script Studio"
 COMPANY = "Code Fry Dev"
 URL = "codefrydev.in"

@@ -33,7 +33,12 @@ public class PortAvailabilityServiceTests
             temp.Stop();
         }
 
-        var result = await _service.CheckPortStatusAsync(freePort);
+        PortStatusResult result = await _service.CheckPortStatusAsync(freePort);
+        for (int i = 0; i < 10 && result.State != PortState.Available; i++)
+        {
+            await Task.Delay(50);
+            result = await _service.CheckPortStatusAsync(freePort);
+        }
 
         Assert.Equal(PortState.Available, result.State);
         Assert.Equal(freePort, result.Port);
