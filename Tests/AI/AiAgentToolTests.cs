@@ -35,7 +35,7 @@ public class AiAgentToolTests : IDisposable
         var tools = registry.BuildToolList();
 
         Assert.NotNull(tools);
-        Assert.Equal(22, tools.Count);
+        Assert.Equal(27, tools.Count);
         Assert.Contains(tools, t => t.Name == "read_file");
         Assert.Contains(tools, t => t.Name == "write_file");
         Assert.Contains(tools, t => t.Name == "modify_file");
@@ -52,6 +52,11 @@ public class AiAgentToolTests : IDisposable
         Assert.Contains(tools, t => t.Name == "get_runtime_extension_points");
         Assert.Contains(tools, t => t.Name == "inspect_studio_ui");
         Assert.Contains(tools, t => t.Name == "inject_studio_widget");
+        Assert.Contains(tools, t => t.Name == "configure_ai_assistant");
+        Assert.Contains(tools, t => t.Name == "extract_ai_window");
+        Assert.Contains(tools, t => t.Name == "dock_ai_assistant");
+        Assert.Contains(tools, t => t.Name == "take_workspace_screenshot");
+        Assert.Contains(tools, t => t.Name == "set_ai_protection");
     }
 
     [Fact]

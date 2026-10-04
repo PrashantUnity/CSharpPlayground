@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FrySharp.Sdk;
@@ -214,5 +215,153 @@ public class AiExtensibilityAndDockingTests
         Assert.Equal("AI", aiModule.Name);
         Assert.Equal("App.AI", aiModule.AccessPath);
         Assert.Equal(typeof(IAiApi).Name, aiModule.InterfaceType);
+    }
+
+    [Fact]
+    public void SetCaptureProtection_UpdatesState_AndFiresEvent()
+    {
+        var (context, vm) = CreateTestContext();
+        bool? eventFiredValue = null;
+        context.AI.CaptureProtectionChanged += val => eventFiredValue = val;
+
+        Assert.False(context.AI.IsProtectedFromCapture);
+        Assert.False(vm.IsProtectedFromCapture);
+
+        context.AI.SetCaptureProtection(true);
+        Assert.True(context.AI.IsProtectedFromCapture);
+        Assert.True(vm.IsProtectedFromCapture);
+        Assert.True(eventFiredValue);
+
+        context.AI.SetCaptureProtection(false);
+        Assert.False(context.AI.IsProtectedFromCapture);
+        Assert.False(vm.IsProtectedFromCapture);
+        Assert.False(eventFiredValue);
+    }
+
+    [Fact]
+    public async Task CaptureWorkspaceScreenshot_GeneratesValidPngBytes()
+    {
+        var (context, vm) = CreateTestContext();
+        var bytes = await context.AI.CaptureWorkspaceScreenshotAsync(CaptureTarget.WorkspaceArea, excludeSelf: true);
+
+        Assert.NotNull(bytes);
+        Assert.NotEmpty(bytes);
+        // PNG magic header: 0x89, 'P', 'N', 'G'
+        Assert.True(bytes.Length >= 8);
+        Assert.Equal(0x89, bytes[0]);
+        Assert.Equal((byte)'P', bytes[1]);
+        Assert.Equal((byte)'N', bytes[2]);
+        Assert.Equal((byte)'G', bytes[3]);
+    }
+
+    [Fact]
+    public async Task CaptureWorkspaceScreenshotToFile_CreatesFileOnDisk()
+    {
+        var (context, vm) = CreateTestContext();
+        string tempFile = Path.Combine(Path.GetTempPath(), $"test_capture_{Guid.NewGuid():N}.png");
+
+        try
+        {
+            var savedPath = await context.AI.CaptureWorkspaceScreenshotToFileAsync(tempFile, CaptureTarget.WorkspaceArea, excludeSelf: true);
+
+            Assert.Equal(tempFile, savedPath);
+            Assert.True(File.Exists(savedPath));
+            var fileBytes = await File.ReadAllBytesAsync(savedPath);
+            Assert.NotEmpty(fileBytes);
+            Assert.Equal(0x89, fileBytes[0]);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                File.Delete(tempFile);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task AiAgentTools_CanCaptureScreenshot_AndSetProtection()
+    {
+        var (context, vm) = CreateTestContext();
+        StudioAppContext.Instance = context;
+
+        var registry = new AiAgentToolRegistry();
+
+        // 1. Tool set_ai_protection
+        var protectResult = registry.SetAiProtection(true);
+        Assert.Contains("successfully enabled", protectResult);
+        Assert.True(context.AI.IsProtectedFromCapture);
+
+        // 2. Tool take_workspace_screenshot
+        var screenshotResult = await registry.TakeWorkspaceScreenshot(target: "workspace", excludeSelf: true);
+        Assert.Contains("Screenshot successfully captured and saved to:", screenshotResult);
+        Assert.Contains("AI self-exclusion active: True", screenshotResult);
+
+        // Verify tool is registered in BuildToolList
+        var tools = registry.BuildToolList();
+        Assert.Contains(tools, t => t.Name == "take_workspace_screenshot");
+        Assert.Contains(tools, t => t.Name == "set_ai_protection");
+    }
+
+    [Fact]
+    public void AiWindow_And_FloatingControl_SupportDynamicResizingAndSizeSync()
+    {
+        var (context, vm) = CreateTestContext();
+
+        // 1. Initial dimensions
+        Assert.Equal(520, vm.WindowWidth);
+        Assert.Equal(650, vm.WindowHeight);
+
+        // 2. Extensibility SetDimensions
+        context.AI.SetDimensions(750, 850);
+        Assert.Equal(750, vm.WindowWidth);
+        Assert.Equal(850, vm.WindowHeight);
+
+        // 3. Extensibility SetStyle with custom bounds
+        context.AI.SetStyle(new AiStyleOptions
+        {
+            Width = 900,
+            Height = 700
+        });
+        Assert.Equal(900, vm.WindowWidth);
+        Assert.Equal(700, vm.WindowHeight);
+
+        // 4. StyleChanged event propagates new dimensions
+        AiStyleOptions? capturedStyle = null;
+        context.AI.StyleChanged += s => capturedStyle = s;
+        context.AI.SetDimensions(620, 820);
+        Assert.Equal(620, vm.WindowWidth);
+        Assert.Equal(820, vm.WindowHeight);
+        Assert.NotNull(capturedStyle);
+        Assert.Equal(620, capturedStyle.Width);
+        Assert.Equal(820, capturedStyle.Height);
+    }
+
+    [Fact]
+    public void ToggleCaptureProtection_And_DiffLines_Parsing_WorkCorrectly()
+    {
+        var (_, vm) = CreateTestContext();
+
+        Assert.False(vm.IsProtectedFromCapture);
+        vm.ToggleCaptureProtection();
+        Assert.True(vm.IsProtectedFromCapture);
+        Assert.Contains("Protected from screen capture", vm.StatusText);
+
+        vm.ToggleCaptureProtection();
+        Assert.False(vm.IsProtectedFromCapture);
+        Assert.Contains("Capture protection disabled", vm.StatusText);
+
+        var item = new ModifiedFileItem
+        {
+            FilePath = "Test.cs",
+            OriginalContent = "int a = 1;\nint b = 2;\n",
+            ModifiedContent = "int a = 1;\nint b = 3;\nint c = 4;\n"
+        };
+        item.CalculateLineMetrics();
+
+        Assert.NotEmpty(item.DiffLines);
+        Assert.Contains(item.DiffLines, l => l.Kind == DiffLineKind.Header && l.Text.StartsWith("@@"));
+        Assert.Contains(item.DiffLines, l => l.Kind == DiffLineKind.Deleted && l.Text.StartsWith("-"));
+        Assert.Contains(item.DiffLines, l => l.Kind == DiffLineKind.Added && l.Text.StartsWith("+"));
     }
 }

@@ -369,4 +369,75 @@ public partial class AiAgentToolRegistry
             return $"Failed to dock AI assistant: {ex.Message}";
         }
     }
+
+    [Description("Captures a clean screenshot of the studio IDE workspace, active editor canvas, or bottom panel for visual AI inspection. Automatically excludes the AI assistant's own overlay/window to eliminate self-occlusion.")]
+    public async Task<string> TakeWorkspaceScreenshot(
+        [Description("Target area: 'workspace' (default), 'editor', 'bottom', or 'full'.")] string target = "workspace",
+        [Description("Whether to automatically exclude the AI overlay from the screenshot (default true).")] bool excludeSelf = true,
+        [Description("Optional custom output path for saving the PNG screenshot.")] string? outputPath = null)
+    {
+        var step = new AgentStepItem
+        {
+            Title = $"Capture Studio Screenshot ({target})",
+            Status = AgentStepStatus.Running,
+            ToolName = "take_workspace_screenshot"
+        };
+        OnStepUpdate?.Invoke(step);
+
+        try
+        {
+            var captureTarget = target.ToLowerInvariant() switch
+            {
+                "editor" => CaptureTarget.ActiveEditor,
+                "bottom" or "deck" or "panel" => CaptureTarget.BottomPanel,
+                "full" or "all" => CaptureTarget.FullWindow,
+                _ => CaptureTarget.WorkspaceArea
+            };
+
+            var ai = StudioAppContext.Instance.AI;
+            string savedPath = await ai.CaptureWorkspaceScreenshotToFileAsync(outputPath, captureTarget, excludeSelf);
+
+            step.Status = AgentStepStatus.Completed;
+            step.Detail = $"Screenshot saved: {savedPath}";
+            OnStepUpdate?.Invoke(step);
+            return $"Screenshot successfully captured and saved to: {savedPath}\n(AI self-exclusion active: {excludeSelf})";
+        }
+        catch (Exception ex)
+        {
+            step.Status = AgentStepStatus.Failed;
+            step.Detail = ex.Message;
+            OnStepUpdate?.Invoke(step);
+            return $"Failed to capture workspace screenshot: {ex.Message}";
+        }
+    }
+
+    [Description("Configures OS-level window display affinity to protect the AI assistant and workspace from being captured by external screen recording apps (Zoom, Microsoft Teams, Discord, OBS).")]
+    public string SetAiProtection(
+        [Description("Enable or disable OS-level capture protection (default true).")] bool enabled = true)
+    {
+        var step = new AgentStepItem
+        {
+            Title = $"Set Capture Protection: {(enabled ? "Enabled" : "Disabled")}",
+            Status = AgentStepStatus.Running,
+            ToolName = "set_ai_protection"
+        };
+        OnStepUpdate?.Invoke(step);
+
+        try
+        {
+            var ai = StudioAppContext.Instance.AI;
+            ai.SetCaptureProtection(enabled);
+
+            step.Status = AgentStepStatus.Completed;
+            OnStepUpdate?.Invoke(step);
+            return $"AI capture protection successfully {(enabled ? "enabled (excluded from screen sharing/recordings)" : "disabled")}!";
+        }
+        catch (Exception ex)
+        {
+            step.Status = AgentStepStatus.Failed;
+            step.Detail = ex.Message;
+            OnStepUpdate?.Invoke(step);
+            return $"Failed to set capture protection: {ex.Message}";
+        }
+    }
 }

@@ -68,6 +68,24 @@ public record AiPolicyOptions
 }
 
 /// <summary>
+/// Target UI area for visual studio capture.
+/// </summary>
+public enum CaptureTarget
+{
+    /// <summary>The active code/notebook editor canvas.</summary>
+    ActiveEditor = 0,
+
+    /// <summary>The active workspace area (KeepAlivePageHost), excluding floating AI overlays.</summary>
+    WorkspaceArea = 1,
+
+    /// <summary>The bottom panel / tool deck (Problems, Output, Terminal, Results).</summary>
+    BottomPanel = 2,
+
+    /// <summary>The full host studio window.</summary>
+    FullWindow = 3
+}
+
+/// <summary>
 /// Public API for controlling the AI Assistant's UI styling, layout docking,
 /// native window extraction (screen tearing), behavioral personas, and agent policies.
 /// </summary>
@@ -93,6 +111,9 @@ public interface IAiApi
 
     /// <summary>The current opacity of the assistant window (0.1 - 1.0).</summary>
     double Opacity { get; }
+
+    /// <summary>Whether OS-level screen capture protection (e.g. NSWindowSharingNone on macOS, WDA_EXCLUDEFROMCAPTURE on Windows) is active.</summary>
+    bool IsProtectedFromCapture { get; set; }
 
     /// <summary>Current styling parameters of the assistant.</summary>
     AiStyleOptions CurrentStyle { get; }
@@ -133,6 +154,21 @@ public interface IAiApi
     /// <summary>Configures agent execution policies (auto-accept diffs, step limits, etc.).</summary>
     void ConfigurePolicy(AiPolicyOptions policy);
 
+    /// <summary>Enables or disables OS-level screen capture protection (Zoom/Teams/OBS exclusion).</summary>
+    void SetCaptureProtection(bool enabled);
+
+    /// <summary>
+    /// Captures a screenshot of the specified IDE workspace area, automatically
+    /// excluding the AI Assistant's own window/overlay from the capture to prevent self-occlusion.
+    /// </summary>
+    Task<byte[]> CaptureWorkspaceScreenshotAsync(CaptureTarget target = CaptureTarget.WorkspaceArea, bool excludeSelf = true);
+
+    /// <summary>
+    /// Captures a screenshot of the specified IDE workspace area to a PNG file,
+    /// automatically excluding the AI Assistant's own window/overlay.
+    /// </summary>
+    Task<string> CaptureWorkspaceScreenshotToFileAsync(string? outputPath = null, CaptureTarget target = CaptureTarget.WorkspaceArea, bool excludeSelf = true);
+
     /// <summary>Programmatically sends a message or prompt to the assistant.</summary>
     Task SendMessageAsync(string prompt);
 
@@ -144,4 +180,7 @@ public interface IAiApi
 
     /// <summary>Event raised whenever the assistant's styling options change.</summary>
     event Action<AiStyleOptions>? StyleChanged;
+
+    /// <summary>Event raised whenever screen capture protection state changes.</summary>
+    event Action<bool>? CaptureProtectionChanged;
 }

@@ -87,7 +87,12 @@ public partial class AiAgentToolRegistry
             AIFunctionFactory.Create(GetStudioApiMetadata, "get_studio_api_metadata", "Retrieves structured API documentation and method signatures for App.UI, App.Theme, App.Commands, App.Editor, App.Hooks, and App.State."),
             AIFunctionFactory.Create(GetRuntimeExtensionPoints, "get_runtime_extension_points", "Discovers active UI contribution slots, registered commands, active theme tokens, and mounted items in the running application."),
             AIFunctionFactory.Create(InspectStudioUi, "inspect_studio_ui", "Inspects the live Avalonia visual tree of the running studio window, returning visible control hierarchy, names, types, and bounds."),
-            AIFunctionFactory.Create(InjectStudioWidget, "inject_studio_widget", "Dynamically injects a custom widget or declarative XAML control into a studio slot ('EditorToolbar', 'FloatingOverlay', 'ComposerAction', 'BottomDeck', 'SideBar').")
+            AIFunctionFactory.Create(InjectStudioWidget, "inject_studio_widget", "Dynamically injects a custom widget or declarative XAML control into a studio slot ('EditorToolbar', 'FloatingOverlay', 'ComposerAction', 'BottomDeck', 'SideBar')."),
+            AIFunctionFactory.Create(ConfigureAiAssistant, "configure_ai_assistant", "Configures AI assistant visual styling, opacity, persona, auto-accept diffs, or step limits."),
+            AIFunctionFactory.Create(ExtractAiWindow, "extract_ai_window", "Extracts ('tears out') the AI assistant into an independent native desktop OS window for multi-monitor setups."),
+            AIFunctionFactory.Create(DockAiAssistant, "dock_ai_assistant", "Docks the AI assistant back into the studio layout ('floating', 'sidebar', 'bottom')."),
+            AIFunctionFactory.Create(TakeWorkspaceScreenshot, "take_workspace_screenshot", "Captures a clean screenshot of the studio workspace/editor canvas without AI self-occlusion."),
+            AIFunctionFactory.Create(SetAiProtection, "set_ai_protection", "Configures OS-level window display affinity to protect the AI assistant and workspace from external screen recorders/sharing (Zoom, Teams, OBS).")
         };
 
         return tools;

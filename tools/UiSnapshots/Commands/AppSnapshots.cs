@@ -138,18 +138,103 @@ internal static class AppSnapshots
                 window.StudioHostVm.AiComposer.Messages.Add(userMsg);
                 window.StudioHostVm.AiComposer.Messages.Add(assistantMsg);
             }
-            if (options.Flag("prompt-drawer"))
+            if (options.Value("ai-width") != null)
             {
-                window.StudioHostVm.AiComposer.IsPromptEditorOpen = true;
+                window.StudioHostVm.AiComposer.WindowWidth = options.Int("ai-width", 520);
+            }
+            if (options.Flag("protected"))
+            {
+                window.StudioHostVm.AiComposer.IsProtectedFromCapture = true;
+            }
+            var dockMode = options.Value("dock")?.ToLowerInvariant();
+            if (dockMode is "sidebar" or "right")
+            {
+                window.StudioHostVm.AiComposer.DockTo(FrySharp.Sdk.AiDockMode.DockedSideBar);
+            }
+            else if (dockMode is "bottom" or "deck")
+            {
+                window.StudioHostVm.AiComposer.DockTo(FrySharp.Sdk.AiDockMode.DockedBottomDeck);
+            }
+
+            if (options.Value("dock-width") != null)
+            {
+                window.StudioHostVm.AiComposer.SideBarDockWidth = options.Int("dock-width", 380);
             }
         }
 
         window.UpdateMenuStates();
         Snapshot.Settle(15);
+        var dockStr = options.Value("dock")?.ToLowerInvariant();
         var shotName = options.Flag("ai") || options.Flag("composer")
-            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : (options.Flag("prompt-drawer") ? "mainwindow_ai_prompt_drawer" : "mainwindow_ai_composer"))
+            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : (options.Flag("prompt-drawer") ? "mainwindow_ai_prompt_drawer" : (!string.IsNullOrEmpty(dockStr) ? $"mainwindow_ai_docked_{dockStr}" : "mainwindow_ai_composer")))
             : (string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}");
         Snapshot.Save(window, options, shotName);
+    }
+
+    public static void AiWindow(Options options)
+    {
+        var vm = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI.AiComposerViewModel();
+        vm.IsExtracted = true;
+        vm.IsVisible = true;
+        vm.WindowWidth = options.Int("width", 540);
+        vm.WindowHeight = options.Int("height", 650);
+
+        if (options.Flag("protected"))
+        {
+            vm.IsProtectedFromCapture = true;
+        }
+
+        if (options.Flag("demo-chat"))
+        {
+            var userMsg = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ChatMessageItem
+            {
+                Role = Microsoft.Extensions.AI.ChatRole.User,
+                Content = "Please refactor Calculator.cs to modern C# 13 expression-bodied members and verify compilation."
+            };
+            var assistantMsg = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ChatMessageItem
+            {
+                Role = Microsoft.Extensions.AI.ChatRole.Assistant,
+                Content = "I've inspected Calculator.cs, refactored the members into clean expression bodies, added Multiply, and confirmed compilation with Roslyn (0 errors).",
+                ReasoningContent = "1. Inspect Calculator.cs with read_file.\n2. Refactor Add method into modern C# 13 expression body.\n3. Add Multiply method.\n4. Run compile_and_get_diagnostics with Roslyn to verify 0 errors.",
+                IsReasoningExpanded = true
+            };
+            assistantMsg.Steps.Add(new PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepItem
+            {
+                ToolName = "read_file",
+                Title = "Read Calculator.cs",
+                Status = PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepStatus.Completed
+            });
+            assistantMsg.Steps.Add(new PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepItem
+            {
+                ToolName = "compile_and_get_diagnostics",
+                Title = "Roslyn compile check (0 errors)",
+                Status = PdfEditorApp.Plugins.CSharpEditor.Models.AI.AgentStepStatus.Completed
+            });
+
+            var modifiedFile = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ModifiedFileItem
+            {
+                FilePath = "Calculator.cs",
+                RelativePath = "Calculator.cs",
+                OriginalContent = "public class Calculator\n{\n    public int Add(int a, int b)\n    {\n        return a + b;\n    }\n}\n",
+                ModifiedContent = "public class Calculator\n{\n    public int Add(int a, int b) => a + b;\n    public int Multiply(int a, int b) => a * b;\n}\n",
+                IsDiffExpanded = true
+            };
+            modifiedFile.CalculateLineMetrics();
+            assistantMsg.ModifiedFiles.Add(modifiedFile);
+            vm.SessionModifiedFiles.Add(modifiedFile);
+
+            vm.Messages.Add(userMsg);
+            vm.Messages.Add(assistantMsg);
+        }
+
+        var window = new PdfEditorApp.Plugins.CSharpEditor.Controls.AI.AiComposerWindow(vm)
+        {
+            Width = vm.WindowWidth,
+            Height = vm.WindowHeight
+        };
+        window.Show();
+        Snapshot.Settle(20);
+        Snapshot.Save(window, options, "extracted_ai_window");
     }
 
     public static void Snake(Options options)

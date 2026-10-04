@@ -42,11 +42,38 @@ public partial class ModifiedFileItem : ObservableObject
     [ObservableProperty]
     private string _diffPreviewText = string.Empty;
 
+    [ObservableProperty]
+    private IReadOnlyList<DiffLine> _diffLines = Array.Empty<DiffLine>();
+
     public string SummaryText => $"+{LinesAdded} -{LinesDeleted}";
 
     public void ToggleDiffExpanded()
     {
         IsDiffExpanded = !IsDiffExpanded;
+    }
+
+    partial void OnDiffPreviewTextChanged(string value)
+    {
+        if (DiffLines.Count == 0 && !string.IsNullOrWhiteSpace(value))
+        {
+            DiffLines = ParseDiffLines(value);
+        }
+    }
+
+    private static IReadOnlyList<DiffLine> ParseDiffLines(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return Array.Empty<DiffLine>();
+        var list = new List<DiffLine>();
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        foreach (var line in lines)
+        {
+            var kind = DiffLineKind.Context;
+            if (line.StartsWith("@@")) kind = DiffLineKind.Header;
+            else if (line.StartsWith("+")) kind = DiffLineKind.Added;
+            else if (line.StartsWith("-")) kind = DiffLineKind.Deleted;
+            list.Add(new DiffLine(line, kind));
+        }
+        return list;
     }
 
     /// <summary>
@@ -116,6 +143,36 @@ public partial class ModifiedFileItem : ObservableObject
 
         LinesAdded = added;
         LinesDeleted = deleted;
-        DiffPreviewText = sb.Length > 0 ? sb.ToString().TrimEnd() : "No visual line changes";
+        var diffText = sb.Length > 0 ? sb.ToString().TrimEnd() : "No visual line changes";
+        DiffPreviewText = diffText;
+        DiffLines = ParseDiffLines(diffText);
     }
 }
+
+public enum DiffLineKind
+{
+    Context,
+    Header,
+    Added,
+    Deleted
+}
+
+public record DiffLine(string Text, DiffLineKind Kind)
+{
+    public string ForegroundHex => Kind switch
+    {
+        DiffLineKind.Header => "#38BDF8",
+        DiffLineKind.Added => "#4ADE80",
+        DiffLineKind.Deleted => "#F87171",
+        _ => "#94A3B8"
+    };
+
+    public string BackgroundHex => Kind switch
+    {
+        DiffLineKind.Header => "#1E293B",
+        DiffLineKind.Added => "#064E3B44",
+        DiffLineKind.Deleted => "#7F1D1D44",
+        _ => "Transparent"
+    };
+}
+

@@ -21,11 +21,17 @@
         <Style Selector="Button.composer-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="6" />
+            <Setter Property="Padding" Value="4" />
             <Setter Property="CornerRadius" Value="4" />
         </Style>
         <Style Selector="Button.composer-btn:pointerover">
-            <Setter Property="Background" Value="#2D2D3D" />
+            <Setter Property="Background" Value="#323246" />
+        </Style>
+        <Style Selector="Button.close-btn:pointerover">
+            <Setter Property="Background" Value="#DC2626" />
+        </Style>
+        <Style Selector="Button.close-btn:pointerover materialIcons|MaterialIcon">
+            <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
         <Style Selector="Button.action-accept">
             <Setter Property="Background" Value="#166534" />
@@ -49,7 +55,7 @@
         <!-- ======================================================== -->
         <!-- 1. MINIMIZED FLOATING CAPSULE BUTTON (Bottom Right)      -->
         <!-- ======================================================== -->
-        <Border IsVisible="{Binding IsMinimized}"
+        <Border IsVisible="{Binding CanShowMinimizedCapsule}"
                 HorizontalAlignment="Right" VerticalAlignment="Bottom"
                 Margin="0,0,24,24"
                 Background="#232332" BorderBrush="#38BDF8" BorderThickness="1.5"
@@ -71,94 +77,103 @@
         <Border Name="ComposerContainer"
                 IsVisible="{Binding !IsMinimized}"
                 Classes="composer-window"
-                Opacity="{Binding WindowOpacity}"
-                Width="{Binding WindowWidth}" Height="{Binding WindowHeight}"
-                HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="0,48,24,0">
-            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                Opacity="{Binding WindowOpacity}">
+            <Panel>
+                <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
 
                 <!-- Header Bar (Draggable Title Rail) -->
                 <Border Name="HeaderBar" Grid.Row="0" Height="40" Background="#282838" CornerRadius="9,9,0,0"
-                        Padding="10,0,6,0">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-                        <!-- Icon & Title -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        Padding="12,0,8,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Icon, Title & Agent Mode Switcher Pill -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="AutoFix" Width="15" Height="15" Foreground="#38BDF8" VerticalAlignment="Center" />
-                            <TextBlock Text="Composer" FontWeight="Bold" FontSize="12.5" Foreground="#FFFFFF" VerticalAlignment="Center" />
-                        </StackPanel>
+                            <TextBlock Text="Composer" FontWeight="Bold" FontSize="13" Foreground="#FFFFFF" VerticalAlignment="Center" />
 
-                        <!-- Mode Switcher Pill (Agent vs Chat) & Prompt Persona Pill -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0">
-                            <Border Background="#1E1E28" CornerRadius="4" Padding="2">
+                            <Border Background="#1E1E28" CornerRadius="4" Padding="2" Margin="4,0,0,0">
                                 <ToggleButton Content="Agent" IsChecked="{Binding IsAgentMode, Mode=TwoWay}"
-                                              FontSize="10.5" Padding="6,2" Height="22" CornerRadius="3" />
+                                              FontSize="10.5" Padding="7,2" Height="22" CornerRadius="3"
+                                              ToolTip.Tip="Toggle Agent mode (autonomous tools) vs Chat mode" />
                             </Border>
-                            <Button Command="{Binding TogglePromptEditorCommand}" Classes="composer-btn"
-                                    ToolTip.Tip="Customize System Prompt &amp; Persona" Height="22" Padding="6,2">
-                                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="Tune" Width="12" Height="12" Foreground="#38BDF8" />
-                                    <TextBlock Text="{Binding ActivePromptPresetName}" FontSize="10" Foreground="#38BDF8" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
                         </StackPanel>
 
-                        <!-- Model Selector & Presets -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Command="{Binding SwitchToLmStudioCommand}" Classes="composer-btn" ToolTip.Tip="Switch to LM Studio (1234)" Padding="4,2">
-                                <materialIcons:MaterialIcon Kind="Laptop" Width="13" Height="13" Foreground="#A78BFA" />
-                            </Button>
-                            <Button Command="{Binding SwitchToOllamaCommand}" Classes="composer-btn" ToolTip.Tip="Switch to Ollama (11434)" Padding="4,2">
-                                <materialIcons:MaterialIcon Kind="Server" Width="13" Height="13" Foreground="#38BDF8" />
-                            </Button>
-                            <ComboBox ItemsSource="{Binding AvailableModels}"
-                                      SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
-                                      Height="24" FontSize="11" Width="130" Padding="6,2"
-                                      Background="#1E1E28" BorderBrush="#3B3B4F" />
-                            <Button Command="{Binding RefreshModelsCommand}" Classes="composer-btn" ToolTip.Tip="Refresh Models">
-                                <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="#94A3B8" />
-                            </Button>
-                        </StackPanel>
+                        <!-- Draggable rail empty space -->
+                        <Border Grid.Column="1" Background="Transparent" />
 
-                        <!-- Clear Chat & Dynamic Injected Actions -->
-                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <StackPanel Name="DynamicActionsHost" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" />
+                        <!-- Action Toolbar & Window Controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                            <!-- Dynamic Actions Injected by Extensions -->
+                            <StackPanel Name="DynamicActionsHost" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" />
 
-                            <Button Command="{Binding ClearChatCommand}" Classes="composer-btn" ToolTip.Tip="Clear Conversation" Margin="4,0,0,0">
+                            <!-- Clear Chat -->
+                            <Button Command="{Binding ClearChatCommand}" Classes="composer-btn" ToolTip.Tip="Clear Conversation"
+                                    Width="26" Height="26" Padding="0">
                                 <materialIcons:MaterialIcon Kind="Broom" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
-                        </StackPanel>
 
-                        <!-- Window Controls (Docking, Extract, Minimize, Close) -->
-                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
+                            <!-- Screen Capture Protection Toggle -->
+                            <Button Command="{Binding ToggleCaptureProtectionCommand}" Classes="composer-btn"
+                                    ToolTip.Tip="Toggle Screen Capture Protection (Hide window from recording/screenshots)"
+                                    Width="26" Height="26" Padding="0">
+                                <Panel>
+                                    <materialIcons:MaterialIcon Kind="ShieldCheck" Width="14" Height="14" Foreground="#38BDF8"
+                                                                IsVisible="{Binding IsProtectedFromCapture}" />
+                                    <materialIcons:MaterialIcon Kind="ShieldOutline" Width="14" Height="14" Foreground="#94A3B8"
+                                                                IsVisible="{Binding !IsProtectedFromCapture}" />
+                                </Panel>
+                            </Button>
+
+                            <!-- Vertical Divider -->
+                            <Border Width="1" Height="14" Background="#3E3E52" Margin="3,0" />
+
+                            <!-- Docking Controls -->
                             <!-- When Extracted: Re-dock to main window -->
                             <Button Command="{Binding ReDockCommand}" Classes="composer-btn" ToolTip.Tip="Re-dock into Studio"
-                                    IsVisible="{Binding IsExtracted}">
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding IsExtracted}">
                                 <materialIcons:MaterialIcon Kind="DockWindow" Width="14" Height="14" Foreground="#38BDF8" />
+                            </Button>
+
+                            <!-- When Docked in SideBar/Bottom: Float as Overlay -->
+                            <Button Command="{Binding DockToFloatingCommand}" Classes="composer-btn" ToolTip.Tip="Float as Overlay"
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanDockToFloating}">
+                                <materialIcons:MaterialIcon Kind="LayersOutline" Width="14" Height="14" Foreground="#38BDF8" />
                             </Button>
 
                             <!-- When Not Extracted: Extract to OS Window (Screen Tearing) -->
                             <Button Command="{Binding ExtractToWindowCommand}" Classes="composer-btn" ToolTip.Tip="Tear Out into Floating Window"
-                                    IsVisible="{Binding !IsExtracted}">
-                                <materialIcons:MaterialIcon Kind="OpenInNew" Width="13" Height="13" Foreground="#38BDF8" />
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanExtractToWindow}">
+                                <materialIcons:MaterialIcon Kind="OpenInNew" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
 
                             <!-- Dock to SideBar -->
-                            <Button Command="{Binding DockToSideBarCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Side Bar"
-                                    IsVisible="{Binding !IsExtracted}">
-                                <materialIcons:MaterialIcon Kind="PageLayoutSidebarRight" Width="13" Height="13" Foreground="#94A3B8" />
+                            <Button Command="{Binding DockToSideBarCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Right Panel (Secondary Side Bar)"
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanDockToSideBar}">
+                                <materialIcons:MaterialIcon Kind="DockRight" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
 
                             <!-- Dock to Bottom Deck -->
-                            <Button Command="{Binding DockToBottomDeckCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Bottom Deck"
-                                    IsVisible="{Binding !IsExtracted}">
-                                <materialIcons:MaterialIcon Kind="DockBottom" Width="13" Height="13" Foreground="#94A3B8" />
+                            <Button Command="{Binding DockToBottomDeckCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Bottom Panel / Deck"
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanDockToBottomDeck}">
+                                <materialIcons:MaterialIcon Kind="DockBottom" Width="14" Height="14" Foreground="#94A3B8" />
+                            </Button>
+
+                            <!-- Vertical Divider -->
+                            <Border Width="1" Height="14" Background="#3E3E52" Margin="3,0"
+                                    IsVisible="{Binding CanMaximizeAndMinimize}" />
+
+                            <!-- Window Management (Maximize, Minimize, Close) -->
+                            <Button Name="MaximizeRestoreButton" Classes="composer-btn" ToolTip.Tip="Maximize / Restore"
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanMaximizeAndMinimize}">
+                                <materialIcons:MaterialIcon Name="MaximizeIcon" Kind="WindowMaximize" Width="13" Height="13" Foreground="#94A3B8" />
                             </Button>
 
                             <Button Command="{Binding ToggleMinimizeCommand}" Classes="composer-btn" ToolTip.Tip="Minimize to Pill"
-                                    IsVisible="{Binding !IsExtracted}">
+                                    Width="26" Height="26" Padding="0" IsVisible="{Binding CanMaximizeAndMinimize}">
                                 <materialIcons:MaterialIcon Kind="Minus" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
-                            <Button Command="{Binding CloseCommand}" Classes="composer-btn" ToolTip.Tip="Close (Cmd+I)">
+
+                            <Button Command="{Binding CloseCommand}" Classes="composer-btn close-btn" ToolTip.Tip="Close (Cmd+I)"
+                                    Width="26" Height="26" Padding="0">
                                 <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
                         </StackPanel>
@@ -349,7 +364,7 @@
                                             <Border Background="#212130" CornerRadius="8" Padding="12,10">
                                                 <StackPanel Spacing="6">
                                                     <SelectableTextBlock Text="{Binding Content}" FontSize="12" Foreground="#F1F5F9"
-                                                                         TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monaco, monospace" />
+                                                                         TextWrapping="Wrap" />
 
                                                     <!-- Error Notice -->
                                                     <Border IsVisible="{Binding HasError}" Background="#450A0A" CornerRadius="4" Padding="8" Margin="0,4">
@@ -372,13 +387,21 @@
                                                                             </ToggleButton>
                                                                         </Grid>
 
-                                                                        <!-- Expandable Unified Diff Viewer -->
-                                                                        <Border IsVisible="{Binding IsDiffExpanded}" Background="#0E0E17" CornerRadius="4" Padding="8" BorderBrush="#232336" BorderThickness="1">
-                                                                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxHeight="160">
-                                                                                <SelectableTextBlock Text="{Binding DiffPreviewText}"
-                                                                                                     FontFamily="Consolas, Menlo, Monaco, monospace"
-                                                                                                     FontSize="10.5"
-                                                                                                     Foreground="#E2E8F0" />
+                                                                        <!-- Expandable Unified Diff Viewer with Line-by-Line Syntax Highlighting -->
+                                                                        <Border IsVisible="{Binding IsDiffExpanded}" Background="#0E0E17" CornerRadius="4" Padding="4,4" BorderBrush="#232336" BorderThickness="1">
+                                                                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="220">
+                                                                                <ItemsControl ItemsSource="{Binding DiffLines}">
+                                                                                    <ItemsControl.ItemTemplate>
+                                                                                        <DataTemplate x:DataType="ai:DiffLine">
+                                                                                            <Border Background="{Binding BackgroundHex}" Padding="8,1" Margin="0,0.5" CornerRadius="2">
+                                                                                                <SelectableTextBlock Text="{Binding Text}"
+                                                                                                                     FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                                                                                     FontSize="10.5"
+                                                                                                                     Foreground="{Binding ForegroundHex}" />
+                                                                                            </Border>
+                                                                                        </DataTemplate>
+                                                                                    </ItemsControl.ItemTemplate>
+                                                                                </ItemsControl>
                                                                             </ScrollViewer>
                                                                         </Border>
                                                                     </StackPanel>
@@ -397,7 +420,7 @@
                 </ScrollViewer>
 
                 <!-- Status Strip (Row 4) -->
-                <Border Grid.Row="4" Background="#1B1B26" Height="22" Padding="10,0" BorderBrush="#2D2D3D" BorderThickness="0,1,0,0">
+                <Border Grid.Row="4" Background="#1B1B26" Height="22" Padding="12,0" BorderBrush="#2D2D3D" BorderThickness="0,1,0,0">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Border Width="6" Height="6" CornerRadius="3"
@@ -409,34 +432,124 @@
                 </Border>
 
                 <!-- Bottom Prompt Input Deck (Row 5) -->
-                <Border Grid.Row="5" Background="#242436" CornerRadius="0,0,9,9" Padding="10" BorderBrush="#3B3B4F" BorderThickness="0,1,0,0">
-                    <Grid RowDefinitions="Auto,Auto">
-                        <!-- Input Box & Buttons -->
-                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                            <TextBox Name="PromptTextBox" Grid.Column="0"
+                <Border Name="PromptDeckBorder" Grid.Row="5" Background="#242436" CornerRadius="0,0,9,9" Padding="10,8,10,10" BorderBrush="#3B3B4F" BorderThickness="0,1,0,0">
+                    <Border Background="#1A1A26" BorderBrush="#3B3B4F" BorderThickness="1" CornerRadius="6" Padding="8,8,8,6">
+                        <Grid RowDefinitions="*,Auto">
+                            <!-- Multi-line Prompt Text Box -->
+                            <TextBox Name="PromptTextBox" Grid.Row="0"
                                      Text="{Binding PromptText, Mode=TwoWay}"
-                                     AcceptsReturn="True" MaxHeight="120"
-                                     Background="#1A1A26" Foreground="#FFFFFF"
-                                     BorderBrush="#3B3B4F" CornerRadius="6"
-                                     FontSize="12" Padding="8,6"
+                                     AcceptsReturn="True" MinHeight="38" MaxHeight="120"
+                                     Background="Transparent" Foreground="#FFFFFF"
+                                     BorderThickness="0"
+                                     FontSize="12" Padding="2"
                                      PlaceholderText="Ask Fry AI or describe code changes (@file, /fix)..."
                                      KeyDown="OnPromptTextBoxKeyDown" />
 
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" Margin="6,0,0,0">
-                                <Button Command="{Binding StopGenerationCommand}" Classes="action-reject" Height="30" Width="30" Padding="0"
-                                        IsVisible="{Binding IsGenerating}" ToolTip.Tip="Stop Generation">
-                                    <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="#FFFFFF" />
-                                </Button>
-                                <Button Command="{Binding SendMessageCommand}" Classes="action-accept" Height="30" Width="30" Padding="0"
-                                        IsVisible="{Binding !IsGenerating}" ToolTip.Tip="Send Prompt (Enter)">
-                                    <materialIcons:MaterialIcon Kind="Send" Width="14" Height="14" Foreground="#FFFFFF" />
-                                </Button>
-                            </StackPanel>
+                            <!-- Composer Bottom Toolbar Inside Prompt Box -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,0">
+                                <!-- Left: Model Selector, Refresh & Persona -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <!-- Model Selector Dropdown -->
+                                    <ComboBox ItemsSource="{Binding AvailableModels}"
+                                              SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
+                                              Height="24" FontSize="11" MinWidth="130" MaxWidth="190" Padding="6,1"
+                                              Background="#242434" BorderBrush="#35354A" CornerRadius="4"
+                                              ToolTip.Tip="{Binding SelectedModel, StringFormat='Active Model: {0}'}" />
+
+                                    <!-- Refresh Models Button -->
+                                    <Button Command="{Binding RefreshModelsCommand}" Classes="composer-btn"
+                                            ToolTip.Tip="Refresh Available Models" Width="24" Height="24" Padding="0">
+                                        <materialIcons:MaterialIcon Kind="Refresh" Width="12" Height="12" Foreground="#94A3B8" />
+                                    </Button>
+
+                                    <!-- Persona Preset Button -->
+                                    <Button Command="{Binding TogglePromptEditorCommand}" Classes="composer-btn"
+                                            ToolTip.Tip="Customize System Prompt &amp; Persona" Height="24" Padding="6,2"
+                                            Background="#242434" CornerRadius="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <materialIcons:MaterialIcon Kind="Tune" Width="12" Height="12" Foreground="#38BDF8" />
+                                            <TextBlock Text="{Binding ActivePromptPresetName}" FontSize="10.5" Foreground="#38BDF8" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Center: Fast Provider Switchers -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <Button Command="{Binding SwitchToLmStudioCommand}" Classes="composer-btn"
+                                            ToolTip.Tip="Switch to LM Studio (1234)" Height="22" Padding="5,1"
+                                            Background="#1E1E28" CornerRadius="3">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <materialIcons:MaterialIcon Kind="Laptop" Width="11" Height="11" Foreground="#A78BFA" />
+                                            <TextBlock Text="LM" FontSize="9.5" FontWeight="SemiBold" Foreground="#A78BFA" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding SwitchToOllamaCommand}" Classes="composer-btn"
+                                            ToolTip.Tip="Switch to Ollama (11434)" Height="22" Padding="5,1"
+                                            Background="#1E1E28" CornerRadius="3">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <materialIcons:MaterialIcon Kind="Server" Width="11" Height="11" Foreground="#38BDF8" />
+                                            <TextBlock Text="Ollama" FontSize="9.5" FontWeight="SemiBold" Foreground="#38BDF8" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Right: Send / Stop Action Button -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <Button Command="{Binding StopGenerationCommand}" Classes="action-reject" Height="26" Width="26" Padding="0"
+                                            IsVisible="{Binding IsGenerating}" ToolTip.Tip="Stop Generation">
+                                        <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="#FFFFFF" />
+                                    </Button>
+                                    <Button Command="{Binding SendMessageCommand}" Classes="action-accept" Height="26" Width="26" Padding="0"
+                                            IsVisible="{Binding !IsGenerating}" ToolTip.Tip="Send Prompt (Enter)">
+                                        <materialIcons:MaterialIcon Kind="Send" Width="13" Height="13" Foreground="#FFFFFF" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    </Border>
                 </Border>
 
-            </Grid>
+                </Grid>
+
+                <!-- ======================================================== -->
+                <!-- FLOATING RESIZE HANDLES & CORNER GRIP                    -->
+                <!-- ======================================================== -->
+                <!-- Left Border Resize Handle -->
+                <Border Name="ResizeHandleLeft" Width="8"
+                        HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                        Background="Transparent" Cursor="SizeWestEast" />
+
+                <!-- Right Border Resize Handle -->
+                <Border Name="ResizeHandleRight" Width="8"
+                        HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                        Background="Transparent" Cursor="SizeWestEast" />
+
+                <!-- Bottom Border Resize Handle -->
+                <Border Name="ResizeHandleBottom" Height="8"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                        Background="Transparent" Cursor="SizeNorthSouth" />
+
+                <!-- Top Border Resize Handle -->
+                <Border Name="ResizeHandleTop" Height="5"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        Background="Transparent" Cursor="SizeNorthSouth" />
+
+                <!-- Bottom-Left Resize Grip Handle -->
+                <Border Name="ResizeHandleBottomLeft" Width="20" Height="20"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Background="Transparent" Cursor="BottomLeftCorner" />
+
+                <!-- Bottom-Right Resize Grip Handle & Visual Indicator -->
+                <Border Name="ResizeHandleBottomRight" Width="22" Height="22"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Background="Transparent" Cursor="BottomRightCorner">
+                    <materialIcons:MaterialIcon Kind="ResizeBottomRight"
+                                                Width="12" Height="12"
+                                                Foreground="#475569"
+                                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                Margin="0,0,3,3" />
+                </Border>
+            </Panel>
         </Border>
 
     </Panel>

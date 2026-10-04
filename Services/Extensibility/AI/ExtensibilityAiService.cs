@@ -18,6 +18,7 @@ public class ExtensibilityAiService : IAiApi
 
     public event Action<AiDockMode>? DockModeChanged;
     public event Action<AiStyleOptions>? StyleChanged;
+    public event Action<bool>? CaptureProtectionChanged;
 
     private readonly Func<IUiApi>? _uiApiResolver;
     private IDisposable? _activeDockRegistration;
@@ -38,6 +39,7 @@ public class ExtensibilityAiService : IAiApi
             DockModeChanged?.Invoke(mode);
         };
         vm.StyleChanged += style => StyleChanged?.Invoke(style);
+        vm.CaptureProtectionChanged += isProtected => CaptureProtectionChanged?.Invoke(isProtected);
         vm.WindowExtractionRequested ??= options =>
         {
             PdfEditorApp.Plugins.CSharpEditor.Controls.AI.AiComposerWindow.ShowExtracted(vm, options);
@@ -131,6 +133,12 @@ public class ExtensibilityAiService : IAiApi
     public string ActiveModel => Vm?.SelectedModel ?? string.Empty;
 
     public double Opacity => Vm?.WindowOpacity ?? 1.0;
+
+    public bool IsProtectedFromCapture
+    {
+        get => Vm?.IsProtectedFromCapture ?? false;
+        set => SetCaptureProtection(value);
+    }
 
     public AiStyleOptions CurrentStyle => new()
     {
@@ -285,5 +293,29 @@ public class ExtensibilityAiService : IAiApi
         {
             Vm?.ClearChat();
         });
+    }
+
+    public void SetCaptureProtection(bool enabled)
+    {
+        RunOnUI(() =>
+        {
+            Vm?.SetCaptureProtection(enabled);
+
+            // Also apply OS capture protection to the main IDE window if active
+            if (StudioAppContext.Instance.UI.MainWindow is Avalonia.Controls.Window mainWin)
+            {
+                PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI.WindowProtectionService.SetProtected(mainWin, enabled);
+            }
+        });
+    }
+
+    public async Task<byte[]> CaptureWorkspaceScreenshotAsync(CaptureTarget target = CaptureTarget.WorkspaceArea, bool excludeSelf = true)
+    {
+        return await PdfEditorApp.Plugins.CSharpEditor.Services.AI.Vision.StudioScreenshotService.CaptureAsync(target, excludeSelf, Vm);
+    }
+
+    public async Task<string> CaptureWorkspaceScreenshotToFileAsync(string? outputPath = null, CaptureTarget target = CaptureTarget.WorkspaceArea, bool excludeSelf = true)
+    {
+        return await PdfEditorApp.Plugins.CSharpEditor.Services.AI.Vision.StudioScreenshotService.CaptureToFileAsync(outputPath, target, excludeSelf, Vm);
     }
 }

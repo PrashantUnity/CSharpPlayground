@@ -233,4 +233,63 @@ public class AiComposerViewModelTests
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public void AiComposerViewModel_DockToSideBar_UpdatesGridLengthsAndVisibility()
+    {
+        var vm = new AiComposerViewModel();
+        Assert.False(vm.IsVisible);
+        Assert.False(vm.IsSideBarDocked);
+        Assert.Equal(0, vm.SideBarDockGridLength.Value);
+
+        // Dock to Right SideBar
+        vm.DockToSideBar();
+        Assert.True(vm.IsVisible);
+        Assert.True(vm.IsSideBarDocked);
+        Assert.False(vm.IsOverlayVisible);
+        Assert.False(vm.IsBottomDocked);
+        Assert.Equal(380, vm.SideBarDockGridLength.Value);
+
+        // Resize docked sidebar via GridLength (simulating splitter drag)
+        vm.SideBarDockGridLength = new Avalonia.Controls.GridLength(450, Avalonia.Controls.GridUnitType.Pixel);
+        Assert.Equal(450, vm.SideBarDockWidth);
+
+        // Hide/Close docked sidebar
+        vm.Close();
+        Assert.False(vm.IsVisible);
+        Assert.False(vm.IsSideBarDocked);
+        Assert.Equal(0, vm.SideBarDockGridLength.Value);
+
+        // Re-open (preserves dock mode and previous width)
+        vm.IsVisible = true;
+        Assert.True(vm.IsSideBarDocked);
+        Assert.Equal(450, vm.SideBarDockGridLength.Value);
+    }
+
+    [Fact]
+    public void AiComposerViewModel_DockToBottomDeck_UpdatesGridLengthsAndVisibility()
+    {
+        var vm = new AiComposerViewModel();
+        Assert.False(vm.IsVisible);
+        Assert.False(vm.IsBottomDocked);
+        Assert.Equal(0, vm.BottomDockGridLength.Value);
+
+        // Dock to Bottom Deck
+        vm.DockToBottomDeck();
+        Assert.True(vm.IsVisible);
+        Assert.True(vm.IsBottomDocked);
+        Assert.False(vm.IsOverlayVisible);
+        Assert.False(vm.IsSideBarDocked);
+        Assert.Equal(280, vm.BottomDockGridLength.Value);
+
+        // Resize docked bottom deck via GridLength (simulating splitter drag)
+        vm.BottomDockGridLength = new Avalonia.Controls.GridLength(320, Avalonia.Controls.GridUnitType.Pixel);
+        Assert.Equal(320, vm.BottomDockHeight);
+
+        // Close
+        vm.Close();
+        Assert.False(vm.IsVisible);
+        Assert.False(vm.IsBottomDocked);
+        Assert.Equal(0, vm.BottomDockGridLength.Value);
+    }
 }

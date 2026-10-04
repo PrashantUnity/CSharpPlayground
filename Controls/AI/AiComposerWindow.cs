@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FrySharp.Sdk;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.UI;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Controls.AI;
@@ -30,6 +31,7 @@ public class AiComposerWindow : Window
         Height = options?.Height ?? Math.Max(650, _viewModel.WindowHeight);
         MinWidth = 380;
         MinHeight = 420;
+        CanResize = true;
         Topmost = options?.Topmost ?? false;
         WindowStartupLocation = options?.CenterScreen == false ? WindowStartupLocation.Manual : WindowStartupLocation.CenterScreen;
 
@@ -37,6 +39,24 @@ public class AiComposerWindow : Window
         Opacity = _viewModel.WindowOpacity;
 
         _viewModel.StyleChanged += OnStyleChanged;
+        _viewModel.CaptureProtectionChanged += OnCaptureProtectionChanged;
+
+        Opened += (_, _) =>
+        {
+            if (_viewModel.IsProtectedFromCapture)
+            {
+                WindowProtectionService.SetProtected(this, true);
+            }
+        };
+
+        SizeChanged += (_, _) =>
+        {
+            if (WindowState == WindowState.Normal && Bounds.Width > 0 && Bounds.Height > 0)
+            {
+                _viewModel.WindowWidth = Math.Round(Bounds.Width);
+                _viewModel.WindowHeight = Math.Round(Bounds.Height);
+            }
+        };
 
         var composerControl = new StudioFloatingComposerControl
         {
@@ -46,6 +66,14 @@ public class AiComposerWindow : Window
         };
 
         Content = composerControl;
+    }
+
+    private void OnCaptureProtectionChanged(bool isProtected)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            WindowProtectionService.SetProtected(this, isProtected);
+        });
     }
 
     private void OnStyleChanged(AiStyleOptions style)
@@ -62,6 +90,7 @@ public class AiComposerWindow : Window
     {
         base.OnClosed(e);
         _viewModel.StyleChanged -= OnStyleChanged;
+        _viewModel.CaptureProtectionChanged -= OnCaptureProtectionChanged;
 
         if (_activeInstance == this)
         {

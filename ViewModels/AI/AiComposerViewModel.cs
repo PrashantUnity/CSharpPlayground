@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -88,14 +89,104 @@ public partial class AiComposerViewModel : ObservableObject
     [ObservableProperty]
     private int _maxSteps = 25;
 
-    public bool IsOverlayVisible => IsVisible && !IsExtracted && DockMode == AiDockMode.FloatingOverlay;
+    [ObservableProperty]
+    private bool _isProtectedFromCapture = false;
 
-    partial void OnIsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverlayVisible));
-    partial void OnIsExtractedChanged(bool value) => OnPropertyChanged(nameof(IsOverlayVisible));
-    partial void OnDockModeChanged(AiDockMode value) => OnPropertyChanged(nameof(IsOverlayVisible));
+    [ObservableProperty]
+    private bool _isGhostHidden = false;
+
+    [ObservableProperty]
+    private double _sideBarDockWidth = 380;
+
+    [ObservableProperty]
+    private double _bottomDockHeight = 280;
+
+    [ObservableProperty]
+    private GridLength _sideBarDockGridLength = new GridLength(0, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _bottomDockGridLength = new GridLength(0, GridUnitType.Pixel);
+
+    public bool IsOverlayVisible => IsVisible && !IsExtracted && !IsGhostHidden && DockMode == AiDockMode.FloatingOverlay;
+    public bool IsSideBarDocked => IsVisible && !IsExtracted && !IsGhostHidden && DockMode == AiDockMode.DockedSideBar;
+    public bool IsBottomDocked => IsVisible && !IsExtracted && !IsGhostHidden && DockMode == AiDockMode.DockedBottomDeck;
+    public bool CanShowMinimizedCapsule => IsMinimized && DockMode == AiDockMode.FloatingOverlay;
+
+    public bool CanDockToFloating => !IsExtracted && DockMode != AiDockMode.FloatingOverlay;
+    public bool CanDockToSideBar => !IsExtracted && DockMode != AiDockMode.DockedSideBar;
+    public bool CanDockToBottomDeck => !IsExtracted && DockMode != AiDockMode.DockedBottomDeck;
+    public bool CanExtractToWindow => !IsExtracted;
+    public bool CanMaximizeAndMinimize => !IsExtracted && DockMode == AiDockMode.FloatingOverlay;
+
+    private void NotifyDockStateChanged()
+    {
+        if (IsSideBarDocked)
+        {
+            SideBarDockGridLength = new GridLength(SideBarDockWidth >= 200 ? SideBarDockWidth : 380, GridUnitType.Pixel);
+        }
+        else
+        {
+            if (SideBarDockGridLength.IsAbsolute && SideBarDockGridLength.Value >= 200)
+            {
+                SideBarDockWidth = SideBarDockGridLength.Value;
+            }
+            SideBarDockGridLength = new GridLength(0, GridUnitType.Pixel);
+        }
+
+        if (IsBottomDocked)
+        {
+            BottomDockGridLength = new GridLength(BottomDockHeight >= 150 ? BottomDockHeight : 280, GridUnitType.Pixel);
+        }
+        else
+        {
+            if (BottomDockGridLength.IsAbsolute && BottomDockGridLength.Value >= 150)
+            {
+                BottomDockHeight = BottomDockGridLength.Value;
+            }
+            BottomDockGridLength = new GridLength(0, GridUnitType.Pixel);
+        }
+
+        OnPropertyChanged(nameof(IsOverlayVisible));
+        OnPropertyChanged(nameof(IsSideBarDocked));
+        OnPropertyChanged(nameof(IsBottomDocked));
+        OnPropertyChanged(nameof(CanShowMinimizedCapsule));
+        OnPropertyChanged(nameof(CanDockToFloating));
+        OnPropertyChanged(nameof(CanDockToSideBar));
+        OnPropertyChanged(nameof(CanDockToBottomDeck));
+        OnPropertyChanged(nameof(CanExtractToWindow));
+        OnPropertyChanged(nameof(CanMaximizeAndMinimize));
+    }
+
+    partial void OnSideBarDockGridLengthChanged(GridLength value)
+    {
+        if (value.IsAbsolute && value.Value >= 200)
+        {
+            _sideBarDockWidth = value.Value;
+        }
+    }
+
+    partial void OnBottomDockGridLengthChanged(GridLength value)
+    {
+        if (value.IsAbsolute && value.Value >= 150)
+        {
+            _bottomDockHeight = value.Value;
+        }
+    }
+
+    partial void OnIsVisibleChanged(bool value) => NotifyDockStateChanged();
+    partial void OnIsMinimizedChanged(bool value) => NotifyDockStateChanged();
+    partial void OnIsExtractedChanged(bool value) => NotifyDockStateChanged();
+    partial void OnDockModeChanged(AiDockMode value)
+    {
+        NotifyDockStateChanged();
+        DockModeChanged?.Invoke(value);
+    }
+    partial void OnIsGhostHiddenChanged(bool value) => NotifyDockStateChanged();
+    partial void OnIsProtectedFromCaptureChanged(bool value) => CaptureProtectionChanged?.Invoke(value);
 
     public event Action<AiDockMode>? DockModeChanged;
     public event Action<AiStyleOptions>? StyleChanged;
+    public event Action<bool>? CaptureProtectionChanged;
     public Action<AiWindowOptions?>? WindowExtractionRequested { get; set; }
     public Action? ReDockRequested { get; set; }
 
@@ -402,7 +493,10 @@ public partial class AiComposerViewModel : ObservableObject
     [RelayCommand]
     public void DockTo(AiDockMode mode)
     {
-        if (DockMode == mode) return;
+        IsVisible = true;
+        IsMinimized = false;
+
+        if (DockMode == mode && !IsExtracted) return;
 
         if (mode == AiDockMode.ExtractedWindow)
         {
@@ -417,7 +511,6 @@ public partial class AiComposerViewModel : ObservableObject
         }
 
         DockMode = mode;
-        DockModeChanged?.Invoke(mode);
     }
 
     [RelayCommand]
@@ -468,5 +561,17 @@ public partial class AiComposerViewModel : ObservableObject
         if (policy.AutoAcceptDiffs.HasValue) AutoAcceptDiffs = policy.AutoAcceptDiffs.Value;
         if (policy.MaxSteps.HasValue) MaxSteps = Math.Clamp(policy.MaxSteps.Value, 1, 100);
         if (policy.Temperature.HasValue && _settings != null) _settings.Temperature = (float)policy.Temperature.Value;
+    }
+
+    public void SetCaptureProtection(bool enabled)
+    {
+        IsProtectedFromCapture = enabled;
+    }
+
+    [RelayCommand]
+    public void ToggleCaptureProtection()
+    {
+        IsProtectedFromCapture = !IsProtectedFromCapture;
+        StatusText = IsProtectedFromCapture ? "Protected from screen capture" : "Capture protection disabled";
     }
 }
