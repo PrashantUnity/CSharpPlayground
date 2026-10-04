@@ -106,7 +106,10 @@ public sealed class MainWindowMenuCoordinator
 
     private void OnMonitoredPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        UiDispatchHelper.RunOnUi(UpdateMenuStates);
+        // Skip entirely in headless / test environments — there is no native menu to update
+        // and NativeMenuItem.Header access would throw a cross-thread exception.
+        if (UiDispatchHelper.HasLiveUiLifetime)
+            UiDispatchHelper.RunOnUi(UpdateMenuStates);
     }
 
     public void UpdateMenuStates()
@@ -302,7 +305,7 @@ public sealed class MainWindowMenuCoordinator
         helpMenu.Items.Add(new NativeMenuItem("Documentation & Learning"));
         helpMenu.Items.Add(new NativeMenuItem("Blind 75 Algorithm Hub"));
         helpMenu.Items.Add(new NativeMenuItemSeparator());
-        helpMenu.Items.Add(new NativeMenuItem("About C# Code Studio"));
+        helpMenu.Items.Add(new NativeMenuItem("About FrySharp"));
         root.Items.Add(new NativeMenuItem("Help") { Menu = helpMenu });
 
         return root;

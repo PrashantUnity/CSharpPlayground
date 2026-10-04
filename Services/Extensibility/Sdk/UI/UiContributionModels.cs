@@ -71,3 +71,49 @@ public class BottomDeckTabDescriptor
     public Func<object> ContentFactory { get; init; } = null!;
     public Action? OnSelected { get; init; }
 }
+
+/// <summary>
+/// Descriptor for contributing an action button or widget into the Editor Area toolbar (Zone 3).
+/// </summary>
+public class EditorToolbarItemDescriptor
+{
+    public string Id { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public string IconKind { get; init; } = "CogOutline";
+    public Action? OnClick { get; init; }
+    public Func<object>? CustomContentFactory { get; init; }
+    public int Order { get; init; } = 50;
+    public bool IsVisible { get; set; } = true;
+}
+
+/// <summary>
+/// Descriptor for contributing a dynamic floating overlay or HUD into the studio workspace.
+/// </summary>
+public class FloatingOverlayDescriptor
+{
+    public string Id { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public Func<object> ContentFactory { get; init; } = null!;
+    public double X { get; set; } = 24;
+    public double Y { get; set; } = 24;
+    public double? Width { get; set; }
+    public double? Height { get; set; }
+    public bool IsVisible { get; set; } = true;
+    public bool IsDraggable { get; set; } = true;
+    public Action? OnClosed { get; set; }
+}
+
+/// <summary>
+/// Descriptor for contributing custom buttons, pills, or widgets into the AI Composer interface.
+/// </summary>
+public class ComposerActionDescriptor
+{
+    public string Id { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public string? Tooltip { get; init; }
+    public string IconKind { get; init; } = "LightningBoltOutline";
+    public Action? OnClick { get; init; }
+    public Func<object>? CustomContentFactory { get; init; }
+    public int Order { get; init; } = 50;
+    public bool IsVisible { get; set; } = true;
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unified asset generation script for FrySharp (C# Code Studio).
+"""Unified asset generation script for FrySharp.
 
 Generates:
 1. Master PNG (1024x1024)
@@ -102,7 +102,7 @@ def generate_windows_branding(master: Image.Image) -> None:
             [(width - s(36)) / 2, s(206), (width + s(36)) / 2, s(206) + s(3)],
             fill=b.ACCENT_CYAN,
         )
-        centered("Interactive C# Studio", s(218), 9, "Regular", b.MUTED)
+        centered("Interactive Multi-Language Studio", s(218), 9, "Regular", b.MUTED)
         centered(b.URL, height - s(24), 8, "Regular", b.MUTED)
 
         out_large = WINDOWS_BRANDING_DIR / f"wizard-large-{width}x{height}.png"
@@ -267,7 +267,7 @@ def render_dmg_background(master: Image.Image, scale: float) -> Image.Image:
     wordmark = b.font(s(26), "Semibold")
     draw.text((s(100), s(20)), "FrySharp", font=wordmark, fill=b.WHITE)
     tagline = b.font(s(12), "Regular")
-    draw.text((s(101), s(54)), "Interactive C# Code Studio", font=tagline, fill=b.MUTED)
+    draw.text((s(101), s(54)), "Interactive Multi-Language Studio", font=tagline, fill=b.MUTED)
 
     canvas.alpha_composite(_pedestals(scale))
     _arrow(ImageDraw.Draw(canvas), scale)

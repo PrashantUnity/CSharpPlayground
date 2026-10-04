@@ -116,7 +116,7 @@ public partial class DocumentationService
 
                     using var client = new HttpClient();
 
-                    var payload = new NewPost("Learning HttpClient", "This post was created from C# Code Studio.", 7);
+                    var payload = new NewPost("Learning HttpClient", "This post was created from FrySharp.", 7);
                     string requestJson = JsonSerializer.Serialize(payload);
 
                     using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
@@ -223,7 +223,7 @@ public partial class DocumentationService
                     string tempDir = Path.Combine(Path.GetTempPath(), "frypdf-learn-csharp-demo");
                     Directory.CreateDirectory(tempDir);
                     string tempFile = Path.Combine(tempDir, "upload-me.txt");
-                    await File.WriteAllTextAsync(tempFile, "Sample content uploaded from C# Code Studio.");
+                    await File.WriteAllTextAsync(tempFile, "Sample content uploaded from FrySharp.");
 
                     using var form = new MultipartFormDataContent();
                     using var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(tempFile));

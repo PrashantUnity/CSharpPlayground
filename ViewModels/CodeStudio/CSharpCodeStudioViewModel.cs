@@ -131,6 +131,14 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         }
     }
 
+    public Action? ToggleAiComposerAction { get; set; }
+
+    [RelayCommand]
+    public void ToggleAiComposer()
+    {
+        ToggleAiComposerAction?.Invoke();
+    }
+
     private CancellationTokenSource? _diagnosticsCts;
     private CancellationTokenSource? _executionCts;
     private int _executionRunId;

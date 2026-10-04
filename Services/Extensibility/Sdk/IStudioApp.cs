@@ -1,7 +1,7 @@
 namespace FrySharp.Sdk;
 
 /// <summary>
-/// Root ambient facade for the C# Code Studio and FrySharp extensibility system.
+/// Root ambient facade for the FrySharp extensibility system.
 /// Available as global 'App' or 'Studio' in customization scripts and extensions.
 /// </summary>
 public interface IStudioApp
@@ -41,6 +41,12 @@ public interface IStudioApp
 
     /// <summary>Language registration, queries, and file-type associations.</summary>
     ILanguagesApi Languages { get; }
+
+    /// <summary>Runtime API reflection, live command enumeration, UI slot discovery, and schema catalog.</summary>
+    IApiMetadataApi Metadata { get; }
+
+    /// <summary>AI Chat Assistant styling, docking, screen tearing, and behavior policies.</summary>
+    IAiApi AI { get; }
 
     /// <summary>Convenience alias for UI.Dialogs (modals, prompts, and file pickers).</summary>
     IDialogApi Dialogs => UI.Dialogs;

@@ -286,6 +286,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             return;
         }
 
+        if (isModifier && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.I)
+        {
+            _currentVm.ToggleAiComposerCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         if (isModifier && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.E)
         {
             _currentVm.SelectActivityBarItem(0); // Explorer
@@ -490,13 +497,80 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
                 viewAction: item => OpenValueViewer(item),
                 getChildrenFunc: item => _currentVm != null ? _currentVm.GetVariableChildrenAsync(item) : Task.FromResult<IReadOnlyList<DebugVariableItem>>(item.Children));
         }
+
+        // Connect the active TopLevel resolver to the live visual tree
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UiService.ActiveTopLevelResolver = () => TopLevel.GetTopLevel(this);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UI.ContributionsChanged += RefreshExtensibilitySlots;
+        RefreshExtensibilitySlots();
     }
 
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UI.ContributionsChanged -= RefreshExtensibilitySlots;
         _debugHoverController?.Dispose();
         _debugHoverController = null;
+    }
+
+    private void RefreshExtensibilitySlots()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var ui = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UI;
+
+            // 1. Editor Toolbar dynamic items
+            var toolbarHost = this.FindControl<StackPanel>("DynamicEditorToolbarHost");
+            if (toolbarHost != null)
+            {
+                toolbarHost.Children.Clear();
+                foreach (var item in ui.EditorToolbarItems)
+                {
+                    if (!item.IsVisible) continue;
+
+                    if (item.CustomContentFactory != null)
+                    {
+                        var content = item.CustomContentFactory();
+                        if (content is Control ctrl) toolbarHost.Children.Add(ctrl);
+                        else toolbarHost.Children.Add(new ContentControl { Content = content });
+                    }
+                    else
+                    {
+                        var btn = new Button
+                        {
+                            Classes = { "cs-toolbar-icon" },
+                            Content = new TextBlock
+                            {
+                                Text = item.Title,
+                                FontSize = 11,
+                                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                            }
+                        };
+                        ToolTip.SetTip(btn, item.Title);
+                        btn.Click += (_, _) => item.OnClick?.Invoke();
+                        toolbarHost.Children.Add(btn);
+                    }
+                }
+            }
+
+            // 2. Floating Overlays
+            var overlaysHost = this.FindControl<Canvas>("DynamicOverlaysHost");
+            if (overlaysHost != null)
+            {
+                overlaysHost.Children.Clear();
+                foreach (var overlay in ui.FloatingOverlays)
+                {
+                    if (!overlay.IsVisible) continue;
+
+                    var ctrl = overlay.ContentFactory() is Control c ? c : new ContentControl { Content = overlay.ContentFactory() };
+                    if (overlay.Width.HasValue) ctrl.Width = overlay.Width.Value;
+                    if (overlay.Height.HasValue) ctrl.Height = overlay.Height.Value;
+
+                    Canvas.SetLeft(ctrl, overlay.X);
+                    Canvas.SetTop(ctrl, overlay.Y);
+                    overlaysHost.Children.Add(ctrl);
+                }
+            }
+        });
     }
 
     private void PolishLeftMargins(bool isDark = true)

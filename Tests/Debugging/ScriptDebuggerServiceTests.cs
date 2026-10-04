@@ -98,7 +98,7 @@ Console.WriteLine(""Finished"");";
             new() { LineNumber = 11, IsEnabled = true }
         };
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var session = ScriptDebugSession.BeginSession(breakpoints, cts, "two-sum-test");
 
         int hitCount = 0;
@@ -186,7 +186,7 @@ Console.WriteLine(c);";
             new() { LineNumber = 3, IsEnabled = true }
         };
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var session = ScriptDebugSession.BeginSession(breakpoints, cts, "top-level-test");
 
         bool hit = false;

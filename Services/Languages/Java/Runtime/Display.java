@@ -7,7 +7,7 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 /**
- * Interactive Display and Visual Dump API for FryPDF C# Code Studio (Java).
+ * Interactive Display and Visual Dump API for FrySharp (Java).
  */
 public class Display {
     public static final String DISPLAY_MARKER = "__FRY_DISPLAY__";

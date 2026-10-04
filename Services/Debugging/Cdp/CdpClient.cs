@@ -50,7 +50,8 @@ public sealed class CdpClient : IAsyncDisposable
     /// </summary>
     public static async Task<string> DiscoverWebSocketUrlAsync(int port, TimeSpan timeout, CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var requestTimeout = timeout < TimeSpan.FromSeconds(2) ? timeout : TimeSpan.FromSeconds(5);
+        using var http = new HttpClient { Timeout = requestTimeout };
         var deadline = DateTime.UtcNow + timeout;
         Exception? last = null;
         while (DateTime.UtcNow < deadline)
@@ -67,6 +68,7 @@ public sealed class CdpClient : IAsyncDisposable
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or IOException)
             {
+                if (ct.IsCancellationRequested) throw;
                 last = ex;
             }
 

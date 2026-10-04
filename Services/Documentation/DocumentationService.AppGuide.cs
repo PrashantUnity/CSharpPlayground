@@ -14,7 +14,7 @@ public partial class DocumentationService
             IconKind = MaterialIconKind.ApplicationOutline,
             AccentColor = "#38BDF8",
             Badge = "Getting Started",
-            Description = "Learn how to use C# Code Studio, navigate the 5-zone VS Code layout, manage scripts, and debug .NET code.",
+            Description = "Learn how to use FrySharp, navigate the 5-zone VS Code layout, manage scripts, and debug .NET code.",
             Articles = new List<DocArticle>
             {
                 CreateWelcomeArticle(),
@@ -32,17 +32,17 @@ public partial class DocumentationService
         return new DocArticle
         {
             Id = "welcome_guide",
-            Title = "Welcome to C# Code Studio",
+            Title = "Welcome to FrySharp",
             Subtitle = "A high-performance .NET 10 document scripting, algorithm, and interactive notebook IDE.",
             ReadingTime = "3 min read",
-            Summary = "C# Code Studio brings Visual Studio Code ergonomics to FryPDF for document scripting, algorithmic exploration, and dynamic data visualization.",
+            Summary = "FrySharp brings Visual Studio Code ergonomics to FryPDF for document scripting, algorithmic exploration, and dynamic data visualization.",
             Keywords = new List<string> { "overview", "intro", "architecture", "roslyn", "net10", "welcome", "getting started" },
             Sections = new List<DocSection>
             {
                 new()
                 {
                     Heading = "Core Paradigm & Purpose",
-                    Content = "C# Code Studio is a premier, in-app development environment built for .NET 10 within FryPDF. It provides Roslyn-powered C# scripting, interactive polyglot-style notebooks, algorithm visualizers, and interactive inspection decks without requiring an external IDE.",
+                    Content = "FrySharp is a premier development environment built for .NET 10 within FryPDF. It provides Roslyn-powered C# scripting, interactive polyglot-style notebooks, algorithm visualizers, and interactive inspection decks without requiring an external IDE.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "All compilation and reflection operations execute off the UI thread via background task workers, guaranteeing zero UI-thread freezes."
                 },
@@ -65,11 +65,11 @@ public partial class DocumentationService
                 new()
                 {
                     Id = "snip_hello_world",
-                    Title = "Your First C# Studio Script",
+                    Title = "Your First FrySharp Script",
                     Description = "Write modern top-level C# code and use .Dump() to view output in the bottom deck.",
                     Language = "csharp",
                     TargetKind = WorkspaceItemKind.Script,
-                    Code = @"// Welcome to C# Code Studio!
+                    Code = @"// Welcome to FrySharp!
 var message = ""Hello from .NET 10 Roslyn Scripting!"";
 Console.WriteLine(message);
 
@@ -303,7 +303,7 @@ Console.WriteLine(json);"
             {
                 new()
                 {
-                    Heading = "Python files in Code Studio",
+                    Heading = "Python files in FrySharp",
                     Content = "Create one with New File → Python in the Explorer (or open any .py file in your workspace). The file is edited and saved as plain Python, in place:",
                     BulletPoints = new List<string>
                     {

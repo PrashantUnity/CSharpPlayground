@@ -19,14 +19,14 @@ using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.C
 namespace PdfEditorApp.Plugins.CSharpEditor;
 
 /// <summary>
-/// FryPDF plugin entry point for C# Code Studio.
+/// FryPDF plugin entry point for FrySharp.
 /// Mounts as a full-viewport Workspace Studio Navigation page, Status Bar widget,
 /// Command Palette action, and Dynamic Ribbon action (No floating shell overlay).
 /// </summary>
 public class CSharpEditorPlugin : IFryPlugin
 {
     public string Id => "com.frypdf.plugin.csharpeditor";
-    public string Name => "C# Code Studio";
+    public string Name => "FrySharp";
     public Version Version => new(1, 0, 0);
     public bool AutoOpenOverlay => false;
     public IReadOnlyList<Type> RequiredServices => Array.Empty<Type>();
@@ -89,7 +89,7 @@ public class CSharpEditorPlugin : IFryPlugin
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
         {
             Id = "CSharpStudio",
-            Title = "C# Code Studio",
+            Title = "FrySharp",
             Group = "Overview",
             IconKind = "CodeBraces",
             BadgeText = "Studio",
@@ -109,7 +109,7 @@ public class CSharpEditorPlugin : IFryPlugin
         var cmdReg = ctx.RegisterCommand(new CommandPaletteDescriptor
         {
             Id = "cmd.studio.csharpeditor",
-            Title = "Open C# Code Studio",
+            Title = "Open FrySharp",
             Subtitle = "Launch in-app C# development studio with project manager, editor, and Roslyn runner",
             Category = "Developer Tools",
             IconKind = "CodeBraces",
@@ -180,10 +180,10 @@ public class CSharpEditorPlugin : IFryPlugin
             WidgetId = "frypdf.status.csharpeditor",
             Alignment = StatusBarAlignment.Right,
             Order = 14,
-            ToolTip = "C# Code Studio & Automation Hub",
+            ToolTip = "FrySharp & Automation Hub",
             Factory = _ => new Button
             {
-                Content = "{ } C# Studio",
+                Content = "{ } FrySharp",
                 Classes = { "m3-tonal-btn" }
             }
         });
@@ -193,7 +193,7 @@ public class CSharpEditorPlugin : IFryPlugin
             Id = "frypdf.ribbon.action.csharpeditor",
             TabId = "plugins",
             GroupId = "tools",
-            Label = "C# Studio",
+            Label = "FrySharp",
             Tooltip = "Open full-featured C# development studio and script automation workspace",
             IconKind = "CodeBraces",
             Order = 30,
@@ -205,7 +205,7 @@ public class CSharpEditorPlugin : IFryPlugin
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.studio.launch",
-                Title = "Launch C# Code Studio",
+                Title = "Launch FrySharp",
                 Description = "Open in-app C# development studio and script automation workspace.",
                 Category = "Editor",
                 DefaultGesture = "Ctrl+Alt+E",

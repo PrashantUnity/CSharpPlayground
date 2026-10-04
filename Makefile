@@ -10,6 +10,6 @@ build:
 	dotnet build CSharpEditorPlugin.slnx
 
 test:
-	dotnet test Tests/CSharpEditorPlugin.Tests.csproj
+	dotnet test Tests/CSharpEditorPlugin.Tests.csproj -c Release
 
 .PHONY: run run-release build test

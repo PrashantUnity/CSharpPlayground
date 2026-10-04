@@ -547,9 +547,17 @@
                                 </Panel>
                             </Button>
 
+                            <!-- Dynamic Injected Editor Toolbar Actions Slot -->
+                            <StackPanel Name="DynamicEditorToolbarHost" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" />
+
                             <!-- Save Script -->
                             <Button Command="{Binding SaveCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Save Script (Ctrl+S)">
                                 <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+
+                            <!-- AI Composer / Agent (Cmd+I) -->
+                            <Button Command="{Binding ToggleAiComposerCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Toggle AI Composer &amp; Agent (Cmd+I / Ctrl+I)">
+                                <materialIcons:MaterialIcon Kind="AutoFix" Width="15" Height="15" Foreground="{DynamicResource DsPrimaryBrush}" />
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -607,8 +615,10 @@
                         <!-- Text / JSON Value Viewer Overlay -->
                         <visuals:ValueViewerControl Name="ValueViewerOverlay"
                                                      HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center"
                                                      IsVisible="False" />
+
+                        <!-- Dynamic Floating Overlays Host (HUDs, Mini-Inspectors, Adorners) -->
+                        <Canvas Name="DynamicOverlaysHost" IsHitTestVisible="True" />
                     </Grid>
 
                     <!-- Vertical Splitter (Editor vs Right Dock) -->

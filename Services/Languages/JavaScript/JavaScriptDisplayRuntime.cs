@@ -5,7 +5,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 
 /// <summary>
-/// Provides zero-configuration runtime support for Node.js scripts in C# Code Studio,
+/// Provides zero-configuration runtime support for Node.js scripts in FrySharp,
 /// injecting <c>dump()</c>, <c>display()</c>, and <c>Display</c> into JavaScript scripts.
 /// </summary>
 public static class JavaScriptDisplayRuntime

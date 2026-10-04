@@ -1,4 +1,4 @@
-; Inno Setup 6 Script for FrySharp (C# Code Studio) by Code Fry Dev
+; Inno Setup 6 Script for FrySharp by Code Fry Dev
 #ifndef MyAppVersion
 #define MyAppVersion "2.0.0"
 #endif

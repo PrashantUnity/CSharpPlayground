@@ -1,0 +1,409 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.AiSettingsSectionControl"
+             x:DataType="settings:CSharpSettingsViewModel"
+             Background="Transparent">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- LEFT MAIN COLUMN: AI AGENT PREFERENCES                    -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="0" Spacing="16">
+
+                <!-- 1. HERO HEADER CARD -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8"
+                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="RobotOutline" Width="24" Height="24"
+                                                        Foreground="{DynamicResource DsPrimaryBrush}"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="AI Agent &amp; Local LLM Preferences" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Autonomous ReAct agent, local Ollama connectivity, model parameters, and Roslyn self-healing loop" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="Microsoft.Extensions.AI" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- 2. PROVIDER & ENDPOINT CONNECTIVITY -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="ServerNetwork" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="ENDPOINT &amp; PROVIDER CONFIGURATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Provider Kind -->
+                        <Grid ColumnDefinitions="*,220">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="LLM Provider Architecture" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Choose between local private runtimes (Ollama, LM Studio) or OpenAI-compatible endpoints." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding AvailableAiProviders}"
+                                      SelectedItem="{Binding AiProvider, Mode=TwoWay}"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Endpoint URL & Ping -->
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="8">
+                            <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Server Base URL / Custom Port" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Default: http://localhost:11434. Supports custom ports (e.g. 11443) and LAN endpoints." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <Button Grid.Row="0" Grid.Column="1"
+                                    Command="{Binding TestAiConnectionCommand}"
+                                    Classes="cs-toolbar-filled"
+                                    IsEnabled="{Binding !IsAiConnecting}"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="LanCheck" Width="15" Height="15" />
+                                    <TextBlock Text="Test Connection" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                     Text="{Binding AiEndpointUrl, Mode=TwoWay}"
+                                     PlaceholderText="http://localhost:11434"
+                                     Classes="cs-editor-textbox"
+                                     FontSize="12" Height="32" />
+                        </Grid>
+
+                        <!-- Quick Presets -->
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Quick Presets:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <Button Command="{Binding SetLmStudioPresetCommand}" Classes="cs-toolbar-btn" Padding="8,3" FontSize="11">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <materialIcons:MaterialIcon Kind="Laptop" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="LM Studio (1234)" />
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding SetOllamaPresetCommand}" Classes="cs-toolbar-btn" Padding="8,3" FontSize="11">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <materialIcons:MaterialIcon Kind="Server" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Ollama (11434)" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Connection Status Pill -->
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12,8">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <materialIcons:MaterialIcon Grid.Column="0"
+                                                            Kind="{Binding IsAiConnected, Converter={x:Null}, FallbackValue=InformationOutline}"
+                                                            Width="16" Height="16"
+                                                            Foreground="{DynamicResource DsPrimaryBrush}"
+                                                            VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding AiConnectionStatus}"
+                                           FontSize="12"
+                                           Margin="8,0,0,0"
+                                           Foreground="{DynamicResource DsTextBrush}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. MODEL SELECTION & AUTHENTICATION -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="Brain" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="TARGET MODEL &amp; AUTHENTICATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Model Name & Discovered Dropdown -->
+                        <Grid ColumnDefinitions="*,240">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Target Model Identifier" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Specifies the model tag (e.g. qwen2.5-coder:7b, deepseek-r1, llama3.2)." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding AiModelName, Mode=TwoWay}"
+                                     PlaceholderText="qwen2.5-coder:7b"
+                                     Classes="cs-editor-textbox"
+                                     FontSize="12" Height="32"
+                                     VerticalAlignment="Center" />
+                        </Grid>
+
+                        <!-- Discovered Models quick selector (if populated) -->
+                        <Border IsVisible="{Binding DiscoveredAiModels.Count}"
+                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                CornerRadius="6" Padding="10,6">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Discovered Models:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <ComboBox ItemsSource="{Binding DiscoveredAiModels}"
+                                          SelectedItem="{Binding AiModelName, Mode=TwoWay}"
+                                          FontSize="11.5" Height="28" MinWidth="180"
+                                          VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- API Key (Optional) -->
+                        <Grid ColumnDefinitions="*,240">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="API Key (Optional)" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Optional bearer token for authenticated cloud proxies or OpenAI-compatible services." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding AiApiKey, Mode=TwoWay}"
+                                     PasswordChar="●"
+                                     PlaceholderText="Leave empty for local Ollama"
+                                     Classes="cs-editor-textbox"
+                                     FontSize="12" Height="32"
+                                     VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. AGENT SAMPLING & AUTONOMOUS GUARDRAILS -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="ShieldCheckOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="AUTONOMOUS BEHAVIOR &amp; GUARDRAILS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Auto-Approve Edits -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Auto-Approve File Modifications" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="When enabled, agent modifications apply immediately. When disabled, changes require review in diff cards." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AiAutoApproveEdits, Mode=TwoWay}" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Temperature -->
+                        <Grid ColumnDefinitions="*,130">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Sampling Temperature" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Lower values (0.1 - 0.2) produce precise, deterministic code; higher values (0.7) increase creativity." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1" Value="{Binding AiTemperature, Mode=TwoWay}" Minimum="0.0" Maximum="1.0" Increment="0.05" FormatString="0.00" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
+
+                        <!-- Max Output Tokens -->
+                        <Grid ColumnDefinitions="*,130">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Max Output Tokens" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text="Upper boundary on token generation per agent step or LLM turn (512 - 16384)." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1" Value="{Binding AiMaxOutputTokens, Mode=TwoWay}" Minimum="512" Maximum="16384" Increment="512" FormatString="0" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. SYSTEM PROMPT & CUSTOM INSTRUCTIONS -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="18,16">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="CardTextOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="SYSTEM PROMPT &amp; PERSONA" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                                <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding AiPromptPresetName}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                </Border>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Command="{Binding ResetAiPromptToDefaultCommand}"
+                                    Classes="cs-toolbar-outlined"
+                                    ToolTip.Tip="Reset system instructions to studio default">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <materialIcons:MaterialIcon Kind="Restore" Width="13" Height="13" />
+                                    <TextBlock Text="Reset Default" FontSize="11.5" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Prompt Presets Strip -->
+                        <WrapPanel Orientation="Horizontal">
+                            <TextBlock Text="Presets:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Button Command="{Binding SetDefaultPromptPresetCommand}" Classes="cs-toolbar-outlined" Margin="0,2,6,2" Padding="8,3" ToolTip.Tip="Autonomous pair programmer with full Roslyn &amp; bash toolchain">
+                                <TextBlock Text="Agent (Default)" FontSize="11" />
+                            </Button>
+                            <Button Command="{Binding SetConcisePromptPresetCommand}" Classes="cs-toolbar-outlined" Margin="0,2,6,2" Padding="8,3" ToolTip.Tip="Direct surgical code solutions with minimal prose">
+                                <TextBlock Text="Concise" FontSize="11" />
+                            </Button>
+                            <Button Command="{Binding SetReviewerPromptPresetCommand}" Classes="cs-toolbar-outlined" Margin="0,2,6,2" Padding="8,3" ToolTip.Tip="Code review, memory leaks, performance &amp; security audit">
+                                <TextBlock Text="Code Reviewer" FontSize="11" />
+                            </Button>
+                            <Button Command="{Binding SetTddPromptPresetCommand}" Classes="cs-toolbar-outlined" Margin="0,2,6,2" Padding="8,3" ToolTip.Tip="Test-driven development, xUnit coverage &amp; boundary tests">
+                                <TextBlock Text="TDD Architect" FontSize="11" />
+                            </Button>
+                        </WrapPanel>
+
+                        <TextBox Text="{Binding AiSystemPrompt, Mode=TwoWay}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="140"
+                                 FontFamily="{DynamicResource JetBrainsMonoFontFamily}"
+                                 FontSize="11.5"
+                                 Classes="cs-editor-textbox" />
+
+                        <!-- Prompt Status & Metrics Footer -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="InformationOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="Changes apply immediately across both standalone chats and floating Composer" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding AiSystemPromptLength, StringFormat='{}{0:N0} characters'}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- RIGHT SIDEBAR COLUMN: QUICK REFERENCE & GUIDES             -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <StackPanel Grid.Column="1" Spacing="16">
+
+                <!-- 1. LOCAL OLLAMA SETUP GUIDE -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="16,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="InformationOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="OLLAMA QUICKSTART" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="To run a high-performance local coding model on your machine:" FontSize="12" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" />
+
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="6" Padding="10,8">
+                            <SelectableTextBlock Text="ollama run qwen2.5-coder:7b"
+                                                 FontFamily="{DynamicResource JetBrainsMonoFontFamily}"
+                                                 FontSize="11.5" Foreground="{DynamicResource DsPrimaryBrush}" />
+                        </Border>
+
+                        <TextBlock Text="Custom Port Setup:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" Margin="0,4,0,0" />
+                        <TextBlock Text="Set OLLAMA_HOST=0.0.0.0:11443 in your environment to expose Ollama on port 11443." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. AGENT TOOLS & CAPABILITIES -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="16,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="WrenchOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="AUTONOMOUS AGENT TOOLS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="• Workspace file reader &amp; patch editor" FontSize="12" Foreground="{DynamicResource DsTextBrush}" />
+                            <TextBlock Text="• Active editor canvas &amp; selection inspection" FontSize="12" Foreground="{DynamicResource DsTextBrush}" />
+                            <TextBlock Text="• Roslyn compile &amp; self-healing loop" FontSize="12" Foreground="{DynamicResource DsTextBrush}" />
+                            <TextBlock Text="• In-app metaprogramming (~/.frysharp/init.csx)" FontSize="12" Foreground="{DynamicResource DsTextBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. SHORTCUTS & ERGONOMICS -->
+                <Border Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="16,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            <TextBlock Text="KEYBOARD SHORTCUTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Toggle AI Composer" FontSize="12" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                            <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2">
+                                <TextBlock Text="Ctrl+I / ⌘I" FontSize="11" FontFamily="{DynamicResource JetBrainsMonoFontFamily}" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            </Border>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Accept All Changes" FontSize="12" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                            <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2">
+                                <TextBlock Text="Ctrl+Enter / ⌘Enter" FontSize="11" FontFamily="{DynamicResource JetBrainsMonoFontFamily}" Foreground="{DynamicResource DsGreenBrush}" />
+                            </Border>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Send Prompt" FontSize="12" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                            <Border Grid.Row="2" Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2">
+                                <TextBlock Text="Enter" FontSize="11" FontFamily="{DynamicResource JetBrainsMonoFontFamily}" Foreground="{DynamicResource DsTextBrush}" />
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

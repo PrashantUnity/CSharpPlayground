@@ -91,6 +91,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     public CodeStudio.CSharpCodeStudioViewModel? CodeStudioViewModel { get; internal set; }
     public Notebooks.CSharpNotebookStudioViewModel? NotebookStudioViewModel { get; internal set; }
     public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel? ServerStudioViewModel { get; private set; }
+    public AI.AiComposerViewModel AiComposer { get; }
 
     /// <param name="serviceProvider">Resolves the plugin settings store when <paramref name="settingsStore"/> isn't given.</param>
     /// <param name="settingsStore">The plugin's settings (execution timeout).</param>
@@ -166,6 +167,13 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
+
+        AiComposer = new AI.AiComposerViewModel(
+            settings: _languages.StudioSettings.GetSettings().Ai,
+            settingsStore: _languages.StudioSettings);
+
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ComposerVmResolver = () => AiComposer;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.AiService.AttachViewModel(AiComposer);
 
         // ── Boot the Roslyn compiler service off the UI thread ──
         // ⚠️  DO NOT move RoslynCompilerService or child ViewModel construction back into this
@@ -260,6 +268,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         {
             CodeStudioViewModel = codeVm;
             NotebookStudioViewModel = notebookVm;
+            if (codeVm != null)
+            {
+                codeVm.ToggleAiComposerAction = () => ToggleAiComposer();
+            }
+            AiComposer.InitializeServices(codeVm, _storageService, _compilerService, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager);
             IsEngineLoading = false;
             EngineStatus = "Roslyn .NET 10 Engine Active";
         }
@@ -268,6 +281,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         UiDispatchHelper.RunOnUi(Publish);
     }
 
+    [RelayCommand]
+    public void ToggleAiComposer()
+    {
+        AiComposer.ToggleFloating();
+    }
 
     [RelayCommand]
     public void NavigateToHome()

@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 import jdk.jshell.*;
 
 /**
- * Java Notebook Kernel for FryPDF C# Code Studio.
+ * Java Notebook Kernel for FrySharp.
  * Speaks the line-delimited JSON Fry Kernel Protocol over stdin/stdout pipes.
  */
 public class FryKernel {

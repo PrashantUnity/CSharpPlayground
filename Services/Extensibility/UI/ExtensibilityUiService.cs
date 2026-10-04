@@ -17,6 +17,9 @@ public class ExtensibilityUiService : IUiApi
     private readonly ConcurrentDictionary<string, SideBarViewDescriptor> _sideBarViews = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, StatusBarWidgetDescriptor> _statusBarWidgets = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, BottomDeckTabDescriptor> _bottomDeckTabs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, EditorToolbarItemDescriptor> _editorToolbarItems = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, FloatingOverlayDescriptor> _floatingOverlays = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, ComposerActionDescriptor> _composerActions = new(StringComparer.OrdinalIgnoreCase);
 
     public ExtensibilityDialogService DialogsService { get; } = new();
     public IDialogApi Dialogs => DialogsService;
@@ -26,6 +29,13 @@ public class ExtensibilityUiService : IUiApi
     public object? ActiveTopLevel => ActiveTopLevelResolver?.Invoke();
     public object? MainWindow => MainWindowResolver?.Invoke();
 
+    public IVisualTreeApi VisualTree { get; }
+
+    public ExtensibilityUiService()
+    {
+        VisualTree = new VisualTreeManager(() => ActiveTopLevel ?? MainWindow);
+    }
+
     public event Action<NotificationMessage>? NotificationPosted;
     public event Action? ContributionsChanged;
 
@@ -33,6 +43,9 @@ public class ExtensibilityUiService : IUiApi
     public IReadOnlyList<SideBarViewDescriptor> SideBarViews => _sideBarViews.Values.OrderBy(x => x.Order).ToList();
     public IReadOnlyList<StatusBarWidgetDescriptor> StatusBarWidgets => _statusBarWidgets.Values.OrderByDescending(x => x.Priority).ToList();
     public IReadOnlyList<BottomDeckTabDescriptor> BottomDeckTabs => _bottomDeckTabs.Values.ToList();
+    public IReadOnlyList<EditorToolbarItemDescriptor> EditorToolbarItems => _editorToolbarItems.Values.OrderBy(x => x.Order).ToList();
+    public IReadOnlyList<FloatingOverlayDescriptor> FloatingOverlays => _floatingOverlays.Values.ToList();
+    public IReadOnlyList<ComposerActionDescriptor> ComposerActions => _composerActions.Values.OrderBy(x => x.Order).ToList();
 
     public IDisposable RegisterActivityBarItem(ActivityBarDescriptor descriptor)
     {
@@ -92,6 +105,59 @@ public class ExtensibilityUiService : IUiApi
             _bottomDeckTabs.TryRemove(descriptor.Id, out _);
             NotifyContributionsChanged();
         });
+    }
+
+    public IDisposable RegisterEditorToolbarItem(EditorToolbarItemDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptor.Id);
+
+        _editorToolbarItems[descriptor.Id] = descriptor;
+        NotifyContributionsChanged();
+
+        return new ActionDisposable(() =>
+        {
+            _editorToolbarItems.TryRemove(descriptor.Id, out _);
+            NotifyContributionsChanged();
+        });
+    }
+
+    public IDisposable RegisterFloatingOverlay(FloatingOverlayDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptor.Id);
+
+        _floatingOverlays[descriptor.Id] = descriptor;
+        NotifyContributionsChanged();
+
+        return new ActionDisposable(() =>
+        {
+            if (_floatingOverlays.TryRemove(descriptor.Id, out var removed))
+            {
+                removed.OnClosed?.Invoke();
+            }
+            NotifyContributionsChanged();
+        });
+    }
+
+    public IDisposable RegisterComposerAction(ComposerActionDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptor.Id);
+
+        _composerActions[descriptor.Id] = descriptor;
+        NotifyContributionsChanged();
+
+        return new ActionDisposable(() =>
+        {
+            _composerActions.TryRemove(descriptor.Id, out _);
+            NotifyContributionsChanged();
+        });
+    }
+
+    public object? CreateComponent(string xaml, string? title = null)
+    {
+        return DynamicViewFactory.CreateFromXaml(xaml, title);
     }
 
     public void ShowNotification(NotificationMessage notification)

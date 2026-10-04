@@ -281,6 +281,11 @@ public partial class MainWindow : Window
         if (ActiveCodeStudio is { } code) code.ToggleBottomDeck();
     }
 
+    public void ToggleAiComposer_OnClick(object? sender, EventArgs e)
+    {
+        StudioHostVm.ToggleAiComposerCommand.Execute(null);
+    }
+
     public void ZoomIn_OnClick(object? sender, EventArgs e)
     {
         if (ActiveCodeStudio is { } code) code.ZoomInCommand.Execute(null);

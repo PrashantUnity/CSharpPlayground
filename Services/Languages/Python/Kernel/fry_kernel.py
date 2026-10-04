@@ -1,4 +1,4 @@
-"""The Python kernel of FryPDF's C# Code Studio notebooks.
+"""The Python kernel of FrySharp notebooks.
 
 Started by the studio with the user's own Python (so every installed package works), it runs notebook cells one
 after another in one namespace, as Jupyter's IPython kernel does, and talks to the studio over its stdin/stdout pipes

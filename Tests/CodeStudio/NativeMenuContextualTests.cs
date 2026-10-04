@@ -7,6 +7,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Runner;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
@@ -19,18 +20,16 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tests;
 public class NativeMenuContextualTests
 {
     private static readonly object InitLock = new();
-    private static MainWindowMenuCoordinator? _sharedCoordinator;
 
     private static MainWindowMenuCoordinator GetWindow()
     {
         lock (InitLock)
         {
-            if (_sharedCoordinator != null) return _sharedCoordinator;
-
             var tempDir = Path.Combine(Path.GetTempPath(), "NativeMenuTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var storage = new LocalScriptStorageService(tempDir);
-            var hostVm = new CSharpStudioHostViewModel(storageService: storage);
+            var languages = new StudioLanguageServices(tempDir);
+            var hostVm = new CSharpStudioHostViewModel(languages: languages, storageService: storage);
 
             var doc = new ScriptDocumentItem { Title = "TestScript", Code = "Console.WriteLine(1);" };
             var compiler = new RoslynCompilerService();
@@ -57,8 +56,7 @@ public class NativeMenuContextualTests
             var menu = MainWindowMenuCoordinator.CreateDefaultMenu();
             var coordinator = new MainWindowMenuCoordinator(menu, hostVm);
             coordinator.UpdateMenuStates();
-            _sharedCoordinator = coordinator;
-            return _sharedCoordinator;
+            return coordinator;
         }
     }
 

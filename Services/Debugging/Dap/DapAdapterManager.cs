@@ -347,8 +347,8 @@ public sealed class DapAdapterManager
         {
             response = await client.SendRequestAsync("initialize", new
             {
-                clientID = "FryStudio",
-                clientName = "C# Code Studio",
+                clientID = "FrySharp",
+                clientName = "FrySharp",
                 adapterID = context.ScriptId,
                 linesStartAt1 = true,
                 columnsStartAt1 = true,

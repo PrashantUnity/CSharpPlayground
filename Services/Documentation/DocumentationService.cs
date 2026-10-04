@@ -270,7 +270,7 @@ public partial class DocumentationService
             Title = string.IsNullOrWhiteSpace(title) ? (isSourceFile ? $"Docs Sample Script{ext}" : "Docs Sample Script") : title,
             Code = snippet.Code,
             LanguageId = lang?.Id ?? snippet.Language ?? Languages.LanguageIds.CSharp,
-            Notes = $"# {snippet.Title}\n\n{snippet.Description}\n\nGenerated from C# Code Studio Documentation."
+            Notes = $"# {snippet.Title}\n\n{snippet.Description}\n\nGenerated from FrySharp Documentation."
         };
     }
 
@@ -284,7 +284,7 @@ public partial class DocumentationService
         notebook.Cells.Add(new NotebookCellItem
         {
             Type = CellType.Markdown,
-            Source = $"# 📘 {snippet.Title}\n\n{snippet.Description}\n\n*Created from C# Code Studio Documentation.*",
+            Source = $"# 📘 {snippet.Title}\n\n{snippet.Description}\n\n*Created from FrySharp Documentation.*",
             IsMarkdownPreviewMode = true
         });
 

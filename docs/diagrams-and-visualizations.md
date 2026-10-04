@@ -1,6 +1,6 @@
 # Diagrams & Visualizations API: Polyglot Guide
 
-C# Code Studio and FrySharp provide a unified, polyglot visual runtime for interactive diagrams, data structure visualizers, 2D/3D plots, and custom vector scenes. Regardless of your programming language (**C++**, **Java**, **Python**, or **C#**), programs generate rich interactive output through canonical APIs, standardized MIME bundles (`application/vnd.fry.*.v1+json`), and universal interactive visual controls.
+FrySharp provides a unified, polyglot visual runtime for interactive diagrams, data structure visualizers, 2D/3D plots, and custom vector scenes. Regardless of your programming language (**C++**, **Java**, **Python**, or **C#**), programs generate rich interactive output through canonical APIs, standardized MIME bundles (`application/vnd.fry.*.v1+json`), and universal interactive visual controls.
 
 ---
 
