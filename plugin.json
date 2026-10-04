@@ -1,7 +1,7 @@
 {
   "id": "com.frypdf.plugin.csharpeditor",
   "name": "FrySharp",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "author": "Code Fry Dev",
   "description": "Interactive in-app C# development and automation studio featuring a dedicated project/script manager, syntax-highlighted editor, real-time Roslyn compilation diagnostics, in-memory execution, visual gutter breakpoints, interactive stepping (F5/F10/F11), locals/watch inspection, and immediate evaluation.",
   "entryPoint": "CSharpEditorPlugin.dll",
@@ -57,5 +57,6 @@
       "default": true
     }
   },
-  "isCollectible": false
+  "isCollectible": false,
+  "releaseNotes": "Release 2.0.3: Rebrands to FrySharp with major AI and extensibility architecture. Introduces the AI Agent Composer powered by Microsoft.Extensions.AI with floating composer UI, prompt mentions, screenshot service, window protection, and self-improving UI tools. Adds dynamic language extensibility SDK with Dart language support, LSP integration, and Git package management for extensions. Adds Git source control UI with status/diff viewer. Adds Markdown, image, and CSV previewers, SkiaSharp surface rendering, desktop native menu bar with contextual item states, and enhanced stability."
 }

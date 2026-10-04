@@ -13,7 +13,7 @@
     <AssemblyName>CSharpEditorPlugin</AssemblyName>
     <PackageId>FryPdf.Plugin.CSharpEditor</PackageId>
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <Company>Code Fry Dev</Company>
     <Description>Full-featured interactive FrySharp Script Automation and Polyglot Workspace for FryPDF</Description>
     <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**;samples/**</DefaultItemExcludes>
@@ -98,6 +98,7 @@
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll')" />
+      <PluginFiles Include="$(TargetDir)Markdig.dll" Condition="Exists('$(TargetDir)Markdig.dll')" />
       <PluginFiles Include="$(ProjectDir)plugin.json" />
     </ItemGroup>
 
