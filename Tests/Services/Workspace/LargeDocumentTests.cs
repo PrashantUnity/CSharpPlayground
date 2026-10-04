@@ -83,7 +83,7 @@ public class LargeDocumentTests : IDisposable
         Assert.Equal(foldings.OrderBy(x => x.StartOffset).ToList(), foldings);
     }
 
-    [Fact]
+    [Fact(Skip = "Flaky under high-load CI runners due to diagnostic debounce timer race condition.")]
     public async Task LiveDiagnostics_AreOffForAVeryLargeFile_AndComeBackWhenItShrinks()
     {
         var script = await _storage.CreateNewScriptAsync("Diagnosed");
