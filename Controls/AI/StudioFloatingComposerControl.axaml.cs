@@ -116,6 +116,18 @@ public partial class StudioFloatingComposerControl : UserControl
         var header = this.FindControl<Border>("HeaderBar");
         var promptDeck = this.FindControl<Border>("PromptDeckBorder");
 
+        if (container.Background == null || container.Background == Avalonia.Media.Brushes.Transparent)
+        {
+            if (this.TryFindResource("DsSurfaceBrush", out var brushObj) && brushObj is Avalonia.Media.IBrush brush)
+            {
+                container.Background = brush;
+            }
+            else
+            {
+                container.Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#161B22"));
+            }
+        }
+
         if (DataContext is AiComposerViewModel vm && (vm.IsExtracted || vm.DockMode != FrySharp.Sdk.AiDockMode.FloatingOverlay))
         {
             container.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
@@ -138,8 +150,8 @@ public partial class StudioFloatingComposerControl : UserControl
             container.Width = normalVm.WindowWidth;
             container.Height = normalVm.WindowHeight;
             container.CornerRadius = new CornerRadius(10);
-            container.BorderThickness = new Thickness(1.5);
-            container.BoxShadow = Avalonia.Media.BoxShadows.Parse("0 10 30 0 #50000000");
+            container.BorderThickness = new Thickness(1);
+            container.BoxShadow = Avalonia.Media.BoxShadows.Parse("0 14 36 0 #70000000, 0 2 8 0 #30000000");
             if (header != null) header.CornerRadius = new CornerRadius(9, 9, 0, 0);
             if (promptDeck != null) promptDeck.CornerRadius = new CornerRadius(0, 0, 9, 9);
             SetResizeHandlesVisible(true);

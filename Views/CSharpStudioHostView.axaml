@@ -15,6 +15,9 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
@@ -43,7 +46,7 @@
 
                 <!-- GridSplitter between PageHost and Right Docked AI SideBar -->
                 <GridSplitter Grid.Column="1" Width="4"
-                              Background="#1E1E28"
+                              Background="{DynamicResource DsBorderBrush}"
                               Classes="studio-sash"
                               ResizeDirection="Columns"
                               Cursor="SizeWestEast"
@@ -53,8 +56,8 @@
                 <Border Grid.Column="2"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        Background="#1E1E26"
-                        BorderBrush="#3B3B4F" BorderThickness="1,0,0,0"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1,0,0,0"
                         IsVisible="{Binding AiComposer.IsSideBarDocked}">
                     <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
                                                       HorizontalAlignment="Stretch"
@@ -64,7 +67,7 @@
 
             <!-- Row 1: GridSplitter between Workspace and Bottom Docked AI Deck -->
             <GridSplitter Grid.Row="1" Height="4"
-                          Background="#1E1E28"
+                          Background="{DynamicResource DsBorderBrush}"
                           Classes="studio-sash"
                           ResizeDirection="Rows"
                           Cursor="SizeNorthSouth"
@@ -74,8 +77,8 @@
             <Border Grid.Row="2"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
-                    Background="#1E1E26"
-                    BorderBrush="#3B3B4F" BorderThickness="0,1,0,0"
+                    Background="{DynamicResource DsSurfaceBrush}"
+                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0"
                     IsVisible="{Binding AiComposer.IsBottomDocked}">
                 <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
                                                   HorizontalAlignment="Stretch"
