@@ -1,6 +1,8 @@
 # CSharpPlayground (FrySharp)
 
 [![CI](https://github.com/PrashantUnity/CSharpPlayground/actions/workflows/ci.yml/badge.svg)](https://github.com/PrashantUnity/CSharpPlayground/actions/workflows/ci.yml)
+[![Microsoft Store](https://img.shields.io/badge/Microsoft_Store-FrySharp-0078D4?logo=microsoft&logoColor=white)](https://apps.microsoft.com/detail/9mx55lk7c843?hl=en-US&gl=IN)
+[![Homebrew](https://img.shields.io/badge/Homebrew_Cask-frysharp-FBB040?logo=homebrew&logoColor=black)](https://github.com/PrashantUnity/homebrew-tap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
@@ -22,7 +24,26 @@ It operates both as:
 
 ---
 
-## 🚀 Quick Start
+## 📦 Installation
+
+### macOS (via Homebrew)
+```bash
+# Add the tap and install FrySharp
+brew install --cask prashantunity/tap/frysharp
+```
+
+To update when a new version is released:
+```bash
+brew upgrade --cask frysharp
+```
+
+### Windows (via Microsoft Store)
+Get FrySharp from the official Microsoft Store:
+- **[Download on Microsoft Store](https://apps.microsoft.com/detail/9mx55lk7c843?hl=en-US&gl=IN)**
+
+---
+
+## 🚀 Quick Start (Build from Source)
 
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
