@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1.2-red.svg)](https://avaloniaui.net/)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/PrashantUnity)
 
 **CSharpPlayground** (standalone executable: **FrySharp**) is an interactive multi-language code studio, polyglot Jupyter-style notebook environment for .NET 10, Python, Rust, and extensible language toolchains built with Avalonia UI.
 
@@ -84,6 +85,20 @@ flowchart TD
     S1 --> Out2
     S2 --> Out3
 ```
+
+---
+
+## 💖 Sponsor & Support
+
+[![How Your Sponsorship Works: A Scientific Flowchart](Assets/sponsorship-flowchart.jpg)](https://github.com/sponsors/PrashantUnity)
+
+> **The Scientific Sponsorship Loop:**
+> 1. **You Fund** 💸 ➔ 2. **I Buy Food** 🍕 ➔ 3. **Eat & Stay Healthy** 🍜 ➔ 4. **Code & Ship Features** 🚀
+> *(Alternative timeline: No food ➔ Dev dies 💀 ➔ Zero commits 🪦)*
+
+If you find **FrySharp** (CSharpPlayground) helpful, consider keeping the developer fueled and alive:
+
+👉 **[Sponsor @PrashantUnity on GitHub](https://github.com/sponsors/PrashantUnity)**
 
 ---
 
