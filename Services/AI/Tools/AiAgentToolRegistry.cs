@@ -61,9 +61,29 @@ public partial class AiAgentToolRegistry
 
     /// <summary>
     /// Builds the list of AITools ready to pass to ChatOptions.Tools or FunctionInvokingChatClient.
+    /// If compact is true, returns only the core autonomous coding and active editor tools.
     /// </summary>
-    public IList<AITool> BuildToolList()
+    public IList<AITool> BuildToolList(bool compact = false)
     {
+        if (compact)
+        {
+            return new List<AITool>
+            {
+                AIFunctionFactory.Create(ListWorkspaceFiles, "list_workspace_files", "Lists files and folders within the workspace."),
+                AIFunctionFactory.Create(GrepSearch, "grep_search", "Fast regex or text search across workspace files, returning line numbers and snippets."),
+                AIFunctionFactory.Create(ReadFile, "read_file", "Reads file contents from disk with line numbering."),
+                AIFunctionFactory.Create(WriteFile, "write_file", "Creates or overwrites a file in the workspace with given content."),
+                AIFunctionFactory.Create(ModifyFile, "modify_file", "Modifies a file by replacing an exact, unique code snippet with new code."),
+                AIFunctionFactory.Create(GetActiveFileContext, "get_active_file_context", "Gets the file name, active cursor position, selection, and code of the open editor document."),
+                AIFunctionFactory.Create(ModifyActiveDocument, "modify_active_document", "Replaces the content of the currently open editor document with new code."),
+                AIFunctionFactory.Create(InsertAtCursor, "insert_at_cursor", "Inserts code at the current caret position in the open document."),
+                AIFunctionFactory.Create(GetDiagnostics, "get_diagnostics", "Retrieves active compiler errors and warnings from the Problems panel."),
+                AIFunctionFactory.Create(CompileAndGetDiagnostics, "compile_and_get_diagnostics", "Compiles C# code using the in-memory Roslyn compiler and returns any diagnostic errors."),
+                AIFunctionFactory.Create(RunCommand, "run_command", "Executes a shell command in the workspace."),
+                AIFunctionFactory.Create(ApplyStudioCustomization, "apply_studio_customization", "Applies an init.csx customization script to dynamically alter the running studio.")
+            };
+        }
+
         var tools = new List<AITool>
         {
             AIFunctionFactory.Create(ListWorkspaceFiles, "list_workspace_files", "Lists files and folders within the workspace."),
@@ -288,6 +308,18 @@ public partial class AiAgentToolRegistry
             return $"Error modifying file: {ex.Message}";
         }
     }
+
+    /// <summary>
+    /// Returns the resolved file path or title of the currently active document.
+    /// </summary>
+    public string GetActiveDocumentPath() =>
+        _codeStudioViewModel?.Script?.SourceFilePath ?? _codeStudioViewModel?.Script?.Title ?? "ActiveScript.cs";
+
+    /// <summary>
+    /// Returns the text content of the currently active document.
+    /// </summary>
+    public string GetActiveDocumentCode() =>
+        _codeStudioViewModel?.Code ?? string.Empty;
 
     [Description("Gets context on the currently active file in the editor.")]
     public string GetActiveFileContext()

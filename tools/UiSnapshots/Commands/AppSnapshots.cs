@@ -96,6 +96,19 @@ internal static class AppSnapshots
             {
                 window.StudioHostVm.AiComposer.IsMinimized = true;
             }
+            if (options.Flag("prompt-drawer"))
+            {
+                window.StudioHostVm.AiComposer.IsPromptEditorOpen = true;
+            }
+            if (options.Flag("connection-drawer") || options.Flag("server-drawer"))
+            {
+                window.StudioHostVm.AiComposer.IsConnectionDrawerOpen = true;
+            }
+            if (options.Flag("mention-popup") || options.Flag("mentions"))
+            {
+                window.StudioHostVm.AiComposer.PromptText = "@";
+                window.StudioHostVm.AiComposer.IsMentionPopupOpen = true;
+            }
             if (options.Flag("demo-chat"))
             {
                 var userMsg = new PdfEditorApp.Plugins.CSharpEditor.Models.AI.ChatMessageItem
@@ -166,7 +179,7 @@ internal static class AppSnapshots
         Snapshot.Settle(15);
         var dockStr = options.Value("dock")?.ToLowerInvariant();
         var shotName = options.Flag("ai") || options.Flag("composer")
-            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : (options.Flag("prompt-drawer") ? "mainwindow_ai_prompt_drawer" : (!string.IsNullOrEmpty(dockStr) ? $"mainwindow_ai_docked_{dockStr}" : "mainwindow_ai_composer")))
+            ? (options.Flag("minimized") ? "mainwindow_ai_minimized" : (options.Flag("prompt-drawer") ? "mainwindow_ai_prompt_drawer" : (options.Flag("connection-drawer") ? "mainwindow_ai_connection_drawer" : (options.Flag("mention-popup") ? "mainwindow_ai_mentions" : (options.Flag("demo-chat") ? "mainwindow_ai_chat" : (!string.IsNullOrEmpty(dockStr) ? $"mainwindow_ai_docked_{dockStr}" : "mainwindow_ai_composer"))))))
             : (string.IsNullOrEmpty(page) || page == "hub" ? "mainwindow" : $"mainwindow_{page}");
         Snapshot.Save(window, options, shotName);
     }

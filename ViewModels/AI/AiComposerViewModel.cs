@@ -183,6 +183,10 @@ public partial class AiComposerViewModel : ObservableObject
     }
     partial void OnIsGhostHiddenChanged(bool value) => NotifyDockStateChanged();
     partial void OnIsProtectedFromCaptureChanged(bool value) => CaptureProtectionChanged?.Invoke(value);
+    partial void OnIsAgentModeChanged(bool value)
+    {
+        StatusText = value ? "Agent Mode: Autonomous Tools" : "Chat Mode: Direct Assistant";
+    }
 
     public event Action<AiDockMode>? DockModeChanged;
     public event Action<AiStyleOptions>? StyleChanged;
@@ -219,6 +223,8 @@ public partial class AiComposerViewModel : ObservableObject
 
         AvailableModels.Add(_settings.ModelName);
         InitializePromptState();
+        InitializeConnectionState();
+        InitializeMentions();
     }
 
     /// <summary>
@@ -305,13 +311,14 @@ public partial class AiComposerViewModel : ObservableObject
         _settings.Provider = AiProviderKind.LMStudio;
         _settings.EndpointUrl = AiSettings.DefaultLmStudioEndpoint;
         _settings.ModelName = AiSettings.DefaultLmStudioModel;
+        EndpointUrl = _settings.EndpointUrl;
         SelectedModel = _settings.ModelName;
         StatusText = "Switched to LM Studio (1234)";
         if (_coordinator != null)
         {
             _coordinator = new AiAgentExecutionCoordinator(_settings, _toolRegistry);
         }
-        await RefreshModelsAsync();
+        await PingEndpointAsync();
     }
 
     [RelayCommand]
@@ -320,13 +327,14 @@ public partial class AiComposerViewModel : ObservableObject
         _settings.Provider = AiProviderKind.Ollama;
         _settings.EndpointUrl = AiSettings.DefaultOllamaEndpoint;
         _settings.ModelName = AiSettings.DefaultModelName;
+        EndpointUrl = _settings.EndpointUrl;
         SelectedModel = _settings.ModelName;
         StatusText = "Switched to Ollama (11434)";
         if (_coordinator != null)
         {
             _coordinator = new AiAgentExecutionCoordinator(_settings, _toolRegistry);
         }
-        await RefreshModelsAsync();
+        await PingEndpointAsync();
     }
 
     [RelayCommand]
@@ -363,12 +371,14 @@ public partial class AiComposerViewModel : ObservableObject
             }
 
             string? activeContext = _toolRegistry?.GetActiveFileContext();
+            activeContext = EnrichContextWithMentions(prompt, activeContext);
 
             await Task.Run(async () =>
             {
                 var result = await _coordinator.ExecuteTaskAsync(
                     userPrompt: prompt,
                     activeContext: activeContext,
+                    isAgentMode: IsAgentMode,
                     onTokenChunk: chunk =>
                     {
                         Dispatcher.UIThread.Post(() =>
@@ -482,10 +492,36 @@ public partial class AiComposerViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void ApplyModifiedFile(ModifiedFileItem? item)
+    {
+        if (item == null) return;
+        if (_toolRegistry != null && !string.IsNullOrEmpty(item.ModifiedContent))
+        {
+            _toolRegistry.ModifyActiveDocument(item.ModifiedContent, "Applied by user from AI Composer");
+            item.IsAccepted = true;
+            SessionModifiedFiles.Remove(item);
+            OnPropertyChanged(nameof(HasModifiedFiles));
+            StatusText = $"Applied {item.FileName} to editor";
+        }
+    }
+
+    [RelayCommand]
+    public void InsertCodeAtCursor(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return;
+        if (_toolRegistry != null)
+        {
+            _toolRegistry.InsertAtCursor(code);
+            StatusText = "Inserted code at cursor";
+        }
+    }
+
+    [RelayCommand]
     public void ClearChat()
     {
         Messages.Clear();
         SessionModifiedFiles.Clear();
+        _coordinator?.ResetConversation();
         OnPropertyChanged(nameof(HasModifiedFiles));
         StatusText = "Ready";
     }

@@ -272,7 +272,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             {
                 codeVm.ToggleAiComposerAction = () => ToggleAiComposer();
             }
-            AiComposer.InitializeServices(codeVm, _storageService, _compilerService, null);
+            AiComposer.InitializeServices(codeVm, _storageService, _compilerService, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager);
             IsEngineLoading = false;
             EngineStatus = "Roslyn .NET 10 Engine Active";
         }

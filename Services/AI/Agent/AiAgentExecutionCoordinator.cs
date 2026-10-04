@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
@@ -46,15 +47,16 @@ public class AiAgentExecutionCoordinator
         var promptBuilder = new StringBuilder();
         promptBuilder.AppendLine(_settings.SystemPrompt);
 
-        // Auto-inject workspace architectural rules and guidelines (AGENTS.md, GEMINI.md, CLAUDE.md)
+        // Auto-inject workspace architectural rules only if present and keep it compact
         try
         {
             var projectRules = _toolRegistry.ReadProjectRules();
             if (!projectRules.StartsWith("No project rules found", StringComparison.OrdinalIgnoreCase))
             {
+                var compactRules = projectRules.Length > 800 ? projectRules[..800] + "..." : projectRules;
                 promptBuilder.AppendLine();
                 promptBuilder.AppendLine("<project_rules>");
-                promptBuilder.AppendLine(projectRules);
+                promptBuilder.AppendLine(compactRules);
                 promptBuilder.AppendLine("</project_rules>");
             }
         }
@@ -84,6 +86,7 @@ public class AiAgentExecutionCoordinator
     public async Task<ChatMessageItem> ExecuteTaskAsync(
         string userPrompt,
         string? activeContext = null,
+        bool isAgentMode = true,
         Action<string>? onTokenChunk = null,
         Action<string>? onReasoningChunk = null,
         Action<AgentStepItem>? onStepUpdate = null,
@@ -98,21 +101,41 @@ public class AiAgentExecutionCoordinator
         // Hook up tool registry progress updates to caller
         _toolRegistry.OnStepUpdate = onStepUpdate;
 
-        // Format user message with optional context chips
-        var fullPromptBuilder = new StringBuilder();
+        // Construct request messages without permanently bloating _chatHistory
+        var requestMessages = new List<ChatMessage>();
+        var systemMsg = _chatHistory.FirstOrDefault(m => m.Role == ChatRole.System);
+        if (systemMsg != null)
+        {
+            requestMessages.Add(systemMsg);
+        }
+
+        // Include recent conversation turns (last 6 messages max)
+        var recentHistory = _chatHistory
+            .Where(m => m.Role != ChatRole.System)
+            .TakeLast(6)
+            .ToList();
+
+        // Prune repetitive greetings from history to break out of repetition loops
+        if (recentHistory.Count(m => m.Role == ChatRole.Assistant && m.Text != null && m.Text.Contains("How can I assist", StringComparison.OrdinalIgnoreCase)) > 1)
+        {
+            recentHistory.RemoveAll(m => m.Role == ChatRole.Assistant && m.Text != null && m.Text.Contains("How can I assist", StringComparison.OrdinalIgnoreCase));
+        }
+
+        requestMessages.AddRange(recentHistory);
+
+        // Format current user message with context
+        var userTurnBuilder = new StringBuilder();
         if (!string.IsNullOrWhiteSpace(activeContext))
         {
-            fullPromptBuilder.AppendLine("<context>");
-            fullPromptBuilder.AppendLine(activeContext);
-            fullPromptBuilder.AppendLine("</context>");
-            fullPromptBuilder.AppendLine();
+            userTurnBuilder.AppendLine("<context>");
+            userTurnBuilder.AppendLine(activeContext);
+            userTurnBuilder.AppendLine("</context>");
+            userTurnBuilder.AppendLine();
         }
-        fullPromptBuilder.Append(userPrompt);
+        userTurnBuilder.Append(userPrompt);
+        requestMessages.Add(new ChatMessage(ChatRole.User, userTurnBuilder.ToString()));
 
-        var userMessage = fullPromptBuilder.ToString();
-        _chatHistory.Add(new ChatMessage(ChatRole.User, userMessage));
-
-        var tools = _toolRegistry.BuildToolList();
+        var tools = isAgentMode ? _toolRegistry.BuildToolList(compact: true) : null;
         var chatOptions = new ChatOptions
         {
             Temperature = _settings.Temperature,
@@ -129,7 +152,7 @@ public class AiAgentExecutionCoordinator
             // Initial planning step
             var planningStep = new AgentStepItem
             {
-                Title = "Formulating Plan & Exploring Context",
+                Title = isAgentMode ? "Formulating Plan & Exploring Context" : "Direct Assistant Response",
                 Status = AgentStepStatus.Running
             };
             assistantMessage.Steps.Add(planningStep);
@@ -137,7 +160,7 @@ public class AiAgentExecutionCoordinator
 
             // Stream response using Microsoft.Extensions.AI
             // The FunctionInvokingChatClient middleware handles tool calls automatically.
-            await foreach (var update in _chatClient.GetStreamingResponseAsync(_chatHistory, chatOptions, cancellationToken))
+            await foreach (var update in _chatClient.GetStreamingResponseAsync(requestMessages, chatOptions, cancellationToken))
             {
                 // 1. Check for provider-native reasoning_content (e.g. LM Studio / OpenAI delta)
                 string? nativeReasoning = null;
@@ -256,8 +279,21 @@ public class AiAgentExecutionCoordinator
                 assistantMessage.ReasoningContent = reasoningBuilder.ToString().Trim();
             }
 
-            // Record assistant turn in history
+            // Record lean user turn and assistant response in history
+            _chatHistory.Add(new ChatMessage(ChatRole.User, userPrompt));
             _chatHistory.Add(new ChatMessage(ChatRole.Assistant, responseText.ToString()));
+
+            // Keep history sliding window bounded
+            while (_chatHistory.Count > 10)
+            {
+                int removeIdx = _chatHistory.FindIndex(m => m.Role != ChatRole.System);
+                if (removeIdx >= 0) _chatHistory.RemoveAt(removeIdx);
+                else break;
+            }
+
+            // Fallback: If model returned markdown code blocks (e.g. from local LLMs) instead of tool calls,
+            // extract the code and create a ModifiedFileItem so the user gets diffs and one-click apply!
+            ExtractAndTrackCodeBlocks(userPrompt, responseText.ToString(), assistantMessage);
 
             // Associate any files modified during this turn
             foreach (var mod in _sessionModifiedFiles)
@@ -282,6 +318,68 @@ public class AiAgentExecutionCoordinator
         }
 
         return assistantMessage;
+    }
+
+    private void ExtractAndTrackCodeBlocks(string userPrompt, string response, ChatMessageItem assistantMessage)
+    {
+        if (string.IsNullOrWhiteSpace(response)) return;
+        if (assistantMessage.ModifiedFiles.Count > 0) return;
+
+        var codeBlock = ExtractMarkdownCode(response);
+        if (string.IsNullOrWhiteSpace(codeBlock)) return;
+
+        bool isCodeEditIntent = userPrompt.Contains("add", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("loop", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("modify", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("write", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("create", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("refactor", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("update", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("fix", StringComparison.OrdinalIgnoreCase) ||
+                                userPrompt.Contains("@", StringComparison.OrdinalIgnoreCase);
+
+        if (!isCodeEditIntent) return;
+
+        var activeDocContext = _toolRegistry.GetActiveFileContext();
+        if (string.IsNullOrWhiteSpace(activeDocContext) || activeDocContext.StartsWith("No active editor", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var path = _toolRegistry.GetActiveDocumentPath();
+        var original = _toolRegistry.GetActiveDocumentCode();
+
+        var modItem = new ModifiedFileItem
+        {
+            FilePath = path,
+            RelativePath = Path.GetFileName(path),
+            OriginalContent = original,
+            ModifiedContent = codeBlock,
+            IsDiffExpanded = true
+        };
+        modItem.CalculateLineMetrics();
+
+        assistantMessage.ModifiedFiles.Add(modItem);
+        TrackModifiedFile(modItem);
+    }
+
+    private static string? ExtractMarkdownCode(string text)
+    {
+        var match = Regex.Match(text, @"```(?:csharp|cs|c#)?\s*\n([\s\S]*?)```", RegexOptions.IgnoreCase);
+        if (match.Success)
+        {
+            return match.Groups[1].Value.Trim();
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Resets the conversation history to a clean state without rolling back disk files.
+    /// </summary>
+    public void ResetConversation()
+    {
+        _sessionModifiedFiles.Clear();
+        InitializeSystemPrompt();
     }
 
     /// <summary>

@@ -165,6 +165,16 @@
             <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
 
+        <!-- Autocomplete Mention Item -->
+        <Style Selector="Button.composer-mention-item">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.composer-mention-item:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        </Style>
+
         <!-- Stop Generation Button -->
         <Style Selector="Button.action-stop">
             <Setter Property="Background" Value="#DC2626" />
@@ -294,6 +304,20 @@
                                     <TextBlock Text="Agent" FontSize="10.5" VerticalAlignment="Center" />
                                 </StackPanel>
                             </ToggleButton>
+
+                            <!-- Server Address & Auto-Discovery Pill Button -->
+                            <Button Command="{Binding ToggleConnectionDrawerCommand}"
+                                    Classes="composer-pill-btn"
+                                    Margin="6,0,0,0" Height="22" Padding="6,1"
+                                    ToolTip.Tip="Configure Server Address &amp; Auto-Detect Local LLM"
+                                    Background="{DynamicResource DsSurfaceBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="LanConnect" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Server" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <!-- Draggable rail empty space -->
@@ -379,10 +403,105 @@
                     </Grid>
                 </Border>
 
-                <!-- Prompt & Persona Customization Drawer (Row 1) -->
-                <Border Grid.Row="1" Background="{DynamicResource DsSurfaceHighBrush}"
-                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1"
-                        Padding="12,10" IsVisible="{Binding IsPromptEditorOpen}">
+                <!-- Drawers (Row 1): Server Address & Auto-Discovery Drawer + System Prompt & Persona Drawer -->
+                <StackPanel Grid.Row="1">
+                    <!-- 1. Endpoint Address & LLM Auto-Discovery Drawer -->
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1"
+                            Padding="12,10" IsVisible="{Binding IsConnectionDrawerOpen}">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="LanConnect" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="SERVER ADDRESS &amp; LOCAL LLM DISCOVERY" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Command="{Binding ToggleConnectionDrawerCommand}" Classes="composer-btn" Padding="2" ToolTip.Tip="Close connection drawer">
+                                    <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                            </Grid>
+
+                            <!-- Address Input + Ping + Auto-Detect -->
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding EndpointUrl, Mode=TwoWay}"
+                                         FontFamily="{DynamicResource JetBrainsMonoFontFamily}"
+                                         FontSize="11" Height="28" Padding="8,4"
+                                         Background="{DynamicResource DsBgBrush}"
+                                         Foreground="{DynamicResource DsTextWhiteBrush}"
+                                         BorderBrush="{DynamicResource DsBorderBrush}"
+                                         BorderThickness="1" CornerRadius="6"
+                                         PlaceholderText="Endpoint Address (e.g. http://localhost:11434)" />
+
+                                <Button Grid.Column="1" Command="{Binding PingEndpointCommand}" Classes="composer-pill-btn"
+                                        Margin="6,0,0,0" Height="28" Padding="8,2"
+                                        ToolTip.Tip="Ping this address and test latency"
+                                        Background="{DynamicResource NavHomeBgBrush}" BorderBrush="{DynamicResource NavHomeFgBrush}">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <materialIcons:MaterialIcon Kind="Pulse" Width="12" Height="12" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                        <TextBlock Text="Ping" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="2" Command="{Binding AutoDetectLocalServiceCommand}" Classes="action-accept"
+                                        Margin="6,0,0,0" Height="28" Padding="10,2"
+                                        ToolTip.Tip="Auto-detect running Ollama or LM Studio servers on local ports (1234, 11434, 11443)">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="12" Height="12" Foreground="#FFFFFF" />
+                                        <TextBlock Text="Auto-Detect" FontSize="10.5" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <!-- Status & Latency Strip -->
+                            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,5">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding EndpointStatusText}" FontSize="10.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <TextBlock Text="Model:" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding SelectedModel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Studio UI Freedom & Extensibility Quick Presets -->
+                            <StackPanel Spacing="4" Margin="0,2,0,0">
+                                <TextBlock Text="STUDIO UI FREEDOM &amp; EXTENSIBILITY:" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" />
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button Command="{Binding PresetCustomizeThemeCommand}" Classes="composer-pill-btn" Margin="0,1,6,1" Padding="7,2"
+                                            Background="{DynamicResource NavBlind75BgBrush}" BorderBrush="{DynamicResource NavBlind75FgBrush}"
+                                            ToolTip.Tip="Ask agent to modify studio theme colors and styles">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <materialIcons:MaterialIcon Kind="PaletteOutline" Width="11" Height="11" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                                            <TextBlock Text="Customize Theme" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding PresetInjectWidgetCommand}" Classes="composer-pill-btn" Margin="0,1,6,1" Padding="7,2"
+                                            Background="{DynamicResource NavToolchainsBgBrush}" BorderBrush="{DynamicResource NavToolchainsFgBrush}"
+                                            ToolTip.Tip="Ask agent to inject a custom XAML widget into EditorToolbar">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <materialIcons:MaterialIcon Kind="PuzzleOutline" Width="11" Height="11" Foreground="{DynamicResource NavToolchainsFgBrush}" />
+                                            <TextBlock Text="Inject Widget" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource NavToolchainsFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding PresetInspectUiCommand}" Classes="composer-pill-btn" Margin="0,1,6,1" Padding="7,2"
+                                            Background="{DynamicResource NavKernelsBgBrush}" BorderBrush="{DynamicResource NavKernelsFgBrush}"
+                                            ToolTip.Tip="Ask agent to inspect running studio visual tree">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="11" Height="11" Foreground="{DynamicResource NavKernelsFgBrush}" />
+                                            <TextBlock Text="Inspect UI Tree" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource NavKernelsFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Prompt & Persona Customization Drawer -->
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1"
+                            Padding="12,10" IsVisible="{Binding IsPromptEditorOpen}">
                     <StackPanel Spacing="8">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -443,6 +562,7 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+                </StackPanel>
 
                 <!-- Touched Files Strip (Row 2, Visible when files modified) -->
                 <Border Grid.Row="2" Background="{DynamicResource DsSurfaceBrush}"
@@ -500,17 +620,57 @@
                                 <TextBlock Text="✨ What would you like to build or automate?" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 <TextBlock Text="Fry AI can explore your workspace, create or edit scripts, fix compiler errors, and customize the studio UI."
                                            FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
-                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-                                    <Border Background="{DynamicResource NavHomeBgBrush}" BorderBrush="{DynamicResource NavHomeFgBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
-                                        <TextBlock Text="@Files" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                    </Border>
-                                    <Border Background="{DynamicResource NavHomeBgBrush}" BorderBrush="{DynamicResource NavHomeFgBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
-                                        <TextBlock Text="@Problems" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                    </Border>
-                                    <Border Background="{DynamicResource NavHomeBgBrush}" BorderBrush="{DynamicResource NavHomeFgBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2">
-                                        <TextBlock Text="@Docs" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                    </Border>
-                                </StackPanel>
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Button Command="{Binding InsertMentionCommand}" CommandParameter="@Files"
+                                            Classes="composer-pill-btn" Margin="0,2,6,2" Padding="8,3"
+                                            Background="{DynamicResource NavHomeBgBrush}" BorderBrush="{DynamicResource NavHomeFgBrush}"
+                                            ToolTip.Tip="Attach full workspace file listing">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                            <TextBlock Text="@Files" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button Command="{Binding InsertMentionCommand}" CommandParameter="@Problems"
+                                            Classes="composer-pill-btn" Margin="0,2,6,2" Padding="8,3"
+                                            Background="{DynamicResource NavKernelsBgBrush}" BorderBrush="{DynamicResource NavKernelsFgBrush}"
+                                            ToolTip.Tip="Attach active compiler diagnostics &amp; errors">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="11" Height="11" Foreground="{DynamicResource NavKernelsFgBrush}" />
+                                            <TextBlock Text="@Problems" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavKernelsFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button Command="{Binding InsertMentionCommand}" CommandParameter="@Docs"
+                                            Classes="composer-pill-btn" Margin="0,2,6,2" Padding="8,3"
+                                            Background="{DynamicResource NavTemplatesBgBrush}" BorderBrush="{DynamicResource NavTemplatesFgBrush}"
+                                            ToolTip.Tip="Attach studio API documentation &amp; SDK reference">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="BookOpenOutline" Width="11" Height="11" Foreground="{DynamicResource NavTemplatesFgBrush}" />
+                                            <TextBlock Text="@Docs" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavTemplatesFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button Command="{Binding InsertMentionCommand}" CommandParameter="@UI"
+                                            Classes="composer-pill-btn" Margin="0,2,6,2" Padding="8,3"
+                                            Background="{DynamicResource NavToolchainsBgBrush}" BorderBrush="{DynamicResource NavToolchainsFgBrush}"
+                                            ToolTip.Tip="Inspect live studio visual tree hierarchy">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="11" Height="11" Foreground="{DynamicResource NavToolchainsFgBrush}" />
+                                            <TextBlock Text="@UI" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavToolchainsFgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button Command="{Binding InsertMentionCommand}" CommandParameter="@Theme"
+                                            Classes="composer-pill-btn" Margin="0,2,6,2" Padding="8,3"
+                                            Background="{DynamicResource NavBlind75BgBrush}" BorderBrush="{DynamicResource NavBlind75FgBrush}"
+                                            ToolTip.Tip="Customize studio styling &amp; theme tokens">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <materialIcons:MaterialIcon Kind="PaletteOutline" Width="11" Height="11" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                                            <TextBlock Text="@Theme" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavBlind75FgBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
 
@@ -593,11 +753,24 @@
                                                              <DataTemplate x:DataType="ai:ModifiedFileItem">
                                                                 <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Margin="0,4,0,2" Padding="8">
                                                                     <StackPanel Spacing="6">
-                                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                                                             <materialIcons:MaterialIcon Grid.Column="0" Kind="FileDocumentEditOutline" Width="14" Height="14" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0" />
                                                                             <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                                                                             <TextBlock Grid.Column="2" Text="{Binding SummaryText}" FontSize="10.5" Foreground="#4ADE80" VerticalAlignment="Center" Margin="8,0" />
-                                                                            <ToggleButton Grid.Column="3" IsChecked="{Binding IsDiffExpanded, Mode=TwoWay}"
+
+                                                                            <!-- Apply to Editor Button -->
+                                                                            <Button Grid.Column="3"
+                                                                                    Command="{Binding $parent[UserControl].((vm:AiComposerViewModel)DataContext).ApplyModifiedFileCommand}"
+                                                                                    CommandParameter="{Binding}"
+                                                                                    Classes="composer-pill-btn" Height="22" Padding="6,1" Margin="4,0"
+                                                                                    ToolTip.Tip="Apply changes to active document in editor">
+                                                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                                    <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="#4ADE80" />
+                                                                                    <TextBlock Text="Apply" FontSize="10" Foreground="#4ADE80" FontWeight="SemiBold" />
+                                                                                </StackPanel>
+                                                                            </Button>
+
+                                                                            <ToggleButton Grid.Column="4" IsChecked="{Binding IsDiffExpanded, Mode=TwoWay}"
                                                                                           Classes="composer-btn" Padding="4,2" Height="22" Width="22">
                                                                                 <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="#94A3B8" />
                                                                             </ToggleButton>
@@ -605,20 +778,35 @@
 
                                                                         <!-- Expandable Unified Diff Viewer with Line-by-Line Syntax Highlighting -->
                                                                         <Border IsVisible="{Binding IsDiffExpanded}" Background="{DynamicResource DsBgBrush}" CornerRadius="4" Padding="4,4" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
-                                                                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="220">
-                                                                                <ItemsControl ItemsSource="{Binding DiffLines}">
-                                                                                    <ItemsControl.ItemTemplate>
-                                                                                        <DataTemplate x:DataType="ai:DiffLine">
-                                                                                            <Border Background="{Binding BackgroundHex}" Padding="8,1" Margin="0,0.5" CornerRadius="2">
-                                                                                                <SelectableTextBlock Text="{Binding Text}"
-                                                                                                                     FontFamily="Consolas, Menlo, Monaco, monospace"
-                                                                                                                     FontSize="10.5"
-                                                                                                                     Foreground="{Binding ForegroundHex}" />
-                                                                                            </Border>
-                                                                                        </DataTemplate>
-                                                                                    </ItemsControl.ItemTemplate>
-                                                                                </ItemsControl>
-                                                                            </ScrollViewer>
+                                                                            <StackPanel Spacing="4">
+                                                                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="220">
+                                                                                    <ItemsControl ItemsSource="{Binding DiffLines}">
+                                                                                        <ItemsControl.ItemTemplate>
+                                                                                            <DataTemplate x:DataType="ai:DiffLine">
+                                                                                                <Border Background="{Binding BackgroundHex}" Padding="8,1" Margin="0,0.5" CornerRadius="2">
+                                                                                                    <SelectableTextBlock Text="{Binding Text}"
+                                                                                                                         FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                                                                                         FontSize="10.5"
+                                                                                                                         Foreground="{Binding ForegroundHex}" />
+                                                                                                </Border>
+                                                                                            </DataTemplate>
+                                                                                        </ItemsControl.ItemTemplate>
+                                                                                    </ItemsControl>
+                                                                                </ScrollViewer>
+
+                                                                                <!-- Insert at Caret Option -->
+                                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" Margin="0,2,2,2">
+                                                                                    <Button Command="{Binding $parent[UserControl].((vm:AiComposerViewModel)DataContext).InsertCodeAtCursorCommand}"
+                                                                                            CommandParameter="{Binding ModifiedContent}"
+                                                                                            Classes="composer-pill-btn" Height="20" Padding="6,1"
+                                                                                            ToolTip.Tip="Insert modified code at current cursor position">
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                                            <materialIcons:MaterialIcon Kind="CursorDefaultClickOutline" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                                                            <TextBlock Text="Insert at Caret" FontSize="9.5" Foreground="{DynamicResource DsTextBrush}" />
+                                                                                        </StackPanel>
+                                                                                    </Button>
+                                                                                </StackPanel>
+                                                                            </StackPanel>
                                                                         </Border>
                                                                     </StackPanel>
                                                                 </Border>
@@ -655,55 +843,103 @@
                         Padding="12,10,12,12"
                         BorderBrush="{DynamicResource DsBorderBrush}"
                         BorderThickness="0,1,0,0">
-                    <Border Background="{DynamicResource DsBgBrush}"
-                            BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="10,8,8,8">
-                        <Grid RowDefinitions="*,Auto">
-                            <!-- Multi-line Prompt Text Box -->
-                            <TextBox Name="PromptTextBox" Grid.Row="0"
-                                     Text="{Binding PromptText, Mode=TwoWay}"
-                                     AcceptsReturn="True" MinHeight="40" MaxHeight="120"
-                                     Background="Transparent" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                     BorderThickness="0"
-                                     FontSize="12.5" Padding="2"
-                                     PlaceholderForeground="{DynamicResource DsMutedBrush}"
-                                     PlaceholderText="Ask Fry AI or describe code changes (@file, /fix)..."
-                                     KeyDown="OnPromptTextBoxKeyDown" />
+                    <StackPanel Spacing="6">
+                        <!-- @ Mention Autocomplete Popup Deck -->
+                        <Border IsVisible="{Binding IsMentionPopupOpen}"
+                                Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                MaxHeight="160"
+                                BoxShadow="0 -4 16 0 #40000000">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding FilteredMentions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="ai:MentionSuggestionItem">
+                                            <Button Command="{Binding ((vm:AiComposerViewModel)DataContext).InsertMentionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding Prefix}"
+                                                    Classes="composer-mention-item"
+                                                    HorizontalAlignment="Stretch"
+                                                    Padding="8,5"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Cursor="Hand">
+                                                <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Prefix}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding Description}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                    <Border Grid.Column="3" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="6,0,0,0">
+                                                        <TextBlock Text="{Binding Category}" FontSize="9" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
 
-                            <!-- Composer Bottom Toolbar Inside Prompt Box -->
-                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
-                                <!-- Left: Model Selector, Refresh & Persona -->
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <!-- Model Selector Dropdown -->
-                                    <ComboBox ItemsSource="{Binding AvailableModels}"
-                                              SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
-                                              Height="24" FontSize="11" MinWidth="95" MaxWidth="130" Padding="6,1"
-                                              Background="{DynamicResource DsSurfaceBrush}"
-                                              BorderBrush="{DynamicResource DsBorderBrush}"
-                                              CornerRadius="6"
-                                              ToolTip.Tip="{Binding SelectedModel, StringFormat='Active Model: {0}'}" />
+                        <Border Background="{DynamicResource DsBgBrush}"
+                                BorderBrush="{DynamicResource DsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,8,8,8">
+                            <Grid RowDefinitions="*,Auto">
+                                <!-- Multi-line Prompt Text Box -->
+                                <TextBox Name="PromptTextBox" Grid.Row="0"
+                                         Text="{Binding PromptText, Mode=TwoWay}"
+                                         AcceptsReturn="True" MinHeight="40" MaxHeight="120"
+                                         Background="Transparent" Foreground="{DynamicResource DsTextWhiteBrush}"
+                                         BorderThickness="0"
+                                         FontSize="12.5" Padding="2"
+                                         PlaceholderForeground="{DynamicResource DsMutedBrush}"
+                                         PlaceholderText="Ask Fry AI or describe code changes (@file, /fix)..."
+                                         KeyDown="OnPromptTextBoxKeyDown" />
 
-                                    <!-- Refresh Models Button -->
-                                    <Button Command="{Binding RefreshModelsCommand}" Classes="composer-btn"
-                                            ToolTip.Tip="Refresh Available Models" Width="22" Height="22" Padding="0">
-                                        <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    </Button>
+                                <!-- Composer Bottom Toolbar Inside Prompt Box -->
+                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
+                                    <!-- Left: Model Selector, Refresh, Connection & Persona -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <!-- Model Selector Dropdown -->
+                                        <ComboBox ItemsSource="{Binding AvailableModels}"
+                                                  SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
+                                                  Height="24" FontSize="11" MinWidth="90" MaxWidth="150" Padding="6,1"
+                                                  Background="{DynamicResource DsSurfaceBrush}"
+                                                  BorderBrush="{DynamicResource DsBorderBrush}"
+                                                  CornerRadius="6"
+                                                  ToolTip.Tip="{Binding SelectedModel, StringFormat='Active Model: {0}'}" />
 
-                                    <!-- Persona Preset Button (Pill Badge style inspired by Side Panel) -->
-                                    <Button Command="{Binding TogglePromptEditorCommand}"
-                                            Classes="composer-pill-btn"
-                                            ToolTip.Tip="Customize System Prompt &amp; Persona"
-                                            Height="22" Padding="6,1"
-                                            Background="{DynamicResource NavHomeBgBrush}"
-                                            BorderBrush="{DynamicResource NavHomeFgBrush}">
-                                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                            <materialIcons:MaterialIcon Kind="Tune" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                            <TextBlock Text="{Binding ActivePromptPresetName}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
+                                        <!-- Refresh Models Button -->
+                                        <Button Command="{Binding RefreshModelsCommand}" Classes="composer-btn"
+                                                ToolTip.Tip="Refresh Available Models" Width="22" Height="22" Padding="0">
+                                            <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                        </Button>
+
+                                        <!-- Server Connection Pill Button -->
+                                        <Button Command="{Binding ToggleConnectionDrawerCommand}" Classes="composer-pill-btn"
+                                                ToolTip.Tip="{Binding EndpointStatusText, StringFormat='Server: {0} (Click to configure &amp; auto-detect)'}"
+                                                Height="22" Padding="6,1"
+                                                Background="{DynamicResource DsSurfaceBrush}"
+                                                BorderBrush="{DynamicResource DsBorderBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="LanConnect" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                                <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+
+                                        <!-- Persona Preset Button (Pill Badge style inspired by Side Panel) -->
+                                        <Button Command="{Binding TogglePromptEditorCommand}"
+                                                Classes="composer-pill-btn"
+                                                ToolTip.Tip="Customize System Prompt &amp; Persona"
+                                                Height="22" Padding="6,1"
+                                                Background="{DynamicResource NavHomeBgBrush}"
+                                                BorderBrush="{DynamicResource NavHomeFgBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                                <materialIcons:MaterialIcon Kind="Tune" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
+                                                <TextBlock Text="{Binding ActivePromptPresetName}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavHomeFgBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
 
                                 <!-- Center Spacer -->
                                 <Border Grid.Column="1" Background="Transparent" />
@@ -744,6 +980,7 @@
                             </Grid>
                         </Grid>
                     </Border>
+                    </StackPanel>
                 </Border>
 
                 </Grid>
