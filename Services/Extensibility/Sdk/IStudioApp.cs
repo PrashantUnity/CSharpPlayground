@@ -45,6 +45,9 @@ public interface IStudioApp
     /// <summary>Runtime API reflection, live command enumeration, UI slot discovery, and schema catalog.</summary>
     IApiMetadataApi Metadata { get; }
 
+    /// <summary>AI Chat Assistant styling, docking, screen tearing, and behavior policies.</summary>
+    IAiApi AI { get; }
+
     /// <summary>Convenience alias for UI.Dialogs (modals, prompts, and file pickers).</summary>
     IDialogApi Dialogs => UI.Dialogs;
 }

@@ -198,4 +198,175 @@ public partial class AiAgentToolRegistry
             return $"Failed to inject widget: {ex.Message}";
         }
     }
+
+    [Description("Configures the AI assistant's UI presentation, layout docking, floating window opacity, or accent color styling.")]
+    public string ConfigureAiAssistant(
+        [Description("Dock mode: 'floating', 'sidebar', 'bottom', or 'extracted_window'.")] string? dockMode = null,
+        [Description("Window opacity from 0.1 to 1.0 (e.g. 0.85 for translucent).")] double? opacity = null,
+        [Description("Width in pixels.")] double? width = null,
+        [Description("Height in pixels.")] double? height = null,
+        [Description("Accent hex color code (e.g. '#38BDF8', '#A78BFA', '#10B981').")] string? accentColor = null,
+        [Description("Background hex color code (e.g. '#161622', '#1E1E2E').")] string? backgroundColor = null,
+        [Description("Corner radius in pixels (0-32).")] double? cornerRadius = null,
+        [Description("Persona preset name: 'Agent', 'Concise', 'Reviewer', 'TDD'.")] string? persona = null)
+    {
+        var step = new AgentStepItem
+        {
+            Title = "Configure AI Assistant Appearance & Layout",
+            Status = AgentStepStatus.Running,
+            ToolName = "configure_ai_assistant"
+        };
+        OnStepUpdate?.Invoke(step);
+
+        try
+        {
+            var ai = StudioAppContext.Instance.AI;
+
+            if (!string.IsNullOrWhiteSpace(dockMode))
+            {
+                switch (dockMode.Trim().ToLowerInvariant())
+                {
+                    case "floating":
+                    case "overlay":
+                        ai.DockTo(AiDockMode.FloatingOverlay);
+                        break;
+                    case "sidebar":
+                    case "side":
+                    case "zone2":
+                        ai.DockTo(AiDockMode.DockedSideBar);
+                        break;
+                    case "bottom":
+                    case "deck":
+                    case "panel":
+                    case "zone4":
+                        ai.DockTo(AiDockMode.DockedBottomDeck);
+                        break;
+                    case "extracted":
+                    case "extracted_window":
+                    case "window":
+                    case "detached":
+                    case "tear":
+                        ai.ExtractToWindow(new AiWindowOptions
+                        {
+                            Width = width,
+                            Height = height
+                        });
+                        break;
+                }
+            }
+
+            if (opacity.HasValue || width.HasValue || height.HasValue || !string.IsNullOrWhiteSpace(accentColor) || !string.IsNullOrWhiteSpace(backgroundColor) || cornerRadius.HasValue)
+            {
+                ai.SetStyle(new AiStyleOptions
+                {
+                    Opacity = opacity,
+                    Width = width,
+                    Height = height,
+                    AccentColorHex = accentColor,
+                    BackgroundHex = backgroundColor,
+                    CornerRadius = cornerRadius
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(persona))
+            {
+                ai.SetPersona(persona);
+            }
+
+            step.Status = AgentStepStatus.Completed;
+            OnStepUpdate?.Invoke(step);
+            return $"AI Assistant configured successfully! (DockMode: {ai.DockMode}, Opacity: {ai.Opacity})";
+        }
+        catch (Exception ex)
+        {
+            step.Status = AgentStepStatus.Failed;
+            step.Detail = ex.Message;
+            OnStepUpdate?.Invoke(step);
+            return $"Failed to configure AI assistant: {ex.Message}";
+        }
+    }
+
+    [Description("Extracts ('tears out') the AI assistant into an independent native desktop OS window for multi-monitor setups, with optional topmost pinning.")]
+    public string ExtractAiWindow(
+        [Description("Window title (default: 'Fry AI Studio Assistant').")] string? title = null,
+        [Description("Window width in pixels.")] double? width = null,
+        [Description("Window height in pixels.")] double? height = null,
+        [Description("Keep the window topmost above all other application windows.")] bool topmost = false)
+    {
+        var step = new AgentStepItem
+        {
+            Title = "Extract AI Assistant to Native OS Window",
+            Status = AgentStepStatus.Running,
+            ToolName = "extract_ai_window"
+        };
+        OnStepUpdate?.Invoke(step);
+
+        try
+        {
+            var ai = StudioAppContext.Instance.AI;
+            ai.ExtractToWindow(new AiWindowOptions
+            {
+                Title = title ?? "Fry AI Studio Assistant",
+                Width = width ?? 560,
+                Height = height ?? 800,
+                Topmost = topmost
+            });
+
+            step.Status = AgentStepStatus.Completed;
+            OnStepUpdate?.Invoke(step);
+            return $"AI Assistant successfully extracted into an independent OS window! (Topmost: {topmost})";
+        }
+        catch (Exception ex)
+        {
+            step.Status = AgentStepStatus.Failed;
+            step.Detail = ex.Message;
+            OnStepUpdate?.Invoke(step);
+            return $"Failed to extract AI assistant window: {ex.Message}";
+        }
+    }
+
+    [Description("Docks the AI assistant back into the studio layout ('floating', 'sidebar', 'bottom').")]
+    public string DockAiAssistant(
+        [Description("Target zone: 'floating', 'sidebar', or 'bottom'.")] string targetZone = "floating")
+    {
+        var step = new AgentStepItem
+        {
+            Title = $"Dock AI Assistant to {targetZone}",
+            Status = AgentStepStatus.Running,
+            ToolName = "dock_ai_assistant"
+        };
+        OnStepUpdate?.Invoke(step);
+
+        try
+        {
+            var ai = StudioAppContext.Instance.AI;
+            switch (targetZone.Trim().ToLowerInvariant())
+            {
+                case "sidebar":
+                case "side":
+                    ai.DockTo(AiDockMode.DockedSideBar);
+                    break;
+                case "bottom":
+                case "deck":
+                case "panel":
+                    ai.DockTo(AiDockMode.DockedBottomDeck);
+                    break;
+                case "floating":
+                default:
+                    ai.DockTo(AiDockMode.FloatingOverlay);
+                    break;
+            }
+
+            step.Status = AgentStepStatus.Completed;
+            OnStepUpdate?.Invoke(step);
+            return $"AI Assistant docked to {ai.DockMode}!";
+        }
+        catch (Exception ex)
+        {
+            step.Status = AgentStepStatus.Failed;
+            step.Detail = ex.Message;
+            OnStepUpdate?.Invoke(step);
+            return $"Failed to dock AI assistant: {ex.Message}";
+        }
+    }
 }

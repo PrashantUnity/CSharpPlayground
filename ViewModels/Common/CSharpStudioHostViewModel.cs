@@ -172,6 +172,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             settings: _languages.StudioSettings.GetSettings().Ai,
             settingsStore: _languages.StudioSettings);
 
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ComposerVmResolver = () => AiComposer;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.AiService.AttachViewModel(AiComposer);
+
         // ── Boot the Roslyn compiler service off the UI thread ──
         // ⚠️  DO NOT move RoslynCompilerService or child ViewModel construction back into this
         //     constructor body. See the post-mortem comment on InitializeCompilerAsync below.

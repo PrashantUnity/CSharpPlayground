@@ -37,7 +37,8 @@ public class StudioApiMetadataService : IApiMetadataApi
             BuildModuleMetadata("Editor", "App.Editor", typeof(IEditorApi), "Active editor document, selection, caret manipulation, formatting, and file opening."),
             BuildModuleMetadata("Hooks", "App.Hooks", typeof(IHookApi), "Execution lifecycle hooks, compilation interception, document events, and event bus."),
             BuildModuleMetadata("State", "App.State", typeof(IStateBag), "Thread-safe cross-session key-value state bag persisting across hot-reloads."),
-            BuildModuleMetadata("Metadata", "App.Metadata", typeof(IApiMetadataApi), "Runtime reflection, live command enumeration, UI slot discovery, and schema catalog.")
+            BuildModuleMetadata("Metadata", "App.Metadata", typeof(IApiMetadataApi), "Runtime reflection, live command enumeration, UI slot discovery, and schema catalog."),
+            BuildModuleMetadata("AI", "App.AI", typeof(IAiApi), "AI Chat Assistant styling, docking, screen tearing, and behavior policies.")
         };
 
         if (string.IsNullOrWhiteSpace(category) || category.Equals("all", StringComparison.OrdinalIgnoreCase))

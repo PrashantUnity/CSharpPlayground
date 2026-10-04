@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FrySharp.Sdk;
 using Microsoft.Extensions.AI;
 using PdfEditorApp.Plugins.CSharpEditor.Models.AI;
 using PdfEditorApp.Plugins.CSharpEditor.Services.AI.Agent;
@@ -62,6 +63,41 @@ public partial class AiComposerViewModel : ObservableObject
 
     [ObservableProperty]
     private string _selectedModel;
+
+    [ObservableProperty]
+    private AiDockMode _dockMode = AiDockMode.FloatingOverlay;
+
+    [ObservableProperty]
+    private bool _isExtracted = false;
+
+    [ObservableProperty]
+    private double _windowOpacity = 1.0;
+
+    [ObservableProperty]
+    private string _customAccentColorHex = "#38BDF8";
+
+    [ObservableProperty]
+    private string _customBackgroundHex = "#1E1E26";
+
+    [ObservableProperty]
+    private double _customCornerRadius = 10;
+
+    [ObservableProperty]
+    private bool _autoAcceptDiffs = false;
+
+    [ObservableProperty]
+    private int _maxSteps = 25;
+
+    public bool IsOverlayVisible => IsVisible && !IsExtracted && DockMode == AiDockMode.FloatingOverlay;
+
+    partial void OnIsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverlayVisible));
+    partial void OnIsExtractedChanged(bool value) => OnPropertyChanged(nameof(IsOverlayVisible));
+    partial void OnDockModeChanged(AiDockMode value) => OnPropertyChanged(nameof(IsOverlayVisible));
+
+    public event Action<AiDockMode>? DockModeChanged;
+    public event Action<AiStyleOptions>? StyleChanged;
+    public Action<AiWindowOptions?>? WindowExtractionRequested { get; set; }
+    public Action? ReDockRequested { get; set; }
 
     public ObservableCollection<string> AvailableModels { get; } = new();
     public ObservableCollection<ChatMessageItem> Messages { get; } = new();
@@ -125,6 +161,13 @@ public partial class AiComposerViewModel : ObservableObject
             }
             SessionModifiedFiles.Add(item);
             OnPropertyChanged(nameof(HasModifiedFiles));
+
+            if (AutoAcceptDiffs)
+            {
+                item.IsAccepted = true;
+                SessionModifiedFiles.Clear();
+                OnPropertyChanged(nameof(HasModifiedFiles));
+            }
         });
     }
 
@@ -354,5 +397,76 @@ public partial class AiComposerViewModel : ObservableObject
         SessionModifiedFiles.Clear();
         OnPropertyChanged(nameof(HasModifiedFiles));
         StatusText = "Ready";
+    }
+
+    [RelayCommand]
+    public void DockTo(AiDockMode mode)
+    {
+        if (DockMode == mode) return;
+
+        if (mode == AiDockMode.ExtractedWindow)
+        {
+            ExtractToWindow();
+            return;
+        }
+
+        if (IsExtracted)
+        {
+            ReDock(mode);
+            return;
+        }
+
+        DockMode = mode;
+        DockModeChanged?.Invoke(mode);
+    }
+
+    [RelayCommand]
+    public void DockToSideBar() => DockTo(AiDockMode.DockedSideBar);
+
+    [RelayCommand]
+    public void DockToBottomDeck() => DockTo(AiDockMode.DockedBottomDeck);
+
+    [RelayCommand]
+    public void DockToFloating() => DockTo(AiDockMode.FloatingOverlay);
+
+    [RelayCommand]
+    public void ExtractToWindow(AiWindowOptions? options = null)
+    {
+        IsExtracted = true;
+        DockMode = AiDockMode.ExtractedWindow;
+        DockModeChanged?.Invoke(DockMode);
+        WindowExtractionRequested?.Invoke(options);
+    }
+
+    [RelayCommand]
+    public void ReDock(AiDockMode targetMode = AiDockMode.FloatingOverlay)
+    {
+        IsExtracted = false;
+        DockMode = targetMode;
+        ReDockRequested?.Invoke();
+        DockModeChanged?.Invoke(DockMode);
+    }
+
+    public void SetStyle(AiStyleOptions style)
+    {
+        ArgumentNullException.ThrowIfNull(style);
+        if (style.Opacity.HasValue) WindowOpacity = Math.Clamp(style.Opacity.Value, 0.1, 1.0);
+        if (!string.IsNullOrWhiteSpace(style.AccentColorHex)) CustomAccentColorHex = style.AccentColorHex;
+        if (!string.IsNullOrWhiteSpace(style.BackgroundHex)) CustomBackgroundHex = style.BackgroundHex;
+        if (style.CornerRadius.HasValue) CustomCornerRadius = Math.Clamp(style.CornerRadius.Value, 0, 32);
+        if (style.Width.HasValue) WindowWidth = Math.Clamp(style.Width.Value, 320, 1600);
+        if (style.Height.HasValue) WindowHeight = Math.Clamp(style.Height.Value, 300, 1400);
+        if (style.PositionX.HasValue) PositionX = style.PositionX.Value;
+        if (style.PositionY.HasValue) PositionY = style.PositionY.Value;
+
+        StyleChanged?.Invoke(style);
+    }
+
+    public void ConfigurePolicy(AiPolicyOptions policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        if (policy.AutoAcceptDiffs.HasValue) AutoAcceptDiffs = policy.AutoAcceptDiffs.Value;
+        if (policy.MaxSteps.HasValue) MaxSteps = Math.Clamp(policy.MaxSteps.Value, 1, 100);
+        if (policy.Temperature.HasValue && _settings != null) _settings.Temperature = (float)policy.Temperature.Value;
     }
 }

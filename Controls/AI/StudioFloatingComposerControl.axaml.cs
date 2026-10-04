@@ -32,12 +32,52 @@ public partial class StudioFloatingComposerControl : UserControl
         {
             StudioAppContext.Instance.UI.ContributionsChanged += RefreshDynamicActions;
             RefreshDynamicActions();
+            UpdateLayoutForDockMode();
+
+            if (DataContext is AiComposerViewModel vm)
+            {
+                vm.DockModeChanged += OnDockModeChanged;
+            }
         };
 
         DetachedFromVisualTree += (_, _) =>
         {
             StudioAppContext.Instance.UI.ContributionsChanged -= RefreshDynamicActions;
+            if (DataContext is AiComposerViewModel vm)
+            {
+                vm.DockModeChanged -= OnDockModeChanged;
+            }
         };
+
+        DataContextChanged += (_, _) => UpdateLayoutForDockMode();
+    }
+
+    private void OnDockModeChanged(FrySharp.Sdk.AiDockMode mode)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateLayoutForDockMode);
+    }
+
+    private void UpdateLayoutForDockMode()
+    {
+        var container = this.FindControl<Border>("ComposerContainer");
+        if (container == null) return;
+
+        if (DataContext is AiComposerViewModel vm && (vm.IsExtracted || vm.DockMode != FrySharp.Sdk.AiDockMode.FloatingOverlay))
+        {
+            container.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            container.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
+            container.Margin = new Thickness(0);
+            container.Width = double.NaN;
+            container.Height = double.NaN;
+        }
+        else if (DataContext is AiComposerViewModel normalVm)
+        {
+            container.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right;
+            container.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top;
+            container.Margin = new Thickness(0, 48, 24, 0);
+            container.Width = normalVm.WindowWidth;
+            container.Height = normalVm.WindowHeight;
+        }
     }
 
     private void RefreshDynamicActions()
@@ -89,6 +129,11 @@ public partial class StudioFloatingComposerControl : UserControl
              visual.FindAncestorOfType<ToggleButton>(includeSelf: true) != null ||
              visual.FindAncestorOfType<ComboBox>(includeSelf: true) != null ||
              visual.FindAncestorOfType<TextBox>(includeSelf: true) != null))
+        {
+            return;
+        }
+
+        if (DataContext is AiComposerViewModel vm && (vm.IsExtracted || vm.DockMode != FrySharp.Sdk.AiDockMode.FloatingOverlay))
         {
             return;
         }

@@ -30,6 +30,9 @@ public interface IUiApi
     /// <summary>Registers a tab in the Bottom Tool Deck (Zone 4).</summary>
     IDisposable RegisterBottomDeckTab(BottomDeckTabDescriptor descriptor);
 
+    /// <summary>Gets all registered custom Bottom Tool Deck tabs.</summary>
+    IReadOnlyList<BottomDeckTabDescriptor> BottomDeckTabs => Array.Empty<BottomDeckTabDescriptor>();
+
     /// <summary>Registers a custom action or button in the Editor Area toolbar (Zone 3).</summary>
     IDisposable RegisterEditorToolbarItem(EditorToolbarItemDescriptor descriptor) => new EmptyDisposable();
 

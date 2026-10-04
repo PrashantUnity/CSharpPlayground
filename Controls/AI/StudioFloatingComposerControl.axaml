@@ -71,6 +71,7 @@
         <Border Name="ComposerContainer"
                 IsVisible="{Binding !IsMinimized}"
                 Classes="composer-window"
+                Opacity="{Binding WindowOpacity}"
                 Width="{Binding WindowWidth}" Height="{Binding WindowHeight}"
                 HorizontalAlignment="Right" VerticalAlignment="Top"
                 Margin="0,48,24,0">
@@ -127,9 +128,34 @@
                             </Button>
                         </StackPanel>
 
-                        <!-- Window Controls (Minimize, Close) -->
+                        <!-- Window Controls (Docking, Extract, Minimize, Close) -->
                         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
-                            <Button Command="{Binding ToggleMinimizeCommand}" Classes="composer-btn" ToolTip.Tip="Minimize to Pill">
+                            <!-- When Extracted: Re-dock to main window -->
+                            <Button Command="{Binding ReDockCommand}" Classes="composer-btn" ToolTip.Tip="Re-dock into Studio"
+                                    IsVisible="{Binding IsExtracted}">
+                                <materialIcons:MaterialIcon Kind="DockWindow" Width="14" Height="14" Foreground="#38BDF8" />
+                            </Button>
+
+                            <!-- When Not Extracted: Extract to OS Window (Screen Tearing) -->
+                            <Button Command="{Binding ExtractToWindowCommand}" Classes="composer-btn" ToolTip.Tip="Tear Out into Floating Window"
+                                    IsVisible="{Binding !IsExtracted}">
+                                <materialIcons:MaterialIcon Kind="OpenInNew" Width="13" Height="13" Foreground="#38BDF8" />
+                            </Button>
+
+                            <!-- Dock to SideBar -->
+                            <Button Command="{Binding DockToSideBarCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Side Bar"
+                                    IsVisible="{Binding !IsExtracted}">
+                                <materialIcons:MaterialIcon Kind="PageLayoutSidebarRight" Width="13" Height="13" Foreground="#94A3B8" />
+                            </Button>
+
+                            <!-- Dock to Bottom Deck -->
+                            <Button Command="{Binding DockToBottomDeckCommand}" Classes="composer-btn" ToolTip.Tip="Dock into Bottom Deck"
+                                    IsVisible="{Binding !IsExtracted}">
+                                <materialIcons:MaterialIcon Kind="DockBottom" Width="13" Height="13" Foreground="#94A3B8" />
+                            </Button>
+
+                            <Button Command="{Binding ToggleMinimizeCommand}" Classes="composer-btn" ToolTip.Tip="Minimize to Pill"
+                                    IsVisible="{Binding !IsExtracted}">
                                 <materialIcons:MaterialIcon Kind="Minus" Width="14" Height="14" Foreground="#94A3B8" />
                             </Button>
                             <Button Command="{Binding CloseCommand}" Classes="composer-btn" ToolTip.Tip="Close (Cmd+I)">

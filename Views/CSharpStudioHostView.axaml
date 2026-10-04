@@ -28,6 +28,7 @@
 
         <!-- App-Wide Floating AI Agent & Composer Overlay (Available throughout all pages) -->
         <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
+                                          IsVisible="{Binding IsOverlayVisible}"
                                           ZIndex="998" />
 
         <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
