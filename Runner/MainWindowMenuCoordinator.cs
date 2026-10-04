@@ -106,7 +106,10 @@ public sealed class MainWindowMenuCoordinator
 
     private void OnMonitoredPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        UiDispatchHelper.RunOnUi(UpdateMenuStates);
+        // Skip entirely in headless / test environments — there is no native menu to update
+        // and NativeMenuItem.Header access would throw a cross-thread exception.
+        if (UiDispatchHelper.HasLiveUiLifetime)
+            UiDispatchHelper.RunOnUi(UpdateMenuStates);
     }
 
     public void UpdateMenuStates()
