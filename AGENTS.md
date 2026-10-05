@@ -21,7 +21,7 @@ Every main studio interface (both script code studio and notebook studio) must s
   - **Scratchpad & Notes** (`FileDocumentOutline`)
   - **Problems** (`AlertCircleOutline` with error badge)
 - Bottom utilities: **Settings** (`CogOutline`) and **Return to Hub** (`ArrowLeft` / `HomeOutline`).
-- Active item displays a 2px high-contrast vertical accent line on the left edge (`#007ACC` / `{DynamicResource M3PrimaryBrush}`).
+- Active item displays a 2px high-contrast vertical accent line on the left edge (`#007ACC` / `{DynamicResource DsPrimaryBrush}`).
 - Clicking the active icon toggles the Primary Side Bar closed/open (`Ctrl+B`).
 
 ### Zone 2: Primary Side Bar (Resizable ~270px, Collapsible)

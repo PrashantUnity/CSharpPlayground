@@ -30,5 +30,6 @@
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Domains/StudioBlindProblemsStyles.axaml" />
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Domains/StudioSettingsStyles.axaml" />
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Domains/StudioDocsStyles.axaml" />
+    <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Domains/StudioAboutDialogStyles.axaml" />
 
 </Styles>

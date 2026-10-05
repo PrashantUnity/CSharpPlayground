@@ -60,6 +60,17 @@ public partial class AboutWindow : Window
         }
     }
 
+    private void OnSponsorClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            OpenUrl("https://github.com/sponsors/PrashantUnity");
+        }
+        catch
+        {
+        }
+    }
+
     private void OnCloseClick(object? sender, RoutedEventArgs e)
     {
         Close();

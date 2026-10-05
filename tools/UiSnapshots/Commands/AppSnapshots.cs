@@ -9,8 +9,8 @@ internal static class AppSnapshots
     {
         var window = new AboutWindow
         {
-            Width = options.Int("width", 520),
-            Height = options.Int("height", 460)
+            Width = options.Int("width", 510),
+            Height = options.Int("height", 580)
         };
         window.Show();
         Snapshot.Settle();
