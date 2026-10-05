@@ -162,3 +162,132 @@ frysharp serve --no-auth
 
 > [!TIP]
 > Start with Phase 1 + Phase 2 to get a working skeleton quickly. The WebSocket work in Phase 3 is where the real interactivity comes alive.
+
+---
+
+# VS Code Extension — Roadmap
+> **Concept**: Bring FrySharp's Roslyn engine and `.csnb` notebooks directly into VS Code as a first-class extension — no separate app needed.
+
+---
+
+## Why This Is the Highest-Value Entry Point
+
+VS Code handles all the hard UI work — cell chrome, run buttons, output panels, gutter decorations. You only need to implement three focused pieces:
+
+| What You Implement | What VS Code Provides |
+|---|---|
+| `NotebookSerializer` | Cell UI, tab management, dirty state |
+| `NotebootController` (kernel) | Run buttons, execution order, interrupt |
+| Output renderers (tables, images, HTML) | Output area, MIME routing |
+| Roslyn LSP server | Completions, diagnostics, hover, go-to-def |
+| Debug Adapter (DAP) | Full debugger UI, breakpoints, call stack |
+
+---
+
+## Core Implementation
+
+### 1. NotebookSerializer — Read/Write `.csnb` Files
+- Deserializes `.csnb` (JSON) into `vscode.NotebookData` (cells, metadata, outputs)
+- Serializes back on save — compatible with git, external editors
+- Supports polyglot cell language metadata (C#, Python, JS)
+
+### 2. NotebookController — Roslyn / Python Kernel
+- Connects to a **sidecar process** (local .NET host) via named pipe or stdio
+- Speaks the **Fry Kernel Protocol** (already defined) over that pipe
+- Routes cell execution to the correct language kernel
+- Streams stdout/stderr back as `NotebookCellOutput` in real-time
+- Supports `#!share` cross-language variable sharing
+
+### 3. Cell Output Renderers
+- **Rich tables** (`DataTable`, `DataFrame`) → custom MIME renderer
+- **Images** (`Display.Image`) → `image/png` MIME — VS Code handles natively
+- **HTML dumps** → `text/html` MIME renderer
+- **Object inspector** → custom renderer with expandable tree
+
+---
+
+## Additional VS Code APIs to Use
+
+| API | Purpose |
+|---|---|
+| **Language Server Protocol (LSP)** | Roslyn intellisense, squiggles, hover, rename in `.cs`/`.csx`/`.frycs` |
+| **Debug Adapter Protocol (DAP)** | Debugging inside VS Code's native debugger UI |
+| **Custom Editor API** | `.frycs` script files open with a tailored editor experience |
+| **Tree View API** | FrySharp Explorer sidebar panel (scripts, packages) |
+| **Terminal API** | Attach runner stdout/stderr to a VS Code terminal tab |
+| **Status Bar API** | Show Roslyn status, active language, execution timer |
+
+---
+
+## Sidecar Architecture
+
+```
+VS Code Extension (TypeScript)
+  │
+  ├── activates → spawns FrySharp.Sidecar (local .NET process)
+  │                  ├── Roslyn LSP server  (stdio / named pipe)
+  │                  ├── Kernel controller  (Fry Kernel Protocol)
+  │                  └── Reuses all existing Services unchanged
+  │
+  ├── NotebookController ──→ kernel messages over pipe
+  ├── LSP client          ──→ Roslyn completions/diagnostics
+  └── DAP client          ──→ debugging
+```
+
+The sidecar is a thin .NET host — **all existing services are reused with zero changes**.
+
+---
+
+## Phased Roadmap (VS Code Extension)
+
+### Phase 1 — Skeleton Extension + Sidecar
+- [ ] VS Code extension project (TypeScript + `yo code`)
+- [ ] `FrySharp.Sidecar` .NET host (minimal, starts LSP + kernel)
+- [ ] Extension activates on `.csnb` / `.frycs` / `.csx` files
+- [ ] Sidecar launch + lifecycle management from extension
+
+### Phase 2 — Notebook Support
+- [ ] `NotebookSerializer` for `.csnb` read/write
+- [ ] `NotebookController` wired to Fry Kernel Protocol
+- [ ] Basic cell execution (C# via Roslyn)
+- [ ] stdout/stderr streaming into cell output
+- [ ] Interrupt / stop execution
+
+### Phase 3 — Rich Output Renderers
+- [ ] Table renderer (`DataTable` / `DataFrame`)
+- [ ] HTML dump renderer
+- [ ] Image renderer
+- [ ] Object inspector renderer
+
+### Phase 4 — LSP + IntelliSense
+- [ ] Roslyn LSP server in sidecar
+- [ ] Completions, diagnostics, hover, go-to-definition in cells
+- [ ] NuGet package resolution inside notebook
+
+### Phase 5 — Polyglot + Debug
+- [ ] Python / JS cells in notebooks
+- [ ] `#!share` cross-language variable support
+- [ ] DAP integration for C# cell debugging
+- [ ] `.frycs` script debugging with breakpoints
+
+---
+
+## Three-Surface Strategy
+
+```
+┌──────────────────────┐   shared Services layer   ┌──────────────────────┐
+│  FrySharp (Native)   │ ◄───────────────────────► │  VS Code Extension   │
+│  Avalonia Desktop    │                            │  LSP + Notebook API  │
+└──────────────────────┘                            └──────────────────────┘
+          ▲                                                    ▲
+          └──────────────────────────────────────────────────┘
+                         FrySharp Web (React + ASP.NET)
+```
+
+Same Roslyn engine. Same kernel protocol. Same services. Three UI surfaces.
+
+> [!IMPORTANT]
+> The VS Code Notebook API route is the recommended first integration target. VS Code handles all cell UI — you only implement the kernel, serializer, and output renderers.
+
+> [!TIP]
+> Start with Phase 1 + Phase 2. A working `.csnb` notebook running C# cells in VS Code is achievable with minimal code given the existing Fry Kernel Protocol infrastructure.
