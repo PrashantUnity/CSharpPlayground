@@ -206,16 +206,5 @@
         <!-- "New Script" / "New Notebook" location dialog                    -->
         <!-- ================================================================ -->
         <hub1:HubCreateItemDialogControl />
-
-        <!-- ================================================================ -->
-        <!-- STUDIO LOADING OVERLAY POPUP                                     -->
-        <!-- ================================================================ -->
-        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
-                                              LoadingTitle="{Binding LoadingTitle}"
-                                              LoadingSubtitle="{Binding LoadingSubtitle}"
-                                              ZIndex="1000"
-                                              HorizontalAlignment="Stretch"
-                                              VerticalAlignment="Stretch" />
-
     </Panel>
 </UserControl>

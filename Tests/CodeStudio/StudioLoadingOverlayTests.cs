@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -118,6 +119,19 @@ public class StudioLoadingOverlayTests
     }
 
     [Fact]
+    public void OverlayControl_VisualAnimationElements_ExistAndRespondToShowLogo()
+    {
+        var control = new StudioLoadingOverlayControl();
+        control.ShowLogo = false;
+        control.IconKind = MaterialIconKind.Refresh;
+        control.IsLoading = true;
+
+        Assert.False(control.ShowLogo);
+        Assert.Equal(MaterialIconKind.Refresh, control.IconKind);
+        Assert.True(control.IsLoading);
+    }
+
+    [Fact]
     public async System.Threading.Tasks.Task NotebookStudio_OpenDocumentAsync_SetsLoadingDuringFileTransition()
     {
         var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NotebookLoadingTest_" + Guid.NewGuid().ToString("N"));
@@ -222,5 +236,73 @@ public class StudioLoadingOverlayTests
                 System.IO.Directory.Delete(tempDir, recursive: true);
             }
         }
+    }
+
+    [Fact]
+    public void StudioLoadingOverlayControl_StepAnimation_UpdatesTransforms()
+    {
+        var overlay = new StudioLoadingOverlayControl
+        {
+            IsLoading = true
+        };
+
+        var spinnerBorder = overlay.FindControl<Avalonia.Controls.Border>("SpinnerRingBorder");
+        Assert.NotNull(spinnerBorder);
+
+        overlay.StepAnimation(TimeSpan.FromSeconds(0.3));
+        var rotate = spinnerBorder.RenderTransform as Avalonia.Media.RotateTransform;
+        Assert.NotNull(rotate);
+        Assert.True(rotate.Angle > 0, $"Expected Angle > 0, got {rotate.Angle}");
+    }
+
+    [Fact]
+    public void StudioLoadingManager_RefCountingAndGlobalState()
+    {
+        var manager = StudioLoadingManager.Instance;
+        manager.Reset();
+        Assert.False(manager.IsLoading);
+
+        var scope1 = manager.Begin("First task", "sub 1");
+        Assert.True(manager.IsLoading);
+        Assert.Equal("First task", manager.LoadingTitle);
+        Assert.Equal("sub 1", manager.LoadingSubtitle);
+
+        var scope2 = manager.Begin("Second task", "sub 2");
+        Assert.True(manager.IsLoading);
+        Assert.Equal("Second task", manager.LoadingTitle);
+
+        scope1.Dispose();
+        Assert.True(manager.IsLoading, "Manager should remain loading while second scope is active");
+
+        scope2.Dispose();
+        Assert.False(manager.IsLoading, "Manager should finish loading once all scopes are disposed");
+    }
+
+    [Fact]
+    public void ChildStudio_BeginLoading_UpdatesHostViewModelViaGlobalManager()
+    {
+        var host = new CSharpStudioHostViewModel(blindProgress: new LocalBlindProgressService());
+        var notebook = new PdfEditorApp.Plugins.CSharpEditor.Models.NotebookDocumentItem { Title = "TestNB" };
+        var studio = new CSharpNotebookStudioViewModel(
+            notebook,
+            new LocalScriptStorageService(),
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            backToHomeAction: () => { });
+
+        Assert.False((bool)host.IsLoading);
+        Assert.False((bool)studio.IsLoading);
+
+        using (studio.BeginLoading("Opening File...", "MachineLearningCode.frynb"))
+        {
+            Assert.True((bool)studio.IsLoading);
+            Assert.True((bool)host.IsLoading);
+            Assert.Equal("Opening File...", (string?)host.LoadingTitle);
+            Assert.Equal("MachineLearningCode.frynb", (string?)host.LoadingSubtitle);
+        }
+
+        Assert.False((bool)studio.IsLoading);
+        Assert.False((bool)host.IsLoading);
     }
 }

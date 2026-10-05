@@ -235,19 +235,55 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
 
     private async Task<string?> FindExistingFilePathAsync(string id, string extension)
     {
+        if (File.Exists(id) && id.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+        {
+            _knownFileLocations[id] = id;
+            return id;
+        }
+
+        if (File.Exists(id + extension))
+        {
+            _knownFileLocations[id] = id + extension;
+            return id + extension;
+        }
+
+        var root = EffectiveWorkspaceRoot;
+        if (!string.IsNullOrEmpty(root))
+        {
+            var combined = Path.Combine(root, id);
+            if (File.Exists(combined) && combined.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
+                _knownFileLocations[id] = combined;
+                return combined;
+            }
+
+            var combinedExt = Path.Combine(root, id + extension);
+            if (File.Exists(combinedExt))
+            {
+                _knownFileLocations[id] = combinedExt;
+                return combinedExt;
+            }
+        }
+
         if (_knownFileLocations.TryGetValue(id, out var cached) &&
             cached.EndsWith(extension, StringComparison.OrdinalIgnoreCase) && File.Exists(cached))
         {
             return cached;
         }
 
-        var root = EffectiveWorkspaceRoot;
         var candidates = await Task.Run(() => WorkspaceWalker.Files(root, f => f.EndsWith(extension, StringComparison.OrdinalIgnoreCase))).ConfigureAwait(false);
         var direct = candidates.FirstOrDefault(f => string.Equals(Path.GetFileName(f), $"{id}{extension}", StringComparison.OrdinalIgnoreCase));
         if (direct != null)
         {
             _knownFileLocations[id] = direct;
             return direct;
+        }
+
+        var directWithoutExt = candidates.FirstOrDefault(f => string.Equals(Path.GetFileName(f), id, StringComparison.OrdinalIgnoreCase));
+        if (directWithoutExt != null)
+        {
+            _knownFileLocations[id] = directWithoutExt;
+            return directWithoutExt;
         }
 
         foreach (var file in candidates)
@@ -571,6 +607,10 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
     {
         await EnsureInitializedAsync();
         var file = await FindExistingFilePathAsync(id, ".frynb");
+        if (file == null && (id.EndsWith(".ipynb", StringComparison.OrdinalIgnoreCase) || id.EndsWith(".csnb", StringComparison.OrdinalIgnoreCase)))
+        {
+            file = await FindExistingFilePathAsync(id, Path.GetExtension(id));
+        }
         if (file == null) return null;
 
         try

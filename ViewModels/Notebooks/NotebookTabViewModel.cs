@@ -108,7 +108,8 @@ public partial class NotebookTabViewModel : ObservableObject
         Action<NotebookTabViewModel>? onCloseTab = null,
         Func<int>? getTimeoutSeconds = null,
         StudioLanguageServices? languages = null,
-        Func<string?>? workspaceRoot = null)
+        Func<string?>? workspaceRoot = null,
+        bool skipInitialPopulate = false)
     {
         _notebook = notebook;
         _folderName = folderName;
@@ -126,7 +127,9 @@ public partial class NotebookTabViewModel : ObservableObject
         Kernel = new NotebookExecutionKernel();
         _router = new NotebookKernelRouter(_languages.Registry, new KernelCreationContext(() => WorkingFolder, workspaceRoot), Kernel);
 
-        PopulateCells();
+        // skipInitialPopulate = true when the caller will await PopulateCellsAsync()
+        // immediately after construction (avoids blocking the UI thread for large notebooks).
+        if (!skipInitialPopulate) PopulateCells();
         RefreshKernelName();
         _languages.Registry.Changed += OnLanguagesRegistryChanged;
     }
@@ -182,59 +185,73 @@ public partial class NotebookTabViewModel : ObservableObject
     [RelayCommand]
     public void RevealInExplorer() => OnRevealInExplorer?.Invoke(this);
 
+    /// <summary>
+    /// Synchronous populate — used only when the notebook is already on a background thread
+    /// (e.g. in unit tests or when called from PopulateCellsAsync which already Task.Run'd).
+    /// Must NOT be called directly from the UI thread for notebooks with existing cells.
+    /// </summary>
     public void PopulateCells()
     {
         Cells.Clear();
 
+        // Seed default starter cells for a brand-new notebook (trivial, no I/O or decoding).
         if (Notebook.Cells.Count == 0)
         {
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "using System;"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "Console.WriteLine(\"Welcome to FryPDF Interactive Notebook!\");"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "var list = new List<int>()\n{\n    1,3,4,5,6,7,8,10\n};\nlist"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "public class People\n{\n    public string Name { get; set; } = string.Empty;\n    public string Class { get; set; } = string.Empty;\n    public int[] Numbers { get; set; } = [1, 34, 45, 235, 25];\n    public People? Another { get; set; }\n    public void WhoAreYou()\n    {\n        Console.WriteLine($\"My name is {Name}\");\n    }\n}"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "var people = new People();\npeople"
-            });
-
-            Notebook.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "people.Name = \"Code\";\npeople.Class = \"II\";\npeople.Another = people;\n\npeople"
-            });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "using System;" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "Console.WriteLine(\"Welcome to FryPDF Interactive Notebook!\");" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "var list = new List<int>()\n{\n    1,3,4,5,6,7,8,10\n};\nlist" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "public class People\n{\n    public string Name { get; set; } = string.Empty;\n    public string Class { get; set; } = string.Empty;\n    public int[] Numbers { get; set; } = [1, 34, 45, 235, 25];\n    public People? Another { get; set; }\n    public void WhoAreYou()\n    {\n        Console.WriteLine($\"My name is {Name}\");\n    }\n}" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "var people = new People();\npeople" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "people.Name = \"Code\";\npeople.Class = \"II\";\npeople.Another = people;\n\npeople" });
         }
 
         foreach (var cellItem in Notebook.Cells)
-        {
             Cells.Add(CreateCellViewModel(cellItem));
+
+        if (Cells.Count > 0)
+            SelectCell(Cells[0]);
+    }
+
+    /// <summary>
+    /// Async version of <see cref="PopulateCells"/>: constructs all cell ViewModels (which may decode
+    /// Bitmaps and materialize snapshots) on a background thread via <c>Task.Run</c> to avoid
+    /// blocking the UI thread, then posts the results back to the UI thread in a single batch.
+    /// </summary>
+    public async Task PopulateCellsAsync(CancellationToken ct = default)
+    {
+        // Seed default starter cells — trivial, only for empty notebooks.
+        if (Notebook.Cells.Count == 0)
+        {
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "using System;" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "Console.WriteLine(\"Welcome to FryPDF Interactive Notebook!\");" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "var list = new List<int>()\n{\n    1,3,4,5,6,7,8,10\n};\nlist" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "public class People\n{\n    public string Name { get; set; } = string.Empty;\n    public string Class { get; set; } = string.Empty;\n    public int[] Numbers { get; set; } = [1, 34, 45, 235, 25];\n    public People? Another { get; set; }\n    public void WhoAreYou()\n    {\n        Console.WriteLine($\"My name is {Name}\");\n    }\n}" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "var people = new People();\npeople" });
+            Notebook.Cells.Add(new NotebookCellItem { Type = CellType.Code, Source = "people.Name = \"Code\";\npeople.Class = \"II\";\npeople.Another = people;\n\npeople" });
+        }
+
+        // CreateCellViewModel must run on the UI thread (hooks ObservableObject events and
+        // PropertyChanged). To avoid one giant synchronous block, we yield to
+        // DispatcherPriority.Background every few cells so the loading animation can repaint
+        // between batches — the spinner stays alive without ever blocking the UI thread for long.
+        const int BatchSize = 8;
+        Cells.Clear();
+        var allCells = Notebook.Cells;
+        for (var i = 0; i < allCells.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            Cells.Add(CreateCellViewModel(allCells[i]));
+
+            // Yield every BatchSize cells: lets Avalonia process pending input + paint animation frames.
+            if ((i + 1) % BatchSize == 0)
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+                    () => { }, Avalonia.Threading.DispatcherPriority.Background);
         }
 
         if (Cells.Count > 0)
-        {
             SelectCell(Cells[0]);
-        }
     }
+
 
     public NotebookCellViewModel CreateCellViewModel(NotebookCellItem item)
     {

@@ -17,6 +17,29 @@ internal static class AppSnapshots
         Snapshot.Save(window, options, "about");
     }
 
+    public static void Loading(Options options)
+    {
+        var overlay = new PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioLoadingOverlayControl
+        {
+            IsLoading = true,
+            LoadingTitle = "Opening File...",
+            LoadingSubtitle = "MachineLearningCode.frynb",
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
+        };
+        var window = Snapshot.Show(overlay, options.Int("width", 600), options.Int("height", 420));
+        overlay.StepAnimation(TimeSpan.FromSeconds(0.2));
+        Snapshot.Settle(5);
+        Snapshot.Save(window, options, "loading_f1");
+        overlay.StepAnimation(TimeSpan.FromSeconds(0.65));
+        Snapshot.Settle(5);
+        Snapshot.Save(window, options, "loading_f2");
+        overlay.StepAnimation(TimeSpan.FromSeconds(1.1));
+        Snapshot.Settle(5);
+        Snapshot.Save(window, options, "loading_f3");
+        Snapshot.Save(window, options, "loading");
+    }
+
     public static void Update(Options options)
     {
         var window = new UpdateDialogWindow

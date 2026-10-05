@@ -484,11 +484,26 @@ public partial class CSharpCodeStudioViewModel
             }
 
             if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
-                item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))
+                item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase) ||
+                item.FileExtension.Equals(".csnb", StringComparison.OrdinalIgnoreCase))
             {
                 if (_openNotebookAction != null)
                 {
                     var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
+                    if (nb == null && !string.IsNullOrEmpty(item.FullPath))
+                    {
+                        var candidate = item.FullPath;
+                        if (!Path.IsPathRooted(candidate) && !string.IsNullOrEmpty(_storageService.ActiveWorkspaceRootPath))
+                        {
+                            var full = Path.Combine(_storageService.ActiveWorkspaceRootPath, candidate);
+                            if (File.Exists(full)) candidate = full;
+                        }
+                        if (File.Exists(candidate))
+                        {
+                            nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(candidate));
+                        }
+                    }
+
                     if (nb != null)
                     {
                         _openNotebookAction.Invoke(nb);

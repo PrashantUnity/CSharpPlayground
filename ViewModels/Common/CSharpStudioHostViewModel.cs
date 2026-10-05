@@ -129,6 +129,17 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         // supplies one this way via StandaloneServiceProvider/StandaloneSettingsStore.
         _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(IPluginSettingsStore)) as IPluginSettingsStore;
 
+        // Centralized global loading manager connection
+        StudioLoadingManager.Instance.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(StudioLoadingManager.IsLoading))
+                IsLoading = StudioLoadingManager.Instance.IsLoading;
+            else if (e.PropertyName == nameof(StudioLoadingManager.LoadingTitle))
+                LoadingTitle = StudioLoadingManager.Instance.LoadingTitle;
+            else if (e.PropertyName == nameof(StudioLoadingManager.LoadingSubtitle))
+                LoadingSubtitle = StudioLoadingManager.Instance.LoadingSubtitle;
+        };
+
         // ── Initialize Documentation & Learning Center page ──
         DocsViewModel = new Docs.CSharpDocsViewModel(
             docService: DocumentationService.Instance,
@@ -331,6 +342,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 CurrentPage = CodeStudioViewModel;
                 IsOnManagerPage = false;
                 ActiveDocumentTitle = title;
+
+                if (Avalonia.Application.Current != null)
+                {
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Loaded);
+                }
             }
         }
     }
@@ -352,12 +368,14 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             }
             if (NotebookStudioViewModel == null) return;
 
-            using (NotebookStudioViewModel.BeginLoading("Opening Notebook...", title))
+            NotebookStudioViewModel.UpdateActiveNotebook(notebook);
+            CurrentPage = NotebookStudioViewModel;
+            IsOnManagerPage = false;
+            ActiveDocumentTitle = title;
+
+            if (Avalonia.Application.Current != null)
             {
-                NotebookStudioViewModel.UpdateActiveNotebook(notebook);
-                CurrentPage = NotebookStudioViewModel;
-                IsOnManagerPage = false;
-                ActiveDocumentTitle = title;
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Loaded);
             }
         }
     }

@@ -644,17 +644,5 @@
                                           ZIndex="999"
                                           HorizontalAlignment="Stretch"
                                           VerticalAlignment="Stretch" />
-
-        <!-- ============================================================ -->
-        <!-- 4. STUDIO LOADING OVERLAY POPUP                              -->
-        <!-- ============================================================ -->
-        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
-                                              LoadingTitle="{Binding LoadingTitle}"
-                                              LoadingSubtitle="{Binding LoadingSubtitle}"
-                                              Grid.RowSpan="2"
-                                              ZIndex="1000"
-                                              HorizontalAlignment="Stretch"
-                                              VerticalAlignment="Stretch" />
-
     </Grid>
 </UserControl>

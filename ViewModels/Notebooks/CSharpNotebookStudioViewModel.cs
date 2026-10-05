@@ -628,6 +628,28 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
             languages: _languages,
             workspaceRoot: () => _storageService.ActiveWorkspaceRootPath);
 
+    /// <summary>
+    /// Creates a tab and populates its cells on a background thread (<see cref="NotebookTabViewModel.PopulateCellsAsync"/>)
+    /// so Bitmap decoding and snapshot materialization never block the UI thread.
+    /// </summary>
+    private async Task<NotebookTabViewModel> CreateTabAsync(
+        NotebookDocumentItem notebook, string folderName, string filePath,
+        CancellationToken ct = default)
+    {
+        var tab = new NotebookTabViewModel(
+            notebook,
+            folderName: folderName,
+            filePath: filePath,
+            onSelectTab: SelectTab,
+            onCloseTab: CloseTab,
+            getTimeoutSeconds: _getTimeoutSeconds,
+            languages: _languages,
+            workspaceRoot: () => _storageService.ActiveWorkspaceRootPath,
+            skipInitialPopulate: true); // cells are loaded below, off the UI thread
+        await tab.PopulateCellsAsync(ct);
+        return tab;
+    }
+
     /// <summary>A closed tab's cells let go of their live outputs, and its kernels in other programs end.</summary>
     private static void ReleaseTab(NotebookTabViewModel tab)
     {
@@ -930,10 +952,29 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
                 return;
             }
 
+            var resolvedPath = filePath;
+            if (!Path.IsPathRooted(resolvedPath) && !string.IsNullOrEmpty(_storageService.ActiveWorkspaceRootPath))
+            {
+                var candidate = Path.Combine(_storageService.ActiveWorkspaceRootPath, resolvedPath);
+                if (File.Exists(candidate)) resolvedPath = candidate;
+            }
+
             NotebookDocumentItem? loadedDoc = null;
             if (!string.IsNullOrEmpty(item.DocumentId))
             {
                 loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
+            }
+
+            if (loadedDoc == null && !string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath) &&
+                (resolvedPath.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase) ||
+                 resolvedPath.EndsWith(".ipynb", StringComparison.OrdinalIgnoreCase) ||
+                 resolvedPath.EndsWith(".csnb", StringComparison.OrdinalIgnoreCase)))
+            {
+                loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(resolvedPath));
+                if (loadedDoc != null && !string.IsNullOrEmpty(loadedDoc.Id))
+                {
+                    item.DocumentId = loadedDoc.Id;
+                }
             }
 
             if (loadedDoc == null)
@@ -978,10 +1019,26 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
                 item.DocumentId = loadedDoc.Id;
             }
 
-            var newTab = CreateTab(loadedDoc, folderName, filePath);
+            // Yield so the loading overlay paints and renders animation frames smoothly
+            await Task.Yield();
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+            }
+
+            // PopulateCellsAsync builds all NotebookCellViewModels (Bitmap decode, snapshot
+            // materialization) on a Task.Run background thread — no UI-thread freeze.
+            var newTab = await CreateTabAsync(loadedDoc, folderName, filePath);
             ConfigureNotebookTab(newTab);
             Tabs.Add(newTab);
             SelectTab(newTab);
+
+            // Yield after tab selection so Avalonia completes initial layout passes
+            // before the loading overlay dismisses, avoiding a frozen blank UI during cell mounting
+            if (Avalonia.Application.Current != null)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Loaded);
+            }
         }
     }
 

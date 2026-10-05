@@ -49,6 +49,18 @@
                 <GradientStop Offset="0" Color="#18F59E0B" />
                 <GradientStop Offset="1" Color="#00F59E0B" />
             </RadialGradientBrush>
+            <LinearGradientBrush x:Key="DsLoadingBeamPrimary" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0.0" Color="#002F81F7" />
+                <GradientStop Offset="0.25" Color="#662F81F7" />
+                <GradientStop Offset="0.5" Color="#FF388BFD" />
+                <GradientStop Offset="0.75" Color="#662F81F7" />
+                <GradientStop Offset="1.0" Color="#002F81F7" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="DsLoadingBeamSecondary" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0.0" Color="#0058A6FF" />
+                <GradientStop Offset="0.5" Color="#B379C0FF" />
+                <GradientStop Offset="1.0" Color="#0058A6FF" />
+            </LinearGradientBrush>
 
             <!-- M3 Compatibility Mappings (Dark) -->
             <SolidColorBrush x:Key="M3SurfaceBrush" Color="#0D1117" />
@@ -219,6 +231,18 @@
                 <GradientStop Offset="0" Color="#12D97706" />
                 <GradientStop Offset="1" Color="#00D97706" />
             </RadialGradientBrush>
+            <LinearGradientBrush x:Key="DsLoadingBeamPrimary" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0.0" Color="#000969DA" />
+                <GradientStop Offset="0.25" Color="#660969DA" />
+                <GradientStop Offset="0.5" Color="#FF218BFF" />
+                <GradientStop Offset="0.75" Color="#660969DA" />
+                <GradientStop Offset="1.0" Color="#000969DA" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="DsLoadingBeamSecondary" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0.0" Color="#00218BFF" />
+                <GradientStop Offset="0.5" Color="#B354A0FF" />
+                <GradientStop Offset="1.0" Color="#00218BFF" />
+            </LinearGradientBrush>
 
             <!-- M3 Compatibility Mappings (Light) -->
             <SolidColorBrush x:Key="M3SurfaceBrush" Color="#FFFFFF" />
