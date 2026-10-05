@@ -11,14 +11,14 @@
              x:DataType="hub:CSharpManagerViewModel">
 
         <Border IsVisible="{Binding IsCreatePromptOpen}"
-                Background="#B3000000"
+                Background="{DynamicResource DsScrimBrush}"
                 ZIndex="100">
             <Border Width="460"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="14"
-                    BoxShadow="0 24 64 #90000000"
+                    BoxShadow="{DynamicResource DsModalShadow}"
                     Padding="24,22"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Spacing="18">
@@ -42,10 +42,10 @@
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <!-- Server Badge -->
-                                <Border Background="#1A009688" CornerRadius="8"
+                                <Border Background="{DynamicResource NavServersBgBrush}" CornerRadius="8"
                                         IsVisible="{Binding IsCreatingServer}">
                                     <materialIcons:MaterialIcon Kind="ServerNetwork" Width="19" Height="19"
-                                                                Foreground="#009688"
+                                                                Foreground="{DynamicResource NavServersFgBrush}"
                                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                             </Panel>
@@ -130,11 +130,11 @@
                         </Grid>
 
                         <!-- Location Warning Callout (if picked outside library root) -->
-                        <Border Background="#1C1811" BorderBrush="#D29922" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,4,0,0"
+                        <Border Background="{DynamicResource DsWarningSubtleBrush}" BorderBrush="{DynamicResource DsWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,4,0,0"
                                 IsVisible="{Binding LocationWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <Grid ColumnDefinitions="Auto,*">
-                                <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Foreground="#D29922" VerticalAlignment="Top" Margin="0,1,8,0" />
-                                <TextBlock Grid.Column="1" Text="{Binding LocationWarning}" FontSize="11" Foreground="#E3B341" TextWrapping="Wrap" />
+                                <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Top" Margin="0,1,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding LocationWarning}" FontSize="11" Foreground="{DynamicResource DsWarningBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
                     </StackPanel>

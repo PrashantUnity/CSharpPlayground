@@ -15,14 +15,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="54,*">
@@ -133,7 +132,7 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsLanguagesCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="Languages &amp; Runtimes" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>

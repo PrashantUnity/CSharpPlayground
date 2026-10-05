@@ -276,7 +276,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     private void SyncCreateLanguages()
     {
-        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.Id == "csharp").ToList();
+        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.IsNamed(LanguageIds.CSharp)).ToList();
         var existing = AvailableCreateLanguages.Select(l => l.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var toRemove = AvailableCreateLanguages.Where(l => !allLangs.Any(a => a.IsNamed(l.Id))).ToList();
@@ -287,7 +287,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             if (!existing.Contains(l.Id)) AvailableCreateLanguages.Add(l);
         }
 
-        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(LanguageIds.CSharp)) ?? AvailableCreateLanguages.FirstOrDefault();
     }
 
     private void ReloadTemplates()
@@ -1179,7 +1179,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             {
                 SelectedCreateLanguage = AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(template.LanguageId));
             }
-            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(LanguageIds.CSharp)) ?? AvailableCreateLanguages.FirstOrDefault();
         }
         PendingCreateKind = kind;
         return Task.CompletedTask;

@@ -9,7 +9,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://FrySharp/Material3ExpressiveTokens.axaml" />
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
@@ -19,6 +19,7 @@
         <materialIcons:MaterialIconStyles />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <StyleInclude Source="avares://FrySharp/Material3ExpressiveStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </Application.Styles>
 
     <NativeMenu.Menu>

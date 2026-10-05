@@ -13,234 +13,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <Style Selector="Border.composer-window">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="BoxShadow" Value="0 14 36 0 #70000000, 0 2 8 0 #30000000" />
-        </Style>
-        <Style Selector="Button.composer-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.composer-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
-        </Style>
-        <Style Selector="Button.close-btn:pointerover">
-            <Setter Property="Background" Value="#DC2626" />
-        </Style>
-        <Style Selector="Button.close-btn:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-
-        <!-- Pill Badges & Chips (Inspired by Side Panel nexus-badge-pill) -->
-        <Style Selector="Button.composer-pill-btn">
-            <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="8,1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.composer-pill-btn">
-            <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="8,1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.composer-pill-btn:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.04)" />
-        </Style>
-        <Style Selector="Button.composer-pill-btn /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="12" />
-        </Style>
-
-        <!-- Mode Toggle Switcher Pill in Header (Chat / Agent) -->
-        <Style Selector="ToggleButton.composer-mode-toggle">
-            <Setter Property="Height" Value="22" />
-            <Setter Property="CornerRadius" Value="11" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Background" Value="#158B949E" />
-            <Setter Property="BorderBrush" Value="#252D3B" />
-            <Setter Property="Foreground" Value="#8B949E" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FontSize" Value="10.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="11" />
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle:checked">
-            <Setter Property="Background" Value="#1A38BDF8" />
-            <Setter Property="BorderBrush" Value="#38BDF8" />
-            <Setter Property="Foreground" Value="#38BDF8" />
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle:checked /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1A38BDF8" />
-            <Setter Property="BorderBrush" Value="#38BDF8" />
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle:checked materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="#38BDF8" />
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle:checked TextBlock">
-            <Setter Property="Foreground" Value="#38BDF8" />
-        </Style>
-        <Style Selector="ToggleButton.composer-mode-toggle:pointerover">
-            <Setter Property="BorderBrush" Value="#38BDF8" />
-        </Style>
-
-        <!-- Primary Action Send Button (Sleek modern button matching app primary style) -->
-        <Style Selector="Button.action-send">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.action-send /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="CornerRadius" Value="7" />
-        </Style>
-        <Style Selector="Button.action-send:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="RenderTransform" Value="scale(1.06)" />
-        </Style>
-        <Style Selector="Button.action-send:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
-        </Style>
-        <Style Selector="Button.action-send materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-
-        <!-- Autocomplete Mention Item -->
-        <Style Selector="Button.composer-mention-item">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="6" />
-        </Style>
-        <Style Selector="Button.composer-mention-item:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-        </Style>
-
-        <!-- Stop Generation Button -->
-        <Style Selector="Button.action-stop">
-            <Setter Property="Background" Value="#DC2626" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="#EF4444" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.action-stop /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#DC2626" />
-            <Setter Property="BorderBrush" Value="#EF4444" />
-            <Setter Property="CornerRadius" Value="7" />
-        </Style>
-        <Style Selector="Button.action-stop:pointerover">
-            <Setter Property="Background" Value="#B91C1C" />
-            <Setter Property="RenderTransform" Value="scale(1.06)" />
-        </Style>
-        <Style Selector="Button.action-stop:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#B91C1C" />
-        </Style>
-        <Style Selector="Button.action-stop materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-        </Style>
-
-        <!-- Diff & Change Acceptance Buttons -->
-        <Style Selector="Button.action-accept">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.action-accept:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
-        </Style>
-        <Style Selector="Button.action-reject">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#F87171" />
-            <Setter Property="BorderBrush" Value="#4B2323" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.action-reject:pointerover">
-            <Setter Property="Background" Value="#251212" />
-            <Setter Property="BorderBrush" Value="#DC2626" />
-        </Style>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <!-- Overlay Host Container -->
@@ -256,7 +35,7 @@
                 BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
                 BorderThickness="1"
                 CornerRadius="16" Padding="12,7"
-                BoxShadow="0 8 24 0 #60000000">
+                BoxShadow="{DynamicResource DsFloatingShadow}">
             <Button Command="{Binding ToggleMinimizeCommand}" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Border Width="22" Height="22" CornerRadius="6" Background="{DynamicResource DsPrimarySubtleBrush}">
@@ -445,7 +224,7 @@
                                         Margin="6,0,0,0" Height="28" Padding="10,2"
                                         ToolTip.Tip="Auto-detect running Ollama or LM Studio servers on local ports (1234, 11434, 11443)">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="12" Height="12" Foreground="#FFFFFF" />
+                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="12" Height="12" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                         <TextBlock Text="Auto-Detect" FontSize="10.5" FontWeight="SemiBold" />
                                     </StackPanel>
                                 </Button>
@@ -681,10 +460,12 @@
                                     <StackPanel Spacing="6" Margin="0,4">
                                         <!-- User Message Bubble -->
                                         <Border IsVisible="{Binding IsUser}"
-                                                Background="#1C2E47" BorderBrush="#293F5F" BorderThickness="1"
+                                                Background="{DynamicResource DsPrimarySubtleBrush}"
+                                                BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
+                                                BorderThickness="1"
                                                 CornerRadius="8" Padding="12,8"
                                                 HorizontalAlignment="Right" MaxWidth="440">
-                                            <TextBlock Text="{Binding Content}" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Content}" FontSize="12" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" />
                                         </Border>
 
                                         <!-- Assistant Message Bubble -->
@@ -728,7 +509,7 @@
                                                                                  FontStyle="Italic"
                                                                                  Foreground="{DynamicResource DsTextBrush}"
                                                                                  TextWrapping="Wrap"
-                                                                                 FontFamily="Consolas, Menlo, Monaco, monospace" />
+                                                                                 FontFamily="{DynamicResource DsCodeFontFamily}" />
                                                         </ScrollViewer>
                                                     </Border>
                                                 </StackPanel>
@@ -743,8 +524,8 @@
                                                                          TextWrapping="Wrap" />
 
                                                     <!-- Error Notice -->
-                                                    <Border IsVisible="{Binding HasError}" Background="#450A0A" CornerRadius="4" Padding="8" Margin="0,4">
-                                                        <TextBlock Text="{Binding ErrorMessage}" FontSize="11" Foreground="#FCA5A5" TextWrapping="Wrap" />
+                                                    <Border IsVisible="{Binding HasError}" Background="{DynamicResource DsErrorSubtleBrush}" BorderBrush="{DynamicResource DsErrorBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4">
+                                                        <TextBlock Text="{Binding ErrorMessage}" FontSize="11" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap" />
                                                     </Border>
 
                                                     <!-- Inline Touched Files & Diff Cards -->
@@ -754,9 +535,9 @@
                                                                 <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Margin="0,4,0,2" Padding="8">
                                                                     <StackPanel Spacing="6">
                                                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                                                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="FileDocumentEditOutline" Width="14" Height="14" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                                            <materialIcons:MaterialIcon Grid.Column="0" Kind="FileDocumentEditOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                                                                             <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                                                            <TextBlock Grid.Column="2" Text="{Binding SummaryText}" FontSize="10.5" Foreground="#4ADE80" VerticalAlignment="Center" Margin="8,0" />
+                                                                            <TextBlock Grid.Column="2" Text="{Binding SummaryText}" FontSize="10.5" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="8,0" />
 
                                                                             <!-- Apply to Editor Button -->
                                                                             <Button Grid.Column="3"
@@ -765,14 +546,14 @@
                                                                                     Classes="composer-pill-btn" Height="22" Padding="6,1" Margin="4,0"
                                                                                     ToolTip.Tip="Apply changes to active document in editor">
                                                                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                                    <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="#4ADE80" />
-                                                                                    <TextBlock Text="Apply" FontSize="10" Foreground="#4ADE80" FontWeight="SemiBold" />
+                                                                                    <materialIcons:MaterialIcon Kind="Check" Width="12" Height="12" Foreground="{DynamicResource DsGreenBrush}" />
+                                                                                    <TextBlock Text="Apply" FontSize="10" Foreground="{DynamicResource DsGreenBrush}" FontWeight="SemiBold" />
                                                                                 </StackPanel>
                                                                             </Button>
 
                                                                             <ToggleButton Grid.Column="4" IsChecked="{Binding IsDiffExpanded, Mode=TwoWay}"
                                                                                           Classes="composer-btn" Padding="4,2" Height="22" Width="22">
-                                                                                <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="#94A3B8" />
+                                                                                <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
                                                                             </ToggleButton>
                                                                         </Grid>
 
@@ -785,7 +566,7 @@
                                                                                             <DataTemplate x:DataType="ai:DiffLine">
                                                                                                 <Border Background="{Binding BackgroundHex}" Padding="8,1" Margin="0,0.5" CornerRadius="2">
                                                                                                     <SelectableTextBlock Text="{Binding Text}"
-                                                                                                                         FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                                                                                         FontFamily="{DynamicResource DsCodeFontFamily}"
                                                                                                                          FontSize="10.5"
                                                                                                                          Foreground="{Binding ForegroundHex}" />
                                                                                                 </Border>
@@ -851,7 +632,7 @@
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 MaxHeight="160"
-                                BoxShadow="0 -4 16 0 #40000000">
+                                BoxShadow="{DynamicResource DsBottomBarShadow}">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding FilteredMentions}">
                                     <ItemsControl.ItemTemplate>
@@ -969,12 +750,12 @@
                                     <Button Command="{Binding StopGenerationCommand}" Classes="action-stop"
                                             Height="24" Width="24"
                                             IsVisible="{Binding IsGenerating}" ToolTip.Tip="Stop Generation">
-                                        <materialIcons:MaterialIcon Kind="Stop" Width="12" Height="12" Foreground="#FFFFFF" />
+                                        <materialIcons:MaterialIcon Kind="Stop" Width="12" Height="12" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     </Button>
                                     <Button Command="{Binding SendMessageCommand}" Classes="action-send"
                                             Height="24" Width="24"
                                             IsVisible="{Binding !IsGenerating}" ToolTip.Tip="Send Prompt (Enter)">
-                                        <materialIcons:MaterialIcon Kind="Send" Width="12" Height="12" Foreground="#FFFFFF" />
+                                        <materialIcons:MaterialIcon Kind="Send" Width="12" Height="12" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -1019,7 +800,7 @@
                         Background="Transparent" Cursor="BottomRightCorner">
                     <materialIcons:MaterialIcon Kind="ResizeBottomRight"
                                                 Width="12" Height="12"
-                                                Foreground="#475569"
+                                                Foreground="{DynamicResource DsMutedBrush}"
                                                 HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                                 Margin="0,0,3,3" />
                 </Border>

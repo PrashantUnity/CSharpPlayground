@@ -10,7 +10,7 @@
 
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
@@ -23,7 +23,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                 <!-- VS Code Remote-Style Accent Pill -->
                 <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="3" Padding="6,1">
-                    <TextBlock Text="&gt;&lt; FrySharp" FontSize="9.5" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                    <TextBlock Text="&gt;&lt; FrySharp" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                 </Border>
 
                 <!-- Git Branch Pill with Branch Switcher Flyout -->
@@ -56,16 +56,16 @@
                 <!-- Problems Quick Button -->
                 <Button Command="{Binding ShowProblemsTabCommand}" Classes="status-item" ToolTip.Tip="Errors and warnings (Ctrl+Shift+M)">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="12" Height="12" Foreground="#EF4444" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding ErrorCount}" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                        <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="#F59E0B" VerticalAlignment="Center" Margin="2,0,0,0" />
+                        <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
                         <TextBlock Text="{Binding WarningCount}" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
                 <!-- Roslyn Compiler Status -->
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                    <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="12" Height="12" Foreground="#22C55E" VerticalAlignment="Center" />
+                    <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding CompilerStatusText}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
@@ -165,7 +165,7 @@
                     </Button.Flyout>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" IsVisible="{Binding IsToolchainMissing}"
-                                                    Foreground="#F59E0B" VerticalAlignment="Center" />
+                                                    Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding LanguageStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>

@@ -10,7 +10,7 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.InteractiveVisualizerControl">
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Visualizers/Controls/VisualizerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid>

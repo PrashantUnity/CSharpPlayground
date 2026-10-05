@@ -11,7 +11,7 @@
              x:CompileBindings="False">
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -40,7 +40,7 @@
                         </TextBox>
                         <Button Grid.Column="1" Command="{Binding SearchNuGetPackagesCommand}"
                                 Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}"
-                                Foreground="#FFFFFF"
+                                Foreground="{DynamicResource DsOnAccentBrush}"
                                 Height="26" MinHeight="0" Margin="4,0,0,0" Padding="8,0"
                                 ToolTip.Tip="Search">
                             <TextBlock Text="Search" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />

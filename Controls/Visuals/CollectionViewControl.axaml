@@ -7,7 +7,7 @@
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1"
             CornerRadius="8"
-            BoxShadow="0 12 40 0 #A0000000"
+            BoxShadow="{DynamicResource DsModalShadow}"
             MinWidth="480"
             MaxWidth="680"
             MinHeight="300"
@@ -19,10 +19,10 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!-- Left: Badge & Title -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <Border Background="#E53935" CornerRadius="3" Padding="4,1">
-                            <TextBlock Text="RD" FontSize="9.5" FontWeight="Bold" Foreground="White" />
+                        <Border Background="{DynamicResource DsErrorBrush}" CornerRadius="3" Padding="4,1">
+                            <TextBlock Text="RD" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}" />
                         </Border>
-                        <TextBlock Name="TitleText" Text="Collection View: SampleData" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, monospace" VerticalAlignment="Center" />
+                        <TextBlock Name="TitleText" Text="Collection View: SampleData" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Right: Row count, export, close -->
@@ -46,7 +46,7 @@
             <Border Grid.Row="1" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8,4">
                 <Grid ColumnDefinitions="Auto,*">
                     <materialIcons:MaterialIcon Grid.Column="0" Kind="FilterOutline" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="2,0,6,0" />
-                    <TextBox Grid.Column="1" Name="FilterTextBox" Classes="sidebar-search-box" PlaceholderText="Where x => x. (Filter rows...)" FontSize="11" FontFamily="JetBrains Mono, monospace" BorderThickness="0" Background="Transparent" />
+                    <TextBox Grid.Column="1" Name="FilterTextBox" Classes="sidebar-search-box" PlaceholderText="Where x => x. (Filter rows...)" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" BorderThickness="0" Background="Transparent" />
                 </Grid>
             </Border>
 

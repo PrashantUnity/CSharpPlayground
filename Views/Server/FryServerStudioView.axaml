@@ -16,7 +16,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="ServerTabTopRadius">4,4,0,0</CornerRadius>
@@ -25,136 +25,7 @@
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-
-        <!-- Activity Bar Active Accent Border -->
-        <Style Selector="Button.activity-bar-btn.active /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
-        </Style>
-
-        <!-- Flat Server Traffic List in Bottom Deck & Sidebar -->
-        <Style Selector="ListBox.server-traffic-list">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-        </Style>
-        <Style Selector="ListBox.server-traffic-list ListBoxItem">
-            <Setter Property="Padding" Value="8,2" />
-            <Setter Property="MinHeight" Value="24" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="ListBox.server-traffic-list ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="3" />
-        </Style>
-        <Style Selector="ListBox.server-traffic-list ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
-        </Style>
-        <Style Selector="ListBox.server-traffic-list ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
-        </Style>
-
-        <!-- Top Insert Divider -->
-        <Style Selector="Border.top-insert-divider">
-            <Setter Property="Height" Value="24" />
-            <Setter Property="Margin" Value="56,0,0,8" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Border.top-insert-divider StackPanel.insert-pill-group">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.top-insert-divider:pointerover StackPanel.insert-pill-group">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-        <Style Selector="Border.top-insert-divider Rectangle.divider-line">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.top-insert-divider:pointerover Rectangle.divider-line">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-
-        <Style Selector="Button.insert-cell-pill">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.1" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.insert-cell-pill:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <!-- Authentic IDE Tree / Outline Item Row (VS Code & Notebook Standard) -->
-        <Style Selector="Button.server-outline-row">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.08" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.08" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.server-outline-row /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-        </Style>
-        <Style Selector="Button.server-outline-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
-        </Style>
-        <Style Selector="Button.server-outline-row.selected /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
-        </Style>
-
-        <!-- Cell Tool Button -->
-        <Style Selector="Button.cell-tool-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Button.cell-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        </Style>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,22">

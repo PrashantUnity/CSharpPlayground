@@ -17,14 +17,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
-
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Panel>
@@ -56,14 +55,8 @@
                             <!-- Top-Right Ambient Glow Effect -->
                             <Border HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Width="500" Height="380"
-                                    IsHitTestVisible="False">
-                                <Border.Background>
-                                    <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
-                                        <GradientStop Offset="0" Color="#1A2F81F7" />
-                                        <GradientStop Offset="1" Color="#002F81F7" />
-                                    </RadialGradientBrush>
-                                </Border.Background>
-                            </Border>
+                                    IsHitTestVisible="False"
+                                    Background="{DynamicResource DsAmbientGlowBrush}" />
 
                             <!-- Dashboard Content (Fills 100% of available canvas across all displays) -->
                             <StackPanel Margin="32,28,32,48" Spacing="28" HorizontalAlignment="Stretch">
@@ -78,7 +71,7 @@
                                                                     Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
                                                                     IsVisible="{Binding !IsStatusBannerError}" />
                                         <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18"
-                                                                    Foreground="#F85149" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                                    Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
                                                                     IsVisible="{Binding IsStatusBannerError}" />
                                         <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                         <Button Grid.Column="2" Command="{Binding DismissStatusBannerCommand}" Classes="nexus-btn-ghost" Width="26" Height="26" Padding="0" VerticalAlignment="Center">
@@ -109,7 +102,7 @@
                             BorderThickness="1.5"
                             CornerRadius="12"
                             Padding="16,10"
-                            BoxShadow="0 10 32 0 #77000000">
+                            BoxShadow="{DynamicResource DsModalShadow}">
                         <Border.Transitions>
                             <Transitions>
                                 <DoubleTransition Property="Opacity" Duration="0:0:0.18" />

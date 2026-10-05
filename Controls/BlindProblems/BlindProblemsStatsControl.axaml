@@ -16,7 +16,7 @@
         <Grid ColumnDefinitions="Auto,Auto,*,Auto">
             <!-- 1. Progress Summary Text -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="#22C55E" VerticalAlignment="Center" />
+                <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="{DynamicResource BadgeEasyFgBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding ProgressSummaryText}"
                            FontSize="12.5" FontWeight="Bold"
                            Foreground="{DynamicResource DsTextWhiteBrush}"
@@ -26,29 +26,29 @@
             <!-- 2. Breakdown Badges -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="24,0,0,0">
                 <!-- Easy -->
-                <Border Background="#1A22C55E" BorderBrush="#3322C55E" BorderThickness="1"
+                <Border Background="{DynamicResource BadgeEasyBgBrush}" BorderBrush="{DynamicResource BadgeEasyBorderBrush}" BorderThickness="1"
                         Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="#22C55E" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
-                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="#22C55E" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="Easy:" FontSize="10.5" Foreground="{DynamicResource BadgeEasyFgBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding EasySummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeEasyFgBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                     </StackPanel>
                 </Border>
 
                 <!-- Medium -->
-                <Border Background="#1AF59E0B" BorderBrush="#33F59E0B" BorderThickness="1"
+                <Border Background="{DynamicResource BadgeMediumBgBrush}" BorderBrush="{DynamicResource BadgeMediumBorderBrush}" BorderThickness="1"
                         Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="Med:" FontSize="10.5" Foreground="#F59E0B" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
-                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="#F59E0B" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="Med:" FontSize="10.5" Foreground="{DynamicResource BadgeMediumFgBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding MediumSummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeMediumFgBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                     </StackPanel>
                 </Border>
 
                 <!-- Hard -->
-                <Border Background="#1AE11D48" BorderBrush="#33E11D48" BorderThickness="1"
+                <Border Background="{DynamicResource BadgeHardBgBrush}" BorderBrush="{DynamicResource BadgeHardBorderBrush}" BorderThickness="1"
                         Height="20" MinHeight="20" CornerRadius="10" Padding="8,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="#FB7185" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
-                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="#FB7185" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="Hard:" FontSize="10.5" Foreground="{DynamicResource BadgeHardFgBrush}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,1,0,0" />
+                        <TextBlock Text="{Binding HardSummaryText}" FontSize="10.5" Foreground="{DynamicResource BadgeHardFgBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -59,7 +59,7 @@
                          Value="{Binding ProgressPercentage}"
                          Height="5"
                          CornerRadius="2.5"
-                         Foreground="#22C55E"
+                         Foreground="{DynamicResource BadgeEasyFgBrush}"
                          Background="{DynamicResource DsSurfaceHighBrush}"
                          VerticalAlignment="Center"
                          Margin="24,0" />
@@ -74,7 +74,7 @@
                     <Button Classes="segment" Classes.selected="{Binding IsStatusSolved}"
                             Command="{Binding SetStatusFilterCommand}" CommandParameter="Solved">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="#22C55E" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="{DynamicResource BadgeEasyFgBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Solved" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -86,7 +86,7 @@
                             Command="{Binding SetStatusFilterCommand}" CommandParameter="Bookmarked"
                             ToolTip.Tip="Problems you saved for later">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <materialIcons:MaterialIcon Kind="Bookmark" Width="13" Height="13" Foreground="#F59E0B" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Bookmark" Width="13" Height="13" Foreground="{DynamicResource BadgeMediumFgBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="Saved" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>

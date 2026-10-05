@@ -17,14 +17,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <StackPanel Spacing="4">
@@ -260,15 +259,15 @@
                     <!-- Missing Variable Smart Hint (CS0103) -->
                     <Border IsVisible="{Binding HasMissingVariableError}"
                             Background="{DynamicResource DsSurfaceHighBrush}"
-                            BorderBrush="#D29922"
+                            BorderBrush="{DynamicResource DsWarningBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             Margin="0,0,0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbAlertOutline" Width="16" Height="16" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E3B341" />
+                                <TextBlock Text="{Binding MissingVariableHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsWarningBrush}" />
                                 <TextBlock Text="This variable may be defined in an earlier cell. Run previous cells to initialize it in this session."
                                            FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </StackPanel>
@@ -289,15 +288,15 @@
                     <!-- Missing package hint (Python's ModuleNotFoundError): install it, then the cell runs again -->
                     <Border IsVisible="{Binding HasMissingDependency}"
                             Background="{DynamicResource DsSurfaceHighBrush}"
-                            BorderBrush="#D29922"
+                            BorderBrush="{DynamicResource DsWarningBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,8"
                             Margin="0,0,0,2">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariantClosed" Width="16" Height="16" Foreground="#E3B341" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <materialIcons:MaterialIcon Grid.Column="0" Kind="PackageVariantClosed" Width="16" Height="16" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding MissingDependencyHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="#E3B341" />
+                                <TextBlock Text="{Binding MissingDependencyHintTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsWarningBrush}" />
                                 <TextBlock Text="{Binding MissingDependencyHintDetail}"
                                            FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </StackPanel>

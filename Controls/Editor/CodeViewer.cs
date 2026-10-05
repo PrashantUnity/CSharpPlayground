@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -36,6 +37,12 @@ public class CodeViewer : TextEditor
         set => SetValue(LanguageProperty, value);
     }
 
+    private static readonly FontFamily s_defaultCodeFont = new("JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace");
+    private static readonly IBrush s_darkForeground = new SolidColorBrush(Color.Parse("#D4D4D4"));
+    private static readonly IBrush s_darkLink = new SolidColorBrush(Color.Parse("#4FC1FF"));
+    private static readonly IBrush s_lightForeground = new SolidColorBrush(Color.Parse("#1E293B"));
+    private static readonly IBrush s_lightLink = new SolidColorBrush(Color.Parse("#2563EB"));
+
     public CodeViewer()
     {
         IsReadOnly = true;
@@ -44,7 +51,7 @@ public class CodeViewer : TextEditor
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         Background = Brushes.Transparent;
-        FontFamily = new FontFamily("Consolas, Menlo, monospace");
+        FontFamily = Application.Current != null && Application.Current.TryFindResource("DsCodeFontFamily", out var fontRes) && fontRes is FontFamily ff ? ff : s_defaultCodeFont;
         FontSize = 12;
 
         Options.HighlightCurrentLine = false;
@@ -53,6 +60,15 @@ public class CodeViewer : TextEditor
 
         ApplyThemeVariant();
         ActualThemeVariantChanged += (_, _) => ApplyThemeVariant();
+    }
+
+    private IBrush ResolveBrush(string resourceKey, IBrush fallback)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is IBrush brush)
+            return brush;
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is IBrush appBrush)
+            return appBrush;
+        return fallback;
     }
 
     private void ApplyThemeVariant()
@@ -64,14 +80,14 @@ public class CodeViewer : TextEditor
         if (isDark)
         {
             SyntaxHighlighting = language?.GetHighlighting(isDark: true) ?? CSharpSyntaxHighlightingTheme.GetDarkTheme();
-            Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
-            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
+            Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
+            TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_darkLink);
         }
         else
         {
             SyntaxHighlighting = language?.GetHighlighting(isDark: false) ?? CSharpSyntaxHighlightingTheme.GetLightTheme();
-            Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
-            TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
+            Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
+            TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_lightLink);
         }
     }
 

@@ -74,7 +74,7 @@
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem1.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem1.DisplayLocation}"
-                                                                       FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                       FontSize="10.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                        TextTrimming="CharacterEllipsis" />
                                                         </StackPanel>
 
@@ -118,7 +118,7 @@
                                                                 <Separator />
                                                                 <MenuItem Header="Delete Workspace" Command="{Binding DeleteItemCommand}" CommandParameter="{Binding PinnedItem1}">
                                                                     <MenuItem.Icon>
-                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#F85149" />
+                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource DsErrorBrush}" />
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                             </MenuFlyout>
@@ -161,7 +161,7 @@
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
                                                                                                 <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
-                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                             </StackPanel>
                                                                                             <materialIcons:MaterialIcon Grid.Column="2" Kind="PinOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -250,7 +250,7 @@
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem2.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem2.DisplayLocation}"
-                                                                       FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                       FontSize="10.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                        TextTrimming="CharacterEllipsis" />
                                                         </StackPanel>
 
@@ -294,7 +294,7 @@
                                                                 <Separator />
                                                                 <MenuItem Header="Delete Workspace" Command="{Binding DeleteItemCommand}" CommandParameter="{Binding PinnedItem2}">
                                                                     <MenuItem.Icon>
-                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#F85149" />
+                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource DsErrorBrush}" />
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                             </MenuFlyout>
@@ -337,7 +337,7 @@
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
                                                                                                 <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
-                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                             </StackPanel>
                                                                                             <materialIcons:MaterialIcon Grid.Column="2" Kind="PinOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -426,7 +426,7 @@
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding PinnedItem3.Title}" />
                                                             <TextBlock Text="{Binding PinnedItem3.DisplayLocation}"
-                                                                       FontSize="10.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                       FontSize="10.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                        TextTrimming="CharacterEllipsis" />
                                                         </StackPanel>
 
@@ -470,7 +470,7 @@
                                                                 <Separator />
                                                                 <MenuItem Header="Delete Workspace" Command="{Binding DeleteItemCommand}" CommandParameter="{Binding PinnedItem3}">
                                                                     <MenuItem.Icon>
-                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#F85149" />
+                                                                        <materialIcons:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource DsErrorBrush}" />
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                             </MenuFlyout>
@@ -517,7 +517,7 @@
                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
                                                                                                 <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
-                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}"
+                                                                                                <TextBlock Text="{Binding DisplayLocation}" FontSize="10" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}"
                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                             </StackPanel>
                                                                                             <materialIcons:MaterialIcon Grid.Column="2" Kind="PinOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />

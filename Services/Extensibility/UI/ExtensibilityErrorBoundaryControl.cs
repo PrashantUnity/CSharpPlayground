@@ -79,6 +79,21 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
         }
     }
 
+    private static readonly IBrush s_defaultErrorBg = new SolidColorBrush(Color.Parse("#201214"));
+    private static readonly IBrush s_defaultErrorBorder = new SolidColorBrush(Color.Parse("#DC2626"));
+    private static readonly IBrush s_defaultErrorFg = new SolidColorBrush(Color.Parse("#EF4444"));
+    private static readonly IBrush s_defaultRetryBg = new SolidColorBrush(Color.Parse("#371C1E"));
+    private static readonly IBrush s_defaultMsgFg = new SolidColorBrush(Color.Parse("#FCA5A5"));
+
+    private IBrush ResolveBrush(string resourceKey, IBrush fallback)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is IBrush brush)
+            return brush;
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is IBrush appBrush)
+            return appBrush;
+        return fallback;
+    }
+
     public void CatchError(Exception ex)
     {
         HasError = true;
@@ -86,8 +101,8 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
 
         var errorContainer = new Border
         {
-            Background = new SolidColorBrush(Color.Parse("#201214")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#DC2626")),
+            Background = ResolveBrush("BadgeHardBgBrush", s_defaultErrorBg),
+            BorderBrush = ResolveBrush("BadgeHardBorderBrush", s_defaultErrorBorder),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12),
@@ -101,7 +116,7 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
         {
             Text = "⚠",
             FontSize = 14,
-            Foreground = new SolidColorBrush(Color.Parse("#EF4444")),
+            Foreground = ResolveBrush("DsErrorBrush", s_defaultErrorFg),
             Margin = new Thickness(0, 0, 8, 0),
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -112,7 +127,7 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
             Text = $"{ComponentTitle ?? "Custom Component"} Error",
             FontWeight = FontWeight.SemiBold,
             FontSize = 12,
-            Foreground = new SolidColorBrush(Color.Parse("#EF4444")),
+            Foreground = ResolveBrush("DsErrorBrush", s_defaultErrorFg),
             VerticalAlignment = VerticalAlignment.Center
         };
 
@@ -121,8 +136,8 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
             Content = "Retry",
             Padding = new Thickness(8, 2, 8, 2),
             FontSize = 11,
-            Background = new SolidColorBrush(Color.Parse("#371C1E")),
-            Foreground = Brushes.White,
+            Background = ResolveBrush("DsSurfaceHoverBrush", s_defaultRetryBg),
+            Foreground = ResolveBrush("DsTextWhiteBrush", Brushes.White),
             CornerRadius = new CornerRadius(4),
             HorizontalAlignment = HorizontalAlignment.Right
         };
@@ -137,7 +152,7 @@ public class ExtensibilityErrorBoundaryControl : ContentControl
         {
             Text = ex.Message,
             FontSize = 11,
-            Foreground = new SolidColorBrush(Color.Parse("#FCA5A5")),
+            Foreground = ResolveBrush("DsTextBrush", s_defaultMsgFg),
             TextWrapping = TextWrapping.Wrap
         };
 

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Rendering;
@@ -10,6 +11,18 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 public class BreakpointMargin : AbstractMargin, ICustomHitTest
 {
     public sealed record BreakpointVisualInfo(int LineNumber, bool IsEnabled = true, bool IsVerified = true);
+
+    private static readonly IBrush s_defaultBpBrush = new SolidColorBrush(Color.Parse("#EF4444"));
+    private static readonly IPen s_defaultBpPen = new Pen(new SolidColorBrush(Color.Parse("#B91C1C")), 1.2);
+    private static readonly IPen s_defaultUnverifiedPen = new Pen(new SolidColorBrush(Color.Parse("#EF4444")), 1.6);
+    private static readonly IBrush s_defaultUnverifiedFill = new SolidColorBrush(Color.FromArgb(35, 239, 68, 68));
+    private static readonly IPen s_defaultDisabledPen = new Pen(new SolidColorBrush(Color.Parse("#6E7681")), 1.2);
+    private static readonly IBrush s_defaultDisabledFill = new SolidColorBrush(Color.FromArgb(50, 110, 118, 129));
+    private static readonly IBrush s_defaultPausedBrush = new SolidColorBrush(Color.Parse("#FBBF24"));
+    private static readonly IPen s_defaultPausedPen = new Pen(new SolidColorBrush(Color.Parse("#D97706")), 1.2);
+    private static readonly IBrush s_defaultHoverBrush = new SolidColorBrush(Color.FromArgb(110, 239, 68, 68));
+    private static readonly IPen s_defaultHoverPen = new Pen(new SolidColorBrush(Color.FromArgb(190, 220, 38, 38)), 1.2);
+    private static readonly IPen s_defaultHighlightRingPen = new Pen(new SolidColorBrush(Color.FromArgb(120, 239, 68, 68)), 1.5);
 
     private int _hoveredLine = -1;
     private int _currentPausedLine = -1;
@@ -103,6 +116,24 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
         return new Size(24, 0);
     }
 
+    private static IBrush ResolveBrush(string resourceKey, IBrush fallback)
+    {
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var res) && res is IBrush brush)
+        {
+            return brush;
+        }
+        return fallback;
+    }
+
+    private static IPen ResolvePen(string resourceKey, IPen fallback, double thickness)
+    {
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var res) && res is IBrush brush)
+        {
+            return new Pen(brush, thickness);
+        }
+        return fallback;
+    }
+
     public override void Render(DrawingContext drawingContext)
     {
         drawingContext.DrawRectangle(Brushes.Transparent, null, new Rect(Bounds.Size));
@@ -110,23 +141,17 @@ public class BreakpointMargin : AbstractMargin, ICustomHitTest
         var textView = TextView;
         if (textView == null || !textView.VisualLinesValid) return;
 
-        var bpBrush = new SolidColorBrush(Color.Parse("#EF4444"));
-        var bpPen = new Pen(new SolidColorBrush(Color.Parse("#B91C1C")), 1.2);
-
-        // VS Code style unverified hollow breakpoint (red border, translucent center)
-        var unverifiedPen = new Pen(new SolidColorBrush(Color.Parse("#EF4444")), 1.6);
-        var unverifiedFill = new SolidColorBrush(Color.FromArgb(35, 239, 68, 68));
-
-        // Disabled breakpoint (muted gray)
-        var disabledPen = new Pen(new SolidColorBrush(Color.Parse("#6E7681")), 1.2);
-        var disabledFill = new SolidColorBrush(Color.FromArgb(50, 110, 118, 129));
-
-        var pausedBrush = new SolidColorBrush(Color.Parse("#FBBF24"));
-        var pausedPen = new Pen(new SolidColorBrush(Color.Parse("#D97706")), 1.2);
-
-        var hoverBrush = new SolidColorBrush(Color.FromArgb(110, 239, 68, 68));
-        var hoverPen = new Pen(new SolidColorBrush(Color.FromArgb(190, 220, 38, 38)), 1.2);
-        var highlightRingPen = new Pen(new SolidColorBrush(Color.FromArgb(120, 239, 68, 68)), 1.5);
+        var bpBrush = ResolveBrush("EditorBreakpointBrush", s_defaultBpBrush);
+        var bpPen = ResolvePen("EditorBreakpointBorderBrush", s_defaultBpPen, 1.2);
+        var unverifiedPen = ResolvePen("EditorBreakpointBrush", s_defaultUnverifiedPen, 1.6);
+        var unverifiedFill = s_defaultUnverifiedFill;
+        var disabledPen = ResolvePen("EditorLineNumbersBrush", s_defaultDisabledPen, 1.2);
+        var disabledFill = s_defaultDisabledFill;
+        var pausedBrush = ResolveBrush("EditorBreakpointPausedBrush", s_defaultPausedBrush);
+        var pausedPen = ResolvePen("EditorBreakpointPausedBorderBrush", s_defaultPausedPen, 1.2);
+        var hoverBrush = s_defaultHoverBrush;
+        var hoverPen = s_defaultHoverPen;
+        var highlightRingPen = s_defaultHighlightRingPen;
 
         var centerX = Bounds.Width > 0 ? Bounds.Width / 2.0 : 12.0;
 

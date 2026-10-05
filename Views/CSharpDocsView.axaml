@@ -17,14 +17,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="56,*">
@@ -140,14 +139,8 @@
                 <!-- Top-Right Ambient Glow Effect (Matches Manager Dashboard) -->
                 <Border HorizontalAlignment="Right" VerticalAlignment="Top"
                         Width="450" Height="340"
-                        IsHitTestVisible="False">
-                    <Border.Background>
-                        <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
-                            <GradientStop Offset="0" Color="#1A2F81F7" />
-                            <GradientStop Offset="1" Color="#002F81F7" />
-                        </RadialGradientBrush>
-                    </Border.Background>
-                </Border>
+                        IsHitTestVisible="False"
+                        Background="{DynamicResource DsAmbientGlowBrush}" />
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Stretch" Margin="36,24,36,40">
@@ -177,8 +170,9 @@
                             </StackPanel>
 
                             <!-- Summary Callout Box -->
-                            <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsPrimaryBrush}"
-                                    BorderThickness="3,1,1,1" CornerRadius="10" Padding="18,14">
+                            <Border Background="{DynamicResource DsSurfaceBrush}"
+                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                    BorderThickness="1" CornerRadius="10" Padding="18,14">
                                 <TextBlock Text="{Binding SelectedArticle.Summary}" FontSize="13.5" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" LineHeight="22" />
                             </Border>
 
@@ -192,11 +186,11 @@
 
                                             <!-- Callout box -->
                                             <Border IsVisible="{Binding HasCallout}"
-                                                    Background="{DynamicResource DsPrimarySubtleBrush}"
-                                                    BorderBrush="{DynamicResource DsPrimaryBrush}"
-                                                    BorderThickness="3,1,1,1"
-                                                    CornerRadius="8" Padding="14,10" Margin="0,4">
-                                                <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap" LineHeight="19" />
+                                                    Background="{DynamicResource DsSurfaceBrush}"
+                                                    BorderBrush="{DynamicResource DsBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10" Padding="16,12" Margin="0,4">
+                                                <TextBlock Text="{Binding CalloutText}" FontSize="12.5" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" LineHeight="20" />
                                             </Border>
 
                                             <!-- Bullet points -->
@@ -274,7 +268,7 @@
                                                                     Height="30" Padding="12,0"
                                                                     ToolTip.Tip="Launch this code sample directly in FrySharp">
                                                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="#FFFFFF" />
+                                                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsOnAccentBrush}" />
                                                                     <TextBlock Text="Try in Studio" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Button>

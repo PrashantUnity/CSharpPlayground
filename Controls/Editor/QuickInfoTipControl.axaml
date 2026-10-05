@@ -8,14 +8,14 @@
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1"
             CornerRadius="8"
-            BoxShadow="0 8 28 0 #70000000"
+            BoxShadow="{DynamicResource DsModalShadow}"
             MaxWidth="640"
             MaxHeight="440"
             ClipToBounds="True">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="12,9,12,10">
                 <SelectableTextBlock Name="SignatureText"
-                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                                     FontFamily="{DynamicResource DsCodeFontFamily}"
                                      FontSize="12.5"
                                      LineHeight="18"
                                      TextWrapping="Wrap" />
@@ -23,7 +23,7 @@
                 <!-- "in class System.Console", then one "T is int" line per type argument -->
                 <SelectableTextBlock Name="DetailsText"
                                      Margin="0,2,0,0"
-                                     FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                                     FontFamily="{DynamicResource DsCodeFontFamily}"
                                      FontSize="12"
                                      LineHeight="17"
                                      TextWrapping="Wrap"

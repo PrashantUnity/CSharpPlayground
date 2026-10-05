@@ -1,0 +1,368 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ============================================================ -->
+    <!-- ZONE 3: EDITOR AREA STYLES                                   -->
+    <!-- Multi-Tab Strip, Toolbars, Sashes, Flyouts, Tips & Overlays  -->
+    <!-- ============================================================ -->
+
+    <!-- VS Code Multi-Tab Strip Styles -->
+    <Style Selector="Border.vscode-tab">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Padding" Value="12,0,8,0" />
+        <Setter Property="Height" Value="35" />
+    </Style>
+    <Style Selector="Border.vscode-tab:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab.active">
+        <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
+        <Setter Property="BorderThickness" Value="0,2,1,0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab:pointerover TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Border.vscode-tab.active TextBlock.tab-title">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.vscode-tab-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.vscode-tab-close">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.vscode-tab-close:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <!-- Toolbar Button Styles -->
+    <Style Selector="Button.cs-toolbar-filled, Button.cs-toolbar-tonal, Button.cs-toolbar-outlined">
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.cs-toolbar-filled">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-filled:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.cs-toolbar-tonal">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-tonal:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+    <Style Selector="Button.cs-toolbar-outlined">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-outlined:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+
+    <!-- Toolbar Icon Buttons & ToggleButtons -->
+    <Style Selector="Button.cs-toolbar-icon, ToggleButton.cs-toolbar-icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-icon /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.cs-toolbar-icon /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-icon:pointerover, ToggleButton.cs-toolbar-icon:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.cs-toolbar-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-icon:pointerover materialIcons|MaterialIcon, ToggleButton.cs-toolbar-icon:pointerover materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-icon:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.cs-toolbar-icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.cs-toolbar-icon:checked">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.cs-toolbar-icon:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.cs-toolbar-icon:checked materialIcons|MaterialIcon, ToggleButton.cs-toolbar-icon:checked:pointerover materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.cs-toolbar-icon:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+
+    <!-- Studio Sash Splitters -->
+    <Style Selector="GridSplitter.studio-sash">
+        <Setter Property="Background" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="GridSplitter.studio-sash:pointerover, GridSplitter.studio-sash:pressed">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <!-- Modern IDE Flyout & Menu Styles -->
+    <Style Selector="FlyoutPresenter.ide-menu-flyout">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+
+    <Style Selector="Button.ide-menu-item-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.ide-menu-item-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.ide-menu-item-btn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="Button.ide-menu-item-btn.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+    <!-- Cell Language Chip Button -->
+    <Style Selector="Button.cell-lang-chip">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.cell-lang-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <!-- Documentation Multi-Language Tabs -->
+    <Style Selector="Button.doc-lang-tab">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.doc-lang-tab TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab:pointerover TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.doc-lang-tab.selected TextBlock">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <!-- Diff Viewer Styles -->
+    <Style Selector="TextBlock.diff-code">
+        <Setter Property="FontFamily" Value="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.diff-line-num">
+        <Setter Property="FontFamily" Value="JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="TextAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+    <Style Selector="Border.diff-addition">
+        <Setter Property="Background" Value="#1C3829" />
+    </Style>
+    <Style Selector="Border.diff-deletion">
+        <Setter Property="Background" Value="#3D1D24" />
+    </Style>
+    <Style Selector="Border.diff-header">
+        <Setter Property="Background" Value="#162738" />
+    </Style>
+    <Style Selector="Button.diff-action-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="Button.diff-action-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <!-- Debug Hover Data Tip Styles -->
+    <Style Selector="Border.hover-node-row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="4,2" />
+    </Style>
+    <Style Selector="Border.hover-node-row:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerBrush}" />
+    </Style>
+    <Style Selector="Button.hover-action-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.hover-action-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryContainerBrush}" />
+    </Style>
+
+    <!-- Quick Open Overlay ListBox Items -->
+    <Style Selector="ListBox.quick-open-list ListBoxItem, ListBoxItem.quick-open-item">
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="Margin" Value="2,1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ListBox.quick-open-list ListBoxItem:pointerover /template/ ContentPresenter, ListBoxItem.quick-open-item:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+    </Style>
+    <Style Selector="ListBox.quick-open-list ListBoxItem:selected /template/ ContentPresenter, ListBoxItem.quick-open-item:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
+    </Style>
+
+    <!-- Object Inspector Styles -->
+    <Style Selector="Border.inspector-row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Padding" Value="4,2" />
+    </Style>
+    <Style Selector="Border.inspector-row:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+
+    <!-- Rich HTML Action Buttons -->
+    <Style Selector="Button.html-action-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+    </Style>
+    <Style Selector="Button.html-action-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+
+</Styles>

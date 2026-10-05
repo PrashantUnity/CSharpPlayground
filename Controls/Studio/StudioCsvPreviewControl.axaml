@@ -20,8 +20,8 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Table Mode Badge & Summary Metrics -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Border Background="#2EA043" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
-                        <TextBlock Text="DATA TABLE" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <Border Background="{DynamicResource DsGreenBrush}" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="DATA TABLE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}" />
                     </Border>
                     <TextBlock Text="{Binding Script.Title}"
                                FontSize="12"

@@ -20,20 +20,20 @@
                 <!-- Header -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="#009688" VerticalAlignment="Center" />
+                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="{DynamicResource NavServersFgBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="ACTIVE API SERVERS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Status Badge Pill -->
                     <Border Grid.Column="2" Classes="nexus-badge-pill"
-                            Background="#1A009688"
-                            BorderBrush="#009688"
+                            Background="{DynamicResource NavServersBgBrush}"
+                            BorderBrush="{DynamicResource NavServersFgBrush}"
                             BorderThickness="1"
                             IsVisible="{Binding HasRunningServers}">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding RunningServerCount, StringFormat='{}{0} RUNNING'}"
-                                       FontSize="9" FontWeight="Bold" Foreground="#009688" VerticalAlignment="Center" />
+                                       FontSize="9" FontWeight="Bold" Foreground="{DynamicResource NavServersFgBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
@@ -62,14 +62,14 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <Border Grid.Column="0" Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" Margin="0,0,6,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding DocumentTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                            <Border Grid.Column="2" Background="#1A009688" BorderBrush="#009688" BorderThickness="1" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}" FontSize="10" FontWeight="Bold" FontFamily="Consolas, monospace" Foreground="#009688" />
+                                            <Border Grid.Column="2" Background="{DynamicResource NavServersBgBrush}" BorderBrush="{DynamicResource NavServersFgBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}" FontSize="10" FontWeight="Bold" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource NavServersFgBrush}" />
                                             </Border>
                                         </Grid>
 
                                         <!-- URL & Quick Copy -->
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding BaseUrl}" FontSize="10.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="0" Text="{Binding BaseUrl}" FontSize="10.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                             <Button Grid.Column="1" Command="{Binding $parent[ItemsControl].((hub:CSharpManagerViewModel)DataContext).CopyServerUrlCommand}" CommandParameter="{Binding}"
                                                     Background="Transparent" BorderThickness="0" Padding="3" ToolTip.Tip="Copy Base URL">
                                                 <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
@@ -138,7 +138,7 @@
                     <Button Command="{Binding CreateNewServerCommand}"
                             Classes="nexus-btn-surface" Height="26" Padding="8,0" Margin="0,4,0,0" HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Plus" Width="12" Height="12" Foreground="#009688" />
+                            <materialIcons:MaterialIcon Kind="Plus" Width="12" Height="12" Foreground="{DynamicResource NavServersFgBrush}" />
                             <TextBlock Text="New API Server" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>

@@ -23,34 +23,14 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-
-        <Style Selector="Button.explorer-tool-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Button.explorer-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        </Style>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto" Background="{DynamicResource DsBgBrush}">
@@ -101,7 +81,7 @@
                                         <MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="OnNewFileFlyoutOpening">
                                             <MenuItem Header="New C# Script (.csx)" Command="{Binding NewScriptCommand}">
                                                 <MenuItem.Icon>
-                                                    <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="14" Height="14" Foreground="#9B72CF" />
+                                                    <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="14" Height="14" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <Separator />
@@ -174,12 +154,12 @@
                                 <!-- Launch Action Buttons -->
                                 <StackPanel Spacing="6">
                                     <Button Command="{Binding DebugCodeCommand}" Classes="cs-toolbar-filled"
-                                            Background="{DynamicResource DsPrimaryBrush}" Foreground="#FFFFFF"
+                                            Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
                                             IsEnabled="{Binding !IsExecuting}" IsVisible="{Binding !IsDebugging}"
                                             HorizontalAlignment="Stretch" Height="32" CornerRadius="6"
                                             ToolTip.Tip="Start Interactive Debugging (F5)">
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <materialIcons:MaterialIcon Kind="BugPlay" Width="15" Height="15" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                            <materialIcons:MaterialIcon Kind="BugPlay" Width="15" Height="15" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             <TextBlock Text="Start Debugging (F5)" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
@@ -204,8 +184,8 @@
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="DEBUGGING ACTIVE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
                                         <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                            <Button Command="{Binding ContinueDebugCommand}" Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}" Foreground="#FFFFFF" IsVisible="{Binding IsPaused}" ToolTip.Tip="Continue (F5)">
-                                                <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" Foreground="#FFFFFF" />
+                                            <Button Command="{Binding ContinueDebugCommand}" Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}" IsVisible="{Binding IsPaused}" ToolTip.Tip="Continue (F5)">
+                                                <materialIcons:MaterialIcon Kind="Play" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                             </Button>
                                             <Button Command="{Binding StepOverCommand}" Classes="cs-toolbar-tonal" IsVisible="{Binding IsPaused}" ToolTip.Tip="Step Over (F10)">
                                                 <materialIcons:MaterialIcon Kind="DebugStepOver" Width="14" Height="14" />
@@ -216,8 +196,8 @@
                                             <Button Command="{Binding RestartDebugCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Restart">
                                                 <materialIcons:MaterialIcon Kind="Restart" Width="14" Height="14" />
                                             </Button>
-                                            <Button Command="{Binding StopDebugCommand}" Classes="cs-toolbar-outlined" BorderBrush="#EF4444" Foreground="#EF4444" ToolTip.Tip="Stop (Shift+F5)">
-                                                <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="#EF4444" />
+                                            <Button Command="{Binding StopDebugCommand}" Classes="cs-toolbar-outlined" BorderBrush="{DynamicResource DsErrorBrush}" Foreground="{DynamicResource DsErrorBrush}" ToolTip.Tip="Stop (Shift+F5)">
+                                                <materialIcons:MaterialIcon Kind="Stop" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" />
                                             </Button>
                                         </StackPanel>
                                     </StackPanel>
@@ -258,7 +238,7 @@
                                             <Border Grid.Column="1" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                     Height="18" MinHeight="18" MinWidth="18" CornerRadius="9" Padding="4,0"
                                                     VerticalAlignment="Center" IsVisible="{Binding Breakpoints.Count}">
-                                                <TextBlock Text="{Binding Breakpoints.Count}" FontSize="9.5" FontWeight="Bold" Foreground="#EF4444"
+                                                <TextBlock Text="{Binding Breakpoints.Count}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsErrorBrush}"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                             </Border>
                                         </Grid>
@@ -436,29 +416,29 @@
                         <!-- Right-Side Editor Action Toolbar -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Stepping Controls (Visible when active debugging) -->
-                            <StackPanel Orientation="Horizontal" Spacing="3" IsVisible="{Binding IsDebugging}">
-                                <Button Command="{Binding ContinueDebugCommand}" Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}" Foreground="#FFFFFF" IsVisible="{Binding IsPaused}" ToolTip.Tip="Continue (F5)">
-                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="#FFFFFF" />
+                            <StackPanel Orientation="Horizontal" Spacing="3" IsVisible="{Binding IsDebugging}" VerticalAlignment="Center">
+                                <Button Command="{Binding ContinueDebugCommand}" Classes="cs-toolbar-filled" Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}" IsVisible="{Binding IsPaused}" ToolTip.Tip="Continue (F5)" Width="28" Height="26" Padding="0">
+                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </Button>
-                                <Button Command="{Binding StepOverCommand}" Classes="cs-toolbar-tonal" IsVisible="{Binding IsPaused}" ToolTip.Tip="Step Over (F10)">
-                                    <materialIcons:MaterialIcon Kind="DebugStepOver" Width="13" Height="13" />
+                                <Button Command="{Binding StepOverCommand}" Classes="cs-toolbar-tonal" IsVisible="{Binding IsPaused}" ToolTip.Tip="Step Over (F10)" Width="28" Height="26" Padding="0">
+                                    <materialIcons:MaterialIcon Kind="DebugStepOver" Width="13" Height="13" VerticalAlignment="Center" />
                                 </Button>
-                                <Button Command="{Binding StepIntoCommand}" Classes="cs-toolbar-tonal" IsVisible="{Binding IsPaused}" ToolTip.Tip="Step Into (F11)">
-                                    <materialIcons:MaterialIcon Kind="DebugStepInto" Width="13" Height="13" />
+                                <Button Command="{Binding StepIntoCommand}" Classes="cs-toolbar-tonal" IsVisible="{Binding IsPaused}" ToolTip.Tip="Step Into (F11)" Width="28" Height="26" Padding="0">
+                                    <materialIcons:MaterialIcon Kind="DebugStepInto" Width="13" Height="13" VerticalAlignment="Center" />
                                 </Button>
                                 <Button Command="{Binding RestartDebugCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Restart Debugging">
-                                    <materialIcons:MaterialIcon Kind="Restart" Width="13" Height="13" />
+                                    <materialIcons:MaterialIcon Kind="Restart" Width="13" Height="13" VerticalAlignment="Center" />
                                 </Button>
-                                <Button Command="{Binding StopDebugCommand}" Classes="cs-toolbar-outlined" BorderBrush="#EF4444" Foreground="#EF4444" ToolTip.Tip="Stop (Shift+F5)">
-                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="#EF4444" />
+                                <Button Command="{Binding StopDebugCommand}" Classes="cs-toolbar-outlined" BorderBrush="{DynamicResource DsErrorBrush}" Foreground="{DynamicResource DsErrorBrush}" ToolTip.Tip="Stop (Shift+F5)" Width="28" Height="26" Padding="0">
+                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
                                 </Button>
                             </StackPanel>
 
                             <!-- Normal Stop (Visible during background execution) -->
-                            <Button Command="{Binding StopCommand}" Classes="cs-toolbar-outlined" BorderBrush="#EF4444" Foreground="#EF4444" IsVisible="{Binding IsNormalExecuting}" ToolTip.Tip="Stop Execution (Shift+F5)">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="#EF4444" />
-                                    <TextBlock Text="Stop" FontSize="11" FontWeight="Bold" />
+                            <Button Command="{Binding StopCommand}" Classes="cs-toolbar-outlined" BorderBrush="{DynamicResource DsErrorBrush}" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding IsNormalExecuting}" ToolTip.Tip="Stop Execution (Shift+F5)" Height="26" Padding="8,0" CornerRadius="4">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Stop" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -466,15 +446,15 @@
                             <Button Command="{Binding RunCodeCommand}"
                                     Classes="cs-toolbar-filled"
                                     Background="{DynamicResource DsGreenBrush}"
-                                    Foreground="#FFFFFF"
+                                    Foreground="{DynamicResource DsTextWhiteBrush}"
                                     Height="26"
                                     Padding="10,0"
                                     CornerRadius="4"
                                     IsVisible="{Binding !IsExecuting}"
                                     ToolTip.Tip="Run Script (Ctrl+F5)">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="#FFFFFF" />
-                                    <TextBlock Text="Run" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Run" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -489,9 +469,9 @@
                                     CornerRadius="4"
                                     IsVisible="{Binding ShowDebugButton}"
                                     ToolTip.Tip="Start Debugging (F5)">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                    <TextBlock Text="Debug" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Debug" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -506,13 +486,13 @@
                                     CornerRadius="4"
                                     IsVisible="{Binding HasPreviewMode}"
                                     ToolTip.Tip="{Binding DocumentPreviewModeTooltip}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="{Binding DocumentPreviewToggleIconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                    <TextBlock Text="{Binding DocumentPreviewToggleText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="{Binding DocumentPreviewToggleIconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DocumentPreviewToggleText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
-                            <Rectangle Width="1" Height="16" Fill="{DynamicResource DsBorderBrush}" Margin="2,0" />
+                            <Rectangle Width="1" Height="16" Fill="{DynamicResource DsBorderBrush}" Margin="2,0" VerticalAlignment="Center" />
 
                             <!-- Apply as Studio Customization -->
                             <Button Command="{Binding ApplyActiveTabAsCustomizationCommand}" Classes="cs-toolbar-icon" ToolTip.Tip="Apply Script as Studio Customization (Ctrl+Alt+R)">

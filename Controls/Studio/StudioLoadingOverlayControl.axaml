@@ -10,7 +10,7 @@
              IsVisible="{Binding #LoadingRoot.IsLoading}">
 
     <!-- Full-screen backdrop / scrim capturing clicks and dimming the background -->
-    <Grid Background="#85000000"
+    <Grid Background="{DynamicResource DsScrimBrush}"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           ZIndex="1000">
@@ -25,17 +25,17 @@
                 BorderBrush="{DynamicResource DsBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16"
-                BoxShadow="0 24 64 0 #B0000000"
+                BoxShadow="{DynamicResource DsModalShadow}"
                 Padding="28,24">
             <StackPanel Spacing="18" HorizontalAlignment="Center">
 
                 <!-- Official Brand Dragon Logo in Circular Badge with Glow -->
                 <Border Width="56" Height="56"
                         CornerRadius="28"
-                        Background="#FFFFFF"
+                        Background="{DynamicResource DsOnAccentBrush}"
                         BorderBrush="{DynamicResource DsPrimaryBrush}"
                         BorderThickness="2"
-                        BoxShadow="0 0 24 0 #4D007ACC"
+                        BoxShadow="{DynamicResource DsGlowPrimaryShadow}"
                         HorizontalAlignment="Center"
                         ClipToBounds="True"
                         IsVisible="{Binding #LoadingRoot.ShowLogo}">

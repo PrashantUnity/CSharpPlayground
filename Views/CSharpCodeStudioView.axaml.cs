@@ -427,6 +427,37 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ||
         (ActualThemeVariant != Avalonia.Styling.ThemeVariant.Light && (Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark));
 
+    private static readonly IBrush s_darkEditorBg = new SolidColorBrush(Color.Parse("#14171F"));
+    private static readonly IBrush s_darkForeground = new SolidColorBrush(Color.Parse("#D4D4D4"));
+    private static readonly IBrush s_darkLineNumbers = new SolidColorBrush(Color.Parse("#6E7681"));
+    private static readonly IBrush s_darkSelection = new SolidColorBrush(Color.Parse("#264F78"));
+    private static readonly IBrush s_darkCaret = new SolidColorBrush(Color.Parse("#58A6FF"));
+    private static readonly IBrush s_darkLink = new SolidColorBrush(Color.Parse("#4FC1FF"));
+    private static readonly IBrush s_darkFoldMarker = new SolidColorBrush(Color.Parse("#8B949E"));
+    private static readonly IBrush s_darkFoldMarkerBg = new SolidColorBrush(Color.Parse("#1E2633"));
+    private static readonly IBrush s_darkFoldActive = new SolidColorBrush(Color.Parse("#58A6FF"));
+    private static readonly IBrush s_darkFoldActiveBg = new SolidColorBrush(Color.Parse("#264F78"));
+
+    private static readonly IBrush s_lightEditorBg = new SolidColorBrush(Color.Parse("#FFFFFF"));
+    private static readonly IBrush s_lightForeground = new SolidColorBrush(Color.Parse("#1E293B"));
+    private static readonly IBrush s_lightLineNumbers = new SolidColorBrush(Color.Parse("#64748B"));
+    private static readonly IBrush s_lightSelection = new SolidColorBrush(Color.Parse("#ADD6FF"));
+    private static readonly IBrush s_lightCaret = new SolidColorBrush(Color.Parse("#0F172A"));
+    private static readonly IBrush s_lightLink = new SolidColorBrush(Color.Parse("#2563EB"));
+    private static readonly IBrush s_lightFoldMarker = new SolidColorBrush(Color.Parse("#64748B"));
+    private static readonly IBrush s_lightFoldMarkerBg = new SolidColorBrush(Color.Parse("#F1F5F9"));
+    private static readonly IBrush s_lightFoldActive = new SolidColorBrush(Color.Parse("#2563EB"));
+    private static readonly IBrush s_lightFoldActiveBg = new SolidColorBrush(Color.Parse("#DBEAFE"));
+
+    private IBrush ResolveBrush(string resourceKey, IBrush fallback)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is IBrush brush)
+            return brush;
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is IBrush appBrush)
+            return appBrush;
+        return fallback;
+    }
+
     public void ApplyThemeVariant()
     {
         if (_editor == null) return;
@@ -436,24 +467,24 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         if (isDark)
         {
             _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
-            _editor.Background = new SolidColorBrush(Color.Parse("#14171F"));
-            _editor.Foreground = new SolidColorBrush(Color.Parse("#D4D4D4"));
-            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#6E7681"));
-            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#264F78"));
+            _editor.Background = ResolveBrush("EditorBgBrush", s_darkEditorBg);
+            _editor.Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
+            _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_darkLineNumbers);
+            _editor.TextArea.SelectionBrush = ResolveBrush("EditorSelectionBrush", s_darkSelection);
             _editor.TextArea.SelectionForeground = null;
-            _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
-            _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#4FC1FF"));
+            _editor.TextArea.Caret.CaretBrush = ResolveBrush("EditorCaretBrush", s_darkCaret);
+            _editor.TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_darkLink);
         }
         else
         {
             _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
-            _editor.Background = new SolidColorBrush(Color.Parse("#FFFFFF"));
-            _editor.Foreground = new SolidColorBrush(Color.Parse("#1E293B"));
-            _editor.LineNumbersForeground = new SolidColorBrush(Color.Parse("#64748B"));
-            _editor.TextArea.SelectionBrush = new SolidColorBrush(Color.Parse("#ADD6FF"));
+            _editor.Background = ResolveBrush("EditorBgBrush", s_lightEditorBg);
+            _editor.Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
+            _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_lightLineNumbers);
+            _editor.TextArea.SelectionBrush = ResolveBrush("EditorSelectionBrush", s_lightSelection);
             _editor.TextArea.SelectionForeground = null;
-            _editor.TextArea.Caret.CaretBrush = new SolidColorBrush(Color.Parse("#0F172A"));
-            _editor.TextArea.TextView.LinkTextForegroundBrush = new SolidColorBrush(Color.Parse("#2563EB"));
+            _editor.TextArea.Caret.CaretBrush = ResolveBrush("EditorCaretBrush", s_lightCaret);
+            _editor.TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_lightLink);
         }
 
         PolishLeftMargins(isDark);
@@ -588,17 +619,17 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             {
                 if (isDark)
                 {
-                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#8B949E"));
-                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#1E2633"));
-                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#58A6FF"));
-                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#264F78"));
+                    foldingMargin.FoldingMarkerBrush = ResolveBrush("EditorFoldingMarkerBrush", s_darkFoldMarker);
+                    foldingMargin.FoldingMarkerBackgroundBrush = ResolveBrush("EditorFoldingMarkerBgBrush", s_darkFoldMarkerBg);
+                    foldingMargin.SelectedFoldingMarkerBrush = ResolveBrush("EditorFoldingMarkerActiveBrush", s_darkFoldActive);
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = ResolveBrush("EditorFoldingMarkerActiveBgBrush", s_darkFoldActiveBg);
                 }
                 else
                 {
-                    foldingMargin.FoldingMarkerBrush = new SolidColorBrush(Color.Parse("#64748B"));
-                    foldingMargin.FoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#F1F5F9"));
-                    foldingMargin.SelectedFoldingMarkerBrush = new SolidColorBrush(Color.Parse("#2563EB"));
-                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = new SolidColorBrush(Color.Parse("#DBEAFE"));
+                    foldingMargin.FoldingMarkerBrush = ResolveBrush("EditorFoldingMarkerBrush", s_lightFoldMarker);
+                    foldingMargin.FoldingMarkerBackgroundBrush = ResolveBrush("EditorFoldingMarkerBgBrush", s_lightFoldMarkerBg);
+                    foldingMargin.SelectedFoldingMarkerBrush = ResolveBrush("EditorFoldingMarkerActiveBrush", s_lightFoldActive);
+                    foldingMargin.SelectedFoldingMarkerBackgroundBrush = ResolveBrush("EditorFoldingMarkerActiveBgBrush", s_lightFoldActiveBg);
                 }
             }
         }

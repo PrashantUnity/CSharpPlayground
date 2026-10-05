@@ -1,0 +1,318 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===================================================================== -->
+    <!-- Modern Developer Dashboard Palette (Nexus / GitHub Dark & Light)       -->
+    <!-- Canonical tokens used across the entire C# Code Studio IDE.            -->
+    <!-- Theme-variant aware (Dark and Light).                                  -->
+    <!-- ===================================================================== -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DsBgBrush" Color="#0D1117" />
+            <SolidColorBrush x:Key="DsSurfaceBrush" Color="#161B22" />
+            <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#1C2128" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#21262D" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#171B22" />
+            <SolidColorBrush x:Key="DsTextBrush" Color="#C9D1D9" />
+            <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsOnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsSyntaxStringBrush" Color="#A5D6FF" />
+            <SolidColorBrush x:Key="DsMutedBrush" Color="#8B949E" />
+            <SolidColorBrush x:Key="DsPrimaryBrush" Color="#2F81F7" />
+            <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#1F6FEB" />
+            <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A2F81F7" />
+            <SolidColorBrush x:Key="DsSelectionBrush" Color="#992F81F7" />
+            <SolidColorBrush x:Key="DsFocusBorderBrush" Color="#8C2F81F7" />
+            <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#332F81F7" />
+            <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
+            <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
+            <SolidColorBrush x:Key="DsLinqBrush" Color="#238636" />
+            <SolidColorBrush x:Key="DsLinqSubtleBrush" Color="#26238636" />
+            <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
+            <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6161B22" />
+            <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#1AFFFFFF" />
+            <SolidColorBrush x:Key="DsScrimBrush" Color="#85000000" />
+            <BoxShadows x:Key="DsModalShadow">0 24 64 0 #B0000000</BoxShadows>
+            <BoxShadows x:Key="DsFloatingShadow">0 8 24 0 #60000000</BoxShadows>
+            <BoxShadows x:Key="DsBottomBarShadow">0 -4 16 0 #40000000</BoxShadows>
+            <BoxShadows x:Key="DsGlowPrimaryShadow">0 0 24 0 #4D2F81F7</BoxShadows>
+            <LinearGradientBrush x:Key="DsAvatarGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#2F81F7" />
+                <GradientStop Offset="1" Color="#7C3AED" />
+            </LinearGradientBrush>
+            <RadialGradientBrush x:Key="DsAmbientGlowBrush" Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                <GradientStop Offset="0" Color="#1A2F81F7" />
+                <GradientStop Offset="1" Color="#002F81F7" />
+            </RadialGradientBrush>
+            <RadialGradientBrush x:Key="DsBlindAmbientGlowBrush" Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                <GradientStop Offset="0" Color="#18F59E0B" />
+                <GradientStop Offset="1" Color="#00F59E0B" />
+            </RadialGradientBrush>
+
+            <!-- Sidebar Navigation Category Brushes (Dark) -->
+            <SolidColorBrush x:Key="NavHomeFgBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="NavHomeBgBrush" Color="#1A38BDF8" />
+            <SolidColorBrush x:Key="NavProjectsFgBrush" Color="#818CF8" />
+            <SolidColorBrush x:Key="NavProjectsBgBrush" Color="#1A818CF8" />
+            <SolidColorBrush x:Key="NavNotebooksFgBrush" Color="#FB923C" />
+            <SolidColorBrush x:Key="NavNotebooksBgBrush" Color="#1AFB923C" />
+            <SolidColorBrush x:Key="NavScriptsFgBrush" Color="#C084FC" />
+            <SolidColorBrush x:Key="NavScriptsBgBrush" Color="#1AC084FC" />
+            <SolidColorBrush x:Key="NavPinnedFgBrush" Color="#FB7185" />
+            <SolidColorBrush x:Key="NavPinnedBgBrush" Color="#1AFB7185" />
+            <SolidColorBrush x:Key="NavTemplatesFgBrush" Color="#FBBF24" />
+            <SolidColorBrush x:Key="NavTemplatesBgBrush" Color="#1AFBBF24" />
+            <SolidColorBrush x:Key="NavOpenFgBrush" Color="#FACC15" />
+            <SolidColorBrush x:Key="NavOpenBgBrush" Color="#1AFACC15" />
+            <SolidColorBrush x:Key="NavBlind75FgBrush" Color="#F59E0B" />
+            <SolidColorBrush x:Key="NavBlind75BgBrush" Color="#1AF59E0B" />
+            <SolidColorBrush x:Key="NavDocsFgBrush" Color="#22D3EE" />
+            <SolidColorBrush x:Key="NavDocsBgBrush" Color="#1A22D3EE" />
+            <SolidColorBrush x:Key="NavThemeFgBrush" Color="#F472B6" />
+            <SolidColorBrush x:Key="NavThemeBgBrush" Color="#1AF472B6" />
+            <SolidColorBrush x:Key="NavToolchainsFgBrush" Color="#34D399" />
+            <SolidColorBrush x:Key="NavToolchainsBgBrush" Color="#1A34D399" />
+            <SolidColorBrush x:Key="NavKernelsFgBrush" Color="#A78BFA" />
+            <SolidColorBrush x:Key="NavKernelsBgBrush" Color="#1AA78BFA" />
+            <SolidColorBrush x:Key="NavSettingsFgBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="NavSettingsBgBrush" Color="#1A94A3B8" />
+            <SolidColorBrush x:Key="NavFrySharpFgBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="NavFrySharpBgBrush" Color="#1A38BDF8" />
+            <SolidColorBrush x:Key="NavServersFgBrush" Color="#2DD4BF" />
+            <SolidColorBrush x:Key="NavServersBgBrush" Color="#1A2DD4BF" />
+            <SolidColorBrush x:Key="NotebookAmberBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="DsLeetCodeBrush" Color="#FFA116" />
+
+            <!-- Semantic Status Brushes (Dark) -->
+            <SolidColorBrush x:Key="DsErrorBrush" Color="#F85149" />
+            <SolidColorBrush x:Key="DsErrorSubtleBrush" Color="#26F85149" />
+            <SolidColorBrush x:Key="DsWarningBrush" Color="#D29922" />
+            <SolidColorBrush x:Key="DsWarningSubtleBrush" Color="#26D29922" />
+            <SolidColorBrush x:Key="DsSuccessBrush" Color="#2EA043" />
+
+            <!-- Difficulty & Category Badges (Dark) -->
+            <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A22C55E" />
+            <SolidColorBrush x:Key="BadgeEasyBorderBrush" Color="#3322C55E" />
+            <SolidColorBrush x:Key="BadgeEasyFgBrush" Color="#22C55E" />
+            <SolidColorBrush x:Key="BadgeMediumBgBrush" Color="#1AF59E0B" />
+            <SolidColorBrush x:Key="BadgeMediumBorderBrush" Color="#33F59E0B" />
+            <SolidColorBrush x:Key="BadgeMediumFgBrush" Color="#F59E0B" />
+            <SolidColorBrush x:Key="BadgeHardBgBrush" Color="#1AEF4444" />
+            <SolidColorBrush x:Key="BadgeHardBorderBrush" Color="#33EF4444" />
+            <SolidColorBrush x:Key="BadgeHardFgBrush" Color="#EF4444" />
+
+            <!-- Server Method Tokens (Dark) -->
+            <SolidColorBrush x:Key="ServerMethodGetBgBrush" Color="#162846" />
+            <SolidColorBrush x:Key="ServerMethodGetFgBrush" Color="#60A5FA" />
+            <SolidColorBrush x:Key="ServerMethodGetBorderBrush" Color="#2563EB" />
+            <SolidColorBrush x:Key="ServerMethodPostBgBrush" Color="#123522" />
+            <SolidColorBrush x:Key="ServerMethodPostFgBrush" Color="#4ADE80" />
+            <SolidColorBrush x:Key="ServerMethodPostBorderBrush" Color="#22C55E" />
+            <SolidColorBrush x:Key="ServerMethodPutBgBrush" Color="#382A12" />
+            <SolidColorBrush x:Key="ServerMethodPutFgBrush" Color="#FBBF24" />
+            <SolidColorBrush x:Key="ServerMethodPutBorderBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="ServerMethodDeleteBgBrush" Color="#3A1519" />
+            <SolidColorBrush x:Key="ServerMethodDeleteFgBrush" Color="#F87171" />
+            <SolidColorBrush x:Key="ServerMethodDeleteBorderBrush" Color="#DC2626" />
+            <SolidColorBrush x:Key="ServerMethodPatchBgBrush" Color="#2C1542" />
+            <SolidColorBrush x:Key="ServerMethodPatchFgBrush" Color="#C084FC" />
+            <SolidColorBrush x:Key="ServerMethodPatchBorderBrush" Color="#9333EA" />
+            <SolidColorBrush x:Key="ServerMethodOptionsBgBrush" Color="#1E293B" />
+            <SolidColorBrush x:Key="ServerMethodOptionsFgBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="ServerMethodOptionsBorderBrush" Color="#475569" />
+            <SolidColorBrush x:Key="ServerMethodOtherBgBrush" Color="#133036" />
+            <SolidColorBrush x:Key="ServerMethodOtherFgBrush" Color="#2DD4BF" />
+            <SolidColorBrush x:Key="ServerMethodOtherBorderBrush" Color="#0D9488" />
+
+            <!-- Server Type Tokens (Dark) -->
+            <SolidColorBrush x:Key="ServerTypeStartupBgBrush" Color="#2E1846" />
+            <SolidColorBrush x:Key="ServerTypeStartupFgBrush" Color="#C084FC" />
+            <SolidColorBrush x:Key="ServerTypeStartupBorderBrush" Color="#9333EA" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareBgBrush" Color="#122E3B" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareFgBrush" Color="#38BDF8" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareBorderBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="ServerTypeScenarioBgBrush" Color="#183522" />
+            <SolidColorBrush x:Key="ServerTypeScenarioFgBrush" Color="#4ADE80" />
+            <SolidColorBrush x:Key="ServerTypeScenarioBorderBrush" Color="#22C55E" />
+            <SolidColorBrush x:Key="ServerTypeJobBgBrush" Color="#382710" />
+            <SolidColorBrush x:Key="ServerTypeJobFgBrush" Color="#FB923C" />
+            <SolidColorBrush x:Key="ServerTypeJobBorderBrush" Color="#EA580C" />
+            <SolidColorBrush x:Key="ServerTypeDocsBgBrush" Color="#3A2A12" />
+            <SolidColorBrush x:Key="ServerTypeDocsFgBrush" Color="#FBBF24" />
+            <SolidColorBrush x:Key="ServerTypeDocsBorderBrush" Color="#D97706" />
+
+            <!-- Editor Surface & Gutter Tokens (Dark) -->
+            <SolidColorBrush x:Key="EditorBgBrush" Color="#14171F" />
+            <SolidColorBrush x:Key="EditorFgBrush" Color="#D4D4D4" />
+            <SolidColorBrush x:Key="EditorLineNumbersBrush" Color="#6E7681" />
+            <SolidColorBrush x:Key="EditorSelectionBrush" Color="#264F78" />
+            <SolidColorBrush x:Key="EditorCaretBrush" Color="#58A6FF" />
+            <SolidColorBrush x:Key="EditorLinkBrush" Color="#4FC1FF" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerBrush" Color="#8B949E" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerBgBrush" Color="#1E2633" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerActiveBrush" Color="#58A6FF" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerActiveBgBrush" Color="#264F78" />
+            <SolidColorBrush x:Key="EditorBreakpointBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="EditorBreakpointBorderBrush" Color="#B91C1C" />
+            <SolidColorBrush x:Key="EditorBreakpointPausedBrush" Color="#FBBF24" />
+            <SolidColorBrush x:Key="EditorBreakpointPausedBorderBrush" Color="#D97706" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DsBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsSurfaceBrush" Color="#F6F8FA" />
+            <SolidColorBrush x:Key="DsSurfaceHoverBrush" Color="#EAEEF2" />
+            <SolidColorBrush x:Key="DsSurfaceHighBrush" Color="#ECEFF2" />
+            <SolidColorBrush x:Key="DsBorderBrush" Color="#E1E4E8" />
+            <SolidColorBrush x:Key="DsBorderSubtleBrush" Color="#EEF1F5" />
+            <SolidColorBrush x:Key="DsTextBrush" Color="#24292F" />
+            <SolidColorBrush x:Key="DsTextWhiteBrush" Color="#1F2328" />
+            <SolidColorBrush x:Key="DsOnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DsSyntaxStringBrush" Color="#0A3069" />
+            <SolidColorBrush x:Key="DsMutedBrush" Color="#656D76" />
+            <SolidColorBrush x:Key="DsPrimaryBrush" Color="#0969DA" />
+            <SolidColorBrush x:Key="DsPrimaryHoverBrush" Color="#0860CA" />
+            <SolidColorBrush x:Key="DsPrimarySubtleBrush" Color="#1A0969DA" />
+            <SolidColorBrush x:Key="DsSelectionBrush" Color="#880969DA" />
+            <SolidColorBrush x:Key="DsFocusBorderBrush" Color="#590969DA" />
+            <SolidColorBrush x:Key="DsPrimaryBorderSubtleBrush" Color="#330969DA" />
+            <SolidColorBrush x:Key="DsJupyterBrush" Color="#E34C26" />
+            <SolidColorBrush x:Key="DsJupyterSubtleBrush" Color="#26E34C26" />
+            <SolidColorBrush x:Key="DsLinqBrush" Color="#238636" />
+            <SolidColorBrush x:Key="DsLinqSubtleBrush" Color="#26238636" />
+            <SolidColorBrush x:Key="DsGreenBrush" Color="#2EA043" />
+            <SolidColorBrush x:Key="DsGlassBgBrush" Color="#E6F6F8FA" />
+            <SolidColorBrush x:Key="DsHoverOverlayBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="DsScrimBrush" Color="#50000000" />
+            <BoxShadows x:Key="DsModalShadow">0 24 64 0 #40000000</BoxShadows>
+            <BoxShadows x:Key="DsFloatingShadow">0 8 24 0 #20000000</BoxShadows>
+            <BoxShadows x:Key="DsBottomBarShadow">0 -4 16 0 #15000000</BoxShadows>
+            <BoxShadows x:Key="DsGlowPrimaryShadow">0 0 24 0 #330969DA</BoxShadows>
+            <LinearGradientBrush x:Key="DsAvatarGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#0969DA" />
+                <GradientStop Offset="1" Color="#6D28D9" />
+            </LinearGradientBrush>
+            <RadialGradientBrush x:Key="DsAmbientGlowBrush" Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                <GradientStop Offset="0" Color="#140969DA" />
+                <GradientStop Offset="1" Color="#000969DA" />
+            </RadialGradientBrush>
+            <RadialGradientBrush x:Key="DsBlindAmbientGlowBrush" Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
+                <GradientStop Offset="0" Color="#12D97706" />
+                <GradientStop Offset="1" Color="#00D97706" />
+            </RadialGradientBrush>
+
+            <!-- Sidebar Navigation Category Brushes (Light) -->
+            <SolidColorBrush x:Key="NavHomeFgBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="NavHomeBgBrush" Color="#140284C7" />
+            <SolidColorBrush x:Key="NavProjectsFgBrush" Color="#4F46E5" />
+            <SolidColorBrush x:Key="NavProjectsBgBrush" Color="#144F46E5" />
+            <SolidColorBrush x:Key="NavNotebooksFgBrush" Color="#EA580C" />
+            <SolidColorBrush x:Key="NavNotebooksBgBrush" Color="#14EA580C" />
+            <SolidColorBrush x:Key="NavScriptsFgBrush" Color="#9333EA" />
+            <SolidColorBrush x:Key="NavScriptsBgBrush" Color="#149333EA" />
+            <SolidColorBrush x:Key="NavPinnedFgBrush" Color="#E11D48" />
+            <SolidColorBrush x:Key="NavPinnedBgBrush" Color="#14E11D48" />
+            <SolidColorBrush x:Key="NavTemplatesFgBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="NavTemplatesBgBrush" Color="#14D97706" />
+            <SolidColorBrush x:Key="NavOpenFgBrush" Color="#CA8A04" />
+            <SolidColorBrush x:Key="NavOpenBgBrush" Color="#14CA8A04" />
+            <SolidColorBrush x:Key="NavBlind75FgBrush" Color="#B45309" />
+            <SolidColorBrush x:Key="NavBlind75BgBrush" Color="#14B45309" />
+            <SolidColorBrush x:Key="NavDocsFgBrush" Color="#0891B2" />
+            <SolidColorBrush x:Key="NavDocsBgBrush" Color="#140891B2" />
+            <SolidColorBrush x:Key="NavThemeFgBrush" Color="#DB2777" />
+            <SolidColorBrush x:Key="NavThemeBgBrush" Color="#14DB2777" />
+            <SolidColorBrush x:Key="NavToolchainsFgBrush" Color="#059669" />
+            <SolidColorBrush x:Key="NavToolchainsBgBrush" Color="#14059669" />
+            <SolidColorBrush x:Key="NavKernelsFgBrush" Color="#7C3AED" />
+            <SolidColorBrush x:Key="NavKernelsBgBrush" Color="#147C3AED" />
+            <SolidColorBrush x:Key="NavSettingsFgBrush" Color="#475569" />
+            <SolidColorBrush x:Key="NavSettingsBgBrush" Color="#14475569" />
+            <SolidColorBrush x:Key="NavFrySharpFgBrush" Color="#0284C7" />
+            <SolidColorBrush x:Key="NavFrySharpBgBrush" Color="#140284C7" />
+            <SolidColorBrush x:Key="NavServersFgBrush" Color="#0D9488" />
+            <SolidColorBrush x:Key="NavServersBgBrush" Color="#140D9488" />
+            <SolidColorBrush x:Key="NotebookAmberBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="DsLeetCodeBrush" Color="#D97706" />
+
+            <!-- Semantic Status Brushes (Light) -->
+            <SolidColorBrush x:Key="DsErrorBrush" Color="#CF222E" />
+            <SolidColorBrush x:Key="DsErrorSubtleBrush" Color="#1ACF222E" />
+            <SolidColorBrush x:Key="DsWarningBrush" Color="#9A6700" />
+            <SolidColorBrush x:Key="DsWarningSubtleBrush" Color="#1A9A6700" />
+            <SolidColorBrush x:Key="DsSuccessBrush" Color="#1A7F37" />
+
+            <!-- Difficulty & Category Badges (Light) -->
+            <SolidColorBrush x:Key="BadgeEasyBgBrush" Color="#1A16A34A" />
+            <SolidColorBrush x:Key="BadgeEasyBorderBrush" Color="#4D16A34A" />
+            <SolidColorBrush x:Key="BadgeEasyFgBrush" Color="#16A34A" />
+            <SolidColorBrush x:Key="BadgeMediumBgBrush" Color="#1AD97706" />
+            <SolidColorBrush x:Key="BadgeMediumBorderBrush" Color="#4DD97706" />
+            <SolidColorBrush x:Key="BadgeMediumFgBrush" Color="#B45309" />
+            <SolidColorBrush x:Key="BadgeHardBgBrush" Color="#1ADC2626" />
+            <SolidColorBrush x:Key="BadgeHardBorderBrush" Color="#4DDC2626" />
+            <SolidColorBrush x:Key="BadgeHardFgBrush" Color="#DC2626" />
+
+            <!-- Server Method Tokens (Light) -->
+            <SolidColorBrush x:Key="ServerMethodGetBgBrush" Color="#E0EAFF" />
+            <SolidColorBrush x:Key="ServerMethodGetFgBrush" Color="#1E5EEB" />
+            <SolidColorBrush x:Key="ServerMethodGetBorderBrush" Color="#A8C7FA" />
+            <SolidColorBrush x:Key="ServerMethodPostBgBrush" Color="#D1E7DD" />
+            <SolidColorBrush x:Key="ServerMethodPostFgBrush" Color="#0A3622" />
+            <SolidColorBrush x:Key="ServerMethodPostBorderBrush" Color="#198754" />
+            <SolidColorBrush x:Key="ServerMethodPutBgBrush" Color="#FEF3C7" />
+            <SolidColorBrush x:Key="ServerMethodPutFgBrush" Color="#78350F" />
+            <SolidColorBrush x:Key="ServerMethodPutBorderBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="ServerMethodDeleteBgBrush" Color="#FFDAD6" />
+            <SolidColorBrush x:Key="ServerMethodDeleteFgBrush" Color="#BA1A1A" />
+            <SolidColorBrush x:Key="ServerMethodDeleteBorderBrush" Color="#FFB4AB" />
+            <SolidColorBrush x:Key="ServerMethodPatchBgBrush" Color="#F3E8FF" />
+            <SolidColorBrush x:Key="ServerMethodPatchFgBrush" Color="#6B21A8" />
+            <SolidColorBrush x:Key="ServerMethodPatchBorderBrush" Color="#D8B4FE" />
+            <SolidColorBrush x:Key="ServerMethodOptionsBgBrush" Color="#F1F5F9" />
+            <SolidColorBrush x:Key="ServerMethodOptionsFgBrush" Color="#475569" />
+            <SolidColorBrush x:Key="ServerMethodOptionsBorderBrush" Color="#CBD5E1" />
+            <SolidColorBrush x:Key="ServerMethodOtherBgBrush" Color="#CCFBF1" />
+            <SolidColorBrush x:Key="ServerMethodOtherFgBrush" Color="#0F766E" />
+            <SolidColorBrush x:Key="ServerMethodOtherBorderBrush" Color="#5EEAD4" />
+
+            <!-- Server Type Tokens (Light) -->
+            <SolidColorBrush x:Key="ServerTypeStartupBgBrush" Color="#F3E8FF" />
+            <SolidColorBrush x:Key="ServerTypeStartupFgBrush" Color="#6B21A8" />
+            <SolidColorBrush x:Key="ServerTypeStartupBorderBrush" Color="#D8B4FE" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareBgBrush" Color="#E0F2FE" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareFgBrush" Color="#0369A1" />
+            <SolidColorBrush x:Key="ServerTypeMiddlewareBorderBrush" Color="#BAE6FD" />
+            <SolidColorBrush x:Key="ServerTypeScenarioBgBrush" Color="#D1E7DD" />
+            <SolidColorBrush x:Key="ServerTypeScenarioFgBrush" Color="#0A3622" />
+            <SolidColorBrush x:Key="ServerTypeScenarioBorderBrush" Color="#198754" />
+            <SolidColorBrush x:Key="ServerTypeJobBgBrush" Color="#FFEDD5" />
+            <SolidColorBrush x:Key="ServerTypeJobFgBrush" Color="#9A3412" />
+            <SolidColorBrush x:Key="ServerTypeJobBorderBrush" Color="#FED7AA" />
+            <SolidColorBrush x:Key="ServerTypeDocsBgBrush" Color="#FEF3C7" />
+            <SolidColorBrush x:Key="ServerTypeDocsFgBrush" Color="#78350F" />
+            <SolidColorBrush x:Key="ServerTypeDocsBorderBrush" Color="#D97706" />
+
+            <!-- Editor Surface & Gutter Tokens (Light) -->
+            <SolidColorBrush x:Key="EditorBgBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="EditorFgBrush" Color="#1E293B" />
+            <SolidColorBrush x:Key="EditorLineNumbersBrush" Color="#64748B" />
+            <SolidColorBrush x:Key="EditorSelectionBrush" Color="#ADD6FF" />
+            <SolidColorBrush x:Key="EditorCaretBrush" Color="#0F172A" />
+            <SolidColorBrush x:Key="EditorLinkBrush" Color="#2563EB" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerBrush" Color="#64748B" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerBgBrush" Color="#F1F5F9" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerActiveBrush" Color="#2563EB" />
+            <SolidColorBrush x:Key="EditorFoldingMarkerActiveBgBrush" Color="#DBEAFE" />
+            <SolidColorBrush x:Key="EditorBreakpointBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="EditorBreakpointBorderBrush" Color="#B91C1C" />
+            <SolidColorBrush x:Key="EditorBreakpointPausedBrush" Color="#D97706" />
+            <SolidColorBrush x:Key="EditorBreakpointPausedBorderBrush" Color="#B45309" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Global Typography Tokens -->
+    <FontFamily x:Key="DsCodeFontFamily">Cascadia Code, JetBrains Mono, Fira Code, Menlo, Consolas, monospace</FontFamily>
+    <FontFamily x:Key="DsUiFontFamily">Inter, Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif</FontFamily>
+
+</ResourceDictionary>

@@ -7,7 +7,7 @@
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
             BorderThickness="1"
             CornerRadius="8"
-            BoxShadow="0 12 40 0 #A0000000"
+            BoxShadow="{DynamicResource DsModalShadow}"
             MinWidth="420"
             MaxWidth="600"
             MinHeight="260"
@@ -19,7 +19,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="FormatQuoteClose" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Name="TitleText" Text="Value View" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="JetBrains Mono, Menlo, monospace" VerticalAlignment="Center" />
+                        <TextBlock Name="TitleText" Text="Value View" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -42,7 +42,7 @@
                          BorderThickness="0"
                          Background="Transparent"
                          Foreground="{DynamicResource M3OnSurfaceBrush}"
-                         FontFamily="JetBrains Mono, Menlo, Monaco, Consolas, monospace"
+                         FontFamily="{DynamicResource DsCodeFontFamily}"
                          FontSize="11.5" />
             </Border>
 

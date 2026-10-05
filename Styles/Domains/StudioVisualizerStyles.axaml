@@ -1,0 +1,70 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ============================================================ -->
+    <!-- DOMAIN: DATA STRUCTURE & ALGORITHM VISUALIZER STYLES         -->
+    <!-- Canvas resize grips, chrome tools, playback watch cells     -->
+    <!-- ============================================================ -->
+
+    <!-- Drag handle under the inline canvas -->
+    <Style Selector="Border.canvas-resize-grip">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="SizeNorthSouth" />
+    </Style>
+    <Style Selector="Border.canvas-resize-grip > Border">
+        <Setter Property="Background" Value="{DynamicResource M3OutlineVariantBrush}" />
+    </Style>
+    <Style Selector="Border.canvas-resize-grip:pointerover > Border">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+    </Style>
+
+    <!-- Chrome Tool Buttons (Full Screen, Reset, Options) -->
+    <Style Selector="Button.chrome-tool-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.chrome-tool-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+    </Style>
+
+    <!-- Visualizer Playback Watch Cells -->
+    <Style Selector="Border.watch-cell">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="Margin" Value="0,1,4,1" />
+    </Style>
+    <Style Selector="Border.watch-cell.added">
+        <Setter Property="BorderBrush" Value="#a3e635" />
+        <Setter Property="Background" Value="#26a3e635" />
+    </Style>
+    <Style Selector="Border.watch-cell.marker">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0,1" />
+    </Style>
+    <Style Selector="Border.watch-cell TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
+    </Style>
+    <Style Selector="Border.watch-cell.marker TextBlock">
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
+    </Style>
+
+</Styles>

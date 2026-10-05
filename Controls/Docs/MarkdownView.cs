@@ -24,13 +24,17 @@ public class MarkdownView : UserControl
     public static readonly StyledProperty<string?> MarkdownProperty =
         AvaloniaProperty.Register<MarkdownView, string?>(nameof(Markdown));
 
-    private static readonly FontFamily Monospace = new("Cascadia Code, Consolas, Menlo, monospace");
+    private static readonly FontFamily Monospace = Application.Current != null && Application.Current.TryFindResource("DsCodeFontFamily", out var fontRes) && fontRes is FontFamily ff
+        ? ff
+        : new FontFamily("Cascadia Code, Consolas, Menlo, monospace");
 
     private static readonly IBrush CodeBrush = new SolidColorBrush(Color.FromArgb(46, 128, 128, 128));
     private static readonly IBrush CodeBlockBrush = new SolidColorBrush(Color.FromArgb(30, 128, 128, 128));
     private static readonly IBrush QuoteBrush = new SolidColorBrush(Color.FromArgb(22, 88, 166, 255));
     private static readonly IBrush QuoteAccentBrush = new SolidColorBrush(Color.FromArgb(170, 88, 166, 255));
     private static readonly IBrush RuleBrush = new SolidColorBrush(Color.FromArgb(70, 128, 128, 128));
+    private static readonly IBrush TableZebraBrush = new SolidColorBrush(Color.FromArgb(14, 128, 128, 128));
+    private static readonly IBrush TableBorderBrush = new SolidColorBrush(Color.FromArgb(35, 128, 128, 128));
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -330,7 +334,7 @@ public class MarkdownView : UserControl
             {
                 var zebraBg = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromArgb(14, 128, 128, 128))
+                    Background = TableZebraBrush
                 };
                 Grid.SetRow(zebraBg, curGridRow);
                 Grid.SetColumnSpan(zebraBg, colCount);
@@ -348,7 +352,7 @@ public class MarkdownView : UserControl
                 {
                     Padding = new Thickness(12, 6),
                     BorderThickness = new Thickness(0, 0, c < colCount - 1 ? 1 : 0, isLastRow ? 0 : 1),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(35, 128, 128, 128)),
+                    BorderBrush = TableBorderBrush,
                     Child = text
                 };
                 Grid.SetRow(cell, curGridRow);
