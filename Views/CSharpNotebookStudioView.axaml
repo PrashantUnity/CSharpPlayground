@@ -9,6 +9,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:notebooks="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks"
              xmlns:controls1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
+             xmlns:nb="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
@@ -870,7 +871,8 @@
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
                                             <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
                                                 <!-- COLUMN 0: LEFT GUTTER (Aligned with Line 1) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0" VerticalAlignment="Top"
+                                                             nb:StickyGutterBehavior.IsEnabled="True">
                                                     <!-- Row 1: Gutter Input Fold & Run Button -->
                                                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                                                         <Button Command="{Binding ToggleInputCollapseCommand}"
