@@ -1,3 +1,5 @@
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
@@ -8,6 +10,7 @@ using CSharpStudioHostViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.C
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection("SettingsTests")]
 public class CSharpSettingsViewModelTests : IDisposable
 {
     private readonly string _tempFolder;
@@ -531,5 +534,93 @@ public class CSharpSettingsViewModelTests : IDisposable
         reloaded.ResetAiPromptToDefault();
         Assert.Equal("Agent", reloaded.AiPromptPresetName);
         Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings.DefaultSystemPrompt, reloaded.AiSystemPrompt);
+    }
+
+    [Fact]
+    public void Settings_VisionDeficiency_SimulatesSwatchesAndWarns()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.VisionDeficiency.Normal, vm.SelectedVisionDeficiency);
+        Assert.NotEmpty(vm.PrimaryTonalSwatches);
+
+        // Simulate Achromatopsia
+        vm.SelectedVisionDeficiency = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.VisionDeficiency.Achromatopsia;
+        string achromaHex = vm.PrimaryTonalSwatches[0].Hex;
+
+        // In achromatopsia, R == G == B
+        var rgb = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorRgb.FromHex(achromaHex);
+        Assert.Equal(rgb.R, rgb.G);
+        Assert.Equal(rgb.G, rgb.B);
+
+        // Switch to Deuteranopia
+        vm.SelectedVisionDeficiency = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.VisionDeficiency.Deuteranopia;
+        Assert.Contains("Deuteranopia", vm.ContrastStatusSummary);
+    }
+
+    [Fact]
+    public void Settings_PerceptualContrastAndSeedInput_UpdatesProperly()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+
+        // Verify contrast pairings and vision safety matrix populated
+        Assert.NotEmpty(vm.ContrastPairings);
+        Assert.Equal(7, vm.ContrastPairings.Count);
+        Assert.NotEmpty(vm.VisionSafetyItems);
+        Assert.Equal(5, vm.VisionSafetyItems.Count);
+
+        var textPair = vm.ContrastPairings.First(p => p.RoleName.Contains("Body Text"));
+        Assert.True(textPair.WcagRatio >= 4.5f);
+        Assert.True(MathF.Abs(textPair.ApcaLc) >= 60f);
+
+        // Paste brand seed hex
+        vm.SeedHexInput = "#6366F1"; // Indigo (~238°)
+        Assert.True(vm.SelectedHueDegrees >= 230f && vm.SelectedHueDegrees <= 250f);
+        Assert.Equal("#6366F1", vm.SeedHexInput);
+    }
+
+    [Fact]
+    public void Settings_CuratedSeedPresets_AppliesProperly()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        Assert.NotEmpty(vm.CuratedSeedPresets);
+        Assert.True(vm.CuratedSeedPresets.Count >= 8);
+
+        var emerald = vm.CuratedSeedPresets.First(p => p.Name == "Emerald");
+        vm.ApplySeedPreset(emerald);
+
+        Assert.Equal(emerald.Hue, vm.SelectedHueDegrees);
+        Assert.Equal(emerald.Mode, vm.SelectedHarmonyMode);
+        Assert.Equal(emerald.SeedHex, vm.SeedHexInput);
+    }
+
+    [Fact]
+    public void Settings_ExportMultiTargetAndImportDtcg_WorksAccurately()
+    {
+        var vm = new CSharpSettingsViewModel(_services, _settingsStore);
+        var config = vm.GetCurrentHarmonicConfiguration();
+        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, isDark: true);
+
+        // Verify SwiftUI export
+        string swift = ThemeExportService.ExportToSwiftUI(theme);
+        Assert.Contains("import SwiftUI", swift);
+        Assert.Contains("public extension Color", swift);
+        Assert.Contains("static let dsPrimary", swift);
+
+        // Verify Compose export
+        string compose = ThemeExportService.ExportToJetpackCompose(theme);
+        Assert.Contains("import androidx.compose.ui.graphics.Color", compose);
+        Assert.Contains("object ThemeTokens", compose);
+        Assert.Contains("val dsPrimary", compose);
+
+        // Verify DTCG Export and Roundtrip Import
+        string dtcgJson = ThemeExportService.ExportToDtcgJson(theme);
+        Assert.Contains("\"$type\": \"color\"", dtcgJson);
+
+        var imported = ThemeExportService.ImportFromDtcgJson(dtcgJson, "test-dtcg", "Imported Test", isDark: true);
+        Assert.NotNull(imported);
+        Assert.Equal("test-dtcg", imported.Id);
+        Assert.Equal("Imported Test", imported.Name);
+        Assert.True(imported.Colors.ContainsKey("DsPrimaryBrush"));
+        Assert.Equal(theme.Colors["DsPrimaryBrush"], imported.Colors["DsPrimaryBrush"]);
     }
 }

@@ -23,7 +23,9 @@ public sealed partial class ThemePresetItemViewModel : ObservableObject
     public string Description { get; init; } = string.Empty;
     public bool IsDark { get; init; } = true;
     public string BgHex { get; init; } = "#1E1E1E";
+    public string SurfaceHex { get; init; } = "#252526";
     public string AccentHex { get; init; } = "#007ACC";
+    public string TextHex { get; init; } = "#CCCCCC";
 
     [ObservableProperty]
     private bool _isActive;
@@ -115,7 +117,9 @@ public partial class CSharpSettingsViewModel
         foreach (var theme in BuiltInThemes.All)
         {
             string bg = theme.Colors.TryGetValue("DsBgBrush", out var b) ? b : (theme.IsDark ? "#0D1117" : "#FFFFFF");
+            string surface = theme.Colors.TryGetValue("DsSurfaceBrush", out var s) ? s : (theme.IsDark ? "#161B22" : "#F6F8FA");
             string accent = theme.Colors.TryGetValue("DsPrimaryBrush", out var a) ? a : "#2F81F7";
+            string text = theme.Colors.TryGetValue("DsTextBrush", out var t) ? t : (theme.IsDark ? "#E6EDF3" : "#24292F");
 
             ThemePresets.Add(new ThemePresetItemViewModel
             {
@@ -124,7 +128,9 @@ public partial class CSharpSettingsViewModel
                 Description = theme.Description,
                 IsDark = theme.IsDark,
                 BgHex = bg,
+                SurfaceHex = surface,
                 AccentHex = accent,
+                TextHex = text,
                 IsActive = string.Equals(StudioAppContext.Instance.ThemeEngine.ActiveThemeId, theme.Id, StringComparison.OrdinalIgnoreCase)
             });
         }
@@ -240,7 +246,6 @@ public partial class CSharpSettingsViewModel
         LoadedExtensionsCount = InstalledExtensions.Count;
     }
 
-    [RelayCommand]
     public void ApplyThemePreset(string themeId)
     {
         if (string.IsNullOrWhiteSpace(themeId)) return;
@@ -255,6 +260,7 @@ public partial class CSharpSettingsViewModel
             {
                 p.IsActive = string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase);
             }
+            RefreshColorTokenValues();
             ShowNotification($"Applied theme preset: {ActiveThemeName}", isError: false);
         }
         else
@@ -264,6 +270,88 @@ public partial class CSharpSettingsViewModel
     }
 
     [RelayCommand]
+    public async Task ApplyThemePresetAsync(string themeId)
+    {
+        if (string.IsNullOrWhiteSpace(themeId)) return;
+
+        var preset = ThemePresets.FirstOrDefault(p => string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase));
+        string themeName = preset?.Name ?? themeId;
+
+        IsLoading = true;
+        LoadingTitle = $"Applying {themeName}...";
+        LoadingSubtitle = "Switching 80+ dynamic tokens and UI brush resources";
+
+        try
+        {
+            ApplyThemePreset(themeId);
+        }
+        finally
+        {
+            await Task.Delay(60);
+            IsLoading = false;
+        }
+    }
+
+    public void GenerateHarmonicPalette()
+    {
+        var theme = HarmonicColorGenerator.GenerateRandomHarmonicTheme(isDark: true);
+        StudioAppContext.Instance.ThemeEngine.RegisterTheme(theme);
+        bool success = StudioAppContext.Instance.ThemeEngine.ApplyTheme(theme.Id);
+        if (success)
+        {
+            ActiveThemeId = theme.Id;
+            ActiveThemeName = theme.Name;
+
+            var existingHarmonic = ThemePresets.FirstOrDefault(p => p.Id.StartsWith("harmonic-", StringComparison.OrdinalIgnoreCase));
+            if (existingHarmonic != null)
+            {
+                ThemePresets.Remove(existingHarmonic);
+            }
+
+            ThemePresets.Add(new ThemePresetItemViewModel
+            {
+                Id = theme.Id,
+                Name = theme.Name,
+                Description = theme.Description,
+                IsActive = true,
+                BgHex = theme.Colors.TryGetValue("DsBgBrush", out var bg) ? bg : "#0E1117",
+                SurfaceHex = theme.Colors.TryGetValue("DsSurfaceBrush", out var s) ? s : "#161B22",
+                AccentHex = theme.Colors.TryGetValue("DsPrimaryBrush", out var acc) ? acc : "#38BDF8",
+                TextHex = theme.Colors.TryGetValue("DsTextBrush", out var t) ? t : "#E6EDF3"
+            });
+
+            foreach (var p in ThemePresets)
+            {
+                p.IsActive = string.Equals(p.Id, theme.Id, StringComparison.OrdinalIgnoreCase);
+            }
+
+            RefreshColorTokenValues();
+            ShowNotification($"Generated & applied {theme.Name}!", isError: false);
+        }
+        else
+        {
+            ShowNotification("Failed to apply generated harmonic theme.", isError: true);
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateHarmonicPaletteAsync()
+    {
+        IsLoading = true;
+        LoadingTitle = "Synthesizing Palette...";
+        LoadingSubtitle = "Generating harmonic color wheel and updating runtime tokens";
+
+        try
+        {
+            GenerateHarmonicPalette();
+        }
+        finally
+        {
+            await Task.Delay(60);
+            IsLoading = false;
+        }
+    }
+
     public void SetDensity(string densityName)
     {
         if (Enum.TryParse<LayoutDensity>(densityName, ignoreCase: true, out var density))
@@ -275,19 +363,52 @@ public partial class CSharpSettingsViewModel
     }
 
     [RelayCommand]
+    public async Task SetDensityAsync(string densityName)
+    {
+        if (Enum.TryParse<LayoutDensity>(densityName, ignoreCase: true, out var density))
+        {
+            IsLoading = true;
+            LoadingTitle = $"Applying Density: {density}...";
+            LoadingSubtitle = "Recalculating layout padding and component margins";
+
+            try
+            {
+                SetDensity(densityName);
+            }
+            finally
+            {
+                await Task.Delay(40);
+                IsLoading = false;
+            }
+        }
+    }
+
+    [RelayCommand]
     public async Task ReloadCustomizationScriptAsync()
     {
         if (StudioAppContext.Instance.CustomizationManager is { } mgr)
         {
-            var result = await mgr.ReloadAsync();
-            if (result.Success)
+            IsLoading = true;
+            LoadingTitle = "Reloading Scripts...";
+            LoadingSubtitle = "Hot-reloading C# extension scripts and custom themes";
+
+            try
             {
-                RefreshCustomizationData();
-                ShowNotification("Global customization script reloaded and applied successfully!", isError: false);
+                var result = await mgr.ReloadAsync();
+                if (result.Success)
+                {
+                    RefreshCustomizationData();
+                    ShowNotification("Global customization script reloaded and applied successfully!", isError: false);
+                }
+                else
+                {
+                    ShowNotification($"Customization script error: {result.ErrorMessage}", isError: true);
+                }
             }
-            else
+            finally
             {
-                ShowNotification($"Customization script error: {result.ErrorMessage}", isError: true);
+                await Task.Delay(50);
+                IsLoading = false;
             }
         }
         else

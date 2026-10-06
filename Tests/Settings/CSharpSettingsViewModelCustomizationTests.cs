@@ -14,6 +14,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection("SettingsTests")]
 public class CSharpSettingsViewModelCustomizationTests : IDisposable
 {
     private readonly string _tempFolder;

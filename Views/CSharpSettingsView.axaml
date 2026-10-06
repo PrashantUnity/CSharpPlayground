@@ -7,6 +7,7 @@
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
              xmlns:settings1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
+             xmlns:studio="using:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpSettingsView"
              x:DataType="settings:CSharpSettingsViewModel"
@@ -24,7 +25,8 @@
         <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
-    <Grid RowDefinitions="54,*">
+    <Panel>
+        <Grid RowDefinitions="54,*">
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- 1. TOP HEADER BAR (54px)                                       -->
         <!-- ══════════════════════════════════════════════════════════════ -->
@@ -168,6 +170,16 @@
                                 </Grid>
                             </Button>
 
+                            <!-- Category: Theme & Colors -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Themes"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsThemesCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="PaletteOutline" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Theme &amp; Colors" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
                             <!-- Category: Execution & Terminal -->
                             <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Execution"
                                     Classes="doc-nav-item"
@@ -228,6 +240,10 @@
                     <settings1:EditorSettingsSectionControl
                         IsVisible="{Binding IsEditorCategoryActive}" />
 
+                    <!-- Detail for Theme & Colors -->
+                    <settings1:ThemeSettingsSectionControl
+                        IsVisible="{Binding IsThemesCategoryActive}" />
+
                     <!-- Detail for Execution & Terminal -->
                     <settings1:ExecutionSettingsSectionControl
                         IsVisible="{Binding IsExecutionCategoryActive}" />
@@ -247,4 +263,14 @@
             </Border>
         </Grid>
     </Grid>
+
+    <!-- Top-level Settings Loading & Applying Overlay -->
+    <studio:StudioLoadingOverlayControl
+        IsLoading="{Binding IsLoading}"
+        LoadingTitle="{Binding LoadingTitle}"
+        LoadingSubtitle="{Binding LoadingSubtitle}"
+        ZIndex="2000"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" />
+</Panel>
 </UserControl>

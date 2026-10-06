@@ -125,6 +125,19 @@ internal static class HubAndDocsSnapshots
         Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpSettingsViewModel(languages);
         if (options.Value("category") is { } cat) vm.SelectCategory(cat);
+        if (options.Value("theme-preset") is { } themePreset)
+        {
+            vm.ApplyThemePresetCommand.Execute(themePreset);
+        }
+        else if (options.Flag("random-harmony"))
+        {
+            vm.RandomizeHarmonicWheelCommand.Execute(null);
+        }
+        else if (options.Value("hue") is { } hueStr && float.TryParse(hueStr, out var hueVal))
+        {
+            vm.SelectedHueDegrees = hueVal;
+            vm.ApplyHarmonicConfigurationCommand.Execute(null);
+        }
         if (options.Flag("import-package") || options.Value("package-url") is not null)
         {
             vm.IsImportPackageFormVisible = true;
@@ -145,6 +158,12 @@ internal static class HubAndDocsSnapshots
         if (options.Flag("test-hello-world") && vm.SelectedLanguage is { } selected)
         {
             Snapshot.Wait(selected.TestHelloWorldAsync());
+        }
+        if (options.Flag("loading"))
+        {
+            vm.IsLoading = true;
+            vm.LoadingTitle = options.Value("loading-title") ?? "Applying Harmonic Theme...";
+            vm.LoadingSubtitle = options.Value("loading-subtitle") ?? "Updating 80+ dynamic tokens across IDE workbench";
         }
         var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         string defaultName = options.Value("name") switch

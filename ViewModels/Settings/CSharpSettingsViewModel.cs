@@ -25,6 +25,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLanguagesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsThemesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsCustomizationCategoryActive))]
@@ -46,8 +47,18 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasPendingChanges;
 
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private string _loadingTitle = "Applying...";
+
+    [ObservableProperty]
+    private string _loadingSubtitle = "Updating configuration";
+
     public bool IsLanguagesCategoryActive => string.Equals(ActiveCategory, "Languages", StringComparison.OrdinalIgnoreCase);
     public bool IsEditorCategoryActive => string.Equals(ActiveCategory, "Editor", StringComparison.OrdinalIgnoreCase);
+    public bool IsThemesCategoryActive => string.Equals(ActiveCategory, "Themes", StringComparison.OrdinalIgnoreCase);
     public bool IsExecutionCategoryActive => string.Equals(ActiveCategory, "Execution", StringComparison.OrdinalIgnoreCase);
     public bool IsKeymapCategoryActive => string.Equals(ActiveCategory, "Keymap", StringComparison.OrdinalIgnoreCase);
     public bool IsCustomizationCategoryActive => string.Equals(ActiveCategory, "Customization", StringComparison.OrdinalIgnoreCase);
@@ -74,6 +85,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeKeymap();
         InitializeEditorSettings();
         InitializeLanguages();
+        InitializeThemingSettings();
         InitializeCustomizationSettings();
         InitializeAiSettings();
 
@@ -96,6 +108,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     {
         Categories.Add(new SettingsCategoryItem("Languages", "Languages & Runtimes", "TuneVariant", "Interpreters, SDKs, virtualenvs & compilers"));
         Categories.Add(new SettingsCategoryItem("Editor", "Editor & Formatting", "CodeBraces", "Indentation, font size, line numbers & wrap"));
+        Categories.Add(new SettingsCategoryItem("Themes", "Theme & Colors", "PaletteOutline", "Color harmony wheel, live token inspector, themes & palettes"));
         Categories.Add(new SettingsCategoryItem("Execution", "Execution & Terminal", "Console", "Execution timeout, stdout buffers & process lifecycle"));
         Categories.Add(new SettingsCategoryItem("Keymap", "Keymap & Shortcuts", "KeyboardOutline", "Visual Studio Code & studio keybindings"));
         Categories.Add(new SettingsCategoryItem("Customization", "Customization & Extensions", "PuzzleOutline", "C# scripts, dynamic themes, tokens, extensions & hooks"));
@@ -161,7 +174,6 @@ public partial class CSharpSettingsViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
     public void Apply()
     {
         SaveEditorSettings();
@@ -170,13 +182,50 @@ public partial class CSharpSettingsViewModel : ObservableObject
         ShowNotification("Settings and environment choices saved successfully.", isError: false);
     }
 
-    [RelayCommand]
     public void ResetDefaults()
     {
         ResetEditorSettingsToDefaults();
         ResetLanguageSettingsToDefaults();
         HasPendingChanges = true;
         ShowNotification("Settings reset to defaults. Click Apply to persist.", isError: false);
+    }
+
+    [RelayCommand]
+    public async System.Threading.Tasks.Task ApplyAsync()
+    {
+        IsLoading = true;
+        LoadingTitle = "Saving Settings...";
+        LoadingSubtitle = "Persisting environment configuration";
+        await System.Threading.Tasks.Task.Delay(50);
+
+        try
+        {
+            Apply();
+        }
+        finally
+        {
+            await System.Threading.Tasks.Task.Delay(50);
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    public async System.Threading.Tasks.Task ResetDefaultsAsync()
+    {
+        IsLoading = true;
+        LoadingTitle = "Resetting Defaults...";
+        LoadingSubtitle = "Restoring standard IDE configuration";
+        await System.Threading.Tasks.Task.Delay(50);
+
+        try
+        {
+            ResetDefaults();
+        }
+        finally
+        {
+            await System.Threading.Tasks.Task.Delay(50);
+            IsLoading = false;
+        }
     }
 
     public void ShowNotification(string message, bool isError = false)

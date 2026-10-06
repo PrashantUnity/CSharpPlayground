@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="300"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.ThemePresetsGalleryControl"
+             x:DataType="settings:CSharpSettingsViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.theme-preset-card">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="MinHeight" Value="66" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.theme-preset-card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource DsSurfaceBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="18,16">
+        <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="CURATED THEMES &amp; PRESETS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="Click any theme card to apply immediately" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding ThemePresets}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="settings:ThemePresetItemViewModel">
+                        <Button Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).ApplyThemePresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding Id}" Classes="theme-preset-card" Margin="0,0,10,10" Width="245">
+                            <Grid RowDefinitions="Auto,Auto,Auto">
+                                <Border Grid.Row="0" Height="8" CornerRadius="3" ClipToBounds="True" Margin="0,0,0,8" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                                    <Grid ColumnDefinitions="*,*,*,*">
+                                        <Border Grid.Column="0" Background="{Binding BgHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                        <Border Grid.Column="1" Background="{Binding SurfaceHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                        <Border Grid.Column="2" Background="{Binding AccentHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                        <Border Grid.Column="3" Background="{Binding TextHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                    </Grid>
+                                </Border>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,3">
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" IsVisible="{Binding IsActive}" Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="ACTIVE" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Grid.Row="2" Text="{Binding Description}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</UserControl>
