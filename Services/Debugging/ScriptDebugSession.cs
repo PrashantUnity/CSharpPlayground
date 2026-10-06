@@ -1,5 +1,5 @@
 using System.Collections;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.Visualizers;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
@@ -190,19 +190,7 @@ public class ScriptDebugSession
 
         // Notify UI thread (or call directly on background threads in headless/test environments)
         var localsSnapshot = CapturedLocals.ToList();
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                Paused?.Invoke(lineNumber, localsSnapshot);
-            });
-        }
-        else
-        {
-            // Already on a background thread (script worker) — invoke directly so
-            // the Paused handler (e.g. session.Continue()) runs before the gate wait.
-            Paused?.Invoke(lineNumber, localsSnapshot);
-        }
+        UiDispatchHelper.RunOnUi(() => Paused?.Invoke(lineNumber, localsSnapshot));
 
         // Wait asynchronously without blocking the UI thread (execution runs on Task.Run worker)
         try
@@ -272,10 +260,7 @@ public class ScriptDebugSession
     private static void DispatchToUI(Action? action)
     {
         if (action == null) return;
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-            Dispatcher.UIThread.Post(action);
-        else
-            action();
+        UiDispatchHelper.RunOnUi(action);
     }
 
     private IReadOnlyList<CallStackFrameItem> BuildCallStack(DebugFrame? current)

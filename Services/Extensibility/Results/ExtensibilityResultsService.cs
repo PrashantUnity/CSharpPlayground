@@ -1,5 +1,5 @@
 using System;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Results;
@@ -42,15 +42,5 @@ public class ExtensibilityResultsService : IResultsApi
         RunOnUI(() => FocusHandler?.Invoke());
     }
 
-    private static void RunOnUI(Action action)
-    {
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(action);
-        }
-        else
-        {
-            action();
-        }
-    }
+    private static void RunOnUI(Action action) => UiDispatchHelper.RunOnUi(action);
 }

@@ -5,7 +5,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
@@ -51,7 +51,7 @@ public class DynamicThemeEngine : IThemeApi
             ? tokenName.Substring(0, tokenName.Length - 5) + "Color"
             : tokenName;
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is { } res)
             {
@@ -100,7 +100,7 @@ public class DynamicThemeEngine : IThemeApi
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontFamily);
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is not { } res) return;
 
@@ -128,7 +128,7 @@ public class DynamicThemeEngine : IThemeApi
 
     public void SetDensity(LayoutDensity density)
     {
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is not { } res) return;
 
@@ -161,7 +161,7 @@ public class DynamicThemeEngine : IThemeApi
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenName);
         _overrides[tokenName] = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is { } res)
             {
@@ -180,7 +180,7 @@ public class DynamicThemeEngine : IThemeApi
         ArgumentNullException.ThrowIfNull(value);
         _overrides[tokenName] = value.ToString() ?? string.Empty;
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is { } res)
             {
@@ -222,7 +222,7 @@ public class DynamicThemeEngine : IThemeApi
         _activeThemeId = themeId;
         _overrides.Clear();
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             if (Application.Current?.Resources is not { } res) return;
 
@@ -267,14 +267,14 @@ public class DynamicThemeEngine : IThemeApi
     {
         ArgumentNullException.ThrowIfNull(style);
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             Application.Current?.Styles.Add(style);
         });
 
         return new ActionDisposable(() =>
         {
-            Dispatcher.UIThread.Post(() =>
+            UiDispatchHelper.RunOnUi(() =>
             {
                 Application.Current?.Styles.Remove(style);
             });
@@ -287,7 +287,7 @@ public class DynamicThemeEngine : IThemeApi
 
         IStyle? loadedStyle = null;
 
-        Dispatcher.UIThread.Post(() =>
+        UiDispatchHelper.RunOnUi(() =>
         {
             try
             {
@@ -323,7 +323,7 @@ public class DynamicThemeEngine : IThemeApi
         {
             if (loadedStyle != null)
             {
-                Dispatcher.UIThread.Post(() =>
+                UiDispatchHelper.RunOnUi(() =>
                 {
                     Application.Current?.Styles.Remove(loadedStyle);
                 });

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Editor;
@@ -25,14 +25,7 @@ public class ExtensibilityEditorService : IEditorApi
 
     public void NotifyActiveDocumentChanged(IDocumentContext? doc)
     {
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => ActiveDocumentChanged?.Invoke(doc));
-        }
-        else
-        {
-            ActiveDocumentChanged?.Invoke(doc);
-        }
+        UiDispatchHelper.RunOnUi(() => ActiveDocumentChanged?.Invoke(doc));
     }
 
     public IDocumentContext? ActiveDocument => ActiveDocumentResolver?.Invoke();
@@ -77,37 +70,16 @@ public class ExtensibilityEditorService : IEditorApi
     public void SwitchToDocument(IDocumentContext document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => SwitchToDocumentHandler?.Invoke(document));
-        }
-        else
-        {
-            SwitchToDocumentHandler?.Invoke(document);
-        }
+        UiDispatchHelper.RunOnUi(() => SwitchToDocumentHandler?.Invoke(document));
     }
 
     public void FormatActiveDocument()
     {
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => FormatDocumentHandler?.Invoke());
-        }
-        else
-        {
-            FormatDocumentHandler?.Invoke();
-        }
+        UiDispatchHelper.RunOnUi(() => FormatDocumentHandler?.Invoke());
     }
 
     public void SaveActiveDocument()
     {
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(() => SaveDocumentHandler?.Invoke());
-        }
-        else
-        {
-            SaveDocumentHandler?.Invoke();
-        }
+        UiDispatchHelper.RunOnUi(() => SaveDocumentHandler?.Invoke());
     }
 }

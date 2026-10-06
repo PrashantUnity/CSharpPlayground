@@ -12,6 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Controls.AI;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI;
 
@@ -105,12 +106,7 @@ public static class StudioScreenshotService
             }
         }
 
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            return await Dispatcher.UIThread.InvokeAsync(DoCapture);
-        }
-
-        return DoCapture();
+        return await UiDispatchHelper.InvokeAsync(DoCapture);
     }
 
     /// <summary>
