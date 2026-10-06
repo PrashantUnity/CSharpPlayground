@@ -68,15 +68,32 @@ public partial class CSharpSettingsViewModel
             ("Error Status", "Error", "#EF4444", "Canvas", canvasHex)
         ];
 
-        ContrastPairings.Clear();
-        foreach (var p in pairings)
+        // Same rows every time (fixed roles): recolour them in place rather than rebuilding them on every slider tick.
+        bool reuseContrast = ContrastPairings.Count == pairings.Length && ContrastPairings.Select(c => c.RoleName).SequenceEqual(pairings.Select(p => p.Role));
+        if (!reuseContrast) ContrastPairings.Clear();
+        for (int index = 0; index < pairings.Length; index++)
         {
+            var p = pairings[index];
             var fRgb = ColorRgb.FromHex(p.ForeHex);
             var bRgb = ColorRgb.FromHex(p.BackHex);
 
             float wcag = fRgb.ContrastRatio(bRgb);
             float apca = ApcaEngine.ContrastLc(fRgb, bRgb);
             string wcagBadge = wcag >= 7.0f ? "AAA" : wcag >= 4.5f ? "AA" : "FAIL";
+
+            if (reuseContrast)
+            {
+                var row = ContrastPairings[index];
+                row.ForeHex = p.ForeHex;
+                row.BackHex = p.BackHex;
+                row.WcagRatio = (float)Math.Round(wcag, 1);
+                row.WcagBadge = wcagBadge;
+                row.IsWcagPassed = wcag >= 4.5f;
+                row.ApcaLc = (float)Math.Round(apca, 1);
+                row.ApcaRating = ApcaEngine.GetRating(apca);
+                row.IsApcaPassed = ApcaEngine.IsLargeTextCompliant(apca);
+                continue;
+            }
 
             ContrastPairings.Add(new ContrastPairingItemViewModel
             {
@@ -106,9 +123,11 @@ public partial class CSharpSettingsViewModel
         var rawSuccess = ColorRgb.FromHex("#10B981");
         var rawError = ColorRgb.FromHex("#EF4444");
 
-        VisionSafetyItems.Clear();
-        foreach (var def in deficiencies)
+        bool reuseVision = VisionSafetyItems.Count == deficiencies.Length && VisionSafetyItems.Select(v => v.Deficiency).SequenceEqual(deficiencies.Select(d => d.Deficiency));
+        if (!reuseVision) VisionSafetyItems.Clear();
+        for (int index = 0; index < deficiencies.Length; index++)
         {
+            var def = deficiencies[index];
             var simS = ColorBlindnessEngine.Simulate(rawSuccess, def.Deficiency);
             var simE = ColorBlindnessEngine.Simulate(rawError, def.Deficiency);
             float dE = ColorBlindnessEngine.DeltaE(simS, simE);
@@ -117,6 +136,17 @@ public partial class CSharpSettingsViewModel
             string label = safe
                 ? (dE >= 25f ? "Safe (Distinct)" : "Pass (Low Contrast)")
                 : "Confusable (ΔE < 12)";
+
+            if (reuseVision)
+            {
+                var row = VisionSafetyItems[index];
+                row.SimulatedSuccessHex = simS.ToHex();
+                row.SimulatedErrorHex = simE.ToHex();
+                row.DeltaE = (float)Math.Round(dE, 1);
+                row.IsSafe = safe;
+                row.StatusLabel = label;
+                continue;
+            }
 
             VisionSafetyItems.Add(new VisionDeficiencyStatusItemViewModel
             {

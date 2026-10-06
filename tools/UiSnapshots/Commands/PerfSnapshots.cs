@@ -80,6 +80,15 @@ internal static class PerfSnapshots
             Console.WriteLine($"Code Studio opened during start-up: {early.ToFrame:F0} ms after the window; longest input wait {earlyStall:F0} ms");
         }
 
+        if (options.Flag("theme-only"))
+        {
+            // Only the Hub and Settings built: what a theme costs without the other pages kept alive.
+            Snapshot.WaitFor(() => host.CodeStudioViewModel != null && !host.ManagerViewModel.IsRefreshingList, TimeSpan.FromMinutes(3));
+            PerfLoading.ThemeSwitch(window, host, probe);
+            window.Close();
+            return;
+        }
+
         bool started = false;
         double startupStall = probe.Measure(() => started = Snapshot.WaitFor(() => host.CodeStudioViewModel != null && host.NotebookStudioViewModel != null && !host.ManagerViewModel.IsRefreshingList, TimeSpan.FromMinutes(3)));
         if (!started)
@@ -497,6 +506,8 @@ internal static class PerfSnapshots
         {
             Console.WriteLine($"Page views built over the whole run: {built} (one per page)");
         }
+
+        if (options.Flag("theme-switch")) PerfLoading.ThemeSwitch(window, host, probe, options.Flag("theme-shots"));
 
         if (options.Value("big-csv-mb") is { } csvMb && double.TryParse(csvMb, System.Globalization.CultureInfo.InvariantCulture, out var csvMegabytes) && csvMegabytes > 0)
         {

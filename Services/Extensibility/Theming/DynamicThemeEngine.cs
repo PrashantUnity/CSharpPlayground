@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
@@ -11,14 +13,34 @@ using FrySharp.Sdk;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 
 /// <summary>
-/// Dynamic runtime theme engine. Modifies Avalonia Application.Current.Resources tokens
-/// in real time on the UI thread without requiring app restart or view reconstruction.
+/// Dynamic runtime theme engine: recolours, refonts and resizes the studio at run time, without a restart.
+/// <para>
+/// Every value it sets lives in one <b>theme layer</b>, a resource dictionary placed on top of the palette in each
+/// studio root (the studio host view, and windows of their own; the application when there is none). A change replaces
+/// that whole dictionary at once: <b>one</b> resource-change notification for a whole theme. Writing the ~240 entries of
+/// a theme one by one sent ~700 notifications, each re-resolving every dynamic resource of every page the studio keeps
+/// alive, which froze the app for ~8 s per theme. And because the palette was also included closer to the controls than
+/// the application, colours written to the application were shadowed and never showed.
+/// </para>
 /// </summary>
 public class DynamicThemeEngine : IThemeApi
 {
     private readonly ConcurrentDictionary<string, ThemeDefinition> _themes = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _overrides = new(StringComparer.OrdinalIgnoreCase);
     private string _activeThemeId = "dark-plus";
+
+    // The theme layer: every resource the engine has set, by key. Read and written under _layerGate.
+    private readonly Dictionary<string, object> _layer = new(StringComparer.Ordinal);
+    private readonly object _layerGate = new();
+    private ThemeVariant? _variant;
+
+    // Where the layer is shown (UI thread only): each root's resources, and the layer dictionary installed in it.
+    private readonly List<IResourceDictionary> _roots = new();
+    private readonly Dictionary<IResourceDictionary, ThemeLayerProvider> _installed = new();
+    private int _commitQueued;
+
+    /// <summary>How many times the layer was swapped into the screen (tests check a whole theme costs one).</summary>
+    public int LayerCommits { get; private set; }
 
     public event Action<string>? ThemeChanged;
 
@@ -51,17 +73,15 @@ public class DynamicThemeEngine : IThemeApi
             ? tokenName.Substring(0, tokenName.Length - 5) + "Color"
             : tokenName;
 
-        UiDispatchHelper.RunOnUi(() =>
+        var brush = new ImmutableSolidColorBrush(color);
+        lock (_layerGate)
         {
-            if (Application.Current?.Resources is { } res)
-            {
-                var brush = new SolidColorBrush(color);
-                res[brushKey] = brush;
-                res[colorKey] = color;
-                res[tokenName] = brush;
-            }
-        });
+            _layer[brushKey] = brush;
+            _layer[colorKey] = color;
+            _layer[tokenName] = brush;
+        }
 
+        QueueCommit();
         ThemeChanged?.Invoke(_activeThemeId);
     }
 
@@ -72,6 +92,17 @@ public class DynamicThemeEngine : IThemeApi
         if (_overrides.TryGetValue(tokenName, out var overrideHex))
         {
             return overrideHex;
+        }
+
+        object? layered;
+        lock (_layerGate) _layer.TryGetValue(tokenName, out layered);
+        if (layered is ISolidColorBrush layeredBrush)
+        {
+            return $"#{layeredBrush.Color.A:X2}{layeredBrush.Color.R:X2}{layeredBrush.Color.G:X2}{layeredBrush.Color.B:X2}";
+        }
+        if (layered is Color layeredColor)
+        {
+            return $"#{layeredColor.A:X2}{layeredColor.R:X2}{layeredColor.G:X2}{layeredColor.B:X2}";
         }
 
         if (Application.Current?.Resources is { } res && res.TryGetResource(tokenName, null, out var val))
@@ -100,75 +131,58 @@ public class DynamicThemeEngine : IThemeApi
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontFamily);
 
-        UiDispatchHelper.RunOnUi(() =>
+        lock (_layerGate) SetFontValues(role, fontFamily, size);
+        QueueCommit();
+    }
+
+    private void SetFontValues(string role, string fontFamily, double? size)
+    {
+        var family = new FontFamily(fontFamily);
+        switch (role.ToLowerInvariant())
         {
-            if (Application.Current?.Resources is not { } res) return;
-
-            var family = new FontFamily(fontFamily);
-
-            switch (role.ToLowerInvariant())
-            {
-                case "editor":
-                case "mono":
-                case "code":
-                    res["M3FontFamilyMono"] = family;
-                    res["EditorFontFamily"] = family;
-                    if (size.HasValue) res["EditorFontSize"] = size.Value;
-                    break;
-                case "ui":
-                case "system":
-                default:
-                    res["M3FontFamily"] = family;
-                    res["M3FontFamilyDisplay"] = family;
-                    if (size.HasValue) res["M3FontSizeBodyMedium"] = size.Value;
-                    break;
-            }
-        });
+            case "editor":
+            case "mono":
+            case "code":
+                _layer["M3FontFamilyMono"] = family;
+                _layer["EditorFontFamily"] = family;
+                if (size.HasValue) _layer["EditorFontSize"] = size.Value;
+                break;
+            case "ui":
+            case "system":
+            default:
+                _layer["M3FontFamily"] = family;
+                _layer["M3FontFamilyDisplay"] = family;
+                if (size.HasValue) _layer["M3FontSizeBodyMedium"] = size.Value;
+                break;
+        }
     }
 
     public void SetDensity(LayoutDensity density)
     {
-        UiDispatchHelper.RunOnUi(() =>
+        var (tab, rail, small, medium) = density switch
         {
-            if (Application.Current?.Resources is not { } res) return;
+            LayoutDensity.Compact => (28.0, 42.0, 2.0, 6.0),
+            LayoutDensity.Spacious => (42.0, 54.0, 6.0, 12.0),
+            _ => (35.0, 48.0, 4.0, 8.0),
+        };
 
-            switch (density)
-            {
-                case LayoutDensity.Compact:
-                    res["DensityTabHeight"] = 28.0;
-                    res["DensityRailWidth"] = 42.0;
-                    res["DensityPaddingSmall"] = 2.0;
-                    res["DensityPaddingMedium"] = 6.0;
-                    break;
-                case LayoutDensity.Comfortable:
-                    res["DensityTabHeight"] = 35.0;
-                    res["DensityRailWidth"] = 48.0;
-                    res["DensityPaddingSmall"] = 4.0;
-                    res["DensityPaddingMedium"] = 8.0;
-                    break;
-                case LayoutDensity.Spacious:
-                    res["DensityTabHeight"] = 42.0;
-                    res["DensityRailWidth"] = 54.0;
-                    res["DensityPaddingSmall"] = 6.0;
-                    res["DensityPaddingMedium"] = 12.0;
-                    break;
-            }
-        });
+        lock (_layerGate)
+        {
+            _layer["DensityTabHeight"] = tab;
+            _layer["DensityRailWidth"] = rail;
+            _layer["DensityPaddingSmall"] = small;
+            _layer["DensityPaddingMedium"] = medium;
+        }
+
+        QueueCommit();
     }
 
     public void SetSpacing(string tokenName, double value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenName);
         _overrides[tokenName] = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-        UiDispatchHelper.RunOnUi(() =>
-        {
-            if (Application.Current?.Resources is { } res)
-            {
-                res[tokenName] = value;
-            }
-        });
-
+        lock (_layerGate) _layer[tokenName] = value;
+        QueueCommit();
         ThemeChanged?.Invoke(_activeThemeId);
     }
 
@@ -179,21 +193,18 @@ public class DynamicThemeEngine : IThemeApi
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenName);
         ArgumentNullException.ThrowIfNull(value);
         _overrides[tokenName] = value.ToString() ?? string.Empty;
-
-        UiDispatchHelper.RunOnUi(() =>
-        {
-            if (Application.Current?.Resources is { } res)
-            {
-                res[tokenName] = value;
-            }
-        });
-
+        lock (_layerGate) _layer[tokenName] = value;
+        QueueCommit();
         ThemeChanged?.Invoke(_activeThemeId);
     }
 
     public object? GetResource(string tokenName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenName);
+        lock (_layerGate)
+        {
+            if (_layer.TryGetValue(tokenName, out var layered)) return layered;
+        }
 
         if (Application.Current?.Resources is { } res && res.TryGetResource(tokenName, null, out var val))
         {
@@ -222,16 +233,10 @@ public class DynamicThemeEngine : IThemeApi
         _activeThemeId = themeId;
         _overrides.Clear();
 
-        UiDispatchHelper.RunOnUi(() =>
+        // The whole theme is worked out first (off screen), then shown in one swap of the theme layer.
+        lock (_layerGate)
         {
-            if (Application.Current?.Resources is not { } res) return;
-
-            // Switch Avalonia requested theme variant
-            if (Application.Current is { } app)
-            {
-                app.RequestedThemeVariant = def.IsDark ? ThemeVariant.Dark : ThemeVariant.Light;
-            }
-
+            _variant = def.IsDark ? ThemeVariant.Dark : ThemeVariant.Light;
             foreach (var (key, hex) in def.Colors)
             {
                 if (TryParseColor(hex, out var color))
@@ -241,21 +246,118 @@ public class DynamicThemeEngine : IThemeApi
                         ? key.Substring(0, key.Length - 5) + "Color"
                         : key;
 
-                    var brush = new SolidColorBrush(color);
-                    res[brushKey] = brush;
-                    res[colorKey] = color;
-                    res[key] = brush;
+                    var brush = new ImmutableSolidColorBrush(color);
+                    _layer[brushKey] = brush;
+                    _layer[colorKey] = color;
+                    _layer[key] = brush;
                 }
             }
 
             foreach (var (fontRole, fontName) in def.Fonts)
             {
-                SetFont(fontRole, fontName);
+                SetFontValues(fontRole, fontName, null);
             }
-        });
+        }
 
+        QueueCommit();
         ThemeChanged?.Invoke(_activeThemeId);
         return true;
+    }
+
+    /// <summary>
+    /// Shows the theme layer in <paramref name="element"/>'s resources while it is in a window: the studio host view,
+    /// and windows of their own that include the palette. The layer sits on top of the palette there, so it wins.
+    /// </summary>
+    public void TrackResourceRoot(StyledElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (element is Window window)
+        {
+            // A window is the root of its own tree: it is never "detached", it closes.
+            AttachResourceRoot(window.Resources);
+            window.Closed += (_, _) => DetachResourceRoot(window.Resources);
+            return;
+        }
+
+        element.AttachedToLogicalTree += (_, _) => AttachResourceRoot(element.Resources);
+        element.DetachedFromLogicalTree += (_, _) => DetachResourceRoot(element.Resources);
+        if (((Avalonia.LogicalTree.ILogical)element).IsAttachedToLogicalTree) AttachResourceRoot(element.Resources);
+    }
+
+    /// <summary>Starts showing the theme layer in <paramref name="root"/> (UI thread).</summary>
+    public void AttachResourceRoot(IResourceDictionary root)
+    {
+        if (_roots.Contains(root)) return;
+        _roots.Add(root);
+
+        // A theme applied before any studio existed went to the application; a studio shows it from now on.
+        if (Application.Current?.Resources is { } app && !_roots.Contains(app) && _installed.Remove(app, out var appLayer))
+        {
+            app.MergedDictionaries.Remove(appLayer);
+        }
+
+        CommitNow();
+    }
+
+    /// <summary>Stops showing the theme layer in <paramref name="root"/> (UI thread).</summary>
+    public void DetachResourceRoot(IResourceDictionary root)
+    {
+        _roots.Remove(root);
+        if (_installed.Remove(root, out var layer)) root.MergedDictionaries.Remove(layer);
+    }
+
+    // Many changes in a row (a script setting fifty colours) are shown together, once, on the next UI turn.
+    private void QueueCommit()
+    {
+        if (!UiDispatchHelper.HasLiveUiLifetime)
+        {
+            UiDispatchHelper.RunOnUi(CommitNow);
+            return;
+        }
+
+        if (System.Threading.Interlocked.Exchange(ref _commitQueued, 1) == 1) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            System.Threading.Interlocked.Exchange(ref _commitQueued, 0);
+            CommitNow();
+        }, Avalonia.Threading.DispatcherPriority.Send);
+    }
+
+    private void CommitNow()
+    {
+        Dictionary<object, object?> values;
+        ThemeVariant? variant;
+        lock (_layerGate)
+        {
+            values = new Dictionary<object, object?>(_layer.Count);
+            foreach (var (key, value) in _layer) values[key] = value;
+            variant = _variant;
+        }
+
+        // The light/dark switch re-resolves every themed resource once; only when it really changes.
+        if (variant != null && Application.Current is { } app && app.RequestedThemeVariant != variant)
+        {
+            app.RequestedThemeVariant = variant;
+        }
+
+        var targets = _roots.Count > 0 ? (IEnumerable<IResourceDictionary>)_roots : Application.Current?.Resources is { } appResources ? new[] { appResources } : Array.Empty<IResourceDictionary>();
+        foreach (var root in targets)
+        {
+            // The layer stays installed; its content is replaced in one go: one change for everything below the root.
+            if (_installed.TryGetValue(root, out var layer) && root.MergedDictionaries.Contains(layer))
+            {
+                layer.Replace(values);
+            }
+            else
+            {
+                layer = new ThemeLayerProvider();
+                layer.Replace(values);
+                root.MergedDictionaries.Add(layer);
+                _installed[root] = layer;
+            }
+        }
+
+        LayerCommits++;
     }
 
     public IReadOnlyList<ThemeDefinition> GetAvailableThemes()

@@ -44,7 +44,7 @@ public partial class CSharpSettingsViewModel
 
     public ObservableCollection<CategoryFilterItemViewModel> CategoryFilters { get; } = new();
     public ObservableCollection<ColorTokenItemViewModel> ColorTokens { get; } = new();
-    public ObservableCollection<ColorTokenItemViewModel> FilteredColorTokens { get; } = new();
+    public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.RangeObservableCollection<ColorTokenItemViewModel> FilteredColorTokens { get; } = new();
 
     public int TotalTokensCount => ColorTokens.Count;
 
@@ -92,7 +92,7 @@ public partial class CSharpSettingsViewModel
 
     private void FilterColorTokens()
     {
-        FilteredColorTokens.Clear();
+        var matching = new List<ColorTokenItemViewModel>();
         string q = (TokenSearchQuery ?? string.Empty).Trim();
         string cat = SelectedTokenCategory ?? "All";
 
@@ -109,10 +109,14 @@ public partial class CSharpSettingsViewModel
                 t.CurrentHex.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 t.Description.Contains(q, StringComparison.OrdinalIgnoreCase))
             {
-                FilteredColorTokens.Add(t);
+                matching.Add(t);
             }
         }
 
+        // Applying a theme changes the tokens' colours, not which tokens are listed: their swatches follow by binding,
+        // so the list is only replaced when the set really changed, and then in one go (it used to be cleared and
+        // refilled row by row, rebuilding every swatch, on every theme).
+        if (!matching.SequenceEqual(FilteredColorTokens)) FilteredColorTokens.ReplaceAll(matching);
         MatchingTokensCount = FilteredColorTokens.Count;
     }
 

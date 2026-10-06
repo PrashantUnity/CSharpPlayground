@@ -13,13 +13,6 @@
              x:DataType="settings:CSharpSettingsViewModel"
              Background="{DynamicResource DsBgBrush}">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
 
     <Panel>

@@ -186,7 +186,45 @@ public partial class CSharpSettingsViewModel
         ContrastTarget = ContrastTarget
     };
 
+    // Dragging the hue wheel or a slider changes a value many times a second: the previews are worked out once per UI
+    // turn, from the latest values, instead of once per change.
+    private int _harmonyUpdateQueued;
+
     private void UpdateHarmonyChords()
+    {
+        if (Avalonia.Application.Current == null)
+        {
+            UpdateHarmonyChordsNow();
+            return;
+        }
+
+        if (System.Threading.Interlocked.Exchange(ref _harmonyUpdateQueued, 1) == 1) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            System.Threading.Interlocked.Exchange(ref _harmonyUpdateQueued, 0);
+            UpdateHarmonyChordsNow();
+        }, Avalonia.Threading.DispatcherPriority.Background);
+    }
+
+    // The swatch rows are kept and recoloured (their values are observable), not cleared and rebuilt on every change.
+    private static void SyncSwatches(System.Collections.ObjectModel.ObservableCollection<TonalSwatchItemViewModel> target, IReadOnlyList<(int Stop, string Hex, bool IsKeyRole)> wanted)
+    {
+        if (target.Count == wanted.Count && target.Select(t => t.Stop).SequenceEqual(wanted.Select(w => w.Stop)))
+        {
+            for (int i = 0; i < wanted.Count; i++)
+            {
+                target[i].Hex = wanted[i].Hex;
+                target[i].IsKeyRole = wanted[i].IsKeyRole;
+            }
+
+            return;
+        }
+
+        target.Clear();
+        foreach (var w in wanted) target.Add(new TonalSwatchItemViewModel { Stop = w.Stop, Hex = w.Hex, IsKeyRole = w.IsKeyRole });
+    }
+
+    private void UpdateHarmonyChordsNow()
     {
         var config = GetCurrentHarmonicConfiguration();
         float baseHue = (SelectedHueDegrees % 360f + 360f) % 360f;
@@ -196,47 +234,20 @@ public partial class CSharpSettingsViewModel
         var scales = HarmonicColorGenerator.GenerateAllTonalScales(config);
         if (scales.TryGetValue("Primary", out var pScale))
         {
-            PrimaryTonalSwatches.Clear();
-            foreach (int stop in TonalScaleEngine.StandardStops)
-            {
-                string hex = SimulateHex(pScale[stop].ToHex());
-                PrimaryTonalSwatches.Add(new TonalSwatchItemViewModel
-                {
-                    Stop = stop,
-                    Hex = hex,
-                    IsKeyRole = stop == (IsThemeDarkMode ? 400 : 500)
-                });
-            }
+            SyncSwatches(PrimaryTonalSwatches, TonalScaleEngine.StandardStops
+                .Select(stop => (stop, SimulateHex(pScale[stop].ToHex()), stop == (IsThemeDarkMode ? 400 : 500))).ToList());
         }
 
         if (scales.TryGetValue("Accent", out var aScale))
         {
-            AccentTonalSwatches.Clear();
-            foreach (int stop in TonalScaleEngine.StandardStops)
-            {
-                string hex = SimulateHex(aScale[stop].ToHex());
-                AccentTonalSwatches.Add(new TonalSwatchItemViewModel
-                {
-                    Stop = stop,
-                    Hex = hex,
-                    IsKeyRole = stop == (IsThemeDarkMode ? 400 : 500)
-                });
-            }
+            SyncSwatches(AccentTonalSwatches, TonalScaleEngine.StandardStops
+                .Select(stop => (stop, SimulateHex(aScale[stop].ToHex()), stop == (IsThemeDarkMode ? 400 : 500))).ToList());
         }
 
         if (scales.TryGetValue("Neutral", out var nScale))
         {
-            NeutralTonalSwatches.Clear();
-            foreach (int stop in TonalScaleEngine.StandardStops)
-            {
-                string hex = SimulateHex(nScale[stop].ToHex());
-                NeutralTonalSwatches.Add(new TonalSwatchItemViewModel
-                {
-                    Stop = stop,
-                    Hex = hex,
-                    IsKeyRole = stop == (IsThemeDarkMode ? 900 : 100)
-                });
-            }
+            SyncSwatches(NeutralTonalSwatches, TonalScaleEngine.StandardStops
+                .Select(stop => (stop, SimulateHex(nScale[stop].ToHex()), stop == (IsThemeDarkMode ? 900 : 100))).ToList());
         }
 
         string rawCanvas, rawSurface, rawPrimary, rawSecondary;
@@ -313,12 +324,17 @@ public partial class CSharpSettingsViewModel
         return sim.ToHex();
     }
 
+    // Several theme changes in a row (a theme, then its colours from a script) refresh the inspector once.
+    private int _inspectorRefreshQueued;
+
     private void OnThemeChangedForInspector(string themeId)
     {
+        if (System.Threading.Interlocked.Exchange(ref _inspectorRefreshQueued, 1) == 1) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            System.Threading.Interlocked.Exchange(ref _inspectorRefreshQueued, 0);
             RefreshColorTokenValues();
-        });
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     public void ApplyHarmonicConfiguration()

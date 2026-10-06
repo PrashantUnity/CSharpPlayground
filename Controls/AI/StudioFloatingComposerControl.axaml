@@ -10,13 +10,6 @@
              x:DataType="vm:AiComposerViewModel"
              IsVisible="{Binding IsVisible}">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
 
     <!-- Overlay Host Container -->

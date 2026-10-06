@@ -107,6 +107,105 @@ internal static class PerfLoading
         return clock.Elapsed.TotalMilliseconds;
     }
 
+    // --theme-switch: apply theme presets from the Settings page (every page already built), the way a user tries them.
+    public static void ThemeSwitch(Window window, PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.CSharpStudioHostViewModel host, StallProbe probe, bool shots = false)
+    {
+        var settings = host.SettingsViewModel;
+        host.NavigateToSettings("Themes");
+        Pump(Task.CompletedTask);
+        Dispatcher.UIThread.RunJobs();
+        using (window.CaptureRenderedFrame()) { }
+        var presets = settings.ThemePresets.Select(p => p.Id).ToList();
+        int resourceChanges = 0;
+        void Count(object? sender, Avalonia.Controls.ResourcesChangedEventArgs e) => resourceChanges++;
+        window.ResourcesChanged += Count;
+        foreach (var id in presets.Take(4).Concat(presets.Take(1)))
+        {
+            resourceChanges = 0;
+            var gc = GC.GetTotalPauseDuration();
+            var clock = Stopwatch.StartNew();
+            double refreshMs = 0, layoutMs = 0;
+            double stall = probe.Measure(() =>
+            {
+                // What the Settings button does, split: the engine's swap, the token inspector refresh, then layout + a frame.
+                var part = Stopwatch.StartNew();
+                settings.ApplyThemePreset(id);
+                refreshMs = part.Elapsed.TotalMilliseconds;
+                var reflected = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+                var layoutManager = typeof(TopLevel).GetProperty("LayoutManager", reflected)?.GetValue(window) ?? typeof(TopLevel).GetField("_layoutManager", reflected)?.GetValue(window);
+                var queued = new SortedDictionary<string, int>();
+                int total = 0;
+                if (layoutManager?.GetType().GetField("_toMeasure", reflected)?.GetValue(layoutManager) is System.Collections.IEnumerable toMeasure)
+                {
+                    foreach (var control in toMeasure)
+                    {
+                        total++;
+                        string where = "";
+                        for (var v = control as Avalonia.Visual; v != null; v = v.GetVisualParent())
+                        {
+                            if (v.GetType().Name.StartsWith("Theme") || v.GetType().Name.EndsWith("SectionControl")) { where = v.GetType().Name; break; }
+                        }
+
+                        queued[where] = queued.GetValueOrDefault(where) + 1;
+                    }
+                }
+
+                Console.WriteLine($"   queued for measure: {total} — " + string.Join(", ", queued.OrderByDescending(kv => kv.Value).Take(8).Select(kv => $"{(kv.Key.Length == 0 ? "(elsewhere)" : kv.Key)} x{kv.Value}")));
+                part.Restart();
+                var executeLayoutPass = layoutManager?.GetType().GetMethod("ExecuteLayoutPass", reflected, Type.EmptyTypes);
+                executeLayoutPass?.Invoke(layoutManager, null);
+                double layoutOnly = part.Elapsed.TotalMilliseconds;
+                part.Restart();
+                Dispatcher.UIThread.RunJobs();
+                double jobsOnly = part.Elapsed.TotalMilliseconds;
+                part.Restart();
+                using (window.CaptureRenderedFrame()) { }
+                Console.WriteLine($"   after the apply: layout pass {layoutOnly:F0} ms, queued jobs {jobsOnly:F0} ms, one frame {part.Elapsed.TotalMilliseconds:F0} ms");
+                layoutMs = layoutOnly + jobsOnly + part.Elapsed.TotalMilliseconds;
+            });
+            Console.WriteLine($"   split: the Settings command (theme swap + token inspector) {refreshMs:F0} ms, layout + jobs + frame {layoutMs:F0} ms");
+            if (shots) Snapshot.Save(window, $"theme-{id}");
+            Console.WriteLine($"theme {id}: {clock.Elapsed.TotalMilliseconds:F0} ms, longest input wait {stall:F0} ms, " +
+                              $"resource-change notifications reaching the window {resourceChanges}, GC pauses {(GC.GetTotalPauseDuration() - gc).TotalMilliseconds:F0} ms");
+        }
+
+        window.ResourcesChanged -= Count;
+
+        // Dragging the hue wheel: one change per frame, each followed by its jobs and a frame, as the user sees it.
+        var frames = new List<double>();
+        double dragStall = probe.Measure(() =>
+        {
+            for (int i = 1; i <= 30; i++)
+            {
+                var frame = Stopwatch.StartNew();
+                settings.SelectedHueDegrees = i * 12f;
+                Dispatcher.UIThread.RunJobs();
+                using (window.CaptureRenderedFrame()) { }
+                frames.Add(frame.Elapsed.TotalMilliseconds);
+            }
+        });
+        Console.WriteLine($"hue wheel drag (30 steps): median {frames.Order().ElementAt(frames.Count / 2):F0} ms per step, slowest {frames.Max():F0} ms; longest input wait {dragStall:F0} ms");
+
+        foreach (var (name, action) in new (string, Func<Task>)[]
+        {
+            ("apply the harmonic theme", () => settings.ApplyHarmonicConfigurationAsync()),
+            ("randomize the wheel", () => settings.RandomizeHarmonicWheelAsync()),
+            ("density compact", () => settings.SetDensityAsync("Compact")),
+            ("density comfortable", () => settings.SetDensityAsync("Comfortable")),
+            ("theme dark-plus again", () => settings.ApplyThemePresetAsync("dark-plus")),
+        })
+        {
+            var clock = Stopwatch.StartNew();
+            double stall = probe.Measure(() =>
+            {
+                Pump(action());
+                Dispatcher.UIThread.RunJobs();
+                using (window.CaptureRenderedFrame()) { }
+            });
+            Console.WriteLine($"{name}: {clock.Elapsed.TotalMilliseconds:F0} ms, longest input wait {stall:F0} ms");
+        }
+    }
+
     // --table-rows n: a table of n rows shown in a window of its own, the way the CSV preview shows it.
     public static void TableOnly(StallProbe probe, int rows, string? shot = null)
     {

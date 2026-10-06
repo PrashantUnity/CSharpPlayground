@@ -14,13 +14,6 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks.NotebookCellOutputControl"
              x:DataType="notebooks:NotebookCellViewModel">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
 
     <StackPanel Spacing="4">

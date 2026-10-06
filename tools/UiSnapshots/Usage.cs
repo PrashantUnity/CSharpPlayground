@@ -129,6 +129,7 @@ internal static class Usage
               --open-early           open a script the moment the window is up, while the engine is still starting
               --big-csv-mb <n>       also open a CSV of about n MB (shown as a table) and type in it
               --big-image-mp <n>     also open a PNG of about n megapixels and switch away from it and back
+              --theme-switch         also apply theme presets from Settings (every page built) and time each
               --csv-experiments      with --big-csv-mb: split an open into its parts (view model, editor, table, language switch)
               --table-rows <n>       only: show a table of n rows in a window of its own (--table-shot <name> saves it)
               --memory-trace         print the heap after each start-up step and each page's first visit

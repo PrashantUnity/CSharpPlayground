@@ -23,6 +23,9 @@ public partial class CSharpStudioHostView : UserControl, IDisposable
         InitializeComponent();
         AddHandler(KeyDownEvent, OnHostKeyDown, RoutingStrategies.Tunnel);
 
+        // The studio's palette is included here, once; the theme engine shows its theme layer on top of it here.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.TrackResourceRoot(this);
+
         _pages = this.FindControl<KeepAlivePageHost>("PageHost")!;
         _pages.Register<CSharpManagerViewModel>(() => new CSharpManagerView());
         _pages.Register<CSharpCodeStudioViewModel>(() => new CSharpCodeStudioView());

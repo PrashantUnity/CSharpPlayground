@@ -22,9 +22,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>

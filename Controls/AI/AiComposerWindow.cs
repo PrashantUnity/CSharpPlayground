@@ -71,6 +71,7 @@ public class AiComposerWindow : Window
             Source = new Uri("avares://CSharpEditorPlugin/Styles/StudioStyles.axaml")
         });
         Content = composerControl;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.TrackResourceRoot(this);
     }
 
     private void OnCaptureProtectionChanged(bool isProtected)
