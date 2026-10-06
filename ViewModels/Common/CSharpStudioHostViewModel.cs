@@ -486,5 +486,23 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
         _settingsStore?.GetSetting(PluginId, "ExecutionTimeoutSeconds", DefaultExecutionTimeoutSeconds) ?? DefaultExecutionTimeoutSeconds;
 
     /// <summary>Stops presenting activity (its timer and subscriptions); the studio is going away.</summary>
-    public void Dispose() => Activity.Dispose();
+    /// <summary>Writes every pending preference change now (the studio or the window closing).</summary>
+    public void FlushSettings()
+    {
+        try
+        {
+            SettingsViewModel.FlushAutoSave();
+            _languages.StudioSettings.Flush();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CSharpStudioHost] Couldn't save the preferences on close: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        FlushSettings();
+        Activity.Dispose();
+    }
 }

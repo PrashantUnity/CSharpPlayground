@@ -124,6 +124,11 @@ public class CSharpEditorPlugin : IFryPlugin
         var extensionManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Extensions.ExtensionManager();
         PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ExtensionManager = extensionManager;
 
+        // The look the user left the studio with (theme, density, colours), before their customization script runs, so
+        // the script still has the last word.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.AppearanceRestorer.RestoreFrom(
+            null, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine);
+
         _ = Task.Run(async () =>
         {
             var ws = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.WorkspaceService.RootPath;

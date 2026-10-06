@@ -18,6 +18,8 @@
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="MinHeight" Value="66" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
@@ -25,7 +27,112 @@
             <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         </Style>
+        <Style Selector="Button.theme-card-action">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+        <Style Selector="Button.theme-card-action:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        </Style>
+        <Style Selector="Panel.theme-card StackPanel.theme-card-actions">
+            <Setter Property="Opacity" Value="0.75" />
+        </Style>
+        <Style Selector="Panel.theme-card:pointerover StackPanel.theme-card-actions">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
     </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- One theme card: click to apply; Duplicate on every theme, Rename and Delete on the user's own. -->
+        <DataTemplate x:Key="ThemeCardTemplate" x:DataType="settings:ThemePresetItemViewModel">
+            <Panel Classes="theme-card" Margin="0,0,10,10" Width="245">
+                <Button Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).ApplyThemePresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding Id}" Classes="theme-preset-card">
+                    <Grid RowDefinitions="Auto,Auto,Auto">
+                        <Border Grid.Row="0" Height="8" CornerRadius="3" ClipToBounds="True" Margin="0,0,0,8" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                            <Grid ColumnDefinitions="*,*,*,*">
+                                <Border Grid.Column="0" Background="{Binding BgHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                <Border Grid.Column="1" Background="{Binding SurfaceHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                <Border Grid.Column="2" Background="{Binding AccentHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                <Border Grid.Column="3" Background="{Binding TextHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,3">
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <Border Grid.Column="1" IsVisible="{Binding IsActive}" Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="ACTIVE" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Grid.Row="2" Text="{Binding Description}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" Margin="0,0,72,0" />
+                    </Grid>
+                </Button>
+
+                <StackPanel Classes="theme-card-actions" Orientation="Horizontal" Spacing="1"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,5">
+                    <Button Classes="theme-card-action" IsVisible="{Binding IsUserTheme}" ToolTip.Tip="Rename"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).BeginRenameUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Classes="theme-card-action" ToolTip.Tip="Save a copy to My themes"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).DuplicateThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                    </Button>
+                    <Button Classes="theme-card-action" IsVisible="{Binding IsUserTheme}" ToolTip.Tip="Delete"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).AskDeleteUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
+                    </Button>
+                </StackPanel>
+
+                <!-- Rename in place: Enter keeps the name, Escape cancels. -->
+                <Border IsVisible="{Binding IsRenaming}" Background="{DynamicResource DsSurfaceHighBrush}"
+                        BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8">
+                    <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                        <TextBox Grid.Column="0" Classes="theme-rename-box" Text="{Binding EditName, Mode=TwoWay}"
+                                 PlaceholderText="Theme name" FontSize="12" MaxLength="80" VerticalAlignment="Center"
+                                 KeyDown="OnRenameBoxKeyDown" />
+                        <Button Grid.Column="1" Classes="theme-card-action" ToolTip.Tip="Rename" Margin="4,0,0,0"
+                                Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).RenameUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
+                        </Button>
+                        <Button Grid.Column="2" Classes="theme-card-action" ToolTip.Tip="Cancel"
+                                Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).CancelRenameUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <materialIcons:MaterialIcon Kind="Close" Width="15" Height="15" />
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Delete asks first. -->
+                <Border IsVisible="{Binding IsConfirmingDelete}" Background="{DynamicResource DsSurfaceHighBrush}"
+                        BorderBrush="{DynamicResource DsErrorBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8">
+                    <Grid RowDefinitions="Auto,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Row="0" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" TextTrimming="CharacterEllipsis">
+                            <Run Text="Delete" /> <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text="?" />
+                        </TextBlock>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0" HorizontalAlignment="Right">
+                            <Button Classes="cs-toolbar-outlined" Content="Keep"
+                                    Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).AskDeleteUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                            <Button Classes="cs-toolbar-filled" Content="Delete" Background="{DynamicResource DsErrorBrush}"
+                                    Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).DeleteUserThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Panel>
+        </DataTemplate>
+    </UserControl.Resources>
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -33,7 +140,34 @@
             CornerRadius="10"
             Padding="18,16">
         <StackPanel Spacing="12">
+            <!-- My themes: saved by the user, as many as they like, each with its own name. -->
             <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="BookmarkMultipleOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="MY THEMES" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBox Text="{Binding NewThemeName, Mode=TwoWay}" Width="220" FontSize="12" MaxLength="80"
+                             PlaceholderText="Name the current theme…" VerticalAlignment="Center"
+                             KeyDown="OnSaveAsBoxKeyDown" />
+                    <Button Command="{Binding SaveCurrentThemeAsCommand}" Classes="cs-toolbar-filled"
+                            ToolTip.Tip="Save the theme in use to My themes under this name">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" />
+                            <TextBlock Text="Save as" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock IsVisible="{Binding !UserThemes.Count}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
+                       Text="Themes you save appear here and come back every time the studio opens. Generate one below, or copy any theme with its copy button, then name it and save." />
+
+            <ItemsControl ItemsSource="{Binding UserThemes}" ItemTemplate="{StaticResource ThemeCardTemplate}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,0">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="ViewGridOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                     <TextBlock Text="CURATED THEMES &amp; PRESETS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
@@ -41,34 +175,8 @@
                 <TextBlock Grid.Column="2" Text="Click any theme card to apply immediately" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
             </Grid>
 
-            <ItemsControl ItemsSource="{Binding ThemePresets}">
+            <ItemsControl ItemsSource="{Binding ThemePresets}" ItemTemplate="{StaticResource ThemeCardTemplate}">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="settings:ThemePresetItemViewModel">
-                        <Button Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).ApplyThemePresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding Id}" Classes="theme-preset-card" Margin="0,0,10,10" Width="245">
-                            <Grid RowDefinitions="Auto,Auto,Auto">
-                                <Border Grid.Row="0" Height="8" CornerRadius="3" ClipToBounds="True" Margin="0,0,0,8" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
-                                    <Grid ColumnDefinitions="*,*,*,*">
-                                        <Border Grid.Column="0" Background="{Binding BgHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                                        <Border Grid.Column="1" Background="{Binding SurfaceHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                                        <Border Grid.Column="2" Background="{Binding AccentHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                                        <Border Grid.Column="3" Background="{Binding TextHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                                    </Grid>
-                                </Border>
-
-                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,3">
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                    <Border Grid.Column="1" IsVisible="{Binding IsActive}" Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="ACTIVE" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                    </Border>
-                                </Grid>
-
-                                <TextBlock Grid.Row="2" Text="{Binding Description}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
-                            </Grid>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
     </Border>

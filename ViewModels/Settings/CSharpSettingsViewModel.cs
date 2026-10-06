@@ -85,6 +85,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeAiSettings();
 
         _settingsStore.SettingsChanged += OnStoreSettingsChanged;
+        FinishInitialization();
     }
 
     private void OnStoreSettingsChanged(StudioSettings s)
@@ -169,11 +170,10 @@ public partial class CSharpSettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Saves now (Settings also saves itself a moment after every change).</summary>
     public void Apply()
     {
-        SaveEditorSettings();
-        SaveLanguageSettings();
-        HasPendingChanges = false;
+        SaveChanges(flush: true);
         ShowNotification("Settings and environment choices saved successfully.", isError: false);
     }
 
@@ -182,7 +182,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         ResetEditorSettingsToDefaults();
         ResetLanguageSettingsToDefaults();
         HasPendingChanges = true;
-        ShowNotification("Settings reset to defaults. Click Apply to persist.", isError: false);
+        ShowNotification("Settings reset to defaults.", isError: false);
     }
 
     [RelayCommand]

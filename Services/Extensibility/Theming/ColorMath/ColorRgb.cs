@@ -91,6 +91,26 @@ public readonly record struct ColorRgb(byte R, byte G, byte B)
     }
 
     /// <summary>
+    /// Parses what a person typed as a colour: #RGB, #RRGGBB or #AARRGGBB (the # optional), hex digits only. Unlike
+    /// <see cref="FromHex"/>, anything else is refused rather than read as black.
+    /// </summary>
+    public static bool TryParseHex(string? text, out ColorRgb color)
+    {
+        color = Black;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var span = text.Trim().AsSpan();
+        if (span.StartsWith("#")) span = span[1..];
+        if (span.Length is not (3 or 6 or 8)) return false;
+        foreach (var c in span)
+        {
+            if (!char.IsAsciiHexDigit(c)) return false;
+        }
+
+        color = FromHex(span.ToString());
+        return true;
+    }
+
+    /// <summary>
     /// Parses a hex color string (#RGB, #RRGGBB, or #AARRGGBB).
     /// </summary>
     public static ColorRgb FromHex(string hex)

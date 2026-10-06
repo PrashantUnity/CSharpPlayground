@@ -125,6 +125,42 @@ internal static class HubAndDocsSnapshots
         Snapshot.EnsureExtensionsLoaded(languages, options);
         var vm = new CSharpSettingsViewModel(languages);
         if (options.Value("category") is { } cat) vm.SelectCategory(cat);
+        if (options.Value("engine") is { } engineName)
+        {
+            vm.SelectedColorEngine = engineName.Equals("hct", StringComparison.OrdinalIgnoreCase)
+                ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Hct
+                : PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Oklch;
+        }
+
+        if (options.Value("lock") is { } locks)
+        {
+            foreach (var id in locks.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var row = vm.CoreSections.Concat(vm.SyntaxSections).Concat(vm.ChartSections).FirstOrDefault(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+                if (row != null) vm.ToggleSectionLock(row);
+            }
+        }
+
+        for (var i = 0; i < options.Int("generate", 0); i++) vm.GeneratePalette();
+        if (options.Flag("apply-palette")) vm.ApplyHarmonicConfiguration();
+        if (options.Int("saved-themes", 0) is var savedCount and > 0)
+        {
+            // Saved into the throwaway folder's theme library, as the Save as box does.
+            string[] names = ["Ocean", "Sunset", "Forest night", "Paper", "Midnight", "Sandstone"];
+            string[] bases = ["dark-plus", "dracula", "one-dark", "light-plus", "cyberpunk", "monokai"];
+            for (var i = 0; i < savedCount; i++)
+            {
+                vm.ApplyThemePresetCommand.Execute(bases[i % bases.Length]);
+                vm.NewThemeName = i < names.Length ? names[i] : $"Theme {i + 1}";
+                vm.SaveCurrentThemeAs();
+            }
+
+            switch (options.Value("theme-card"))
+            {
+                case "rename": vm.BeginRenameUserTheme(vm.UserThemes[0]); break;
+                case "delete": vm.AskDeleteUserTheme(vm.UserThemes[0]); break;
+            }
+        }
         if (options.Value("theme-preset") is { } themePreset)
         {
             vm.ApplyThemePresetCommand.Execute(themePreset);

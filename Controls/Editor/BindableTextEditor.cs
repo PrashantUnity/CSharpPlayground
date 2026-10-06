@@ -225,7 +225,7 @@ public class BindableTextEditor : TextEditor
         if (isDark)
         {
             SyntaxHighlighting = syntaxEnabled
-                ? (_language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme())
+                ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme())
                 : null;
             Background = Brushes.Transparent;
             Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
@@ -238,7 +238,7 @@ public class BindableTextEditor : TextEditor
         else
         {
             SyntaxHighlighting = syntaxEnabled
-                ? (_language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme())
+                ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme())
                 : null;
             Background = Brushes.Transparent;
             Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
@@ -348,6 +348,7 @@ public class BindableTextEditor : TextEditor
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged -= OnEditorColorsChanged;
         UnsubscribeCellVm();
         _languageAssistant?.Dispose();
         _languageAssistant = null;
@@ -359,8 +360,17 @@ public class BindableTextEditor : TextEditor
     {
         base.OnAttachedToVisualTree(e);
         SubscribeCellVm();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EnsureSubscribed();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged += OnEditorColorsChanged;
         ApplyThemeVariant();
         UpdateCodeFolding();
+    }
+
+    // Another theme (even of the same light or dark scheme): its editor and syntax colours.
+    private void OnEditorColorsChanged()
+    {
+        ApplyThemeVariant();
+        TextArea.TextView.Redraw();
     }
 
     public void UpdateCodeFolding()

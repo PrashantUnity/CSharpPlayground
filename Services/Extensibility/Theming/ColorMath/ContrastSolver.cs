@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
 
 /// <summary>
-/// Greedy perceptual contrast solver testing candidate scale stops against target surfaces
-/// to guarantee WCAG 2.1 AA (4.5:1) or AAA (7.0:1) accessibility compliance.
+/// Finds colours that meet a contrast target against a surface: <see cref="SolveTone"/> searches the tone of a hue and
+/// chroma (WCAG 2.2 ratio and, optionally, APCA Lc together); <see cref="PickStop"/> picks from a fixed scale.
 /// </summary>
 public static class ContrastSolver
 {
@@ -47,5 +47,54 @@ public static class ContrastSolver
         }
 
         return new PickResult(bestStop, scale[bestStop], bestRatio, false);
+    }
+
+    public readonly record struct ToneResult(double Tone, ColorRgb Color, float Ratio, float ApcaLc, bool IsSatisfied);
+
+    /// <summary>Whether <paramref name="foreground"/> on <paramref name="background"/> meets both targets.</summary>
+    public static bool Meets(ColorRgb foreground, ColorRgb background, float minRatio, float minApcaLc = 0f) =>
+        foreground.ContrastRatio(background) >= minRatio && MathF.Abs(ApcaEngine.ContrastLc(foreground, background)) >= minApcaLc;
+
+    /// <summary>
+    /// The colour of <paramref name="hue"/> and <paramref name="chroma"/> whose tone is closest to
+    /// <paramref name="desiredTone"/> while reaching <paramref name="minRatio"/> (WCAG) and <paramref name="minApcaLc"/>
+    /// (APCA, 0 to ignore) on <paramref name="background"/>. It moves away from the background (lighter on a dark one,
+    /// darker on a light one); when that side can't reach the target it tries the other side, and when neither can it
+    /// returns the strongest it found with <see cref="ToneResult.IsSatisfied"/> false.
+    /// </summary>
+    public static ToneResult SolveTone(IColorEngine engine, double hue, double chroma, double desiredTone, ColorRgb background, float minRatio = 4.5f, float minApcaLc = 0f)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        desiredTone = Math.Clamp(desiredTone, 0, 100);
+        var desired = engine.Compose(hue, chroma, desiredTone);
+        if (Meets(desired, background, minRatio, minApcaLc)) return Result(desiredTone, desired, true);
+
+        var backgroundTone = engine.Decompose(background).Tone;
+        var lighterFirst = desiredTone >= backgroundTone;
+        var preferred = Search(lighterFirst ? 100 : 0, desiredTone);
+        if (preferred.IsSatisfied) return preferred;
+
+        var other = Search(lighterFirst ? 0 : 100, backgroundTone);
+        if (other.IsSatisfied) return other;
+        return preferred.Ratio >= other.Ratio ? preferred : other;
+
+        // The tone nearest to `from` (moving towards `extreme`) that meets the targets; contrast grows towards the extreme.
+        ToneResult Search(double extreme, double from)
+        {
+            var extremeColor = engine.Compose(hue, chroma, extreme);
+            if (!Meets(extremeColor, background, minRatio, minApcaLc)) return Result(extreme, extremeColor, false);
+            double near = from, far = extreme;
+            for (var i = 0; i < 18; i++)
+            {
+                var mid = (near + far) / 2;
+                if (Meets(engine.Compose(hue, chroma, mid), background, minRatio, minApcaLc)) far = mid;
+                else near = mid;
+            }
+
+            return Result(far, engine.Compose(hue, chroma, far), true);
+        }
+
+        ToneResult Result(double tone, ColorRgb color, bool satisfied) =>
+            new(tone, color, color.ContrastRatio(background), ApcaEngine.ContrastLc(color, background), satisfied);
     }
 }

@@ -214,6 +214,17 @@ public class DynamicThemeEngine : IThemeApi
         return null;
     }
 
+    /// <summary>Whether a theme with this id is registered (built in, saved, generated or imported).</summary>
+    public bool HasTheme(string themeId) => !string.IsNullOrWhiteSpace(themeId) && _themes.ContainsKey(themeId);
+
+    /// <summary>The registered theme with this id, or <c>null</c>.</summary>
+    public ThemeDefinition? GetTheme(string themeId) =>
+        !string.IsNullOrWhiteSpace(themeId) && _themes.TryGetValue(themeId, out var theme) ? theme : null;
+
+    /// <summary>Whether this id is one of the themes that ship with the studio.</summary>
+    public static bool IsBuiltInTheme(string? themeId) =>
+        themeId != null && BuiltInThemes.All.Any(t => string.Equals(t.Id, themeId, StringComparison.OrdinalIgnoreCase));
+
     public void RegisterTheme(ThemeDefinition theme)
     {
         ArgumentNullException.ThrowIfNull(theme);

@@ -161,8 +161,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopyAvaloniaXamlAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
         string xaml = ThemeExportService.ExportToAvaloniaXaml(theme);
         await CopyExportTextAsync(xaml, "Copied Avalonia ResourceDictionary XAML!");
     }
@@ -170,9 +169,8 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopyCssVariablesAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var light = HarmonicColorGenerator.GenerateHarmonicTheme(config, isDark: false);
-        var dark = HarmonicColorGenerator.GenerateHarmonicTheme(config, isDark: true);
+        var light = BuildPaletteTheme(isDark: false);
+        var dark = BuildPaletteTheme(isDark: true);
         string css = ThemeExportService.ExportToCssVariables(light, dark);
         await CopyExportTextAsync(css, "Copied CSS Custom Properties!");
     }
@@ -180,8 +178,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopyTailwindAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
         string tw = ThemeExportService.ExportToTailwindV4(theme);
         await CopyExportTextAsync(tw, "Copied Tailwind CSS v4 @theme!");
     }
@@ -189,8 +186,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopyDtcgJsonAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
         string json = ThemeExportService.ExportToDtcgJson(theme);
         await CopyExportTextAsync(json, "Copied W3C DTCG Token JSON!");
     }
@@ -198,8 +194,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopySwiftUiAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
         string swift = ThemeExportService.ExportToSwiftUI(theme);
         await CopyExportTextAsync(swift, "Copied SwiftUI Color extension!");
     }
@@ -207,8 +202,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task CopyComposeAsync()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
         string compose = ThemeExportService.ExportToJetpackCompose(theme);
         await CopyExportTextAsync(compose, "Copied Jetpack Compose Color tokens!");
     }
@@ -231,29 +225,50 @@ public partial class CSharpSettingsViewModel
                 return;
             }
 
+            ImportDtcgJson(json);
+        }
+        catch (Exception ex)
+        {
+            ShowNotification($"Failed to import DTCG JSON: {ex.Message}", isError: true);
+        }
+    }
+
+    /// <summary>Imports design tokens (DTCG JSON), saves them to My themes and applies them. Returns the saved theme.</summary>
+    internal SavedTheme? ImportDtcgJson(string json)
+    {
+        try
+        {
             var imported = ThemeExportService.ImportFromDtcgJson(json, "imported-harmonic", "Imported DTCG Theme", IsThemeDarkMode);
             if (imported == null || imported.Colors.Count == 0)
             {
                 ShowNotification("No valid design tokens found in clipboard JSON.", isError: true);
-                return;
+                return null;
             }
 
+            // Into the user's library (named after the Save-as box when something is typed there), so it is still there
+            // after a restart and can be renamed or deleted like any saved theme.
+            var name = string.IsNullOrWhiteSpace(NewThemeName) ? $"Imported theme {DateTime.Now:d MMM HH:mm}" : NewThemeName.Trim();
+            var saved = Library.Save(name, imported, source: "imported");
             var engine = StudioAppContext.Instance.ThemeEngine;
-            engine.RegisterTheme(imported);
-            bool success = engine.ApplyTheme(imported.Id);
+            engine.RegisterTheme(saved.Theme);
+            UserThemes.Insert(0, PresetFor(saved));
+            engine.ApplyTheme(saved.Id);
+            RememberActiveTheme(saved.Id);
+            NewThemeName = string.Empty;
 
             if (imported.Colors.TryGetValue("DsPrimaryBrush", out var primaryHex))
             {
                 SeedHexInput = primaryHex;
             }
 
-            RefreshThemePresetsWithHarmonic(imported);
             RefreshColorTokenValues();
-            ShowNotification($"Imported and applied {imported.Colors.Count} tokens from DTCG JSON!", isError: false);
+            ShowNotification($"Imported {imported.Colors.Count} tokens and saved them as \"{saved.Name}\".", isError: false);
+            return saved;
         }
         catch (Exception ex)
         {
             ShowNotification($"Failed to import DTCG JSON: {ex.Message}", isError: true);
+            return null;
         }
     }
 
@@ -334,7 +349,7 @@ public partial class CSharpSettingsViewModel
             TextHex = theme.Colors.TryGetValue("DsTextBrush", out var t) ? t : "#E6EDF3"
         });
 
-        foreach (var p in ThemePresets)
+        foreach (var p in AllThemePresets)
         {
             p.IsActive = string.Equals(p.Id, theme.Id, StringComparison.OrdinalIgnoreCase);
         }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FrySharp.Sdk;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 
@@ -42,12 +44,15 @@ public sealed record HarmonicConfiguration
     public float NeutralHueOffset { get; init; } = 0f;
     public float SemanticPull { get; init; } = 15f;
     public float ContrastTarget { get; init; } = 4.5f;
+
+    /// <summary>The colour model the palette is built in.</summary>
+    public ColorEngineKind Engine { get; init; } = ColorEngineKind.Oklch;
 }
 
 /// <summary>
-/// Scientific color harmony wheel engine. Generates mathematically coherent, ergonomic dark and light
-/// color palettes based on HSL color wheel relations while strictly enforcing anti-glare card contrast
-/// and complete coverage across all IDE token families (surfaces, editor canvas, badges, M3, navigation).
+/// The harmony wheel's theme generator: a facade over <see cref="PaletteGenerator"/> and <see cref="ThemeTokenMapper"/>
+/// (perceptual OKLCH or HCT palettes with every text and accent colour solved for contrast). The wheel's hue is the
+/// familiar colour-wheel hue; it is turned into the engine's own hue before the palette is built.
 /// </summary>
 public static class HarmonicColorGenerator
 {
@@ -77,25 +82,18 @@ public static class HarmonicColorGenerator
     public static ThemeDefinition GenerateHarmonicTheme(HarmonicConfiguration config, bool isDark = true)
     {
         ArgumentNullException.ThrowIfNull(config);
-        float hueDegrees = (config.BaseHue % 360f + 360f) % 360f;
+        float accentHue = AccentHue(config);
+        return ThemeFromPalette(PaletteGenerator.Generate(ToPaletteSpec(config, accentHue, isDark)), accentHue);
+    }
 
-        // Calculate accent hue from classical color harmony wheel geometry + accent shift
-        float rawAccent = config.Mode switch
-        {
-            ColorHarmonyMode.Analogous => hueDegrees + 30f,
-            ColorHarmonyMode.Complementary => hueDegrees + 180f,
-            ColorHarmonyMode.SplitComplementary => hueDegrees + 150f,
-            ColorHarmonyMode.Triadic => hueDegrees + 120f,
-            ColorHarmonyMode.Tetradic => hueDegrees + 90f,
-            ColorHarmonyMode.Monochromatic => hueDegrees,
-            _ => hueDegrees + 180f
-        };
-        float accentHue = ((rawAccent + config.AccentShift) % 360f + 360f) % 360f;
+    /// <summary>The theme a palette makes, named after its harmony and the wheel hue of its accent.</summary>
+    public static ThemeDefinition ThemeFromPalette(GeneratedPalette palette, float accentHue)
+    {
+        ArgumentNullException.ThrowIfNull(palette);
+        var mode = palette.Spec.Harmony;
+        var colors = ThemeTokenMapper.Map(palette);
 
-        var colors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        PopulateAllTokens(colors, config, accentHue, isDark);
-
-        string modeName = config.Mode switch
+        string modeName = mode switch
         {
             ColorHarmonyMode.Analogous => "Analogous",
             ColorHarmonyMode.Complementary => "Complementary",
@@ -107,18 +105,57 @@ public static class HarmonicColorGenerator
         };
 
         string hueName = GetHueDescriptor(accentHue);
-        string themeId = $"harmonic-{config.Mode.ToString().ToLowerInvariant()}-{(int)accentHue}";
+        string themeId = $"harmonic-{mode.ToString().ToLowerInvariant()}-{(int)accentHue}";
         string themeName = $"Harmonic {modeName} ({hueName})";
 
         return new ThemeDefinition
         {
             Id = themeId,
             Name = themeName,
-            Description = $"Scientifically generated {modeName} harmony wheel palette centered at {hueName} ({accentHue:0}°).",
-            IsDark = isDark,
+            Description = $"{modeName} harmony built in {palette.Engine.DisplayName}, centred at {hueName} ({accentHue:0}°).",
+            IsDark = palette.Spec.IsDark,
             Colors = colors
         };
     }
+
+    /// <summary>The wheel hue of the primary accent: the base hue turned by the harmony mode and the accent shift.</summary>
+    public static float AccentHue(HarmonicConfiguration config)
+    {
+        float hueDegrees = (config.BaseHue % 360f + 360f) % 360f;
+        float rawAccent = config.Mode switch
+        {
+            ColorHarmonyMode.Analogous => hueDegrees + 30f,
+            ColorHarmonyMode.Complementary => hueDegrees + 180f,
+            ColorHarmonyMode.SplitComplementary => hueDegrees + 150f,
+            ColorHarmonyMode.Triadic => hueDegrees + 120f,
+            ColorHarmonyMode.Tetradic => hueDegrees + 90f,
+            ColorHarmonyMode.Monochromatic => hueDegrees,
+            _ => hueDegrees + 180f
+        };
+        return ((rawAccent + config.AccentShift) % 360f + 360f) % 360f;
+    }
+
+    /// <summary>The palette spec the wheel describes, with the primary at <paramref name="accentHue"/> (wheel degrees).</summary>
+    public static PaletteSpec ToPaletteSpec(HarmonicConfiguration config, float accentHue, bool isDark)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        var engine = ColorEngines.Get(config.Engine);
+        return new PaletteSpec
+        {
+            Engine = config.Engine,
+            Harmony = config.Mode,
+            BaseHue = EngineHue(engine, accentHue),
+            IsDark = isDark,
+            ChromaBoost = Math.Clamp(config.SaturationBoost, 0.2f, 2.0f),
+            NeutralTint = Math.Clamp(config.NeutralTint, 0f, 35f),
+            SemanticPull = Math.Clamp(config.SemanticPull, 0f, 100f),
+            ContrastTarget = Math.Clamp(config.ContrastTarget, 3f, 21f),
+        };
+    }
+
+    /// <summary>The engine hue of a colour-wheel hue: where a vivid colour of that wheel hue sits in the engine.</summary>
+    public static double EngineHue(IColorEngine engine, float wheelHue) =>
+        engine.Decompose(ColorRgb.FromHex(HslToHex(wheelHue, 0.85f, 0.55f))).Hue;
 
     /// <summary>
     /// Backward-compatible overload populating all tokens using default harmonic configuration.
@@ -131,298 +168,9 @@ public static class HarmonicColorGenerator
     /// </summary>
     public static void PopulateAllTokens(IDictionary<string, string> colors, HarmonicConfiguration config, float accentHue, bool isDark)
     {
-        float baseHue = (config.BaseHue % 360f + 360f) % 360f;
-        float ps = Math.Clamp(0.86f * config.SaturationBoost, 0.20f, 1.0f);
-        if (isDark) ps = Math.Min(ps, 0.88f);
-
-        // 1. Synthesize 11-stop tonal scales
-        var pScale = TonalScaleEngine.GenerateScale(accentHue, ps);
-        var aScale = TonalScaleEngine.GenerateScale(accentHue, ps * (config.Mode == ColorHarmonyMode.Monochromatic ? 0.55f : 1.0f));
-
-        float secHue = config.Mode switch
-        {
-            ColorHarmonyMode.Analogous => baseHue - 30f,
-            ColorHarmonyMode.Complementary => baseHue + 30f,
-            ColorHarmonyMode.SplitComplementary => baseHue + 210f,
-            ColorHarmonyMode.Triadic => baseHue + 240f,
-            ColorHarmonyMode.Tetradic => baseHue + 180f,
-            _ => baseHue
-        };
-        secHue = ((secHue + config.AccentShift) % 360f + 360f) % 360f;
-        var sScale = TonalScaleEngine.GenerateScale(secHue, ps * 0.85f);
-
-        float nHue = ((baseHue + config.NeutralHueOffset) % 360f + 360f) % 360f;
-        float nSat = Math.Clamp(config.NeutralTint / 100f, 0f, 0.35f);
-        var nScale = TonalScaleEngine.GenerateScale(nHue, nSat, isFlatSaturation: true);
-
-        // Status scales with brand-biased pull
-        float successHue = CalculateBiasedHue(baseHue, 145f, config.SemanticPull);
-        float warningHue = CalculateBiasedHue(baseHue, 40f, config.SemanticPull);
-        float errorHue = CalculateBiasedHue(baseHue, 4f, config.SemanticPull);
-        float infoHue = CalculateBiasedHue(baseHue, 208f, config.SemanticPull);
-
-        var successScale = TonalScaleEngine.GenerateScale(successHue, Math.Clamp(ps, 0.55f, 0.95f));
-        var warningScale = TonalScaleEngine.GenerateScale(warningHue, Math.Clamp(ps + 0.10f, 0.55f, 0.95f));
-        var errorScale = TonalScaleEngine.GenerateScale(errorHue, Math.Clamp(ps, 0.55f, 0.95f));
-        var infoScale = TonalScaleEngine.GenerateScale(infoHue, Math.Clamp(ps, 0.55f, 0.95f));
-
-        // Register tonal scale tokens
-        foreach (int stop in TonalScaleEngine.StandardStops)
-        {
-            colors[$"TonalP{stop}"] = pScale[stop].ToHex();
-            colors[$"TonalA{stop}"] = aScale[stop].ToHex();
-            colors[$"TonalS{stop}"] = sScale[stop].ToHex();
-            colors[$"TonalN{stop}"] = nScale[stop].ToHex();
-            colors[$"TonalSuccess{stop}"] = successScale[stop].ToHex();
-            colors[$"TonalWarning{stop}"] = warningScale[stop].ToHex();
-            colors[$"TonalError{stop}"] = errorScale[stop].ToHex();
-            colors[$"TonalInfo{stop}"] = infoScale[stop].ToHex();
-        }
-
-        string primaryHex;
-        string primaryHoverHex;
-        string bgHex;
-        string surfaceHex;
-        string surfaceHoverHex;
-        string surfaceHighHex;
-        string surfaceLowestHex;
-        string borderHex;
-        string borderSubtleHex;
-        string textHex;
-        string textWhiteHex;
-        string mutedHex;
-        string syntaxStringHex;
-
-        if (isDark)
-        {
-            // Dark Mode Ergonomics per styling mandate:
-            primaryHex = HslToHex(accentHue, ps, 0.62f);
-            primaryHoverHex = HslToHex(accentHue, Math.Min(1f, ps + 0.04f), 0.70f);
-
-            // Canvas & Surfaces: Subtle, comfortable dark tint derived from neutral tonal scale
-            bgHex = nScale[950].ToHex();                           // Deep canvas tone
-            surfaceHex = nScale[900].ToHex();                      // Dark card surface tone
-            surfaceHoverHex = nScale[800].ToHex();                  // Hover card tone
-            surfaceHighHex = nScale[700].ToHex();                   // Elevated surface tone
-            surfaceLowestHex = HslToHex(baseHue, 0.14f, 0.05f);    // Lowest inset tone
-            borderHex = nScale[800].ToHex();                       // Subtle non-glaring 1px border
-            borderSubtleHex = HslToHex(baseHue, 0.14f, 0.13f);     // Subtle divider
-
-            // Typography
-            textHex = nScale[100].ToHex();                         // Soft off-white
-            textWhiteHex = "#FFFFFF";
-            mutedHex = nScale[300].ToHex();                        // Caption
-            syntaxStringHex = HslToHex((accentHue + 30f) % 360f, 0.80f, 0.82f);
-        }
-        else
-        {
-            // Light Mode Ergonomics
-            primaryHex = HslToHex(accentHue, ps, 0.45f);
-            primaryHoverHex = HslToHex(accentHue, Math.Min(1f, ps + 0.03f), 0.38f);
-
-            bgHex = nScale[50].ToHex();
-            surfaceHex = nScale[100].ToHex();
-            surfaceHoverHex = nScale[200].ToHex();
-            surfaceHighHex = "#FFFFFF";
-            surfaceLowestHex = "#FFFFFF";
-            borderHex = nScale[300].ToHex();
-            borderSubtleHex = nScale[200].ToHex();
-
-            textHex = nScale[900].ToHex();
-            textWhiteHex = "#1F2328";
-            mutedHex = nScale[600].ToHex();
-            syntaxStringHex = HslToHex((accentHue + 30f) % 360f, 0.90f, 0.22f);
-        }
-
-        // Alpha derivatives
-        string primarySubtleHex = ToHexWithAlpha(primaryHex, 0.15f);
-        string selectionHex = ToHexWithAlpha(primaryHex, isDark ? 0.40f : 0.30f);
-        string focusBorderHex = ToHexWithAlpha(primaryHex, 0.65f);
-        string primaryBorderSubtleHex = ToHexWithAlpha(primaryHex, 0.25f);
-        string glassBgHex = ToHexWithAlpha(surfaceHex, 0.90f);
-
-        // 1. Surfaces & Canvas
-        colors["DsBgBrush"] = bgHex;
-        colors["DsSurfaceBrush"] = surfaceHex;
-        colors["DsSurfaceHoverBrush"] = surfaceHoverHex;
-        colors["DsSurfaceHighBrush"] = surfaceHighHex;
-        colors["DsSurfaceContainerLowestBrush"] = surfaceLowestHex;
-        colors["DsGlassBgBrush"] = glassBgHex;
-        colors["DsHoverOverlayBrush"] = isDark ? "#1AFFFFFF" : "#14000000";
-        colors["DsScrimBrush"] = isDark ? "#85000000" : "#50000000";
-        colors["VisCanvasBgBrush"] = bgHex;
-
-        // 2. Borders & Focus
-        colors["DsBorderBrush"] = borderHex;
-        colors["DsBorderSubtleBrush"] = borderSubtleHex;
-        colors["DsFocusBorderBrush"] = focusBorderHex;
-
-        // 3. Primary Accents
-        colors["DsPrimaryBrush"] = primaryHex;
-        colors["DsPrimaryHoverBrush"] = primaryHoverHex;
-        colors["DsPrimarySubtleBrush"] = primarySubtleHex;
-        colors["DsSelectionBrush"] = selectionHex;
-        colors["DsPrimaryBorderSubtleBrush"] = primaryBorderSubtleHex;
-        colors["DsOnAccentBrush"] = "#FFFFFF";
-
-        // 4. Typography
-        colors["DsTextBrush"] = textHex;
-        colors["DsTextWhiteBrush"] = textWhiteHex;
-        colors["DsMutedBrush"] = mutedHex;
-        colors["DsSyntaxStringBrush"] = syntaxStringHex;
-
-        // 5. Code Canvas & Editor (AvaloniaEdit)
-        string editorBgHex = isDark ? HslToHex(baseHue, 0.18f, 0.09f) : "#FFFFFF";
-        string editorFgHex = isDark ? "#D4D4D4" : "#1E293B";
-        string editorLineNumHex = isDark ? HslToHex(baseHue, 0.10f, 0.50f) : HslToHex(baseHue, 0.10f, 0.55f);
-        string editorSelectionHex = ToHexWithAlpha(primaryHex, isDark ? 0.35f : 0.25f);
-
-        colors["EditorBgBrush"] = editorBgHex;
-        colors["EditorFgBrush"] = editorFgHex;
-        colors["EditorLineNumbersBrush"] = editorLineNumHex;
-        colors["EditorSelectionBrush"] = editorSelectionHex;
-        colors["EditorCaretBrush"] = primaryHex;
-        colors["EditorLinkBrush"] = primaryHoverHex;
-        colors["EditorFoldingMarkerBrush"] = mutedHex;
-        colors["EditorFoldingMarkerBgBrush"] = surfaceHighHex;
-        colors["EditorFoldingMarkerActiveBrush"] = primaryHex;
-        colors["EditorFoldingMarkerActiveBgBrush"] = ToHexWithAlpha(primaryHex, 0.25f);
-        colors["EditorBreakpointBrush"] = "#EF4444";
-        colors["EditorBreakpointBorderBrush"] = "#B91C1C";
-        colors["EditorBreakpointPausedBrush"] = isDark ? "#FBBF24" : "#D97706";
-        colors["EditorBreakpointPausedBorderBrush"] = isDark ? "#D97706" : "#B45309";
-
-        // 6. Semantic Status (Brand-Biased Procedural Tones)
-        string errorHex = errorScale[isDark ? 400 : 600].ToHex();
-        string warningHex = warningScale[isDark ? 400 : 600].ToHex();
-        string successHex = successScale[isDark ? 400 : 600].ToHex();
-
-        colors["DsErrorBrush"] = errorHex;
-        colors["DsErrorSubtleBrush"] = ToHexWithAlpha(errorHex, 0.15f);
-        colors["DsWarningBrush"] = warningHex;
-        colors["DsWarningSubtleBrush"] = ToHexWithAlpha(warningHex, 0.15f);
-        colors["DsSuccessBrush"] = successHex;
-        colors["DsGreenBrush"] = successHex;
-        colors["DsRedBrush"] = errorHex;
-        colors["DsInfoBrush"] = primaryHex;
-
-        // 7. Domain Accents
-        colors["DsJupyterBrush"] = "#E34C26";
-        colors["DsJupyterSubtleBrush"] = "#26E34C26";
-        colors["DsLinqBrush"] = "#238636";
-        colors["DsLinqSubtleBrush"] = "#26238636";
-        colors["DsLeetCodeBrush"] = isDark ? "#FFA116" : "#D97706";
-        colors["NotebookAmberBrush"] = "#D97706";
-        colors["BrainPurpleBrush"] = "#A855F7";
-
-        // 8. Badges
-        colors["BadgeEasyBgBrush"] = "#1A22C55E";
-        colors["BadgeEasyBorderBrush"] = isDark ? "#3322C55E" : "#4D16A34A";
-        colors["BadgeEasyFgBrush"] = isDark ? "#22C55E" : "#16A34A";
-
-        colors["BadgeMediumBgBrush"] = "#1AF59E0B";
-        colors["BadgeMediumBorderBrush"] = isDark ? "#33F59E0B" : "#4DD97706";
-        colors["BadgeMediumFgBrush"] = isDark ? "#F59E0B" : "#B45309";
-
-        colors["BadgeHardBgBrush"] = "#1AEF4444";
-        colors["BadgeHardBorderBrush"] = isDark ? "#33EF4444" : "#4DDC2626";
-        colors["BadgeHardFgBrush"] = isDark ? "#EF4444" : "#DC2626";
-
-        colors["BadgeAmberBgBrush"] = "#1AF59E0B";
-        colors["BadgeAmberBorderBrush"] = "#33F59E0B";
-        colors["BadgeAmberFgBrush"] = "#F59E0B";
-
-        // 9. Material 3 Tokens
-        colors["M3BackgroundBrush"] = bgHex;
-        colors["M3SurfaceBrush"] = bgHex;
-        colors["M3SurfaceContainerBrush"] = surfaceHex;
-        colors["M3SurfaceContainerLowBrush"] = surfaceHex;
-        colors["M3SurfaceContainerLowestBrush"] = surfaceLowestHex;
-        colors["M3SurfaceContainerHighBrush"] = surfaceHighHex;
-        colors["M3SurfaceContainerHighestBrush"] = surfaceHoverHex;
-        colors["M3SurfaceVariantBrush"] = surfaceHoverHex;
-        colors["M3OnSurfaceBrush"] = textWhiteHex;
-        colors["M3OnSurfaceVariantBrush"] = mutedHex;
-        colors["M3OutlineBrush"] = isDark ? "#30363D" : "#8C959F";
-        colors["M3OutlineVariantBrush"] = borderHex;
-        colors["M3PrimaryBrush"] = primaryHex;
-        colors["M3PrimaryContainerBrush"] = primarySubtleHex;
-        colors["M3OnPrimaryContainerBrush"] = primaryHex;
-        colors["M3SecondaryContainerBrush"] = surfaceHoverHex;
-        colors["M3OnSecondaryContainerBrush"] = textHex;
-        colors["M3TertiaryBrush"] = syntaxStringHex;
-        colors["M3WarningBrush"] = isDark ? "#D29922" : "#9A6700";
-
-        // 10. Sidebar Navigation Category Brushes
-        colors["NavHomeFgBrush"] = isDark ? "#38BDF8" : "#0284C7";
-        colors["NavHomeBgBrush"] = isDark ? "#1A38BDF8" : "#140284C7";
-        colors["NavProjectsFgBrush"] = isDark ? "#818CF8" : "#4F46E5";
-        colors["NavProjectsBgBrush"] = isDark ? "#1A818CF8" : "#144F46E5";
-        colors["NavNotebooksFgBrush"] = isDark ? "#FB923C" : "#EA580C";
-        colors["NavNotebooksBgBrush"] = isDark ? "#1AFB923C" : "#14EA580C";
-        colors["NavScriptsFgBrush"] = isDark ? "#C084FC" : "#9333EA";
-        colors["NavScriptsBgBrush"] = isDark ? "#1AC084FC" : "#149333EA";
-        colors["NavPinnedFgBrush"] = isDark ? "#FB7185" : "#E11D48";
-        colors["NavPinnedBgBrush"] = isDark ? "#1AFB7185" : "#14E11D48";
-        colors["NavTemplatesFgBrush"] = isDark ? "#FBBF24" : "#D97706";
-        colors["NavTemplatesBgBrush"] = isDark ? "#1AFBBF24" : "#14D97706";
-        colors["NavOpenFgBrush"] = isDark ? "#FACC15" : "#CA8A04";
-        colors["NavOpenBgBrush"] = isDark ? "#1AFACC15" : "#14CA8A04";
-        colors["NavBlind75FgBrush"] = isDark ? "#F59E0B" : "#B45309";
-        colors["NavBlind75BgBrush"] = isDark ? "#1AF59E0B" : "#14B45309";
-        colors["NavDocsFgBrush"] = isDark ? "#22D3EE" : "#0891B2";
-        colors["NavDocsBgBrush"] = isDark ? "#1A22D3EE" : "#140891B2";
-        colors["NavThemeFgBrush"] = isDark ? "#F472B6" : "#DB2777";
-        colors["NavThemeBgBrush"] = isDark ? "#1AF472B6" : "#14DB2777";
-        colors["NavToolchainsFgBrush"] = isDark ? "#34D399" : "#059669";
-        colors["NavToolchainsBgBrush"] = isDark ? "#1A34D399" : "#14059669";
-        colors["NavKernelsFgBrush"] = isDark ? "#A78BFA" : "#7C3AED";
-        colors["NavKernelsBgBrush"] = isDark ? "#1AA78BFA" : "#147C3AED";
-        colors["NavSettingsFgBrush"] = isDark ? "#94A3B8" : "#475569";
-        colors["NavSettingsBgBrush"] = isDark ? "#1A94A3B8" : "#14475569";
-        colors["NavFrySharpFgBrush"] = isDark ? "#38BDF8" : "#0284C7";
-        colors["NavFrySharpBgBrush"] = isDark ? "#1A38BDF8" : "#140284C7";
-        colors["NavServersFgBrush"] = isDark ? "#2DD4BF" : "#0D9488";
-        colors["NavServersBgBrush"] = isDark ? "#1A2DD4BF" : "#140D9488";
-
-        // 11. Server Method & Type Tokens
-        colors["ServerMethodGetBgBrush"] = isDark ? "#162846" : "#E0EAFF";
-        colors["ServerMethodGetFgBrush"] = isDark ? "#60A5FA" : "#1E5EEB";
-        colors["ServerMethodGetBorderBrush"] = isDark ? "#2563EB" : "#A8C7FA";
-        colors["ServerMethodPostBgBrush"] = isDark ? "#123522" : "#D1E7DD";
-        colors["ServerMethodPostFgBrush"] = isDark ? "#4ADE80" : "#0A3622";
-        colors["ServerMethodPostBorderBrush"] = isDark ? "#22C55E" : "#198754";
-        colors["ServerMethodPutBgBrush"] = isDark ? "#382A12" : "#FEF3C7";
-        colors["ServerMethodPutFgBrush"] = isDark ? "#FBBF24" : "#78350F";
-        colors["ServerMethodPutBorderBrush"] = isDark ? "#D97706" : "#D97706";
-        colors["ServerMethodDeleteBgBrush"] = isDark ? "#3A1519" : "#FFDAD6";
-        colors["ServerMethodDeleteFgBrush"] = isDark ? "#F87171" : "#BA1A1A";
-        colors["ServerMethodDeleteBorderBrush"] = isDark ? "#DC2626" : "#FFB4AB";
-        colors["ServerMethodPatchBgBrush"] = isDark ? "#2C1542" : "#F3E8FF";
-        colors["ServerMethodPatchFgBrush"] = isDark ? "#C084FC" : "#6B21A8";
-        colors["ServerMethodPatchBorderBrush"] = isDark ? "#9333EA" : "#D8B4FE";
-        colors["ServerMethodOptionsBgBrush"] = isDark ? "#1E293B" : "#F1F5F9";
-        colors["ServerMethodOptionsFgBrush"] = isDark ? "#94A3B8" : "#475569";
-        colors["ServerMethodOptionsBorderBrush"] = isDark ? "#475569" : "#CBD5E1";
-        colors["ServerMethodOtherBgBrush"] = isDark ? "#133036" : "#CCFBF1";
-        colors["ServerMethodOtherFgBrush"] = isDark ? "#2DD4BF" : "#0F766E";
-        colors["ServerMethodOtherBorderBrush"] = isDark ? "#0D9488" : "#5EEAD4";
-
-        colors["ServerTypeStartupBgBrush"] = isDark ? "#2E1846" : "#F3E8FF";
-        colors["ServerTypeStartupFgBrush"] = isDark ? "#C084FC" : "#6B21A8";
-        colors["ServerTypeStartupBorderBrush"] = isDark ? "#9333EA" : "#D8B4FE";
-        colors["ServerTypeMiddlewareBgBrush"] = isDark ? "#122E3B" : "#E0F2FE";
-        colors["ServerTypeMiddlewareFgBrush"] = isDark ? "#38BDF8" : "#0369A1";
-        colors["ServerTypeMiddlewareBorderBrush"] = isDark ? "#0284C7" : "#BAE6FD";
-        colors["ServerTypeScenarioBgBrush"] = isDark ? "#183522" : "#D1E7DD";
-        colors["ServerTypeScenarioFgBrush"] = isDark ? "#4ADE80" : "#0A3622";
-        colors["ServerTypeScenarioBorderBrush"] = isDark ? "#22C55E" : "#198754";
-        colors["ServerTypeJobBgBrush"] = isDark ? "#382710" : "#FFEDD5";
-        colors["ServerTypeJobFgBrush"] = isDark ? "#FB923C" : "#9A3412";
-        colors["ServerTypeJobBorderBrush"] = isDark ? "#EA580C" : "#FED7AA";
-        colors["ServerTypeDocsBgBrush"] = isDark ? "#3A2A12" : "#FEF3C7";
-        colors["ServerTypeDocsFgBrush"] = isDark ? "#FBBF24" : "#78350F";
-        colors["ServerTypeDocsBorderBrush"] = isDark ? "#D97706" : "#D97706";
+        ArgumentNullException.ThrowIfNull(colors);
+        var palette = PaletteGenerator.Generate(ToPaletteSpec(config, accentHue, isDark));
+        foreach (var (key, value) in ThemeTokenMapper.Map(palette)) colors[key] = value;
     }
 
     /// <summary>
@@ -432,13 +180,9 @@ public static class HarmonicColorGenerator
     {
         ArgumentNullException.ThrowIfNull(theme);
 
-        string bg = theme.Colors.TryGetValue("DsBgBrush", out var b) ? b : (theme.IsDark ? "#0D1117" : "#FFFFFF");
-        string primary = theme.Colors.TryGetValue("DsPrimaryBrush", out var p) ? p : (theme.IsDark ? "#2F81F7" : "#0969DA");
-
-        var fallback = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        // Default base hue roughly 215 (dark blue-slate) for default studio aesthetics
-        PopulateAllTokens(fallback, 215f, 212f, theme.IsDark);
-
+        // The same for every theme of a scheme: worked out once. Syntax and chart colours are left out on purpose, so a
+        // theme that doesn't set them keeps each language's own highlighting and the default chart colours.
+        var fallback = theme.IsDark ? DarkFallback.Value : LightFallback.Value;
         foreach (var (k, v) in fallback)
         {
             if (!theme.Colors.ContainsKey(k))
@@ -446,6 +190,22 @@ public static class HarmonicColorGenerator
                 theme.Colors[k] = v;
             }
         }
+    }
+
+    private static readonly Lazy<Dictionary<string, string>> DarkFallback = new(() => Fallback(isDark: true));
+    private static readonly Lazy<Dictionary<string, string>> LightFallback = new(() => Fallback(isDark: false));
+
+    private static Dictionary<string, string> Fallback(bool isDark)
+    {
+        // Default base hue roughly 215 (dark blue-slate) for default studio aesthetics
+        var fallback = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        PopulateAllTokens(fallback, 215f, 212f, isDark);
+        foreach (var key in fallback.Keys.Where(k => k.StartsWith("Syntax", StringComparison.Ordinal) || k.StartsWith("ChartSeries", StringComparison.Ordinal)).ToList())
+        {
+            fallback.Remove(key);
+        }
+
+        return fallback;
     }
 
     /// <summary>
@@ -511,52 +271,20 @@ public static class HarmonicColorGenerator
     /// <summary>
     /// Generates full 11-stop tonal scale dictionaries for all core palette families.
     /// </summary>
-    public static IReadOnlyDictionary<string, IReadOnlyDictionary<int, ColorRgb>> GenerateAllTonalScales(HarmonicConfiguration config)
+    public static IReadOnlyDictionary<string, IReadOnlyDictionary<int, ColorRgb>> GenerateAllTonalScales(HarmonicConfiguration config, bool isDark = true)
     {
-        float baseHue = (config.BaseHue % 360f + 360f) % 360f;
-        float ps = Math.Clamp(0.86f * config.SaturationBoost, 0.20f, 1.0f);
-
-        float rawAccent = config.Mode switch
-        {
-            ColorHarmonyMode.Analogous => baseHue + 30f,
-            ColorHarmonyMode.Complementary => baseHue + 180f,
-            ColorHarmonyMode.SplitComplementary => baseHue + 150f,
-            ColorHarmonyMode.Triadic => baseHue + 120f,
-            ColorHarmonyMode.Tetradic => baseHue + 90f,
-            ColorHarmonyMode.Monochromatic => baseHue,
-            _ => baseHue + 180f
-        };
-        float accentHue = ((rawAccent + config.AccentShift) % 360f + 360f) % 360f;
-
-        float secHue = config.Mode switch
-        {
-            ColorHarmonyMode.Analogous => baseHue - 30f,
-            ColorHarmonyMode.Complementary => baseHue + 30f,
-            ColorHarmonyMode.SplitComplementary => baseHue + 210f,
-            ColorHarmonyMode.Triadic => baseHue + 240f,
-            ColorHarmonyMode.Tetradic => baseHue + 180f,
-            _ => baseHue
-        };
-        secHue = ((secHue + config.AccentShift) % 360f + 360f) % 360f;
-
-        float nHue = ((baseHue + config.NeutralHueOffset) % 360f + 360f) % 360f;
-        float nSat = Math.Clamp(config.NeutralTint / 100f, 0f, 0.35f);
-
-        float successHue = CalculateBiasedHue(baseHue, 145f, config.SemanticPull);
-        float warningHue = CalculateBiasedHue(baseHue, 40f, config.SemanticPull);
-        float errorHue = CalculateBiasedHue(baseHue, 4f, config.SemanticPull);
-        float infoHue = CalculateBiasedHue(baseHue, 208f, config.SemanticPull);
-
+        ArgumentNullException.ThrowIfNull(config);
+        var palette = PaletteGenerator.Generate(ToPaletteSpec(config, AccentHue(config), isDark));
         return new Dictionary<string, IReadOnlyDictionary<int, ColorRgb>>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Primary"] = TonalScaleEngine.GenerateScale(accentHue, ps),
-            ["Accent"] = TonalScaleEngine.GenerateScale(accentHue, ps * (config.Mode == ColorHarmonyMode.Monochromatic ? 0.55f : 1.0f)),
-            ["Secondary"] = TonalScaleEngine.GenerateScale(secHue, ps * 0.85f),
-            ["Neutral"] = TonalScaleEngine.GenerateScale(nHue, nSat, isFlatSaturation: true),
-            ["Success"] = TonalScaleEngine.GenerateScale(successHue, Math.Clamp(ps, 0.55f, 0.95f)),
-            ["Warning"] = TonalScaleEngine.GenerateScale(warningHue, Math.Clamp(ps + 0.10f, 0.55f, 0.95f)),
-            ["Danger"] = TonalScaleEngine.GenerateScale(errorHue, Math.Clamp(ps, 0.55f, 0.95f)),
-            ["Info"] = TonalScaleEngine.GenerateScale(infoHue, Math.Clamp(ps, 0.55f, 0.95f))
+            ["Primary"] = palette.Scales[PaletteSections.Primary],
+            ["Accent"] = palette.Scales[PaletteSections.Tertiary],
+            ["Secondary"] = palette.Scales[PaletteSections.Secondary],
+            ["Neutral"] = palette.Scales[PaletteSections.Neutral],
+            ["Success"] = palette.Scales[PaletteSections.Success],
+            ["Warning"] = palette.Scales[PaletteSections.Warning],
+            ["Danger"] = palette.Scales[PaletteSections.Error],
+            ["Info"] = palette.Scales[PaletteSections.Info]
         };
     }
 

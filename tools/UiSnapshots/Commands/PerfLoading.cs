@@ -186,6 +186,44 @@ internal static class PerfLoading
         });
         Console.WriteLine($"hue wheel drag (30 steps): median {frames.Order().ElementAt(frames.Count / 2):F0} ms per step, slowest {frames.Max():F0} ms; longest input wait {dragStall:F0} ms");
 
+        // The palette studio: Generate (Space) twenty times in a row, one section regenerated, the engine switched — each
+        // previewed (sections recoloured) and drawn; budget 10 ms of palette work per press.
+        void Step(string name, Action action, int times = 1)
+        {
+            var steps = new List<double>();
+            double stall = probe.Measure(() =>
+            {
+                for (int i = 0; i < times; i++)
+                {
+                    var step = Stopwatch.StartNew();
+                    action();
+                    Dispatcher.UIThread.RunJobs();
+                    using (window.CaptureRenderedFrame()) { }
+                    steps.Add(step.Elapsed.TotalMilliseconds);
+                }
+            });
+            Console.WriteLine($"{name}: median {steps.Order().ElementAt(steps.Count / 2):F0} ms, slowest {steps.Max():F0} ms (x{times}); longest input wait {stall:F0} ms");
+        }
+
+        var paletteOnly = Stopwatch.StartNew();
+        var spec = settings.PaletteSpec;
+        for (int i = 0; i < 20; i++)
+        {
+            spec = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette.PaletteGenerator.Regenerate(spec);
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette.ThemeTokenMapper.Map(
+                PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette.PaletteGenerator.Generate(spec));
+        }
+
+        Console.WriteLine($"palette generate + token map alone: {paletteOnly.Elapsed.TotalMilliseconds / 20:F1} ms each");
+        Step("palette Generate (Space)", settings.GeneratePalette, times: 20);
+        Step("palette regenerate one section", () => settings.RegenerateSection(settings.CoreSections[1]), times: 5);
+        Step("palette lock a section", () => settings.ToggleSectionLock(settings.CoreSections[0]), times: 2);
+        Step("palette engine switch", () => settings.SelectedColorEngine = settings.SelectedColorEngine == PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Hct
+            ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Oklch
+            : PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Hct, times: 4);
+        Step("palette undo", settings.UndoPalette, times: 5);
+        Step("palette apply (generate + apply as the studio theme)", () => { settings.GeneratePalette(); settings.ApplyHarmonicConfiguration(); }, times: 3);
+
         foreach (var (name, action) in new (string, Func<Task>)[]
         {
             ("apply the harmonic theme", () => settings.ApplyHarmonicConfigurationAsync()),

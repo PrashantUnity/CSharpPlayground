@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
@@ -156,6 +157,8 @@ public partial class CSharpSettingsViewModel
 
     private void InitializeThemingSettings()
     {
+        RestoreHarmonyControls();
+        RestorePaletteSpec();
         SelectedHarmonyOption = AvailableHarmonyOptions.FirstOrDefault(o => o.Mode == SelectedHarmonyMode) ?? AvailableHarmonyOptions[0];
         SelectedVisionDeficiencyOption = AvailableVisionDeficiencyOptions.FirstOrDefault(o => o.Deficiency == SelectedVisionDeficiency) ?? AvailableVisionDeficiencyOptions[0];
         UpdateHarmonyChords();
@@ -183,7 +186,8 @@ public partial class CSharpSettingsViewModel
         AccentShift = AccentShift,
         NeutralTint = NeutralTint,
         SemanticPull = SemanticPull,
-        ContrastTarget = ContrastTarget
+        ContrastTarget = ContrastTarget,
+        Engine = SelectedColorEngine
     };
 
     // Dragging the hue wheel or a slider changes a value many times a second: the previews are worked out once per UI
@@ -226,45 +230,23 @@ public partial class CSharpSettingsViewModel
 
     private void UpdateHarmonyChordsNow()
     {
+        // The controls are remembered as they move (written to disk once they settle).
+        RememberHarmony();
         var config = GetCurrentHarmonicConfiguration();
         float baseHue = (SelectedHueDegrees % 360f + 360f) % 360f;
         string rawHueHex = HarmonicColorGenerator.HslToHex(baseHue, 0.85f * config.SaturationBoost, 0.55f);
         CurrentHueHex = SimulateHex(rawHueHex);
 
-        var scales = HarmonicColorGenerator.GenerateAllTonalScales(config);
-        if (scales.TryGetValue("Primary", out var pScale))
-        {
-            SyncSwatches(PrimaryTonalSwatches, TonalScaleEngine.StandardStops
-                .Select(stop => (stop, SimulateHex(pScale[stop].ToHex()), stop == (IsThemeDarkMode ? 400 : 500))).ToList());
-        }
+        // The palette being designed (sections, locks, engine), from which every preview below is taken.
+        var (palette, tokens) = RefreshPalettePreview();
+        SyncScale(PrimaryTonalSwatches, PaletteSections.Primary);
+        SyncScale(AccentTonalSwatches, PaletteSections.Tertiary);
+        SyncScale(NeutralTonalSwatches, PaletteSections.Neutral);
 
-        if (scales.TryGetValue("Accent", out var aScale))
-        {
-            SyncSwatches(AccentTonalSwatches, TonalScaleEngine.StandardStops
-                .Select(stop => (stop, SimulateHex(aScale[stop].ToHex()), stop == (IsThemeDarkMode ? 400 : 500))).ToList());
-        }
-
-        if (scales.TryGetValue("Neutral", out var nScale))
-        {
-            SyncSwatches(NeutralTonalSwatches, TonalScaleEngine.StandardStops
-                .Select(stop => (stop, SimulateHex(nScale[stop].ToHex()), stop == (IsThemeDarkMode ? 900 : 100))).ToList());
-        }
-
-        string rawCanvas, rawSurface, rawPrimary, rawSecondary;
-        if (IsThemeDarkMode)
-        {
-            rawCanvas = nScale != null && nScale.TryGetValue(950, out var bgC) ? bgC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue, 0.14f, 0.07f);
-            rawSurface = nScale != null && nScale.TryGetValue(900, out var surfC) ? surfC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue, 0.16f, 0.11f);
-            rawPrimary = pScale != null && pScale.TryGetValue(400, out var primC) ? primC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue + 180f, 0.86f, 0.62f);
-            rawSecondary = aScale != null && aScale.TryGetValue(500, out var secC) ? secC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue + 180f, 0.80f, 0.65f);
-        }
-        else
-        {
-            rawCanvas = nScale != null && nScale.TryGetValue(50, out var bgC) ? bgC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue, 0.18f, 0.98f);
-            rawSurface = nScale != null && nScale.TryGetValue(100, out var surfC) ? surfC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue, 0.18f, 0.94f);
-            rawPrimary = pScale != null && pScale.TryGetValue(500, out var primC) ? primC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue + 180f, 0.85f, 0.42f);
-            rawSecondary = aScale != null && aScale.TryGetValue(600, out var secC) ? secC.ToHex() : HarmonicColorGenerator.HslToHex(baseHue + 180f, 0.80f, 0.46f);
-        }
+        string rawCanvas = tokens["DsBgBrush"];
+        string rawSurface = tokens["DsSurfaceBrush"];
+        string rawPrimary = tokens["DsPrimaryBrush"];
+        string rawSecondary = palette.Keys[PaletteSections.Secondary].ToHex();
 
         ChordCanvasHex = SimulateHex(rawCanvas);
         ChordSurfaceHex = SimulateHex(rawSurface);
@@ -316,6 +298,16 @@ public partial class CSharpSettingsViewModel
         };
     }
 
+    // A role's scale, with the stop nearest its key colour marked.
+    private void SyncScale(ObservableCollection<TonalSwatchItemViewModel> swatches, string role)
+    {
+        var palette = CurrentPalette;
+        var scale = palette.Scales[role];
+        var keyTone = palette.Engine.Decompose(palette.Keys[role]).Tone;
+        var keyStop = TonalScaleEngine.StandardStops.MinBy(stop => Math.Abs(palette.Engine.ToneOfStop(stop) - keyTone));
+        SyncSwatches(swatches, TonalScaleEngine.StandardStops.Select(stop => (stop, SimulateHex(scale[stop].ToHex()), stop == keyStop)).ToList());
+    }
+
     private string SimulateHex(string hex)
     {
         if (SelectedVisionDeficiency == VisionDeficiency.Normal) return hex;
@@ -339,12 +331,14 @@ public partial class CSharpSettingsViewModel
 
     public void ApplyHarmonicConfiguration()
     {
-        var config = GetCurrentHarmonicConfiguration();
-        var theme = HarmonicColorGenerator.GenerateHarmonicTheme(config, IsThemeDarkMode);
+        var theme = BuildPaletteTheme();
+        _appliedPaletteSpec = CurrentSpec();
         StudioAppContext.Instance.ThemeEngine.RegisterTheme(theme);
         bool success = StudioAppContext.Instance.ThemeEngine.ApplyTheme(theme.Id);
         if (success)
         {
+            RememberActiveTheme(theme.Id);
+            RememberHarmony();
             ActiveThemeId = theme.Id;
             ActiveThemeName = theme.Name;
             RefreshThemePresetsWithHarmonic(theme);
@@ -364,14 +358,10 @@ public partial class CSharpSettingsViewModel
         await Task.CompletedTask;
     }
 
+    /// <summary>Generates a new palette (locked sections stay) and applies it.</summary>
     public void RandomizeHarmonicWheel()
     {
-        SelectedHueDegrees = (float)(Random.Shared.NextDouble() * 360.0);
-        var modes = AvailableHarmonyModes;
-        SelectedHarmonyMode = modes[Random.Shared.Next(modes.Count)];
-        SaturationBoost = (float)Math.Round(0.85 + Random.Shared.NextDouble() * 0.35, 2);
-        NeutralTint = Random.Shared.Next(5, 20);
-        SemanticPull = Random.Shared.Next(5, 30);
+        GeneratePalette();
         ApplyHarmonicConfiguration();
     }
 

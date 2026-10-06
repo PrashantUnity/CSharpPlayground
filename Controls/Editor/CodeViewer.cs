@@ -62,6 +62,26 @@ public class CodeViewer : TextEditor
         ActualThemeVariantChanged += (_, _) => ApplyThemeVariant();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EnsureSubscribed();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged += OnEditorColorsChanged;
+        ApplyThemeVariant();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged -= OnEditorColorsChanged;
+    }
+
+    private void OnEditorColorsChanged()
+    {
+        ApplyThemeVariant();
+        TextArea.TextView.Redraw();
+    }
+
     private IBrush ResolveBrush(string resourceKey, IBrush fallback)
     {
         if (this.TryFindResource(resourceKey, out var res) && res is IBrush brush)
@@ -79,13 +99,13 @@ public class CodeViewer : TextEditor
         var language = StudioLanguageServices.Default.Registry.Get(Language);
         if (isDark)
         {
-            SyntaxHighlighting = language?.GetHighlighting(isDark: true) ?? CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(language?.GetHighlighting(isDark: true) ?? CSharpSyntaxHighlightingTheme.GetDarkTheme());
             Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
             TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_darkLink);
         }
         else
         {
-            SyntaxHighlighting = language?.GetHighlighting(isDark: false) ?? CSharpSyntaxHighlightingTheme.GetLightTheme();
+            SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(language?.GetHighlighting(isDark: false) ?? CSharpSyntaxHighlightingTheme.GetLightTheme());
             Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
             TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_lightLink);
         }

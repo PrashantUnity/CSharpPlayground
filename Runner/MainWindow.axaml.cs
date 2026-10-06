@@ -43,6 +43,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // The look the user left the studio with, before any page is built and before the customization script runs.
+        if (hostVm == null)
+        {
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.AppearanceRestorer.RestoreFrom(
+                null, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine);
+        }
+
         if (hostVm != null)
         {
             StudioHostVm = hostVm;
@@ -55,6 +62,7 @@ public partial class MainWindow : Window
         }
 
         StudioHostVm.RequestClose = () => Close();
+        Closing += (_, _) => StudioHostVm.FlushSettings();
         DataContext = StudioHostVm;
         StudioHost.DataContext = StudioHostVm;
 

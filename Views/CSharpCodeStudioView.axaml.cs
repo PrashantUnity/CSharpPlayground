@@ -466,7 +466,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
 
         if (isDark)
         {
-            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme();
+            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme());
             _editor.Background = ResolveBrush("EditorBgBrush", s_darkEditorBg);
             _editor.Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
             _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_darkLineNumbers);
@@ -477,7 +477,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         }
         else
         {
-            _editor.SyntaxHighlighting = _editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme();
+            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme());
             _editor.Background = ResolveBrush("EditorBgBrush", s_lightEditorBg);
             _editor.Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
             _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_lightLineNumbers);
@@ -504,15 +504,24 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         }
         else
         {
-            _editor.SyntaxHighlighting = _editorLanguage != null
+            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null
                 ? _editorLanguage.GetHighlighting(IsDarkTheme())
-                : CSharpSyntaxHighlightingTheme.GetDarkTheme();
+                : CSharpSyntaxHighlightingTheme.GetDarkTheme());
         }
+    }
+
+    // Another theme (even of the same light or dark scheme): its editor and syntax colours.
+    private void OnEditorColorsChanged()
+    {
+        ApplyThemeVariant();
+        _editor?.TextArea.TextView.Redraw();
     }
 
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EnsureSubscribed();
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged += OnEditorColorsChanged;
         ApplyThemeVariant();
 
         if (_debugHoverController == null && _editor != null && _debugHoverTip != null)
@@ -538,6 +547,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.EditorColorsChanged -= OnEditorColorsChanged;
         PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.UI.ContributionsChanged -= RefreshExtensibilitySlots;
         _debugHoverController?.Dispose();
         _debugHoverController = null;
