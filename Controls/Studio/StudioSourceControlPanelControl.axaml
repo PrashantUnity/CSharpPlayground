@@ -11,9 +11,6 @@
              x:DataType="vm:CSharpCodeStudioViewModel"
              x:CompileBindings="False">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
         <!-- Section Header Bar (VS Code SCM Header) -->

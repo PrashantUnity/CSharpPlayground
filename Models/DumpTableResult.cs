@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Models;
 
@@ -98,8 +99,12 @@ public partial class DumpTableResult : ObservableObject
     private int _selectedRowIndex = -1;
 
     public ObservableCollection<DumpTableColumn> Columns { get; } = new();
-    public ObservableCollection<DumpTableRow> Rows { get; } = new();
-    public ObservableCollection<DumpTableRow> FilteredRows { get; } = new();
+
+    /// <summary>All rows. Add many at once with <see cref="AddRows"/>: one notification instead of one per row.</summary>
+    public RangeObservableCollection<DumpTableRow> Rows { get; } = new();
+
+    /// <summary>The rows as shown (filtered and sorted). Rebuilt with one notification, never row by row.</summary>
+    public RangeObservableCollection<DumpTableRow> FilteredRows { get; } = new();
 
     public event Action? RowsViewChanged;
 
@@ -134,7 +139,30 @@ public partial class DumpTableResult : ObservableObject
 
     public DumpTableResult()
     {
-        Rows.CollectionChanged += (s, e) => ApplyFilterAndSort();
+        Rows.CollectionChanged += OnRowsChanged;
+    }
+
+    // Rows are usually added one at a time by whatever builds the table. Re-filtering and re-sorting every row on every
+    // add made building a table of N rows cost N² (a 2,800-row CSV took 30 s); with no filter or sort the shown rows
+    // simply follow the added ones.
+    private void OnRowsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (!IsFiltered && !IsSorted && e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+            e.NewItems != null && e.NewStartingIndex == FilteredRows.Count && FilteredRows.Count == Rows.Count - e.NewItems.Count)
+        {
+            FilteredRows.InsertRange(FilteredRows.Count, e.NewItems.Cast<DumpTableRow>().ToList());
+            RowsViewChanged?.Invoke();
+            return;
+        }
+
+        ApplyFilterAndSort();
+    }
+
+    /// <summary>Adds many rows with one change notification (and one filter/sort pass).</summary>
+    public void AddRows(IReadOnlyList<DumpTableRow> rows)
+    {
+        if (rows.Count == 0) return;
+        Rows.InsertRange(Rows.Count, rows);
     }
 
     public DumpTableResult(string title, string? label = null) : this()
@@ -240,12 +268,7 @@ public partial class DumpTableResult : ObservableObject
                 : rows.OrderBy(r => GetSortKey(r, col, colNumeric), RowSortComparer.Instance);
         }
 
-        FilteredRows.Clear();
-        foreach (var r in rows)
-        {
-            FilteredRows.Add(r);
-        }
-
+        FilteredRows.ReplaceAll(rows as IReadOnlyList<DumpTableRow> ?? rows.ToList());
         RowsViewChanged?.Invoke();
     }
 

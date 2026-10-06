@@ -11,9 +11,6 @@
              mc:Ignorable="d"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubWelcomeSectionControl"
              x:DataType="hub:CSharpManagerViewModel">
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
                             <!-- ============================================================ -->
                             <!-- SECTION 1: WELCOME & QUICK ACTIONS                           -->

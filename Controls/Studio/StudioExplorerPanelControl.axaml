@@ -12,9 +12,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <UserControl.DataTemplates>
         <DataTemplate DataType="explorer:ExplorerItemViewModel">

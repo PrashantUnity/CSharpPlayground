@@ -17,9 +17,6 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">

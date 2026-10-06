@@ -12,20 +12,17 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
 public partial class DumpTableView
 {
-    private Control CreateCellControl(
-        DumpTableCell? cell,
-        string cellText,
-        DumpTableResult table,
-        SelectableTextBlock textBlock,
-        IBrush primaryBrush,
-        IBrush onSurfaceBrush,
-        IBrush onSurfaceMutedBrush,
-        IBrush borderBrush)
+    private Control CreateCellControl(DumpTableCell? cell, SelectableTextBlock textBlock, DumpTableBrushes brushes)
     {
         if (cell?.HasNestedTable != true || cell.NestedTable == null)
         {
             return textBlock;
         }
+
+        var primaryBrush = brushes.Primary;
+        var onSurfaceBrush = brushes.OnSurface;
+        var onSurfaceMutedBrush = brushes.OnSurfaceMuted;
+        var borderBrush = brushes.Border;
 
         var cellPanel = new StackPanel
         {
@@ -80,7 +77,7 @@ public partial class DumpTableView
         expandBtn.Click += (s, e) =>
         {
             cell.IsNestedExpanded = !cell.IsNestedExpanded;
-            BuildTable(table);
+            NestedToggled();
         };
 
         cellPanel.Children.Add(expandBtn);
@@ -88,7 +85,7 @@ public partial class DumpTableView
         return cellPanel;
     }
 
-    private void AppendNestedTableMenuItems(ContextMenu menu, DumpTableCell cell, DumpTableResult table)
+    private void AppendNestedTableMenuItems(ContextMenu menu, DumpTableCell cell)
     {
         if (!cell.HasNestedTable || cell.NestedTable == null) return;
 
@@ -99,7 +96,7 @@ public partial class DumpTableView
         toggleNestedItem.Click += (s, e) =>
         {
             cell.IsNestedExpanded = !cell.IsNestedExpanded;
-            BuildTable(table);
+            NestedToggled();
         };
         menu.Items.Add(toggleNestedItem);
 
@@ -118,14 +115,11 @@ public partial class DumpTableView
         menu.Items.Add(new Separator());
     }
 
-    private Border CreateNestedTableCard(
-        string colHeader,
-        DumpTableCell cell,
-        DumpTableResult table,
-        IBrush primaryBrush,
-        IBrush onSurfaceBrush,
-        IBrush onSurfaceMutedBrush)
+    internal Border CreateNestedTableCard(string colHeader, DumpTableCell cell, DumpTableBrushes brushes)
     {
+        var primaryBrush = brushes.Primary;
+        var onSurfaceBrush = brushes.OnSurface;
+        var onSurfaceMutedBrush = brushes.OnSurfaceMuted;
         var nestedCard = new Border
         {
             Background = ResolveBrush("M3SurfaceContainerLowBrush", "#14181F"),
@@ -185,7 +179,7 @@ public partial class DumpTableView
         closeBtn.Click += (s, e) =>
         {
             cell.IsNestedExpanded = false;
-            BuildTable(table);
+            NestedToggled();
         };
         Grid.SetColumn(closeBtn, 2);
         subHeader.Children.Add(closeBtn);

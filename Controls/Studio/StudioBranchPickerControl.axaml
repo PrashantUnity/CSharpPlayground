@@ -11,9 +11,6 @@
              Width="290" MaxHeight="380"
              Background="{DynamicResource DsSurfaceBrush}">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6"
             Background="{DynamicResource DsSurfaceBrush}" Padding="8">

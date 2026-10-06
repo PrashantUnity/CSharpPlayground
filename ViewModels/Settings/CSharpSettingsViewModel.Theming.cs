@@ -344,19 +344,8 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task ApplyHarmonicConfigurationAsync()
     {
-        IsLoading = true;
-        LoadingTitle = "Applying Harmonic Theme...";
-        LoadingSubtitle = $"Updating 120+ dynamic tokens for {SelectedHarmonyMode} ({SelectedHueDescriptor})";
-
-        try
-        {
-            ApplyHarmonicConfiguration();
-        }
-        finally
-        {
-            await Task.Delay(60);
-            IsLoading = false;
-        }
+        ApplyHarmonicConfiguration();
+        await Task.CompletedTask;
     }
 
     public void RandomizeHarmonicWheel()
@@ -373,18 +362,7 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task RandomizeHarmonicWheelAsync()
     {
-        IsLoading = true;
-        LoadingTitle = "Generating Harmonic Palette...";
-        LoadingSubtitle = "Randomizing chromatic wheel and computing harmonic chords";
-
-        try
-        {
-            RandomizeHarmonicWheel();
-        }
-        finally
-        {
-            await Task.Delay(60);
-            IsLoading = false;
-        }
+        RandomizeHarmonicWheel();
+        await Task.CompletedTask;
     }
 }

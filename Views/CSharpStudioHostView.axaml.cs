@@ -37,7 +37,30 @@ public partial class CSharpStudioHostView : UserControl, IDisposable
     public KeepAlivePageHost Pages => _pages;
 
     /// <summary>Releases every page view; the studio is going away for good.</summary>
-    public void Dispose() => _pages.Dispose();
+    public void Dispose()
+    {
+        _stallMonitor?.Dispose();
+        _stallMonitor = null;
+        _pages.Dispose();
+    }
+
+    // Debug builds report every UI-thread stall over 200 ms to the debug log, with the work that was running.
+    private UiStallMonitor? _stallMonitor;
+
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+#if DEBUG
+        if (_stallMonitor == null && DataContext is CSharpStudioHostViewModel host) _stallMonitor = new UiStallMonitor(host.Activities);
+#endif
+    }
+
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _stallMonitor?.Dispose();
+        _stallMonitor = null;
+    }
 
     private void OnHostKeyDown(object? sender, KeyEventArgs e)
     {

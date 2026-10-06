@@ -17,10 +17,13 @@ internal sealed class SnapshotApp : Application
     {
         RequestedThemeVariant = ThemeVariant.Dark;
         var baseUri = new Uri("avares://UiSnapshots/");
-        Resources.MergedDictionaries.Add(new ResourceInclude(baseUri) { Source = new Uri("avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml") });
+        // FRY_PLUGIN_STYLES_ONLY=1: render as the plugin does inside FryPDF, where the app has none of the studio's styles and
+        // the studio host includes them (once) for everything below it.
+        bool pluginOnly = Environment.GetEnvironmentVariable("FRY_PLUGIN_STYLES_ONLY") is { Length: > 0 };
+        if (!pluginOnly) Resources.MergedDictionaries.Add(new ResourceInclude(baseUri) { Source = new Uri("avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml") });
         Styles.Add(new FluentTheme());
         Styles.Add(new MaterialIconStyles(null));
         Styles.Add(new StyleInclude(baseUri) { Source = new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml") });
-        Styles.Add(new StyleInclude(baseUri) { Source = new Uri("avares://CSharpEditorPlugin/Styles/StudioStyles.axaml") });
+        if (!pluginOnly) Styles.Add(new StyleInclude(baseUri) { Source = new Uri("avares://CSharpEditorPlugin/Styles/StudioStyles.axaml") });
     }
 }

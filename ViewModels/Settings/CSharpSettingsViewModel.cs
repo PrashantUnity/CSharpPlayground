@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
 
@@ -16,6 +17,7 @@ public sealed record KeymapShortcutItem(string Action, string Shortcut, string C
 public partial class CSharpSettingsViewModel : ObservableObject
 {
     private readonly StudioLanguageServices _languageServices;
+    private readonly IActivityService _activities;
     private readonly StudioSettingsStore _settingsStore;
     private readonly Action? _backToHubAction;
     private readonly Action? _backToPreviousAction;
@@ -47,15 +49,6 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasPendingChanges;
 
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _loadingTitle = "Applying...";
-
-    [ObservableProperty]
-    private string _loadingSubtitle = "Updating configuration";
-
     public bool IsLanguagesCategoryActive => string.Equals(ActiveCategory, "Languages", StringComparison.OrdinalIgnoreCase);
     public bool IsEditorCategoryActive => string.Equals(ActiveCategory, "Editor", StringComparison.OrdinalIgnoreCase);
     public bool IsThemesCategoryActive => string.Equals(ActiveCategory, "Themes", StringComparison.OrdinalIgnoreCase);
@@ -72,8 +65,10 @@ public partial class CSharpSettingsViewModel : ObservableObject
         StudioSettingsStore? settingsStore = null,
         Action? backToHubAction = null,
         Action? backToPreviousAction = null,
-        Action<ScriptDocumentItem>? openScriptAction = null)
+        Action<ScriptDocumentItem>? openScriptAction = null,
+        IActivityService? activities = null)
     {
+        _activities = activities ?? NullActivityService.Instance;
         _languageServices = languageServices;
         _settingsStore = settingsStore ?? languageServices.StudioSettings;
         _backToHubAction = backToHubAction;
@@ -191,41 +186,18 @@ public partial class CSharpSettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async System.Threading.Tasks.Task ApplyAsync()
+    public System.Threading.Tasks.Task ApplyAsync()
     {
-        IsLoading = true;
-        LoadingTitle = "Saving Settings...";
-        LoadingSubtitle = "Persisting environment configuration";
-        await System.Threading.Tasks.Task.Delay(50);
-
-        try
-        {
-            Apply();
-        }
-        finally
-        {
-            await System.Threading.Tasks.Task.Delay(50);
-            IsLoading = false;
-        }
+        // Saving settings takes a few milliseconds: no card, no waiting, just the confirmation Apply shows.
+        Apply();
+        return System.Threading.Tasks.Task.CompletedTask;
     }
 
     [RelayCommand]
-    public async System.Threading.Tasks.Task ResetDefaultsAsync()
+    public System.Threading.Tasks.Task ResetDefaultsAsync()
     {
-        IsLoading = true;
-        LoadingTitle = "Resetting Defaults...";
-        LoadingSubtitle = "Restoring standard IDE configuration";
-        await System.Threading.Tasks.Task.Delay(50);
-
-        try
-        {
-            ResetDefaults();
-        }
-        finally
-        {
-            await System.Threading.Tasks.Task.Delay(50);
-            IsLoading = false;
-        }
+        ResetDefaults();
+        return System.Threading.Tasks.Task.CompletedTask;
     }
 
     public void ShowNotification(string message, bool isError = false)

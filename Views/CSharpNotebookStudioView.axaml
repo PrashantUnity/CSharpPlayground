@@ -11,6 +11,7 @@
              xmlns:controls1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
              xmlns:nb="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
              xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
@@ -34,7 +35,6 @@
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto" Background="{DynamicResource DsBgBrush}">
@@ -367,6 +367,9 @@
                 <!-- ==================================================== -->
                 <!-- ROW 0: DOCUMENT TAB BAR (36px)                       -->
                 <!-- ==================================================== -->
+                <!-- Opening a notebook that takes a while: a line along the tab strip's bottom edge -->
+                <activities:ActivityProgressLine Grid.Row="0" Location="Notebook" VerticalAlignment="Bottom" ZIndex="1" />
+
                 <Border Grid.Row="0"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
@@ -1441,6 +1444,9 @@
                         <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding CompilerStatusText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
+
+                    <!-- Running work (opening a notebook, starting the engine) -->
+                    <activities:ActivityStatusItem />
                 </StackPanel>
 
                 <!-- Right: Metadata & Kernel Indicator -->

@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
@@ -17,7 +18,7 @@ using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
-public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
+public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle
 {
     // ── Infrastructure ────────────────────────────────────────────────────────
 
@@ -46,19 +47,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [ObservableProperty]
     private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
 
-    // ── Loading overlay ───────────────────────────────────────────────────────
+    // ── Running work ──────────────────────────────────────────────────────────
 
-    [ObservableProperty]
-    private bool _isLoading;
+    // Where this studio reports work the user may wait for (opening a notebook, a folder); the host decides what to show.
+    private readonly IActivityService _activities;
 
-    [ObservableProperty]
-    private string _loadingTitle = "Loading...";
-
-    [ObservableProperty]
-    private string _loadingSubtitle = string.Empty;
-
-    public IDisposable BeginLoading(string title, string subtitle = "") =>
-        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
+    // Opening notebook B while notebook A is still loading cancels A, so A can never take the canvas away from B.
+    private readonly LatestOperation _documentOpen = new();
 
     // ── Activity bar / sidebar ────────────────────────────────────────────────
 
@@ -423,8 +418,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         Action? navigateToDocsAction = null,
         StudioLanguageServices? languages = null,
         Action? navigateToSettingsAction = null,
-        Action<FryServerDocumentItem>? openServerAction = null)
+        Action<FryServerDocumentItem>? openServerAction = null,
+        IActivityService? activities = null)
     {
+        _activities = activities ?? NullActivityService.Instance;
         _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
         _storageService = storageService;

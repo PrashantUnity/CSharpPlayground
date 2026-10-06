@@ -8,9 +8,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border Background="{DynamicResource DsBgBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"

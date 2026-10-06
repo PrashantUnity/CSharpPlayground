@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
@@ -127,42 +129,48 @@ public partial class CSharpCodeStudioViewModel
     // Go to File: opens any file of the workspace by its path, whether or not the Explorer has drawn it.
     public async Task OpenWorkspaceFileAsync(string fullPath)
     {
-        using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
+        var token = _fileOpen.Begin();
+        using var activity = _activities.Start(new ActivityOptions($"Opening {Path.GetFileName(fullPath)}", ActivityLocation.Editor), token);
+        var result = await Task.Run(() => _storageService.OpenExternalProjectAsync(fullPath));
+        if (token.IsCancellationRequested) return;
+        if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
         {
-            await Task.Yield();
-            var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(fullPath));
-            if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
-            {
-                CompilerStatusText = result.Message;
-                return;
-            }
-
-            if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
-            {
-                if (_openServerAction != null && await Task.Run(async () => await _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId)) is { } server)
-                {
-                    _openServerAction.Invoke(server);
-                }
-
-                return;
-            }
-
-            if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
-            {
-                if (_openNotebookAction != null && await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId)) is { } notebook)
-                {
-                    _openNotebookAction.Invoke(notebook);
-                }
-
-                return;
-            }
-
-            await SaveDocumentAsync(userAsked: false);
-            if (await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId)) is { } loaded)
-            {
-                await UpdateActiveScriptAsync(loaded);
-            }
+            CompilerStatusText = result.Message;
+            return;
         }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Server)
+        {
+            if (_openServerAction != null && await Task.Run(() => _storageService.LoadServerDocumentAsync(result.PrimaryDocumentId)) is { } server && !token.IsCancellationRequested)
+            {
+                _openServerAction.Invoke(server);
+            }
+
+            return;
+        }
+
+        if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
+        {
+            if (_openNotebookAction != null && await Task.Run(() => _storageService.LoadNotebookAsync(result.PrimaryDocumentId)) is { } notebook && !token.IsCancellationRequested)
+            {
+                _openNotebookAction.Invoke(notebook);
+            }
+
+            return;
+        }
+
+        await LoadAndShowScriptAsync(result.PrimaryDocumentId, token);
+    }
+
+    // The common end of every "open this file" path: load it off the UI thread (joining a load of the same file that is
+    // already running), then show it, unless a newer open has started meanwhile.
+    private async Task LoadAndShowScriptAsync(string documentId, CancellationToken token)
+    {
+        var loaded = await _scriptLoads.RunAsync(documentId, () => Task.Run(() => _storageService.LoadScriptAsync(documentId)));
+        if (loaded == null || token.IsCancellationRequested) return;
+        await SaveDocumentAsync(userAsked: false);
+        if (token.IsCancellationRequested) return;
+        await UpdateActiveScriptAsync(loaded);
     }
 
     public void OnDeactivated() => _isPageActive = false;
@@ -462,69 +470,68 @@ public partial class CSharpCodeStudioViewModel
 
         if (string.IsNullOrEmpty(item.DocumentId)) return;
 
-        using (BeginLoading("Loading File...", item.Name))
+        var token = _fileOpen.Begin();
+        using var activity = _activities.Start(new ActivityOptions($"Opening {item.Name}", ActivityLocation.Editor), token);
+        if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
         {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
+            if (_openServerAction != null)
             {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
-            }
-
-            if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_openServerAction != null)
+                var server = await Task.Run(() => _storageService.LoadServerDocumentAsync(item.DocumentId));
+                if (token.IsCancellationRequested) return;
+                if (server != null)
                 {
-                    var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.DocumentId));
-                    if (server != null)
-                    {
-                        _openServerAction.Invoke(server);
-                        return;
-                    }
+                    _openServerAction.Invoke(server);
+                    return;
                 }
             }
-
-            if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
-                item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase) ||
-                item.FileExtension.Equals(".csnb", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_openNotebookAction != null)
-                {
-                    var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
-                    if (nb == null && !string.IsNullOrEmpty(item.FullPath))
-                    {
-                        var candidate = item.FullPath;
-                        if (!Path.IsPathRooted(candidate) && !string.IsNullOrEmpty(_storageService.ActiveWorkspaceRootPath))
-                        {
-                            var full = Path.Combine(_storageService.ActiveWorkspaceRootPath, candidate);
-                            if (File.Exists(full)) candidate = full;
-                        }
-                        if (File.Exists(candidate))
-                        {
-                            nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(candidate));
-                        }
-                    }
-
-                    if (nb != null)
-                    {
-                        _openNotebookAction.Invoke(nb);
-                        return;
-                    }
-                }
-            }
-
-            if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
-            {
-                HighlightExplorerItem(item.DocumentId, item.Name, item.FullPath);
-                return;
-            }
-
-            await SaveDocumentAsync(userAsked: false);
-
-            var loaded = await Task.Run(async () => await _storageService.LoadScriptAsync(item.DocumentId));
-            if (loaded == null) return;
-
-            await UpdateActiveScriptAsync(loaded);
         }
+
+        if (item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) ||
+            item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase) ||
+            item.FileExtension.Equals(".csnb", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_openNotebookAction != null)
+            {
+                var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
+                if (nb == null && !string.IsNullOrEmpty(item.FullPath))
+                {
+                    var candidate = item.FullPath;
+                    if (!Path.IsPathRooted(candidate) && !string.IsNullOrEmpty(_storageService.ActiveWorkspaceRootPath))
+                    {
+                        var full = Path.Combine(_storageService.ActiveWorkspaceRootPath, candidate);
+                        if (File.Exists(full)) candidate = full;
+                    }
+                    if (File.Exists(candidate))
+                    {
+                        nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(candidate));
+                    }
+                }
+
+                if (token.IsCancellationRequested) return;
+                if (nb != null)
+                {
+                    _openNotebookAction.Invoke(nb);
+                    return;
+                }
+            }
+        }
+
+        if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
+        {
+            HighlightExplorerItem(item.DocumentId, item.Name, item.FullPath);
+            return;
+        }
+
+        // Already open in a tab: switch to it, nothing to read.
+        if (OpenTabs.FirstOrDefault(t => string.Equals(t.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) is { } openTab)
+        {
+            await SaveDocumentAsync(userAsked: false);
+            if (token.IsCancellationRequested) return;
+            await SwitchToTabAsync(openTab);
+            return;
+        }
+
+        await LoadAndShowScriptAsync(item.DocumentId, token);
     }
 
     public void DeleteExplorerItem(Explorer.ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
@@ -577,52 +584,31 @@ public partial class CSharpCodeStudioViewModel
     {
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        using (BeginLoading("Opening Project...", Path.GetFileName(path) ?? path))
+        using var activity = _activities.Start(new ActivityOptions("Opening folder", ActivityLocation.Window) { Detail = Path.GetFileName(path) ?? path, Blocking = true });
+        try
         {
-            await Task.Yield();
-            try
+            var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
+            if (!result.Success)
             {
-                var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
-                if (!result.Success)
-                {
-                    CompilerStatusText = result.Message;
-                    return;
-                }
-
-                await RefreshExplorerAsync();
-
-                var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
-                if (!string.IsNullOrWhiteSpace(workspaceFolder))
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
-                        await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
-                        var workspaceExtDir = Path.Combine(workspaceFolder, ".frysharp", "extensions");
-                        if (Directory.Exists(workspaceExtDir))
-                        {
-                            await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
-                        }
-                    });
-                }
-
-                if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
-                {
-                    var loaded = await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId));
-                    if (loaded != null)
-                    {
-                        await SaveDocumentAsync(userAsked: false);
-                        await UpdateActiveScriptAsync(loaded);
-                    }
-                }
-
                 CompilerStatusText = result.Message;
+                return;
             }
-            catch (Exception ex)
+
+            await RefreshExplorerAsync();
+
+            WorkspaceCustomizationLoader.LoadInBackground(_storageService.ActiveWorkspaceRootPath, _activities);
+
+            if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
             {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
-                CompilerStatusText = $"Error opening project: {ex.Message}";
+                await LoadAndShowScriptAsync(result.PrimaryDocumentId, _fileOpen.Begin());
             }
+
+            CompilerStatusText = result.Message;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
+            CompilerStatusText = $"Error opening project: {ex.Message}";
         }
     }
 

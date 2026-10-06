@@ -88,7 +88,7 @@
 
         <!-- 2. Interactive Table Canvas -->
         <Border Grid.Row="1" Padding="16,12" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <views:DumpTableView DataContext="{Binding ActiveCsvTable}" />
+            <views:DumpTableView DataContext="{Binding ActiveCsvTable}" FillHeight="True" />
         </Border>
     </Grid>
 </UserControl>

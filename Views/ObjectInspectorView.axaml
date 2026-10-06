@@ -10,9 +10,6 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.ObjectInspectorView"
              x:DataType="models:ObjectInspectorNode">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <StackPanel Spacing="3" Margin="0,1">
         <!-- 1. Header Row (e.g. ▼ Submission#16+People) -->

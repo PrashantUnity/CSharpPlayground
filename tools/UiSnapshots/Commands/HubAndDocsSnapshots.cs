@@ -159,12 +159,6 @@ internal static class HubAndDocsSnapshots
         {
             Snapshot.Wait(selected.TestHelloWorldAsync());
         }
-        if (options.Flag("loading"))
-        {
-            vm.IsLoading = true;
-            vm.LoadingTitle = options.Value("loading-title") ?? "Applying Harmonic Theme...";
-            vm.LoadingSubtitle = options.Value("loading-subtitle") ?? "Updating 80+ dynamic tokens across IDE workbench";
-        }
         var window = Snapshot.Show(new CSharpSettingsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
         string defaultName = options.Value("name") switch
         {

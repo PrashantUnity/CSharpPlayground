@@ -328,6 +328,34 @@ public class CodeStudioSourceFileTests : IDisposable
     }
 
     [Fact]
+    public async Task ABigCsvFile_IsTurnedIntoATableInTheBackground_AndOnlyTheNewestPreviewIsShown()
+    {
+        var csv = new System.Text.StringBuilder("id,name,score\n");
+        for (int i = 0; i < 20_000; i++) csv.Append(i).Append(",name ").Append(i).Append(',').Append(i % 100).Append('\n');
+        WriteSource("data/big.csv", csv.ToString());
+        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "big.csv");
+
+        await studio.SwitchToScriptAsync(item);
+        Assert.True(studio.ShowCsvPreview);
+        await studio.PendingCsvPreview.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.NotNull(studio.ActiveCsvTable);
+        Assert.Equal(20_000, studio.ActiveCsvTable.Rows.Count);
+        Assert.Contains("20000 rows × 3 cols", studio.RuntimeLabel);
+
+        // Two refreshes in a row: the first is cancelled, only the second lands.
+        var first = studio.ActiveCsvTable;
+        studio.RefreshActiveDocumentPreview();
+        var cancelled = studio.PendingCsvPreview;
+        studio.RefreshActiveDocumentPreview();
+        await studio.PendingCsvPreview.WaitAsync(TimeSpan.FromSeconds(30));
+        await cancelled.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.NotSame(first, studio.ActiveCsvTable);
+        Assert.Equal(20_000, studio.ActiveCsvTable!.Rows.Count);
+    }
+
+    [Fact]
     public async Task OpeningACsvFile_TogglesBetweenTablePreviewAndRawTextModes()
     {
         var csvContent = """

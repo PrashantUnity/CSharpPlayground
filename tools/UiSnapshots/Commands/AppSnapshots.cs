@@ -38,6 +38,27 @@ internal static class AppSnapshots
         Snapshot.Settle(5);
         Snapshot.Save(window, options, "loading_f3");
         Snapshot.Save(window, options, "loading");
+
+        // The same card for cancellable blocking work, and the toasts long work and failures show.
+        overlay.ShowCancel = true;
+        overlay.LoadingTitle = "Opening folder";
+        overlay.LoadingSubtitle = "big-monorepo";
+        Snapshot.Settle(3);
+        Snapshot.Save(window, options, "loading_cancel");
+
+        var clock = new SnapshotClock();
+        var activities = new PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityService(clock);
+        var presenter = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.ActivityPresenterViewModel(activities, action => action());
+        var csv = activities.Start(new PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityOptions("Opening sales-2026.csv", PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityLocation.Editor) { Detail = "48 MB", Cancellable = true });
+        var index = activities.Start(new PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityOptions("Indexing workspace", PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityLocation.Explorer) { Detail = "src/Services" });
+        index.Report(0.62);
+        activities.Start(new PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityOptions("Opening photo.png", PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityLocation.Editor)).Fail(new InvalidDataException("The file is not a valid PNG image."));
+        clock.Advance(TimeSpan.FromSeconds(3));
+        presenter.Refresh();
+        var toasts = new PdfEditorApp.Plugins.CSharpEditor.Controls.Activities.ActivityToastHost { DataContext = presenter };
+        var toastWindow = Snapshot.Show(new Avalonia.Controls.Panel { Children = { toasts } }, 600, 360);
+        Snapshot.Save(toastWindow, options, "loading_toasts");
+        GC.KeepAlive(csv);
     }
 
     public static void Update(Options options)

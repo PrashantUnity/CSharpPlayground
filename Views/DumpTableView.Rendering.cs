@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -11,91 +12,190 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
+/// <summary>The theme brushes a table paints with, resolved once per theme instead of once per cell.</summary>
+internal sealed record DumpTableBrushes(
+    IBrush Header,
+    IBrush HeaderHover,
+    IBrush Border,
+    IBrush OnSurface,
+    IBrush OnSurfaceMuted,
+    IBrush Primary,
+    IBrush RowEven,
+    IBrush RowOdd,
+    IBrush RowHover,
+    IBrush RowSelected,
+    FontFamily Monospace)
+{
+    public static DumpTableBrushes Resolve(DumpTableView view) => new(
+        view.ResolveBrush("M3SurfaceContainerHighBrush", "#252C36"),
+        view.ResolveBrush("M3SurfaceContainerHighestBrush", "#2F3642"),
+        view.ResolveBrush("M3OutlineVariantBrush", "#3D4450"),
+        view.ResolveBrush("M3OnSurfaceBrush", "#E2E2E6"),
+        view.ResolveBrush("M3OnSurfaceVariantBrush", "#9BA1AD"),
+        view.ResolveBrush("M3PrimaryBrush", "#007ACC"),
+        view.ResolveBrush("M3SurfaceContainerLowestBrush", "#0B0E11"),
+        view.ResolveBrush("M3SurfaceContainerLowBrush", "#161A1F"),
+        view.ResolveBrush("M3SurfaceContainerHighestBrush", "#252C36"),
+        view.ResolveBrush("M3PrimaryContainerBrush", "#192B42"),
+        new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"));
+}
+
+/// <summary>
+/// The column widths a table's rows share. A virtualized row cannot measure the other rows to agree on widths, so the
+/// widths come from the header and a sample of rows, and stretch to fill the width available (like the star columns of
+/// the old grid). Text wider than its column is trimmed with an ellipsis; "Copy Cell Value" gives all of it.
+/// </summary>
+internal sealed class DumpTableLayout
+{
+    /// <summary>How many rows the widths are worked out from (the rest are trimmed if wider).</summary>
+    public const int SampleRows = 200;
+
+    public const double CellPaddingX = 10;
+    public const double CellPaddingY = 5.5;
+    private const double MonoCharWidth = 7.2;
+    private const double HeaderCharWidth = 7.4;
+    private const double SortIconWidth = 19;
+    private const double MinColumn = 90;
+    private const double MaxColumn = 460;
+    private const double NestedButtonWidth = 96;
+
+    public static readonly DumpTableLayout Empty = new(36, Array.Empty<double>());
+
+    private DumpTableLayout(double indexWidth, double[] widths)
+    {
+        IndexWidth = indexWidth;
+        Widths = widths;
+        Offsets = new double[widths.Length];
+        double x = indexWidth;
+        for (int i = 0; i < widths.Length; i++)
+        {
+            Offsets[i] = x;
+            x += widths[i];
+        }
+
+        TotalWidth = x;
+    }
+
+    public double IndexWidth { get; }
+    public double[] Widths { get; }
+
+    /// <summary>Where each data column starts (the index column is at 0).</summary>
+    public double[] Offsets { get; }
+
+    public double TotalWidth { get; }
+
+    public bool SameWidths(DumpTableLayout other) =>
+        Math.Abs(IndexWidth - other.IndexWidth) < 0.5 && Widths.Length == other.Widths.Length &&
+        Widths.Zip(other.Widths).All(p => Math.Abs(p.First - p.Second) < 0.5);
+
+    /// <summary>The column under <paramref name="x"/> (-1 for the index column).</summary>
+    public int ColumnAt(double x)
+    {
+        for (int i = Widths.Length - 1; i >= 0; i--)
+        {
+            if (x >= Offsets[i]) return i;
+        }
+
+        return -1;
+    }
+
+    public static DumpTableLayout Compute(DumpTableResult table, double viewportWidth)
+    {
+        int columns = table.Columns.Count;
+        int digits = Math.Max(2, (Math.Max(1, table.FilteredRows.Count)).ToString().Length);
+        double indexWidth = Math.Max(36, digits * MonoCharWidth + 14);
+        if (columns == 0) return new DumpTableLayout(indexWidth, Array.Empty<double>());
+
+        var widths = new double[columns];
+        for (int c = 0; c < columns; c++)
+        {
+            widths[c] = table.Columns[c].Header.Length * HeaderCharWidth + SortIconWidth + 2 * CellPaddingX;
+        }
+
+        var rows = table.FilteredRows;
+        int sample = Math.Min(rows.Count, SampleRows);
+        for (int r = 0; r < sample; r++)
+        {
+            var cells = rows[r].Cells;
+            for (int c = 0; c < columns && c < cells.Count; c++)
+            {
+                var cell = cells[c];
+                double w = Math.Min(cell.DisplayText?.Length ?? 0, 64) * MonoCharWidth + 2 * CellPaddingX;
+                if (cell.HasNestedTable) w += NestedButtonWidth;
+                if (w > widths[c]) widths[c] = w;
+            }
+        }
+
+        bool isKeyValue = columns == 2 &&
+            (table.Columns[0].Header.Equals("Property", StringComparison.OrdinalIgnoreCase) ||
+             table.Columns[0].Header.Equals("Key", StringComparison.OrdinalIgnoreCase));
+        if (isKeyValue)
+        {
+            widths[0] = Math.Clamp(widths[0], 150, 360);
+            widths[1] = Math.Clamp(widths[1], 200, MaxColumn * 2);
+        }
+        else
+        {
+            for (int c = 0; c < columns; c++) widths[c] = Math.Clamp(widths[c], MinColumn, MaxColumn);
+        }
+
+        // Fill the width available, as the old star columns did: the value column of a key/value table takes it all.
+        // (A pixel short of the width, so rounding never shows a horizontal scrollbar for nothing.)
+        double extra = Math.Floor(viewportWidth) - 1 - indexWidth - widths.Sum();
+        if (extra > 1)
+        {
+            if (isKeyValue)
+            {
+                widths[1] += extra;
+            }
+            else
+            {
+                double sum = widths.Sum();
+                for (int c = 0; c < columns; c++) widths[c] += extra * widths[c] / sum;
+            }
+        }
+
+        return new DumpTableLayout(indexWidth, widths);
+    }
+}
+
 public partial class DumpTableView
 {
-    public void BuildTable(DumpTableResult table)
+    private void BuildHeader(DumpTableResult table, DumpTableBrushes brushes)
     {
-        _tableGrid ??= this.FindControl<Grid>("TableGrid");
-        if (_tableGrid == null) return;
-
-        _tableGrid.Children.Clear();
-        _tableGrid.ColumnDefinitions.Clear();
-        _tableGrid.RowDefinitions.Clear();
+        var grid = _tableGrid!;
+        grid.Children.Clear();
+        grid.ColumnDefinitions.Clear();
+        grid.RowDefinitions.Clear();
 
         int colCount = table.Columns.Count;
         if (colCount == 0) return;
 
-        // Column 0: Row Index (#)
-        _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto)
+        grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(Layout.IndexWidth)));
+        for (int c = 0; c < colCount; c++)
         {
-            MinWidth = 36,
-            MaxWidth = 60
-        });
-
-        // Determine layout for data columns
-        bool isKeyValue = colCount == 2 &&
-            (table.Columns[0].Header.Equals("Property", StringComparison.OrdinalIgnoreCase) ||
-             table.Columns[0].Header.Equals("Key", StringComparison.OrdinalIgnoreCase));
-
-        if (isKeyValue)
-        {
-            _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto)
-            {
-                MinWidth = 150,
-                MaxWidth = 360
-            });
-            _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star)
-            {
-                MinWidth = 200
-            });
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(Layout.Widths[c])));
         }
-        else
-        {
-            for (int i = 0; i < colCount; i++)
-            {
-                _tableGrid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star)
-                {
-                    MinWidth = 100
-                });
-            }
-        }
-
-        // Brushes
-        var headerBrush = ResolveBrush("M3SurfaceContainerHighBrush", "#252C36");
-        var headerHoverBrush = ResolveBrush("M3SurfaceContainerHighestBrush", "#2F3642");
-        var borderBrush = ResolveBrush("M3OutlineVariantBrush", "#3D4450");
-        var onSurfaceBrush = ResolveBrush("M3OnSurfaceBrush", "#E2E2E6");
-        var onSurfaceMutedBrush = ResolveBrush("M3OnSurfaceVariantBrush", "#9BA1AD");
-        var primaryBrush = ResolveBrush("M3PrimaryBrush", "#007ACC");
-        var rowBgEven = ResolveBrush("M3SurfaceContainerLowestBrush", "#0B0E11");
-        var rowBgOdd = ResolveBrush("M3SurfaceContainerLowBrush", "#161A1F");
-        var rowHoverBrush = ResolveBrush("M3SurfaceContainerHighestBrush", "#252C36");
-        var rowSelectedBrush = ResolveBrush("M3PrimaryContainerBrush", "#192B42");
-        var monospaceFont = new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace");
-
-        // Row 0: Header Row
-        _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
 
         // Header Cell 0: Row number indicator (#)
         var numHeaderBorder = new Border
         {
-            Background = headerBrush,
-            BorderBrush = borderBrush,
+            Background = brushes.Header,
+            BorderBrush = brushes.Border,
             BorderThickness = new Thickness(0, 0, 1, 1),
-            Padding = new Thickness(6, 6)
+            Padding = new Thickness(6, 6),
+            Child = new TextBlock
+            {
+                Text = "#",
+                FontSize = 11,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = brushes.OnSurfaceMuted,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
         };
-        numHeaderBorder.Child = new TextBlock
-        {
-            Text = "#",
-            FontSize = 11,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = onSurfaceMutedBrush,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        Grid.SetRow(numHeaderBorder, 0);
         Grid.SetColumn(numHeaderBorder, 0);
-        _tableGrid.Children.Add(numHeaderBorder);
+        grid.Children.Add(numHeaderBorder);
 
         // Header Data Cells (Sortable & Clickable)
         for (int c = 0; c < colCount; c++)
@@ -106,25 +206,22 @@ public partial class DumpTableView
 
             var headerBorder = new Border
             {
-                Background = isSortedCol ? headerHoverBrush : headerBrush,
-                BorderBrush = borderBrush,
+                Background = isSortedCol ? brushes.HeaderHover : brushes.Header,
+                BorderBrush = brushes.Border,
                 BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : 1), 1),
-                Padding = new Thickness(10, 6),
+                Padding = new Thickness(DumpTableLayout.CellPaddingX, 6),
                 Cursor = new Cursor(StandardCursorType.Hand)
             };
 
-            var headerGrid = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitions("*,Auto")
-            };
-
+            var headerGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
             var headerText = new TextBlock
             {
                 Text = col.Header,
                 FontSize = 12,
                 FontWeight = isSortedCol ? FontWeight.Bold : FontWeight.SemiBold,
-                Foreground = isSortedCol ? primaryBrush : onSurfaceBrush,
+                Foreground = isSortedCol ? brushes.Primary : brushes.OnSurface,
                 VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
                 TextAlignment = col.IsNumeric ? TextAlignment.Right : TextAlignment.Left
             };
             Grid.SetColumn(headerText, 0);
@@ -137,223 +234,99 @@ public partial class DumpTableView
                     : MaterialIconKind.SwapVertical,
                 Width = 13,
                 Height = 13,
-                Foreground = isSortedCol ? primaryBrush : onSurfaceMutedBrush,
+                Foreground = isSortedCol ? brushes.Primary : brushes.OnSurfaceMuted,
                 Opacity = isSortedCol ? 1.0 : 0.45,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0)
             };
             Grid.SetColumn(sortIcon, 1);
             headerGrid.Children.Add(sortIcon);
-
             headerBorder.Child = headerGrid;
 
-            string sortTip = isSortedCol
+            ToolTip.SetTip(headerBorder, isSortedCol
                 ? (table.IsSortDescending ? $"Sorted descending by {col.Header}. Click to clear sort." : $"Sorted ascending by {col.Header}. Click to sort descending.")
-                : $"Click to sort by {col.Header}";
-            ToolTip.SetTip(headerBorder, sortTip);
+                : $"Click to sort by {col.Header}");
 
             headerBorder.PointerPressed += (s, e) => table.SortByColumn(colIndex);
             headerBorder.PointerEntered += (s, e) =>
             {
-                headerBorder.Background = headerHoverBrush;
+                headerBorder.Background = brushes.HeaderHover;
                 sortIcon.Opacity = 1.0;
             };
             headerBorder.PointerExited += (s, e) =>
             {
-                headerBorder.Background = isSortedCol ? headerHoverBrush : headerBrush;
+                headerBorder.Background = isSortedCol ? brushes.HeaderHover : brushes.Header;
                 sortIcon.Opacity = isSortedCol ? 1.0 : 0.45;
             };
 
-            Grid.SetRow(headerBorder, 0);
             Grid.SetColumn(headerBorder, c + 1);
-            _tableGrid.Children.Add(headerBorder);
+            grid.Children.Add(headerBorder);
         }
+    }
 
-        // Data Rows
-        var displayRows = table.FilteredRows.Count > 0 || table.IsFiltered
-            ? (IReadOnlyList<DumpTableRow>)table.FilteredRows
-            : (IReadOnlyList<DumpTableRow>)table.Rows;
-
-        if (displayRows.Count == 0)
+    /// <summary>What a row shows in one cell: its text, or a nested table's toggle and its text.</summary>
+    internal Control CreateCellContent(DumpTableCell? cell, DumpTableBrushes brushes)
+    {
+        var cellText = cell?.DisplayText ?? string.Empty;
+        var textBlock = new SelectableTextBlock
         {
-            _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            var emptyBorder = new Border
-            {
-                Background = rowBgEven,
-                Padding = new Thickness(16, 14),
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            emptyBorder.Child = new TextBlock
-            {
-                Text = table.IsFiltered ? "No rows matching filter." : "Table contains no rows.",
-                FontSize = 12,
-                FontStyle = FontStyle.Italic,
-                Foreground = onSurfaceMutedBrush,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            Grid.SetRow(emptyBorder, 1);
-            Grid.SetColumn(emptyBorder, 0);
-            Grid.SetColumnSpan(emptyBorder, colCount + 1);
-            _tableGrid.Children.Add(emptyBorder);
-            return;
-        }
+            Text = cellText,
+            FontSize = 12,
+            FontFamily = brushes.Monospace,
+            Foreground = cell?.IsNull == true ? brushes.OnSurfaceMuted : brushes.OnSurface,
+            FontStyle = cell?.IsNull == true ? FontStyle.Italic : FontStyle.Normal,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextAlignment = cell?.Alignment ?? TextAlignment.Left,
+            // Right-click reaches the row's cell menu (which has Copy Cell Value) instead of a bare Copy flyout.
+            ContextFlyout = null,
+        };
 
-        for (int r = 0; r < displayRows.Count; r++)
+        return CreateCellControl(cell, textBlock, brushes);
+    }
+
+    /// <summary>The right-click menu of one cell, built when it is opened (not for every cell up front).</summary>
+    internal ContextMenu CreateCellMenu(DumpTableRow row, int columnIndex)
+    {
+        var table = _currentTable!;
+        var cell = columnIndex >= 0 && columnIndex < row.Cells.Count ? row.Cells[columnIndex] : null;
+        var cellText = cell?.DisplayText ?? string.Empty;
+        var menu = new ContextMenu();
+        if (cell != null)
         {
-            _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            int rowGridIndex = _tableGrid.RowDefinitions.Count - 1;
-
-            var row = displayRows[r];
-            int rowIndex = r;
-            bool isSelected = table.SelectedRowIndex == r;
-            var rowBg = isSelected ? rowSelectedBrush : (r % 2 == 0 ? rowBgEven : rowBgOdd);
-            bool isLastRow = (r == displayRows.Count - 1);
-            var rowBorders = new List<Border>(colCount + 1);
-
-            // Column 0: Row Index
-            var indexBorder = new Border
-            {
-                Background = rowBg,
-                BorderBrush = isSelected ? primaryBrush : borderBrush,
-                BorderThickness = new Thickness(isSelected ? 3 : 0, 0, 1, isLastRow ? 0 : 1),
-                Padding = new Thickness(6, 5.5)
-            };
-            indexBorder.Child = new TextBlock
-            {
-                Text = (r + 1).ToString(),
-                FontSize = 11,
-                FontFamily = monospaceFont,
-                Foreground = isSelected ? primaryBrush : onSurfaceMutedBrush,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetRow(indexBorder, rowGridIndex);
-            Grid.SetColumn(indexBorder, 0);
-            _tableGrid.Children.Add(indexBorder);
-            rowBorders.Add(indexBorder);
-
-            // Data Cells
-            for (int c = 0; c < colCount; c++)
-            {
-                var cell = (c < row.Cells.Count) ? row.Cells[c] : null;
-                var cellText = cell?.DisplayText ?? string.Empty;
-
-                var cellBorder = new Border
-                {
-                    Background = rowBg,
-                    BorderBrush = isSelected ? primaryBrush : borderBrush,
-                    BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : 1), isLastRow ? 0 : 1),
-                    Padding = new Thickness(10, 5.5)
-                };
-
-                var textBlock = new SelectableTextBlock
-                {
-                    Text = cellText,
-                    FontSize = 12,
-                    FontFamily = monospaceFont,
-                    Foreground = cell?.IsNull == true ? onSurfaceMutedBrush : onSurfaceBrush,
-                    FontStyle = cell?.IsNull == true ? FontStyle.Italic : FontStyle.Normal,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    TextAlignment = (cell?.Alignment ?? TextAlignment.Left)
-                };
-
-                // Context Menu on Cells
-                var menu = new ContextMenu();
-                if (cell != null)
-                {
-                    AppendNestedTableMenuItems(menu, cell, table);
-                }
-
-                var copyCell = new MenuItem { Header = "Copy Cell Value" };
-                copyCell.Click += async (s, e) => await SetClipboardTextAsync(cellText);
-                menu.Items.Add(copyCell);
-
-                var copyRowTsv = new MenuItem { Header = "Copy Row (TSV)" };
-                copyRowTsv.Click += async (s, e) =>
-                {
-                    var line = string.Join("\t", row.Cells.Select(x => x.DisplayText));
-                    await SetClipboardTextAsync(line);
-                };
-                menu.Items.Add(copyRowTsv);
-
-                var copyRowJson = new MenuItem { Header = "Copy Row (JSON)" };
-                copyRowJson.Click += async (s, e) =>
-                {
-                    var dict = new Dictionary<string, object?>();
-                    for (int i = 0; i < table.Columns.Count; i++)
-                    {
-                        var h = table.Columns[i].Header;
-                        var val = (i < row.Cells.Count) ? (row.Cells[i].RawValue ?? row.Cells[i].DisplayText) : null;
-                        dict[h] = val;
-                    }
-                    var json = System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-                    await SetClipboardTextAsync(json);
-                };
-                menu.Items.Add(copyRowJson);
-
-                if (!string.IsNullOrWhiteSpace(cellText))
-                {
-                    menu.Items.Add(new Separator());
-                    string preview = cellText.Length > 20 ? cellText.Substring(0, 18) + "…" : cellText;
-                    var filterItem = new MenuItem { Header = $"Filter by \"{preview}\"" };
-                    filterItem.Click += (s, e) => table.FilterText = cellText;
-                    menu.Items.Add(filterItem);
-                }
-
-                cellBorder.ContextMenu = menu;
-                cellBorder.Child = CreateCellControl(cell, cellText, table, textBlock, primaryBrush, onSurfaceBrush, onSurfaceMutedBrush, borderBrush);
-
-                Grid.SetRow(cellBorder, rowGridIndex);
-                Grid.SetColumn(cellBorder, c + 1);
-                _tableGrid.Children.Add(cellBorder);
-                rowBorders.Add(cellBorder);
-            }
-
-            // Hover and Click Selection for each row
-            foreach (var b in rowBorders)
-            {
-                b.PointerEntered += (s, e) =>
-                {
-                    if (table.SelectedRowIndex != rowIndex)
-                    {
-                        foreach (var rb in rowBorders) rb.Background = rowHoverBrush;
-                    }
-                };
-                b.PointerExited += (s, e) =>
-                {
-                    if (table.SelectedRowIndex != rowIndex)
-                    {
-                        var origBg = (rowIndex % 2 == 0) ? rowBgEven : rowBgOdd;
-                        foreach (var rb in rowBorders) rb.Background = origBg;
-                    }
-                };
-                b.PointerPressed += (s, e) =>
-                {
-                    if (e.GetCurrentPoint(b).Properties.IsLeftButtonPressed)
-                    {
-                        table.SelectedRowIndex = (table.SelectedRowIndex == rowIndex) ? -1 : rowIndex;
-                        BuildTable(table);
-                    }
-                };
-            }
-
-            // Inline Nested Table Expansion Card (when any cell in this row is expanded)
-            for (int c = 0; c < row.Cells.Count; c++)
-            {
-                var cell = row.Cells[c];
-                if (cell.IsNestedExpanded && cell.NestedTable != null)
-                {
-                    _tableGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-                    int subGridRow = _tableGrid.RowDefinitions.Count - 1;
-                    var colHeader = (c < table.Columns.Count) ? table.Columns[c].Header : "Nested";
-                    var nestedCard = CreateNestedTableCard(colHeader, cell, table, primaryBrush, onSurfaceBrush, onSurfaceMutedBrush);
-
-                    Grid.SetRow(nestedCard, subGridRow);
-                    Grid.SetColumn(nestedCard, 0);
-                    Grid.SetColumnSpan(nestedCard, colCount + 1);
-                    _tableGrid.Children.Add(nestedCard);
-                }
-            }
+            AppendNestedTableMenuItems(menu, cell);
         }
+
+        var copyCell = new MenuItem { Header = "Copy Cell Value", IsEnabled = cell != null };
+        copyCell.Click += async (s, e) => await SetClipboardTextAsync(cellText);
+        menu.Items.Add(copyCell);
+
+        var copyRowTsv = new MenuItem { Header = "Copy Row (TSV)" };
+        copyRowTsv.Click += async (s, e) => await SetClipboardTextAsync(string.Join("\t", row.Cells.Select(x => x.DisplayText)));
+        menu.Items.Add(copyRowTsv);
+
+        var copyRowJson = new MenuItem { Header = "Copy Row (JSON)" };
+        copyRowJson.Click += async (s, e) =>
+        {
+            var dict = new Dictionary<string, object?>();
+            for (int i = 0; i < table.Columns.Count; i++)
+            {
+                dict[table.Columns[i].Header] = i < row.Cells.Count ? (row.Cells[i].RawValue ?? row.Cells[i].DisplayText) : null;
+            }
+
+            await SetClipboardTextAsync(System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        };
+        menu.Items.Add(copyRowJson);
+
+        if (!string.IsNullOrWhiteSpace(cellText))
+        {
+            menu.Items.Add(new Separator());
+            string preview = cellText.Length > 20 ? cellText.Substring(0, 18) + "…" : cellText;
+            var filterItem = new MenuItem { Header = $"Filter by \"{preview}\"" };
+            filterItem.Click += (s, e) => table.FilterText = cellText;
+            menu.Items.Add(filterItem);
+        }
+
+        return menu;
     }
 }

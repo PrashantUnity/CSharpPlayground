@@ -9,10 +9,6 @@
              x:Name="LoadingRoot"
              IsVisible="{Binding #LoadingRoot.IsLoading}">
 
-
-
-
-
     <!-- Full-screen backdrop / scrim capturing clicks and dimming the background -->
     <Grid Background="{DynamicResource DsScrimBrush}"
           HorizontalAlignment="Stretch"
@@ -156,6 +152,14 @@
                         </Border>
                     </Canvas>
                 </Border>
+
+                <!-- Blocking work the user may stop (switching workspace) -->
+                <Button Content="Cancel"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        Padding="16,4"
+                        Command="{Binding #LoadingRoot.CancelCommand}"
+                        IsVisible="{Binding #LoadingRoot.ShowCancel}" />
             </StackPanel>
         </Border>
     </Grid>

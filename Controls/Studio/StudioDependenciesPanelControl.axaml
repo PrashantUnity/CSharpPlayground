@@ -10,9 +10,6 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioDependenciesPanelControl"
              x:CompileBindings="False">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="10,8" Spacing="10">

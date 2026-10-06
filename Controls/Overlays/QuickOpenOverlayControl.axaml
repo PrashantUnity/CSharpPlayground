@@ -11,9 +11,6 @@
              x:DataType="common:QuickOpenViewModel"
              IsVisible="{Binding IsOpen}">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <!-- Full Screen Scrim to Capture Outside Clicks -->
     <Grid Background="{DynamicResource DsScrimBrush}"

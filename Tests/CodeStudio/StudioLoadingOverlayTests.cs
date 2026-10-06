@@ -1,7 +1,9 @@
+using System.Reflection;
 using Avalonia.Controls;
 using Material.Icons;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Studio;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
@@ -15,237 +17,121 @@ using ExplorerItemViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeS
 
 namespace CSharpEditorPlugin.Tests;
 
+/// <summary>
+/// The studio's loading behaviour: pages report work as activities (never a modal of their own), fast work such as a
+/// tab switch reports nothing, a later open wins over an earlier one, and the Hub's list refresh never swallows a click.
+/// </summary>
 public class StudioLoadingOverlayTests
 {
-    private sealed class TestLoadingState : IStudioLoadingState
+    /// <summary>An activity service that remembers what was started, where.</summary>
+    private sealed class RecordingActivities : IActivityService
     {
-        public bool IsLoading { get; set; }
-        public string LoadingTitle { get; set; } = "Loading...";
-        public string LoadingSubtitle { get; set; } = string.Empty;
+        private readonly ActivityService _inner = new();
+        public List<ActivityOptions> Started { get; } = new();
+        public TimeProvider Time => _inner.Time;
+        public long Version => _inner.Version;
+
+        public IActivity Start(ActivityOptions options, CancellationToken linked = default)
+        {
+            lock (Started) Started.Add(options);
+            return _inner.Start(options, linked);
+        }
+
+        public IReadOnlyList<ActivitySnapshot> Snapshot() => _inner.Snapshot();
+        public void Cancel(long id) => _inner.Cancel(id);
+
+        public event Action? Changed
+        {
+            add => _inner.Changed += value;
+            remove => _inner.Changed -= value;
+        }
+
+        public event Action<ActivitySnapshot, Exception>? Failed
+        {
+            add => _inner.Failed += value;
+            remove => _inner.Failed -= value;
+        }
+    }
+
+    /// <summary>Storage whose chosen calls wait for a gate, to make "slow" loads without timing tricks.</summary>
+    public class GatedStorage : DispatchProxy
+    {
+        public IScriptStorageService Inner { get; set; } = null!;
+        public Func<MethodInfo, object?[]?, Task?> Gate { get; set; } = (_, _) => null;
+
+        public static IScriptStorageService Wrap(IScriptStorageService inner, Func<MethodInfo, object?[]?, Task?> gate)
+        {
+            var proxy = Create<IScriptStorageService, GatedStorage>();
+            var gated = (GatedStorage)(object)proxy;
+            gated.Inner = inner;
+            gated.Gate = gate;
+            return proxy;
+        }
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            var gate = Gate(targetMethod!, args);
+            if (gate == null || !typeof(Task).IsAssignableFrom(targetMethod!.ReturnType)) return targetMethod!.Invoke(Inner, args);
+
+            // Same task type as the real method, completed once the gate opens.
+            var resultType = targetMethod.ReturnType.IsGenericType ? targetMethod.ReturnType.GetGenericArguments()[0] : null;
+            var run = typeof(GatedStorage).GetMethod(resultType == null ? nameof(After) : nameof(AfterOf), BindingFlags.NonPublic | BindingFlags.Static)!;
+            if (resultType != null) run = run.MakeGenericMethod(resultType);
+            return run.Invoke(null, [gate, (Func<object?>)(() => targetMethod.Invoke(Inner, args))]);
+        }
+
+        private static async Task After(Task gate, Func<object?> call)
+        {
+            await gate;
+            await (Task)call()!;
+        }
+
+        private static async Task<T> AfterOf<T>(Task gate, Func<object?> call)
+        {
+            await gate;
+            return await (Task<T>)call()!;
+        }
+    }
+
+    private static string NewTempFolder(string purpose)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"{purpose}_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        return dir;
     }
 
     [Fact]
-    public void BeginLoading_SetsProperties_AndDisposingResetsLoading()
-    {
-        var state = new TestLoadingState();
-        Assert.False(state.IsLoading);
-
-        using (state.BeginLoading("Opening File...", "test.frynb"))
-        {
-            Assert.True(state.IsLoading);
-            Assert.Equal("Opening File...", state.LoadingTitle);
-            Assert.Equal("test.frynb", state.LoadingSubtitle);
-        }
-
-        Assert.False(state.IsLoading);
-    }
-
-    [Fact]
-    public void BeginLoading_ResetsOnException()
-    {
-        var state = new TestLoadingState();
-        try
-        {
-            using (state.BeginLoading("Processing...", "step 1"))
-            {
-                Assert.True(state.IsLoading);
-                throw new InvalidOperationException("Simulated error");
-            }
-        }
-        catch (InvalidOperationException)
-        {
-            // Expected
-        }
-
-        Assert.False(state.IsLoading);
-    }
-
-    [Fact]
-    public void HostViewModel_ImplementsIStudioLoadingState()
-    {
-        var host = new CSharpStudioHostViewModel(blindProgress: new LocalBlindProgressService());
-        Assert.IsAssignableFrom<IStudioLoadingState>(host);
-        Assert.False((bool)host.IsLoading);
-
-        using (host.BeginLoading("Opening Studio...", "Roslyn"))
-        {
-            Assert.True((bool)host.IsLoading);
-            Assert.Equal((string?)"Opening Studio...", (string?)host.LoadingTitle);
-            Assert.Equal((string?)"Roslyn", (string?)host.LoadingSubtitle);
-        }
-
-        Assert.False((bool)host.IsLoading);
-    }
-
-    [Fact]
-    public void ManagerViewModel_ImplementsIStudioLoadingState()
-    {
-        var storage = new LocalScriptStorageService();
-        var manager = new CSharpManagerViewModel(
-            storage,
-            openScriptAction: _ => { },
-            openNotebookAction: _ => { },
-            navigateToHomeAction: () => { });
-
-        Assert.IsAssignableFrom<IStudioLoadingState>(manager);
-
-        using (manager.BeginLoading("Opening Project...", "Workspace1"))
-        {
-            Assert.True((bool)manager.IsLoading);
-            Assert.Equal((string?)"Opening Project...", (string?)manager.LoadingTitle);
-            Assert.Equal((string?)"Workspace1", (string?)manager.LoadingSubtitle);
-        }
-
-        Assert.False((bool)manager.IsLoading);
-    }
-
-    [Fact]
-    public void OverlayControl_DefaultsAndPropertiesWork()
+    public void OverlayControl_DefaultsAndBindableProperties()
     {
         var control = new StudioLoadingOverlayControl();
         Assert.False(control.IsLoading);
         Assert.Equal("Loading...", control.LoadingTitle);
         Assert.Equal(string.Empty, control.LoadingSubtitle);
+        Assert.False(control.ShowCancel);
 
         control.IsLoading = true;
-        control.LoadingTitle = "Saving...";
-        control.LoadingSubtitle = "file.cs";
-        control.IconKind = MaterialIconKind.SyncCircle;
-
-        Assert.True(control.IsLoading);
-        Assert.Equal("Saving...", control.LoadingTitle);
-        Assert.Equal("file.cs", control.LoadingSubtitle);
-        Assert.Equal(MaterialIconKind.SyncCircle, control.IconKind);
-    }
-
-    [Fact]
-    public void OverlayControl_VisualAnimationElements_ExistAndRespondToShowLogo()
-    {
-        var control = new StudioLoadingOverlayControl();
+        control.LoadingTitle = "Opening folder";
+        control.LoadingSubtitle = "big-repo";
         control.ShowLogo = false;
         control.IconKind = MaterialIconKind.Refresh;
-        control.IsLoading = true;
 
-        Assert.False(control.ShowLogo);
+        Assert.Equal("Opening folder", control.LoadingTitle);
+        Assert.Equal("big-repo", control.LoadingSubtitle);
         Assert.Equal(MaterialIconKind.Refresh, control.IconKind);
-        Assert.True(control.IsLoading);
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task NotebookStudio_OpenDocumentAsync_SetsLoadingDuringFileTransition()
+    public void OverlayControl_DoesNotAnimate_WhileItIsNotOnScreen()
     {
-        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NotebookLoadingTest_" + Guid.NewGuid().ToString("N"));
-        System.IO.Directory.CreateDirectory(tempDir);
-        try
-        {
-            using var storage = new LocalScriptStorageService(tempDir);
-            var initial = new NotebookDocumentItem { Title = "Initial Notebook" };
-            var studio = new CSharpNotebookStudioViewModel(
-                initial,
-                storage,
-                new RoslynCompilerService(),
-                new ScriptExecutionEngine(),
-                backToHubAction: () => { },
-                backToHomeAction: () => { });
-
-            bool wasLoadingDuringOpen = false;
-            string? capturedTitle = null;
-            studio.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(IStudioLoadingState.IsLoading) && studio.IsLoading)
-                {
-                    wasLoadingDuringOpen = true;
-                    capturedTitle = studio.LoadingTitle;
-                }
-            };
-
-            var item = new ExplorerItemViewModel
-            {
-                Name = "MachineLearning.frynb",
-                DocumentId = "ml_doc_1",
-                FileExtension = ".frynb",
-                IsDirectory = false
-            };
-
-            await studio.OpenDocumentAsync(item);
-
-            Assert.True(wasLoadingDuringOpen, "NotebookStudio should set IsLoading=true during OpenDocumentAsync");
-            Assert.Equal("Opening File...", capturedTitle);
-            Assert.False((bool)studio.IsLoading, "IsLoading should be false after OpenDocumentAsync completes");
-        }
-        finally
-        {
-            if (System.IO.Directory.Exists(tempDir))
-            {
-                System.IO.Directory.Delete(tempDir, recursive: true);
-            }
-        }
+        // The old card ran a 16 ms timer on the UI thread whenever IsLoading was set; now nothing runs off screen.
+        var overlay = new StudioLoadingOverlayControl { IsLoading = true };
+        Assert.False(overlay.IsAnimationRunning);
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task CodeStudio_SwitchToScriptAsync_SetsLoadingDuringFileTransition()
+    public void OverlayControl_StepAnimation_PosesTheRings()
     {
-        var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CodeLoadingTest_" + Guid.NewGuid().ToString("N"));
-        System.IO.Directory.CreateDirectory(tempDir);
-        try
-        {
-            using var storage = new LocalScriptStorageService(tempDir);
-            var script = new ScriptDocumentItem { Title = "Script 1", Code = "// code" };
-            await storage.SaveScriptAsync(script);
-
-            var secondScript = new ScriptDocumentItem { Title = "Script 2", Code = "// script 2" };
-            await storage.SaveScriptAsync(secondScript);
-
-            var studio = new CSharpCodeStudioViewModel(
-                script,
-                storage,
-                new RoslynCompilerService(),
-                new ScriptExecutionEngine(),
-                backToHubAction: () => { },
-                backToHomeAction: () => { });
-
-            bool wasLoadingDuringSwitch = false;
-            string? capturedTitle = null;
-            studio.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(IStudioLoadingState.IsLoading) && studio.IsLoading)
-                {
-                    wasLoadingDuringSwitch = true;
-                    capturedTitle = studio.LoadingTitle;
-                }
-            };
-
-            var item = new ExplorerItemViewModel
-            {
-                Name = "Script 2.frycs",
-                DocumentId = secondScript.Id,
-                FileExtension = ".frycs",
-                IsDirectory = false
-            };
-
-            await studio.SwitchToScriptAsync(item);
-
-            Assert.True(wasLoadingDuringSwitch, "CodeStudio should set IsLoading=true during SwitchToScriptAsync");
-            Assert.Equal("Loading File...", capturedTitle);
-            Assert.False((bool)studio.IsLoading, "IsLoading should be false after SwitchToScriptAsync completes");
-        }
-        finally
-        {
-            if (System.IO.Directory.Exists(tempDir))
-            {
-                System.IO.Directory.Delete(tempDir, recursive: true);
-            }
-        }
-    }
-
-    [Fact]
-    public void StudioLoadingOverlayControl_StepAnimation_UpdatesTransforms()
-    {
-        var overlay = new StudioLoadingOverlayControl
-        {
-            IsLoading = true
-        };
-
+        var overlay = new StudioLoadingOverlayControl { IsLoading = true };
         var spinnerBorder = overlay.FindControl<Avalonia.Controls.Border>("SpinnerRingBorder");
         Assert.NotNull(spinnerBorder);
 
@@ -256,53 +142,143 @@ public class StudioLoadingOverlayTests
     }
 
     [Fact]
-    public void StudioLoadingManager_RefCountingAndGlobalState()
+    public async Task CodeStudio_TabSwitch_ReportsNoActivity_ButOpeningAFileDoes()
     {
-        var manager = StudioLoadingManager.Instance;
-        manager.Reset();
-        Assert.False(manager.IsLoading);
+        var dir = NewTempFolder("CodeLoadingTest");
+        try
+        {
+            using var storage = new LocalScriptStorageService(dir);
+            var first = new ScriptDocumentItem { Title = "Script 1", Code = "// one" };
+            var second = new ScriptDocumentItem { Title = "Script 2", Code = "// two" };
+            await storage.SaveScriptAsync(first);
+            await storage.SaveScriptAsync(second);
+            var activities = new RecordingActivities();
+            var studio = new CSharpCodeStudioViewModel(first, storage, new RoslynCompilerService(), new ScriptExecutionEngine(),
+                backToHubAction: () => { }, backToHomeAction: () => { }, activities: activities);
 
-        var scope1 = manager.Begin("First task", "sub 1");
-        Assert.True(manager.IsLoading);
-        Assert.Equal("First task", manager.LoadingTitle);
-        Assert.Equal("sub 1", manager.LoadingSubtitle);
+            await studio.SwitchToScriptAsync(new ExplorerItemViewModel { Name = "Script 2.frycs", DocumentId = second.Id, FileExtension = ".frycs" });
+            var open = Assert.Single(activities.Started);
+            Assert.Equal("Opening Script 2.frycs", open.Title);
+            Assert.Equal(ActivityLocation.Editor, open.Location);
+            Assert.False(open.Blocking);
+            Assert.Equal(second.Id, studio.Script.Id);
 
-        var scope2 = manager.Begin("Second task", "sub 2");
-        Assert.True(manager.IsLoading);
-        Assert.Equal("Second task", manager.LoadingTitle);
-
-        scope1.Dispose();
-        Assert.True(manager.IsLoading, "Manager should remain loading while second scope is active");
-
-        scope2.Dispose();
-        Assert.False(manager.IsLoading, "Manager should finish loading once all scopes are disposed");
+            activities.Started.Clear();
+            var firstTab = studio.OpenTabs.First(t => t.Id == first.Id);
+            await studio.SwitchToTabAsync(firstTab);
+            Assert.Equal(first.Id, studio.Script.Id);
+            Assert.Empty(activities.Started);
+            Assert.Empty(activities.Snapshot());
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     [Fact]
-    public void ChildStudio_BeginLoading_UpdatesHostViewModelViaGlobalManager()
+    public async Task CodeStudio_ALaterOpen_WinsOverASlowerEarlierOne()
+    {
+        var dir = NewTempFolder("CodeLatestWins");
+        try
+        {
+            using var real = new LocalScriptStorageService(dir);
+            var start = new ScriptDocumentItem { Title = "Start", Code = "// start" };
+            var slow = new ScriptDocumentItem { Title = "Slow", Code = "// slow" };
+            var fast = new ScriptDocumentItem { Title = "Fast", Code = "// fast" };
+            foreach (var s in new[] { start, slow, fast }) await real.SaveScriptAsync(s);
+
+            var slowGate = new TaskCompletionSource();
+            var storage = GatedStorage.Wrap(real, (method, args) =>
+                method.Name == nameof(IScriptStorageService.LoadScriptAsync) && Equals(args?[0], slow.Id) ? slowGate.Task : null);
+            var studio = new CSharpCodeStudioViewModel(start, storage, new RoslynCompilerService(), new ScriptExecutionEngine(),
+                backToHubAction: () => { }, backToHomeAction: () => { });
+
+            var openSlow = studio.SwitchToScriptAsync(new ExplorerItemViewModel { Name = "Slow.frycs", DocumentId = slow.Id, FileExtension = ".frycs" });
+            await studio.SwitchToScriptAsync(new ExplorerItemViewModel { Name = "Fast.frycs", DocumentId = fast.Id, FileExtension = ".frycs" });
+            Assert.Equal(fast.Id, studio.Script.Id);
+
+            slowGate.SetResult();
+            await openSlow;
+
+            // The slow file finished last, but the user had moved on: it must not take the editor.
+            Assert.Equal(fast.Id, studio.Script.Id);
+            Assert.DoesNotContain(studio.OpenTabs, t => t.Id == slow.Id);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task NotebookStudio_OpeningANotebook_ReportsANotebookActivity()
+    {
+        var dir = NewTempFolder("NotebookLoadingTest");
+        try
+        {
+            using var storage = new LocalScriptStorageService(dir);
+            var activities = new RecordingActivities();
+            var studio = new CSharpNotebookStudioViewModel(new NotebookDocumentItem { Title = "Initial Notebook" }, storage,
+                new RoslynCompilerService(), new ScriptExecutionEngine(), backToHubAction: () => { }, backToHomeAction: () => { },
+                activities: activities);
+
+            await studio.OpenDocumentAsync(new ExplorerItemViewModel { Name = "MachineLearning.frynb", DocumentId = "ml_doc_1", FileExtension = ".frynb" });
+
+            var open = Assert.Single(activities.Started);
+            Assert.Equal("Opening MachineLearning.frynb", open.Title);
+            Assert.Equal(ActivityLocation.Notebook, open.Location);
+            Assert.Empty(activities.Snapshot());
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Hub_CreatingADocument_WorksWhileTheListIsRefreshing()
+    {
+        // The Hub used to guard "create" on the same flag its list refresh set, so a click during a refresh did nothing.
+        var dir = NewTempFolder("HubCreateDuringRefresh");
+        try
+        {
+            using var real = new LocalScriptStorageService(dir);
+            var listGate = new TaskCompletionSource();
+            var storage = GatedStorage.Wrap(real, (method, _) =>
+                method.Name == nameof(IScriptStorageService.LoadWorkspaceSummariesAsync) ? listGate.Task : null);
+            ScriptDocumentItem? opened = null;
+            var hub = new CSharpManagerViewModel(storage, openScriptAction: s => opened = s);
+
+            Assert.True(hub.IsRefreshingList);
+            await hub.CreateNewScriptAsync();
+            var create = hub.ConfirmCreateAsync();
+
+            // The document opens before the list has caught up.
+            Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref opened) != null, TimeSpan.FromSeconds(10)), "the new script was never opened");
+            listGate.SetResult();
+            await create;
+            Assert.False(hub.IsRefreshingList);
+            Assert.Contains(hub.AllItems, i => i.Id == opened!.Id);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Host_OwnsOneActivityPresenter_AndALaterNavigationWinsOverAnOpenWaitingForTheEngine()
     {
         var host = new CSharpStudioHostViewModel(blindProgress: new LocalBlindProgressService());
-        var notebook = new PdfEditorApp.Plugins.CSharpEditor.Models.NotebookDocumentItem { Title = "TestNB" };
-        var studio = new CSharpNotebookStudioViewModel(
-            notebook,
-            new LocalScriptStorageService(),
-            new RoslynCompilerService(),
-            new ScriptExecutionEngine(),
-            backToHubAction: () => { },
-            backToHomeAction: () => { });
+        Assert.Same(host.Activities, host.Activity.Service);
 
-        Assert.False((bool)host.IsLoading);
-        Assert.False((bool)studio.IsLoading);
+        // Opening a script right after start-up waits for the engine; going to the docs meanwhile must not be undone.
+        var open = host.OpenInCodeStudioAsync(new ScriptDocumentItem { Title = "Early" });
+        host.NavigateToDocs();
+        await open.WaitAsync(TimeSpan.FromMinutes(2));
 
-        using (studio.BeginLoading("Opening File...", "MachineLearningCode.frynb"))
-        {
-            Assert.True((bool)studio.IsLoading);
-            Assert.True((bool)host.IsLoading);
-            Assert.Equal("Opening File...", (string?)host.LoadingTitle);
-            Assert.Equal("MachineLearningCode.frynb", (string?)host.LoadingSubtitle);
-        }
-
-        Assert.False((bool)studio.IsLoading);
-        Assert.False((bool)host.IsLoading);
+        Assert.Same(host.DocsViewModel, host.CurrentPage);
+        host.Dispose();
     }
 }

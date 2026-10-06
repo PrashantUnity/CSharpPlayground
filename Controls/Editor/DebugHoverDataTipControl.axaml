@@ -4,9 +4,6 @@
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Editor.DebugHoverDataTipControl">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"

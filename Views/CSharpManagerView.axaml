@@ -9,6 +9,7 @@
              xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              xmlns:hub1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Hub"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              mc:Ignorable="d" d:DesignWidth="1380" d:DesignHeight="880"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpManagerView"
              x:DataType="hub:CSharpManagerViewModel"
@@ -22,9 +23,6 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Panel>
         <!-- ============================================================ -->
@@ -47,6 +45,9 @@
 
                 <!-- Top Header: Search & Sync Bar -->
                 <hub1:HubTopHeaderControl Grid.Row="0" />
+
+                <!-- Refreshing the workspace list, opening or creating an item: a line under the header -->
+                <activities:ActivityProgressLine Grid.Row="0" Location="Hub" VerticalAlignment="Bottom" ZIndex="1" />
 
                 <!-- Dashboard Content Area (ScrollViewer + Floating Overlay) -->
                 <Panel Grid.Row="1">

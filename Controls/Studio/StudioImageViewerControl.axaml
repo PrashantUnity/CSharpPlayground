@@ -30,9 +30,6 @@
         </DrawingBrush>
     </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource DsBgBrush}">
         <!-- Top Toolbar / Info Bar -->

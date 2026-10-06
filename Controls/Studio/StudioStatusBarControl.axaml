@@ -5,13 +5,11 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:studio="using:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="22"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioStatusBarControl"
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
@@ -62,6 +60,9 @@
                         <TextBlock Text="{Binding WarningCount}" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
+
+                <!-- Running work (opening a file, starting the engine, loading extensions) -->
+                <activities:ActivityStatusItem />
 
                 <!-- Roslyn Compiler Status -->
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">

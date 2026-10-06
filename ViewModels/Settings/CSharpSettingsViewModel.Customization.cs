@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FrySharp.Sdk;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Packages;
@@ -277,19 +278,8 @@ public partial class CSharpSettingsViewModel
         var preset = ThemePresets.FirstOrDefault(p => string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase));
         string themeName = preset?.Name ?? themeId;
 
-        IsLoading = true;
-        LoadingTitle = $"Applying {themeName}...";
-        LoadingSubtitle = "Switching 80+ dynamic tokens and UI brush resources";
-
-        try
-        {
-            ApplyThemePreset(themeId);
-        }
-        finally
-        {
-            await Task.Delay(60);
-            IsLoading = false;
-        }
+        ApplyThemePreset(themeId);
+        await Task.CompletedTask;
     }
 
     public void GenerateHarmonicPalette()
@@ -337,19 +327,8 @@ public partial class CSharpSettingsViewModel
     [RelayCommand]
     public async Task GenerateHarmonicPaletteAsync()
     {
-        IsLoading = true;
-        LoadingTitle = "Synthesizing Palette...";
-        LoadingSubtitle = "Generating harmonic color wheel and updating runtime tokens";
-
-        try
-        {
-            GenerateHarmonicPalette();
-        }
-        finally
-        {
-            await Task.Delay(60);
-            IsLoading = false;
-        }
+        GenerateHarmonicPalette();
+        await Task.CompletedTask;
     }
 
     public void SetDensity(string densityName)
@@ -367,19 +346,8 @@ public partial class CSharpSettingsViewModel
     {
         if (Enum.TryParse<LayoutDensity>(densityName, ignoreCase: true, out var density))
         {
-            IsLoading = true;
-            LoadingTitle = $"Applying Density: {density}...";
-            LoadingSubtitle = "Recalculating layout padding and component margins";
-
-            try
-            {
-                SetDensity(densityName);
-            }
-            finally
-            {
-                await Task.Delay(40);
-                IsLoading = false;
-            }
+            SetDensity(densityName);
+            await Task.CompletedTask;
         }
     }
 
@@ -388,27 +356,17 @@ public partial class CSharpSettingsViewModel
     {
         if (StudioAppContext.Instance.CustomizationManager is { } mgr)
         {
-            IsLoading = true;
-            LoadingTitle = "Reloading Scripts...";
-            LoadingSubtitle = "Hot-reloading C# extension scripts and custom themes";
-
-            try
+            // Compiling the customization script is real work: report it (status bar, a line if it takes a while).
+            using var activity = _activities.Start(new ActivityOptions("Reloading customization script", ActivityLocation.Window));
+            var result = await mgr.ReloadAsync();
+            if (result.Success)
             {
-                var result = await mgr.ReloadAsync();
-                if (result.Success)
-                {
-                    RefreshCustomizationData();
-                    ShowNotification("Global customization script reloaded and applied successfully!", isError: false);
-                }
-                else
-                {
-                    ShowNotification($"Customization script error: {result.ErrorMessage}", isError: true);
-                }
+                RefreshCustomizationData();
+                ShowNotification("Global customization script reloaded and applied successfully!", isError: false);
             }
-            finally
+            else
             {
-                await Task.Delay(50);
-                IsLoading = false;
+                ShowNotification($"Customization script error: {result.ErrorMessage}", isError: true);
             }
         }
         else

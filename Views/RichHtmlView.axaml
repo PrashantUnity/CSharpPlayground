@@ -5,9 +5,6 @@
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.RichHtmlView">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Panel HorizontalAlignment="Stretch">
         <!-- 1. Text / Markdown Render Container -->

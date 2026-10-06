@@ -325,7 +325,9 @@ internal static class StudioSnapshots
             vm.EditorFontSize = zoomSize;
         }
 
-        var window = Snapshot.Show(new CSharpCodeStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        var codeView = new CSharpCodeStudioView { DataContext = vm };
+        ActivitySnapshots.BusyIfAsked(codeView, options, PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityLocation.Editor, "Opening sales-2026.csv");
+        var window = Snapshot.Show(codeView, options.Int("width", 1400), options.Int("height", 900));
         if (options.Value("zoom-keys") is { } zoomKeys)
         {
             ApplyZoomKeys(window, zoomKeys);
@@ -648,14 +650,9 @@ internal static class StudioSnapshots
             vm.EditorFontSize = nbZoomSize;
         }
 
-        if (options.Flag("loading"))
-        {
-            vm.IsLoading = true;
-            vm.LoadingTitle = options.Value("loading-title") ?? "Opening Notebook...";
-            vm.LoadingSubtitle = options.Value("loading-sub") ?? "MachineLeaningCode.frynb";
-        }
-
-        var window = Snapshot.Show(new CSharpNotebookStudioView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        var notebookView = new CSharpNotebookStudioView { DataContext = vm };
+        ActivitySnapshots.BusyIfAsked(notebookView, options, PdfEditorApp.Plugins.CSharpEditor.Services.Activities.ActivityLocation.Notebook, "Opening MachineLearningCode.frynb");
+        var window = Snapshot.Show(notebookView, options.Int("width", 1400), options.Int("height", 900));
         if (options.Value("zoom-keys") is { } nbZoomKeys)
         {
             ApplyZoomKeys(window, nbZoomKeys);

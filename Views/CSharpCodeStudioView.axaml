@@ -11,6 +11,7 @@
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:codeStudio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
              xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
@@ -30,7 +31,6 @@
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto" Background="{DynamicResource DsBgBrush}">
@@ -138,6 +138,9 @@
                             </StackPanel>
                         </Grid>
                     </Border>
+
+                    <!-- Explorer work (listing a big folder, opening a workspace): a line along the header's bottom edge -->
+                    <activities:ActivityProgressLine Grid.Row="0" Location="Explorer" VerticalAlignment="Bottom" ZIndex="1" />
 
                     <!-- SideBar Carousel Pages -->
                     <Carousel Grid.Row="1" SelectedIndex="{Binding SelectedActivityBarIndex}">
@@ -401,6 +404,9 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="{Binding BottomDeckGridLength, Mode=TwoWay}" MinHeight="0" />
                 </Grid.RowDefinitions>
+
+                <!-- Opening a file that takes a while: a line along the tab bar's bottom edge (VS Code's editor progress) -->
+                <activities:ActivityProgressLine Grid.Row="0" Location="Editor" VerticalAlignment="Bottom" ZIndex="1" />
 
                 <!-- Row 0: VS Code Editor Tab Bar & Actions Strip -->
                 <Border Grid.Row="0"

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.DumpTableView"
              x:DataType="models:DumpTableResult">
@@ -14,9 +15,10 @@
             CornerRadius="6"
             Margin="0,0,0,12"
             HorizontalAlignment="Stretch">
-        <StackPanel>
+        <DockPanel>
             <!-- 1. Header Banner (VS Code Data Viewer Header) -->
-            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
+            <Border DockPanel.Dock="Top"
+                    Background="{DynamicResource M3SurfaceContainerHighBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,0,0,1"
                     CornerRadius="5,5,0,0"
@@ -142,18 +144,24 @@
                 </Grid>
             </Border>
 
-            <!-- 2. Grid Table Body (Hidden when collapsed) -->
+            <!-- 2. Table Body (Hidden when collapsed): the column headers, then the rows. Only the rows on screen are
+                 built (a virtualized list), so a table of 100,000 rows costs what a table of 30 does. -->
             <Border x:Name="TableBodyBorder"
                     IsVisible="{Binding !IsCollapsed}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                     BorderThickness="0,1,0,0"
                     HorizontalAlignment="Stretch">
                 <ScrollViewer x:Name="TableScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <Grid x:Name="TableGrid"
-                          HorizontalAlignment="Stretch"
-                          MinWidth="{Binding #TableScrollViewer.Bounds.Width}" />
+                    <Grid x:Name="TableHost" RowDefinitions="Auto,Auto,*" HorizontalAlignment="Left">
+                        <Grid x:Name="TableGrid" Grid.Row="0" />
+                        <Border x:Name="EmptyRow" Grid.Row="1" Padding="16,14" IsVisible="False">
+                            <TextBlock x:Name="EmptyText" FontSize="12" FontStyle="Italic" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                        </Border>
+                        <views:DumpTableRowsList x:Name="RowsPart" Grid.Row="2" />
+                    </Grid>
                 </ScrollViewer>
             </Border>
-        </StackPanel>
+        </DockPanel>
     </Border>
 </UserControl>

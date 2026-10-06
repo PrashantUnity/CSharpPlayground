@@ -12,9 +12,6 @@
              mc:Ignorable="d"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubWorkspacesPanelControl"
              x:DataType="hub:CSharpManagerViewModel">
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <StackPanel Grid.Column="0" Spacing="16">
 

@@ -44,12 +44,22 @@ internal static class PerfSnapshots
         var scripts = summaries.Where(s => s.IsScript).Take(8).Select(s => Pump(storage.LoadScriptAsync(s.Id))!).ToList();
         var notebook = Pump(storage.LoadNotebookAsync(summaries.First(s => s.IsNotebook).Id))!;
 
+        using var probe = new StallProbe();
+        if (options.Int("table-rows", 0) is > 0 and var tableRows)
+        {
+            PerfLoading.TableOnly(probe, tableRows, options.Value("table-shot"));
+            return;
+        }
+
         var clock = Stopwatch.StartNew();
         var host = new CSharpStudioHostViewModel(
             blindProgress: new LocalBlindProgressService(Snapshot.TempFolder("perf-blind")),
             languages: languages,
             storageService: storage);
         Console.WriteLine($"Studio view model created (runs on the UI thread when the plugin opens): {clock.Elapsed.TotalMilliseconds:F0} ms");
+        bool memoryTrace = options.Flag("memory-trace");
+        void Heap(string where) { if (memoryTrace) Console.WriteLine($"  heap {where}: {GC.GetTotalMemory(forceFullCollection: true) / 1048576.0:F0} MB"); }
+        Heap("after the studio view model");
 
         clock.Restart();
         var view = new CSharpStudioHostView { DataContext = host };
@@ -58,13 +68,100 @@ internal static class PerfSnapshots
         Dispatcher.UIThread.RunJobs();
         using (window.CaptureRenderedFrame()) { }
         Console.WriteLine($"Studio window shown (Hub built, laid out, one frame): {clock.Elapsed.TotalMilliseconds:F0} ms");
+        Heap("after the window");
 
         clock.Restart();
-        if (!Snapshot.WaitFor(() => host.CodeStudioViewModel != null && host.NotebookStudioViewModel != null && !host.ManagerViewModel.IsLoading, TimeSpan.FromMinutes(3)))
+        // --open-early: open a script the moment the window is up, the way a user clicks a recent file at once.
+        if (options.Flag("open-early"))
+        {
+            double earlyStall = 0;
+            Sample early = default;
+            earlyStall = probe.Measure(() => early = Navigate(window, () => host.NavigateToCodeStudio(scripts[0]), () => ReferenceEquals(host.CurrentPage, host.CodeStudioViewModel)));
+            Console.WriteLine($"Code Studio opened during start-up: {early.ToFrame:F0} ms after the window; longest input wait {earlyStall:F0} ms");
+        }
+
+        bool started = false;
+        double startupStall = probe.Measure(() => started = Snapshot.WaitFor(() => host.CodeStudioViewModel != null && host.NotebookStudioViewModel != null && !host.ManagerViewModel.IsRefreshingList, TimeSpan.FromMinutes(3)));
+        if (!started)
         {
             throw new InvalidOperationException("The studio never finished starting up.");
         }
-        Console.WriteLine($"Engine and Hub data ready: {clock.Elapsed.TotalMilliseconds:F0} ms (background)");
+        Console.WriteLine($"Engine and Hub data ready: {clock.Elapsed.TotalMilliseconds:F0} ms (background); longest input wait meanwhile {startupStall:F0} ms");
+        // The engine's second stage (the first compilation) runs on in the background; keep it out of the page timings.
+        double warmStall = probe.Measure(() => Pump(host.Engine.WarmReady));
+        Console.WriteLine($"Engine stages: core {host.Engine.CoreElapsed.TotalMilliseconds:F0} ms, warm-up {host.Engine.WarmElapsed.TotalMilliseconds:F0} ms (state {host.Engine.State}); longest input wait during warm-up {warmStall:F0} ms");
+        Heap("after the engine warmed up");
+
+        if (options.Flag("style-cost"))
+        {
+            foreach (var file in new[] { "Styles/StudioStyles.axaml", "Views/CSharpManagerStyles.axaml" })
+            {
+                long before = GC.GetTotalMemory(forceFullCollection: true);
+                var keep = new List<object>();
+                var c = Stopwatch.StartNew();
+                for (int i = 0; i < 5; i++)
+                {
+                    var include = new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://CSharpEditorPlugin/")) { Source = new Uri($"avares://CSharpEditorPlugin/{file}") };
+                    keep.Add(include.Loaded);
+                }
+                long after = GC.GetTotalMemory(forceFullCollection: true);
+                Console.WriteLine($"  style include {file}: {c.Elapsed.TotalMilliseconds / 5:F1} ms and {(after - before) / 5.0 / 1048576:F1} MB each");
+                GC.KeepAlive(keep);
+            }
+        }
+
+        if (options.Flag("memory-parts"))
+        {
+            // What each part of the studio holds once it is built and shown on its own (heap after a full collection).
+            var parts = new (string Name, Func<Control> Make)[]
+            {
+                ("AI composer", () => new PdfEditorApp.Plugins.CSharpEditor.Controls.AI.StudioFloatingComposerControl { DataContext = host.AiComposer }),
+                ("Hub page", () => new CSharpManagerView { DataContext = host.ManagerViewModel }),
+                ("Settings page", () => new CSharpSettingsView { DataContext = host.SettingsViewModel }),
+                ("Code Studio page", () => new CSharpCodeStudioView { DataContext = host.CodeStudioViewModel }),
+                ("Notebook page", () => new CSharpNotebookStudioView { DataContext = host.NotebookStudioViewModel }),
+                ("Docs page", () => new CSharpDocsView { DataContext = host.DocsViewModel }),
+                ("Loading card", () => new PdfEditorApp.Plugins.CSharpEditor.Controls.Studio.StudioLoadingOverlayControl()),
+            };
+            if (options.Flag("memory-children"))
+            {
+                var studioView = new CSharpCodeStudioView { DataContext = host.CodeStudioViewModel };
+                var holder = new Window { Width = 1400, Height = 900, Content = studioView };
+                holder.Show();
+                Snapshot.Settle(3);
+                var types = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(studioView).OfType<UserControl>()
+                    .Select(c => (c.GetType(), c.DataContext)).GroupBy(t => t.Item1).Select(g => g.First()).ToList();
+                holder.Close();
+                Snapshot.Settle(2);
+                foreach (var (type, dataContext) in types)
+                {
+                    if (type.GetConstructor(Type.EmptyTypes) == null) continue;
+                    long before = GC.GetTotalMemory(forceFullCollection: true);
+                    var control = (Control)Activator.CreateInstance(type)!;
+                    control.DataContext = dataContext;
+                    var w = new Window { Width = 1400, Height = 900, Content = control };
+                    w.Show();
+                    Snapshot.Settle(3);
+                    long after = GC.GetTotalMemory(forceFullCollection: true);
+                    Console.WriteLine($"  child {type.Name}: +{(after - before) / 1048576.0:F0} MB");
+                    w.Close();
+                    Snapshot.Settle(2);
+                    GC.GetTotalMemory(forceFullCollection: true);
+                }
+            }
+
+            foreach (var part in parts)
+            {
+                long before = GC.GetTotalMemory(forceFullCollection: true);
+                var partWindow = new Window { Width = 1400, Height = 900, Content = part.Make() };
+                partWindow.Show();
+                Snapshot.Settle(3);
+                long shown = GC.GetTotalMemory(forceFullCollection: true);
+                Console.WriteLine($"  part {part.Name}: +{(shown - before) / 1048576.0:F0} MB");
+                partWindow.Close();
+                Snapshot.Settle(2);
+            }
+        }
 
         var pages = new (string Name, Action Go, Func<bool> Arrived)[]
         {
@@ -77,17 +174,21 @@ internal static class PerfSnapshots
         };
 
         var samples = pages.ToDictionary(p => p.Name, _ => new List<Sample>());
+        var stalls = pages.ToDictionary(p => p.Name, _ => new List<double>());
         long memoryAfterFirstRound = 0;
         int scansBefore = storage.WorkspaceScanCount;
         for (int round = 0; round < rounds; round++)
         {
             foreach (var page in pages)
             {
-                samples[page.Name].Add(Navigate(window, page.Go, page.Arrived));
+                Sample sample = default;
+                stalls[page.Name].Add(probe.Measure(() => sample = Navigate(window, page.Go, page.Arrived)));
+                samples[page.Name].Add(sample);
+                if (round == 0) Heap($"after the first visit of {page.Name}");
                 // --shots: what the page looks like in the studio host, last round only (kept out of the timing).
                 if (options.Flag("shots") && round == rounds - 1) Snapshot.Save(window, $"host-{page.Name.ToLowerInvariant().Replace(' ', '-')}");
                 // The Hub reloads on return; let that finish so it does not bleed into the next page's timing.
-                if (page.Name == "Hub") Snapshot.WaitFor(() => !host.ManagerViewModel.IsLoading, TimeSpan.FromMinutes(1));
+                if (page.Name == "Hub") Snapshot.WaitFor(() => !host.ManagerViewModel.IsRefreshingList, TimeSpan.FromMinutes(1));
             }
 
             if (round == 0) memoryAfterFirstRound = SettledMemory();
@@ -97,36 +198,43 @@ internal static class PerfSnapshots
         int scansDuringPages = storage.WorkspaceScanCount - scansBefore;
 
         Console.WriteLine();
-        Console.WriteLine($"{"page",-14}{"first visit",14}{"warm switch",14}{"warm + frame",14}   (ms)");
+        Console.WriteLine($"{"page",-14}{"first visit",14}{"warm switch",14}{"warm + frame",14}{"max input wait",16}   (ms)");
         foreach (var page in pages)
         {
             var list = samples[page.Name];
             var warm = list.Skip(1).ToList();
-            Console.WriteLine($"{page.Name,-14}{list[0].ToLayout,14:F1}{Median(warm.Select(s => s.ToLayout)),14:F1}{Median(warm.Select(s => s.ToFrame)),14:F1}");
+            Console.WriteLine($"{page.Name,-14}{list[0].ToLayout,14:F1}{Median(warm.Select(s => s.ToLayout)),14:F1}{Median(warm.Select(s => s.ToFrame)),14:F1}{stalls[page.Name].Skip(1).DefaultIfEmpty().Max(),16:F1}");
         }
 
         // Tabs and file opens in the Code Studio.
         Navigate(window, () => host.NavigateToCodeStudio(scripts[0]), () => ReferenceEquals(host.CurrentPage, host.CodeStudioViewModel));
         var codeVm = host.CodeStudioViewModel!;
         var opens = new List<Sample>();
-        foreach (var script in scripts.Skip(1))
+        double openStall = probe.Measure(() =>
         {
-            opens.Add(Timed(window, () => Pump(codeVm.UpdateActiveScriptAsync(script))));
-        }
+            foreach (var script in scripts.Skip(1))
+            {
+                opens.Add(Timed(window, () => Pump(codeVm.UpdateActiveScriptAsync(script))));
+            }
+        });
 
         var switches = new List<Sample>();
         int scansBeforeSwitches = storage.WorkspaceScanCount;
-        for (int i = 0; i < rounds * codeVm.OpenTabs.Count; i++)
+        double switchStall = probe.Measure(() =>
         {
-            var tab = codeVm.OpenTabs[i % codeVm.OpenTabs.Count];
-            switches.Add(Timed(window, () => Pump(codeVm.SwitchToTabAsync(tab))));
-        }
+            for (int i = 0; i < rounds * codeVm.OpenTabs.Count; i++)
+            {
+                var tab = codeVm.OpenTabs[i % codeVm.OpenTabs.Count];
+                switches.Add(Timed(window, () => Pump(codeVm.SwitchToTabAsync(tab))));
+            }
+        });
 
         int scansDuringSwitches = storage.WorkspaceScanCount - scansBeforeSwitches;
 
         Console.WriteLine();
         Console.WriteLine($"{"file open",-14}{Median(opens.Select(s => s.ToLayout)),14:F1}{"",14}{Median(opens.Select(s => s.ToFrame)),14:F1}   ({opens.Count} opens)");
         Console.WriteLine($"{"tab switch",-14}{Median(switches.Select(s => s.ToLayout)),14:F1}{"",14}{Median(switches.Select(s => s.ToFrame)),14:F1}   ({switches.Count} switches, {codeVm.OpenTabs.Count} tabs)");
+        Console.WriteLine($"longest input wait: {openStall:F1} ms over the file opens, {switchStall:F1} ms over the tab switches");
         Console.WriteLine();
         Console.WriteLine($"Workspace scans: {scansDuringPages} during {rounds} rounds of 6 page switches, {scansDuringSwitches} during {switches.Count} tab switches");
         Console.WriteLine($"Memory after round 1: {memoryAfterFirstRound / 1048576.0:F1} MB, after round {rounds}: {memoryAtEnd / 1048576.0:F1} MB " +
@@ -388,6 +496,18 @@ internal static class PerfSnapshots
         if (pageHost?.GetType().GetProperty("BuiltViewCount")?.GetValue(pageHost) is int built)
         {
             Console.WriteLine($"Page views built over the whole run: {built} (one per page)");
+        }
+
+        if (options.Value("big-csv-mb") is { } csvMb && double.TryParse(csvMb, System.Globalization.CultureInfo.InvariantCulture, out var csvMegabytes) && csvMegabytes > 0)
+        {
+            Navigate(window, () => host.NavigateToCodeStudio(scripts[0]), () => ReferenceEquals(host.CurrentPage, host.CodeStudioViewModel));
+            PerfLoading.BigCsv(window, view, codeVm, storage, probe, csvMegabytes, options.Flag("csv-experiments"));
+        }
+
+        if (options.Value("big-image-mp") is { } imageMp && double.TryParse(imageMp, System.Globalization.CultureInfo.InvariantCulture, out var megapixels) && megapixels > 0)
+        {
+            Navigate(window, () => host.NavigateToCodeStudio(scripts[0]), () => ReferenceEquals(host.CurrentPage, host.CodeStudioViewModel));
+            PerfLoading.BigImage(window, codeVm, storage, probe, megapixels);
         }
 
         if (options.Int("cells", 0) is > 0 and var cellCount) LongNotebook(window, host, storage, cellCount);

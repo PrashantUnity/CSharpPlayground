@@ -1,6 +1,7 @@
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -48,12 +49,56 @@ public class MarkdownView : UserControl
 
     static MarkdownView()
     {
-        MarkdownProperty.Changed.AddClassHandler<MarkdownView>((view, _) => view.Rebuild());
-        FontSizeProperty.Changed.AddClassHandler<MarkdownView>((view, _) => view.Rebuild());
+        MarkdownProperty.Changed.AddClassHandler<MarkdownView>((view, _) => view.RebuildWhenShown());
+        FontSizeProperty.Changed.AddClassHandler<MarkdownView>((view, _) => view.RebuildWhenShown());
+    }
+
+    // The text changed while the view was hidden: it is rendered when the view is shown, not before.
+    private bool _isStale;
+
+    /// <summary>How many times the text was rendered (tests check that a hidden view renders nothing).</summary>
+    public int RenderCount { get; private set; }
+
+    // The Code Studio keeps a Markdown preview bound to whatever document is open, hidden unless it is Markdown. Rendering
+    // on every change made opening (and every keystroke in) a big CSV or log render the whole file as one huge paragraph:
+    // minutes for a 1 MB CSV. A hidden view now only remembers that it is out of date.
+    private void RebuildWhenShown()
+    {
+        if (IsShown())
+        {
+            Rebuild();
+        }
+        else
+        {
+            _isStale = true;
+        }
+    }
+
+    // IsEffectivelyVisible only looks at visual parents. Content inside a hidden control whose template was never applied
+    // (never measured, so its ScrollViewer has no presenter yet) has a logical parent but no visual one, and calls itself
+    // visible: the Code Studio's hidden Markdown preview did, and rendered every opened CSV as Markdown. So the logical
+    // parents are asked too.
+    private bool IsShown() =>
+        IsEffectivelyVisible &&
+        this.GetVisualAncestors().All(a => a.IsVisible) &&
+        Avalonia.LogicalTree.LogicalExtensions.GetLogicalAncestors(this).OfType<Visual>().All(a => a.IsVisible);
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (_isStale && change.Property.Name == "IsEffectivelyVisible" && IsShown()) Rebuild();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (_isStale && IsShown()) Rebuild();
     }
 
     private void Rebuild()
     {
+        _isStale = false;
+        RenderCount++;
         var panel = new StackPanel { Spacing = 7 };
         var raw = Markdown ?? string.Empty;
 

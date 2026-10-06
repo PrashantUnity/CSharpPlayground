@@ -380,8 +380,45 @@ public partial class CSharpCodeStudioViewModel
     public async Task RestartDebugAsync()
     {
         StopDebug();
-        await Task.Delay(200);
-        await DebugCodeAsync();
+        // Start again once the old session has really ended: DebugCodeAsync does nothing while one is still running,
+        // so a guessed pause made Restart silently do nothing whenever the stop took longer than the guess.
+        if (await WaitUntilIdleAsync(RestartStopLimit))
+        {
+            await DebugCodeAsync();
+        }
+        else
+        {
+            CompilerStatusText = "The previous debug session has not stopped yet; restart once it has.";
+        }
+    }
+
+    // How long Restart waits for the old session to stop before it gives up and says so.
+    internal static TimeSpan RestartStopLimit { get; set; } = TimeSpan.FromSeconds(10);
+
+    private async Task<bool> WaitUntilIdleAsync(TimeSpan limit)
+    {
+        if (!IsExecuting && !IsDebugging) return true;
+        var idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!IsExecuting && !IsDebugging) idle.TrySetResult();
+        }
+
+        PropertyChanged += OnChanged;
+        try
+        {
+            if (!IsExecuting && !IsDebugging) return true;
+            await idle.Task.WaitAsync(limit);
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+        finally
+        {
+            PropertyChanged -= OnChanged;
+        }
     }
 
     public event Action<DebugVariableItem>? RequestExploreVariable;

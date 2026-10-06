@@ -9,9 +9,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
         <!-- Search & Replace Inputs -->

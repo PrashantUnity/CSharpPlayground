@@ -27,7 +27,19 @@ public partial class LocalScriptStorageService
         public required string LastSavedText { get; set; }
         public DateTime LastWriteTimeUtc { get; set; }
         public bool HasByteOrderMark { get; set; }
+
+        /// <summary>
+        /// The editor shows a description of the file, not its content (a binary file, or one too large to open). Saving
+        /// it would write that description over the real file, so it is never saved.
+        /// </summary>
+        public bool IsPlaceholder { get; set; }
     }
+
+    /// <summary>Text files larger than this are not loaded into the editor (as in VS Code); a description opens instead.</summary>
+    public const long MaxEditorFileBytes = 50L * 1024 * 1024;
+
+    // Enough of a file to tell text from binary without reading the rest of it.
+    private const int BinarySniffBytes = 8192;
 
     public LanguageRegistry Languages => _languages;
 
@@ -83,6 +95,28 @@ public partial class LocalScriptStorageService
     }
 
     private bool IsWorkspaceFile(string path) => !IsIgnoredFile(path);
+
+    private static async Task<bool> StartsLikeBinaryAsync(string path)
+    {
+        var buffer = new byte[BinarySniffBytes];
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BinarySniffBytes, useAsync: true);
+        int read = await fs.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false);
+        return Array.IndexOf(buffer, (byte)0, 0, read) >= 0;
+    }
+
+    private string GenerateLargeFileNote(string path, long fileSize)
+    {
+        var fileName = Path.GetFileName(path);
+        var rel = GetFolderPath(path);
+        var relativePath = string.IsNullOrEmpty(rel) ? fileName : $"{rel}/{fileName}";
+        return $$"""
+            // {{fileName}} is {{FormatFileSize(fileSize)}}: too large to open in the editor (the limit is {{FormatFileSize(MaxEditorFileBytes)}}).
+            // It is left untouched: this note is never saved over it.
+            //
+            // Read it from code instead, a part at a time:
+            //   foreach (var line in System.IO.File.ReadLines("{{relativePath}}").Take(100)) Console.WriteLine(line);
+            """;
+    }
 
     private static bool IsBinaryFile(string path, byte[] bytes)
     {
@@ -182,6 +216,24 @@ public partial class LocalScriptStorageService
         if (_knownFileLocations.TryGetValue(id, out var known) && File.Exists(known)) return known;
 
         var root = EffectiveWorkspaceRoot;
+
+        // The file index already holds every path of the workspace: look there rather than walking the folder again.
+        var index = _fileIndex;
+        if (!index.IsBuilding && !index.IsTruncated && string.Equals(index.Root, root, StringComparison.Ordinal) && index.Count > 0)
+        {
+            var found = await Task.Run(() =>
+            {
+                foreach (var relative in index.Paths)
+                {
+                    var full = Path.Combine(root, relative);
+                    if (SourceFileId(Path.GetFullPath(full)) == id) return RegisterSourceFile(full);
+                }
+
+                return null;
+            }).ConfigureAwait(false);
+            if (found != null && _knownFileLocations.TryGetValue(found, out var located)) return located;
+        }
+
         var files = await Task.Run(() => WorkspaceWalker.Files(root, IsWorkspaceFile)).ConfigureAwait(false);
         foreach (var file in files)
         {
@@ -200,23 +252,31 @@ public partial class LocalScriptStorageService
 
         try
         {
-            var bytes = await File.ReadAllBytesAsync(path);
-            var isBinary = IsBinaryFile(path, bytes);
+            // Size and a sniff of the first bytes decide first: a 2 GB video or log is never read into memory to find out.
             var info = new FileInfo(path);
+            long size = info.Length;
+            bool tooLarge = size > MaxEditorFileBytes;
+            bool isBinary = KnownBinaryExtensions.Contains(Path.GetExtension(path)) || (!tooLarge && await StartsLikeBinaryAsync(path));
 
             string text;
             bool hasBom = false;
 
             if (isBinary)
             {
-                text = GenerateBinaryFileSnippet(path, bytes.LongLength);
+                text = GenerateBinaryFileSnippet(path, size);
+            }
+            else if (tooLarge)
+            {
+                text = GenerateLargeFileNote(path, size);
             }
             else
             {
+                var bytes = await File.ReadAllBytesAsync(path);
                 hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
                 text = new UTF8Encoding(false).GetString(bytes, hasBom ? 3 : 0, bytes.Length - (hasBom ? 3 : 0));
             }
 
+            bool placeholder = isBinary || tooLarge;
             lock (_sourceGate)
             {
                 _sourceFiles[id] = new SourceFileState
@@ -224,7 +284,8 @@ public partial class LocalScriptStorageService
                     Path = path,
                     LastSavedText = text,
                     LastWriteTimeUtc = info.LastWriteTimeUtc,
-                    HasByteOrderMark = hasBom
+                    HasByteOrderMark = hasBom,
+                    IsPlaceholder = placeholder
                 };
             }
 
@@ -232,10 +293,10 @@ public partial class LocalScriptStorageService
             {
                 Id = id,
                 Title = Path.GetFileName(path),
-                Description = isBinary ? $"Binary asset ({FormatFileSize(bytes.Length)})" : $"{language.DisplayName} file",
+                Description = isBinary ? $"Binary asset ({FormatFileSize(size)})" : tooLarge ? $"Large file ({FormatFileSize(size)})" : $"{language.DisplayName} file",
                 Category = isBinary ? "Assets" : language.DisplayName,
                 Code = text,
-                Notes = isBinary ? "[Binary File - Read Only Preview & Script References]" : string.Empty,
+                Notes = isBinary ? "[Binary File - Read Only Preview & Script References]" : tooLarge ? "[Large File - Not Opened in the Editor]" : string.Empty,
                 LanguageId = language.Id,
                 SourceFilePath = path,
                 Created = info.CreationTimeUtc,
@@ -259,14 +320,15 @@ public partial class LocalScriptStorageService
         var path = document.SourceFilePath ?? await FindSourceFilePathAsync(document.Id);
         if (path == null) return false;
 
-        if (IsBinaryFile(path, Array.Empty<byte>()))
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Skipping save on binary file '{path}' to prevent file corruption.");
-            return true;
-        }
-
         SourceFileState? state;
         lock (_sourceGate) _sourceFiles.TryGetValue(document.Id, out state);
+
+        // The editor holds a description of this file, not its content: writing it would destroy the file.
+        if (IsBinaryFile(path, Array.Empty<byte>()) || state?.IsPlaceholder == true)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Skipping save on '{path}': the editor shows a placeholder, not the file's content.");
+            return true;
+        }
         var text = document.Code ?? string.Empty;
 
         try

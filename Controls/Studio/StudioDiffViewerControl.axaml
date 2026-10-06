@@ -10,9 +10,6 @@
              x:DataType="vm:CSharpCodeStudioViewModel"
              Background="{DynamicResource DsBgBrush}">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*" Background="{DynamicResource DsBgBrush}">
         <!-- Toolbar Strip -->

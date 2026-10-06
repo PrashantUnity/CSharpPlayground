@@ -4,9 +4,6 @@
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals.VisualChromeControl">
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
