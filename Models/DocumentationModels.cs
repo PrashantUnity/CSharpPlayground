@@ -108,6 +108,21 @@ public partial class DocCodeSnippet : ObservableObject
     public WorkspaceItemKind TargetKind { get; set; } = WorkspaceItemKind.Script;
     public string Category { get; set; } = "General";
 
+    /// <summary>True for a sample that is only for reading or for a studio (it starts a server, needs a package, or needs the user): it gets no Run button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRunner))]
+    private bool _notRunnable;
+
+    /// <summary>The Run button and output under the sample, set by the docs page when the sample's language can run here.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRunner))]
+    private PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs.SnippetRunViewModel? _run;
+
+    /// <summary>True when the sample, in the language tab showing, can be run on the page (it gets a Run button).</summary>
+    public bool HasRunner => Run?.CanRun == true;
+
+    partial void OnLanguageChanged(string value) => OnPropertyChanged(nameof(HasRunner));
+
     public ObservableCollection<DocCodeLanguageVariant> Variants { get; set; } = new();
 
     public bool HasVariants => Variants.Count > 1;

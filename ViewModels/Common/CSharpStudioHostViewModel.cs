@@ -505,6 +505,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         FlushSettings();
+        DocsViewModel.Dispose();
         Activity.Dispose();
     }
 }

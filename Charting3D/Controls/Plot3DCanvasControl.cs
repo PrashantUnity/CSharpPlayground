@@ -153,7 +153,7 @@ public class Plot3DCanvasControl : Control
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        if (Options == null) return;
+        if (Options == null || !WheelZoomGate.ShouldZoom(this, e.KeyModifiers)) return;
         if (Bounds.Width < 10 || Bounds.Height < 10) return;
 
         double factor = e.Delta.Y > 0 ? 0.88 : 1.14;

@@ -10,72 +10,72 @@ public static partial class DisplayExtensions
 {
     // Charts
 
-    public static T DisplayChart<T>(this T data, string? title = null, string? color = null, string? chartType = null, Action<ChartSpec>? configure = null)
+    public static T DisplayChart<T>(this T data, string? title = null, string? color = null, string? chartType = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.Chart(data, title, color, chartType, configure: configure);
+        if (data != null) Display.Chart(data, title, color, chartType, width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, legend: legend);
         return data;
     }
 
     /// <summary>Charts the records: each at <paramref name="x"/> (a number, or a label) with the value <paramref name="y"/>.</summary>
-    public static IEnumerable<T> DisplayChart<T>(this IEnumerable<T> records, Func<T, object?> x, Func<T, object?> y, string? title = null, string? color = null, string? chartType = null, Action<ChartSpec>? configure = null)
+    public static IEnumerable<T> DisplayChart<T>(this IEnumerable<T> records, Func<T, object?> x, Func<T, object?> y, string? title = null, string? color = null, string? chartType = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        Display.Chart(records, x, y, title, color, chartType, configure);
+        Display.Chart(records, x, y, title, color, chartType, configure, xLabel, yLabel, width, height, legend);
         return records;
     }
 
-    public static T DisplayLineChart<T>(this T data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null)
+    public static T DisplayLineChart<T>(this T data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.LineChart(data, title, color, showPoints, configure);
+        if (data != null) Display.LineChart(data, title, color, showPoints, configure, xLabel, yLabel, width, height, legend);
         return data;
     }
 
-    public static T DisplayAreaChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null)
+    public static T DisplayAreaChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.AreaChart(data, title, color, configure);
+        if (data != null) Display.AreaChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
         return data;
     }
 
-    public static T DisplayBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null)
+    public static T DisplayBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.BarChart(data, title, color, configure);
+        if (data != null) Display.BarChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
         return data;
     }
 
-    public static T DisplayScatterChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null)
+    public static T DisplayScatterChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.ScatterChart(data, title, color, configure);
+        if (data != null) Display.ScatterChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
         return data;
     }
 
-    public static T DisplayPieChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null)
+    public static T DisplayPieChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.PieChart(data, title, configure);
+        if (data != null) Display.PieChart(data, title, configure, width, height, legend);
         return data;
     }
 
-    public static T DisplayDonutChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null)
+    public static T DisplayDonutChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (data != null) Display.DonutChart(data, title, configure);
+        if (data != null) Display.DonutChart(data, title, configure, width, height, legend);
         return data;
     }
 
-    public static T DisplayHistogram<T>(this T samples, string? title = null, int? bins = null, string? color = null, Action<ChartSpec>? configure = null)
+    public static T DisplayHistogram<T>(this T samples, string? title = null, int? bins = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
-        if (samples != null) Display.Histogram(samples, title, bins, color, configure);
+        if (samples != null) Display.Histogram(samples, title, bins, color, configure, xLabel, yLabel, width, height, legend);
         return samples;
     }
 
     // 3D plots
 
-    public static T DisplayPlot3D<T>(this T data, string? title = null, string? color = null, string? plotType = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null)
+    public static T DisplayPlot3D<T>(this T data, string? title = null, string? color = null, string? plotType = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null, string? xLabel = null, string? yLabel = null, string? zLabel = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.Plot3D(data, title, color, plotType, colorMap, configure: configure);
+        if (data != null) Display.Plot3D(data, title, color, plotType, colorMap, width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, zLabel: zLabel);
         return data;
     }
 
-    public static T DisplayScatter3D<T>(this T data, string? title = null, string? color = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null)
+    public static T DisplayScatter3D<T>(this T data, string? title = null, string? color = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null, string? xLabel = null, string? yLabel = null, string? zLabel = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.Scatter3D(data, title, color, colorMap, configure: configure);
+        if (data != null) Display.Scatter3D(data, title, color, colorMap, configure: configure, xLabel: xLabel, yLabel: yLabel, zLabel: zLabel, width: width, height: height);
         return data;
     }
 
@@ -88,27 +88,27 @@ public static partial class DisplayExtensions
         return records;
     }
 
-    public static T DisplayTrajectory3D<T>(this T data, string? title = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null)
+    public static T DisplayTrajectory3D<T>(this T data, string? title = null, ColorMapPreset? colorMap = null, Action<Plot3DSpec>? configure = null, string? xLabel = null, string? yLabel = null, string? zLabel = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.Trajectory3D(data, title, colorMap, configure: configure);
+        if (data != null) Display.Trajectory3D(data, title, colorMap, configure: configure, xLabel: xLabel, yLabel: yLabel, zLabel: zLabel, width: width, height: height);
         return data;
     }
 
-    public static T DisplaySurface3D<T>(this T data, string? title = null, ColorMapPreset? colorMap = null, bool wireframe = false, Action<Plot3DSpec>? configure = null)
+    public static T DisplaySurface3D<T>(this T data, string? title = null, ColorMapPreset? colorMap = null, bool wireframe = false, Action<Plot3DSpec>? configure = null, string? xLabel = null, string? yLabel = null, string? zLabel = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.Surface3D(data, title, colorMap, wireframe, configure: configure);
+        if (data != null) Display.Surface3D(data, title, colorMap, wireframe, configure: configure, xLabel: xLabel, yLabel: yLabel, zLabel: zLabel, width: width, height: height);
         return data;
     }
 
-    public static T DisplayGraph3D<T>(this T data, string? title = null, string? color = null, Action<Plot3DSpec>? configure = null)
+    public static T DisplayGraph3D<T>(this T data, string? title = null, string? color = null, Action<Plot3DSpec>? configure = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.Graph3D(data, title, color, configure: configure);
+        if (data != null) Display.Graph3D(data, title, color, configure: configure, width: width, height: height);
         return data;
     }
 
-    public static T DisplayVoxelBar3D<T>(this T data, string? title = null, string? color = null, Action<Plot3DSpec>? configure = null)
+    public static T DisplayVoxelBar3D<T>(this T data, string? title = null, string? color = null, Action<Plot3DSpec>? configure = null, string? xLabel = null, string? yLabel = null, string? zLabel = null, double? width = null, double? height = null)
     {
-        if (data != null) Display.VoxelBar3D(data, title, color, configure: configure);
+        if (data != null) Display.VoxelBar3D(data, title, color, configure: configure, xLabel: xLabel, yLabel: yLabel, zLabel: zLabel, width: width, height: height);
         return data;
     }
 

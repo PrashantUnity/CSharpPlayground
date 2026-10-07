@@ -25,7 +25,10 @@ public static partial class Display
         bool? showGrid = null,
         bool? showPoints = null,
         bool? showStats = null,
-        Action<ChartSpec>? configure = null)
+        Action<ChartSpec>? configure = null,
+        string? xLabel = null,
+        string? yLabel = null,
+        bool? legend = null)
     {
         var resolvedType = type ?? KindOf(chartType);
         var spec = ChartSpecBuilder.From(data, resolvedType);
@@ -33,6 +36,7 @@ public static partial class Display
         spec.Grid = showGrid ?? spec.Grid;
         spec.ShowPoints = showPoints ?? spec.ShowPoints;
         spec.ShowStats = showStats ?? spec.ShowStats;
+        Label(spec, xLabel, yLabel, legend);
         return Show(spec, configure);
     }
 
@@ -44,36 +48,58 @@ public static partial class Display
         string? title = null,
         string? color = null,
         string? chartType = null,
-        Action<ChartSpec>? configure = null)
+        Action<ChartSpec>? configure = null,
+        string? xLabel = null,
+        string? yLabel = null,
+        double? width = null,
+        double? height = null,
+        bool? legend = null)
     {
         var spec = ChartSpecBuilder.From(records, x, y, KindOf(chartType));
-        Set(spec, title, color, null, null);
+        Set(spec, title, color, width, height);
+        Label(spec, xLabel, yLabel, legend);
         return Show(spec, configure);
     }
 
-    public static DisplayHandle<ChartSpec> LineChart(object data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, color, nameof(ChartType.Line), showPoints: showPoints, configure: configure);
+    // The kind helpers take the same named settings as Chart: a label for each axis, the size, the legend.
 
-    public static DisplayHandle<ChartSpec> AreaChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, color, nameof(ChartType.Area), configure: configure);
+    /// <summary>A line chart. <c>Display.LineChart(sales, "Sales", xLabel: "Month", yLabel: "USD");</c></summary>
+    public static DisplayHandle<ChartSpec> LineChart(object data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, color, nameof(ChartType.Line), showPoints: showPoints, width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, legend: legend);
 
-    public static DisplayHandle<ChartSpec> BarChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, color, nameof(ChartType.Bar), configure: configure);
+    /// <summary>An area chart: a line with the space under it filled.</summary>
+    public static DisplayHandle<ChartSpec> AreaChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, color, nameof(ChartType.Area), width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, legend: legend);
 
-    public static DisplayHandle<ChartSpec> ScatterChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, color, nameof(ChartType.Scatter), configure: configure);
+    /// <summary>A bar chart. <c>Display.BarChart(new Dictionary&lt;string, int&gt; { ["Mon"] = 4, ["Tue"] = 7 });</c></summary>
+    public static DisplayHandle<ChartSpec> BarChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, color, nameof(ChartType.Bar), width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, legend: legend);
 
-    public static DisplayHandle<ChartSpec> PieChart(object data, string? title = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, null, nameof(ChartType.Pie), configure: configure);
+    /// <summary>A scatter chart of [x, y] pairs.</summary>
+    public static DisplayHandle<ChartSpec> ScatterChart(object data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, color, nameof(ChartType.Scatter), width: width, height: height, configure: configure, xLabel: xLabel, yLabel: yLabel, legend: legend);
 
-    public static DisplayHandle<ChartSpec> DonutChart(object data, string? title = null, Action<ChartSpec>? configure = null) =>
-        Chart(data, title, null, nameof(ChartType.Donut), configure: configure);
+    /// <summary>A pie chart: each label → number is a slice.</summary>
+    public static DisplayHandle<ChartSpec> PieChart(object data, string? title = null, Action<ChartSpec>? configure = null,
+        double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, null, nameof(ChartType.Pie), width: width, height: height, configure: configure, legend: legend);
+
+    /// <summary>A donut chart: a pie with a hole.</summary>
+    public static DisplayHandle<ChartSpec> DonutChart(object data, string? title = null, Action<ChartSpec>? configure = null,
+        double? width = null, double? height = null, bool? legend = null) =>
+        Chart(data, title, null, nameof(ChartType.Donut), width: width, height: height, configure: configure, legend: legend);
 
     /// <summary>A histogram of the samples (or of each sequence in a name → sequence map), counted into <paramref name="bins"/> bars.</summary>
-    public static DisplayHandle<ChartSpec> Histogram(object samples, string? title = null, int? bins = null, string? color = null, Action<ChartSpec>? configure = null)
+    public static DisplayHandle<ChartSpec> Histogram(object samples, string? title = null, int? bins = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
     {
         var spec = ChartSpecBuilder.Histogram(samples, bins);
-        Set(spec, title, color, null, null);
+        Set(spec, title, color, width, height);
+        Label(spec, xLabel, yLabel, legend);
         return Show(spec, configure);
     }
 
@@ -85,6 +111,23 @@ public static partial class Display
     {
         ArgumentNullException.ThrowIfNull(source);
         return Show(source.ToVisualSpec(), configure: null, origin: source);
+    }
+
+    private static void Label(VisualSpec spec, string? xLabel, string? yLabel, bool? legend, string? zLabel = null)
+    {
+        switch (spec)
+        {
+            case ChartSpec chart:
+                if (xLabel != null) chart.XAxis.Title = xLabel;
+                if (yLabel != null) chart.YAxis.Title = yLabel;
+                if (legend != null) chart.Legend.Show = legend;
+                break;
+            case Plot3DSpec plot:
+                if (xLabel != null) plot.XAxis.Title = xLabel;
+                if (yLabel != null) plot.YAxis.Title = yLabel;
+                if (zLabel != null) plot.ZAxis.Title = zLabel;
+                break;
+        }
     }
 
     private static ChartType? KindOf(string? chartType) =>

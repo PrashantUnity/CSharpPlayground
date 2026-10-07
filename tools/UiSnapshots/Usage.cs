@@ -92,6 +92,8 @@ internal static class Usage
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
+              --run                  run the article's samples and show their output under them
+              --fullscreen           then press the expand button of the first chart on the page (needs --run)
           settings               The Settings and Environment Setup page.
               --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)

@@ -23,6 +23,13 @@ public sealed class ChartViewState
         OverrideShowGrid = options.ShowGrid;
     }
 
+    /// <summary>A copy for another view of the same chart: the type and grid the user chose, fitted (no zoom or pan).</summary>
+    public ChartViewState(ChartViewState other)
+    {
+        OverrideType = other.OverrideType;
+        OverrideShowGrid = other.OverrideShowGrid;
+    }
+
     public ChartType EffectiveType(ChartOptions options) => OverrideType ?? options.Type;
 
     public bool EffectiveShowGrid(ChartOptions options) => OverrideShowGrid ?? options.ShowGrid;

@@ -143,6 +143,43 @@ public class DocumentationServiceTests
         }
     }
 
+    // The charting and display guides are what people copy first, so every C# sample in them (the primary code, or the C#
+    // tab of a multi-language sample) must compile with the studio's default imports.
+    [Theory]
+    [InlineData("display_apis")]
+    [InlineData("diagrams_and_visualizations")]
+    [InlineData("polyglot_visuals")]
+    public void TheChartingGuides_CSharpSnippets_Compile(string categoryId)
+    {
+        var category = DocumentationService.Instance.Categories.Single(c => c.Id == categoryId);
+        var compiler = new RoslynCompilerService();
+        var checkedAny = false;
+
+        foreach (var snippet in category.Articles.SelectMany(a => a.CodeSnippets))
+        {
+            var code = snippet.Variants.FirstOrDefault(v => v.Language == "csharp")?.Code
+                ?? (snippet.Language == "csharp" ? snippet.Code : null);
+            if (string.IsNullOrWhiteSpace(code)) continue;
+
+            checkedAny = true;
+            var errors = compiler.CheckDiagnostics(code, ExecutionLanguageMode.Statements).Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+            Assert.True(errors.Count == 0,
+                $"Snippet '{(snippet.Id.Length > 0 ? snippet.Id : snippet.Title)}' has compile errors: " + string.Join("; ", errors.Select(e => $"{e.Id}: {e.Message}")));
+        }
+
+        Assert.True(checkedAny, $"No C# snippets found in {categoryId}.");
+    }
+
+    [Fact]
+    public void TheChartsQuickStart_IsInTheDisplayGuide_AndFindableBySearch()
+    {
+        var service = DocumentationService.Instance;
+        var display = service.Categories.Single(c => c.Id == "display_apis");
+
+        Assert.Contains(display.Articles, a => a.Id == "charts_quickstart");
+        Assert.Contains(service.SearchArticles("histogram"), a => a.Id == "charts_quickstart");
+    }
+
     [Fact]
     public void ThePythonGuide_OpensItsSnippetsAsPythonCells_AndCSharpSnippetsStayCSharp()
     {

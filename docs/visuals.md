@@ -71,6 +71,17 @@ recorder.Step(new[] { 5, 2, 8, 1 }, "Initial state");
 recorder.Display();
 ```
 
+Every chart and 3D helper takes the same named settings (`xLabel`, `yLabel`, `zLabel`, `width`, `height`, `legend`), and `Charts` builds the same visual one setting at a time. Both draw the same spec:
+
+```csharp
+Display.LineChart(sales, "Sales", xLabel: "Month", yLabel: "USD");
+
+Charts.Line(sales).Title("Sales").XLabel("Month").YLabel("USD").Size(640, 320).Show();
+Charts.Surface((x, y) => Math.Sin(x) * Math.Cos(y)).ColorMap(ColorMapPreset.Plasma).Show();
+```
+
+`Show()` returns the handle (`Update`, `OnClick`). A builder returned as a notebook cell's last value is shown without `.Show()`; once shown it can't be changed, so change the handle instead.
+
 ### Python
 ```python
 from fry_display import Display

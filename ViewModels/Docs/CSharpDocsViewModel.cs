@@ -12,7 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs;
 
-public partial class CSharpDocsViewModel : ObservableObject
+public partial class CSharpDocsViewModel : ObservableObject, IDisposable
 {
     private readonly DocumentationService _docService;
     private readonly Action? _backToHubAction;
@@ -20,6 +20,7 @@ public partial class CSharpDocsViewModel : ObservableObject
     private readonly Action<NotebookDocumentItem>? _openNotebookAction;
     private readonly IScriptStorageService? _storageService;
     private readonly StudioLanguageServices? _languages;
+    private readonly Lazy<SnippetRunService> _runService;
 
     [ObservableProperty]
     private DocCategory? _selectedCategory;
@@ -62,6 +63,8 @@ public partial class CSharpDocsViewModel : ObservableObject
         _openNotebookAction = openNotebookAction;
         _storageService = storageService;
         _languages = languages;
+        // Holds no kernel until a sample is run.
+        _runService = new Lazy<SnippetRunService>(() => new SnippetRunService((_languages ?? StudioLanguageServices.Default).Registry));
 
         LoadDocumentation();
         _docService.Changed += OnDocumentationChanged;
@@ -126,8 +129,18 @@ public partial class CSharpDocsViewModel : ObservableObject
 
     partial void OnSelectedArticleChanged(DocArticle? oldValue, DocArticle? newValue)
     {
-        if (oldValue != null) oldValue.IsSelected = false;
-        if (newValue != null) newValue.IsSelected = true;
+        if (oldValue != null)
+        {
+            oldValue.IsSelected = false;
+            StopRuns(oldValue);
+        }
+
+        if (newValue != null)
+        {
+            newValue.IsSelected = true;
+            AttachRunners(newValue);
+        }
+
         UpdateBreadcrumb();
         OnPropertyChanged(nameof(HasNextArticle));
         OnPropertyChanged(nameof(HasPreviousArticle));
@@ -146,6 +159,28 @@ public partial class CSharpDocsViewModel : ObservableObject
                 FilteredArticles.Add(match);
             }
         }
+    }
+
+    // Every sample of the article gets its Run button and output (a small object; nothing runs until it is pressed).
+    private void AttachRunners(DocArticle article)
+    {
+        foreach (var snippet in article.CodeSnippets)
+        {
+            snippet.Run ??= new SnippetRunViewModel(_runService.Value, snippet);
+        }
+    }
+
+    // A sample doesn't keep running (or drawing) in an article nobody is reading.
+    private static void StopRuns(DocArticle article)
+    {
+        foreach (var snippet in article.CodeSnippets) snippet.Run?.Stop();
+    }
+
+    public void Dispose()
+    {
+        _docService.Changed -= OnDocumentationChanged;
+        if (SelectedArticle != null) StopRuns(SelectedArticle);
+        if (_runService.IsValueCreated) _runService.Value.Dispose();
     }
 
     private void UpdateBreadcrumb()

@@ -88,9 +88,19 @@ public partial class DocumentationService
             {
                 article.CategoryId = category.Id;
                 _articlesById[article.Id] = article;
+                if (!NotRunnableCategories.Contains(category.Id)) continue;
+                foreach (var snippet in article.CodeSnippets) snippet.NotRunnable = true;
             }
         }
     }
+
+    // Samples that start a web server, need a database or package, or build a plugin: they are read, or opened in a studio.
+    private static readonly HashSet<string> NotRunnableCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "aspnet_core",
+        "ef_core",
+        "extensibility_customization"
+    };
 
     public event Action? Changed;
 

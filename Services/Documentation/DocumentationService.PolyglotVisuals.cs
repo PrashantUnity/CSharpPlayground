@@ -223,7 +223,7 @@ public partial class DocumentationService
                 {
                     Language = "csharp",
                     Title = "C# Click Callback",
-                    Code = "var chart = Display.Chart(new[] { 10, 25, 40, 15 }, title: \"Clickable Bar Chart\");\nchart.OnClick(e => {\n    Console.WriteLine($\"Clicked point index {e.Index} with value {e.Value}\");\n});"
+                    Code = "var chart = Display.Chart(new[] { 10, 25, 40, 15 }, title: \"Clickable Bar Chart\");\nchart.OnClick(e => {\n    Console.WriteLine($\"Clicked point {e.Target?.Index} with value {e.Target?.Y}\");\n});"
                 }
             }
         };

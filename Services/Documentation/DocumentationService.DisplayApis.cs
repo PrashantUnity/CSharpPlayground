@@ -23,6 +23,7 @@ public partial class DocumentationService
                 CreateHtmlAndMarkdownArticle(),
                 CreateImageDisplayArticle(),
                 CreateAnimateAndCancellationArticle(),
+                CreateChartsQuickStartArticle(),
                 CreateInteractive3DVisualizationArticle()
             }
         };

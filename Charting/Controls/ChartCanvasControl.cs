@@ -92,7 +92,7 @@ public class ChartCanvasControl : Control
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        if (Options == null) return;
+        if (Options == null || !WheelZoomGate.ShouldZoom(this, e.KeyModifiers)) return;
         double factor = e.Delta.Y > 0 ? 1.15 : 0.85;
         ViewState.Zoom = Math.Clamp(ViewState.Zoom * factor, 0.2, 20.0);
         InvalidateVisual();

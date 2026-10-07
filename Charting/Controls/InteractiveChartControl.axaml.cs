@@ -22,6 +22,21 @@ public partial class InteractiveChartControl : UserControl
     public ChartOptions? Options { get => GetValue(OptionsProperty); set => SetValue(OptionsProperty, value); }
     public ChartViewState ViewState { get; set; } = new();
 
+    private bool _isFullScreenView;
+
+    /// <summary>True for the copy that fills the window (see <see cref="ChartFullScreenOverlay"/>): the chart takes all the room there is.</summary>
+    public bool IsFullScreenView
+    {
+        get => _isFullScreenView;
+        set
+        {
+            _isFullScreenView = value;
+            ApplyViewMode();
+        }
+    }
+
+    public event EventHandler? ExitFullScreenRequested;
+
     private T? Find<T>(string name) where T : Control { try { return this.FindControl<T>(name); } catch { return null; } }
     private ChartCanvasControl? Canvas => Find<ChartCanvasControl>("CanvasControl");
 
@@ -50,6 +65,7 @@ public partial class InteractiveChartControl : UserControl
             chrome.SpecGetter = () => Options != null ? ChartOptionsConverter.ToSpec(Options) : null;
             chrome.DataCsvGetter = () => Options != null ? ChartExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
             chrome.ResetFitRequested += (_, _) => { ViewState.Reset(); Canvas?.InvalidateVisual(); };
+            chrome.FullscreenRequested += (_, _) => ToggleFullScreen();
         }
     }
 
@@ -62,6 +78,35 @@ public partial class InteractiveChartControl : UserControl
         Bind("ScatterTypeBtn", () => SwitchType(ChartType.Scatter));
         Bind("PieTypeBtn", () => SwitchType(ChartType.Pie));
         Bind("GridToggleBtn", () => { if (Options != null) { ViewState.OverrideShowGrid = !ViewState.EffectiveShowGrid(Options); Canvas?.InvalidateVisual(); } });
+    }
+
+    /// <summary>Fills the window with this chart, or leaves full screen when it already does.</summary>
+    public void ToggleFullScreen()
+    {
+        if (IsFullScreenView) ExitFullScreenRequested?.Invoke(this, EventArgs.Empty);
+        else ChartFullScreenOverlay.Open(this);
+    }
+
+    internal void RaiseValueClicked(ElementClickedEventArgs<ChartHitTestResult> e) => ValueClicked?.Invoke(this, e);
+
+    private void ApplyViewMode()
+    {
+        VerticalAlignment = IsFullScreenView ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+        if (Find<VisualChromeControl>("Chrome") is { } chrome)
+        {
+            chrome.VerticalAlignment = IsFullScreenView ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+            chrome.SetFullScreenState(IsFullScreenView);
+        }
+    }
+
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!e.Handled && IsFullScreenView && e.Key == Avalonia.Input.Key.Escape)
+        {
+            ExitFullScreenRequested?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+        }
     }
 
     private void Bind(string name, Action act) { if (Find<Button>(name) is { } b) b.Click += (_, _) => act(); }
@@ -82,6 +127,7 @@ public partial class InteractiveChartControl : UserControl
         {
             if (opts.Height > 0) chrome.DefaultCanvasHeight = opts.Height;
         }
+        if (IsFullScreenView) ApplyViewMode(); // DefaultCanvasHeight puts the inline height back
         UpdateHeader();
         ApplyLegend(opts);
     }
