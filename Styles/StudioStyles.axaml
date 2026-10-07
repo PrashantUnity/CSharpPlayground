@@ -20,6 +20,8 @@
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Core/StudioBottomDeckStyles.axaml" />
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Core/StudioStatusBarStyles.axaml" />
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Core/StudioToolTipStyles.axaml" />
+    <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Core/StudioSliderStyles.axaml" />
+    <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Core/StudioComboBoxStyles.axaml" />
 
     <!-- Feature & Domain Surfaces -->
     <StyleInclude Source="avares://CSharpEditorPlugin/Styles/Domains/StudioDashboardStyles.axaml" />

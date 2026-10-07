@@ -75,7 +75,7 @@
                             <DataTemplate x:DataType="settings:HarmonyModeOption">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Grid.Column="0" Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding OffsetLabel}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding OffsetLabel}" lt:Tokens.FontSize="DsFontSize150" Classes="combo-secondary-text" VerticalAlignment="Center" Margin="10,0,0,0" />
                                 </Grid>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>

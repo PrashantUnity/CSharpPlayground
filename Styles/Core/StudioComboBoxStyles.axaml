@@ -1,0 +1,142 @@
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================ -->
+    <!-- CORE: COMBOBOX CONTROL STYLES & ERGONOMICS                   -->
+    <!-- Modern VS Code dark chrome, elevated floating popup card,     -->
+    <!-- balanced padding, smooth hover highlights & active states     -->
+    <!-- ============================================================ -->
+
+    <Styles.Resources>
+        <Thickness x:Key="ComboBoxPadding">10,4,8,4</Thickness>
+        <Thickness x:Key="ComboBoxEditableTextPadding">10,4,30,4</Thickness>
+        <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
+        <Thickness x:Key="ComboBoxDropdownBorderThickness">1</Thickness>
+        <Thickness x:Key="ComboBoxDropdownBorderPadding">4</Thickness>
+        <Thickness x:Key="ComboBoxItemThemePadding">10,6</Thickness>
+        <CornerRadius x:Key="OverlayCornerRadius">8</CornerRadius>
+    </Styles.Resources>
+
+    <!-- Base ComboBox Container -->
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="10,4,8,4" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- Internal Background Border -->
+    <Style Selector="ComboBox /template/ Border#Background">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+
+    <Style Selector="ComboBox:focus /template/ Border#Background, ComboBox:open /template/ Border#Background">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ComboBox:disabled">
+        <Setter Property="Opacity" Value="0.5" />
+        <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+
+    <!-- Chevron Dropdown Glyph -->
+    <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Height" Value="10" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="ComboBox:pointerover /template/ PathIcon#DropDownGlyph">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <!-- Floating Dropdown Popup Window / Surface -->
+    <Style Selector="ComboBox /template/ Border#PopupBorder">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+        <Setter Property="lt:Tokens.BoxShadow" Value="DsFloatingShadow" />
+    </Style>
+
+    <!-- ComboBox Items -->
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXS" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="ComboBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXS" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXS" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:disabled">
+        <Setter Property="Opacity" Value="0.5" />
+        <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+
+    <!-- Secondary Text in Item Templates -->
+    <Style Selector="ComboBoxItem TextBlock.combo-secondary-text">
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:pointerover TextBlock.combo-secondary-text">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:selected TextBlock.combo-secondary-text">
+        <Setter Property="Foreground" Value="#D0E2FF" />
+    </Style>
+
+</Styles>
