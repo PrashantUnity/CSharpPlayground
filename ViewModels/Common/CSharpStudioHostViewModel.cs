@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using PdfEditorApp.Core.Plugins.Settings;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
@@ -11,12 +12,13 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Startup;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
-public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadingState
+public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
 {
     private const string PluginId = "com.frypdf.plugin.csharpeditor";
 
@@ -64,25 +66,31 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     [ObservableProperty]
     private string _activeDocumentTitle = "Hub";
 
-    [ObservableProperty]
-    private bool _isLoading;
+    // Every page reports the work the user may wait for here; the presenter decides what of it to show, and when.
+    private readonly IActivityService _activities;
 
-    [ObservableProperty]
-    private string _loadingTitle = "Loading...";
+    /// <summary>Where the studio's pages and services report running work.</summary>
+    public IActivityService Activities => _activities;
 
-    [ObservableProperty]
-    private string _loadingSubtitle = string.Empty;
+    /// <summary>What the screen shows of that work: progress lines, the status entry, toasts and the blocking card.</summary>
+    public ActivityPresenterViewModel Activity { get; }
 
-    public IDisposable BeginLoading(string title, string subtitle = "") =>
-        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
+    // Opening a document from one place and then another before the first is ready: only the last one may take the page.
+    private readonly LatestOperation _navigation = new();
 
     /// <summary>
     /// Action callback for standalone test runners or host shells to close the preview window.
     /// </summary>
     public Action? RequestClose { get; set; }
 
-    private readonly Task _initTask;
-    public Task InitTask => _initTask;
+    // The C# engine starts in two stages off the UI thread; opening a document waits only for the first one.
+    private readonly EngineReadiness _engine;
+
+    /// <summary>The engine's start-up state (the Hub shows it; opening a document waits for its Core stage).</summary>
+    public EngineReadiness Engine => _engine;
+
+    /// <summary>Completes when the studio pages can open documents (the engine's Core stage).</summary>
+    public Task InitTask => _engine.CoreReady;
 
     public Hub.CSharpManagerViewModel ManagerViewModel { get; }
     public Docs.CSharpDocsViewModel DocsViewModel { get; }
@@ -102,8 +110,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         IPluginSettingsStore? settingsStore = null,
         IBlindProgressService? blindProgress = null,
         StudioLanguageServices? languages = null,
-        IScriptStorageService? storageService = null)
+        IScriptStorageService? storageService = null,
+        IActivityService? activities = null)
     {
+        _activities = activities ?? new ActivityService();
+        Activity = new ActivityPresenterViewModel(_activities);
         _languages = languages ?? StudioLanguageServices.Default;
         if (storageService == null)
         {
@@ -151,7 +162,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             _languages.StudioSettings,
             backToHubAction: NavigateToManager,
             backToPreviousAction: NavigateToPreviousPage,
-            openScriptAction: NavigateToCodeStudio);
+            openScriptAction: NavigateToCodeStudio,
+            activities: _activities);
 
         // ── Show Manager immediately — it doesn't need the compiler ──
         ManagerViewModel = new Hub.CSharpManagerViewModel(
@@ -163,7 +175,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
             navigateToBlindProblemsAction: () => NavigateToBlindProblems(),
             languages: _languages,
             navigateToSettingsAction: cat => NavigateToSettings(cat),
-            openServerAction: server => NavigateToServerStudio(server));
+            openServerAction: server => NavigateToServerStudio(server),
+            activities: _activities);
 
         _currentPage = ManagerViewModel;
         _activeDocumentTitle = "Hub";
@@ -178,7 +191,21 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         // ── Boot the Roslyn compiler service off the UI thread ──
         // ⚠️  DO NOT move RoslynCompilerService or child ViewModel construction back into this
         //     constructor body. See the post-mortem comment on InitializeCompilerAsync below.
-        _initTask = Task.Run(InitializeCompilerAsync);
+        _engine = new EngineReadiness(_activities, InitializeCompilerAsync, WarmUpEngineAsync);
+        _engine.Changed += () => UiDispatchHelper.RunOnUi(() =>
+        {
+            IsEngineLoading = _engine.State == EngineState.Starting;
+            EngineStatus = _engine.StatusText;
+            ManagerViewModel.RoslynEngineStatus = _engine.StatusText;
+        });
+        _engine.Start();
+    }
+
+    // The second stage: only makes the first run fast. Nobody waits for it.
+    private static Task WarmUpEngineAsync()
+    {
+        NotebookExecutionKernel.Warmup();
+        return Task.CompletedTask;
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
@@ -214,9 +241,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
 
         await Task.Run(() =>
         {
-            RoslynCompilerService.Warmup();
-            NotebookExecutionKernel.Warmup();
-
+            // Only what the pages need to open documents. The first compilation (the slow part of a cold engine) is
+            // the Warm stage, run afterwards; opening a script no longer waits for it.
             _compilerService = new RoslynCompilerService();
             _executionEngine = new ScriptExecutionEngine();
 
@@ -241,7 +267,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 blindProgress: _blindProgress,
                 languages: _languages,
                 navigateToSettingsAction: () => NavigateToSettings(),
-                openServerAction: server => NavigateToServerStudio(server));
+                openServerAction: server => NavigateToServerStudio(server),
+                activities: _activities);
 
             var initialNotebook = new NotebookDocumentItem
             {
@@ -261,7 +288,8 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 navigateToDocsAction: () => NavigateToDocs(),
                 languages: _languages,
                 navigateToSettingsAction: () => NavigateToSettings(),
-                openServerAction: server => NavigateToServerStudio(server));
+                openServerAction: server => NavigateToServerStudio(server),
+                activities: _activities);
         });
 
         void Publish()
@@ -273,12 +301,11 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
                 codeVm.ToggleAiComposerAction = () => ToggleAiComposer();
             }
             AiComposer.InitializeServices(codeVm, _storageService, _compilerService, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.CustomizationManager);
-            IsEngineLoading = false;
-            EngineStatus = "Roslyn .NET 10 Engine Active";
         }
 
-        // In a live desktop/single-view application, post to UI thread; in unit tests, run inline.
-        UiDispatchHelper.RunOnUi(Publish);
+        // On the UI thread in the studio (inline in tests), and finished before the Core stage counts as done: an open
+        // that waited for it must find the pages.
+        await UiDispatchHelper.InvokeAsync(Publish);
     }
 
     [RelayCommand]
@@ -308,90 +335,74 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
         }
     }
 
-    public async void NavigateToCodeStudio(ScriptDocumentItem script)
+    /// <summary>Opens a script in the Code Studio. Returns at once; a failure is shown to the user, never lost.</summary>
+    public void NavigateToCodeStudio(ScriptDocumentItem script) =>
+        OpenInCodeStudioAsync(script).FireAndForget(_activities, "Opening script");
+
+    /// <summary>Opens a script in the Code Studio and completes when it is the page on screen (or was overtaken).</summary>
+    public async Task OpenInCodeStudioAsync(ScriptDocumentItem script)
     {
         var title = string.IsNullOrWhiteSpace(script.Title) ? "Untitled Script" : script.Title;
-        using (BeginLoading("Opening Script...", title))
-        {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
-            {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
-            }
+        var token = _navigation.Begin();
+        using var activity = _activities.Start(new ActivityOptions($"Opening {title}", ActivityLocation.Window));
+        if (CodeStudioViewModel == null) await _engine.WhenCoreReadyAsync();
+        if (CodeStudioViewModel == null || token.IsCancellationRequested) return;
 
-            if (CodeStudioViewModel == null)
-            {
-                await _initTask;
-            }
-            if (CodeStudioViewModel == null) return;
-
-            using (CodeStudioViewModel.BeginLoading("Opening Script...", title))
-            {
-                await CodeStudioViewModel.UpdateActiveScriptAsync(script);
-                CurrentPage = CodeStudioViewModel;
-                IsOnManagerPage = false;
-                ActiveDocumentTitle = title;
-            }
-        }
+        await CodeStudioViewModel.UpdateActiveScriptAsync(script);
+        if (token.IsCancellationRequested) return;
+        CurrentPage = CodeStudioViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = title;
     }
 
-    public async void NavigateToNotebookStudio(NotebookDocumentItem notebook)
+    /// <summary>Opens a notebook in the Notebook Studio. Returns at once; a failure is shown to the user, never lost.</summary>
+    public void NavigateToNotebookStudio(NotebookDocumentItem notebook) =>
+        OpenInNotebookStudioAsync(notebook).FireAndForget(_activities, "Opening notebook");
+
+    /// <summary>Opens a notebook in the Notebook Studio and completes when it is the page on screen (or was overtaken).</summary>
+    public async Task OpenInNotebookStudioAsync(NotebookDocumentItem notebook)
     {
         var title = string.IsNullOrWhiteSpace(notebook.Title) ? "Untitled Notebook" : notebook.Title;
-        using (BeginLoading("Opening Notebook...", title))
-        {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
-            {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
-            }
+        var token = _navigation.Begin();
+        using var activity = _activities.Start(new ActivityOptions($"Opening {title}", ActivityLocation.Window));
+        if (NotebookStudioViewModel == null) await _engine.WhenCoreReadyAsync();
+        if (NotebookStudioViewModel == null || token.IsCancellationRequested) return;
 
-            if (NotebookStudioViewModel == null)
-            {
-                await _initTask;
-            }
-            if (NotebookStudioViewModel == null) return;
-
-            using (NotebookStudioViewModel.BeginLoading("Opening Notebook...", title))
-            {
-                NotebookStudioViewModel.UpdateActiveNotebook(notebook);
-                CurrentPage = NotebookStudioViewModel;
-                IsOnManagerPage = false;
-                ActiveDocumentTitle = title;
-            }
-        }
+        NotebookStudioViewModel.UpdateActiveNotebook(notebook);
+        CurrentPage = NotebookStudioViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = title;
     }
 
     public void NavigateToServerStudio(FryServerDocumentItem server, string? filePath = null)
     {
         var title = string.IsNullOrWhiteSpace(server.Title) ? "API Server" : server.Title;
-        using (BeginLoading("Opening API Server...", title))
+        _navigation.CancelCurrent();
+        if (ServerStudioViewModel == null)
         {
-            if (ServerStudioViewModel == null)
-            {
-                ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
-                    document: server,
-                    filePath: filePath,
-                    portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
-                    storageService: _storageService,
-                    backToHubAction: NavigateToManager,
-                    backToHomeAction: NavigateToHome);
-            }
-            else
-            {
-                ServerStudioViewModel.LoadDocument(server, filePath);
-            }
-
-            CurrentPage = ServerStudioViewModel;
-            IsOnManagerPage = false;
-            ActiveDocumentTitle = title;
+            ServerStudioViewModel = new PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server.FryServerStudioViewModel(
+                document: server,
+                filePath: filePath,
+                portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
+                storageService: _storageService,
+                backToHubAction: NavigateToManager,
+                backToHomeAction: NavigateToHome);
         }
+        else
+        {
+            ServerStudioViewModel.LoadDocument(server, filePath);
+        }
+
+        CurrentPage = ServerStudioViewModel;
+        IsOnManagerPage = false;
+        ActiveDocumentTitle = title;
     }
 
     [RelayCommand]
     public void NavigateToManager()
     {
-        _ = ManagerViewModel.ReloadIfStaleAsync();
+        _navigation.CancelCurrent();
+        ManagerViewModel.ReloadIfStaleAsync().FireAndForget(_activities, "Refreshing the Hub");
         CurrentPage = ManagerViewModel;
         IsOnManagerPage = true;
         ActiveDocumentTitle = "Hub";
@@ -400,6 +411,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     [RelayCommand]
     public void NavigateToDocs(string? articleId = null)
     {
+        _navigation.CancelCurrent();
         if (!string.IsNullOrEmpty(articleId))
         {
             DocsViewModel.SelectTopic(articleId);
@@ -412,6 +424,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     [RelayCommand]
     public void NavigateToBlindProblems(int? problemNumber = null)
     {
+        _navigation.CancelCurrent();
         if (problemNumber.HasValue)
         {
             // The page's own row for it (it keeps its own copy of the catalog), so the table highlights that row.
@@ -431,6 +444,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     [RelayCommand]
     public void NavigateToSettings(string? category = null)
     {
+        _navigation.CancelCurrent();
         _previousPageBeforeSettings = CurrentPage;
         if (!string.IsNullOrEmpty(category))
         {
@@ -470,4 +484,25 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IStudioLoadin
     /// </summary>
     public int GetExecutionTimeoutSeconds() =>
         _settingsStore?.GetSetting(PluginId, "ExecutionTimeoutSeconds", DefaultExecutionTimeoutSeconds) ?? DefaultExecutionTimeoutSeconds;
+
+    /// <summary>Stops presenting activity (its timer and subscriptions); the studio is going away.</summary>
+    /// <summary>Writes every pending preference change now (the studio or the window closing).</summary>
+    public void FlushSettings()
+    {
+        try
+        {
+            SettingsViewModel.FlushAutoSave();
+            _languages.StudioSettings.Flush();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CSharpStudioHost] Couldn't save the preferences on close: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        FlushSettings();
+        Activity.Dispose();
+    }
 }

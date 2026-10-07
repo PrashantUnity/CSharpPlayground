@@ -5,7 +5,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
@@ -16,7 +18,7 @@ using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub;
 
-public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
+public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly Action<ScriptDocumentItem>? _openScriptAction;
@@ -24,6 +26,13 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     private readonly Action<FryServerDocumentItem>? _openServerAction;
     private readonly IFryServerRegistry _serverRegistry;
     private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private readonly IActivityService _activities;
+
+    // Opening one item and then another before the first has loaded: only the last one opens.
+    private readonly LatestOperation _open = new();
+
+    // The first list load happens while the studio is starting: it may cover the Hub with the branded card (see LoadWorkspaceItemsAsync).
+    private bool _hasLoadedOnce;
 
     [ObservableProperty]
     private string _searchQuery = string.Empty;
@@ -34,17 +43,12 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     [ObservableProperty]
     private string _selectedSortOption = "Recently Modified";
 
+    /// <summary>
+    /// The workspace list is being (re)loaded. Shown as the Hub's progress line; it never blocks a click: creating or
+    /// opening something while the list refreshes works (those are gated by <see cref="IsLaunching"/> only).
+    /// </summary>
     [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string _loadingTitle = "Loading...";
-
-    [ObservableProperty]
-    private string _loadingSubtitle = string.Empty;
-
-    public IDisposable BeginLoading(string title, string subtitle = "") =>
-        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
+    private bool _isRefreshingList;
 
     [ObservableProperty]
     private bool _hasFilteredItems = true;
@@ -252,7 +256,9 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     private readonly DispatcherTimer? _telemetryTimer;
 
     public string RoslynEngineTitle => "Local Roslyn Engine";
-    public string RoslynEngineStatus => "Ready • Roslyn 4.12 & C# 13";
+    /// <summary>The C# engine's real state, set by the studio host as it starts (shown in the Hub's status panel).</summary>
+    [ObservableProperty]
+    private string _roslynEngineStatus = "Starting • Roslyn 4.12 & C# 13";
     public bool IsRoslynEngineActive => true;
 
     /// <summary>A STUDIO ENVIRONMENT row per language that runs with an installed toolchain (Python): found, or how to install it.</summary>
@@ -276,7 +282,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     private void SyncCreateLanguages()
     {
-        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.Id == "csharp").ToList();
+        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.IsNamed(LanguageIds.CSharp)).ToList();
         var existing = AvailableCreateLanguages.Select(l => l.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var toRemove = AvailableCreateLanguages.Where(l => !allLangs.Any(a => a.IsNamed(l.Id))).ToList();
@@ -287,7 +293,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             if (!existing.Contains(l.Id)) AvailableCreateLanguages.Add(l);
         }
 
-        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(LanguageIds.CSharp)) ?? AvailableCreateLanguages.FirstOrDefault();
     }
 
     private void ReloadTemplates()
@@ -679,9 +685,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         StudioLanguageServices? languages = null,
         Action<string?>? navigateToSettingsAction = null,
         Action<FryServerDocumentItem>? openServerAction = null,
-        IFryServerRegistry? serverRegistry = null)
+        IFryServerRegistry? serverRegistry = null,
+        IActivityService? activities = null)
     {
         _storageService = storageService;
+        _activities = activities ?? NullActivityService.Instance;
         _serverRegistry = serverRegistry ?? FryServerRegistry.Shared;
         _serverRegistry.RunningServersChanged += OnRunningServersChanged;
         _languagesRegistry = (languages ?? StudioLanguageServices.Default).Registry;
@@ -703,7 +711,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             StarterTemplates.Add(t);
         }
 
-        _ = UpdateDiskStorageAsync();
+        UpdateDiskStorageAsync().FireAndForget(_activities, "Measuring the library");
 
         try
         {
@@ -719,13 +727,13 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         {
         }
 
-        _ = LoadWorkspaceItemsAsync();
+        LoadWorkspaceItemsAsync().FireAndForget(_activities, "Loading the workspace list");
 
-        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = LoadWorkspaceItemsAsync());
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => LoadWorkspaceItemsAsync().FireAndForget(_activities, "Loading the workspace list"));
         // Files changed outside the studio: catch up now if the Hub is on screen, else on the next visit (OnActivated).
         _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
         {
-            if (_isPageActive) _ = ReloadIfStaleAsync();
+            if (_isPageActive) ReloadIfStaleAsync().FireAndForget(_activities, "Refreshing the workspace list");
         });
     }
 
@@ -737,7 +745,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         _isPageActive = true;
 
         // Other pages (or other programs) may have created, saved or deleted items while the Hub was hidden.
-        _ = ReloadIfStaleAsync();
+        ReloadIfStaleAsync().FireAndForget(_activities, "Refreshing the workspace list");
 
         if (_telemetryTimer is not { IsEnabled: false }) return;
         OnPropertyChanged(nameof(MemoryUsageText));
@@ -773,10 +781,16 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
 
     public async Task LoadWorkspaceItemsAsync()
     {
+        // The very first load runs while the studio starts: if it is slow the branded card covers the Hub, but only for
+        // a few seconds; after that the list keeps loading behind the Hub's progress line.
+        var options = _hasLoadedOnce
+            ? new ActivityOptions("Refreshing the workspace list", ActivityLocation.Hub)
+            : new ActivityOptions("Loading your workspace", ActivityLocation.Hub) { Blocking = true, YieldAfter = TimeSpan.FromSeconds(3) };
+        using var activity = _activities.Start(options);
         await _loadLock.WaitAsync();
         try
         {
-            IsLoading = true;
+            IsRefreshingList = true;
             // Taken before the scan: a change that lands while it runs leaves the list stale, so the next check reloads.
             var version = _storageService.ContentVersion;
             var list = await _storageService.LoadWorkspaceSummariesAsync();
@@ -792,10 +806,11 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             await LoadRecentWorkspacesAsync();
             ApplyFilter();
             _loadedContentVersion = version;
+            _hasLoadedOnce = true;
         }
         finally
         {
-            IsLoading = false;
+            IsRefreshingList = false;
             _loadLock.Release();
         }
     }
@@ -1117,37 +1132,30 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     {
         if (item == null) return;
 
-        using (BeginLoading(item.IsServer ? "Opening API Server..." : (item.IsNotebook ? "Opening Notebook..." : "Opening Script..."), item.Title))
+        var token = _open.Begin();
+        using var activity = _activities.Start(new ActivityOptions($"Opening {item.Title}", ActivityLocation.Hub), token);
+        if (item.IsServer)
         {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
+            var server = await Task.Run(() => _storageService.LoadServerDocumentAsync(item.Id), token);
+            if (server != null && !token.IsCancellationRequested)
             {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
+                _openServerAction?.Invoke(server);
             }
-
-            if (item.IsServer)
+        }
+        else if (item.IsNotebook)
+        {
+            var nb = await Task.Run(() => _storageService.LoadNotebookAsync(item.Id), token);
+            if (nb != null && !token.IsCancellationRequested)
             {
-                var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.Id));
-                if (server != null)
-                {
-                    _openServerAction?.Invoke(server);
-                }
+                _openNotebookAction?.Invoke(nb);
             }
-            else if (item.IsNotebook)
+        }
+        else
+        {
+            var sc = await Task.Run(() => _storageService.LoadScriptAsync(item.Id), token);
+            if (sc != null && !token.IsCancellationRequested)
             {
-                var nb = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.Id));
-                if (nb != null)
-                {
-                    _openNotebookAction?.Invoke(nb);
-                }
-            }
-            else
-            {
-                var sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.Id));
-                if (sc != null)
-                {
-                    _openScriptAction?.Invoke(sc);
-                }
+                _openScriptAction?.Invoke(sc);
             }
         }
     }
@@ -1155,14 +1163,14 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     [RelayCommand]
     public async Task CreateNewScriptAsync(string? templateId = null)
     {
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
         await OpenCreatePromptAsync(WorkspaceItemKind.Script, templateId, "New Automation Script");
     }
 
     [RelayCommand]
     public async Task CreateNewNotebookAsync(string? templateId = null)
     {
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
         await OpenCreatePromptAsync(WorkspaceItemKind.Notebook, templateId, "New Interactive Notebook");
     }
 
@@ -1179,7 +1187,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
             {
                 SelectedCreateLanguage = AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(template.LanguageId));
             }
-            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.Id == "csharp") ?? AvailableCreateLanguages.FirstOrDefault();
+            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(LanguageIds.CSharp)) ?? AvailableCreateLanguages.FirstOrDefault();
         }
         PendingCreateKind = kind;
         return Task.CompletedTask;
@@ -1195,11 +1203,10 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
     public async Task ConfirmCreateAsync()
     {
         if (PendingCreateKind is not { } kind) return;
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
 
-        using (BeginLoading("Creating Document...", string.IsNullOrWhiteSpace(NewItemName) ? "New Document" : NewItemName.Trim()))
+        using (_activities.Start(new ActivityOptions($"Creating {(string.IsNullOrWhiteSpace(NewItemName) ? "document" : NewItemName.Trim())}", ActivityLocation.Hub)))
         {
-            await Task.Yield();
             IsLaunching = true;
             try
             {
@@ -1227,8 +1234,9 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                         var newScript = await _storageService.CreateNewSourceFileAsync(lang.Id, fileName, folderPath, lang.NewFileTemplate);
                         if (newScript != null)
                         {
-                            await LoadWorkspaceItemsAsync();
+                            // Open first: the list catching up must not delay the document the user asked for.
                             _openScriptAction?.Invoke(newScript);
+                            await LoadWorkspaceItemsAsync();
                         }
                     }
                     else
@@ -1256,8 +1264,9 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         }
 
         var newScript = await _storageService.CreateNewScriptAsync(title, templateId, folderPath);
-        await LoadWorkspaceItemsAsync();
+        // Open first: the list catching up must not delay the document the user asked for.
         _openScriptAction?.Invoke(newScript);
+        await LoadWorkspaceItemsAsync();
     }
 
     private async Task CreateNewNotebookCoreAsync(string? templateId, string? folderPath = null, string? explicitTitle = null)
@@ -1271,19 +1280,18 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         }
 
         var newNb = await _storageService.CreateNewNotebookAsync(title, templateId, folderPath);
-        await LoadWorkspaceItemsAsync();
         _openNotebookAction?.Invoke(newNb);
+        await LoadWorkspaceItemsAsync();
     }
 
     [RelayCommand]
     public async Task LaunchTemplateAsync(CodeTemplate template)
     {
         if (template == null) return;
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
 
-        using (BeginLoading("Launching Template...", template.Title))
+        using (_activities.Start(new ActivityOptions($"Opening {template.Title}", ActivityLocation.Hub)))
         {
-            await Task.Yield();
             IsLaunching = true;
             try
             {
@@ -1351,13 +1359,17 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
         if (string.IsNullOrWhiteSpace(path)) return;
         if (IsLaunching) return;
 
-        using (BeginLoading("Opening Project...", System.IO.Path.GetFileName(path) ?? path))
+        // Switching workspace: the one place where nothing else makes sense meanwhile, so it may show the card (with Cancel).
+        using (var activity = _activities.Start(new ActivityOptions("Opening folder", ActivityLocation.Window)
+               {
+                   Detail = System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar)) is { Length: > 0 } name ? name : path,
+                   Blocking = true,
+               }))
         {
-            await Task.Yield();
             IsLaunching = true;
             try
             {
-                var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
+                var result = await Task.Run(() => _storageService.OpenExternalProjectAsync(path));
                 if (result.Success)
                 {
                     await LoadWorkspaceItemsAsync();
@@ -1365,20 +1377,7 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                     IsStatusBannerError = false;
                     HasStatusBannerMessage = true;
 
-                    var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
-                    if (!string.IsNullOrWhiteSpace(workspaceFolder))
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            var app = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance;
-                            await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
-                            var workspaceExtDir = System.IO.Path.Combine(workspaceFolder, ".frysharp", "extensions");
-                            if (System.IO.Directory.Exists(workspaceExtDir))
-                            {
-                                await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
-                            }
-                        });
-                    }
+                    WorkspaceCustomizationLoader.LoadInBackground(_storageService.ActiveWorkspaceRootPath, _activities);
 
                     if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
                     {
@@ -1414,6 +1413,10 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle, 
                     IsStatusBannerError = true;
                     HasStatusBannerMessage = true;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // The user cancelled the switch.
             }
             catch (Exception ex)
             {

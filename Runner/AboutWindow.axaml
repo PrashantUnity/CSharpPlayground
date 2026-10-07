@@ -7,149 +7,233 @@
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.AboutWindow"
         Title="About FrySharp"
         Icon="/Assets/app-logo.ico"
-        Width="490" Height="580"
-        MinWidth="490" MinHeight="580"
-        MaxWidth="490" MaxHeight="580"
+        Width="510" Height="580"
+        MinWidth="510" MinHeight="580"
+        MaxWidth="510" MaxHeight="580"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
-        Background="{DynamicResource M3SurfaceBrush}">
+        Background="{DynamicResource DsBgBrush}">
 
-    <Border Padding="28">
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
-            <!-- App Logo and Title Section -->
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center" Spacing="12" Margin="0,4,0,16">
-                <Border Width="76" Height="76"
-                        CornerRadius="20"
-                        Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+    <Panel>
+        <!-- Top Ambient Radial Glow -->
+        <Border HorizontalAlignment="Center" VerticalAlignment="Top"
+                Width="510" Height="260"
+                IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="50%,0%" GradientOrigin="50%,0%" RadiusX="60%" RadiusY="100%">
+                    <GradientStop Offset="0" Color="#222F81F7" />
+                    <GradientStop Offset="0.5" Color="#0E7C3AED" />
+                    <GradientStop Offset="1" Color="#00000000" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <!-- Top Subtle Frosted Highlight Line -->
+        <Border Height="1" VerticalAlignment="Top" Background="{DynamicResource DsBorderBrush}" Opacity="0.4" />
+
+        <Border Padding="28,24,28,20">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <!-- App Logo, Title, and Version Section -->
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center" Spacing="10" Margin="0,0,0,12">
+                    <!-- Pure Circular Logo Emblem (Zero External Square Card) -->
+                    <Border Width="72" Height="72" CornerRadius="36"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            BorderThickness="1"
+                            ClipToBounds="True"
+                            HorizontalAlignment="Center"
+                            BoxShadow="0 10 30 0 #80000000, 0 0 20 0 #2E2F81F7">
+                        <Image Source="/Assets/app-logo.png"
+                               Width="72" Height="72"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    </Border>
+
+                    <!-- Title & Version Row -->
+                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="FrySharp"
+                                       FontSize="23" FontWeight="ExtraBold"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}"
+                                       VerticalAlignment="Center" />
+                            <Border Background="#1A2F81F7"
+                                    BorderBrush="#4D2F81F7"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="8,2"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="v1.0.6 • Stable"
+                                               FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource DsPrimaryBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Polyglot Workspace &amp; .NET 10 Roslyn Studio"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource DsMutedBrush}"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Description -->
+                <TextBlock Grid.Row="1"
+                           Text="High-performance in-app IDE for .NET 10 document automation, Roslyn scripting, algorithms, and polyglot interactive notebooks."
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           FontSize="11.5"
+                           LineHeight="17"
+                           Foreground="{DynamicResource DsTextBrush}"
+                           Margin="14,0,14,14" />
+
+                <!-- Architecture & Environment Specs Card -->
+                <Border Grid.Row="2"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource DsSurfaceBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
                         BorderThickness="1"
-                        BoxShadow="{DynamicResource M3ElevationLevel2}"
-                        HorizontalAlignment="Center">
-                    <Image Source="/Assets/app-logo.png"
-                           Width="60" Height="60"
-                           RenderOptions.BitmapInterpolationMode="HighQuality" />
+                        CornerRadius="12"
+                        Padding="18,14"
+                        BoxShadow="{DynamicResource DsFloatingShadow}"
+                        Margin="0,0,0,16">
+                    <StackPanel Spacing="10">
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="SYSTEM ARCHITECTURE"
+                                       FontSize="10" FontWeight="Bold" LetterSpacing="1"
+                                       Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- System Details Grid -->
+                        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,2,0,0">
+                            <!-- Runtime -->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
+                                <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Runtime" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Border Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1.5" Margin="0,2,0,2">
+                                <TextBlock x:Name="RuntimeText" Text=".NET 10.0" FontFamily="Consolas, SF Mono, Menlo, monospace" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Compiler -->
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
+                                <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Compiler" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Microsoft Roslyn C# 13" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
+
+                            <!-- UI Framework -->
+                            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
+                                <materialIcons:MaterialIcon Kind="PaletteOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="UI Engine" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Avalonia 12.1.2 (Metal GPU)" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
+
+                            <!-- OS Platform -->
+                            <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
+                                <materialIcons:MaterialIcon Kind="Laptop" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Platform" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="PlatformText" Text="macOS" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" Margin="0,6,0,6" Opacity="0.7" />
+
+                        <!-- Polyglot Toolchains -->
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="LayersOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="POLYGLOT TOOLCHAINS"
+                                           FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
+                                           Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <WrapPanel Orientation="Horizontal">
+                                <Border Background="#1E7C3AED" BorderBrush="#507C3AED" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C# (.NET 10)" FontSize="10.5" FontWeight="SemiBold" Foreground="#C4B5FD" />
+                                </Border>
+                                <Border Background="#1E0284C7" BorderBrush="#500284C7" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Python" FontSize="10.5" FontWeight="SemiBold" Foreground="#38BDF8" />
+                                </Border>
+                                <Border Background="#1E16A34A" BorderBrush="#5016A34A" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="JavaScript / Node" FontSize="10.5" FontWeight="SemiBold" Foreground="#4ADE80" />
+                                </Border>
+                                <Border Background="#1EEA580C" BorderBrush="#50EA580C" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Java" FontSize="10.5" FontWeight="SemiBold" Foreground="#FB923C" />
+                                </Border>
+                                <Border Background="#1E0891B2" BorderBrush="#500891B2" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C++" FontSize="10.5" FontWeight="SemiBold" Foreground="#22D3EE" />
+                                </Border>
+                                <Border Background="#1E64748B" BorderBrush="#5064748B" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C" FontSize="10.5" FontWeight="SemiBold" Foreground="#CBD5E1" />
+                                </Border>
+                                <Border Background="#1ED97706" BorderBrush="#50D97706" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Rust" FontSize="10.5" FontWeight="SemiBold" Foreground="#FBBF24" />
+                                </Border>
+                                <Border Background="#1E0D9488" BorderBrush="#500D9488" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Go" FontSize="10.5" FontWeight="SemiBold" Foreground="#2DD4BF" />
+                                </Border>
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
 
-                <StackPanel HorizontalAlignment="Center" Spacing="4">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                        <TextBlock Text="FrySharp"
-                                   FontFamily="{DynamicResource M3FontFamily}"
-                                   FontSize="22" FontWeight="Bold"
-                                   Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                        <Border Background="{DynamicResource M3PrimaryContainerBrush}"
-                                CornerRadius="{DynamicResource M3ShapeCornerFull}"
-                                Padding="8,2"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="v1.0.6"
-                                       FontSize="11" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource M3PrimaryBrush}" />
-                        </Border>
-                    </StackPanel>
-                    <TextBlock Text="FrySharp Polyglot Workspace"
-                               FontSize="13"
-                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
+                <!-- Bottom Actions and Copyright -->
+                <StackPanel Grid.Row="3" Spacing="10">
+                    <TextBlock Text="Copyright © 2026 Code Fry Dev • Open Source Polyglot Studio"
+                               FontSize="10.5"
+                               Foreground="{DynamicResource DsMutedBrush}"
                                HorizontalAlignment="Center" />
-                </StackPanel>
-            </StackPanel>
 
-            <!-- Description -->
-            <TextBlock Grid.Row="1"
-                       Text="High-performance in-app IDE for .NET 10 document automation, Roslyn scripting, algorithms, and polyglot interactive notebooks."
-                       TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       FontSize="12"
-                       LineHeight="17"
-                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                       Margin="10,0,10,16" />
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <!-- Left Actions: Sponsor + Documentation + GitHub -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <!-- Sponsor Button (Hero Highlight) -->
+                            <Button Classes="about-sponsor-btn"
+                                    Click="OnSponsorClick"
+                                    Cursor="Hand"
+                                    ToolTip.Tip="Sponsor FrySharp on GitHub (❤)">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Heart" Width="14" Height="14" Foreground="#EA4AAA" VerticalAlignment="Center" />
+                                    <TextBlock Text="Sponsor" FontWeight="Bold" FontSize="12" Foreground="#EA4AAA" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
-            <!-- Environment Details Card -->
-            <Border Grid.Row="2"
-                    Background="{DynamicResource M3SurfaceContainerBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{DynamicResource M3ShapeCornerMedium}"
-                    Padding="16,12"
-                    Margin="0,0,0,16">
-                <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Runtime:" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,2,8,2" />
-                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="RuntimeText" Text=".NET 10.0" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="0,2,0,2" />
+                            <!-- Documentation Button -->
+                            <Button Classes="about-action-btn"
+                                    Click="OnDocumentationClick"
+                                    Cursor="Hand"
+                                    ToolTip.Tip="Open Documentation">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="14" Height="14" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Docs" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Compiler:" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,2,8,2" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Microsoft Roslyn C# 13" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="0,2,0,2" />
+                            <!-- GitHub Button -->
+                            <Button Classes="about-action-btn"
+                                    Click="OnGitHubClick"
+                                    Cursor="Hand"
+                                    ToolTip.Tip="Open GitHub Repository">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Github" Width="14" Height="14" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="GitHub" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="UI Framework:" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,2,8,2" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Avalonia 12.1.2 (Metal)" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="0,2,0,2" />
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="OS Platform:" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,2,8,2" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="PlatformText" Text="macOS" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" Margin="0,2,0,2" TextTrimming="CharacterEllipsis" />
+                        <!-- Right Action: Close Button -->
+                        <Button Grid.Column="2"
+                                Content="Close"
+                                Classes="about-close-btn"
+                                Click="OnCloseClick"
+                                IsDefault="True"
+                                Cursor="Hand" />
                     </Grid>
-
-                    <Separator Height="1" Background="{DynamicResource M3OutlineVariantBrush}" Margin="0,2" />
-
-                    <!-- Languages list -->
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="POLYGLOT TOOLCHAINS"
-                                   FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
-                                   Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                        <WrapPanel Orientation="Horizontal">
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="C# (.NET 10)" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="Python" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="JavaScript / Node" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="Java" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="C++" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="C" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="Rust" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                            <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" CornerRadius="6" Padding="6,2" Margin="0,2,6,2">
-                                <TextBlock Text="Go" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                            </Border>
-                        </WrapPanel>
-                    </StackPanel>
                 </StackPanel>
-            </Border>
-
-            <!-- Bottom Actions and Copyright -->
-            <StackPanel Grid.Row="3" Spacing="12">
-                <TextBlock Text="Copyright © 2026 Code Fry Dev. All rights reserved."
-                           FontSize="10.5"
-                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                           HorizontalAlignment="Center" />
-
-                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                        <Button Content="Documentation"
-                                Classes="m3-tonal-btn"
-                                Click="OnDocumentationClick"
-                                Cursor="Hand" />
-                        <Button Content="GitHub"
-                                Classes="m3-tonal-btn"
-                                Click="OnGitHubClick"
-                                Cursor="Hand" />
-                    </StackPanel>
-
-                    <Button Grid.Column="2"
-                            Content="Close"
-                            Classes="m3-filled-btn"
-                            Click="OnCloseClick"
-                            IsDefault="True"
-                            Cursor="Hand" />
-                </Grid>
-            </StackPanel>
-        </Grid>
-    </Border>
+            </Grid>
+        </Border>
+    </Panel>
 </Window>

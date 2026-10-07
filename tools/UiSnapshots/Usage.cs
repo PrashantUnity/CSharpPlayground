@@ -51,6 +51,8 @@ internal static class Usage
                                      (the debugger's data tip when paused with --debug)
               --zoom <size>          editor font size in px (e.g. 18 for 138%, 10 for 77%)
               --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
+              --loading              show running work: the editor's progress line and the status-bar entry
+                                 (--loading-title, --loading-sub, --loading-progress 0..1, --loading-seconds n)
           notebook <n>           Notebook Studio with problem n's notebook.
               --file <path>          open a notebook file (.csnb / .frynb) directly
               --dart-demo            a notebook of Dart cells (classes, collections, persistency across cells)
@@ -74,6 +76,7 @@ internal static class Usage
               --quick-open <mode>    files or commands
               --quick-info <text>    rest the mouse on the first <text> in a cell and show its hover card
               --zoom <size>          notebook font size in px (e.g. 18 for 138%, 10 for 77%)
+              --loading              show running work: the notebook's progress line and the status-bar entry
               --zoom-keys <actions>  simulate zoom keys: in,out,reset (e.g. --zoom-keys in,in)
           hub                    The Hub dashboard over a throwaway workspace (3 scripts, 2 notebooks, 1 pinned).
               --empty                no scripts or notebooks (first run)
@@ -92,6 +95,12 @@ internal static class Usage
               --language <id>        select a language setting item (csharp, python, javascript, java, cpp, go, rust)
               --category <name>      select a category (Languages, Editor, Keymap)
               --nothing-installed    simulate environment with no toolchains installed to test guidance
+              --engine <name>        palette studio engine: oklch or hct
+              --lock <ids>           lock palette sections first (Primary,Error,Syntax.String,Chart.3)
+              --generate <n>         press Generate n times
+              --apply-palette        apply the palette as the studio theme
+              --saved-themes <n>     save n themes to My themes first (Settings → Theme & Colors; --category Themes)
+              --theme-card <state>   with --saved-themes: rename or delete shows that state on the first card
           about                  The About FrySharp dialog (AboutWindow).
           update                 The Check for Updates dialog (UpdateDialogWindow).
           app-window             The main application window (MainWindow) with macOS NativeMenu bar.
@@ -117,11 +126,22 @@ internal static class Usage
               --width <px>           window width (default 900)
               --height <px>          window height (default 600)
           perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
-                                 file opens, workspace re-scans and memory left behind by repeated visits.
+                                 file opens, workspace re-scans, memory left behind by repeated visits, and the longest
+                                 time input waited on the UI thread during each (what a user feels as a hang).
               --files <n>            scripts in the generated workspace (default 200; try 5000 for a big one)
               --rounds <n>           passes over the six pages (default 6, at least 3)
               --big-kb <n>           also open a source file of about n KB and time opening, switching to it and typing
               --typing-experiments   with --big-kb: switch editor features off one by one to see which one a keystroke waits for
+              --open-early           open a script the moment the window is up, while the engine is still starting
+              --big-csv-mb <n>       also open a CSV of about n MB (shown as a table) and type in it
+              --big-image-mp <n>     also open a PNG of about n megapixels and switch away from it and back
+              --theme-switch         also apply theme presets from Settings (every page built) and time each
+              --csv-experiments      with --big-csv-mb: split an open into its parts (view model, editor, table, language switch)
+              --table-rows <n>       only: show a table of n rows in a window of its own (--table-shot <name> saves it)
+              --memory-trace         print the heap after each start-up step and each page's first visit
+              --memory-parts         print what each page and part of the studio holds when built on its own
+              --memory-children      with --memory-parts: the same for each control inside the Code Studio
+              --style-cost           what one include of the studio's style bundle costs (time and memory)
               --shots                also save each page as shown in the studio host (host-<page>.png)
               --cells <n>            also open a notebook of n cells: open time, memory, scrolling, opening the side panels
               --external <n>         also open a folder of n source files: Explorer, Hub, the file index and Go to File search
@@ -132,6 +152,7 @@ internal static class Usage
         Options for every command
           --width <px>  --height <px>   window size, which is the image size
           --light                       light theme instead of dark
+          --palette <engine[:seed]>     draw under a theme generated by the palette studio (oklch or hct)
           --hover <x,y>                 move the mouse there before saving, to show hover states
           --name <file>                 file name without .png (single-image commands)
           --unique                      if a file with this name exists, append _1, _2, etc. instead of overwriting

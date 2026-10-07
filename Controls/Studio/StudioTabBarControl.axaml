@@ -10,9 +10,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
         <StackPanel Orientation="Horizontal">

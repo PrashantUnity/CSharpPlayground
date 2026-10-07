@@ -1,0 +1,34 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ============================================================ -->
+    <!-- ZONE 5: STATUS BAR STYLES (22px Fixed Bottom Bar)            -->
+    <!-- Workspace pills, problems counter, line/col, timers          -->
+    <!-- ============================================================ -->
+
+    <!-- Clickable Status Bar Items -->
+    <Style Selector="Button.status-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="5,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="ToolTip.Placement" Value="Top" />
+        <Setter Property="ToolTip.VerticalOffset" Value="-4" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.status-item:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.status-item:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+
+</Styles>

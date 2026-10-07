@@ -8,33 +8,7 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls.VisualizerPlaybackControl">
 
     <UserControl.Styles>
-        <Style Selector="Border.watch-cell">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="Padding" Value="6,1" />
-            <Setter Property="Margin" Value="0,1,4,1" />
-        </Style>
-        <!-- New since the previous step: same lime as the canvas "changed" outline -->
-        <Style Selector="Border.watch-cell.added">
-            <Setter Property="BorderBrush" Value="#a3e635" />
-            <Setter Property="Background" Value="#26a3e635" />
-        </Style>
-        <Style Selector="Border.watch-cell.marker">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0,1" />
-        </Style>
-        <Style Selector="Border.watch-cell TextBlock">
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        </Style>
-        <Style Selector="Border.watch-cell.marker TextBlock">
-            <Setter Property="FontStyle" Value="Italic" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        </Style>
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
@@ -82,7 +56,7 @@
                 Margin="0,0,0,6">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <materialIcons:MaterialIcon Kind="CompassOutline" Width="14" Height="14" Foreground="#fbbf24" VerticalAlignment="Center" />
+                    <materialIcons:MaterialIcon Kind="CompassOutline" Width="14" Height="14" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                     <TextBlock Name="StepDescriptionText"
                                Text="Step 0: Initial State"
                                FontSize="11"
@@ -100,8 +74,8 @@
                             VerticalAlignment="Center"
                             ToolTip.Tip="Show the code line that recorded this step">
                         <StackPanel Orientation="Horizontal" Spacing="3">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="10" Height="10" Foreground="#38bdf8" VerticalAlignment="Center" />
-                            <TextBlock Name="StepLineText" Text="Ln 1" FontSize="9.5" FontWeight="SemiBold" Foreground="#38bdf8" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="10" Height="10" Foreground="{DynamicResource DsInfoBrush}" VerticalAlignment="Center" />
+                            <TextBlock Name="StepLineText" Text="Ln 1" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsInfoBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

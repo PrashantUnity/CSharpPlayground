@@ -81,17 +81,17 @@ public partial class CSharpSettingsViewModel
 
     private void SaveAiSettings(StudioSettings settings)
     {
-        settings.Ai = new AiSettings
-        {
-            Provider = AiProvider,
-            EndpointUrl = string.IsNullOrWhiteSpace(AiEndpointUrl) ? AiSettings.DefaultOllamaEndpoint : AiEndpointUrl.Trim(),
-            ModelName = string.IsNullOrWhiteSpace(AiModelName) ? AiSettings.DefaultModelName : AiModelName.Trim(),
-            ApiKey = string.IsNullOrWhiteSpace(AiApiKey) ? null : AiApiKey.Trim(),
-            Temperature = AiTemperature,
-            MaxOutputTokens = AiMaxOutputTokens,
-            AutoApproveEdits = AiAutoApproveEdits,
-            SystemPrompt = string.IsNullOrWhiteSpace(AiSystemPrompt) ? AiSettings.DefaultSystemPrompt : AiSystemPrompt
-        };
+        // Only the fields this page shows: the AI composer's own (reasoning on/off) are left as they are.
+        var ai = settings.Ai ?? new AiSettings();
+        ai.Provider = AiProvider;
+        ai.EndpointUrl = string.IsNullOrWhiteSpace(AiEndpointUrl) ? AiSettings.DefaultOllamaEndpoint : AiEndpointUrl.Trim();
+        ai.ModelName = string.IsNullOrWhiteSpace(AiModelName) ? AiSettings.DefaultModelName : AiModelName.Trim();
+        ai.ApiKey = string.IsNullOrWhiteSpace(AiApiKey) ? null : AiApiKey.Trim();
+        ai.Temperature = AiTemperature;
+        ai.MaxOutputTokens = AiMaxOutputTokens;
+        ai.AutoApproveEdits = AiAutoApproveEdits;
+        ai.SystemPrompt = string.IsNullOrWhiteSpace(AiSystemPrompt) ? AiSettings.DefaultSystemPrompt : AiSystemPrompt;
+        settings.Ai = ai;
     }
 
     private void ResetAiSettingsToDefaults()

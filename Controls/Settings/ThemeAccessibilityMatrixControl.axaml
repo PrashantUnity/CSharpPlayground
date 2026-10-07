@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="450"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.ThemeAccessibilityMatrixControl"
+             x:DataType="settings:CSharpSettingsViewModel">
+
+    <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+        <StackPanel Spacing="14">
+
+            <!-- Card Header -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="ShieldCheckOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="PERCEPTUAL CONTRAST &amp; ACCESSIBILITY MATRIX" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="Dual WCAG 2.1 &amp; APCA (WCAG 3.0) Evaluation" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- 1. Contrast Pairings Grid -->
+            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                <StackPanel>
+                    <!-- Table Header -->
+                    <Border Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="12,7">
+                        <Grid ColumnDefinitions="200,120,120,110,*">
+                            <TextBlock Grid.Column="0" Text="INTERFACE PAIRING" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="FOREGROUND" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="BACKGROUND" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Text="WCAG 2.1" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="4" Text="APCA (WCAG 3.0) SCORE &amp; RATING" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Table Rows -->
+                    <ItemsControl ItemsSource="{Binding ContrastPairings}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="settings:ContrastPairingItemViewModel">
+                                <Border BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="12,6" Background="Transparent">
+                                    <Grid ColumnDefinitions="200,120,120,110,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding RoleName}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Border Width="14" Height="14" CornerRadius="3" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding ForeHex, Converter={x:Static common:HexToBrushConverter.Instance}}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding ForeHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Border Width="14" Height="14" CornerRadius="3" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding BackHex, Converter={x:Static common:HexToBrushConverter.Instance}}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding BackHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+
+                                        <!-- WCAG Ratio & Badge -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding WcagRatio, StringFormat='{}{0:0.0}:1'}" FontSize="11" FontWeight="Bold" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                            <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding WcagBadge}" FontSize="9" FontWeight="Bold" Foreground="{Binding IsWcagPassed, Converter={x:Static common:ResourceKeyBrushConverter.Instance}, ConverterParameter='BadgeEasyFgBrush|DsPrimaryBrush'}" VerticalAlignment="Center" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- APCA Score & Rating -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ApcaLc, StringFormat='{}Lc {0:0.0}'}" FontSize="10" FontWeight="Bold" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock Text="{Binding ApcaRating}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 2. Multi-Deficiency Status Distinction Safety -->
+            <StackPanel Spacing="6" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="EyeCheckOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="COLOR VISION DEFICIENCY SAFETY: SUCCESS vs ERROR (CIELAB ΔE DISTINCTION)" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="ΔE &lt; 12 indicates severe confusion risk" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding VisionSafetyItems}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="settings:VisionDeficiencyStatusItemViewModel">
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10,8" Margin="3,0">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="{Binding DeficiencyName}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                        <Border Width="16" Height="16" CornerRadius="3" Background="{Binding SimulatedSuccessHex, Converter={x:Static common:HexToBrushConverter.Instance}}" ToolTip.Tip="Simulated Success" />
+                                        <TextBlock Text="vs" FontSize="9" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <Border Width="16" Height="16" CornerRadius="3" Background="{Binding SimulatedErrorHex, Converter={x:Static common:HexToBrushConverter.Instance}}" ToolTip.Tip="Simulated Error" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                                        <TextBlock Text="ΔE:" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DeltaE, StringFormat='{}{0:0.0}'}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="4,2" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding StatusLabel}" FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</UserControl>

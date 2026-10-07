@@ -17,16 +17,12 @@ public static partial class Display
         int? width = null;
         int? height = null;
 
-        try
+        // The size is in the header: decoding the whole image just to read it (and never disposing the bitmap) cost a
+        // full decode and leaked native memory on every call, every frame of a Display.Image animation.
+        if (ImageDecoder.TryReadDimensions(bytes.AsSpan(0, Math.Min(bytes.Length, 64 * 1024)), out int w, out int h))
         {
-            using var ms = new MemoryStream(bytes);
-            var bmp = new Bitmap(ms);
-            width = (int)bmp.Size.Width;
-            height = (int)bmp.Size.Height;
-        }
-        catch
-        {
-            // Ignore if metadata extraction fails
+            width = w;
+            height = h;
         }
 
         InteractiveDisplayContext.Emit(new RichCellOutput

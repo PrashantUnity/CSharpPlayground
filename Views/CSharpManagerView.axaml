@@ -9,23 +9,13 @@
              xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              xmlns:hub1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Hub"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              mc:Ignorable="d" d:DesignWidth="1380" d:DesignHeight="880"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpManagerView"
              x:DataType="hub:CSharpManagerViewModel"
              Background="{DynamicResource DsBgBrush}">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
 
-        </ResourceDictionary>
-    </UserControl.Resources>
-
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-    </UserControl.Styles>
 
     <Panel>
         <!-- ============================================================ -->
@@ -49,6 +39,9 @@
                 <!-- Top Header: Search & Sync Bar -->
                 <hub1:HubTopHeaderControl Grid.Row="0" />
 
+                <!-- Refreshing the workspace list, opening or creating an item: a line under the header -->
+                <activities:ActivityProgressLine Grid.Row="0" Location="Hub" VerticalAlignment="Bottom" ZIndex="1" />
+
                 <!-- Dashboard Content Area (ScrollViewer + Floating Overlay) -->
                 <Panel Grid.Row="1">
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -56,14 +49,8 @@
                             <!-- Top-Right Ambient Glow Effect -->
                             <Border HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Width="500" Height="380"
-                                    IsHitTestVisible="False">
-                                <Border.Background>
-                                    <RadialGradientBrush Center="100%,0%" GradientOrigin="100%,0%" RadiusX="100%" RadiusY="100%">
-                                        <GradientStop Offset="0" Color="#1A2F81F7" />
-                                        <GradientStop Offset="1" Color="#002F81F7" />
-                                    </RadialGradientBrush>
-                                </Border.Background>
-                            </Border>
+                                    IsHitTestVisible="False"
+                                    Background="{DynamicResource DsAmbientGlowBrush}" />
 
                             <!-- Dashboard Content (Fills 100% of available canvas across all displays) -->
                             <StackPanel Margin="32,28,32,48" Spacing="28" HorizontalAlignment="Stretch">
@@ -78,7 +65,7 @@
                                                                     Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
                                                                     IsVisible="{Binding !IsStatusBannerError}" />
                                         <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="18" Height="18"
-                                                                    Foreground="#F85149" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                                    Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" Margin="0,0,10,0"
                                                                     IsVisible="{Binding IsStatusBannerError}" />
                                         <TextBlock Grid.Column="1" Text="{Binding StatusBannerMessage}" FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                         <Button Grid.Column="2" Command="{Binding DismissStatusBannerCommand}" Classes="nexus-btn-ghost" Width="26" Height="26" Padding="0" VerticalAlignment="Center">
@@ -109,7 +96,7 @@
                             BorderThickness="1.5"
                             CornerRadius="12"
                             Padding="16,10"
-                            BoxShadow="0 10 32 0 #77000000">
+                            BoxShadow="{DynamicResource DsModalShadow}">
                         <Border.Transitions>
                             <Transitions>
                                 <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
@@ -213,16 +200,5 @@
         <!-- "New Script" / "New Notebook" location dialog                    -->
         <!-- ================================================================ -->
         <hub1:HubCreateItemDialogControl />
-
-        <!-- ================================================================ -->
-        <!-- STUDIO LOADING OVERLAY POPUP                                     -->
-        <!-- ================================================================ -->
-        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
-                                              LoadingTitle="{Binding LoadingTitle}"
-                                              LoadingSubtitle="{Binding LoadingSubtitle}"
-                                              ZIndex="1000"
-                                              HorizontalAlignment="Stretch"
-                                              VerticalAlignment="Stretch" />
-
     </Panel>
 </UserControl>

@@ -62,25 +62,26 @@ public partial class CSharpSettingsViewModel
         HasPendingChanges = false;
     }
 
+    // Read-modify-write: only the settings this page shows change. It used to build a fresh StudioSettings, which reset
+    // every setting it didn't list (the C# engine choice, the AI composer's reasoning switch, the theme) on every save.
     private void SaveEditorSettings()
     {
-        var settings = new StudioSettings
+        _settingsStore.Update(settings =>
         {
-            TabSize = TabSize,
-            ConvertTabsToSpaces = ConvertTabsToSpaces,
-            WordWrap = WordWrap,
-            ShowLineNumbers = ShowLineNumbers,
-            EnableSyntaxHighlighting = EnableSyntaxHighlighting,
-            EnableAutoCompletion = EnableAutoCompletion,
-            FontSize = FontSize,
-            ExecutionTimeoutSeconds = ExecutionTimeoutSeconds,
-            AutoClearConsoleOnRun = AutoClearConsoleOnRun,
-            MaxTerminalOutputLines = MaxTerminalOutputLines,
-            NullableChecksEnabled = NullableChecksEnabled,
-            LanguageVersion = LanguageVersion
-        };
-        SaveAiSettings(settings);
-        _settingsStore.SaveSettings(settings);
+            settings.TabSize = TabSize;
+            settings.ConvertTabsToSpaces = ConvertTabsToSpaces;
+            settings.WordWrap = WordWrap;
+            settings.ShowLineNumbers = ShowLineNumbers;
+            settings.EnableSyntaxHighlighting = EnableSyntaxHighlighting;
+            settings.EnableAutoCompletion = EnableAutoCompletion;
+            settings.FontSize = FontSize;
+            settings.ExecutionTimeoutSeconds = ExecutionTimeoutSeconds;
+            settings.AutoClearConsoleOnRun = AutoClearConsoleOnRun;
+            settings.MaxTerminalOutputLines = MaxTerminalOutputLines;
+            settings.NullableChecksEnabled = NullableChecksEnabled;
+            settings.LanguageVersion = LanguageVersion;
+            SaveAiSettings(settings);
+        });
     }
 
     private void ResetEditorSettingsToDefaults()

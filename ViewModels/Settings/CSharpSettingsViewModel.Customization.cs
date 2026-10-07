@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FrySharp.Sdk;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Packages;
@@ -18,12 +19,33 @@ namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
 public sealed partial class ThemePresetItemViewModel : ObservableObject
 {
+    /// <summary>The palette a saved theme was made from (its sections, locks and engine), if it came from the palette studio.</summary>
+    public System.Text.Json.JsonElement? Palette { get; set; }
+
     public string Id { get; init; } = string.Empty;
-    public string Name { get; init; } = string.Empty;
+
+    [ObservableProperty]
+    private string _name = string.Empty;
+
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>A theme from the user's library (can be renamed and deleted); built-in ones can only be duplicated.</summary>
+    public bool IsUserTheme { get; init; }
+
+    [ObservableProperty]
+    private bool _isRenaming;
+
+    [ObservableProperty]
+    private string _editName = string.Empty;
+
+    /// <summary>Delete was clicked once: the row asks to confirm before the theme is removed.</summary>
+    [ObservableProperty]
+    private bool _isConfirmingDelete;
     public bool IsDark { get; init; } = true;
     public string BgHex { get; init; } = "#1E1E1E";
+    public string SurfaceHex { get; init; } = "#252526";
     public string AccentHex { get; init; } = "#007ACC";
+    public string TextHex { get; init; } = "#CCCCCC";
 
     [ObservableProperty]
     private bool _isActive;
@@ -102,6 +124,7 @@ public partial class CSharpSettingsViewModel
     private void InitializeCustomizationSettings()
     {
         PopulateThemePresets();
+        LoadSavedThemes();
         RefreshCustomizationData();
 
         StudioAppContext.Instance.ThemeEngine.ThemeChanged += OnEngineThemeChanged;
@@ -114,19 +137,7 @@ public partial class CSharpSettingsViewModel
         ThemePresets.Clear();
         foreach (var theme in BuiltInThemes.All)
         {
-            string bg = theme.Colors.TryGetValue("DsBgBrush", out var b) ? b : (theme.IsDark ? "#0D1117" : "#FFFFFF");
-            string accent = theme.Colors.TryGetValue("DsPrimaryBrush", out var a) ? a : "#2F81F7";
-
-            ThemePresets.Add(new ThemePresetItemViewModel
-            {
-                Id = theme.Id,
-                Name = theme.Name,
-                Description = theme.Description,
-                IsDark = theme.IsDark,
-                BgHex = bg,
-                AccentHex = accent,
-                IsActive = string.Equals(StudioAppContext.Instance.ThemeEngine.ActiveThemeId, theme.Id, StringComparison.OrdinalIgnoreCase)
-            });
+            ThemePresets.Add(PresetFor(theme, isUserTheme: false));
         }
     }
 
@@ -134,8 +145,10 @@ public partial class CSharpSettingsViewModel
     {
         void Update()
         {
+            // A theme chosen anywhere (the light/dark toggle, the command palette, a script) is the one to restore.
+            if (!string.Equals(ActiveThemeId, newThemeId, StringComparison.OrdinalIgnoreCase)) RememberActiveTheme(newThemeId);
             ActiveThemeId = newThemeId;
-            foreach (var preset in ThemePresets)
+            foreach (var preset in AllThemePresets)
             {
                 preset.IsActive = string.Equals(preset.Id, newThemeId, StringComparison.OrdinalIgnoreCase);
                 if (preset.IsActive)
@@ -183,10 +196,10 @@ public partial class CSharpSettingsViewModel
         IsCustomizationHotReloadActive = app.CustomizationManager?.IsWatching == true;
 
         ActiveThemeId = app.ThemeEngine.ActiveThemeId;
-        var matchingPreset = ThemePresets.FirstOrDefault(p => string.Equals(p.Id, ActiveThemeId, StringComparison.OrdinalIgnoreCase));
+        var matchingPreset = AllThemePresets.FirstOrDefault(p => string.Equals(p.Id, ActiveThemeId, StringComparison.OrdinalIgnoreCase));
         ActiveThemeName = matchingPreset?.Name ?? ActiveThemeId;
 
-        foreach (var preset in ThemePresets)
+        foreach (var preset in AllThemePresets)
         {
             preset.IsActive = string.Equals(preset.Id, ActiveThemeId, StringComparison.OrdinalIgnoreCase);
         }
@@ -240,7 +253,6 @@ public partial class CSharpSettingsViewModel
         LoadedExtensionsCount = InstalledExtensions.Count;
     }
 
-    [RelayCommand]
     public void ApplyThemePreset(string themeId)
     {
         if (string.IsNullOrWhiteSpace(themeId)) return;
@@ -249,12 +261,22 @@ public partial class CSharpSettingsViewModel
         if (success)
         {
             ActiveThemeId = themeId;
-            var preset = ThemePresets.FirstOrDefault(p => string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase));
+            var preset = AllThemePresets.FirstOrDefault(p => string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase));
             ActiveThemeName = preset?.Name ?? themeId;
-            foreach (var p in ThemePresets)
+            RememberActiveTheme(themeId);
+            foreach (var p in AllThemePresets)
             {
                 p.IsActive = string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase);
             }
+
+            // A saved theme made in the palette studio opens its palette there again, ready to be changed.
+            if (PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette.PaletteSpec.FromJson(preset?.Palette) is { } palette)
+            {
+                ChangePalette(palette);
+                _appliedPaletteSpec = palette;
+            }
+
+            RefreshColorTokenValues();
             ShowNotification($"Applied theme preset: {ActiveThemeName}", isError: false);
         }
         else
@@ -264,13 +286,85 @@ public partial class CSharpSettingsViewModel
     }
 
     [RelayCommand]
+    public async Task ApplyThemePresetAsync(string themeId)
+    {
+        if (string.IsNullOrWhiteSpace(themeId)) return;
+
+        var preset = AllThemePresets.FirstOrDefault(p => string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase));
+        string themeName = preset?.Name ?? themeId;
+
+        ApplyThemePreset(themeId);
+        await Task.CompletedTask;
+    }
+
+    public void GenerateHarmonicPalette()
+    {
+        var theme = HarmonicColorGenerator.GenerateRandomHarmonicTheme(isDark: true);
+        StudioAppContext.Instance.ThemeEngine.RegisterTheme(theme);
+        bool success = StudioAppContext.Instance.ThemeEngine.ApplyTheme(theme.Id);
+        if (success)
+        {
+            RememberActiveTheme(theme.Id);
+            ActiveThemeId = theme.Id;
+            ActiveThemeName = theme.Name;
+
+            var existingHarmonic = ThemePresets.FirstOrDefault(p => p.Id.StartsWith("harmonic-", StringComparison.OrdinalIgnoreCase));
+            if (existingHarmonic != null)
+            {
+                ThemePresets.Remove(existingHarmonic);
+            }
+
+            ThemePresets.Add(new ThemePresetItemViewModel
+            {
+                Id = theme.Id,
+                Name = theme.Name,
+                Description = theme.Description,
+                IsActive = true,
+                BgHex = theme.Colors.TryGetValue("DsBgBrush", out var bg) ? bg : "#0E1117",
+                SurfaceHex = theme.Colors.TryGetValue("DsSurfaceBrush", out var s) ? s : "#161B22",
+                AccentHex = theme.Colors.TryGetValue("DsPrimaryBrush", out var acc) ? acc : "#38BDF8",
+                TextHex = theme.Colors.TryGetValue("DsTextBrush", out var t) ? t : "#E6EDF3"
+            });
+
+            foreach (var p in AllThemePresets)
+            {
+                p.IsActive = string.Equals(p.Id, theme.Id, StringComparison.OrdinalIgnoreCase);
+            }
+
+            RefreshColorTokenValues();
+            ShowNotification($"Generated & applied {theme.Name}!", isError: false);
+        }
+        else
+        {
+            ShowNotification("Failed to apply generated harmonic theme.", isError: true);
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateHarmonicPaletteAsync()
+    {
+        GenerateHarmonicPalette();
+        await Task.CompletedTask;
+    }
+
     public void SetDensity(string densityName)
     {
         if (Enum.TryParse<LayoutDensity>(densityName, ignoreCase: true, out var density))
         {
             ActiveLayoutDensity = density;
             StudioAppContext.Instance.ThemeEngine.SetDensity(density);
+            RememberDensity(density);
             ShowNotification($"Layout density updated to {density}.", isError: false);
+        }
+    }
+
+    [RelayCommand]
+    public async Task SetDensityAsync(string densityName)
+    {
+        if (Enum.TryParse<LayoutDensity>(densityName, ignoreCase: true, out var density))
+        {
+            SetDensity(densityName);
+            await Task.CompletedTask;
         }
     }
 
@@ -279,6 +373,8 @@ public partial class CSharpSettingsViewModel
     {
         if (StudioAppContext.Instance.CustomizationManager is { } mgr)
         {
+            // Compiling the customization script is real work: report it (status bar, a line if it takes a while).
+            using var activity = _activities.Start(new ActivityOptions("Reloading customization script", ActivityLocation.Window));
             var result = await mgr.ReloadAsync();
             if (result.Success)
             {

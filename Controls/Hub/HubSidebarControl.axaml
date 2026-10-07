@@ -25,7 +25,7 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="11">
                             <!-- Official Brand Logo Container (Circular) -->
                             <Border Width="34" Height="34" CornerRadius="17"
-                                    Background="#FFFFFF"
+                                    Background="{DynamicResource DsOnAccentBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
                                     BorderThickness="1"
                                     ClipToBounds="True">
@@ -116,12 +116,12 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsServersNavActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="#1A009688">
-                                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="#009688" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavServersBgBrush}">
+                                        <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="{DynamicResource NavServersFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="API Servers" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="#1A009688" BorderBrush="#009688" BorderThickness="1">
-                                        <TextBlock Text="{Binding TotalServers}" Foreground="#009688" />
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavServersBgBrush}" BorderBrush="{DynamicResource NavServersFgBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding TotalServers}" Foreground="{DynamicResource NavServersFgBrush}" />
                                     </Border>
                                 </Grid>
                             </Button>
@@ -292,14 +292,9 @@
                                     Margin="0,4,0,0">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <!-- User Avatar Circle with Gradient -->
-                                    <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17">
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                <GradientStop Offset="0" Color="#2F81F7" />
-                                                <GradientStop Offset="1" Color="#7C3AED" />
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"
+                                    <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17"
+                                            Background="{DynamicResource DsAvatarGradientBrush}">
+                                        <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
 

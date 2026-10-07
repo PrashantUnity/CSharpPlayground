@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Commands;
@@ -101,14 +101,7 @@ public class ExtensibilityCommandPipeline : ICommandApi
 
             if (_commands.TryGetValue(commandId, out var customCmd))
             {
-                if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-                {
-                    Dispatcher.UIThread.Post(customCmd.Action);
-                }
-                else
-                {
-                    customCmd.Action();
-                }
+                UiDispatchHelper.RunOnUi(customCmd.Action);
             }
             else if (HostCommandFallback != null)
             {

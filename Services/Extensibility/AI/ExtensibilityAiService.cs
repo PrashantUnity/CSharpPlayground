@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Avalonia.Threading;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using FrySharp.Sdk;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.AI;
 
@@ -88,17 +88,7 @@ public class ExtensibilityAiService : IAiApi
         }
     }
 
-    private static void RunOnUI(Action action)
-    {
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(action);
-        }
-        else
-        {
-            action();
-        }
-    }
+    private static void RunOnUI(Action action) => UiDispatchHelper.RunOnUi(action);
 
     public AiDockMode DockMode => Vm?.DockMode ?? AiDockMode.FloatingOverlay;
 
@@ -272,19 +262,11 @@ public class ExtensibilityAiService : IAiApi
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         if (Vm == null) return;
 
-        if (Avalonia.Application.Current != null && !Dispatcher.UIThread.CheckAccess())
-        {
-            await Dispatcher.UIThread.InvokeAsync(async () =>
-            {
-                Vm.PromptText = prompt;
-                await Vm.SendMessageAsync();
-            });
-        }
-        else
+        await UiDispatchHelper.InvokeAsync(async () =>
         {
             Vm.PromptText = prompt;
             await Vm.SendMessageAsync();
-        }
+        });
     }
 
     public void ClearChat()

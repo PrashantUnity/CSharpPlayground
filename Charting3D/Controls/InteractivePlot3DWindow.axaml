@@ -15,7 +15,7 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
@@ -34,7 +34,7 @@
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="8"
-                BoxShadow="0 8 24 0 #40000000">
+                BoxShadow="{DynamicResource DsFloatingShadow}">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Title & Info Pill -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
@@ -108,7 +108,7 @@
 
                     <!-- Close Window -->
                     <Button Name="WinCloseBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Close (Esc)">
-                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="#EF4444" />
+                        <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" />
                     </Button>
                 </StackPanel>
             </Grid>
@@ -123,7 +123,7 @@
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="16"
-                BoxShadow="0 4 16 0 #40000000">
+                BoxShadow="{DynamicResource DsBottomBarShadow}">
             <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="GestureTap" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
@@ -135,7 +135,7 @@
                 <TextBlock Name="WinCameraInfoText"
                            Text="Pitch: -45.0°  Yaw: 30.0°"
                            FontSize="10"
-                           FontFamily="Consolas, Menlo, Monaco, monospace"
+                           FontFamily="{DynamicResource DsCodeFontFamily}"
                            Foreground="{DynamicResource M3PrimaryBrush}"
                            VerticalAlignment="Center" />
             </StackPanel>

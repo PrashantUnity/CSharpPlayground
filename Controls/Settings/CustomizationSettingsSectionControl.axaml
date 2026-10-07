@@ -10,18 +10,7 @@
              x:DataType="settings:CSharpSettingsViewModel"
              Background="Transparent">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">
@@ -126,16 +115,28 @@
                     <StackPanel Spacing="14">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="PaletteOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <materialIcons:MaterialIcon Kind="PaletteOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="DYNAMIC THEME PRESETS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
                             </StackPanel>
 
-                            <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="Active:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="{Binding ActiveThemeName}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                </StackPanel>
-                            </Border>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Command="{Binding GenerateHarmonicPaletteCommand}"
+                                        Classes="cs-toolbar-outlined"
+                                        Padding="10,4"
+                                        ToolTip.Tip="Generate a randomized, mathematically coherent color palette using color wheel harmonies (Analogous, Triadic, Split-Complementary, etc.)">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="DiceMultipleOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Random Harmonic Palette" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <TextBlock Text="Active:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ActiveThemeName}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </Grid>
 
                         <TextBlock Text="Select a curated theme preset. Color brush tokens are updated dynamically across the entire application runtime."
@@ -385,8 +386,8 @@
                                         Padding="10,6">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <ProgressBar IsIndeterminate="True" Width="14" Height="14" IsVisible="{Binding IsImportingPackage}" />
-                                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="#3FB950" IsVisible="{Binding PackageImportSuccess}" />
-                                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#F85149" IsVisible="{Binding PackageImportHasError}" />
+                                        <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding PackageImportSuccess}" />
+                                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding PackageImportHasError}" />
                                         <TextBlock Text="{Binding PackageImportStatus}" FontSize="11" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
@@ -402,8 +403,8 @@
                                             <StackPanel Grid.Column="0" Spacing="2">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                                     <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                    <Border Background="#26384C" CornerRadius="3" Padding="4,1" IsVisible="{Binding IsGitPackage}">
-                                                        <TextBlock Text="git" FontSize="9.5" FontWeight="Bold" Foreground="#58A6FF" FontFamily="Consolas, Menlo, monospace" />
+                                                    <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" IsVisible="{Binding IsGitPackage}">
+                                                        <TextBlock Text="git" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
                                                     </Border>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
@@ -466,14 +467,14 @@
 
                         <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="// 1. Live Color Token" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="Consolas, Menlo, monospace" />
-                                <TextBlock Text="App.Themes.SetColor(&quot;DsPrimaryBrush&quot;, &quot;#FF5722&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="Consolas, Menlo, monospace" />
+                                <TextBlock Text="// 1. Live Color Token" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
+                                <TextBlock Text="App.Themes.SetColor(&quot;DsPrimaryBrush&quot;, &quot;#FF5722&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
 
-                                <TextBlock Text="// 2. Register Studio Command" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="Consolas, Menlo, monospace" Margin="0,4,0,0" />
-                                <TextBlock Text="App.Commands.Register(&quot;run.clean&quot;, &quot;Clean Output&quot;, () =&gt; App.UI.ShowSuccess(&quot;Cleaned&quot;), &quot;Ctrl+Alt+C&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="Consolas, Menlo, monospace" TextWrapping="Wrap" />
+                                <TextBlock Text="// 2. Register Studio Command" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,4,0,0" />
+                                <TextBlock Text="App.Commands.Register(&quot;run.clean&quot;, &quot;Clean Output&quot;, () =&gt; App.UI.ShowSuccess(&quot;Cleaned&quot;), &quot;Ctrl+Alt+C&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextWrapping="Wrap" />
 
-                                <TextBlock Text="// 3. Execution Interceptor Hook" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="Consolas, Menlo, monospace" Margin="0,4,0,0" />
-                                <TextBlock Text="App.Hooks.BeforeScriptRun(ctx =&gt; { if (ctx.Code.Contains(&quot;unsafe&quot;)) ctx.Cancel(&quot;Unsafe blocked&quot;); });" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="Consolas, Menlo, monospace" TextWrapping="Wrap" />
+                                <TextBlock Text="// 3. Execution Interceptor Hook" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,4,0,0" />
+                                <TextBlock Text="App.Hooks.BeforeScriptRun(ctx =&gt; { if (ctx.Code.Contains(&quot;unsafe&quot;)) ctx.Cancel(&quot;Unsafe blocked&quot;); });" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

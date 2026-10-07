@@ -83,8 +83,8 @@
                     </Button>
                     <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" CornerRadius="4" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="2">
-                            <TextBlock Text="Ctrl" FontSize="9.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
-                            <TextBlock Text="F" FontSize="9.5" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Ctrl" FontSize="9.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="F" FontSize="9.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -100,16 +100,16 @@
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyEasy}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Easy">
-                        <TextBlock Text="Easy" Foreground="#22C55E" />
+                        <TextBlock Text="Easy" Foreground="{DynamicResource BadgeEasyFgBrush}" />
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyMedium}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Med"
                             ToolTip.Tip="Medium">
-                        <TextBlock Text="Med" Foreground="#F59E0B" />
+                        <TextBlock Text="Med" Foreground="{DynamicResource BadgeMediumFgBrush}" />
                     </Button>
                     <Button Classes="segment" Classes.selected="{Binding IsDifficultyHard}"
                             Command="{Binding SetDifficultyCommand}" CommandParameter="Hard">
-                        <TextBlock Text="Hard" Foreground="#FB7185" />
+                        <TextBlock Text="Hard" Foreground="{DynamicResource BadgeHardFgBrush}" />
                     </Button>
                 </StackPanel>
             </Border>

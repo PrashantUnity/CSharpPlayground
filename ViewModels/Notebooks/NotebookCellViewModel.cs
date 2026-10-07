@@ -50,8 +50,54 @@ public partial class NotebookCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isOutputScrolled;
 
-    [ObservableProperty]
     private Avalonia.Media.Imaging.Bitmap? _imageOutputBitmap;
+
+    // A saved image output is decoded the first time it is shown, off the UI thread, not when the notebook opens:
+    // a notebook of many plots used to decode every one of them on the UI thread before showing anything.
+    private byte[]? _pendingImageBytes;
+
+    // A new frame (Display.Image in a loop) supersedes one still decoding; only the newest is shown.
+    private readonly PdfEditorApp.Plugins.CSharpEditor.Services.Activities.LatestOperation _imageDecode = new();
+
+    public Avalonia.Media.Imaging.Bitmap? ImageOutputBitmap
+    {
+        get
+        {
+            if (_imageOutputBitmap == null && _pendingImageBytes is { } pending)
+            {
+                _pendingImageBytes = null;
+                DecodeImageInBackground(pending);
+            }
+
+            return _imageOutputBitmap;
+        }
+        set => SetProperty(ref _imageOutputBitmap, value);
+    }
+
+    /// <summary>The image output being decoded, if any (tests await it).</summary>
+    internal Task PendingImageDecode { get; private set; } = Task.CompletedTask;
+
+    private void DecodeImageInBackground(byte[] bytes)
+    {
+        var token = _imageDecode.Begin();
+        PendingImageDecode = Task.Run(() => ImageDecoder.Decode(bytes), token).ContinueWith(t =>
+        {
+            if (!t.IsCompletedSuccessfully) return;
+            var bitmap = t.Result;
+            UiDispatchHelper.RunOnUi(() =>
+            {
+                if (token.IsCancellationRequested)
+                {
+                    bitmap.Dispose();
+                    return;
+                }
+
+                var previous = _imageOutputBitmap;
+                ImageOutputBitmap = bitmap;
+                if (previous != null && !ReferenceEquals(previous, bitmap)) previous.Dispose();
+            });
+        }, TaskScheduler.Default);
+    }
 
     [ObservableProperty]
     private bool _hasImageOutput;
@@ -141,8 +187,7 @@ public partial class NotebookCellViewModel : ObservableObject
         {
             try
             {
-                using var ms = new System.IO.MemoryStream(model.ImageBytes);
-                _imageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
+                _pendingImageBytes = model.ImageBytes;
                 _hasImageOutput = true;
                 _imageDimensionsText = (model.ImageWidth.HasValue && model.ImageHeight.HasValue)
                     ? $"{model.ImageWidth.Value} × {model.ImageHeight.Value} px • {model.ImageFormat ?? "PNG"}"
@@ -476,13 +521,11 @@ public partial class NotebookCellViewModel : ObservableObject
             Model.ImageWidth = width;
             Model.ImageHeight = height;
 
-            var previousBitmap = ImageOutputBitmap;
-
-            using var ms = new System.IO.MemoryStream(bytes);
-            ImageOutputBitmap = new Avalonia.Media.Imaging.Bitmap(ms);
+            // The previous frame stays on screen until this one is decoded (off the UI thread), so a running
+            // animation neither flickers nor stalls the studio.
+            _pendingImageBytes = null;
+            DecodeImageInBackground(bytes);
             HasImageOutput = true;
-
-            previousBitmap?.Dispose();
 
             ImageDimensionsText = (width.HasValue && height.HasValue)
                 ? $"{width.Value} × {height.Value} px • {format}"
@@ -622,7 +665,9 @@ public partial class NotebookCellViewModel : ObservableObject
         ExecutionTimeText = string.Empty;
         HasError = false;
 
-        ImageOutputBitmap?.Dispose();
+        _imageDecode.CancelCurrent();
+        _pendingImageBytes = null;
+        _imageOutputBitmap?.Dispose();
         ImageOutputBitmap = null;
         HasImageOutput = false;
         ImageDimensionsText = string.Empty;

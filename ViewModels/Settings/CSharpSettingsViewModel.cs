@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Settings;
 
@@ -16,6 +17,7 @@ public sealed record KeymapShortcutItem(string Action, string Shortcut, string C
 public partial class CSharpSettingsViewModel : ObservableObject
 {
     private readonly StudioLanguageServices _languageServices;
+    private readonly IActivityService _activities;
     private readonly StudioSettingsStore _settingsStore;
     private readonly Action? _backToHubAction;
     private readonly Action? _backToPreviousAction;
@@ -25,6 +27,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLanguagesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsThemesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsCustomizationCategoryActive))]
@@ -48,6 +51,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
 
     public bool IsLanguagesCategoryActive => string.Equals(ActiveCategory, "Languages", StringComparison.OrdinalIgnoreCase);
     public bool IsEditorCategoryActive => string.Equals(ActiveCategory, "Editor", StringComparison.OrdinalIgnoreCase);
+    public bool IsThemesCategoryActive => string.Equals(ActiveCategory, "Themes", StringComparison.OrdinalIgnoreCase);
     public bool IsExecutionCategoryActive => string.Equals(ActiveCategory, "Execution", StringComparison.OrdinalIgnoreCase);
     public bool IsKeymapCategoryActive => string.Equals(ActiveCategory, "Keymap", StringComparison.OrdinalIgnoreCase);
     public bool IsCustomizationCategoryActive => string.Equals(ActiveCategory, "Customization", StringComparison.OrdinalIgnoreCase);
@@ -61,8 +65,10 @@ public partial class CSharpSettingsViewModel : ObservableObject
         StudioSettingsStore? settingsStore = null,
         Action? backToHubAction = null,
         Action? backToPreviousAction = null,
-        Action<ScriptDocumentItem>? openScriptAction = null)
+        Action<ScriptDocumentItem>? openScriptAction = null,
+        IActivityService? activities = null)
     {
+        _activities = activities ?? NullActivityService.Instance;
         _languageServices = languageServices;
         _settingsStore = settingsStore ?? languageServices.StudioSettings;
         _backToHubAction = backToHubAction;
@@ -74,10 +80,12 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeKeymap();
         InitializeEditorSettings();
         InitializeLanguages();
+        InitializeThemingSettings();
         InitializeCustomizationSettings();
         InitializeAiSettings();
 
         _settingsStore.SettingsChanged += OnStoreSettingsChanged;
+        FinishInitialization();
     }
 
     private void OnStoreSettingsChanged(StudioSettings s)
@@ -96,6 +104,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     {
         Categories.Add(new SettingsCategoryItem("Languages", "Languages & Runtimes", "TuneVariant", "Interpreters, SDKs, virtualenvs & compilers"));
         Categories.Add(new SettingsCategoryItem("Editor", "Editor & Formatting", "CodeBraces", "Indentation, font size, line numbers & wrap"));
+        Categories.Add(new SettingsCategoryItem("Themes", "Theme & Colors", "PaletteOutline", "Color harmony wheel, live token inspector, themes & palettes"));
         Categories.Add(new SettingsCategoryItem("Execution", "Execution & Terminal", "Console", "Execution timeout, stdout buffers & process lifecycle"));
         Categories.Add(new SettingsCategoryItem("Keymap", "Keymap & Shortcuts", "KeyboardOutline", "Visual Studio Code & studio keybindings"));
         Categories.Add(new SettingsCategoryItem("Customization", "Customization & Extensions", "PuzzleOutline", "C# scripts, dynamic themes, tokens, extensions & hooks"));
@@ -161,22 +170,34 @@ public partial class CSharpSettingsViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    /// <summary>Saves now (Settings also saves itself a moment after every change).</summary>
     public void Apply()
     {
-        SaveEditorSettings();
-        SaveLanguageSettings();
-        HasPendingChanges = false;
+        SaveChanges(flush: true);
         ShowNotification("Settings and environment choices saved successfully.", isError: false);
     }
 
-    [RelayCommand]
     public void ResetDefaults()
     {
         ResetEditorSettingsToDefaults();
         ResetLanguageSettingsToDefaults();
         HasPendingChanges = true;
-        ShowNotification("Settings reset to defaults. Click Apply to persist.", isError: false);
+        ShowNotification("Settings reset to defaults.", isError: false);
+    }
+
+    [RelayCommand]
+    public System.Threading.Tasks.Task ApplyAsync()
+    {
+        // Saving settings takes a few milliseconds: no card, no waiting, just the confirmation Apply shows.
+        Apply();
+        return System.Threading.Tasks.Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    public System.Threading.Tasks.Task ResetDefaultsAsync()
+    {
+        ResetDefaults();
+        return System.Threading.Tasks.Task.CompletedTask;
     }
 
     public void ShowNotification(string message, bool isError = false)

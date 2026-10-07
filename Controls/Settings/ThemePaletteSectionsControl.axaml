@@ -1,0 +1,188 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.ThemePaletteSectionsControl"
+             x:DataType="settings:CSharpSettingsViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.section-action">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="3" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.section-action:pointerover">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Background" Value="#26000000" />
+        </Style>
+        <Style Selector="TextBox.section-hex">
+            <Setter Property="FontFamily" Value="{DynamicResource DsCodeFontFamily}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.section-contrast">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+        </Style>
+        <Style Selector="TextBlock.section-contrast.adjusted">
+            <Setter Property="Foreground" Value="{DynamicResource DsWarningBrush}" />
+        </Style>
+        <Style Selector="TextBlock.group-title">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="LetterSpacing" Value="0.6" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- One section: its colour (with lock and regenerate-this on it), its hex (type to set and lock), its contrast. -->
+        <DataTemplate x:Key="SectionCardTemplate" x:DataType="settings:PaletteSectionItemViewModel">
+            <Border Width="118" Margin="0,0,8,8" CornerRadius="8" ClipToBounds="True"
+                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <Border Height="54" Background="{Binding Hex, Converter={x:Static common:HexToBrushConverter.Instance}}">
+                        <Grid RowDefinitions="Auto,*" Margin="7,5,4,4">
+                            <TextBlock Grid.Row="0" Text="{Binding Label}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,40,0"
+                                       Foreground="{Binding OnHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="0">
+                                <Button Classes="section-action" ToolTip.Tip="Lock: Generate keeps this colour"
+                                        Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).ToggleSectionLockCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Panel>
+                                        <materialIcons:MaterialIcon Kind="Lock" Width="13" Height="13" IsVisible="{Binding IsLocked}"
+                                                                    Foreground="{Binding OnHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                        <materialIcons:MaterialIcon Kind="LockOpenVariantOutline" Width="13" Height="13" IsVisible="{Binding !IsLocked}"
+                                                                    Foreground="{Binding OnHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                    </Panel>
+                                </Button>
+                                <Button Classes="section-action" ToolTip.Tip="A new colour for this section only"
+                                        Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).RegenerateSectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13"
+                                                                Foreground="{Binding OnHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <StackPanel Margin="3,4,3,6" Spacing="1">
+                        <TextBox Classes="section-hex" Text="{Binding EditHex, Mode=TwoWay}" MaxLength="9" KeyDown="OnHexBoxKeyDown"
+                                 ToolTip.Tip="Type a hex colour and press Enter to set (and lock) this section" />
+                        <TextBlock Classes="section-contrast" Classes.adjusted="{Binding !PassesContrast}" Text="{Binding ContrastLabel}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource DsSurfaceBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="18,16">
+        <StackPanel Spacing="12">
+            <!-- Engine, Generate, history, Apply -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="ViewColumnOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="PALETTE SECTIONS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <ComboBox ItemsSource="{Binding AvailableColorEngines}" SelectedItem="{Binding SelectedColorEngineOption, Mode=TwoWay}" Width="160" Height="32"
+                              ToolTip.Tip="The colour model palettes are built in">
+                        <ComboBox.SelectionBoxItemTemplate>
+                            <DataTemplate x:DataType="settings:ColorEngineOption">
+                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </ComboBox.SelectionBoxItemTemplate>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="settings:ColorEngineOption">
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Command="{Binding GeneratePaletteCommand}" Classes="cs-toolbar-outlined" Height="32" Padding="12,0"
+                            ToolTip.Tip="New colours for every unlocked section (Space)">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="DiceMultipleOutline" Width="14" Height="14" />
+                            <TextBlock Text="Generate" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,0" VerticalAlignment="Center">
+                                <TextBlock Text="Space" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding UndoPaletteCommand}" IsEnabled="{Binding CanUndoPalette}" Classes="cs-toolbar-outlined" Height="32" Width="32" Padding="0" ToolTip.Tip="Undo (Ctrl+Z)">
+                        <materialIcons:MaterialIcon Kind="Undo" Width="15" Height="15" />
+                    </Button>
+                    <Button Command="{Binding RedoPaletteCommand}" IsEnabled="{Binding CanRedoPalette}" Classes="cs-toolbar-outlined" Height="32" Width="32" Padding="0" ToolTip.Tip="Redo (Ctrl+Shift+Z)">
+                        <materialIcons:MaterialIcon Kind="Redo" Width="15" Height="15" />
+                    </Button>
+                    <Button Command="{Binding ApplyHarmonicConfigurationCommand}" Classes="cs-toolbar-filled" Height="32" Padding="14,0" ToolTip.Tip="Make this palette the studio's theme">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
+                            <TextBlock Text="Apply" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
+                       Text="Lock the colours you like and press Space for new ones everywhere else. ↻ changes one colour only; type a hex to set one. Text and accents are always solved for contrast on their surface." />
+            <TextBlock IsVisible="{Binding HarmonyAnchorHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding HarmonyAnchorHint}"
+                       FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+
+            <!-- Core roles -->
+            <TextBlock Classes="group-title" Text="CORE ROLES" />
+            <ItemsControl ItemsSource="{Binding CoreSections}" ItemTemplate="{StaticResource SectionCardTemplate}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Syntax: a sample in the editor's colours, and its roles -->
+            <TextBlock Classes="group-title" Text="SYNTAX (EVERY LANGUAGE)" Margin="0,4,0,0" />
+            <Border CornerRadius="8" Padding="14,10" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                    Background="{Binding EditorPreviewBgHex, Converter={x:Static common:HexToBrushConverter.Instance}}">
+                <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="12.5" LineHeight="19"
+                           Foreground="{Binding EditorPreviewFgHex, Converter={x:Static common:HexToBrushConverter.Instance}}">
+                    <Run Text="// Lock a role to keep it while you generate" Foreground="{Binding SyntaxSections[7].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><LineBreak />
+                    <Run Text="#nullable enable" Foreground="{Binding SyntaxSections[5].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><LineBreak />
+                    <Run Text="public record " Foreground="{Binding SyntaxSections[0].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="Point" Foreground="{Binding SyntaxSections[1].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="(" Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="int " Foreground="{Binding SyntaxSections[0].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="x" Foreground="{Binding SyntaxSections[6].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text=");" Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><LineBreak />
+                    <Run Text="var " Foreground="{Binding SyntaxSections[0].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="total" Foreground="{Binding SyntaxSections[6].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text=" = " Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="Sum" Foreground="{Binding SyntaxSections[2].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="(" Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="42" Foreground="{Binding SyntaxSections[4].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text=", " Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text="&quot;items&quot;" Foreground="{Binding SyntaxSections[3].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><Run Text=");" Foreground="{Binding SyntaxSections[8].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" />
+                </TextBlock>
+            </Border>
+            <ItemsControl ItemsSource="{Binding SyntaxSections}" ItemTemplate="{StaticResource SectionCardTemplate}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Charts -->
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,0">
+                <TextBlock Grid.Column="0" Classes="group-title" Text="CHART SERIES" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <materialIcons:MaterialIcon Kind="EyeCheckOutline" Width="14" Height="14" IsVisible="{Binding ChartsAreSafe}" Foreground="{DynamicResource DsSuccessBrush}" />
+                    <materialIcons:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" IsVisible="{Binding !ChartsAreSafe}" Foreground="{DynamicResource DsWarningBrush}" />
+                    <TextBlock Text="{Binding ChartSafetyLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding ChartSections}" ItemTemplate="{StaticResource SectionCardTemplate}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</UserControl>

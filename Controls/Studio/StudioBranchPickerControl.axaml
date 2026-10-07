@@ -11,19 +11,6 @@
              Width="290" MaxHeight="380"
              Background="{DynamicResource DsSurfaceBrush}">
 
-    <UserControl.Styles>
-        <Style Selector="Button.branch-item-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="8,5" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="CornerRadius" Value="4" />
-        </Style>
-        <Style Selector="Button.branch-item-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
-        </Style>
-    </UserControl.Styles>
 
     <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6"
             Background="{DynamicResource DsSurfaceBrush}" Padding="8">
@@ -65,8 +52,8 @@
                             Height="22" Padding="6,0" CornerRadius="3"
                             ToolTip.Tip="Create and checkout branch">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="#FFFFFF" />
-                            <TextBlock Text="Create" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsOnAccentBrush}" />
+                            <TextBlock Text="Create" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -100,7 +87,7 @@
 
                                     <!-- Checkmark if Current -->
                                     <materialIcons:MaterialIcon Grid.Column="3" Kind="Check" Width="13" Height="13"
-                                                                Foreground="#22C55E" VerticalAlignment="Center"
+                                                                Foreground="{DynamicResource DsSuccessBrush}" VerticalAlignment="Center"
                                                                 IsVisible="{Binding IsCurrent}" Margin="4,0,0,0" />
                                 </Grid>
                             </Button>

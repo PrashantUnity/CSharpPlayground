@@ -10,16 +10,6 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.ObjectInspectorView"
              x:DataType="models:ObjectInspectorNode">
 
-    <UserControl.Styles>
-        <Style Selector="Border.inspector-row">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="Padding" Value="4,2" />
-        </Style>
-        <Style Selector="Border.inspector-row:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-        </Style>
-    </UserControl.Styles>
 
     <StackPanel Spacing="3" Margin="0,1">
         <!-- 1. Header Row (e.g. ▼ Submission#16+People) -->
@@ -49,7 +39,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                         <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding HeaderTitle}"
-                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                    FontSize="11.5"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource CodeTypeBrush}"
@@ -75,13 +65,13 @@
                                     <!-- Column 0: Property Name in VS Code Identifier Blue (CodeMemberBrush) -->
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" MinWidth="130" Margin="0,0,12,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    FontWeight="Medium"
                                                    Foreground="{DynamicResource CodeMemberBrush}"
                                                    VerticalAlignment="Center" />
                                         <TextBlock Text=":"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                    Margin="2,0,0,0"
@@ -92,16 +82,16 @@
                                     <Panel Grid.Column="1" VerticalAlignment="Center">
                                         <!-- Null Value (<null>) -->
                                         <TextBlock Text="&lt;null&gt;"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    FontStyle="Italic"
-                                                   Foreground="#808080"
+                                                   Foreground="{DynamicResource DsMutedBrush}"
                                                    IsVisible="{Binding IsNull}"
                                                    VerticalAlignment="Center" />
 
                                         <!-- Non-Null Value / Formatted Array -->
                                         <TextBlock Text="{Binding SimpleValueText}"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    Foreground="{Binding ValueForegroundKey, Converter={x:Static common:ResourceKeyBrushConverter.Instance}}"
                                                    IsVisible="{Binding !IsNull}"
@@ -115,13 +105,13 @@
                                     <!-- Column 0: Property Name -->
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" MinWidth="130" Margin="0,3,12,0" VerticalAlignment="Top">
                                         <TextBlock Text="{Binding Name}"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    FontWeight="Medium"
                                                    Foreground="{DynamicResource CodeMemberBrush}"
                                                    VerticalAlignment="Center" />
                                         <TextBlock Text=":"
-                                                   FontFamily="JetBrains Mono, Menlo, Cascadia Code, Consolas, monospace"
+                                                   FontFamily="{DynamicResource DsCodeFontFamily}"
                                                    FontSize="11.5"
                                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                    Margin="2,0,0,0"

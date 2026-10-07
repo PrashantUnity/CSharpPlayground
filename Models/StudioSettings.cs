@@ -28,21 +28,15 @@ public sealed class StudioSettings
     // AI Agent & Local LLM Preferences
     public PdfEditorApp.Plugins.CSharpEditor.Models.AI.AiSettings Ai { get; set; } = new();
 
-    public StudioSettings Clone() => new()
-    {
-        TabSize = TabSize,
-        ConvertTabsToSpaces = ConvertTabsToSpaces,
-        WordWrap = WordWrap,
-        ShowLineNumbers = ShowLineNumbers,
-        EnableSyntaxHighlighting = EnableSyntaxHighlighting,
-        EnableAutoCompletion = EnableAutoCompletion,
-        FontSize = FontSize,
-        ExecutionTimeoutSeconds = ExecutionTimeoutSeconds,
-        AutoClearConsoleOnRun = AutoClearConsoleOnRun,
-        MaxTerminalOutputLines = MaxTerminalOutputLines,
-        NullableChecksEnabled = NullableChecksEnabled,
-        LanguageVersion = LanguageVersion,
-        CSharpExecutionEngine = CSharpExecutionEngine,
-        Ai = Ai.Clone()
-    };
+    // Theme, density, colour overrides and the theme studio's controls
+    public AppearanceSettings Appearance { get; set; } = new();
+
+    /// <summary>The shape of this file; moved when a change needs old files read differently.</summary>
+    public int SchemaVersion { get; set; } = 1;
+
+    private static readonly System.Text.Json.JsonSerializerOptions CloneOptions = new();
+
+    /// <summary>A deep copy (through JSON, so a new setting can never be forgotten by a hand-written copy).</summary>
+    public StudioSettings Clone() =>
+        System.Text.Json.JsonSerializer.Deserialize<StudioSettings>(System.Text.Json.JsonSerializer.Serialize(this, CloneOptions), CloneOptions) ?? new StudioSettings();
 }

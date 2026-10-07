@@ -8,9 +8,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border Width="48"
             Background="{DynamicResource DsSurfaceBrush}"
@@ -49,7 +46,7 @@
                             <TextBlock Text="{Binding UncommittedChangesCount}" FontSize="8.5" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0"
-                                       Foreground="#FFFFFF" />
+                                       Foreground="{DynamicResource DsOnAccentBrush}" />
                         </Border>
                     </Grid>
                 </Button>
@@ -61,7 +58,7 @@
                         ToolTip.Tip="Run &amp; Debug (Ctrl+Shift+D)">
                     <Grid>
                         <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="20" Height="20" />
-                        <Border Background="#F59E0B" Width="7" Height="7" CornerRadius="4"
+                        <Border Background="{DynamicResource DsWarningBrush}" Width="7" Height="7" CornerRadius="4"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-2,0"
                                 IsVisible="{Binding IsPaused}" />
                     </Grid>
@@ -90,14 +87,14 @@
                         ToolTip.Tip="Problems &amp; Diagnostics (Ctrl+Shift+M)">
                     <Grid>
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" />
-                        <Border Background="#EF4444" CornerRadius="7"
+                        <Border Background="{DynamicResource DsErrorBrush}" CornerRadius="7"
                                 Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                 IsVisible="{Binding ErrorCount}">
                             <TextBlock Text="{Binding ErrorCount}" FontSize="8.5" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0"
-                                       Foreground="#FFFFFF" />
+                                       Foreground="{DynamicResource DsOnAccentBrush}" />
                         </Border>
                     </Grid>
                 </Button>

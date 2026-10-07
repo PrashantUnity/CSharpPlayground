@@ -54,8 +54,22 @@ public static class ChartPaletteService
         }
     }
 
+    /// <summary>
+    /// The colour of series <paramref name="seriesIndex"/> (0-based): the active theme's <c>ChartSeries{n}Brush</c> when it
+    /// has chart colours (generated themes do, chosen to stay distinct with colour-vision deficiencies), else the default
+    /// expressive palette.
+    /// </summary>
     public static string GetSeriesColor(int seriesIndex)
     {
+        if (seriesIndex < 0) seriesIndex = 0;
+        var engine = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine;
+        if (PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ThemeTokens.TryGet(engine, $"ChartSeries{seriesIndex % ThemeSeriesCount + 1}Brush", out var themed))
+        {
+            return themed;
+        }
+
         return ExpressivePalette[seriesIndex % ExpressivePalette.Count];
     }
+
+    private const int ThemeSeriesCount = 8;
 }

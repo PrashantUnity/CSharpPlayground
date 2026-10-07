@@ -65,7 +65,13 @@ public class AiComposerWindow : Window
             VerticalAlignment = VerticalAlignment.Stretch
         };
 
+        // A window of its own is outside the studio host, which is where the studio's styles are included (once).
+        Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://CSharpEditorPlugin/"))
+        {
+            Source = new Uri("avares://CSharpEditorPlugin/Styles/StudioStyles.axaml")
+        });
         Content = composerControl;
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.TrackResourceRoot(this);
     }
 
     private void OnCaptureProtectionChanged(bool isProtected)

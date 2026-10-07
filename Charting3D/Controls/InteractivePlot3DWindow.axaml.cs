@@ -22,6 +22,8 @@ public partial class InteractivePlot3DWindow : Window
         _options = options ?? new Plot3DOptions();
         ViewState = viewState != null ? new Plot3DViewState(viewState) : new Plot3DViewState(_options);
         InitializeComponent();
+        // A window of its own includes the palette; the current theme is shown on top of it.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.TrackResourceRoot(this);
         Title = $"3D Visualizer — {_options.Title}";
         if (WindowTitleText != null) WindowTitleText.Text = _options.Title;
         if (CanvasControl != null)

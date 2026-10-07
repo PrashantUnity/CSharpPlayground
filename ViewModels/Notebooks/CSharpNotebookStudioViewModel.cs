@@ -1,15 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Avalonia.Input;
-using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
@@ -20,8 +18,10 @@ using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
-public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle, IStudioLoadingState
+public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLifecycle
 {
+    // ── Infrastructure ────────────────────────────────────────────────────────
+
     private readonly IScriptStorageService _storageService;
     private readonly StudioLanguageServices _languages;
     private readonly RoslynCompilerService _compilerService;
@@ -39,23 +39,23 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private readonly ObservableCollection<NotebookCellViewModel> _emptyCells = new();
     private readonly ObservableCollection<NotebookVariableInfo> _emptyVariables = new();
 
+    // ── Active tab ────────────────────────────────────────────────────────────
+
     [ObservableProperty]
     private NotebookTabViewModel? _activeTab;
 
     [ObservableProperty]
     private NotebookDocumentItem _notebook = null!; // Always set by the constructor from a non-nullable parameter.
 
-    [ObservableProperty]
-    private bool _isLoading;
+    // ── Running work ──────────────────────────────────────────────────────────
 
-    [ObservableProperty]
-    private string _loadingTitle = "Loading...";
+    // Where this studio reports work the user may wait for (opening a notebook, a folder); the host decides what to show.
+    private readonly IActivityService _activities;
 
-    [ObservableProperty]
-    private string _loadingSubtitle = string.Empty;
+    // Opening notebook B while notebook A is still loading cancels A, so A can never take the canvas away from B.
+    private readonly LatestOperation _documentOpen = new();
 
-    public IDisposable BeginLoading(string title, string subtitle = "") =>
-        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
+    // ── Activity bar / sidebar ────────────────────────────────────────────────
 
     [ObservableProperty]
     private int _selectedActivityBarIndex = 0;
@@ -89,13 +89,15 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     [ObservableProperty]
     private string _sideBarTitle = "EXPLORER";
 
+    // ── Search ────────────────────────────────────────────────────────────────
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
     public bool IsExplorerActive => SelectedActivityBarIndex == 0;
-    public bool IsOutlineActive => SelectedActivityBarIndex == 1;
+    public bool IsOutlineActive  => SelectedActivityBarIndex == 1;
     public bool IsVariablesActive => SelectedActivityBarIndex == 2;
-    public bool IsSearchActive => SelectedActivityBarIndex == 3;
+    public bool IsSearchActive   => SelectedActivityBarIndex == 3;
 
     public event Action<NotebookCellViewModel>? RequestScrollToCell;
 
@@ -163,6 +165,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     /// <summary>What the canvas draws: a header row, then a row per cell of the active notebook (a virtualized list, see <see cref="NotebookCanvasRows"/>).</summary>
     public RangeObservableCollection<object> CanvasRows => _canvasRows.GetValue(Cells, cells => new NotebookCanvasRows(cells)).Rows;
 
+    // ── Sidebar toggle commands ───────────────────────────────────────────────
+
     [RelayCommand]
     public void SelectActivityBarItem(string? indexStr)
     {
@@ -191,25 +195,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         IsSideBarVisible = !IsSideBarVisible;
     }
 
-    [RelayCommand]
-    public void SelectCellFromOutline(NotebookCellViewModel? cell)
-    {
-        if (cell == null || ActiveTab == null) return;
-        ActiveTab.SelectCell(cell);
-        RequestScrollToCell?.Invoke(cell);
-    }
-
-    [RelayCommand]
-    public void InsertCodeCellAfter(NotebookCellViewModel? cell)
-    {
-        ActiveTab?.AddCodeCell(cell);
-    }
-
-    [RelayCommand]
-    public void InsertMarkdownCellAfter(NotebookCellViewModel? cell)
-    {
-        ActiveTab?.AddMarkdownCell(cell);
-    }
+    // ── Editor zoom ───────────────────────────────────────────────────────────
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
@@ -249,11 +235,16 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         EditorFontSize = EditorZoomController.Clamp(fontSize);
     }
 
+    // ── Panel visibility flags ────────────────────────────────────────────────
+
     [ObservableProperty]
     private bool _isVariableInspectorOpen = false;
 
     [ObservableProperty]
     private bool _isOutlineOpen = false;
+
+    [ObservableProperty]
+    private bool _isExplorerOpen = true;
 
     [ObservableProperty]
     private string _workspaceName = "WORKSPACE";
@@ -262,16 +253,15 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     private bool _isWorkspaceExpanded = true;
 
     [ObservableProperty]
-    private bool _isExplorerOpen = true;
-
-    [ObservableProperty]
     private bool _isOutlineExpanded = false;
 
     [ObservableProperty]
     private bool _isTimelineExpanded = false;
 
+    // ── Collections ───────────────────────────────────────────────────────────
+
     public ObservableCollection<NotebookTabViewModel> Tabs { get; } = new();
-    public ObservableCollection<CodeStudio.Explorer.ExplorerItemViewModel> ExplorerRootItems { get; } = new();
+    public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
 
     private ExplorerRowList? _explorerRows;
 
@@ -285,16 +275,19 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public string ExplorerTruncationText =>
         $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
 
+    // ── Active-tab property bridges ───────────────────────────────────────────
+
     public bool HasActiveTab => ActiveTab != null;
-    public bool HasNoTabs => ActiveTab == null;
+    public bool HasNoTabs    => ActiveTab == null;
 
-    public ObservableCollection<NotebookCellViewModel> Cells => ActiveTab?.Cells ?? _emptyCells;
-    public ObservableCollection<NotebookVariableInfo> Variables => ActiveTab?.Variables ?? _emptyVariables;
+    public ObservableCollection<NotebookCellViewModel> Cells     => ActiveTab?.Cells     ?? _emptyCells;
+    public ObservableCollection<NotebookVariableInfo>  Variables => ActiveTab?.Variables ?? _emptyVariables;
 
-    public NotebookCellViewModel? ActiveCell => ActiveTab?.ActiveCell;
-    public bool IsExecuting => ActiveTab?.IsExecuting ?? false;
-    public string KernelName => ActiveTab?.KernelName ?? ".NET (C#)";
+    public NotebookCellViewModel? ActiveCell     => ActiveTab?.ActiveCell;
+    public bool                  IsExecuting     => ActiveTab?.IsExecuting ?? false;
+    public string                KernelName      => ActiveTab?.KernelName ?? ".NET (C#)";
     public IReadOnlyList<NotebookKernelStatusItem> ActiveKernels => ActiveTab?.ActiveKernels ?? Array.Empty<NotebookKernelStatusItem>();
+
     public string CompilerStatusText
     {
         get => ActiveTab?.KernelStatusText ?? "Kernel Ready";
@@ -310,14 +303,14 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
     public string WorkspaceExpansionArrow => IsWorkspaceExpanded ? "⌵" : ">";
 
-    public string BreadcrumbFolder => ActiveTab?.BreadcrumbFolder ?? "Library";
-    public string BreadcrumbDocument => ActiveTab?.BreadcrumbDocument ?? "Untitled.frynb";
-    public string ActiveCellBadgeText => ActiveTab?.ActiveCellBadgeText ?? "Notebook Root";
-    public string ActiveCellTypeIcon => ActiveTab?.ActiveCellTypeIcon ?? "CodeBraces";
-    public string ActiveCellTypeColor => ActiveTab?.ActiveCellTypeColor ?? "#58A6FF";
+    public string BreadcrumbFolder      => ActiveTab?.BreadcrumbFolder ?? "Library";
+    public string BreadcrumbDocument    => ActiveTab?.BreadcrumbDocument ?? "Untitled.frynb";
+    public string ActiveCellBadgeText   => ActiveTab?.ActiveCellBadgeText ?? "Notebook Root";
+    public string ActiveCellTypeIcon    => ActiveTab?.ActiveCellTypeIcon ?? "CodeBraces";
+    public string ActiveCellTypeColor   => ActiveTab?.ActiveCellTypeColor ?? "#58A6FF";
 
-    public string BreadcrumbText => $"{BreadcrumbFolder} › {BreadcrumbDocument} › {ActiveCellBadgeText}";
-    public string DocumentTabTitle => ActiveTab?.Title ?? "Notebook.frynb";
+    public string BreadcrumbText    => $"{BreadcrumbFolder} › {BreadcrumbDocument} › {ActiveCellBadgeText}";
+    public string DocumentTabTitle  => ActiveTab?.Title ?? "Notebook.frynb";
 
     partial void OnIsWorkspaceExpandedChanged(bool value)
     {
@@ -411,6 +404,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         OnPropertyChanged(nameof(DocumentTabTitle));
     }
 
+    // ── Constructor ───────────────────────────────────────────────────────────
+
     public CSharpNotebookStudioViewModel(
         NotebookDocumentItem notebook,
         IScriptStorageService storageService,
@@ -423,8 +418,10 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         Action? navigateToDocsAction = null,
         StudioLanguageServices? languages = null,
         Action? navigateToSettingsAction = null,
-        Action<FryServerDocumentItem>? openServerAction = null)
+        Action<FryServerDocumentItem>? openServerAction = null,
+        IActivityService? activities = null)
     {
+        _activities = activities ?? NullActivityService.Instance;
         _languages = languages ?? StudioLanguageServices.Default;
         _notebook = notebook;
         _storageService = storageService;
@@ -480,670 +477,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         });
     }
 
-    public void UpdateActiveNotebook(NotebookDocumentItem notebook)
-    {
-        Notebook = notebook;
-
-        var expItem = EnsureDocumentInExplorer(notebook);
-
-        var existingTab = Tabs.FirstOrDefault(t =>
-            string.Equals(t.Notebook.Id, notebook.Id, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Notebook.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Title, $"{notebook.Title}.frynb", StringComparison.OrdinalIgnoreCase));
-
-        if (existingTab != null)
-        {
-            SelectTab(existingTab);
-        }
-        else
-        {
-            var folder = expItem?.Parent?.Name ?? "Library";
-            var newTab = CreateTab(notebook, folder, expItem?.FullPath ?? $"{notebook.Title}.frynb");
-
-            ConfigureNotebookTab(newTab);
-            Tabs.Add(newTab);
-            SelectTab(newTab);
-            RefreshQuickOpenDocuments();
-        }
-    }
-
-    public CodeStudio.Explorer.ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook, bool evenIfInWorkspace = false)
-    {
-        var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? notebook.Title
-            : $"{notebook.Title}.frynb";
-
-        var existing = FindItemByIdOrName(ExplorerRootItems, notebook.Id, fileName);
-        if (existing != null)
-        {
-            existing.Name = fileName;
-            if (!string.IsNullOrEmpty(notebook.Id))
-            {
-                existing.DocumentId = notebook.Id;
-            }
-            return existing;
-        }
-
-        // In a big workspace the notebook may sit in a folder that has not been listed yet: it is not an outsider, so it gets no row
-        // at the top; its folders are opened down to it instead.
-        if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(notebook.Id) is { } relativePath)
-        {
-            _ = RevealInLazyExplorerAsync(notebook.Id);
-            return CreateFileItem(fileName, notebook.Id, parent: null, fullPath: relativePath);
-        }
-
-        var expItem = CreateFileItem(fileName, notebook.Id, parent: null, fullPath: fileName);
-        ExplorerRootItems.Add(expItem);
-        return expItem;
-    }
-
-    [RelayCommand]
-    public void SelectTab(NotebookTabViewModel? tab)
-    {
-        if (tab == null) return;
-
-        ActiveTab = tab;
-        HighlightExplorerItem(tab.Title);
-
-        var adapter = new Services.Extensibility.Editor.NotebookDocumentContextAdapter(this);
-        Services.Extensibility.StudioAppContext.Instance.EditorService.ActiveDocumentResolver = () => adapter;
-        Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentOpened(adapter);
-    }
-
-    [RelayCommand]
-    public void CloseTab(NotebookTabViewModel? tab)
-    {
-        if (tab == null) return;
-
-        ReleaseTab(tab);
-
-        var idx = Tabs.IndexOf(tab);
-        Tabs.Remove(tab);
-
-        if (ActiveTab == tab)
-        {
-            if (Tabs.Count > 0)
-            {
-                var nextIdx = Math.Min(idx, Tabs.Count - 1);
-                SelectTab(Tabs[nextIdx]);
-            }
-            else
-            {
-                ActiveTab = null;
-            }
-        }
-    }
-
-    [RelayCommand]
-    public async Task NewNotebookTab()
-    {
-        await Task.Yield();
-
-        // Create an ephemeral (in-memory only) notebook — nothing is written to disk until the user
-        // renames it (which triggers OnItemRenamedAsync → first save) or presses Ctrl+S.
-        // This prevents "Notebook_065959.frynb" clutter from accumulating in the workspace folder.
-        var newDoc = new NotebookDocumentItem
-        {
-            Id = Guid.NewGuid().ToString("N"),
-            Title = "New Notebook",
-            Description = "Interactive cell-based notebook",
-            Category = "Interactive",
-            Created = DateTime.UtcNow,
-            LastModified = DateTime.UtcNow,
-            IsEphemeral = true
-        };
-        newDoc.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Markdown,
-            Source = "# 📓 New Notebook\nWrite documentation or notes in this cell.",
-            IsMarkdownPreviewMode = true
-        });
-        newDoc.Cells.Add(new NotebookCellItem
-        {
-            Type = CellType.Code,
-            Source = "// C# Code Cell\nConsole.WriteLine(\"Hello from Notebook cell!\");"
-        });
-
-        var newTab = CreateTab(newDoc, "Library", $"{newDoc.Title}.frynb");
-
-        ConfigureNotebookTab(newTab);
-        Tabs.Add(newTab);
-        SelectTab(newTab);
-        RefreshQuickOpenDocuments();
-
-        var newExpItem = EnsureDocumentInExplorer(newDoc);
-        HighlightExplorerItem(newExpItem.Name);
-        newExpItem.StartRename();
-    }
-
-    // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
-    private NotebookTabViewModel CreateTab(NotebookDocumentItem notebook, string folderName, string filePath) =>
-        new(notebook,
-            folderName: folderName,
-            filePath: filePath,
-            onSelectTab: SelectTab,
-            onCloseTab: CloseTab,
-            getTimeoutSeconds: _getTimeoutSeconds,
-            languages: _languages,
-            workspaceRoot: () => _storageService.ActiveWorkspaceRootPath);
-
-    /// <summary>A closed tab's cells let go of their live outputs, and its kernels in other programs end.</summary>
-    private static void ReleaseTab(NotebookTabViewModel tab)
-    {
-        tab.DisposeAllCellResources();
-        tab.ShutdownKernels();
-    }
-
-    private void ConfigureNotebookTab(NotebookTabViewModel tab)
-    {
-        tab.OnCloseOthers = t => CloseOtherTabs(t);
-        tab.OnCloseToTheRight = t => CloseTabsToTheRight(t);
-        tab.OnCloseAll = _ => CloseAllTabs();
-        tab.OnCopyPath = t => CopyNotebookTabPath(t);
-        tab.OnRevealInExplorer = t => RevealNotebookTabInExplorer(t);
-    }
-
-    [RelayCommand]
-    public void CloseOtherTabs(NotebookTabViewModel? tab)
-    {
-        if (tab == null || Tabs.Count <= 1) return;
-        var toRemove = Tabs.Where(t => t != tab).ToList();
-        foreach (var t in toRemove)
-        {
-            ReleaseTab(t);
-            Tabs.Remove(t);
-        }
-        if (ActiveTab != tab)
-        {
-            SelectTab(tab);
-        }
-        RefreshQuickOpenDocuments();
-    }
-
-    [RelayCommand]
-    public void CloseTabsToTheRight(NotebookTabViewModel? tab)
-    {
-        if (tab == null) return;
-        int idx = Tabs.IndexOf(tab);
-        if (idx < 0 || idx >= Tabs.Count - 1) return;
-        var toRemove = Tabs.Skip(idx + 1).ToList();
-        foreach (var t in toRemove)
-        {
-            ReleaseTab(t);
-            Tabs.Remove(t);
-        }
-        if (ActiveTab != null && !Tabs.Contains(ActiveTab))
-        {
-            SelectTab(tab);
-        }
-        RefreshQuickOpenDocuments();
-    }
-
-    [RelayCommand]
-    public void CloseAllTabs()
-    {
-        foreach (var t in Tabs)
-        {
-            ReleaseTab(t);
-        }
-        Tabs.Clear();
-        _ = NewNotebookTab();
-        RefreshQuickOpenDocuments();
-    }
-
-    public void CopyNotebookTabPath(NotebookTabViewModel? tab)
-    {
-        if (tab == null) return;
-        try
-        {
-            var text = !string.IsNullOrEmpty(tab.FilePath) ? tab.FilePath : tab.Title;
-            _ = CopyTextToClipboardAsync(text);
-        }
-        catch
-        {
-        }
-    }
-
-    public void RevealNotebookTabInExplorer(NotebookTabViewModel? tab)
-    {
-        if (tab == null) return;
-        SelectedActivityBarIndex = 0; // Explorer
-        IsSideBarVisible = true;
-        HighlightExplorerItem(tab.Title);
-    }
-
-    [RelayCommand]
-    public void ShowQuickOpen(string? mode = null)
-    {
-        RefreshQuickOpenDocuments();
-        InitializeQuickOpenCommands();
-        var qMode = mode?.ToLowerInvariant() switch
-        {
-            "commands" => QuickOpenMode.Commands,
-            "line" => QuickOpenMode.GoToLine,
-            _ => QuickOpenMode.Files
-        };
-        QuickOpen.Show(qMode);
-    }
-
-    [RelayCommand]
-    public void ShowCommandPalette() => ShowQuickOpen("commands");
-
-    [RelayCommand]
-    public async Task ExportActiveNotebookAsIpynbAsync()
-    {
-        if (ActiveTab == null) return;
-        var content = DocumentExportService.ExportNotebookToIpynb(ActiveTab.Notebook, _languages.Registry);
-        await CopyTextToClipboardAsync(content);
-        Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Jupyter .ipynb and copied to clipboard!");
-    }
-
-    [RelayCommand]
-    public async Task ExportActiveNotebookAsMarkdownAsync()
-    {
-        if (ActiveTab == null) return;
-        var content = DocumentExportService.ExportNotebookToMarkdown(ActiveTab.Notebook, _languages.Registry);
-        await CopyTextToClipboardAsync(content);
-        Debug.WriteLine($"[CSharpEditorPlugin] Notebook '{ActiveTab.Title}' exported to Markdown .md and copied to clipboard!");
-    }
-
-    private static async Task CopyTextToClipboardAsync(string text)
-    {
-        try
-        {
-            var clipboard = Avalonia.Application.Current?.ApplicationLifetime switch
-            {
-                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop =>
-                    desktop.Windows.FirstOrDefault(w => w.IsActive)?.Clipboard ?? desktop.MainWindow?.Clipboard,
-                Avalonia.Controls.ApplicationLifetimes.ISingleViewApplicationLifetime singleView =>
-                    Avalonia.Controls.TopLevel.GetTopLevel(singleView.MainView)?.Clipboard,
-                _ => null
-            };
-            if (clipboard != null)
-            {
-                await clipboard.SetTextAsync(text);
-            }
-        }
-        catch
-        {
-        }
-    }
-
-    private void InitializeQuickOpenCommands()
-    {
-        var cmds = new List<QuickOpenItem>
-        {
-            new() { Title = "Notebook: Run Active Cell", Subtitle = "Execute currently selected cell (Shift+Enter)", Category = "Notebook", IconKind = "Play", IconColorHex = "#75D59A", ShortcutHint = "Shift+Enter", ExecuteAction = () => { if (ActiveTab?.ActiveCell != null) ActiveTab.ActiveCell.RunCellCommand.Execute(null); } },
-            new() { Title = "Notebook: Run All Cells", Subtitle = "Sequential execution of all code cells", Category = "Notebook", IconKind = "FastForward", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Shift+Enter", ExecuteAction = () => { _ = RunAllCellsAsync(); } },
-            new() { Title = "Notebook: Add Code Cell Below", Subtitle = "Insert a new C# code cell below active cell", Category = "Notebook", IconKind = "CodeBraces", IconColorHex = "#58A6FF", ExecuteAction = () => AddCodeCell(ActiveTab?.ActiveCell) },
-            new() { Title = "Notebook: Add Markdown Cell", Subtitle = "Insert a new documentation cell", Category = "Notebook", IconKind = "FormatHeaderPound", IconColorHex = "#4EC9B0", ExecuteAction = () => AddMarkdownCell(ActiveTab?.ActiveCell) },
-            new() { Title = "Notebook: Format All Cells", Subtitle = "Format C# code across all cells", Category = "Notebook", IconKind = "FormatPaint", IconColorHex = "#75D59A", ExecuteAction = FormatAllCodeCells },
-            new() { Title = "Notebook: Clear All Outputs", Subtitle = "Clear stdout, stderr, and rich visuals", Category = "Notebook", IconKind = "Broom", IconColorHex = "#8B949E", ExecuteAction = ClearAllOutputs },
-            new() { Title = "Export: Export to Jupyter Notebook (.ipynb)", Subtitle = "Copy standard Jupyter v4 JSON to clipboard", Category = "Export", IconKind = "ExportVariant", IconColorHex = "#D97706", ExecuteAction = () => _ = ExportActiveNotebookAsIpynbAsync() },
-            new() { Title = "Export: Export to Markdown (.md)", Subtitle = "Copy GitHub Markdown formatted document to clipboard", Category = "Export", IconKind = "ExportVariant", IconColorHex = "#75D59A", ExecuteAction = () => _ = ExportActiveNotebookAsMarkdownAsync() },
-            new() { Title = "File: Save Notebook", Subtitle = "Persist current notebook changes", Category = "File", IconKind = "ContentSaveOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+S", ExecuteAction = () => { _ = SaveAsync(); } },
-            new() { Title = "File: New Notebook Tab", Subtitle = "Open a new interactive notebook tab", Category = "File", IconKind = "FilePlusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+N", ExecuteAction = () => { _ = NewNotebookTab(); } },
-            new() { Title = "File: Close Active Tab", Subtitle = "Close the current notebook tab", Category = "Tabs", IconKind = "Close", IconColorHex = "#E5534B", ShortcutHint = "Ctrl+W", ExecuteAction = () => CloseTab(ActiveTab) },
-            new() { Title = "File: Close Other Tabs", Subtitle = "Close all tabs except active", Category = "Tabs", IconKind = "CloseBoxMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = () => CloseOtherTabs(ActiveTab) },
-            new() { Title = "File: Close All Tabs", Subtitle = "Close all open notebook tabs", Category = "Tabs", IconKind = "CloseCircleMultipleOutline", IconColorHex = "#E5534B", ExecuteAction = CloseAllTabs },
-            new() { Title = "Preferences: Open User Customization Script (init.csx)", Subtitle = "Open ~/.frysharp/init.csx to configure themes, shortcuts, and startup logic", Category = "Preferences", IconKind = "CogOutline", IconColorHex = "#A371F7", ExecuteAction = () => { _ = OpenUserInitScriptAsync(); } },
-            new() { Title = "Preferences: Open Workspace Customization Script (.frysharp/init.csx)", Subtitle = "Open workspace .frysharp/init.csx for project-specific customization", Category = "Preferences", IconKind = "FolderCogOutline", IconColorHex = "#A371F7", ExecuteAction = () => { _ = OpenWorkspaceInitScriptAsync(); } },
-            new() { Title = "Customization: Apply Active Cell as Customization", Subtitle = "Directly execute active cell code to hot-reload customization state", Category = "Customization", IconKind = "PlayCircleOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Alt+R", ExecuteAction = () => { _ = ApplyActiveCellAsCustomizationAsync(); } },
-            new() { Title = "Customization: Reload Customizations (~/.frysharp/init.csx)", Subtitle = "Recompile and apply user customization script and theme tokens", Category = "Customization", IconKind = "Refresh", IconColorHex = "#A371F7", ShortcutHint = "Ctrl+Shift+R", ExecuteAction = () => { _ = ReloadCustomizationsAsync(); } },
-            new() { Title = "Customization: Theme - Dark+ (Default)", Subtitle = "Apply Dark+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#2F81F7", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dark-plus") },
-            new() { Title = "Customization: Theme - Light+ (Default)", Subtitle = "Apply Light+ standard modern palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#0969DA", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("light-plus") },
-            new() { Title = "Customization: Theme - Dracula Pro", Subtitle = "Apply Dracula vibrant purple palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#BD93F9", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("dracula") },
-            new() { Title = "Customization: Theme - Cyberpunk Neon", Subtitle = "Apply Cyberpunk electric yellow & neon cyan palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#FFE600", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("cyberpunk") },
-            new() { Title = "Customization: Theme - Monokai Classic", Subtitle = "Apply Monokai high-contrast warm palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#A6E22E", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("monokai") },
-            new() { Title = "Customization: Theme - One Dark Pro", Subtitle = "Apply Atom One Dark iconic balanced dark palette", Category = "Customization", IconKind = "PaletteOutline", IconColorHex = "#61AFEF", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ApplyTheme("one-dark") },
-            new() { Title = "Customization: Reset Theme to Defaults", Subtitle = "Clear color overrides and reset to active theme defaults", Category = "Customization", IconKind = "Restore", IconColorHex = "#E5534B", ExecuteAction = () => Services.Extensibility.StudioAppContext.Instance.Themes.ResetToDefaults() },
-            new() { Title = "View: Zoom In (Increase Font Size)", Subtitle = "Increase notebook cell typography size", Category = "View", IconKind = "MagnifyPlusOutline", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+=", ExecuteAction = ZoomIn },
-            new() { Title = "View: Zoom Out (Decrease Font Size)", Subtitle = "Decrease notebook cell typography size", Category = "View", IconKind = "MagnifyMinusOutline", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+-", ExecuteAction = ZoomOut },
-            new() { Title = "View: Reset Font Zoom", Subtitle = "Reset typography to default 100% (13px)", Category = "View", IconKind = "MagnifyScan", IconColorHex = "#D97706", ShortcutHint = "Ctrl+0", ExecuteAction = ResetZoom },
-            new() { Title = "View: Toggle Primary Side Bar", Subtitle = "Expand or collapse activity sidebar", Category = "View", IconKind = "DockLeft", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+B", ExecuteAction = ToggleSideBar },
-            new() { Title = "View: Show Explorer", Subtitle = "Browse workspace notebooks and scripts", Category = "Navigation", IconKind = "FolderMultipleOutline", IconColorHex = "#D97706", ShortcutHint = "Ctrl+Shift+E", ExecuteAction = () => SelectActivityBarItem(0) },
-            new() { Title = "View: Show Outline", Subtitle = "Navigate cells in table of contents", Category = "Navigation", IconKind = "FormatListBulleted", IconColorHex = "#58A6FF", ShortcutHint = "Ctrl+Shift+O", ExecuteAction = () => SelectActivityBarItem(1) },
-            new() { Title = "View: Show Live Variables", Subtitle = "Inspect session state and memory values", Category = "Navigation", IconKind = "VariableBox", IconColorHex = "#75D59A", ShortcutHint = "Ctrl+Shift+V", ExecuteAction = () => SelectActivityBarItem(2) },
-            new() { Title = "Hub: Return to Workspace Manager", Subtitle = "Navigate back to Hub dashboard", Category = "Navigation", IconKind = "HomeOutline", IconColorHex = "#58A6FF", ExecuteAction = BackToHub }
-        };
-
-        foreach (var desc in Services.Extensibility.StudioAppContext.Instance.CommandPipeline.Descriptors)
-        {
-            cmds.Add(new QuickOpenItem
-            {
-                Title = $"{desc.Category ?? "Extension"}: {desc.Title}",
-                Subtitle = desc.Id,
-                Category = desc.Category ?? "Extension",
-                IconKind = "ToyBrickOutline",
-                IconColorHex = "#A371F7",
-                ShortcutHint = desc.Shortcut ?? string.Empty,
-                ExecuteAction = desc.Action
-            });
-        }
-
-        QuickOpen.RegisterCommands(cmds);
-    }
-
-    public void RefreshQuickOpenDocuments()
-    {
-        var docs = new List<QuickOpenItem>();
-
-        foreach (var tab in Tabs)
-        {
-            docs.Add(new QuickOpenItem
-            {
-                Title = tab.Title,
-                Subtitle = tab.IsActive ? "Currently Active Notebook" : "Open Tab",
-                Category = "Open Tabs",
-                IconKind = "NotebookOutline",
-                IconColorHex = "#D97706",
-                Kind = QuickOpenItemKind.Document,
-                ExecuteAction = () => SelectTab(tab)
-            });
-        }
-
-        QuickOpen.RegisterDocuments(docs);
-    }
-
-    private void OnExplorerItemClicked(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
-
-    public void OpenDocument(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OpenDocumentAsync(item);
-
-    public async Task OpenDocumentAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item.IsDirectory)
-        {
-            item.IsExpanded = !item.IsExpanded;
-            return;
-        }
-
-        DeselectAll(ExplorerRootItems);
-        item.IsSelected = true;
-
-        using (BeginLoading("Opening File...", item.Name))
-        {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
-            {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
-            }
-
-            // API server documents open in the Server Studio.
-            if (item.FileExtension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_openServerAction != null && !string.IsNullOrEmpty(item.DocumentId))
-                {
-                    var server = await Task.Run(async () => await _storageService.LoadServerDocumentAsync(item.DocumentId));
-                    if (server != null)
-                    {
-                        _openServerAction.Invoke(server);
-                        return;
-                    }
-                }
-            }
-
-            // Non-notebook documents (scripts, plain source files, text and data files) open in the Code Studio.
-            if (!item.FileExtension.Equals(".frynb", StringComparison.OrdinalIgnoreCase) &&
-                !item.FileExtension.Equals(".ipynb", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_openScriptAction != null)
-                {
-                    ScriptDocumentItem? sc = null;
-                    if (!string.IsNullOrEmpty(item.DocumentId))
-                    {
-                        sc = await Task.Run(async () => await _storageService.LoadScriptAsync(item.DocumentId));
-                    }
-                    if (sc == null && !string.IsNullOrEmpty(item.FullPath))
-                    {
-                        var openRes = await Task.Run<OpenProjectResult>(async () => await _storageService.OpenExternalProjectAsync(item.FullPath));
-                        if (openRes.Success && !string.IsNullOrEmpty(openRes.PrimaryDocumentId))
-                        {
-                            sc = await Task.Run(async () => await _storageService.LoadScriptAsync(openRes.PrimaryDocumentId));
-                        }
-                    }
-
-                    if (sc != null)
-                    {
-                        _openScriptAction.Invoke(sc);
-                        return;
-                    }
-                }
-            }
-
-            var fileName = item.Name;
-            var folderName = item.Parent?.Name ?? "Library";
-            var filePath = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : fileName;
-            var docTitle = fileName.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-                ? fileName.Substring(0, fileName.Length - 6)
-                : fileName;
-
-            var existingTab = Tabs.FirstOrDefault(t =>
-                (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-                string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
-
-            if (existingTab != null)
-            {
-                SelectTab(existingTab);
-                return;
-            }
-
-            NotebookDocumentItem? loadedDoc = null;
-            if (!string.IsNullOrEmpty(item.DocumentId))
-            {
-                loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(item.DocumentId));
-            }
-
-            if (loadedDoc == null)
-            {
-                var summaries = await Task.Run(async () => await _storageService.LoadWorkspaceSummariesAsync());
-                var match = summaries.FirstOrDefault(s => s.IsNotebook && (
-                    string.Equals(s.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(s.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(s.Title, fileName, StringComparison.OrdinalIgnoreCase)));
-
-                if (match != null)
-                {
-                    loadedDoc = await Task.Run(async () => await _storageService.LoadNotebookAsync(match.Id));
-                    if (loadedDoc != null) item.DocumentId = match.Id;
-                }
-            }
-
-            if (loadedDoc == null)
-            {
-                loadedDoc = new NotebookDocumentItem
-                {
-                    Id = item.DocumentId ?? Guid.NewGuid().ToString("N"),
-                    Title = docTitle,
-                    Category = "Interactive",
-                    Created = DateTime.UtcNow,
-                    LastModified = DateTime.UtcNow
-                };
-
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Markdown,
-                    Source = $"# 📓 {docTitle}\nWrite documentation or notes in this cell.",
-                    IsMarkdownPreviewMode = true
-                });
-                loadedDoc.Cells.Add(new NotebookCellItem
-                {
-                    Type = CellType.Code,
-                    Source = "// Write C# code here\nConsole.WriteLine(\"Hello from notebook!\");"
-                });
-
-                await Task.Run(async () => await _storageService.SaveNotebookAsync(loadedDoc));
-                item.DocumentId = loadedDoc.Id;
-            }
-
-            var newTab = CreateTab(loadedDoc, folderName, filePath);
-            ConfigureNotebookTab(newTab);
-            Tabs.Add(newTab);
-            SelectTab(newTab);
-        }
-    }
-
-    [RelayCommand]
-    public async Task RunSingleCellAsync(NotebookCellViewModel cell)
-    {
-        if (ActiveTab != null)
-        {
-            await ActiveTab.RunSingleCellAsync(cell);
-        }
-    }
-
-    [RelayCommand]
-    public async Task RunCellAndSelectNextAsync(NotebookCellViewModel? cell = null)
-    {
-        if (ActiveTab != null)
-        {
-            await ActiveTab.RunCellAndSelectNextAsync(cell);
-        }
-    }
-
-    [RelayCommand]
-    public void AddCellAbove()
-    {
-        ActiveTab?.AddCellAbove(ActiveTab.ActiveCell, CellType.Code);
-    }
-
-    [RelayCommand]
-    public void DeleteActiveCell()
-    {
-        if (ActiveTab?.ActiveCell != null)
-        {
-            ActiveTab.DeleteCell(ActiveTab.ActiveCell);
-        }
-    }
-
-    [RelayCommand]
-    public async Task RunAllCellsAsync()
-    {
-        if (ActiveTab != null)
-        {
-            await ActiveTab.RunAllCellsAsync();
-        }
-    }
-
-    [RelayCommand]
-    public void RestartKernel()
-    {
-        ActiveTab?.RestartKernel();
-    }
-
-    [RelayCommand]
-    public void InterruptExecution()
-    {
-        ActiveTab?.InterruptExecution();
-    }
-
-    [RelayCommand]
-    public void ClearAllOutputs()
-    {
-        ActiveTab?.ClearAllOutputs();
-    }
-
-    [RelayCommand]
-    public void CollapseAllInputs()
-    {
-        ActiveTab?.CollapseAllInputs();
-    }
-
-    [RelayCommand]
-    public void ExpandAllInputs()
-    {
-        ActiveTab?.ExpandAllInputs();
-    }
-
-    [RelayCommand]
-    public void CollapseAllOutputs()
-    {
-        ActiveTab?.CollapseAllOutputs();
-    }
-
-    [RelayCommand]
-    public void ExpandAllOutputs()
-    {
-        ActiveTab?.ExpandAllOutputs();
-    }
-
-    [RelayCommand]
-    public void CollapseAllCells()
-    {
-        ActiveTab?.CollapseAllCells();
-    }
-
-    [RelayCommand]
-    public void ExpandAllCells()
-    {
-        ActiveTab?.ExpandAllCells();
-    }
-
-    [RelayCommand]
-    public void FoldAllCodeBlocks()
-    {
-        ActiveTab?.FoldAllCodeBlocks();
-    }
-
-    [RelayCommand]
-    public void UnfoldAllCodeBlocks()
-    {
-        ActiveTab?.UnfoldAllCodeBlocks();
-    }
-
-    [RelayCommand]
-    public void FormatAllCodeCells()
-    {
-        ActiveTab?.FormatAllCodeCells();
-    }
-
-    [RelayCommand]
-    public void SelectCell(NotebookCellViewModel? cell)
-    {
-        ActiveTab?.SelectCell(cell);
-    }
-
-    [RelayCommand]
-    public void AddCodeCell(NotebookCellViewModel? afterCell = null)
-    {
-        ActiveTab?.AddCodeCell(afterCell);
-    }
-
-    [RelayCommand]
-    public void AddMarkdownCell(NotebookCellViewModel? afterCell = null)
-    {
-        ActiveTab?.AddMarkdownCell(afterCell);
-    }
-
-    [RelayCommand]
-    public void ToggleOutline()
-    {
-        SelectActivityBarItem(1);
-    }
-
-    [RelayCommand]
-    public void ToggleVariableInspector()
-    {
-        SelectActivityBarItem(2);
-    }
-
-    [RelayCommand]
-    public async Task SaveAsync()
-    {
-        if (ActiveTab == null) return;
-
-        // An ephemeral notebook must be saved even when not yet modified (user pressed Ctrl+S on a fresh tab).
-        if (ActiveTab.IsModified || ActiveTab.Notebook.IsEphemeral)
-        {
-            ActiveTab.Notebook.IsEphemeral = false;
-            ActiveTab.Notebook.LastModified = DateTime.UtcNow;
-            var saved = await _storageService.SaveNotebookAsync(ActiveTab.Notebook);
-            ActiveTab.IsModified = !saved;
-            CompilerStatusText = saved ? "Saved" : "⚠️ Save failed — check disk space/permissions";
-        }
-    }
+    // ── Navigation ────────────────────────────────────────────────────────────
 
     [RelayCommand]
     public void BackToHub()
@@ -1173,6 +507,8 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         _navigateToSettingsAction?.Invoke();
     }
 
+    // ── Explorer panel toggle commands ────────────────────────────────────────
+
     [RelayCommand]
     public void ToggleWorkspaceExpand()
     {
@@ -1186,6 +522,18 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     }
 
     [RelayCommand]
+    public void ToggleOutline()
+    {
+        SelectActivityBarItem(1);
+    }
+
+    [RelayCommand]
+    public void ToggleVariableInspector()
+    {
+        SelectActivityBarItem(2);
+    }
+
+    [RelayCommand]
     public void ToggleOutlineExpanded()
     {
         IsOutlineExpanded = !IsOutlineExpanded;
@@ -1196,838 +544,5 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public void ToggleTimelineExpanded()
     {
         IsTimelineExpanded = !IsTimelineExpanded;
-    }
-
-    [RelayCommand]
-    public async Task DeleteSelectedExplorerItem()
-    {
-        var selected = FindSelectedItem(ExplorerRootItems);
-        if (selected != null)
-        {
-            await DeleteExplorerItemAsync(selected);
-        }
-    }
-
-    public void DeleteExplorerItem(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = DeleteExplorerItemAsync(item);
-
-    [RelayCommand]
-    public async Task DeleteExplorerItemAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item == null) return;
-
-        if (item.IsExternalGroup) return;
-
-        if (item.IsDirectory)
-        {
-            var descendantIds = CollectDescendantDocumentIds(item);
-            if (descendantIds.Count > 0)
-            {
-                foreach (var tab in Tabs.Where(t => descendantIds.Contains(t.Notebook.Id)).ToList())
-                {
-                    CloseTab(tab);
-                }
-            }
-
-            try
-            {
-                await _storageService.DeleteFolderAsync(item.FullPath);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete folder '{item.FullPath}': {ex.Message}");
-            }
-        }
-        else if (!string.IsNullOrEmpty(item.DocumentId))
-        {
-            try
-            {
-                await _storageService.DeleteItemAsync(item.DocumentId);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to delete '{item.DocumentId}': {ex.Message}");
-            }
-
-            var openTab = Tabs.FirstOrDefault(t =>
-                string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrEmpty(item.FullPath) && string.Equals(t.FilePath, item.FullPath, StringComparison.OrdinalIgnoreCase)));
-
-            if (openTab != null)
-            {
-                CloseTab(openTab);
-            }
-        }
-
-        if (item.Parent != null)
-        {
-            var parent = item.Parent;
-            parent.Children.Remove(item);
-
-            if (parent.IsExternalGroup && parent.Children.Count == 0)
-            {
-                ExplorerRootItems.Remove(parent);
-            }
-        }
-        else
-        {
-            ExplorerRootItems.Remove(item);
-        }
-
-        if (item.IsSelected)
-        {
-            var nextFile = FindFirstFile(ExplorerRootItems);
-            if (nextFile != null)
-            {
-                await OpenDocumentAsync(nextFile);
-            }
-        }
-    }
-
-    public void DuplicateExplorerItem(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = DuplicateExplorerItemAsync(item);
-
-    [RelayCommand]
-    public async Task DuplicateExplorerItemAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item == null || item.IsDirectory) return;
-
-        var parent = item.Parent;
-        var originalTitle = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? item.Name.Substring(0, item.Name.Length - 6)
-            : item.Name;
-        var copyTitle = $"{originalTitle} Copy";
-        var copyFileName = $"{copyTitle}.frynb";
-
-        NotebookDocumentItem? origDoc = null;
-        if (!string.IsNullOrEmpty(item.DocumentId))
-        {
-            origDoc = await _storageService.LoadNotebookAsync(item.DocumentId);
-        }
-        if (origDoc == null)
-        {
-            var openTab = Tabs.FirstOrDefault(t => string.Equals(t.Title, item.Name, StringComparison.OrdinalIgnoreCase));
-            origDoc = openTab?.Notebook;
-        }
-
-        var copyDoc = new NotebookDocumentItem
-        {
-            Id = Guid.NewGuid().ToString("N"),
-            Title = copyTitle,
-            Category = origDoc?.Category ?? "Interactive",
-            Description = origDoc?.Description ?? "",
-            Created = DateTime.UtcNow,
-            LastModified = DateTime.UtcNow
-        };
-
-        if (origDoc != null && origDoc.Cells.Count > 0)
-        {
-            foreach (var cell in origDoc.Cells)
-            {
-                copyDoc.Cells.Add(new NotebookCellItem
-                {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Type = cell.Type,
-                    Source = cell.Source,
-                    IsMarkdownPreviewMode = cell.IsMarkdownPreviewMode,
-                    IsInputCollapsed = cell.IsInputCollapsed,
-                    IsOutputCollapsed = cell.IsOutputCollapsed,
-                    IsOutputScrolled = cell.IsOutputScrolled
-                });
-            }
-        }
-        else
-        {
-            copyDoc.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Markdown,
-                Source = $"# 📓 {copyTitle}\nDuplicated notebook workspace.",
-                IsMarkdownPreviewMode = true
-            });
-            copyDoc.Cells.Add(new NotebookCellItem
-            {
-                Type = CellType.Code,
-                Source = "// Write C# code here\nConsole.WriteLine(\"Hello from duplicate notebook!\");"
-            });
-        }
-
-        await _storageService.SaveNotebookAsync(copyDoc, parent?.FullPath);
-
-        var copyPath = string.IsNullOrEmpty(parent?.FullPath) ? copyFileName : $"{parent!.FullPath}/{copyFileName}";
-        var copyItem = CreateFileItem(copyFileName, copyDoc.Id, parent, copyPath);
-
-        AddToTree(parent, copyItem);
-        if (parent != null) parent.IsExpanded = true;
-
-        await OpenDocumentAsync(copyItem);
-    }
-
-    [RelayCommand]
-    public void CopyItemPath(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item == null) return;
-        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
-        var abs = Path.GetFullPath(Path.Combine(_storageService.ActiveWorkspaceRootPath, rel.Replace('/', Path.DirectorySeparatorChar)));
-        _ = CopyTextToClipboardAsync(abs);
-        CompilerStatusText = $"Copied full path: {abs}";
-    }
-
-    [RelayCommand]
-    public void CopyItemRelativePath(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item == null) return;
-        var rel = !string.IsNullOrEmpty(item.FullPath) ? item.FullPath : item.Name;
-        _ = CopyTextToClipboardAsync(rel);
-        CompilerStatusText = $"Copied relative path: {rel}";
-    }
-
-    [RelayCommand]
-    public async Task NewFile()
-    {
-        var selected = FindSelectedItem(ExplorerRootItems);
-        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
-
-        if (targetFolder != null)
-        {
-            await NewFileUnderItemAsync(targetFolder);
-        }
-        else
-        {
-            await NewNotebookTab();
-        }
-    }
-
-    public void NewFileUnderItem(CodeStudio.Explorer.ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
-
-    [RelayCommand]
-    public async Task NewFileUnderItemAsync(CodeStudio.Explorer.ExplorerItemViewModel target)
-    {
-        var folder = target.IsDirectory ? target : target.Parent;
-        var timestamp = DateTime.Now.ToString("HHmmss");
-        var title = $"Notebook_{timestamp}";
-        var fileName = $"{title}.frynb";
-        var folderPath = folder?.FullPath;
-
-        NotebookDocumentItem newDoc;
-        try
-        {
-            newDoc = await _storageService.CreateNewNotebookAsync(title, folderPath: folderPath);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create notebook: {ex.Message}");
-            newDoc = new NotebookDocumentItem { Id = Guid.NewGuid().ToString("N"), Title = title };
-        }
-
-        var fullPath = string.IsNullOrEmpty(folderPath) ? fileName : $"{folderPath}/{fileName}";
-        CodeStudio.Explorer.ExplorerItemViewModel? newFile = null;
-
-        // Listing a folder that has not been listed yet finds the new notebook on disk: adding a row too would show it twice.
-        if (folder is { ChildrenLoaded: false })
-        {
-            await LazyExplorer.LoadChildrenAsync(folder);
-            folder.IsExpanded = true;
-            newFile = folder.Children.FirstOrDefault(c => string.Equals(c.DocumentId, newDoc.Id, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (newFile == null)
-        {
-            newFile = CreateFileItem(fileName, newDoc.Id, folder, fullPath);
-            AddToTree(folder, newFile);
-            if (folder != null) folder.IsExpanded = true;
-        }
-
-        await OpenDocumentAsync(newFile);
-        newFile.StartRename();
-    }
-
-    [RelayCommand]
-    public async Task NewFolder()
-    {
-        var selected = FindSelectedItem(ExplorerRootItems);
-        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
-        await CreateFolderCoreAsync(targetFolder);
-    }
-
-    public void NewFolderUnderItem(CodeStudio.Explorer.ExplorerItemViewModel target) => _ = NewFolderUnderItemAsync(target);
-
-    [RelayCommand]
-    public async Task NewFolderUnderItemAsync(CodeStudio.Explorer.ExplorerItemViewModel target)
-    {
-        var folder = target.IsDirectory ? target : target.Parent;
-        await CreateFolderCoreAsync(folder);
-    }
-
-    private async Task CreateFolderCoreAsync(CodeStudio.Explorer.ExplorerItemViewModel? parentFolder)
-    {
-        string newRelativePath;
-        try
-        {
-            newRelativePath = await _storageService.CreateFolderAsync(parentFolder?.FullPath, "New Folder");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create folder: {ex.Message}");
-            return;
-        }
-
-        var name = newRelativePath.Contains('/') ? newRelativePath[(newRelativePath.LastIndexOf('/') + 1)..] : newRelativePath;
-
-        // Under a folder that has not been listed yet, listing it finds the new folder on disk: adding a row too would show it twice.
-        if (parentFolder is { ChildrenLoaded: false })
-        {
-            await LazyExplorer.LoadChildrenAsync(parentFolder);
-            parentFolder.IsExpanded = true;
-            parentFolder.Children.FirstOrDefault(c => c.IsDirectory && string.Equals(c.FullPath, newRelativePath, StringComparison.OrdinalIgnoreCase))?.StartRename();
-            return;
-        }
-
-        var newFolder = CreateFolderItem(name, newRelativePath, isExpanded: true, parent: parentFolder);
-        AddToTree(parentFolder, newFolder);
-        if (parentFolder != null) parentFolder.IsExpanded = true;
-        newFolder.StartRename();
-    }
-
-    [RelayCommand]
-    public async Task OpenExternalProjectAsync(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path)) return;
-
-        using (BeginLoading("Opening Project...", Path.GetFileName(path) ?? path))
-        {
-            await Task.Yield();
-            try
-            {
-                var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(path));
-                if (!result.Success)
-                {
-                    if (ActiveTab != null)
-                    {
-                        ActiveTab.KernelStatusText = result.Message;
-                    }
-                    return;
-                }
-
-                await RefreshExplorer();
-
-                var workspaceFolder = _storageService.ActiveWorkspaceRootPath;
-                if (!string.IsNullOrWhiteSpace(workspaceFolder))
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        var app = Services.Extensibility.StudioAppContext.Instance;
-                        await app.CustomizationManager.LoadWorkspaceCustomizationsAsync(workspaceFolder);
-                        var workspaceExtDir = Path.Combine(workspaceFolder, ".frysharp", "extensions");
-                        if (Directory.Exists(workspaceExtDir))
-                        {
-                            await app.ExtensionManager.DiscoverAndLoadAllAsync(workspaceExtDir, enableHotReload: true);
-                        }
-                    });
-                }
-
-                if (!string.IsNullOrEmpty(result.PrimaryDocumentId))
-                {
-                    var loaded = await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId));
-                    if (loaded != null)
-                    {
-                        UpdateActiveNotebook(loaded);
-                    }
-                }
-
-                if (ActiveTab != null)
-                {
-                    ActiveTab.KernelStatusText = result.Message;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to open external project '{path}': {ex.Message}");
-                if (ActiveTab != null)
-                {
-                    ActiveTab.KernelStatusText = $"Error opening project: {ex.Message}";
-                }
-            }
-        }
-    }
-
-    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
-    // workspace scan only when this has moved.
-    private long _explorerStructureVersion = -1;
-
-    [RelayCommand]
-    public async Task RefreshExplorer()
-    {
-        try
-        {
-            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(await _storageService.LoadExplorerListingAsync());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh explorer tree: {ex.Message}");
-        }
-    }
-
-    /// <summary>Reloads the Explorer only if the workspace changed since it was built (a script created in the Hub, say).</summary>
-    public async Task RefreshExplorerIfStaleAsync()
-    {
-        if (_explorerStructureVersion != _storageService.StructureVersion)
-        {
-            await RefreshExplorer();
-        }
-    }
-
-    // A page that is not on screen leaves refreshing to its next visit. Assumed on screen until told otherwise (the
-    // studio is also used without a host that says so).
-    private bool _isPageActive = true;
-
-    // Shown again after other pages (or other programs) may have added, removed or renamed items: catch up.
-    public void OnActivated()
-    {
-        _isPageActive = true;
-        UpdateExtensibilityDocumentResolver();
-        _ = RefreshExplorerIfStaleAsync();
-
-        // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
-        _ = _storageService.FileIndex;
-    }
-
-    // Go to File: opens any file of the workspace by its path. A notebook opens here, anything else in the Code Studio.
-    public async Task OpenWorkspaceFileAsync(string fullPath)
-    {
-        using (BeginLoading("Loading File...", Path.GetFileName(fullPath) ?? fullPath))
-        {
-            await Task.Yield();
-            var result = await Task.Run(async () => await _storageService.OpenExternalProjectAsync(fullPath));
-            if (!result.Success || string.IsNullOrEmpty(result.PrimaryDocumentId))
-            {
-                if (ActiveTab != null) ActiveTab.KernelStatusText = result.Message;
-                return;
-            }
-
-            if (result.PrimaryDocumentKind == WorkspaceItemKind.Notebook)
-            {
-                if (await Task.Run(async () => await _storageService.LoadNotebookAsync(result.PrimaryDocumentId)) is { } notebook)
-                {
-                    UpdateActiveNotebook(notebook);
-                }
-                return;
-            }
-
-            if (_openScriptAction != null && await Task.Run(async () => await _storageService.LoadScriptAsync(result.PrimaryDocumentId)) is { } script)
-            {
-                _openScriptAction.Invoke(script);
-            }
-        }
-    }
-
-    public void OnDeactivated() => _isPageActive = false;
-
-    [RelayCommand]
-    public void CollapseAllExplorer()
-    {
-        foreach (var item in ExplorerRootItems)
-        {
-            CollapseItemRecursive(item);
-        }
-    }
-
-    private void CollapseItemRecursive(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item.IsDirectory)
-        {
-            item.IsExpanded = false;
-            foreach (var child in item.Children)
-            {
-                CollapseItemRecursive(child);
-            }
-        }
-    }
-
-    private LazyExplorerTree? _lazyExplorer;
-
-    // The Explorer of a workspace too big to list at once: one folder at a time (see LazyExplorerTree).
-    private LazyExplorerTree LazyExplorer => _lazyExplorer ??= new LazyExplorerTree(
-        _storageService,
-        ExplorerRootItems,
-        ExplorerRows,
-        (name, path, parent) => CreateFolderItem(name, path, isExpanded: false, parent: parent),
-        (summary, name, fullPath, parent) =>
-        {
-            var item = CreateFileItem(name, summary.Id, parent, fullPath);
-            if (summary.IsSourceFile && _storageService.Languages.Get(summary.LanguageId) is { } language)
-            {
-                item.IsSourceFile = true;
-                item.LanguageIconKind = language.IconKind;
-                item.LanguageIconColor = language.AccentHex;
-            }
-
-            return item;
-        });
-
-    // Draws what the storage listed: the whole workspace, or (when it is too big) its top folder, the rest coming as folders open.
-    private void ShowExplorerListing(WorkspaceListing listing)
-    {
-        if (!listing.IsPartial)
-        {
-            LazyExplorer.Deactivate();
-            RebuildExplorerTree(listing.FolderPaths, listing.Items);
-            return;
-        }
-
-        LazyExplorer.Build(listing, CodeStudio.Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems));
-        foreach (var tab in Tabs.ToList())
-        {
-            EnsureDocumentInExplorer(tab.Notebook);
-        }
-
-        // Only the top folder itself can be cut off here (a nested one says so in its own rows).
-        IsExplorerTruncated = listing.IsTruncated;
-        if (ActiveTab != null)
-        {
-            HighlightExplorerItem(ActiveTab.Title);
-        }
-    }
-
-    public void PopulateExplorerTree()
-    {
-        try
-        {
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(_storageService.LoadExplorerListingAsync().GetAwaiter().GetResult());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to populate explorer tree: {ex.Message}");
-            ExplorerRootItems.Clear();
-        }
-    }
-
-    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries)
-    {
-        // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
-        using var rowsScope = ExplorerRows.Suspend();
-
-        // A refresh keeps the folders the user had open open.
-        var expandedFolders = CodeStudio.Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
-        ExplorerRootItems.Clear();
-        var folderNodes = new Dictionary<string, CodeStudio.Explorer.ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
-        // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
-        // file would be quadratic in the size of a folder.
-        var rootKey = new object();
-        var namesByFolder = new Dictionary<object, HashSet<string>>();
-
-        CodeStudio.Explorer.ExplorerItemViewModel? GetOrCreateFolder(string relativePath)
-        {
-            if (string.IsNullOrEmpty(relativePath)) return null;
-            if (folderNodes.TryGetValue(relativePath, out var existing)) return existing;
-
-            var lastSlash = relativePath.LastIndexOf('/');
-            var name = lastSlash >= 0 ? relativePath[(lastSlash + 1)..] : relativePath;
-            var parentPath = lastSlash >= 0 ? relativePath[..lastSlash] : string.Empty;
-            var parent = GetOrCreateFolder(parentPath);
-
-            var node = CreateFolderItem(name, relativePath, isExpanded: expandedFolders.Contains(relativePath), parent: parent);
-            AddToTree(parent, node);
-            folderNodes[relativePath] = node;
-            return node;
-        }
-
-        foreach (var path in folderPaths.OrderBy(p => p.Count(c => c == '/')).ThenBy(p => p, StringComparer.OrdinalIgnoreCase))
-        {
-            GetOrCreateFolder(path);
-        }
-
-        foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
-        {
-            var ext = s.DisplayExtension;
-            var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
-
-            var parent = GetOrCreateFolder(s.FolderPath);
-            var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
-
-            var folderKey = (object?)parent ?? rootKey;
-            if (!namesByFolder.TryGetValue(folderKey, out var names))
-            {
-                namesByFolder[folderKey] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            if (!names.Add(name))
-            {
-                continue;
-            }
-
-            var docItem = CreateFileItem(name, s.Id, parent, fullPath);
-            if (s.IsSourceFile && _storageService.Languages.Get(s.LanguageId) is { } language)
-            {
-                docItem.IsSourceFile = true;
-                docItem.LanguageIconKind = language.IconKind;
-                docItem.LanguageIconColor = language.AccentHex;
-            }
-            AddToTree(parent, docItem);
-        }
-
-        foreach (var tab in Tabs.ToList())
-        {
-            EnsureDocumentInExplorer(tab.Notebook);
-        }
-
-        SortExplorerTree(ExplorerRootItems);
-
-        if (ActiveTab != null)
-        {
-            HighlightExplorerItem(ActiveTab.Title);
-        }
-
-        IsExplorerTruncated = _storageService.IsWorkspaceTruncated;
-    }
-
-    private void SortExplorerTree(ObservableCollection<CodeStudio.Explorer.ExplorerItemViewModel> items)
-    {
-        using var rowsScope = ExplorerRows.Suspend();
-
-        var sorted = items.OrderByDescending<CodeStudio.Explorer.ExplorerItemViewModel, bool>(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        if (!sorted.SequenceEqual(items))
-        {
-            items.Clear();
-            foreach (var item in sorted)
-            {
-                items.Add(item);
-            }
-        }
-
-        foreach (var folder in items.Where(i => i.IsDirectory))
-        {
-            SortExplorerTree(folder.Children);
-        }
-    }
-
-    private CodeStudio.Explorer.ExplorerItemViewModel CreateFolderItem(string name, string fullPath, bool isExpanded = false, CodeStudio.Explorer.ExplorerItemViewModel? parent = null, bool isExternalGroup = false)
-    {
-        return new CodeStudio.Explorer.ExplorerItemViewModel
-        {
-            Name = name,
-            IsDirectory = true,
-            IsExternalGroup = isExternalGroup,
-            IsExpanded = isExpanded,
-            Parent = parent,
-            Depth = (parent?.Depth ?? -1) + 1,
-            FullPath = fullPath,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath,
-            OnCopyRelativePathRequested = CopyItemRelativePath
-        };
-    }
-
-    private CodeStudio.Explorer.ExplorerItemViewModel CreateFileItem(string name, string? documentId, CodeStudio.Explorer.ExplorerItemViewModel? parent, string fullPath)
-    {
-        return new CodeStudio.Explorer.ExplorerItemViewModel
-        {
-            Name = name,
-            DocumentId = documentId,
-            IsDirectory = false,
-            FileExtension = Path.GetExtension(name),
-            Parent = parent,
-            Depth = (parent?.Depth ?? -1) + 1,
-            FullPath = fullPath,
-            OnItemClicked = OnExplorerItemClicked,
-            OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
-            OnNewFolderRequested = NewFolderUnderItem,
-            OnRenameCommitted = OnItemRenamed,
-            OnDuplicateRequested = DuplicateExplorerItem,
-            OnCopyPathRequested = CopyItemPath,
-            OnCopyRelativePathRequested = CopyItemRelativePath
-        };
-    }
-
-    private void AddToTree(CodeStudio.Explorer.ExplorerItemViewModel? parent, CodeStudio.Explorer.ExplorerItemViewModel child)
-    {
-        if (parent != null)
-        {
-            parent.Children.Add(child);
-        }
-        else
-        {
-            ExplorerRootItems.Add(child);
-        }
-    }
-
-    private HashSet<string> CollectDescendantDocumentIds(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        void Walk(CodeStudio.Explorer.ExplorerItemViewModel node)
-        {
-            if (!node.IsDirectory && !string.IsNullOrEmpty(node.DocumentId))
-            {
-                ids.Add(node.DocumentId);
-            }
-            foreach (var child in node.Children)
-            {
-                Walk(child);
-            }
-        }
-
-        Walk(item);
-        return ids;
-    }
-
-    private void UpdateDescendantFullPaths(CodeStudio.Explorer.ExplorerItemViewModel node, string oldPrefix, string newPrefix)
-    {
-        foreach (var child in node.Children)
-        {
-            if (child.FullPath.StartsWith(oldPrefix, StringComparison.Ordinal))
-            {
-                child.FullPath = newPrefix + child.FullPath[oldPrefix.Length..];
-            }
-            UpdateDescendantFullPaths(child, oldPrefix, newPrefix);
-        }
-    }
-
-    private void OnItemRenamed(CodeStudio.Explorer.ExplorerItemViewModel item) => _ = OnItemRenamedAsync(item);
-
-    internal async Task OnItemRenamedAsync(CodeStudio.Explorer.ExplorerItemViewModel item)
-    {
-        if (item.IsDirectory)
-        {
-            if (item.IsExternalGroup) return;
-
-            try
-            {
-                var oldPath = item.FullPath;
-                var newPath = await _storageService.RenameFolderAsync(oldPath, item.Name);
-                UpdateDescendantFullPaths(item, oldPath, newPath);
-                item.FullPath = newPath;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CSharpEditorPlugin] Failed to rename folder '{item.FullPath}': {ex.Message}");
-            }
-            return;
-        }
-
-        if (string.IsNullOrEmpty(item.DocumentId)) return;
-
-        var newTitle = item.Name.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? item.Name.Substring(0, item.Name.Length - 6)
-            : item.Name;
-
-        var openTab = Tabs.FirstOrDefault(t => string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase));
-        if (openTab != null)
-        {
-            openTab.Title = item.Name;
-            openTab.Notebook.Title = newTitle;
-            // An ephemeral notebook is saved for the very first time on rename — clear the flag so SaveNotebookAsync writes it.
-            openTab.Notebook.IsEphemeral = false;
-            await _storageService.SaveNotebookAsync(openTab.Notebook);
-        }
-        else
-        {
-            var doc = await _storageService.LoadNotebookAsync(item.DocumentId);
-            if (doc != null)
-            {
-                doc.Title = newTitle;
-                doc.IsEphemeral = false;
-                await _storageService.SaveNotebookAsync(doc);
-            }
-        }
-    }
-
-    private void DeselectAll(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
-    {
-        foreach (var it in items)
-        {
-            it.IsSelected = false;
-            if (it.Children.Count > 0)
-            {
-                DeselectAll(it.Children);
-            }
-        }
-    }
-
-    private void HighlightExplorerItem(string fileName)
-    {
-        DeselectAll(ExplorerRootItems);
-        var docId = ActiveTab?.Notebook?.Id;
-        var match = FindItemByIdOrName(ExplorerRootItems, docId, fileName);
-        if (match != null)
-        {
-            match.IsSelected = true;
-            var parent = match.Parent;
-            while (parent != null)
-            {
-                parent.IsExpanded = true;
-                parent = parent.Parent;
-            }
-        }
-        else if (LazyExplorer.IsActive && !string.IsNullOrEmpty(docId))
-        {
-            _ = RevealInLazyExplorerAsync(docId);
-        }
-    }
-
-    // A big workspace lists a folder when it is opened: open the folders down to the notebook, then highlight it.
-    private async Task RevealInLazyExplorerAsync(string documentId)
-    {
-        var item = await LazyExplorer.RevealAsync(documentId);
-        if (!string.Equals(ActiveTab?.Notebook?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
-
-        // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
-        // ActiveTab?.Notebook is confirmed non-null by line 1845 (we returned early if their Id didn't match), but
-        // capture it in a local so the nullable flow analysis doesn't have to track the chained dereference.
-        var activeNotebook = ActiveTab?.Notebook;
-        if (item == null && activeNotebook != null)
-            item = EnsureDocumentInExplorer(activeNotebook, evenIfInWorkspace: true);
-        if (item != null)
-        {
-            DeselectAll(ExplorerRootItems);
-            item.IsSelected = true;
-        }
-    }
-
-    private CodeStudio.Explorer.ExplorerItemViewModel? FindItemByIdOrName(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items, string? docId, string name)
-    {
-        foreach (var it in items)
-        {
-            if (!string.IsNullOrEmpty(docId) && string.Equals(it.DocumentId, docId, StringComparison.OrdinalIgnoreCase))
-                return it;
-
-            if (string.Equals(it.Name, name, StringComparison.OrdinalIgnoreCase))
-                return it;
-
-            var found = FindItemByIdOrName(it.Children, docId, name);
-            if (found != null) return found;
-        }
-        return null;
-    }
-
-    private CodeStudio.Explorer.ExplorerItemViewModel? FindSelectedItem(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
-    {
-        foreach (var it in items)
-        {
-            if (it.IsSelected) return it;
-            var found = FindSelectedItem(it.Children);
-            if (found != null) return found;
-        }
-        return null;
-    }
-
-    private CodeStudio.Explorer.ExplorerItemViewModel? FindFirstFile(IEnumerable<CodeStudio.Explorer.ExplorerItemViewModel> items)
-    {
-        foreach (var it in items)
-        {
-            if (!it.IsDirectory) return it;
-            var found = FindFirstFile(it.Children);
-            if (found != null) return found;
-        }
-        return null;
     }
 }

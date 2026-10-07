@@ -8,21 +8,28 @@
              xmlns:common1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              xmlns:ai="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.AI"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
              x:DataType="common:CSharpStudioHostViewModel"
+             activities:ActivityScope.Presenter="{Binding Activity}"
              Background="{DynamicResource M3SurfaceBrush}">
 
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
+                <ResourceInclude Source="avares://CSharpEditorPlugin/Styles/Tokens/StudioPaletteTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
         </ResourceDictionary>
     </UserControl.Resources>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+        <StyleInclude Source="avares://CSharpEditorPlugin/Styles/StudioStyles.axaml" />
+    </UserControl.Styles>
 
     <Panel>
         <!-- Main Studio Workspace with dynamic Right Panel and Bottom Deck docking slots for AI Assistant -->
@@ -91,10 +98,18 @@
             <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}" />
         </Border>
 
-        <!-- Top-level Studio Loading Overlay (page transitions, engine warmup, external projects) -->
-        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
-                                              LoadingTitle="{Binding LoadingTitle}"
-                                              LoadingSubtitle="{Binding LoadingSubtitle}"
+        <!-- Work for the whole studio (opening a document from another page, reloading scripts): a line across the top -->
+        <activities:ActivityProgressLine Location="Window" ZIndex="997" />
+
+        <!-- Long work that can be cancelled, and failures: toasts in the corner, never in the way -->
+        <activities:ActivityToastHost DataContext="{Binding Activity}" ZIndex="999" />
+
+        <!-- Only blocking work (cold start, switching workspace) covers the studio, and only once it has run a while -->
+        <studio:StudioLoadingOverlayControl IsLoading="{Binding Activity.HasCard}"
+                                              LoadingTitle="{Binding Activity.Card.Title, FallbackValue=''}"
+                                              LoadingSubtitle="{Binding Activity.Card.Detail, FallbackValue=''}"
+                                              ShowCancel="{Binding Activity.Card.Cancellable, FallbackValue=False}"
+                                              CancelCommand="{Binding Activity.CancelCardCommand}"
                                               ZIndex="1000"
                                               HorizontalAlignment="Stretch"
                                               VerticalAlignment="Stretch" />

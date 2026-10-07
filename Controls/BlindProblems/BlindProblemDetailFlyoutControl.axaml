@@ -34,7 +34,7 @@
                             CommandParameter="{Binding SelectedProblem}"
                             Classes="nexus-btn-surface" Height="30" Padding="8,0" Margin="8,0,6,0"
                             ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
-                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="#FFA116" />
+                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
                     </Button>
 
                     <Button Grid.Column="2" Command="{Binding CloseDetailFlyoutCommand}"
@@ -181,7 +181,7 @@
                                                     BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
                                                     CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding BottleneckExplanation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <docs:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="#F87171" />
+                                                <docs:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="{DynamicResource DsErrorBrush}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
@@ -234,8 +234,8 @@
                                             BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="{Binding Name}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="{Binding Input, StringFormat='Input: {0}'}" FontSize="11" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" FontSize="11" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource ComplexitySpaceBrush}" />
+                                            <TextBlock Text="{Binding Input, StringFormat='Input: {0}'}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource ComplexitySpaceBrush}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -258,8 +258,8 @@
                             Classes="nexus-btn-primary" Height="34" Padding="0"
                             HorizontalAlignment="Stretch" Margin="0,0,4,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="#FFFFFF" />
-                            <TextBlock Text="Script" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="#FFFFFF" />
+                            <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Script" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </StackPanel>
                     </Button>
 
@@ -269,7 +269,7 @@
                             Classes="nexus-btn-surface" Height="34" Padding="0"
                             HorizontalAlignment="Stretch" Margin="4,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="#22C55E" />
+                            <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}" />
                             <TextBlock Text="Notebook" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -281,7 +281,7 @@
                             HorizontalAlignment="Stretch" Margin="4,0,0,0"
                             ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="#FFA116" />
+                            <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
                             <TextBlock Text="LeetCode" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>

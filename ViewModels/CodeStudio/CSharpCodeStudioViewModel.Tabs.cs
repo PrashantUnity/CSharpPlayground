@@ -32,24 +32,24 @@ public partial class CSharpCodeStudioViewModel
         {
             LanguageIconKind = iconKind,
             LanguageIconColor = iconColor,
-            OnSelect = t => SafeTabAction(() => SwitchToTabAsync(t), "SwitchTab"),
-            OnClose = t => SafeTabAction(() => CloseTabAsync(t), "CloseTab"),
-            OnCloseOthers = t => SafeTabAction(() => CloseOtherTabsAsync(t), "CloseOtherTabs"),
-            OnCloseToTheRight = t => SafeTabAction(() => CloseTabsToTheRightAsync(t), "CloseTabsToTheRight"),
-            OnCloseAll = _ => SafeTabAction(() => CloseAllTabsAsync(), "CloseAllTabs"),
+            OnSelect = t =>
+            {
+                // Picking a tab wins over a file that is still loading.
+                _fileOpen.CancelCurrent();
+                SafeTabAction(() => SwitchToTabAsync(t), "Switching tab");
+            },
+            OnClose = t => SafeTabAction(() => CloseTabAsync(t), "Closing tab"),
+            OnCloseOthers = t => SafeTabAction(() => CloseOtherTabsAsync(t), "Closing tabs"),
+            OnCloseToTheRight = t => SafeTabAction(() => CloseTabsToTheRightAsync(t), "Closing tabs"),
+            OnCloseAll = _ => SafeTabAction(() => CloseAllTabsAsync(), "Closing tabs"),
             OnCopyPath = t => CopyTabPath(t),
             OnRevealInExplorer = t => RevealTabInExplorer(t)
         };
     }
 
-    private static async void SafeTabAction(Func<Task> action, string actionName)
-    {
-        try { await action(); }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[CSharpCodeStudioViewModel] {actionName} error: {ex}");
-        }
-    }
+    // Tab clicks are fire-and-forget; a failure is shown to the user instead of only reaching the debug log.
+    private void SafeTabAction(Func<Task> action, string actionName) =>
+        Services.Activities.ActivityExtensions.FireAndForget(action(), _activities, actionName);
 
     private static void CopyItems<T>(ICollection<T> target, IEnumerable<T> source)
     {
@@ -61,123 +61,114 @@ public partial class CSharpCodeStudioViewModel
     {
         if (tab.Id == Script.Id && tab.IsActive) return;
 
-        using (BeginLoading("Switching Tab...", tab.Title))
+        // 1. Save state of current active tab
+        var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
+        if (currentTab != null)
         {
-            await Task.Yield();
-            if (Avalonia.Application.Current != null)
-            {
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Render);
-            }
-
-            // 1. Save state of current active tab
-            var currentTab = OpenTabs.FirstOrDefault(t => t.Id == Script.Id);
-            if (currentTab != null)
-            {
-                currentTab.Document.Code = Code;
-                currentTab.Document.Notes = Notes;
-                currentTab.ConsoleHeader = ConsoleHeader;
-                currentTab.ConsoleBody = ConsoleBody;
-                currentTab.ConsoleFooter = ConsoleFooter;
-                currentTab.ConsoleExitCode = ConsoleExitCode;
-                currentTab.ConsoleOutput = ConsoleOutput;
-                currentTab.ExecutionTimeText = ExecutionTimeText;
-                currentTab.CompilerStatusText = CompilerStatusText;
-                currentTab.PausedLine = CurrentPausedLine;
-                currentTab.IsExecuting = IsExecuting;
-                currentTab.IsDebugging = IsDebugging;
-                currentTab.IsPaused = IsPaused;
-                currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
-                currentTab.ImageZoomFactor = ImageZoomFactor;
-                currentTab.ImageFitToWindow = ImageFitToWindow;
-                currentTab.ShowImageCodeDrawer = ShowImageCodeDrawer;
-                currentTab.IsDocumentPreviewMode = IsDocumentPreviewMode;
-                currentTab.CsvTable = ActiveCsvTable;
-                currentTab.CsvDimensionsSummary = CsvDimensionsSummary;
-                currentTab.CsvDelimiterSummary = CsvDelimiterSummary;
-                CopyItems(currentTab.Diagnostics, Diagnostics);
-                CopyItems(currentTab.DumpResults, DumpResults);
-                CopyItems(currentTab.RichOutputs, RichOutputs);
-                CopyItems(currentTab.Locals, Locals);
-                CopyItems(currentTab.CallStack, CallStack);
-            }
-
-            // 2. Mark active flags
-            foreach (var t in OpenTabs)
-            {
-                t.IsActive = (t.Id == tab.Id);
-            }
-
-            // 3. Restore target tab state into active studio context
-            Script = tab.Document;
-            _isRestoringTabState = true;
-            try
-            {
-                Code = tab.Document.Code ?? string.Empty;
-                Notes = tab.Document.Notes;
-            }
-            finally
-            {
-                _isRestoringTabState = false;
-            }
-
-            UpdateImageStateForDocument(tab.Document);
-            UpdatePreviewStateForDocument(tab.Document, tab.IsDocumentPreviewMode);
-            UpdateDiffStateForTab(tab);
-
-            IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
-            SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
-            {
-                "Program" => 1,
-                "Expression" => 2,
-                _ => 0
-            };
-
-            ConsoleHeader = tab.ConsoleHeader;
-            ConsoleBody = tab.ConsoleBody;
-            ConsoleFooter = tab.ConsoleFooter;
-            ConsoleExitCode = tab.ConsoleExitCode;
-            ConsoleOutput = tab.ConsoleOutput;
-            ExecutionTimeText = tab.ExecutionTimeText;
-            CompilerStatusText = tab.CompilerStatusText;
-            CurrentPausedLine = tab.PausedLine;
-            IsExecuting = tab.IsExecuting;
-            IsDebugging = tab.IsDebugging;
-            IsPaused = tab.IsPaused;
-            SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
-            IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
-
-            CopyItems(Diagnostics, tab.Diagnostics);
-            CopyItems(DumpResults, tab.DumpResults);
-            CopyItems(RichOutputs, tab.RichOutputs);
-            CopyItems(Locals, tab.Locals);
-            CopyItems(CallStack, tab.CallStack);
-            CopyItems(TestCases, tab.Document.TestCases);
-
-            Breakpoints.Clear();
-            foreach (var bpLine in tab.Document.Breakpoints)
-            {
-                Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
-            }
-
-            RequestSwitchTabDocument?.Invoke(tab);
-            RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
-            RequestSetPausedLine?.Invoke(CurrentPausedLine > 0 ? CurrentPausedLine : -1);
-            RequestReloadEditorText?.Invoke();
-
-            ErrorCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
-            WarningCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
-
-            if (Diagnostics.Count == 0 && !string.IsNullOrWhiteSpace(Code))
-            {
-                TriggerDiagnosticsCheck();
-            }
-
-            // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
-            await RefreshExplorerIfStaleAsync();
-
-            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentOpened(
-                new Services.Extensibility.Editor.StudioDocumentContextAdapter(this));
+            currentTab.Document.Code = Code;
+            currentTab.Document.Notes = Notes;
+            currentTab.ConsoleHeader = ConsoleHeader;
+            currentTab.ConsoleBody = ConsoleBody;
+            currentTab.ConsoleFooter = ConsoleFooter;
+            currentTab.ConsoleExitCode = ConsoleExitCode;
+            currentTab.ConsoleOutput = ConsoleOutput;
+            currentTab.ExecutionTimeText = ExecutionTimeText;
+            currentTab.CompilerStatusText = CompilerStatusText;
+            currentTab.PausedLine = CurrentPausedLine;
+            currentTab.IsExecuting = IsExecuting;
+            currentTab.IsDebugging = IsDebugging;
+            currentTab.IsPaused = IsPaused;
+            currentTab.SelectedBottomTabIndex = SelectedBottomTabIndex;
+            currentTab.ImageZoomFactor = ImageZoomFactor;
+            currentTab.ImageFitToWindow = ImageFitToWindow;
+            currentTab.ShowImageCodeDrawer = ShowImageCodeDrawer;
+            currentTab.IsDocumentPreviewMode = IsDocumentPreviewMode;
+            currentTab.CsvTable = ActiveCsvTable;
+            currentTab.CsvDimensionsSummary = CsvDimensionsSummary;
+            currentTab.CsvDelimiterSummary = CsvDelimiterSummary;
+            CopyItems(currentTab.Diagnostics, Diagnostics);
+            CopyItems(currentTab.DumpResults, DumpResults);
+            CopyItems(currentTab.RichOutputs, RichOutputs);
+            CopyItems(currentTab.Locals, Locals);
+            CopyItems(currentTab.CallStack, CallStack);
         }
+
+        // 2. Mark active flags
+        foreach (var t in OpenTabs)
+        {
+            t.IsActive = (t.Id == tab.Id);
+        }
+
+        // 3. Restore target tab state into active studio context
+        Script = tab.Document;
+        _isRestoringTabState = true;
+        try
+        {
+            Code = tab.Document.Code ?? string.Empty;
+            Notes = tab.Document.Notes;
+        }
+        finally
+        {
+            _isRestoringTabState = false;
+        }
+
+        UpdateImageStateForDocument(tab.Document);
+        UpdatePreviewStateForDocument(tab.Document, tab.IsDocumentPreviewMode);
+        UpdateDiffStateForTab(tab);
+
+        IsNotesPreviewMode = !string.IsNullOrWhiteSpace(Notes);
+        SelectedLanguageModeIndex = tab.Document.ExecutionMode switch
+        {
+            "Program" => 1,
+            "Expression" => 2,
+            _ => 0
+        };
+
+        ConsoleHeader = tab.ConsoleHeader;
+        ConsoleBody = tab.ConsoleBody;
+        ConsoleFooter = tab.ConsoleFooter;
+        ConsoleExitCode = tab.ConsoleExitCode;
+        ConsoleOutput = tab.ConsoleOutput;
+        ExecutionTimeText = tab.ExecutionTimeText;
+        CompilerStatusText = tab.CompilerStatusText;
+        CurrentPausedLine = tab.PausedLine;
+        IsExecuting = tab.IsExecuting;
+        IsDebugging = tab.IsDebugging;
+        IsPaused = tab.IsPaused;
+        SelectedBottomTabIndex = tab.SelectedBottomTabIndex;
+        IsAcceptingProgramInput = (tab.ActiveRun is { AcceptsInput: true } || tab.InProcessStdin != null) && SupportsStandardInput;
+
+        CopyItems(Diagnostics, tab.Diagnostics);
+        CopyItems(DumpResults, tab.DumpResults);
+        CopyItems(RichOutputs, tab.RichOutputs);
+        CopyItems(Locals, tab.Locals);
+        CopyItems(CallStack, tab.CallStack);
+        CopyItems(TestCases, tab.Document.TestCases);
+
+        Breakpoints.Clear();
+        foreach (var bpLine in tab.Document.Breakpoints)
+        {
+            Breakpoints.Add(new BreakpointItem { LineNumber = bpLine, IsEnabled = true });
+        }
+
+        RequestSwitchTabDocument?.Invoke(tab);
+        RequestSyncBreakpoints?.Invoke(Breakpoints.Where(b => b.IsEnabled).Select(b => b.LineNumber));
+        RequestSetPausedLine?.Invoke(CurrentPausedLine > 0 ? CurrentPausedLine : -1);
+        RequestReloadEditorText?.Invoke();
+
+        ErrorCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
+        WarningCount = Diagnostics.Count(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
+
+        if (Diagnostics.Count == 0 && !string.IsNullOrWhiteSpace(Code))
+        {
+            TriggerDiagnosticsCheck();
+        }
+
+        // The tree only needs rebuilding if the workspace changed (a script created in the Hub, say), not on every switch.
+        await RefreshExplorerIfStaleAsync();
+
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.HookRegistry.InvokeDocumentOpened(
+            new Services.Extensibility.Editor.StudioDocumentContextAdapter(this));
     }
 
     public async Task CloseTabAsync(Common.StudioTabItemViewModel tab)

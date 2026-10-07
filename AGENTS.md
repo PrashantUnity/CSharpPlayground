@@ -21,7 +21,7 @@ Every main studio interface (both script code studio and notebook studio) must s
   - **Scratchpad & Notes** (`FileDocumentOutline`)
   - **Problems** (`AlertCircleOutline` with error badge)
 - Bottom utilities: **Settings** (`CogOutline`) and **Return to Hub** (`ArrowLeft` / `HomeOutline`).
-- Active item displays a 2px high-contrast vertical accent line on the left edge (`#007ACC` / `{DynamicResource M3PrimaryBrush}`).
+- Active item displays a 2px high-contrast vertical accent line on the left edge (`#007ACC` / `{DynamicResource DsPrimaryBrush}`).
 - Clicking the active icon toggles the Primary Side Bar closed/open (`Ctrl+B`).
 
 ### Zone 2: Primary Side Bar (Resizable ~270px, Collapsible)
@@ -132,4 +132,29 @@ The codebase targets modern .NET 10 (C# 13). All contributors and AI agents must
 - **Raw String Literals (`""" ... """`)**: Always use C# 11+ raw string literals for multi-line strings, complex strings, embedded code snippets (C#, Python, Rust, C++, Java, JS), JSON payloads, XML/HTML, regex patterns, scripts, and unit tests.
 - **Strictly Avoid Clumsy Verbatim Escapes**: Never author embedded code or multi-line strings using old verbatim string literals (`@"..."`) with ugly escaped double quotes (`""`) or concatenation chains (`+ "\n" +`).
 - **Interpolated Raw Strings (`$$"""..."""`)**: Use multi-dollar interpolated raw string literals whenever the embedded payload contains curly braces (e.g. JSON, code blocks, dictionary initializers, or regex `{n,m}`), ensuring clean interpolation without backslash escapes.
+
+---
+
+## 10. Strict Styling, Card Surfaces & Visual Ergonomics Mandate
+All contributors and AI agents must strictly comply with [`.agents/rules/styling_and_visual_ergonomics_mandate.md`](.agents/rules/styling_and_visual_ergonomics_mandate.md):
+- **Eye Comfort & Anti-Glare Card Standards**: Never wrap text content, summaries, callouts, or notes in high-contrast saturated electric borders (`DsPrimaryBrush` 2px/3px) or glowing tinted backgrounds (`DsPrimarySubtleBrush`). All cards, callouts, and auxiliary panels must strictly use the canonical dark card formula:
+  - `Background="{DynamicResource DsSurfaceBrush}"`
+  - `BorderBrush="{DynamicResource DsBorderBrush}"` (subtle, non-glaring 1px border)
+  - `BorderThickness="1"`
+  - `CornerRadius="10"` (or `8` for compact sub-cards)
+  - `Padding="16,14"` (or `14,10`)
+  - Typography: Soft, readable off-white `{DynamicResource DsTextBrush}`, with headers in `{DynamicResource DsTextWhiteBrush}`.
+- **Pixel-Perfect Alignment & Vertical Centering**:
+  - Horizontal containers (`StackPanel Orientation="Horizontal"`, `Grid`, toolbars) default to `VerticalAlignment="Stretch"`. For `TextBlock`, this causes glyphs to draw at the top edge of the line box, clipping against rounded button borders and floating above adjacent icons.
+  - Inside any button or toolbar item with an icon and label, child `StackPanel`, `materialIcons:MaterialIcon`, and `TextBlock` elements **MUST** explicitly set `VerticalAlignment="Center"`.
+  - Button styles (`cs-toolbar-*`) must set `VerticalContentAlignment="Center"`, `HorizontalContentAlignment="Center"`, `MinHeight="0"`, and `MinWidth="0"` so default Avalonia Fluent theme min-sizes (32px) do not distort compact heights (26px/28px).
+- **Multi-Control Class Selectors & Complete Template State Coverage**:
+  - `ToggleButton` inherits from `ButtonBase`, NOT `Button`. Selectors targeting `Button.class` will NEVER match `<ToggleButton Classes="class" />`. Shared button styles must explicitly target `Button.class, ToggleButton.class`.
+  - Avalonia Fluent Theme overrides `:pointerover`, `:pressed`, and `:checked` states inside `/template/ ContentPresenter#PART_ContentPresenter`. Styles changing backgrounds/borders must target both the control and its template presenter to avoid default bulky opaque gray boxes.
+- **Semantic Tokens Only**: Always bind colors, borders, and backgrounds to semantic tokens (`DsSurfaceBrush`, `DsBorderBrush`, `DsTextBrush`, etc.). Zero hardcoded hex codes.
+- **Global ToolTip Styling & Anti-Collision Placement**:
+  - Never allow default Avalonia `Pointer` placement to collide with cursor hot-spots or obscure controls.
+  - Placement: General controls default to `Bottom` (`VerticalOffset="6"`, `ShowDelay="350"`), Activity Bar rail sets `Right` (`HorizontalOffset="8"`), and Status Bar sets `Top` (`VerticalOffset="-4"`).
+  - Styling: Uniform dark high-surface background (`DsSurfaceHighBrush`), subtle border (`DsBorderBrush`), `CornerRadius="6"`, floating elevation (`BoxShadow="{DynamicResource DsFloatingShadow}"`), crisp typography (`FontSize="11.5"`, `DsTextWhiteBrush`), and quick opacity transition.
+
 

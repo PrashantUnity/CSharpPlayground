@@ -15,6 +15,8 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+// Changes the studio-wide theme engine: runs with the other tests that do, never alongside them.
+[Collection("SettingsTests")]
 public class NotebookExtensibilityTests : IDisposable
 {
     private readonly string _testBaseDir;

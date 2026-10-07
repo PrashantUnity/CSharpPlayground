@@ -5,19 +5,6 @@
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.RichHtmlView">
 
-    <UserControl.Styles>
-        <Style Selector="Button.html-action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        </Style>
-        <Style Selector="Button.html-action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        </Style>
-    </UserControl.Styles>
 
     <Panel HorizontalAlignment="Stretch">
         <!-- 1. Text / Markdown Render Container -->

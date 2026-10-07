@@ -7,25 +7,16 @@
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
              xmlns:settings1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
+             xmlns:studio="using:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpSettingsView"
              x:DataType="settings:CSharpSettingsViewModel"
              Background="{DynamicResource DsBgBrush}">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
-    <Grid RowDefinitions="54,*">
+    <Panel>
+        <Grid RowDefinitions="54,*">
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- 1. TOP HEADER BAR (54px)                                       -->
         <!-- ══════════════════════════════════════════════════════════════ -->
@@ -81,22 +72,19 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Action Buttons: Reset & Apply -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <!-- Saved indicator (every change saves itself) & Reset -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
+                                ToolTip.Tip="Settings save themselves as you change them">
+                        <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="{Binding SaveStatusText}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
                     <Button Command="{Binding ResetDefaultsCommand}"
                             Classes="cs-toolbar-outlined"
                             ToolTip.Tip="Reset all settings to default values">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Restore" Width="14" Height="14" />
                             <TextBlock Text="Reset Defaults" FontSize="12" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding ApplyCommand}"
-                            Classes="cs-toolbar-filled"
-                            ToolTip.Tip="Save and apply configuration">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
-                            <TextBlock Text="Apply" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -133,7 +121,7 @@
                                     Classes="doc-nav-item"
                                     Classes.active="{Binding IsLanguagesCategoryActive}">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="Languages &amp; Runtimes" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
@@ -166,6 +154,16 @@
                                 <Grid ColumnDefinitions="Auto,*">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="CodeBraces" Width="17" Height="17" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="Editor &amp; Formatting" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+
+                            <!-- Category: Theme & Colors -->
+                            <Button Command="{Binding SelectCategoryCommand}" CommandParameter="Themes"
+                                    Classes="doc-nav-item"
+                                    Classes.active="{Binding IsThemesCategoryActive}">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <materialIcons:MaterialIcon Grid.Column="0" Kind="PaletteOutline" Width="17" Height="17" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Theme &amp; Colors" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
@@ -229,6 +227,10 @@
                     <settings1:EditorSettingsSectionControl
                         IsVisible="{Binding IsEditorCategoryActive}" />
 
+                    <!-- Detail for Theme & Colors -->
+                    <settings1:ThemeSettingsSectionControl
+                        IsVisible="{Binding IsThemesCategoryActive}" />
+
                     <!-- Detail for Execution & Terminal -->
                     <settings1:ExecutionSettingsSectionControl
                         IsVisible="{Binding IsExecutionCategoryActive}" />
@@ -248,4 +250,6 @@
             </Border>
         </Grid>
     </Grid>
+
+</Panel>
 </UserControl>

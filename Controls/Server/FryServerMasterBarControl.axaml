@@ -10,78 +10,7 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Server.FryServerMasterBarControl"
              x:DataType="vm:FryServerStudioViewModel">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-
-        <Style Selector="Border.compact TextBlock.toolbar-label">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-
-        <Style Selector="Button.nb-action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="7,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nb-action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-        <Style Selector="Button.nb-action-btn:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <Style Selector="Button.conflict-pill-btn">
-            <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource NavPinnedFgBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-        <Style Selector="Button.conflict-pill-btn:pointerover">
-            <Setter Property="Opacity" Value="0.9" />
-        </Style>
-
-        <Style Selector="Button.cell-tool-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Button.cell-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        </Style>
-    </UserControl.Styles>
 
     <!-- Professional 38px VS Code Master Bar with Responsive Collapse -->
     <Border common:CompactWhenCrowded.IsEnabled="True"

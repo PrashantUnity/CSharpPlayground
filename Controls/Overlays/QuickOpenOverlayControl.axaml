@@ -11,24 +11,9 @@
              x:DataType="common:QuickOpenViewModel"
              IsVisible="{Binding IsOpen}">
 
-    <UserControl.Styles>
-        <Style Selector="ListBoxItem">
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="Margin" Value="2,1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
-        </Style>
-        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource M3PrimaryContainerBrush}" />
-        </Style>
-    </UserControl.Styles>
 
     <!-- Full Screen Scrim to Capture Outside Clicks -->
-    <Grid Background="#70000000"
+    <Grid Background="{DynamicResource DsScrimBrush}"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           PointerPressed="OnBackdropPointerPressed">
@@ -42,7 +27,7 @@
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
                 BorderThickness="1"
                 CornerRadius="10"
-                BoxShadow="0 16 48 0 #90000000"
+                BoxShadow="{DynamicResource DsModalShadow}"
                 PointerPressed="OnPaletteCardPointerPressed">
             <Grid RowDefinitions="Auto,Auto,*">
                 <!-- Search Box Header -->
@@ -58,7 +43,7 @@
                              Background="Transparent"
                              BorderThickness="0"
                              FontSize="14"
-                             FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                             FontFamily="{DynamicResource DsCodeFontFamily}"
                              Foreground="{DynamicResource M3OnSurfaceBrush}"
                              VerticalAlignment="Center"
                              KeyDown="OnSearchBoxKeyDown" />
@@ -82,7 +67,8 @@
                 <ScrollViewer Grid.Row="2" MaxHeight="380"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ListBox ItemsSource="{Binding FilteredItems}"
+                    <ListBox Classes="quick-open-list"
+                             ItemsSource="{Binding FilteredItems}"
                              SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                              Background="Transparent"
                              BorderThickness="0"

@@ -13,50 +13,59 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
-        Background="{DynamicResource M3SurfaceBrush}">
+        Background="{DynamicResource DsBgBrush}">
 
-    <Border Padding="24">
-        <Grid RowDefinitions="Auto,*,Auto">
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,4,0,16">
-                <Border Width="52" Height="52"
-                        CornerRadius="14"
-                        Background="{DynamicResource M3PrimaryContainerBrush}"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                    <materialIcons:MaterialIcon Kind="CheckCircleOutline"
-                                                Width="32" Height="32"
-                                                Foreground="{DynamicResource M3PrimaryBrush}" />
-                </Border>
+    <Panel>
+        <!-- Top Subtle Frosted Highlight Line -->
+        <Border Height="1" VerticalAlignment="Top" Background="{DynamicResource DsBorderBrush}" Opacity="0.4" />
 
-                <StackPanel VerticalAlignment="Center" Spacing="4">
-                    <TextBlock Text="You're up to date!"
-                               FontFamily="{DynamicResource M3FontFamily}"
-                               FontSize="17" FontWeight="Bold"
-                               Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                    <TextBlock Text="FrySharp v1.0.6"
-                               FontSize="12.5"
-                               Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+        <Border Padding="24">
+            <Grid RowDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,4,0,16">
+                    <Border Width="48" Height="48"
+                            CornerRadius="24"
+                            Background="#1A2F81F7"
+                            BorderBrush="#4D2F81F7"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="CheckCircleOutline"
+                                                    Width="28" Height="28"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                    </Border>
+
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <TextBlock Text="You're up to date!"
+                                   FontFamily="{DynamicResource DsUiFontFamily}"
+                                   FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource DsTextWhiteBrush}" />
+                        <TextBlock Text="FrySharp v1.0.6 • Stable"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource DsMutedBrush}" />
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
 
-            <TextBlock Grid.Row="1"
-                       Text="You are currently running the latest release of FrySharp. All Roslyn compiler services and polyglot runtime modules are ready."
-                       TextWrapping="Wrap"
-                       FontSize="12"
-                       LineHeight="18"
-                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                       Margin="4,0,4,12" />
+                <TextBlock Grid.Row="1"
+                           Text="You are currently running the latest release of FrySharp. All Roslyn compiler services and polyglot runtime modules are ready."
+                           TextWrapping="Wrap"
+                           FontSize="12"
+                           LineHeight="18"
+                           Foreground="{DynamicResource DsTextBrush}"
+                           Margin="4,0,4,12" />
 
-            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                <Button Grid.Column="1"
-                        Content="OK"
-                        Classes="m3-filled-btn"
-                        Click="OnCloseClick"
-                        Width="90"
-                        HorizontalContentAlignment="Center"
-                        IsDefault="True"
-                        Cursor="Hand" />
+                <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                    <Button Grid.Column="1"
+                            Content="OK"
+                            Classes="about-close-btn"
+                            Click="OnCloseClick"
+                            Width="90"
+                            HorizontalContentAlignment="Center"
+                            IsDefault="True"
+                            Cursor="Hand" />
+                </Grid>
             </Grid>
-        </Grid>
-    </Border>
+        </Border>
+    </Panel>
 </Window>

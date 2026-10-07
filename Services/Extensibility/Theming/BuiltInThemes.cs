@@ -170,6 +170,14 @@ public static class BuiltInThemes
         }
     };
 
+    static BuiltInThemes()
+    {
+        foreach (var theme in All)
+        {
+            HarmonicColorGenerator.EnsureCompleteTheme(theme);
+        }
+    }
+
     public static IReadOnlyList<ThemeDefinition> All =>
     [
         DarkPlus,

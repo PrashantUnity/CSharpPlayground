@@ -10,7 +10,7 @@
              IsVisible="{Binding #LoadingRoot.IsLoading}">
 
     <!-- Full-screen backdrop / scrim capturing clicks and dimming the background -->
-    <Grid Background="#85000000"
+    <Grid Background="{DynamicResource DsScrimBrush}"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           ZIndex="1000">
@@ -25,25 +25,78 @@
                 BorderBrush="{DynamicResource DsBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16"
-                BoxShadow="0 24 64 0 #B0000000"
+                BoxShadow="{DynamicResource DsModalShadow}"
                 Padding="28,24">
             <StackPanel Spacing="18" HorizontalAlignment="Center">
 
-                <!-- Official Brand Dragon Logo in Circular Badge with Glow -->
-                <Border Width="56" Height="56"
-                        CornerRadius="28"
-                        Background="#FFFFFF"
-                        BorderBrush="{DynamicResource DsPrimaryBrush}"
-                        BorderThickness="2"
-                        BoxShadow="0 0 24 0 #4D007ACC"
-                        HorizontalAlignment="Center"
-                        ClipToBounds="True"
-                        IsVisible="{Binding #LoadingRoot.ShowLogo}">
-                    <Image x:Name="LogoImage"
-                           Width="50" Height="50"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           RenderOptions.BitmapInterpolationMode="HighQuality" />
-                </Border>
+                <!-- Logo Badge with Animated Orbital Rings & Ambient Glow -->
+                <Grid Width="76" Height="76" HorizontalAlignment="Center">
+
+                    <!-- 1. Ambient Breathing Aura Pulse -->
+                    <Border x:Name="AuraPulseBorder"
+                            Width="64" Height="64"
+                            CornerRadius="32"
+                            Background="{DynamicResource DsPrimarySubtleBrush}"
+                            BoxShadow="{DynamicResource DsGlowPrimaryShadow}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Classes="loading-pulse-glow" />
+
+                    <!-- 2. Counter-Orbiting Outer Whisper Ring (74px) -->
+                    <Border x:Name="OuterRingBorder"
+                            Width="74" Height="74"
+                            CornerRadius="37"
+                            BorderThickness="1.5,0,0,0"
+                            BorderBrush="{DynamicResource DsSyntaxStringBrush}"
+                            Opacity="0.5"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RenderTransformOrigin="50%,50%"
+                            Classes="loading-spinner-outer-ring">
+                        <Border.RenderTransform>
+                            <RotateTransform Angle="0" />
+                        </Border.RenderTransform>
+                    </Border>
+
+                    <!-- 3. Primary Orbital Spinner Ring (68px) with Accent Arc -->
+                    <Border x:Name="SpinnerRingBorder"
+                            Width="68" Height="68"
+                            CornerRadius="34"
+                            BorderThickness="2.5,2.5,0,0"
+                            BorderBrush="{DynamicResource DsPrimaryBrush}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RenderTransformOrigin="50%,50%"
+                            Classes="loading-spinner-ring">
+                        <Border.RenderTransform>
+                            <RotateTransform Angle="0" />
+                        </Border.RenderTransform>
+                    </Border>
+
+                    <!-- 4. Inner Circular Badge (56px) with Dragon Logo or Fallback Material Icon -->
+                    <Border Width="56" Height="56"
+                            CornerRadius="28"
+                            Background="{DynamicResource DsOnAccentBrush}"
+                            BorderBrush="{DynamicResource DsPrimaryBrush}"
+                            BorderThickness="1.5"
+                            BoxShadow="{DynamicResource DsFloatingShadow}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            ClipToBounds="True">
+                        <Panel>
+                            <Image x:Name="LogoImage"
+                                   Width="48" Height="48"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                                   IsVisible="{Binding #LoadingRoot.ShowLogo}" />
+                            <materialIcons:MaterialIcon Kind="{Binding #LoadingRoot.IconKind}"
+                                                        Width="28" Height="28"
+                                                        Foreground="{DynamicResource DsPrimaryBrush}"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        IsVisible="{Binding !#LoadingRoot.ShowLogo}" />
+                        </Panel>
+                    </Border>
+                </Grid>
 
                 <!-- Titles & Secondary Info -->
                 <StackPanel Spacing="4" HorizontalAlignment="Center">
@@ -64,14 +117,49 @@
                                IsVisible="{Binding #LoadingRoot.LoadingSubtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
 
-                <!-- Indeterminate Sleek Progress Bar -->
-                <ProgressBar IsIndeterminate="True"
-                             Height="3"
-                             Width="260"
-                             CornerRadius="1.5"
-                             Background="{DynamicResource DsBgBrush}"
-                             Foreground="{DynamicResource DsPrimaryBrush}"
-                             HorizontalAlignment="Center" />
+                <!-- Indeterminate Sleek Glowing Progress Bar Track -->
+                <Border Width="260"
+                        Height="4"
+                        CornerRadius="2"
+                        Background="{DynamicResource DsBgBrush}"
+                        BorderBrush="{DynamicResource DsBorderBrush}"
+                        BorderThickness="1"
+                        ClipToBounds="True"
+                        HorizontalAlignment="Center">
+                    <Canvas Width="260" Height="4" ClipToBounds="True">
+                        <!-- Primary traveling beam -->
+                        <Border x:Name="PrimaryBeamBorder"
+                                Classes="indeterminate-track-glow-primary"
+                                Width="110"
+                                Height="4"
+                                CornerRadius="2"
+                                Background="{DynamicResource DsLoadingBeamPrimary}">
+                            <Border.RenderTransform>
+                                <TranslateTransform X="-110" />
+                            </Border.RenderTransform>
+                        </Border>
+
+                        <!-- Secondary trailing accent beam -->
+                        <Border x:Name="SecondaryBeamBorder"
+                                Classes="indeterminate-track-glow-secondary"
+                                Width="55"
+                                Height="4"
+                                CornerRadius="2"
+                                Background="{DynamicResource DsLoadingBeamSecondary}">
+                            <Border.RenderTransform>
+                                <TranslateTransform X="-55" />
+                            </Border.RenderTransform>
+                        </Border>
+                    </Canvas>
+                </Border>
+
+                <!-- Blocking work the user may stop (switching workspace) -->
+                <Button Content="Cancel"
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        Padding="16,4"
+                        Command="{Binding #LoadingRoot.CancelCommand}"
+                        IsVisible="{Binding #LoadingRoot.ShowCancel}" />
             </StackPanel>
         </Border>
     </Grid>

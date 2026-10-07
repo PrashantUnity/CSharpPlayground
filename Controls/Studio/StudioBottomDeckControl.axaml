@@ -17,9 +17,6 @@
              x:CompileBindings="False">
 
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
     <Border MinHeight="100"
             VerticalAlignment="Stretch"
@@ -41,7 +38,7 @@
                                 <Border Classes="ide-tab-badge"
                                         Background="{DynamicResource DsPrimaryBrush}"
                                         IsVisible="{Binding DumpResults.Count}">
-                                    <TextBlock Text="{Binding DumpResults.Count}" Foreground="#FFFFFF" />
+                                    <TextBlock Text="{Binding DumpResults.Count}" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -61,12 +58,12 @@
                                 Classes="ide-tab-btn"
                                 Classes.active="{Binding SelectedBottomTabIndex, Converter={x:Static common:NumberEqualsConverter.Instance}, ConverterParameter=2}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="#EAB308" />
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsWarningBrush}" />
                                 <TextBlock Text="Problems" VerticalAlignment="Center" />
                                 <Border Classes="ide-tab-badge"
-                                        Background="#EF4444"
+                                        Background="{DynamicResource DsErrorBrush}"
                                         IsVisible="{Binding ErrorCount}">
-                                    <TextBlock Text="{Binding ErrorCount}" Foreground="#FFFFFF" />
+                                    <TextBlock Text="{Binding ErrorCount}" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -91,10 +88,10 @@
                                 <materialIcons:MaterialIcon Kind="BugOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Text="Debug Console" VerticalAlignment="Center" />
                                 <Border Classes="ide-tab-badge"
-                                        Background="#F59E0B"
+                                        Background="{DynamicResource DsWarningBrush}"
                                         Padding="5,0"
                                         IsVisible="{Binding IsPaused}">
-                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="#000000" FontWeight="Bold" />
+                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="{DynamicResource DsBgBrush}" FontWeight="Bold" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -207,7 +204,7 @@
                                                                     Foreground="{DynamicResource DsGreenBrush}"
                                                                     IsVisible="{Binding IsConsoleExitSuccess}" />
                                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="13" Height="13"
-                                                                    Foreground="#EF4444"
+                                                                    Foreground="{DynamicResource DsErrorBrush}"
                                                                     IsVisible="{Binding IsConsoleExitError}" />
                                         <TextBlock Text="{Binding ConsoleFooter}"
                                                    FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
@@ -286,7 +283,7 @@
                                 <Button Command="{Binding GenerateTestCasesCommand}" IsVisible="{Binding CanGenerateTestCases}" Classes="cs-toolbar-tonal"
                                         ToolTip.Tip="Add this problem's examples and edge cases (empty input, duplicates, negatives...), every answer verified">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="#EAB308" />
+                                        <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="{DynamicResource DsWarningBrush}" />
                                         <TextBlock Text="Generate" FontSize="11" />
                                     </StackPanel>
                                 </Button>
@@ -336,7 +333,7 @@
                                         </Grid>
                                     </Grid>
                                     <TextBlock Text="{Binding TestCaseFormError}" IsVisible="{Binding TestCaseFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               FontSize="11" Foreground="#EF4444" TextWrapping="Wrap" />
+                                               FontSize="11" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap" />
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBlock Text="Adds a Check(...) line to the script; Run or F5 shows whether it passes."
                                                    FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
@@ -362,8 +359,8 @@
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <!-- Passed, failed, running, or not run yet -->
                                                 <Panel Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,0,10,0">
-                                                    <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsPassed}" ToolTip.Tip="Passed" />
-                                                    <materialIcons:MaterialIcon Kind="CloseCircle" Foreground="#EF4444" IsVisible="{Binding IsFailed}" ToolTip.Tip="Failed" />
+                                                    <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding IsPassed}" ToolTip.Tip="Passed" />
+                                                    <materialIcons:MaterialIcon Kind="CloseCircle" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding IsFailed}" ToolTip.Tip="Failed" />
                                                     <materialIcons:MaterialIcon Kind="TimerSand" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsRunning}" ToolTip.Tip="Running" />
                                                     <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsBorderBrush}" IsVisible="{Binding IsNotRun}" ToolTip.Tip="Not run yet" />
                                                 </Panel>
@@ -375,9 +372,9 @@
                                                                IsVisible="{Binding ShowsCall}" />
                                                     <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding ExpectedOutput, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="#22C55E" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsGreenBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding IsPassed}" />
-                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="#EF4444" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding IsFailed}" />
                                                 </StackPanel>
                                                 <Button Grid.Column="2" Command="{Binding $parent[UserControl].DataContext.DeleteTestCaseCommand}" CommandParameter="{Binding}" Classes="cs-toolbar-icon"
@@ -439,8 +436,8 @@
                                                                        FontFamily="Consolas, monospace" FontSize="10.5"
                                                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        VerticalAlignment="Center" />
-                                                            <Border IsVisible="{Binding HasValueChanged}" Background="#FF79C6" CornerRadius="3" Padding="3,0" Margin="4,0,0,0" ToolTip.Tip="Value has changed since last evaluation">
-                                                                <TextBlock Text="changed" FontSize="9" FontWeight="Bold" Foreground="#1E1E2E" />
+                                                            <Border IsVisible="{Binding HasValueChanged}" Background="{DynamicResource NavPinnedFgBrush}" CornerRadius="3" Padding="3,0" Margin="4,0,0,0" ToolTip.Tip="Value has changed since last evaluation">
+                                                                <TextBlock Text="changed" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsBgBrush}" />
                                                             </Border>
                                                         </StackPanel>
 

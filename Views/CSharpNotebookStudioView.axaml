@@ -9,7 +9,9 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:notebooks="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks"
              xmlns:controls1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
+             xmlns:nb="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks"
              xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:activities="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Activities"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:editor="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Editor"
              xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Docs"
@@ -20,350 +22,16 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
             <CornerRadius x:Key="M3ShapeCornerFull">9999</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerExtraSmall">4</CornerRadius>
             <CornerRadius x:Key="NotebookTabTopRadius">4,4,0,0</CornerRadius>
-            <!-- Canonical Jupyter-style amber accent -->
-            <SolidColorBrush x:Key="NotebookAmberBrush" Color="#D97706" />
         </ResourceDictionary>
     </UserControl.Resources>
 
     <UserControl.Styles>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-
-        <!-- Explorer selection accent override for Notebook -->
-        <Style Selector="Button.explorer-item-btn.selected">
-            <Setter Property="BorderBrush" Value="{StaticResource NotebookAmberBrush}" />
-        </Style>
-
-        <!-- Document Studio Tab Item -->
-        <Style Selector="Border.studio-tab-item">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="CornerRadius" Value="{StaticResource NotebookTabTopRadius}" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.1" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.studio-tab-item:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-        </Style>
-        <Style Selector="Border.studio-tab-item.active">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        </Style>
-        <Style Selector="Border.studio-tab-item TextBlock.tab-title">
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="FontWeight" Value="Normal" />
-        </Style>
-        <Style Selector="Border.studio-tab-item.active TextBlock.tab-title">
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-            <Setter Property="FontWeight" Value="Medium" />
-        </Style>
-
-        <!-- Notebook Toolbar Action Buttons -->
-        <Style Selector="Border.compact TextBlock.toolbar-label">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-
-        <Style Selector="Button.nb-action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="7,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.nb-action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-        <Style Selector="Button.nb-action-btn:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <!-- Notebook Canvas Buttons: Prevent focus-steal and auto-scroll on click -->
-        <Style Selector="controls1|NotebookCanvasScrollViewer Button">
-            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
-        </Style>
-
-        <!-- Cell Hover Action Icons -->
-        <Style Selector="Button.cell-tool-btn">
-            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Button.cell-tool-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        </Style>
-        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover">
-            <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
-        </Style>
-        <Style Selector="Button.cell-tool-btn.delete-tool:pointerover materialIcons|MaterialIcon">
-            <Setter Property="Foreground" Value="{DynamicResource NavPinnedFgBrush}" />
-        </Style>
-
-        <!-- Gutter Run Play Button -->
-        <Style Selector="Button.gutter-run-btn">
-            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Opacity" Value="0.7" />
-        </Style>
-        <Style Selector="Button.gutter-run-btn:pointerover">
-            <Setter Property="Opacity" Value="1.0" />
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-        </Style>
-
-        <!-- Gutter Menu Button -->
-        <Style Selector="Button.gutter-menu-btn">
-            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="18" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Opacity" Value="0.7" />
-        </Style>
-        <Style Selector="Button.gutter-menu-btn:pointerover">
-            <Setter Property="Opacity" Value="1.0" />
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-        </Style>
-
-        <!-- Unified Notebook Cell Card (Sleek dark container) -->
-        <Style Selector="Border.notebook-cell-card">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="ClipToBounds" Value="True" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.notebook-cell-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-        <Style Selector="Border.notebook-cell-card.active">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
-        </Style>
-
-        <!-- Dedicated Notebook Cell Output Card (VS Code Authentic) -->
-        <Style Selector="Border.notebook-output-card">
-            <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="ClipToBounds" Value="True" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.notebook-output-card:pointerover">
-            <Setter Property="BorderBrush" Value="{DynamicResource DsMutedBrush}" />
-        </Style>
-
-        <!-- Between-Cell Interactive Insertion Divider -->
-        <Style Selector="Border.cell-insert-divider">
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Margin" Value="56,0,0,0" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Border.cell-insert-divider StackPanel.insert-pill-group">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.cell-insert-divider:pointerover StackPanel.insert-pill-group">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-        <Style Selector="Border.cell-insert-divider Rectangle.divider-line">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.cell-insert-divider:pointerover Rectangle.divider-line">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-
-        <Style Selector="Button.insert-cell-pill">
-            <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.1" />
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.insert-cell-pill:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <!-- Floating Cell Action Capsule -->
-        <Style Selector="Border.cell-floating-toolbar">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
-                    <BrushTransition Property="Background" Duration="0:0:0.15" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.notebook-cell-card:pointerover Border.cell-floating-toolbar">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-        <Style Selector="Border.notebook-cell-card.active Border.cell-floating-toolbar">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-        <Style Selector="Border.cell-floating-toolbar:pointerover">
-            <Setter Property="Opacity" Value="1.0" />
-        </Style>
-
-        <!-- Collapsed Input & Output Banners -->
-        <Style Selector="Border.notebook-collapsed-banner">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.notebook-collapsed-banner:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <Style Selector="Border.notebook-collapsed-output-banner">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
-                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.notebook-collapsed-output-banner:pointerover">
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-        </Style>
-
-        <!-- Collapsed Banner Button -->
-        <Style Selector="Button.collapsed-banner-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-
-        <!-- Gutter Fold Button -->
-        <Style Selector="Button.gutter-fold-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="16" />
-            <Setter Property="Height" Value="16" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Opacity" Value="0.7" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
-                    <BrushTransition Property="Background" Duration="0:0:0.1" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Button.gutter-fold-btn:pointerover">
-            <Setter Property="Opacity" Value="1.0" />
-            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
-        </Style>
-
-        <!-- Scrolled Output ScrollViewer -->
-        <Style Selector="ScrollViewer.notebook-output-scroll.scrolled">
-            <Setter Property="MaxHeight" Value="360" />
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
-        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto" Background="{DynamicResource DsBgBrush}">
@@ -420,7 +88,7 @@
                                     <TextBlock Text="{Binding Variables.Count}" FontSize="8.5" FontWeight="Bold"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                                Margin="0,1,0,0"
-                                               Foreground="#FFFFFF" />
+                                               Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </Border>
                             </Grid>
                         </Button>
@@ -549,7 +217,7 @@
                                                     <materialIcons:MaterialIcon Grid.Column="0"
                                                                                 Kind="FormatHeaderPound"
                                                                                 Width="13" Height="13"
-                                                                                Foreground="{StaticResource NotebookAmberBrush}"
+                                                                                Foreground="{DynamicResource NavNotebooksFgBrush}"
                                                                                 IsVisible="{Binding IsMarkdownCell}"
                                                                                 VerticalAlignment="Center"
                                                                                 Margin="0,0,6,0" />
@@ -663,11 +331,11 @@
                                                 <StackPanel Spacing="3">
                                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                                         <materialIcons:MaterialIcon Kind="CodeBraces" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsCodeCell}" />
-                                                        <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="12" Height="12" Foreground="{StaticResource NotebookAmberBrush}" IsVisible="{Binding IsMarkdownCell}" />
+                                                        <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="12" Height="12" Foreground="{DynamicResource NavNotebooksFgBrush}" IsVisible="{Binding IsMarkdownCell}" />
                                                         <TextBlock Text="{Binding ExecutionBadgeText}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsCodeCell}" />
                                                         <TextBlock Text="{Binding LanguageTag}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </StackPanel>
-                                                    <TextBlock Text="{Binding Source}" FontSize="11" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                                    <TextBlock Text="{Binding Source}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                                                 </StackPanel>
                                             </Button>
                                         </DataTemplate>
@@ -696,6 +364,9 @@
                 <!-- ==================================================== -->
                 <!-- ROW 0: DOCUMENT TAB BAR (36px)                       -->
                 <!-- ==================================================== -->
+                <!-- Opening a notebook that takes a while: a line along the tab strip's bottom edge -->
+                <activities:ActivityProgressLine Grid.Row="0" Location="Notebook" VerticalAlignment="Bottom" ZIndex="1" />
+
                 <Border Grid.Row="0"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
@@ -762,7 +433,7 @@
                                                     <!-- Top active accent line -->
                                                     <Border Grid.Row="0"
                                                             Height="2"
-                                                            Background="{StaticResource NotebookAmberBrush}"
+                                                            Background="{DynamicResource NavNotebooksFgBrush}"
                                                             IsVisible="{Binding IsActive}"
                                                             CornerRadius="2,2,0,0" />
                                                     <Button Grid.Row="1"
@@ -825,7 +496,7 @@
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                         <!-- Segment 1: Folder -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{StaticResource NotebookAmberBrush}" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{DynamicResource NavNotebooksFgBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding BreadcrumbFolder}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
@@ -914,8 +585,8 @@
                             <!-- Stop / Interrupt (visible whenever any cell in this tab is executing) -->
                             <Button Command="{Binding InterruptExecutionCommand}" IsVisible="{Binding IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Stop / Interrupt Execution (Shift+F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="#EF4444" />
-                                    <TextBlock Text="Stop" Classes="toolbar-label" FontSize="12" FontWeight="Medium" Foreground="#EF4444" VerticalAlignment="Center" />
+                                    <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource DsErrorBrush}" />
+                                    <TextBlock Text="Stop" Classes="toolbar-label" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -1012,7 +683,7 @@
                                     <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
                                     <TextBlock Text="Variables" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                     <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="8" Height="16" MinHeight="16" MinWidth="16" Padding="4,0" VerticalAlignment="Center" Margin="2,0,0,0">
-                                        <TextBlock Text="{Binding Variables.Count}" FontSize="9.5" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
+                                        <TextBlock Text="{Binding Variables.Count}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                     </Border>
                                 </StackPanel>
                             </Button>
@@ -1111,10 +782,10 @@
                                                     ToolTip.Tip="Restart every kernel of this notebook: all variables and runtime memory are cleared">
                                                 <Grid ColumnDefinitions="22,*">
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="Restart" Width="14" Height="14"
-                                                                                Foreground="#D29922" VerticalAlignment="Center" />
+                                                                                Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" Spacing="1">
                                                         <TextBlock Text="Restart all notebook kernels" FontSize="11.5" FontWeight="SemiBold"
-                                                                   Foreground="#D29922" />
+                                                                   Foreground="{DynamicResource DsWarningBrush}" />
                                                         <TextBlock Text="Reset runtime state and clear variables" FontSize="9.5"
                                                                    Foreground="{DynamicResource DsMutedBrush}" />
                                                     </StackPanel>
@@ -1200,7 +871,8 @@
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
                                             <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
                                                 <!-- COLUMN 0: LEFT GUTTER (Aligned with Line 1) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0" VerticalAlignment="Top"
+                                                             nb:StickyGutterBehavior.IsEnabled="True">
                                                     <!-- Row 1: Gutter Input Fold & Run Button -->
                                                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                                                         <Button Command="{Binding ToggleInputCollapseCommand}"
@@ -1272,7 +944,7 @@
                                                                 <Border Classes="cell-floating-toolbar"
                                                                         HorizontalAlignment="Right"
                                                                         VerticalAlignment="Top"
-                                                                        Margin="0,4,12,0"
+                                                                        Margin="0,-14,12,0"
                                                                         Padding="4,2">
                                                                     <StackPanel Orientation="Horizontal" Spacing="2">
                                                                         <!-- Language Tag Chip (C# / MD) -->
@@ -1494,7 +1166,7 @@
                                                                                     <Separator />
                                                                                     <MenuItem Header="Delete Cell" Command="{Binding DeleteCommand}">
                                                                                         <MenuItem.Icon>
-                                                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="#EF4444" />
+                                                                                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" />
                                                                                         </MenuItem.Icon>
                                                                                     </MenuItem>
                                                                                 </MenuFlyout>
@@ -1610,7 +1282,7 @@
                                                                                     VerticalAlignment="Center"
                                                                                     IsVisible="{Binding ExecutionDurationShortText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                                                             <materialIcons:MaterialIcon Kind="Check" Width="10" Height="10" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" VerticalAlignment="Center" />
-                                                                            <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="#EF4444" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
+                                                                            <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
                                                                             <TextBlock Text="{Binding ExecutionDurationShortText}"
                                                                                        FontSize="9.5"
                                                                                        Foreground="{DynamicResource DsMutedBrush}"
@@ -1727,7 +1399,7 @@
                         VerticalAlignment="Stretch">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="440">
                         <Border Width="64" Height="64" CornerRadius="16" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
-                            <materialIcons:MaterialIcon Kind="NotebookOutline" Width="32" Height="32" Foreground="#D97706" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="NotebookOutline" Width="32" Height="32" Foreground="{DynamicResource NavNotebooksFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="No Open Notebooks" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
@@ -1736,14 +1408,14 @@
                         </StackPanel>
                         <Button Command="{Binding NewNotebookTabCommand}"
                                 Background="{DynamicResource DsPrimaryBrush}"
-                                Foreground="#FFFFFF"
+                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                 CornerRadius="6"
                                 Height="34"
                                 Padding="18,0"
                                 HorizontalAlignment="Center"
                                 Cursor="Hand">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="Plus" Width="15" Height="15" Foreground="#FFFFFF" />
+                                <materialIcons:MaterialIcon Kind="Plus" Width="15" Height="15" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 <TextBlock Text="New Notebook" FontSize="12.5" FontWeight="SemiBold" />
                             </StackPanel>
                         </Button>
@@ -1769,6 +1441,9 @@
                         <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding CompilerStatusText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
+
+                    <!-- Running work (opening a notebook, starting the engine) -->
+                    <activities:ActivityStatusItem />
                 </StackPanel>
 
                 <!-- Right: Metadata & Kernel Indicator -->
@@ -1787,16 +1462,5 @@
                                           ZIndex="999"
                                           HorizontalAlignment="Stretch"
                                           VerticalAlignment="Stretch" />
-
-        <!-- ============================================================ -->
-        <!-- STUDIO LOADING OVERLAY POPUP                                 -->
-        <!-- ============================================================ -->
-        <studio:StudioLoadingOverlayControl IsLoading="{Binding IsLoading}"
-                                              LoadingTitle="{Binding LoadingTitle}"
-                                              LoadingSubtitle="{Binding LoadingSubtitle}"
-                                              Grid.RowSpan="2"
-                                              ZIndex="1000"
-                                              HorizontalAlignment="Stretch"
-                                              VerticalAlignment="Stretch" />
     </Grid>
 </UserControl>

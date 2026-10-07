@@ -161,7 +161,8 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         _ => "ServerNetwork"
     };
 
-    public IBrush ActiveCellTypeColor => ActiveCell?.TypeBadgeBrush ?? SolidColorBrush.Parse("#2F81F7");
+    private static readonly IBrush FallbackActiveTypeColor = new SolidColorBrush(Color.Parse("#2F81F7"));
+    public IBrush ActiveCellTypeColor => ActiveCell?.TypeBadgeBrush ?? (Avalonia.Application.Current?.TryFindResource("DsPrimaryBrush", out var res) == true && res is IBrush b ? b : FallbackActiveTypeColor);
 
     partial void OnActiveCellChanged(FryServerCellViewModel? value)
     {

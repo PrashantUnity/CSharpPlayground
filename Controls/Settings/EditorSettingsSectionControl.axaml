@@ -10,18 +10,7 @@
              x:DataType="settings:CSharpSettingsViewModel"
              Background="Transparent">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerPaletteTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
 
-    <UserControl.Styles>
-        <StyleInclude Source="avares://CSharpEditorPlugin/Views/CSharpManagerStyles.axaml" />
-        <StyleInclude Source="avares://CSharpEditorPlugin/Controls/SharedStudioStyles.axaml" />
-    </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid Margin="28,20,28,28" ColumnDefinitions="*,380" ColumnSpacing="20">
@@ -225,25 +214,25 @@
                                 <!-- Line Numbers Gutter -->
                                 <Border Grid.Column="0" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0" Padding="0,0,8,0" Margin="0,0,10,0" IsVisible="{Binding ShowLineNumbers}">
                                     <StackPanel Spacing="2">
-                                        <TextBlock Text="1" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="2" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="3" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="4" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="5" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="6" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
-                                        <TextBlock Text="7" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="1" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="2" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="3" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="4" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="5" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="6" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
+                                        <TextBlock Text="7" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" Foreground="{DynamicResource DsMutedBrush}" TextAlignment="Right" />
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Code Lines -->
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="using " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="System;" /></TextBlock>
-                                    <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsMutedBrush}" Text="// Live editor preview canvas" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="string " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg " /><Run Foreground="{DynamicResource DsMutedBrush}" Text="= " /><Run Foreground="#A5D6FF" Text="&quot;Hello, FryPDF&quot;" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=";" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Console" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="WriteLine" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
-                                    <TextBlock FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Display" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="Dump" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
-                                    <TextBlock Text="" FontFamily="Consolas,Menlo,monospace" FontSize="{Binding FontSize}" />
+                                    <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="using " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="System;" /></TextBlock>
+                                    <TextBlock Text="" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" />
+                                    <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsMutedBrush}" Text="// Live editor preview canvas" /></TextBlock>
+                                    <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="string " /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg " /><Run Foreground="{DynamicResource DsMutedBrush}" Text="= " /><Run Foreground="{DynamicResource DsSyntaxStringBrush}" Text="&quot;Hello, FryPDF&quot;" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=";" /></TextBlock>
+                                    <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Console" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="WriteLine" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
+                                    <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" xml:space="preserve"><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="Display" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="." /><Run Foreground="{DynamicResource DsPrimaryBrush}" Text="Dump" /><Run Foreground="{DynamicResource DsMutedBrush}" Text="(" /><Run Foreground="{DynamicResource DsTextWhiteBrush}" Text="msg" /><Run Foreground="{DynamicResource DsMutedBrush}" Text=");" /></TextBlock>
+                                    <TextBlock Text="" FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{Binding FontSize}" />
                                 </StackPanel>
                             </Grid>
                         </Border>

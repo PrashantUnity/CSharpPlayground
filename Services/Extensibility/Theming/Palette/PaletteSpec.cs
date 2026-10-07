@@ -1,0 +1,158 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Palette;
+
+/// <summary>
+/// The sections of a palette, each of which can be locked, set by hand or regenerated on its own: the core roles, the
+/// syntax colours and the chart series.
+/// </summary>
+public static class PaletteSections
+{
+    public const string Primary = "Primary";
+    public const string Secondary = "Secondary";
+    public const string Tertiary = "Tertiary";
+    public const string Neutral = "Neutral";
+    public const string NeutralVariant = "NeutralVariant";
+    public const string Success = "Success";
+    public const string Warning = "Warning";
+    public const string Error = "Error";
+    public const string Info = "Info";
+
+    public const string SyntaxPrefix = "Syntax.";
+    public const string ChartPrefix = "Chart.";
+
+    /// <summary>Syntax roles, in the order the generator places them (earlier ones keep their hue when two clash).</summary>
+    public static readonly IReadOnlyList<string> SyntaxRoles =
+        ["Keyword", "Type", "Function", "String", "Number", "Preprocessor", "Variable", "Comment", "Punctuation"];
+
+    public const int ChartSeriesCount = 8;
+
+    public static readonly IReadOnlyList<string> Core = [Primary, Secondary, Tertiary, Neutral, NeutralVariant, Success, Warning, Error, Info];
+
+    public static readonly IReadOnlyList<string> Syntax = SyntaxRoles.Select(r => SyntaxPrefix + r).ToArray();
+
+    public static readonly IReadOnlyList<string> Charts = Enumerable.Range(1, ChartSeriesCount).Select(i => ChartPrefix + i).ToArray();
+
+    public static readonly IReadOnlyList<string> All = [.. Core, .. Syntax, .. Charts];
+
+    /// <summary>The roles harmony places around the colour wheel (the others follow them).</summary>
+    public static readonly IReadOnlyList<string> Chromatic = [Primary, Secondary, Tertiary];
+
+    public static bool IsKnown(string sectionId) => All.Contains(sectionId, StringComparer.Ordinal);
+
+    public static string SyntaxSection(string role) => SyntaxPrefix + role;
+
+    public static string Chart(int series) => ChartPrefix + series;
+}
+
+/// <summary>Where a section's colour comes from.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<SectionSource>))]
+public enum SectionSource
+{
+    /// <summary>Placed exactly by the harmony mode.</summary>
+    Harmony,
+
+    /// <summary>Placed by the harmony mode with a little seeded variation (what Generate does).</summary>
+    Random,
+
+    /// <summary>Set by the user (a hex value, a picked colour).</summary>
+    Manual,
+}
+
+/// <summary>One section of a palette.</summary>
+public sealed record SectionSpec
+{
+    /// <summary>The section's colour when it is fixed (locked or set by hand), as #RRGGBB; <c>null</c> to generate it.</summary>
+    public string? KeyColor { get; init; }
+
+    /// <summary>A locked section never changes when the palette is regenerated.</summary>
+    public bool Locked { get; init; }
+
+    public SectionSource Source { get; init; } = SectionSource.Harmony;
+}
+
+/// <summary>
+/// Everything a palette is generated from. Immutable and deterministic: the same spec always gives the same palette, so
+/// it is what is saved (with a theme, in the preferences) and what undo steps through.
+/// </summary>
+public sealed record PaletteSpec
+{
+    public const int CurrentVersion = 1;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    public int Version { get; init; } = CurrentVersion;
+
+    public ColorEngineKind Engine { get; init; } = ColorEngineKind.Oklch;
+
+    /// <summary>Drives the variation of sections whose source is <see cref="SectionSource.Random"/>.</summary>
+    public int Seed { get; init; }
+
+    public ColorHarmonyMode Harmony { get; init; } = ColorHarmonyMode.Complementary;
+
+    /// <summary>The primary hue, in the engine's hue circle (degrees), used when no chromatic section is locked.</summary>
+    public double BaseHue { get; init; } = 250;
+
+    public bool IsDark { get; init; } = true;
+
+    /// <summary>Multiplies every role's chroma (1 = the engine's usual vivid level).</summary>
+    public double ChromaBoost { get; init; } = 1.0;
+
+    /// <summary>How much of the primary hue tints the greys, 0..35 (percent of vivid chroma).</summary>
+    public double NeutralTint { get; init; } = 10;
+
+    /// <summary>How far success, warning, error and info lean towards the primary hue, 0..100.</summary>
+    public double SemanticPull { get; init; } = 15;
+
+    /// <summary>The WCAG ratio text and accents must reach on their surfaces: 4.5 (AA) or 7 (AAA).</summary>
+    public double ContrastTarget { get; init; } = 4.5;
+
+    /// <summary>Sections by id (see <see cref="PaletteSections"/>); a missing section is generated by harmony.</summary>
+    public IReadOnlyDictionary<string, SectionSpec> Sections { get; init; } = new Dictionary<string, SectionSpec>(StringComparer.Ordinal);
+
+    public SectionSpec Section(string sectionId) => Sections.TryGetValue(sectionId, out var section) ? section : Default;
+
+    public bool IsLocked(string sectionId) => Section(sectionId).Locked;
+
+    /// <summary>This spec with one section replaced.</summary>
+    public PaletteSpec WithSection(string sectionId, SectionSpec section)
+    {
+        if (!PaletteSections.IsKnown(sectionId)) throw new ArgumentException($"Unknown palette section '{sectionId}'.", nameof(sectionId));
+        var sections = new Dictionary<string, SectionSpec>(Sections, StringComparer.Ordinal) { [sectionId] = section };
+        return this with { Sections = sections };
+    }
+
+    public JsonElement ToJson() => JsonSerializer.SerializeToElement(this, JsonOptions);
+
+    /// <summary>A spec read back from JSON; <c>null</c> when it isn't one (or is from a newer version).</summary>
+    public static PaletteSpec? FromJson(JsonElement? json)
+    {
+        if (json is not { ValueKind: JsonValueKind.Object } element) return null;
+        try
+        {
+            var spec = element.Deserialize<PaletteSpec>(JsonOptions);
+            if (spec == null || spec.Version > CurrentVersion) return null;
+            var sections = new Dictionary<string, SectionSpec>(StringComparer.Ordinal);
+            foreach (var (id, section) in spec.Sections ?? new Dictionary<string, SectionSpec>())
+            {
+                if (PaletteSections.IsKnown(id) && section != null) sections[id] = section;
+            }
+
+            return spec with { Sections = sections };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static readonly SectionSpec Default = new();
+}

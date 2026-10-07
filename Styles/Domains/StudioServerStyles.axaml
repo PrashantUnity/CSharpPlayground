@@ -1,0 +1,189 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ============================================================ -->
+    <!-- DOMAIN: FRY SERVER STUDIO STYLES                             -->
+    <!-- Endpoint cells, method dropdowns, route outline, traffic log -->
+    <!-- ============================================================ -->
+    <Style Selector="Button.method-dropdown-btn">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="46" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+    <Style Selector="Button.method-dropdown-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}" />
+            <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+        </Style>
+
+    <Style Selector="Button.method-dropdown-btn:pointerover">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-action-toggle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="7,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-action-toggle:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-action-toggle:checked">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-enable-toggle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="Opacity" Value="0.45" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-enable-toggle:checked">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Foreground" Value="{DynamicResource DsGreenBrush}" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-enable-toggle:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        </Style>
+
+    <Style Selector="ToggleButton.cell-enable-toggle /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+    <Style Selector="Button.conflict-pill-btn">
+            <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource NavPinnedFgBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+    <Style Selector="Button.conflict-pill-btn:pointerover">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+
+    <Style Selector="ListBox.server-traffic-list">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+    <Style Selector="ListBox.server-traffic-list ListBoxItem">
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+    <Style Selector="ListBox.server-traffic-list ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+
+    <Style Selector="ListBox.server-traffic-list ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        </Style>
+
+    <Style Selector="ListBox.server-traffic-list ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        </Style>
+
+    <Style Selector="Border.top-insert-divider">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Margin" Value="56,0,0,8" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+    <Style Selector="Border.top-insert-divider StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+    <Style Selector="Border.top-insert-divider:pointerover StackPanel.insert-pill-group">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+
+    <Style Selector="Border.top-insert-divider Rectangle.divider-line">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+    <Style Selector="Border.top-insert-divider:pointerover Rectangle.divider-line">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+
+    <Style Selector="Button.server-outline-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.08" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.08" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+    <Style Selector="Button.server-outline-row /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+    <Style Selector="Button.server-outline-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        </Style>
+
+    <Style Selector="Button.server-outline-row.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+        </Style>
+
+</Styles>

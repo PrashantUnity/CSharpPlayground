@@ -42,7 +42,15 @@ public static class EmbeddedKernelFiles
         }
         catch (IOException) when (Directory.Exists(folder))
         {
-            Directory.Delete(staging, recursive: true); // someone else put it there first
+            foreach (var (name, bytes) in files)
+            {
+                var targetFile = Path.Combine(folder, name);
+                if (!File.Exists(targetFile))
+                {
+                    File.WriteAllBytes(targetFile, bytes);
+                }
+            }
+            try { Directory.Delete(staging, recursive: true); } catch { }
         }
 
         return folder;

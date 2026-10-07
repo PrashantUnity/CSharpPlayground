@@ -4,6 +4,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
@@ -133,25 +134,41 @@ public partial class CSharpCodeStudioViewModel
         OnPropertyChanged(nameof(RuntimeLabel));
     }
 
-    public void RefreshActiveDocumentPreview()
+    /// <summary>A CSV up to this size is turned into a table at once (a few milliseconds); a bigger one in the background.</summary>
+    internal const int CsvInlineParseLimit = 64 * 1024;
+
+    /// <summary>The table preview shows at most this many rows (and says how many there are).</summary>
+    internal const int CsvPreviewMaxRows = 100_000;
+
+    // While the raw text changes, the table waits for a pause instead of re-parsing on every change.
+    internal static TimeSpan CsvPreviewDebounce { get; set; } = TimeSpan.FromMilliseconds(300);
+
+    // A newer preview (another file, more typing) cancels the one being built.
+    private readonly LatestOperation _csvPreview = new();
+
+    /// <summary>The table preview being built in the background, if any (tests await it).</summary>
+    public Task PendingCsvPreview { get; private set; } = Task.CompletedTask;
+
+    private sealed record CsvPreview(DumpTableResult Table, string DelimiterSummary, string DimensionsSummary);
+
+    public void RefreshActiveDocumentPreview() => RefreshActiveDocumentPreview(debounce: false);
+
+    private void RefreshActiveDocumentPreview(bool debounce)
     {
         if (IsActiveDocumentCsv)
         {
             var path = Script?.SourceFilePath ?? Script?.Title ?? "data.csv";
             var text = Code ?? string.Empty;
-            char delimiter = DetectDelimiter(path, text);
-            CsvDelimiterSummary = delimiter switch
+            var token = _csvPreview.Begin();
+            if (text.Length <= CsvInlineParseLimit && !debounce)
             {
-                '\t' => "Tab (TSV)",
-                ';' => "Semicolon (;)",
-                _ => "Comma (,)"
-            };
-
-            var records = ParseCsvRecords(text, delimiter);
-            ActiveCsvTable = BuildDumpTableFromRecords(records, Path.GetFileName(path), delimiter);
-            int rows = ActiveCsvTable.Rows.Count;
-            int cols = ActiveCsvTable.Columns.Count;
-            CsvDimensionsSummary = $"{rows} {(rows == 1 ? "row" : "rows")} × {cols} {(cols == 1 ? "col" : "cols")}";
+                ApplyCsvPreview(BuildCsvPreview(path, text, token));
+            }
+            else
+            {
+                PendingCsvPreview = BuildCsvPreviewInBackgroundAsync(path, text, Script?.Id, debounce, token);
+                PendingCsvPreview.FireAndForget(_activities, "Building the table preview");
+            }
         }
         else if (IsActiveDocumentMarkdown)
         {
@@ -159,6 +176,60 @@ public partial class CSharpCodeStudioViewModel
         }
 
         OnPropertyChanged(nameof(RuntimeLabel));
+    }
+
+    private async Task BuildCsvPreviewInBackgroundAsync(string path, string text, string? scriptId, bool debounce, CancellationToken token)
+    {
+        try
+        {
+            if (debounce) await Task.Delay(CsvPreviewDebounce, token);
+            using var activity = _activities.Start(new ActivityOptions($"Building table for {Path.GetFileName(path)}", ActivityLocation.Editor), token);
+            var preview = await Task.Run(() => BuildCsvPreview(path, text, token), token);
+            if (token.IsCancellationRequested || !string.Equals(Script?.Id, scriptId, StringComparison.Ordinal)) return;
+            ApplyCsvPreview(preview);
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer preview took over.
+        }
+    }
+
+    private void ApplyCsvPreview(CsvPreview preview)
+    {
+        CsvDelimiterSummary = preview.DelimiterSummary;
+        ActiveCsvTable = preview.Table;
+        CsvDimensionsSummary = preview.DimensionsSummary;
+        // The tab remembers its table, so switching back to it shows it at once.
+        if (OpenTabs.FirstOrDefault(t => t.Id == Script.Id) is { } tab && tab.IsDocumentPreviewMode != null)
+        {
+            tab.CsvTable = ActiveCsvTable;
+            tab.CsvDimensionsSummary = CsvDimensionsSummary;
+            tab.CsvDelimiterSummary = CsvDelimiterSummary;
+        }
+
+        OnPropertyChanged(nameof(RuntimeLabel));
+    }
+
+    // Pure work, safe off the UI thread: the table is not shown until ApplyCsvPreview hands it over.
+    private static CsvPreview BuildCsvPreview(string path, string text, CancellationToken token)
+    {
+        char delimiter = DetectDelimiter(path, text);
+        var delimiterSummary = delimiter switch
+        {
+            '\t' => "Tab (TSV)",
+            ';' => "Semicolon (;)",
+            _ => "Comma (,)"
+        };
+
+        var records = ParseCsvRecords(text, delimiter, CsvPreviewMaxRows + 1, out int totalRecords, token);
+        int totalDataRows = Math.Max(0, totalRecords - 1);
+        var table = BuildDumpTableFromRecords(records, Path.GetFileName(path), delimiter, totalDataRows);
+        int rows = table.Rows.Count;
+        int cols = table.Columns.Count;
+        var dimensions = totalDataRows > rows
+            ? $"first {rows:N0} of {totalDataRows:N0} rows × {cols} {(cols == 1 ? "col" : "cols")}"
+            : $"{rows} {(rows == 1 ? "row" : "rows")} × {cols} {(cols == 1 ? "col" : "cols")}";
+        return new CsvPreview(table, delimiterSummary, dimensions);
     }
 
     public void UpdatePreviewStateForDocument(ScriptDocumentItem document, bool? tabPreviewMode = null)
@@ -290,19 +361,29 @@ public partial class CSharpCodeStudioViewModel
         var ext = Path.GetExtension(path);
         if (ext.Equals(".tsv", StringComparison.OrdinalIgnoreCase)) return '\t';
 
-        var firstLine = text.Split('\n', 2)[0];
-        int tabs = firstLine.Count(c => c == '\t');
-        int commas = firstLine.Count(c => c == ',');
-        int semicolons = firstLine.Count(c => c == ';');
+        // Only the first line decides; never copy the rest of a big file to find it.
+        int end = text.IndexOf('\n');
+        var firstLine = end < 0 ? text.AsSpan() : text.AsSpan(0, end);
+        int tabs = firstLine.Count('\t');
+        int commas = firstLine.Count(',');
+        int semicolons = firstLine.Count(';');
 
         if (tabs > commas && tabs > semicolons) return '\t';
         if (semicolons > commas && semicolons > tabs) return ';';
         return ',';
     }
 
-    public static List<List<string>> ParseCsvRecords(string text, char delimiter)
+    public static List<List<string>> ParseCsvRecords(string text, char delimiter) =>
+        ParseCsvRecords(text, delimiter, int.MaxValue, out _, CancellationToken.None);
+
+    /// <summary>
+    /// Parses at most <paramref name="maxRecords"/> records (the header counts as one) and counts the rest without
+    /// building them, so a preview of a huge file costs the rows it shows, plus a quick scan for the total.
+    /// </summary>
+    public static List<List<string>> ParseCsvRecords(string text, char delimiter, int maxRecords, out int totalRecords, CancellationToken token)
     {
         var records = new List<List<string>>();
+        totalRecords = 0;
         if (string.IsNullOrEmpty(text)) return records;
 
         var currentRecord = new List<string>();
@@ -312,6 +393,13 @@ public partial class CSharpCodeStudioViewModel
 
         while (i < text.Length)
         {
+            if (records.Count >= maxRecords)
+            {
+                totalRecords = records.Count + CountRemainingRecords(text, i, token);
+                return records;
+            }
+
+            if ((i & 0xFFFF) == 0) token.ThrowIfCancellationRequested();
             char c = text[i];
 
             if (inQuotes)
@@ -381,12 +469,40 @@ public partial class CSharpCodeStudioViewModel
             records.Add(currentRecord);
         }
 
+        totalRecords = records.Count;
         return records;
     }
 
-    public static DumpTableResult BuildDumpTableFromRecords(List<List<string>> records, string title, char delimiter)
+    // Counts the records from position i on, minding quoted line breaks, without building any of them.
+    private static int CountRemainingRecords(string text, int i, CancellationToken token)
     {
-        var result = new DumpTableResult(title, delimiter == '\t' ? "TSV Table" : "CSV Table");
+        int count = 0;
+        bool inQuotes = false;
+        bool hasContent = false;
+        for (; i < text.Length; i++)
+        {
+            if ((i & 0xFFFF) == 0) token.ThrowIfCancellationRequested();
+            char c = text[i];
+            if (c == '"') inQuotes = !inQuotes;
+            if (!inQuotes && (c == '\n' || c == '\r'))
+            {
+                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n') i++;
+                count++;
+                hasContent = false;
+            }
+            else
+            {
+                hasContent = true;
+            }
+        }
+
+        return hasContent ? count + 1 : count;
+    }
+
+    public static DumpTableResult BuildDumpTableFromRecords(List<List<string>> records, string title, char delimiter, int totalDataRows = -1)
+    {
+        var label = delimiter == '\t' ? "TSV Table" : "CSV Table";
+        var result = new DumpTableResult(title, label);
         if (records.Count == 0) return result;
 
         var headerRow = records[0];
@@ -423,6 +539,7 @@ public partial class CSharpCodeStudioViewModel
             });
         }
 
+        var rows = new List<DumpTableRow>(dataRows.Count);
         for (int r = 0; r < dataRows.Count; r++)
         {
             var rowList = dataRows[r];
@@ -433,7 +550,14 @@ public partial class CSharpCodeStudioViewModel
                 var cell = CreateCellFromText(text, isNumeric[c]);
                 cells.Add(cell);
             }
-            result.Rows.Add(new DumpTableRow(r, cells));
+            rows.Add(new DumpTableRow(r, cells));
+        }
+
+        // One notification for the whole table, not one (and a re-filter) per row.
+        result.AddRows(rows);
+        if (totalDataRows > rows.Count)
+        {
+            result.Label = $"{label} • first {rows.Count:N0} of {totalDataRows:N0} rows";
         }
 
         return result;

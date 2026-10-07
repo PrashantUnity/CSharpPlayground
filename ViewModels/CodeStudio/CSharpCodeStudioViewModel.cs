@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Controls.Editor;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
@@ -19,7 +20,7 @@ using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
-public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle, IStudioLoadingState
+public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewFileHost, IPageLifecycle
 {
     private readonly IScriptStorageService _storageService;
     private readonly RoslynCompilerService _compilerService;
@@ -44,17 +45,14 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     public Common.QuickOpenViewModel QuickOpen { get; } = new();
     public event Action<int>? RequestGoToLine;
 
-    [ObservableProperty]
-    private bool _isLoading;
+    // Where this studio reports work the user may wait for (opening a file, a folder); the host decides what to show.
+    private readonly IActivityService _activities;
 
-    [ObservableProperty]
-    private string _loadingTitle = "Loading...";
+    // Opening file B while file A is still loading cancels A: a slow A can never take the editor away from B.
+    private readonly LatestOperation _fileOpen = new();
 
-    [ObservableProperty]
-    private string _loadingSubtitle = string.Empty;
-
-    public IDisposable BeginLoading(string title, string subtitle = "") =>
-        StudioLoadingExtensions.BeginLoading(this, title, subtitle);
+    // Two opens of one file at once (a double click, Go to File racing the Explorer) read it once.
+    private readonly SingleFlight<string, ScriptDocumentItem?> _scriptLoads = new(StringComparer.OrdinalIgnoreCase);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ZoomPercentageText))]
@@ -326,9 +324,11 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         IBlindProgressService? blindProgress = null,
         StudioLanguageServices? languages = null,
         Action? navigateToSettingsAction = null,
-        Action<FryServerDocumentItem>? openServerAction = null)
+        Action<FryServerDocumentItem>? openServerAction = null,
+        IActivityService? activities = null)
     {
         _script = script;
+        _activities = activities ?? NullActivityService.Instance;
         _languages = languages ?? StudioLanguageServices.Default;
         _storageService = storageService;
         _compilerService = compilerService;
@@ -466,9 +466,10 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         }
         TriggerDiagnosticsCheck();
         RefreshDocumentNuGetPackages();
-        if (IsActiveDocumentCsv && IsDocumentPreviewMode)
+        // A tab switch restores its own table; other changes rebuild it after a pause, off the UI thread when big.
+        if (IsActiveDocumentCsv && IsDocumentPreviewMode && !_isRestoringTabState)
         {
-            RefreshActiveDocumentPreview();
+            RefreshActiveDocumentPreview(debounce: true);
         }
     }
 

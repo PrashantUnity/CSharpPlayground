@@ -63,8 +63,8 @@ public class RichCellOutput
             if (ImageBytes == null || ImageBytes.Length == 0) return null;
             try
             {
-                using var ms = new MemoryStream(ImageBytes);
-                _decodedImage = new Bitmap(ms);
+                // At most ImageDecoder.MaxDisplayWidth across: a huge image is not decoded in full to be shown small.
+                _decodedImage = ImageDecoder.Decode(ImageBytes);
             }
             catch
             {

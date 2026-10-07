@@ -90,7 +90,7 @@ public partial class CSharpManagerViewModel
     [RelayCommand]
     public async Task CreateNewServerAsync(string? templateId = null)
     {
-        if (IsLaunching || IsLoading) return;
+        if (IsLaunching) return;
         await OpenCreatePromptAsync(WorkspaceItemKind.Server, templateId, "New API Server");
     }
 
@@ -104,7 +104,7 @@ public partial class CSharpManagerViewModel
         }
 
         var newServer = await _storageService.CreateNewServerDocumentAsync(title, folderPath);
-        await LoadWorkspaceItemsAsync();
         _openServerAction?.Invoke(newServer);
+        await LoadWorkspaceItemsAsync();
     }
 }

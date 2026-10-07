@@ -1,0 +1,200 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ===================================================================== -->
+    <!-- Settings & Environment Setup Styles                                   -->
+    <!-- Consumed by CSharpSettingsView and Controls/Settings/*                -->
+    <!-- Adheres to strict VS Code layout & Material 3 / Developer Studio tokens-->
+    <!-- ===================================================================== -->
+
+    <!-- ── 1. Settings Sidebar Navigation Item (Button.doc-nav-item) ────────── -->
+    <Style Selector="Button.doc-nav-item, Button.doc-category-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.doc-nav-item:pointerover, Button.doc-category-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-nav-item:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.doc-category-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+
+    <Style Selector="Button.doc-nav-item.active, Button.doc-nav-item.selected,
+                     Button.doc-category-btn.selected">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.doc-nav-item.active /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.doc-nav-item.selected /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.doc-category-btn.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+    </Style>
+
+    <Style Selector="Button.doc-nav-item.active TextBlock, Button.doc-nav-item.selected TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Nav Item Icon tinting (defaults to muted, active/hover becomes primary/white) -->
+    <Style Selector="Button.doc-nav-item materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+    </Style>
+    <Style Selector="Button.doc-nav-item:pointerover materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.doc-nav-item.active materialIcons|MaterialIcon,
+                     Button.doc-nav-item.selected materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <!-- ── 2. Snippet & Pill Action Button (Button.snippet-action-btn) ───────── -->
+    <Style Selector="Button.snippet-action-btn">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.snippet-action-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.snippet-action-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+
+    <Style Selector="Button.snippet-action-btn:pressed">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.snippet-action-btn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.snippet-action-btn.active, Button.snippet-action-btn.selected">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.snippet-action-btn.active /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.snippet-action-btn.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+    </Style>
+
+    <Style Selector="Button.snippet-action-btn.active TextBlock, Button.snippet-action-btn.selected TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- ── 3. Search & Editor Inputs (TextBox.nexus-search-input, cs-editor-textbox) -->
+    <Style Selector="TextBox.nexus-search-input, TextBox.cs-editor-textbox">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="TextBox.nexus-search-input:focus, TextBox.cs-editor-textbox:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="TextBox.nexus-search-input:focus /template/ Border#PART_BorderElement,
+                     TextBox.cs-editor-textbox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+    <Style Selector="TextBox.nexus-search-input:pointerover /template/ Border#PART_BorderElement,
+                     TextBox.cs-editor-textbox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
+    </Style>
+
+    <!-- ── 4. Toolbar Action Button (Button.cs-toolbar-btn) ────────────────── -->
+    <Style Selector="Button.cs-toolbar-btn">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.cs-toolbar-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.cs-toolbar-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DsHoverOverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+    </Style>
+
+</Styles>

@@ -1,0 +1,165 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+    <!-- ============================================================ -->
+    <!-- ZONE 2: SIDEBAR & EXPLORER STYLES                            -->
+    <!-- Explorer, Search, Source Control, Branch Picker, Dependencies-->
+    <!-- ============================================================ -->
+
+    <!-- Search Inputs -->
+    <Style Selector="TextBox.sidebar-search-box">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox.sidebar-search-box:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBox.explorer-rename-box">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox.explorer-rename-box /template/ Border#PART_BorderElement">
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+
+    <!-- Sidebar Option Toggle -->
+    <Style Selector="ToggleButton.sidebar-option-toggle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.sidebar-option-toggle:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.sidebar-option-toggle:checked">
+        <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
+
+    <!-- Explorer Tool Button (Unified across Explorer, Search, CodeStudio, Dependencies) -->
+    <Style Selector="Button.explorer-tool-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.explorer-tool-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
+    </Style>
+    <Style Selector="Button.explorer-tool-btn.delete-tool:pointerover">
+        <Setter Property="Background" Value="#2AEE5555" />
+    </Style>
+    <Style Selector="Button.explorer-tool-btn.delete-tool:pointerover materialIcons|MaterialIcon">
+        <Setter Property="Foreground" Value="#EE5555" />
+    </Style>
+
+    <!-- Explorer Tree Items -->
+    <Style Selector="Button.explorer-item-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.explorer-item-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="Button.explorer-item-btn.selected">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="Button.explorer-item-btn StackPanel.explorer-row-actions">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Button.explorer-item-btn:pointerover StackPanel.explorer-row-actions">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Source Control / Git Tool Buttons -->
+    <Style Selector="Button.git-tool-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.git-tool-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+    <Style Selector="Button.git-row-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.git-row-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+    <Style Selector="Button.git-row-btn StackPanel.git-row-actions">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Button.git-row-btn:pointerover StackPanel.git-row-actions">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Branch Picker Items -->
+    <Style Selector="Button.branch-item-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button.branch-item-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+</Styles>

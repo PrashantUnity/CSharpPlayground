@@ -19,6 +19,16 @@ public class NotebookCanvasScrollViewer : ScrollViewer
 {
     private bool _isUserOrProgrammaticScroll;
 
+    /// <summary>
+    /// Raised whenever the scroll <see cref="ScrollViewer.Offset"/> changes (wheel, drag, or
+    /// programmatic).  <see cref="StickyGutterBehavior"/> subscribes to this to update its
+    /// sticky translate transform on every scroll tick.
+    /// </summary>
+    public event EventHandler? OffsetChanged;
+
+    private void RaiseOffsetChanged() =>
+        OffsetChanged?.Invoke(this, EventArgs.Empty);
+
     static NotebookCanvasScrollViewer()
     {
         BringIntoViewOnFocusChangeProperty.OverrideDefaultValue<NotebookCanvasScrollViewer>(false);
@@ -46,6 +56,14 @@ public class NotebookCanvasScrollViewer : ScrollViewer
         SetBringIntoViewOnFocusChange(this, false);
 
         AddHandler(RequestBringIntoViewEvent, OnRequestBringIntoView, RoutingStrategies.Bubble | RoutingStrategies.Tunnel, handledEventsToo: true);
+
+        // Fire OffsetChanged for every scroll path (wheel, scrollbar drag, programmatic).
+        // StickyGutterBehavior uses this to update the gutter translate transform.
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == OffsetProperty)
+                RaiseOffsetChanged();
+        };
     }
 
     protected override Type StyleKeyOverride => typeof(ScrollViewer);

@@ -139,12 +139,12 @@
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding SolvedTooltip}">
                                         <Panel>
-                                            <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="#22C55E" IsVisible="{Binding IsSolved}" />
+                                            <materialIcons:MaterialIcon Kind="CheckCircle" Foreground="{DynamicResource DsSuccessBrush}" IsVisible="{Binding IsSolved}" />
                                             <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsSolved}" />
                                         </Panel>
                                     </Button>
                                     <materialIcons:MaterialIcon Kind="LockOutline" Width="13" Height="13"
-                                                                Foreground="#F59E0B" VerticalAlignment="Center"
+                                                                Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center"
                                                                 IsVisible="{Binding IsPremium}"
                                                                 ToolTip.Tip="LeetCode Premium on leetcode.com; free to solve here" />
                                 </StackPanel>
@@ -196,7 +196,7 @@
                                             Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenOnLeetCodeCommand}"
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding LeetCodeTooltip}">
-                                        <materialIcons:MaterialIcon Kind="OpenInNew" Foreground="#FFA116" />
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Foreground="{DynamicResource DsLeetCodeBrush}" />
                                     </Button>
                                     <Button Classes="row-action"
                                             Command="{Binding $parent[UserControl].((blindProblems:CSharpBlindProblemsViewModel)DataContext).OpenDetailFlyoutCommand}"
@@ -209,7 +209,7 @@
                                             CommandParameter="{Binding}"
                                             ToolTip.Tip="{Binding BookmarkTooltip}">
                                         <Panel>
-                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="#F59E0B" IsVisible="{Binding IsBookmarked}" />
+                                            <materialIcons:MaterialIcon Kind="Bookmark" Foreground="{DynamicResource DsWarningBrush}" IsVisible="{Binding IsBookmarked}" />
                                             <materialIcons:MaterialIcon Kind="BookmarkOutline" Foreground="{DynamicResource DsMutedBrush}" IsVisible="{Binding !IsBookmarked}" />
                                         </Panel>
                                     </Button>
