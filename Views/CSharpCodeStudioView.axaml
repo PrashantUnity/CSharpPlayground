@@ -77,6 +77,16 @@
                                                     <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="14" Height="14" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                                 </MenuItem.Icon>
                                             </MenuItem>
+                                            <MenuItem Header="New Interactive Notebook (.frynb)" Command="{Binding NewNotebookCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="NotebookOutline" Width="14" Height="14" Foreground="{DynamicResource NavNotebooksFgBrush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="New API Server (.fryserver)" Command="{Binding NewServerCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" Foreground="{DynamicResource NavServersFgBrush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
                                             <Separator />
                                         </MenuFlyout>
                                     </Button.Flyout>

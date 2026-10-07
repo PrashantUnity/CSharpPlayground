@@ -1313,10 +1313,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     {
         if (sender is not MenuFlyout menu || _currentVm == null) return;
 
-        while (menu.Items.Count > 2)
+        while (menu.Items.Count > 4)
         {
-            menu.Items.RemoveAt(2);
+            menu.Items.RemoveAt(4);
         }
+
+        var selected = _currentVm.SelectedExplorerItem;
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
 
         foreach (var option in _currentVm.NewFileOptions)
         {
@@ -1328,7 +1331,8 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             {
                 Header = option.Label,
                 Icon = icon,
-                Command = option.Command
+                Command = option.Command,
+                CommandParameter = targetFolder
             });
         }
     }

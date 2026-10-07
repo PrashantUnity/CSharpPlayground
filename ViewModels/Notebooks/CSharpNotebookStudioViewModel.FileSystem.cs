@@ -213,6 +213,49 @@ public partial class CSharpNotebookStudioViewModel
     }
 
     public void NewFileUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+    public void NewNotebookUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+
+    public void NewServerUnderItem(ExplorerItemViewModel target) => _ = NewServerUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewServerUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Server_{timestamp}";
+        var folderPath = folder?.FullPath;
+
+        try
+        {
+            var newServer = await _storageService.CreateNewServerDocumentAsync(title, folderPath: folderPath);
+            _openServerAction?.Invoke(newServer);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create server: {ex.Message}");
+        }
+    }
+
+    public void NewScriptUnderItem(ExplorerItemViewModel target) => _ = NewScriptUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewScriptUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Script_{timestamp}";
+        var folderPath = folder?.FullPath;
+
+        try
+        {
+            var newScript = await _storageService.CreateNewScriptAsync(title, folderPath: folderPath);
+            _openScriptAction?.Invoke(newScript);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create script: {ex.Message}");
+        }
+    }
 
     [RelayCommand]
     public async Task NewFileUnderItemAsync(ExplorerItemViewModel target)

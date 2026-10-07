@@ -759,7 +759,8 @@ internal static class StudioSnapshots
             "kernel" => "The notebook's kernels",
             "toolchain" => "Choose which installed toolchain",
             "mode" => "Select C# Execution Mode",
-            _ => throw new ArgumentException($"--menu is language, kernel (notebook), toolchain or mode (studio); not '{menu}'.")
+            "newfile" => "New File...",
+            _ => throw new ArgumentException($"--menu is language, kernel (notebook), toolchain, mode or newfile (studio); not '{menu}'.")
         };
         // Every cell has a language menu (only the selected cell's toolbar is opaque), so it's the selected cell's.
         var button = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b =>

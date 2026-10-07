@@ -176,6 +176,8 @@ public partial class ExplorerItemViewModel : ObservableObject
     public Action<ExplorerItemViewModel>? OnItemClicked { get; set; }
     public Action<ExplorerItemViewModel>? OnDeleteRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnNewFileRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnNewNotebookRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnNewServerRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnNewFolderRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnRenameCommitted { get; set; }
     public Action<ExplorerItemViewModel>? OnDuplicateRequested { get; set; }
@@ -285,6 +287,18 @@ public partial class ExplorerItemViewModel : ObservableObject
     public void RequestNewFile()
     {
         OnNewFileRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestNewNotebook()
+    {
+        OnNewNotebookRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestNewServer()
+    {
+        OnNewServerRequested?.Invoke(this);
     }
 
     [RelayCommand]

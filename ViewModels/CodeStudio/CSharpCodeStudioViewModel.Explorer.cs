@@ -359,7 +359,9 @@ public partial class CSharpCodeStudioViewModel
         return null;
     }
 
-    private Explorer.ExplorerItemViewModel? FindSelectedItem(IEnumerable<Explorer.ExplorerItemViewModel> items)
+    public Explorer.ExplorerItemViewModel? SelectedExplorerItem => FindSelectedItem(ExplorerRootItems);
+
+    public Explorer.ExplorerItemViewModel? FindSelectedItem(IEnumerable<Explorer.ExplorerItemViewModel> items)
     {
         foreach (var item in items)
         {
@@ -390,6 +392,8 @@ public partial class CSharpCodeStudioViewModel
             OnItemClicked = OnExplorerItemClicked,
             OnDeleteRequested = DeleteExplorerItem,
             OnNewFileRequested = NewScriptUnderItem,
+            OnNewNotebookRequested = NewNotebookUnderItem,
+            OnNewServerRequested = NewServerUnderItem,
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
@@ -416,6 +420,8 @@ public partial class CSharpCodeStudioViewModel
             OnItemClicked = OnExplorerItemClicked,
             OnDeleteRequested = DeleteExplorerItem,
             OnNewFileRequested = NewScriptUnderItem,
+            OnNewNotebookRequested = NewNotebookUnderItem,
+            OnNewServerRequested = NewServerUnderItem,
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
@@ -606,6 +612,110 @@ public partial class CSharpCodeStudioViewModel
         await SaveDocumentAsync(userAsked: false);
         await UpdateActiveScriptAsync(newDoc);
         (await FindOrRevealExplorerItemAsync(newDoc.Id))?.StartRename();
+    }
+
+    [RelayCommand]
+    public async Task NewNotebook()
+    {
+        var selected = FindSelectedItem(ExplorerRootItems);
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
+        if (targetFolder != null)
+        {
+            await NewNotebookUnderItemAsync(targetFolder);
+            return;
+        }
+
+        await NewNotebookCoreAsync(null);
+    }
+
+    public void NewNotebookUnderItem(Explorer.ExplorerItemViewModel target) => _ = NewNotebookUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewNotebookUnderItemAsync(Explorer.ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        await NewNotebookCoreAsync(folder?.FullPath);
+    }
+
+    private async Task NewNotebookCoreAsync(string? folderPath)
+    {
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Notebook_{timestamp}";
+
+        NotebookDocumentItem newNb;
+        try
+        {
+            newNb = await _storageService.CreateNewNotebookAsync(title, folderPath: folderPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create notebook: {ex.Message}");
+            CompilerStatusText = $"⚠️ Couldn't create notebook: {ex.Message}";
+            return;
+        }
+
+        await RefreshExplorerAsync();
+
+        if (_openNotebookAction != null)
+        {
+            _openNotebookAction.Invoke(newNb);
+        }
+        else
+        {
+            (await FindOrRevealExplorerItemAsync(newNb.Id))?.StartRename();
+        }
+    }
+
+    [RelayCommand]
+    public async Task NewServer()
+    {
+        var selected = FindSelectedItem(ExplorerRootItems);
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
+        if (targetFolder != null)
+        {
+            await NewServerUnderItemAsync(targetFolder);
+            return;
+        }
+
+        await NewServerCoreAsync(null);
+    }
+
+    public void NewServerUnderItem(Explorer.ExplorerItemViewModel target) => _ = NewServerUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewServerUnderItemAsync(Explorer.ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        await NewServerCoreAsync(folder?.FullPath);
+    }
+
+    private async Task NewServerCoreAsync(string? folderPath)
+    {
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Server_{timestamp}";
+
+        FryServerDocumentItem newServer;
+        try
+        {
+            newServer = await _storageService.CreateNewServerDocumentAsync(title, folderPath: folderPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create server: {ex.Message}");
+            CompilerStatusText = $"⚠️ Couldn't create server: {ex.Message}";
+            return;
+        }
+
+        await RefreshExplorerAsync();
+
+        if (_openServerAction != null)
+        {
+            _openServerAction.Invoke(newServer);
+        }
+        else
+        {
+            (await FindOrRevealExplorerItemAsync(newServer.Id))?.StartRename();
+        }
     }
 
     private IReadOnlyList<NewFileOption>? _newFileOptions;

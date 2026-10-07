@@ -197,6 +197,8 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
         item.OnItemClicked = i => _ = OpenAsync(i);
         item.OnDeleteRequested = i => _ = DeleteAsync(i);
         item.OnNewFileRequested = i => _ = NewFileAsync(i);
+        item.OnNewServerRequested = i => _ = NewFileAsync(i);
+        item.OnNewNotebookRequested = i => _ = NewNotebookAsync(i);
         item.OnNewFolderRequested = i => _ = NewFolderAsync(i);
         item.OnRenameCommitted = i => _ = RenameAsync(i);
         item.OnDuplicateRequested = i => _ = DuplicateAsync(i);
@@ -272,6 +274,32 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
 
         await OpenAsync(created);
         created.StartRename();
+    }
+
+    private async Task NewNotebookAsync(ExplorerItemViewModel? target)
+    {
+        var parent = target is { IsDirectory: false } ? target.Parent : target;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Notebook_{timestamp}";
+        NotebookDocumentItem doc;
+        try
+        {
+            doc = await _storage.CreateNewNotebookAsync(title, folderPath: parent?.FullPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            StatusText = $"⚠️ Couldn't create notebook: {ex.Message}";
+            return;
+        }
+
+        await RefreshExplorer();
+        if (parent != null) await ListedAsync(parent.FullPath);
+        var created = Find(ExplorerRootItems, i => string.Equals(i.DocumentId, doc.Id, StringComparison.OrdinalIgnoreCase));
+        if (created != null)
+        {
+            await OpenAsync(created);
+            created.StartRename();
+        }
     }
 
     private async Task NewFolderAsync(ExplorerItemViewModel? target)

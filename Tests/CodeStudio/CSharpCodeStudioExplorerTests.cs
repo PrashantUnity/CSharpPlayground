@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
@@ -366,6 +367,101 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         {
             if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task NewNotebookCommand_CreatesNotebookOnDisk_AndInvokesOpenAction()
+    {
+        NotebookDocumentItem? openedNotebook = null;
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            openNotebookAction: nb => openedNotebook = nb);
+
+        await studio.NewNotebookCommand.ExecuteAsync(null);
+
+        Assert.NotNull(openedNotebook);
+        Assert.StartsWith("Notebook_", openedNotebook!.Title);
+        var files = Directory.GetFiles(_testStorage.ActiveWorkspaceRootPath, "*.frynb");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewServerCommand_CreatesServerOnDisk_AndInvokesOpenAction()
+    {
+        FryServerDocumentItem? openedServer = null;
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            openServerAction: s => openedServer = s);
+
+        await studio.NewServerCommand.ExecuteAsync(null);
+
+        Assert.NotNull(openedServer);
+        Assert.StartsWith("Server_", openedServer!.Title);
+        var files = Directory.GetFiles(_testStorage.ActiveWorkspaceRootPath, "*.fryserver");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewNotebookUnderItemAsync_CreatesNotebookInTargetFolder()
+    {
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = CreateStudio(script);
+        var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "analytics");
+        Directory.CreateDirectory(subFolder);
+        await studio.RefreshExplorerAsync();
+
+        var folderItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "analytics");
+        Assert.NotNull(folderItem);
+
+        await studio.NewNotebookUnderItemAsync(folderItem!);
+
+        var files = Directory.GetFiles(subFolder, "*.frynb");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewServerUnderItemAsync_CreatesServerInTargetFolder()
+    {
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = CreateStudio(script);
+        var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "services");
+        Directory.CreateDirectory(subFolder);
+        await studio.RefreshExplorerAsync();
+
+        var folderItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "services");
+        Assert.NotNull(folderItem);
+
+        await studio.NewServerUnderItemAsync(folderItem!);
+
+        var files = Directory.GetFiles(subFolder, "*.fryserver");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public void ExplorerItemViewModel_RequestNewNotebookAndServer_FiresCallbacks()
+    {
+        var item = new ExplorerItemViewModel { Name = "testFolder", IsDirectory = true };
+        var notebookFired = false;
+        var serverFired = false;
+
+        item.OnNewNotebookRequested = _ => notebookFired = true;
+        item.OnNewServerRequested = _ => serverFired = true;
+
+        item.RequestNewNotebookCommand.Execute(null);
+        item.RequestNewServerCommand.Execute(null);
+
+        Assert.True(notebookFired);
+        Assert.True(serverFired);
     }
 
     private sealed class SingleThreadSynchronizationContext : SynchronizationContext
