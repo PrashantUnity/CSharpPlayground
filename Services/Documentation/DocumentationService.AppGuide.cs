@@ -425,6 +425,7 @@ plt.show()"
                     Description = "Run a C# cell with var nums = new[] { 3, 1, 4 }; first, then this Python cell reads it and makes squares, which a C# cell can take back with #!share --from python squares.",
                     Language = "python",
                     TargetKind = WorkspaceItemKind.Notebook,
+                    NotRunnable = true, // reads a value another cell made
                     Code = @"#!share --from csharp nums
 squares = [n * n for n in nums]
 print(sum(squares))"

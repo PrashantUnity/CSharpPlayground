@@ -129,26 +129,32 @@ public partial class DocumentationService
                     Code = """
                     using System;
 
-                    ReadOnlySpan<char> line = "username=frypdf_user".AsSpan();
-
-                    int separatorIndex = line.IndexOf('=');
-                    if (separatorIndex < 0)
+                    // Spans can't be top-level variables of a script, so the work is in a method.
+                    void ParseAndSlice()
                     {
-                        Console.WriteLine("No '=' found.");
-                        return;
+                        ReadOnlySpan<char> line = "username=frypdf_user".AsSpan();
+
+                        int separatorIndex = line.IndexOf('=');
+                        if (separatorIndex < 0)
+                        {
+                            Console.WriteLine("No '=' found.");
+                            return;
+                        }
+
+                        ReadOnlySpan<char> key = line[..separatorIndex];       // slice, no allocation
+                        ReadOnlySpan<char> value = line[(separatorIndex + 1)..]; // slice, no allocation
+
+                        Console.WriteLine($"Key:   {key.ToString()}");
+                        Console.WriteLine($"Value: {value.ToString()}");
+
+                        // A small stack-allocated buffer, sliced the same way — never touches the managed heap.
+                        Span<int> buffer = stackalloc int[5] { 10, 20, 30, 40, 50 };
+                        Span<int> middle = buffer.Slice(1, 3);
+
+                        Console.WriteLine($"Middle slice: [{string.Join(", ", middle.ToArray())}]");
                     }
 
-                    ReadOnlySpan<char> key = line[..separatorIndex];       // slice, no allocation
-                    ReadOnlySpan<char> value = line[(separatorIndex + 1)..]; // slice, no allocation
-
-                    Console.WriteLine($"Key:   {key.ToString()}");
-                    Console.WriteLine($"Value: {value.ToString()}");
-
-                    // A small stack-allocated buffer, sliced the same way — never touches the managed heap.
-                    Span<int> buffer = stackalloc int[5] { 10, 20, 30, 40, 50 };
-                    Span<int> middle = buffer.Slice(1, 3);
-
-                    Console.WriteLine($"Middle slice: [{string.Join(", ", middle.ToArray())}]");
+                    ParseAndSlice();
                     """
                 },
                 new()

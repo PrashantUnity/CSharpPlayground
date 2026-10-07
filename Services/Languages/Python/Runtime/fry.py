@@ -47,19 +47,29 @@ class DisplayHandle:
         self._throttle = fry_channel.Throttle(lambda message: fry_channel.channel().send_in(message[0], message[1]))
 
     def update(self, spec=None, **options):
-        """Redraws the visual: with a new spec (a dict, or a function that changes a copy of the current one), and/or
+        """Redraws the visual: with new data (a chart), a new spec (a dict, or a function that changes a copy of the current one), and/or
         the same settings the call that showed it takes (title=..., color=...). Sent at most 30 times a second."""
         if self._closed:
             raise RuntimeError("This visual was closed: it can't be updated.")
         if callable(spec):
             changed = copy.deepcopy(self.spec)
             spec = spec(changed) or changed
+        if spec is not None and not isinstance(spec, dict):
+            spec = self._with_data(spec)
         new = copy.deepcopy(spec if spec is not None else self.spec)
         _apply(new, options)
         self.spec = new
         context = fry_channel.channel().context()
         self._throttle.submit(lambda: (context, _message("update_display", self.mime, self.spec, self.display_id)))
         return self
+
+    def _with_data(self, data):
+        """The current chart with new data in place of its series (the kind, axes and other settings stay)."""
+        if self.mime != fry_specs.CHART_MIME:
+            raise TypeError("Only a chart can be updated with new data: pass a spec (a dict) for this visual.")
+        changed = copy.deepcopy(self.spec)
+        changed["series"] = fry_specs.chart_spec(data, changed.get("kind", "line"))[1]["series"]
+        return changed
 
     def on(self, event, callback):
         """Calls callback(event) when the user clicks ("click"), selects ("select") or steps ("step") in the visual."""

@@ -1,3 +1,4 @@
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Documentation;
@@ -284,6 +285,80 @@ public class SnippetRunTests : IDisposable
             Assert.True(run.Outputs.Count > 0 && run.Outputs.All(o => o.Kind == CellOutputKind.Chart), $"{snippet.Id}: {string.Join(", ", run.Outputs.Select(o => o.Kind))}");
         }
     }
+
+    [Fact]
+    public async Task AUsingDeclarationAtTheTopOfACell_DisposesWhenTheCellEnds_InReverseOrder()
+    {
+        var run = Runner(Snippet("""
+            class Res(string name) : IDisposable { public void Dispose() => Console.WriteLine($"dispose {name}"); }
+            using var a = new Res("a");
+            await using var b = new Res2();
+            Console.WriteLine("body");
+            class Res2 : IAsyncDisposable { public ValueTask DisposeAsync() { Console.WriteLine("dispose b"); return default; } }
+            """));
+
+        await run.RunAsync();
+
+        Assert.Equal(SnippetRunStatus.Done, run.Status);
+        Assert.Equal(["body", "dispose b", "dispose a"], run.ConsoleText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    }
+
+    // Every sample of the documentation, in every language tab it has, runs with that language's real toolchain. Samples that
+    // call out to the internet are left to the people reading them: a test must not depend on a service.
+    private async Task EverySample_Runs(string language)
+    {
+        var jobs = new List<(DocCodeSnippet Snippet, DocCodeLanguageVariant? Variant)>();
+        foreach (var snippet in DocumentationService.Instance.Categories.SelectMany(c => c.Articles).SelectMany(a => a.CodeSnippets).Where(s => !s.NotRunnable))
+        {
+            if (snippet.Variants.Count > 1) jobs.AddRange(snippet.Variants.Where(v => v.Language == language && !CallsTheInternet(v.Code)).Select(v => (snippet, (DocCodeLanguageVariant?)v)));
+            else if (snippet.Language == language && !CallsTheInternet(snippet.Code)) jobs.Add((snippet, null));
+        }
+
+        Assert.NotEmpty(jobs);
+        foreach (var (snippet, variant) in jobs)
+        {
+            var shown = snippet.SelectedVariant;
+            try
+            {
+                if (variant != null) snippet.SelectVariant(variant);
+                var run = Runner(snippet);
+                await run.RunAsync().WaitAsync(TimeSpan.FromMinutes(3));
+
+                Assert.True(run.Status == SnippetRunStatus.Done, $"{language}: {snippet.Title}: {run.StatusText} {run.ConsoleText}");
+                if (language != "csharp") Assert.NotEmpty(run.Outputs);
+            }
+            finally
+            {
+                if (variant != null && shown != null) snippet.SelectVariant(shown);
+            }
+        }
+    }
+
+    private static bool CallsTheInternet(string code) => code.Contains("http://") || code.Contains("https://");
+
+    [Fact]
+    public Task EveryCSharpSample_Runs() => EverySample_Runs("csharp");
+
+    [PythonFact]
+    public Task EveryPythonSample_Runs() => EverySample_Runs("python");
+
+    [JavaScriptFact]
+    public Task EveryJavaScriptSample_Runs() => EverySample_Runs("javascript");
+
+    [JavaFact]
+    public Task EveryJavaSample_Runs() => EverySample_Runs("java");
+
+    [RustFact]
+    public Task EveryRustSample_Runs() => EverySample_Runs("rust");
+
+    [CppFact]
+    public Task EveryCppSample_Runs() => EverySample_Runs("cpp");
+
+    [GoFact]
+    public Task EveryGoSample_Runs() => EverySample_Runs("go");
+
+    [FSharpFact]
+    public Task EveryFSharpSample_Runs() => EverySample_Runs("fsharp");
 
     [Fact]
     public async Task EveryAnimationSample_RunsToTheEnd_AndLeavesALiveControlOrChart()

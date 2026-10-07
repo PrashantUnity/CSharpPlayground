@@ -97,67 +97,52 @@ Display.plot3d_surface(lambda x, y: x**2 + y**2, x_range=(-3, 3), y_range=(-3, 3
 ```javascript
 const { Display } = require('fry_display');
 
-Display.chart({
-    type: 'bar',
-    title: 'Resource Allocation',
-    labels: ['CPU', 'Memory', 'Disk'],
-    series: [{ name: 'Usage %', values: [45, 78, 62] }]
-});
+Display.barChart({ CPU: 45, Memory: 78, Disk: 62 }, 'Resource Allocation');
 ```
 
 ### Java
 ```java
-import com.frypdf.display.Visualizer;
-
-int[][] matrix = { { 1, 0 }, { 0, 1 } };
+// In a notebook cell (Display and Visualizer need no import there)
+var matrix = List.of(List.of(1, 0), List.of(0, 1));
 Visualizer.grid(matrix).title("Identity Matrix").show();
 ```
 
 ### Go
 ```go
 package main
-import "fry_display"
+
+import "fry"
 
 func main() {
-    fry_display.Chart(fry_display.ChartOptions{
-        Type: "scatter",
-        Title: "Point Distribution",
-        X: []float64{1.0, 2.0, 3.0},
-        Y: []float64{2.5, 3.7, 1.8},
-    })
+    fry.ScatterChart([][]any{{1, 2.5}, {2, 3.7}, {3, 1.8}}, "Point Distribution")
 }
 ```
 
 ### Rust
 ```rust
-use fry_display::prelude::*;
-
 fn main() {
-    let chart = Chart::new()
-        .title("Telemetry")
-        .line_series("Sensor", vec![(0.0, 1.0), (1.0, 4.0), (2.0, 9.0)]);
-    Display::show(chart);
+    fry::scatter_chart(&vec![vec![0.0, 1.0], vec![1.0, 4.0], vec![2.0, 9.0]]).title("Telemetry").show();
 }
 ```
 
 ### C++
 ```cpp
-#include <fry_display.hpp>
+#include <fry/display.hpp>
 
 int main() {
-    fry::Surface3D surface("Saddle", [](double x, double y) { return x*x - y*y; }, -3.0, 3.0, -3.0, 3.0, 30);
-    surface.show();
+    fry::tree(fry::make_tree(2, fry::make_tree(1), fry::make_tree(3)), "Tree");
     return 0;
 }
 ```
 
 ### F#
 ```fsharp
-open FryDisplay
+open Fry
 
-let data = [ for x in 0.0 .. 0.1 .. 6.28 -> (x, sin x) ]
-Display.chart [ "Sine Wave", data ]
+Display.lineChart([ for x in 0.0 .. 0.1 .. 6.28 -> sin x ], "Sine Wave") |> ignore
 ```
+
+Every sample in the docs' visual articles runs with its real toolchain under the Run button, and `SnippetRunTests.EveryPolyglot*Sample_Runs` keeps them honest.
 
 ### More chart kinds and options (every language)
 

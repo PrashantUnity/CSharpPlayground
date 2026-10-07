@@ -35,8 +35,8 @@ public sealed class SnippetRunService : IDisposable
 
     /// <summary>
     /// Runs <paramref name="code"/> and returns when it ends, is stopped, or (for C#, which runs inside the studio and can't
-    /// be forced to stop) is given up on a few seconds after <paramref name="ct"/> was cancelled. C# starts from a clean
-    /// session each time, so a sample never depends on the one run before it.
+    /// be forced to stop) is given up on a few seconds after <paramref name="ct"/> was cancelled. Every language starts from
+    /// a clean session each time, so a sample never depends on the one run before it.
     /// </summary>
     public async Task<KernelExecutionResult> RunAsync(string? languageId, string code, Action<string> onConsole, Action<RichCellOutput> onRichOutput, CancellationToken ct)
     {
@@ -49,8 +49,16 @@ public sealed class SnippetRunService : IDisposable
 
         if (kernel is NotebookExecutionKernel csharp) return await RunCSharpAsync(csharp, code, onConsole, onRichOutput, ct);
 
+        // Another language's kernel keeps what a cell declared (a second run of "const { Display } = ..." is an error there):
+        // the kernel a sample ran in before is forgotten, so a sample, like a C# one, never depends on the one run before it.
+        bool used;
+        lock (_used) used = !_used.Add(language.Id);
+        if (used) kernel.HardReset();
+
         return await kernel.ExecuteAsync(new KernelExecutionRequest { Code = code, OnConsole = onConsole, OnRichOutput = onRichOutput }, ct);
     }
+
+    private readonly HashSet<string> _used = new(StringComparer.OrdinalIgnoreCase);
 
     private static async Task<KernelExecutionResult> RunCSharpAsync(NotebookExecutionKernel kernel, string code, Action<string> onConsole, Action<RichCellOutput> onRichOutput, CancellationToken ct)
     {

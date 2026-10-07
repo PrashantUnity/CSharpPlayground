@@ -1,4 +1,8 @@
 #pragma once
+// The header is staged as <fry/display.hpp>, "display.hpp" and <fry_display.hpp>: #pragma once knows files, not copies,
+// so a guard keeps a program that includes two of them from defining everything twice.
+#ifndef FRY_DISPLAY_HPP_INCLUDED
+#define FRY_DISPLAY_HPP_INCLUDED
 
 #include <iostream>
 #include <string>
@@ -1983,3 +1987,5 @@ public:
 namespace fry {
     using Display = ::Display;
 }
+
+#endif // FRY_DISPLAY_HPP_INCLUDED

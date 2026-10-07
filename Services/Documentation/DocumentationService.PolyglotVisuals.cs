@@ -48,7 +48,7 @@ public partial class DocumentationService
                 new()
                 {
                     Heading = "Supported Language SDKs",
-                    Content = "The unified visual runtime is built into all toolchains:\n• C#: Display.Chart(), Display.Plot3D(), Display.Visualizer()\n• Python: import fry_display as display\n• JavaScript: const { Display } = require('fry_display')\n• Java: import com.frypdf.display.Display\n• Go: import \"fry_display\"\n• Rust: use fry_display::prelude::*\n• C++: #include <fry_display.hpp>\n• F#: open FryDisplay\n• Dart: Display.barChart(), Display.plot3D(), Display.arrayVisualizer()"
+                    Content = "The unified visual runtime is built into all toolchains:\n• C#: Display.Chart(), Display.Plot3D(), Display.Visualizer()\n• Python: import fry_display as display\n• JavaScript: const { Display } = require('fry_display')\n• Java: Display and Visualizer need no import\n• Go: import \"fry\"\n• Rust: fry::line_chart(...), fry::bar_chart(...)\n• C++: #include <fry/display.hpp>\n• F#: open Fry\n• Dart: Display.barChart(), Display.plot3D(), Display.arrayVisualizer()"
                 }
             }
         };
@@ -94,13 +94,13 @@ public partial class DocumentationService
                 {
                     Language = "javascript",
                     Title = "JavaScript Bar Chart",
-                    Code = "const { Display } = require('fry_display');\n\nDisplay.chart({\n  type: 'bar',\n  title: 'Quarterly Revenue',\n  labels: ['Q1', 'Q2', 'Q3', 'Q4'],\n  series: [{ name: '2026', values: [120, 190, 240, 310] }]\n});"
+                    Code = "const { Display } = require('fry_display');\n\nDisplay.barChart(\n  { Q1: 120, Q2: 190, Q3: 240, Q4: 310 },\n  'Quarterly Revenue');"
                 },
                 new()
                 {
                     Language = "rust",
                     Title = "Rust Scatter Chart",
-                    Code = "use fry_display::prelude::*;\n\nfn main() {\n    let chart = Chart::new()\n        .title(\"Normal Distribution\")\n        .scatter_series(\"Samples\", vec![(1.0, 2.1), (2.0, 3.8), (3.0, 2.9)]);\n    Display::show(chart);\n}"
+                    Code = "fn main() {\n    fry::scatter_chart(&vec![vec![1.0, 2.1], vec![2.0, 3.8], vec![3.0, 2.9]])\n        .title(\"Normal Distribution\")\n        .show();\n}"
                 }
             }
         };
@@ -176,13 +176,13 @@ public partial class DocumentationService
                 {
                     Language = "java",
                     Title = "Java Grid Visualizer",
-                    Code = "import com.frypdf.display.Display;\nimport com.frypdf.display.Visualizer;\n\npublic class Solution {\n    public static void main(String[] args) {\n        int[][] grid = {\n            {1, 1, 0, 0},\n            {1, 1, 0, 1},\n            {0, 0, 1, 1}\n        };\n        Visualizer.grid(grid).title(\"Island Traversal\").show();\n    }\n}"
+                    Code = "var grid = List.of(\n    List.of(1, 1, 0, 0),\n    List.of(1, 1, 0, 1),\n    List.of(0, 0, 1, 1));\nVisualizer.grid(grid).title(\"Island Traversal\").show();"
                 },
                 new()
                 {
                     Language = "cpp",
                     Title = "C++ Tree Visualizer",
-                    Code = "#include <fry_display.hpp>\n\nint main() {\n    fry::TreeVisualizer tree(\"Binary Search Tree\");\n    tree.insert(50);\n    tree.insert(30);\n    tree.insert(70);\n    tree.insert(20);\n    tree.show();\n    return 0;\n}"
+                    Code = "#include <fry/display.hpp>\n\nint main() {\n    fry::tree(\n        fry::make_tree(50, fry::make_tree(30, fry::make_tree(20)), fry::make_tree(70)),\n        \"Binary Search Tree\");\n    return 0;\n}"
                 }
             }
         };

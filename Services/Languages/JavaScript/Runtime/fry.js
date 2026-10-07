@@ -176,6 +176,12 @@ class DisplayHandle {
             newSpec = specOrOptions(clone) || clone;
         } else if (specOrOptions && (specOrOptions.kind || specOrOptions.series || specOrOptions.state || specOrOptions.surface)) {
             newSpec = JSON.parse(JSON.stringify(specOrOptions));
+        } else if (Array.isArray(specOrOptions) || specOrOptions instanceof Map) {
+            // New data for a chart: its series are replaced, its kind, axes and other settings stay.
+            if (this.mime !== CHART_MIME) throw new Error('Only a chart can be updated with new data: pass a spec for this visual.');
+            newSpec = JSON.parse(JSON.stringify(this.spec));
+            newSpec.series = chartSpec(newSpec.kind, specOrOptions, null, null).series;
+            if (options) applyOptions(newSpec, options);
         } else {
             newSpec = JSON.parse(JSON.stringify(this.spec));
             const opts = typeof specOrOptions === 'string'

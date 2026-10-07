@@ -210,7 +210,7 @@ public class NotebookExecutionKernel : INotebookKernel
             }
         }
 
-        var cleanCode = nugetResult.SanitizedCode;
+        var cleanCode = CellUsingDeclarations.Rewrite(nugetResult.SanitizedCode);
         if (!string.IsNullOrEmpty(sourceId))
         {
             // Keeps line numbers 1:1 with the editor while naming the submission for caller-info attributes

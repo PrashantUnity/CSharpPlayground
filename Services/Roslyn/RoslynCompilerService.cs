@@ -88,6 +88,9 @@ public class RoslynCompilerService
             Path.Combine(coreDir, "System.ComponentModel.dll"),                // System.ComponentModel
             Path.Combine(coreDir, "System.ComponentModel.Primitives.dll"),     // System.ComponentModel.Primitives
             Path.Combine(coreDir, "System.ComponentModel.TypeConverter.dll"),  // System.ComponentModel.TypeConverter
+            Path.Combine(coreDir, "System.Threading.Tasks.Parallel.dll"),      // Parallel.For / ForEach (only there when something had loaded it)
+            Path.Combine(coreDir, "System.Collections.Concurrent.dll"),        // ConcurrentBag, ConcurrentDictionary
+            Path.Combine(coreDir, "System.Linq.Parallel.dll"),                 // AsParallel
             Path.Combine(coreDir, "netstandard.dll")                           // netstandard
         };
 
