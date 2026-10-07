@@ -48,6 +48,9 @@ public sealed class CSharpLiveSyntax : IDisposable
     /// <summary>A newer tree is ready (raised on a background thread).</summary>
     public event Action? Updated;
 
+    /// <summary>How long the last parse took on its background thread (tools and tests; waiting to start isn't counted).</summary>
+    public TimeSpan LastParseDuration { get; private set; }
+
     /// <summary>Whether a tree exists yet.</summary>
     public bool HasTree => Volatile.Read(ref _snapshot) != null;
 
@@ -117,6 +120,7 @@ public sealed class CSharpLiveSyntax : IDisposable
                 version = _pendingVersion;
             }
 
+            var started = System.Diagnostics.Stopwatch.GetTimestamp();
             var previous = Volatile.Read(ref _snapshot);
             SourceText text;
             SyntaxTree tree;
@@ -149,6 +153,7 @@ public sealed class CSharpLiveSyntax : IDisposable
             }
 
             Volatile.Write(ref _snapshot, new Snapshot(tree, text, version!, names));
+            LastParseDuration = System.Diagnostics.Stopwatch.GetElapsedTime(started);
             Updated?.Invoke();
         }
     }
