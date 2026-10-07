@@ -34,6 +34,37 @@
             "number",
             "null"
           ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
         }
       },
       "additionalProperties": false
@@ -58,6 +89,37 @@
             "number",
             "null"
           ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
         }
       },
       "additionalProperties": false
@@ -82,6 +144,37 @@
             "number",
             "null"
           ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
         }
       },
       "additionalProperties": false,

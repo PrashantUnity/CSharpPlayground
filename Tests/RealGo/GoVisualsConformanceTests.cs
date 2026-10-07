@@ -74,6 +74,24 @@ public class GoVisualsConformanceTests : IDisposable
         fry.Islands([][]int{{1, 0}, {1, 1}}, "Islands")
         """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way Go writes them.
+    private const string TheFeatureStatements = """
+        months := []string{"Jan", "Feb", "Mar"}
+        rev, costs, margin := []float64{40, 55, 48}, []float64{30, 35, 38}, []float64{25, 36, 21}
+        fry.BarChart(fry.Map("Revenue", rev, "Costs", costs, "Margin", fry.S(margin, "kind", "line", "axis", "right", "dash", "dashed")),
+            "Combo", fry.Labels(months...), fry.RightAxis("Margin %", 0, 100))
+        fry.StackedBarChart(fry.Map("Revenue", rev, "Costs", costs), "Stacked", fry.Labels(months...))
+        fry.HorizontalBarChart(fry.Map("Revenue", rev), "Horizontal", fry.Labels(months...))
+        fry.LineChart(fry.Map("Smooth", fry.S(rev, "interpolation", "smooth", "tension", 0.5),
+            "Steps", fry.S(costs, "step", "after", "dash", "dotted", "pointStyle", "star", "pointRadius", 6),
+            "Filled", fry.S(margin, "fill", true, "color", "#ff8800")), "Line styles")
+        fry.BubbleChart([][]float64{{1, 2, 8}, {2, 4, 12}}, "Bubbles")
+        fry.RadarChart(fry.Map("Ada", []float64{8, 6, 9}, "Bo", []float64{5, 9, 6}), "Radar", fry.Labels("Speed", "Power", "Skill"))
+        fry.PolarAreaChart(fry.Map("A", 3, "B", 5), "Polar")
+        fry.DonutChart(fry.Map("Done", 70, "Left", 30), "Gauge", fry.Gauge())
+        fry.LineChart(fry.Map("Growth", []float64{1, 10, 100}), "Scales", fry.YScale("log"), fry.SuggestedY(1, 1000), fry.ReverseX())
+        """;
+
     private static string BuildMainProgram(string statements) => $$"""
         package main
 
@@ -130,6 +148,39 @@ public class GoVisualsConformanceTests : IDisposable
             OnRichOutput = rich.Add,
         }, CancellationToken.None).WaitAsync(Patience);
         return (result, console, rich);
+    }
+
+    [GoFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.go", BuildMainProgram(TheFeatureStatements));
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual!;
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+    }
+
+    [GoFact]
+    public async Task ASeriesOptionItDoesNotKnow_IsAPanicThatListsTheOnesItDoes()
+    {
+        var script = Write("badoption.go", BuildMainProgram("""fry.LineChart(fry.Map("a", fry.S([]int{1, 2}, "dashed", true)))"""));
+        var (session, console, _, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("There is no series option \"dashed\"", string.Concat(console));
     }
 
     [GoFact]

@@ -242,6 +242,34 @@ public partial class VisualChromeControl : UserControl
     public void SetKindTools(Control? tools) { Detach(tools); if (Find<ContentControl>("KindToolsHost") is { } host) host.Content = tools; }
     public void SetFooter(Control? footer) { Detach(footer); if (Find<ContentControl>("FooterHost") is { } host) { host.Content = footer; host.IsVisible = footer != null; } }
 
+    /// <summary>Puts a legend on one side of the canvas (below it is the footer slot); null takes it away.</summary>
+    public void SetLegend(Control? legend, LegendPosition position)
+    {
+        Detach(legend);
+        foreach (var name in new[] { "FooterHost", "LegendTopHost", "LegendLeftHost", "LegendRightHost" })
+        {
+            if (Find<ContentControl>(name) is { } slot)
+            {
+                slot.Content = null;
+                slot.IsVisible = false;
+            }
+        }
+
+        if (legend == null) return;
+        var target = position switch
+        {
+            LegendPosition.Top => "LegendTopHost",
+            LegendPosition.Left => "LegendLeftHost",
+            LegendPosition.Right => "LegendRightHost",
+            _ => "FooterHost"
+        };
+        if (Find<ContentControl>(target) is { } host)
+        {
+            host.Content = legend;
+            host.IsVisible = true;
+        }
+    }
+
     public void SetFullScreenState(bool isFullScreen)
     {
         if (Find<Material.Icons.Avalonia.MaterialIcon>("FullscreenIcon") is { } icon)

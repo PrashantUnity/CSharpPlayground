@@ -1,3 +1,4 @@
+using System.Collections;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Building;
@@ -55,6 +56,40 @@ public static class Charts
 
     /// <summary>A donut chart of records.</summary>
     public static ChartBuilder Donut<T>(IEnumerable<T> records, Func<T, object?> x, Func<T, object?> y) => Chart(records, x, y, ChartType.Donut, null);
+
+    /// <summary>A line chart of several named series: <c>Charts.Line(("Sales", sales), ("Costs", costs))</c>.</summary>
+    public static ChartBuilder Line(params (string Name, IEnumerable<double> Values)[] series) => Several(ChartType.Line, series);
+
+    /// <summary>An area chart of several named series.</summary>
+    public static ChartBuilder Area(params (string Name, IEnumerable<double> Values)[] series) => Several(ChartType.Area, series);
+
+    /// <summary>A bar chart of several named series, side by side (or piled up with <c>.Stacked()</c>).</summary>
+    public static ChartBuilder Bar(params (string Name, IEnumerable<double> Values)[] series) => Several(ChartType.Bar, series);
+
+    /// <summary>A bubble chart of (x, y, size) items: tuples, three-number arrays or records with x, y and a size. The size is the circle's radius in pixels.</summary>
+    public static ChartBuilder Bubble(object data, string? name = null) => Chart(data, ChartType.Bubble, name);
+
+    /// <summary>A radar chart: a polygon for each series over spokes named by <paramref name="labels"/> (or by the labels of the data).</summary>
+    public static ChartBuilder Radar(object data, IEnumerable<string>? labels = null)
+    {
+        var builder = Chart(data, ChartType.Radar, null);
+        return labels == null ? builder : builder.Labels(labels);
+    }
+
+    /// <summary>A polar area chart: a pie whose slices all take the same angle and reach as far out as their value.</summary>
+    public static ChartBuilder PolarArea(object data) => Chart(data, ChartType.PolarArea, null);
+
+    /// <summary>A half circle gauge showing <paramref name="value"/> out of <paramref name="max"/>.</summary>
+    public static ChartBuilder Gauge(double value, double max = 100, string? title = null)
+    {
+        var shown = Math.Clamp(value, 0, max);
+        var spec = new ChartSpec { Kind = ChartType.Donut, StartAngle = -90, Sweep = 180, Cutout = 0.7, Title = title };
+        spec.Series.Add(new ChartSeriesSpec { Y = [shown, max - shown], Labels = ["Value", "Remaining"], Colors = ["#4ec9b0", "#2a3342"] });
+        return new ChartBuilder(spec);
+    }
+
+    private static ChartBuilder Several(ChartType kind, (string Name, IEnumerable<double> Values)[] series) =>
+        new(ChartSpecBuilder.FromSeries(kind, series.Select(s => (s.Name, (IEnumerable)s.Values))));
 
     // 3D, z up
 

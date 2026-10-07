@@ -75,21 +75,26 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Canvas Host Slot -->
-            <Border Grid.Row="1"
-                    x:Name="CanvasContainerBorder"
-                    Background="{DynamicResource VisCanvasBgBrush}"
-                    BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    lt:Tokens.BorderThickness="DsBorderThin"
-                    lt:Tokens.CornerRadius="DsRadiusSM"
-                    Padding="4"
-                    ClipToBounds="True"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch">
-                <ContentControl x:Name="CanvasHost"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" />
-            </Border>
+            <!-- Canvas Host Slot, with room for a legend on any side of it -->
+            <Grid Grid.Row="1" x:Name="CanvasRow" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*,Auto">
+                <ContentControl x:Name="LegendTopHost" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,4" IsVisible="False" />
+                <ContentControl x:Name="LegendLeftHost" Grid.Row="1" Grid.Column="0" Margin="0,0,6,0" VerticalAlignment="Center" IsVisible="False" />
+                <Border Grid.Row="1" Grid.Column="1"
+                        x:Name="CanvasContainerBorder"
+                        Background="{DynamicResource VisCanvasBgBrush}"
+                        BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                        lt:Tokens.BorderThickness="DsBorderThin"
+                        lt:Tokens.CornerRadius="DsRadiusSM"
+                        Padding="4"
+                        ClipToBounds="True"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch">
+                    <ContentControl x:Name="CanvasHost"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch" />
+                </Border>
+                <ContentControl x:Name="LegendRightHost" Grid.Row="1" Grid.Column="2" Margin="6,0,0,0" VerticalAlignment="Center" IsVisible="False" />
+            </Grid>
 
             <!-- Resize Grip (drag to resize canvas, double-click to reset) -->
             <Border Grid.Row="2"

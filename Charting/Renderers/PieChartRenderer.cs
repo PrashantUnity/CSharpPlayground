@@ -3,11 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Media;
+using PdfEditorApp.Plugins.CSharpEditor.Charting.Layout;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
 
+/// <summary>
+/// Pie and donut charts: one slice for each value, sized by its share, from a start angle round as far as the sweep says
+/// (180 degrees is a half circle gauge). With several series, one ring for each, the first outermost; every ring is
+/// divided on its own.
+/// </summary>
 public class PieChartRenderer : ChartRendererBase
 {
     private readonly bool _isDonut;
@@ -17,159 +23,105 @@ public class PieChartRenderer : ChartRendererBase
         _isDonut = isDonut;
     }
 
+    // The empty gap between rings, in pixels.
+    private const double RingGap = 2;
+
+    private sealed record Ring(ChartSeries Series, List<ChartDataPoint> Slices, double Total);
+
+    private (List<Ring> Rings, Point Center, double Outer, double Hole, double Start, double Sweep, Rect Area) Layout(Rect bounds, ChartOptions options)
+    {
+        var rings = new List<Ring>();
+        for (var i = 0; i < options.Series.Count; i++)
+        {
+            if (options.HiddenSeries?.Contains(i) == true) continue;
+            var slices = options.Series[i].Points.Where(p => p.Y > 0).ToList();
+            if (slices.Count > 0) rings.Add(new Ring(options.Series[i], slices, slices.Sum(p => p.Y)));
+        }
+
+        // Reserve space for the legend on the right
+        double legendWidth = Math.Min(160, bounds.Width * 0.35);
+        var area = new Rect(bounds.Left + 10, bounds.Top + 10, Math.Max(50, bounds.Width - legendWidth - 20), Math.Max(50, bounds.Height - 20));
+        var hole = _isDonut || options.Type == ChartType.Donut ? Math.Clamp(options.Cutout, 0, 0.95) : 0;
+        var start = RadialLayout.Radians(options.StartAngle);
+        var sweep = Math.Clamp(options.Sweep, 1, 360) * Math.PI / 180;
+        var (center, outer) = RadialLayout.Fit(area, start, sweep, hole);
+        return (rings, center, outer, hole, start, sweep, area);
+    }
+
+    // The radii of ring i of n: the band between the hole and the edge, shared out evenly.
+    private static (double Inner, double Outer) RingRadii(double outer, double hole, int index, int rings)
+    {
+        var band = outer * (1 - hole);
+        var thickness = band / rings;
+        var ringOuter = outer - index * thickness;
+        var ringInner = ringOuter - thickness + (rings > 1 ? RingGap : 0);
+        return (Math.Max(outer * hole, ringInner), ringOuter);
+    }
+
     public override void Render(DrawingContext context, Rect bounds, ChartOptions options)
     {
-        var points = options.Series.SelectMany(s => s.Points).Where(p => p.Y > 0).ToList();
-        if (points.Count == 0) return;
-
-        double total = points.Sum(p => p.Y);
-        if (total <= 0) return;
-
-        // Reserve space for legend on right
-        double legendWidth = Math.Min(160, bounds.Width * 0.35);
-        var chartRect = new Rect(bounds.Left + 10, bounds.Top + 10, Math.Max(50, bounds.Width - legendWidth - 20), Math.Max(50, bounds.Height - 20));
-
-        var center = new Point(chartRect.Center.X, chartRect.Center.Y);
-        double outerRadius = Math.Min(chartRect.Width, chartRect.Height) * 0.44;
-        double innerRadius = (_isDonut || options.Type == ChartType.Donut) ? outerRadius * 0.55 : 0;
-
-        double currentAngle = -Math.PI / 2; // Start at 12 o'clock
+        var (rings, center, outer, hole, start, sweep, area) = Layout(bounds, options);
+        if (rings.Count == 0) return;
 
         var slicePen = new Pen(new SolidColorBrush(Color.FromArgb(200, 20, 24, 33)), 1.5);
-
-        for (int i = 0; i < points.Count; i++)
+        for (var r = 0; r < rings.Count; r++)
         {
-            var p = points[i];
-            double sliceAngle = (p.Y / total) * 2 * Math.PI;
-            double nextAngle = currentAngle + sliceAngle;
-
-            var colorStr = !string.IsNullOrEmpty(p.CustomColor) ? p.CustomColor : ChartPaletteService.GetSeriesColor(i);
-            var color = ChartPaletteService.ParseColor(colorStr);
-            var brush = new SolidColorBrush(color);
-
-            var sliceGeometry = CreateSliceGeometry(center, innerRadius, outerRadius, currentAngle, nextAngle);
-            context.DrawGeometry(brush, slicePen, sliceGeometry);
-
-            currentAngle = nextAngle;
+            var (inner, ringOuter) = RingRadii(outer, hole, r, rings.Count);
+            var angle = start;
+            for (var i = 0; i < rings[r].Slices.Count; i++)
+            {
+                var p = rings[r].Slices[i];
+                var next = angle + p.Y / rings[r].Total * sweep;
+                var colour = ChartPaletteService.ParseColor(!string.IsNullOrEmpty(p.CustomColor) ? p.CustomColor : ChartPaletteService.GetSeriesColor(i));
+                context.DrawGeometry(new SolidColorBrush(colour), slicePen, RadialLayout.Slice(center, inner, ringOuter, angle, next));
+                angle = next;
+            }
         }
 
-        // Draw Legend on the right
-        double legendX = chartRect.Right + 15;
-        double legendY = bounds.Top + 20;
-
-        for (int i = 0; i < Math.Min(points.Count, 10); i++)
+        // The legend names the slices of the first ring.
+        var first = rings[0];
+        DrawSliceLegend(context, bounds, area, first.Slices.Select((p, i) =>
         {
-            var p = points[i];
-            var colorStr = !string.IsNullOrEmpty(p.CustomColor) ? p.CustomColor : ChartPaletteService.GetSeriesColor(i);
-            var color = ChartPaletteService.ParseColor(colorStr);
-            var brush = new SolidColorBrush(color);
-
-            double pct = (p.Y / total) * 100.0;
-            var label = string.IsNullOrEmpty(p.Label) ? $"Item {i + 1}" : p.Label;
-            if (label.Length > 12) label = label.Substring(0, 10) + "..";
-            var text = $"{label} ({pct:0.0}%)";
-
-            // Legend color pill
-            context.DrawRectangle(brush, null, new RoundedRect(new Rect(legendX, legendY + 2, 10, 10), 2, 2));
-
-            // Legend text
-            var ft = CreateFormattedText(text, 10, TextBrush);
-            context.DrawText(ft, new Point(legendX + 16, legendY));
-
-            legendY += 18;
-            if (legendY > bounds.Bottom - 18) break;
-        }
+            var colour = ChartPaletteService.ParseColor(!string.IsNullOrEmpty(p.CustomColor) ? p.CustomColor : ChartPaletteService.GetSeriesColor(i));
+            return ($"{ShortLabel(p.Label, i + 1)} ({p.Y / first.Total * 100.0:0.0}%)", colour);
+        }).ToList());
     }
 
     public override ChartHitTestResult? HitTest(Point pointerPosition, Rect bounds, ChartOptions options)
     {
-        var points = options.Series.SelectMany(s => s.Points).Where(p => p.Y > 0).ToList();
-        if (points.Count == 0) return null;
+        var (rings, center, outer, hole, start, sweep, _) = Layout(bounds, options);
+        if (rings.Count == 0) return null;
 
-        double total = points.Sum(p => p.Y);
-        if (total <= 0) return null;
+        var dx = pointerPosition.X - center.X;
+        var dy = pointerPosition.Y - center.Y;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
 
-        double legendWidth = Math.Min(160, bounds.Width * 0.35);
-        var chartRect = new Rect(bounds.Left + 10, bounds.Top + 10, Math.Max(50, bounds.Width - legendWidth - 20), Math.Max(50, bounds.Height - 20));
+        // The angle round from the start, in [0, 2π) so a slice that crosses 12 o'clock is found.
+        var along = Math.Atan2(dy, dx) - start;
+        along %= 2 * Math.PI;
+        if (along < 0) along += 2 * Math.PI;
+        if (along > sweep) return null;
 
-        var center = new Point(chartRect.Center.X, chartRect.Center.Y);
-        double outerRadius = Math.Min(chartRect.Width, chartRect.Height) * 0.44;
-        double innerRadius = (_isDonut || options.Type == ChartType.Donut) ? outerRadius * 0.55 : 0;
-
-        double dx = pointerPosition.X - center.X;
-        double dy = pointerPosition.Y - center.Y;
-        double distance = Math.Sqrt(dx * dx + dy * dy);
-
-        if (distance < innerRadius || distance > outerRadius) return null;
-
-        // Angle from center in radians (-PI to PI, starting from positive X-axis)
-        double angle = Math.Atan2(dy, dx);
-        // Normalize angle to start at 12 o'clock (-PI/2) and range [0, 2*PI)
-        double normalizedAngle = angle + (Math.PI / 2.0);
-        if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
-
-        double accumulatedAngle = 0;
-        var parentSeries = options.Series.FirstOrDefault() ?? new ChartSeries();
-
-        for (int i = 0; i < points.Count; i++)
+        for (var r = 0; r < rings.Count; r++)
         {
-            var p = points[i];
-            double sliceAngle = (p.Y / total) * 2 * Math.PI;
+            var (inner, ringOuter) = RingRadii(outer, hole, r, rings.Count);
+            if (distance < inner || distance > ringOuter) continue;
 
-            if (normalizedAngle >= accumulatedAngle && normalizedAngle < accumulatedAngle + sliceAngle)
+            var accumulated = 0.0;
+            for (var i = 0; i < rings[r].Slices.Count; i++)
             {
-                double midAngle = (accumulatedAngle + sliceAngle / 2.0) - (Math.PI / 2.0);
-                double markerDist = (innerRadius + outerRadius) / 2.0;
-                var markerPos = new Point(center.X + Math.Cos(midAngle) * markerDist, center.Y + Math.Sin(midAngle) * markerDist);
+                var p = rings[r].Slices[i];
+                var slice = p.Y / rings[r].Total * sweep;
+                if (along >= accumulated && along < accumulated + slice)
+                {
+                    var middle = start + accumulated + slice / 2;
+                    return new ChartHitTestResult(p, rings[r].Series, RadialLayout.PointAt(center, (inner + ringOuter) / 2, middle));
+                }
 
-                return new ChartHitTestResult(p, parentSeries, markerPos);
+                accumulated += slice;
             }
-
-            accumulatedAngle += sliceAngle;
         }
 
         return null;
-    }
-
-    private StreamGeometry CreateSliceGeometry(Point center, double innerR, double outerR, double startAngle, double endAngle)
-    {
-        var geometry = new StreamGeometry();
-        using var ctx = geometry.Open();
-
-        int segments = Math.Max(6, (int)(Math.Abs(endAngle - startAngle) / (Math.PI / 36.0)));
-
-        // Outer arc start
-        double xOuterStart = center.X + Math.Cos(startAngle) * outerR;
-        double yOuterStart = center.Y + Math.Sin(startAngle) * outerR;
-
-        ctx.BeginFigure(new Point(xOuterStart, yOuterStart), true);
-
-        // Follow outer arc
-        for (int step = 1; step <= segments; step++)
-        {
-            double a = startAngle + (endAngle - startAngle) * (step / (double)segments);
-            ctx.LineTo(new Point(center.X + Math.Cos(a) * outerR, center.Y + Math.Sin(a) * outerR));
-        }
-
-        if (innerR > 1e-3)
-        {
-            // Connect to inner arc end
-            ctx.LineTo(new Point(center.X + Math.Cos(endAngle) * innerR, center.Y + Math.Sin(endAngle) * innerR));
-
-            // Follow inner arc back to start
-            for (int step = segments - 1; step >= 0; step--)
-            {
-                double a = startAngle + (endAngle - startAngle) * (step / (double)segments);
-                ctx.LineTo(new Point(center.X + Math.Cos(a) * innerR, center.Y + Math.Sin(a) * innerR));
-            }
-        }
-        else
-        {
-            // Connect to center
-            ctx.LineTo(center);
-        }
-
-        ctx.EndFigure(true);
-        return geometry;
     }
 }

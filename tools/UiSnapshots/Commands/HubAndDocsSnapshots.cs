@@ -104,6 +104,17 @@ internal static class HubAndDocsSnapshots
                 ?? throw new ArgumentException($"No docs article's title contains '{wanted}'. Try `docs --list`.");
             vm.SelectArticle(article);
         }
+        if (options.Int("sample", 0) is var sampleNumber and > 0 && vm.SelectedArticle is { } whole)
+        {
+            // The article with only its nth code sample, so a tall page can be looked at one output at a time.
+            var only = new PdfEditorApp.Plugins.CSharpEditor.Models.DocArticle
+            {
+                Id = whole.Id + "#" + sampleNumber, CategoryId = whole.CategoryId, Title = whole.Title, Subtitle = whole.Subtitle,
+                Sections = [], CodeSnippets = [whole.CodeSnippets[sampleNumber - 1]]
+            };
+            vm.SelectedArticle = only;
+        }
+
         if (options.Flag("list"))
         {
             foreach (var category in vm.Categories)

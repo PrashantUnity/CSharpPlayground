@@ -237,14 +237,50 @@ public static partial class Display
         return html.Replace("\r\n", "\n").Replace("\n", "<br/>");
     }
 
+    /// <summary>
+    /// Shows a live control. An Avalonia control belongs to the thread that made it, and the UI can only show controls
+    /// made on the UI thread, while a script runs on another one: so make the control with
+    /// <see cref="Control{T}(Func{T})"/> (or <see cref="Animate"/>), which builds it on the UI thread. A control already
+    /// made on the script's thread is refused with a message that says so, rather than showing nothing.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The control was made on the script's thread, not the UI thread.</exception>
     public static void Control(Control control)
     {
+        ArgumentNullException.ThrowIfNull(control);
+        if (!OnUiThread() && control.CheckAccess())
+        {
+            throw new InvalidOperationException(
+                "This control was made on the script's thread, and only controls made on the UI thread can be shown. " +
+                "Make it where the UI can own it: Display.Control(() => new MyControl { ... }), or use Display.Animate(...).");
+        }
+
         InteractiveDisplayContext.Emit(new RichCellOutput
         {
             Kind = CellOutputKind.Control,
             InteractiveControl = control
         });
     }
+
+    /// <summary>
+    /// Builds a control on the UI thread (where its owner must be) and shows it:
+    /// <c>Display.Control(() => new Button { Content = "Hi" });</c>. Everything that sets the control up goes inside
+    /// <paramref name="build"/>. Returns the control (to read or dispose it; touch it from other threads only through
+    /// <c>Avalonia.Threading.Dispatcher.UIThread</c>).
+    /// </summary>
+    public static T Control<T>(Func<T> build) where T : Control
+    {
+        ArgumentNullException.ThrowIfNull(build);
+        var control = RunOnUiThread(build);
+        Control(control);
+        return control;
+    }
+
+    // True when the caller is on the UI thread, or the studio has none (a test, a tool): then there is nowhere else to be.
+    private static bool OnUiThread() => Avalonia.Application.Current == null || Avalonia.Threading.Dispatcher.UIThread.CheckAccess();
+
+    /// <summary>Runs <paramref name="work"/> on the UI thread and waits for what it returns.</summary>
+    internal static T RunOnUiThread<T>(Func<T> work) =>
+        OnUiThread() ? work() : Avalonia.Threading.Dispatcher.UIThread.Invoke(work);
 
     /// <summary>
     /// Primary way to display a live, self-animating visual: hides the DispatcherTimer + repaint
@@ -258,6 +294,9 @@ public static partial class Display
     /// so it never blocks other tabs, and it keeps animating for as long as you like without needing
     /// cooperative-cancellation checks. See Display.ThrowIfCancellationRequested() for the frame-loop
     /// alternative when you specifically want a bounded, finite sequence of frames instead.
+    /// The callback runs on the UI thread. Draw with <c>Brushes.X</c>, <c>ImmutableSolidColorBrush</c> and
+    /// <c>ImmutablePen</c>, or make brushes and pens inside the callback (or in the setup step of the other
+    /// overload): a brush or pen made in the script belongs to the script's thread and can't be drawn with.
     /// </summary>
     public static AnimatedRenderControl Animate(
         Action<DrawingContext, TimeSpan> onFrame,
@@ -265,7 +304,32 @@ public static partial class Display
         double width = 400,
         double height = 300)
     {
-        var control = new AnimatedRenderControl(onFrame, interval, width, height);
+        // Built on the UI thread: the control must belong to the thread that shows it.
+        var control = RunOnUiThread(() => new AnimatedRenderControl(onFrame, interval, width, height));
+        Control(control);
+        return control;
+    }
+
+    /// <summary>
+    /// <see cref="Animate(Action{DrawingContext, TimeSpan}, TimeSpan?, double, double)"/> with a setup step: <paramref name="setup"/>
+    /// runs once on the UI thread and what it returns (brushes, pens, geometry, a list of particles…) is handed to every frame.
+    /// A brush, pen or geometry made in the script belongs to the script's thread and can't be drawn with on the UI thread,
+    /// so make them here, or use <c>Brushes.Red</c>, <c>new ImmutableSolidColorBrush(color)</c> and <c>new ImmutablePen(brush, width)</c>.
+    /// </summary>
+    public static AnimatedRenderControl Animate<TState>(
+        Func<TState> setup,
+        Action<DrawingContext, TimeSpan, TState> onFrame,
+        TimeSpan? interval = null,
+        double width = 400,
+        double height = 300)
+    {
+        ArgumentNullException.ThrowIfNull(setup);
+        ArgumentNullException.ThrowIfNull(onFrame);
+        var control = RunOnUiThread(() =>
+        {
+            var state = setup();
+            return new AnimatedRenderControl((ctx, elapsed) => onFrame(ctx, elapsed, state), interval, width, height);
+        });
         Control(control);
         return control;
     }

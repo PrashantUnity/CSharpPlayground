@@ -112,6 +112,82 @@ public class Display {
         return m;
     }
 
+    /** A series' values and how it is drawn: Display.series(margin).kind("line").rightAxis().dash("dashed"). */
+    public static class SeriesData {
+        public final Object values;
+        public final Map<String, Object> options = new LinkedHashMap<>();
+
+        SeriesData(Object values) { this.values = values; }
+
+        private SeriesData set(String key, Object value) { options.put(key, value); return this; }
+
+        /** Draws this series as another kind than the chart's: line, area, bar or scatter. */
+        public SeriesData kind(String kind) { return set("kind", kind); }
+        /** Measures this series on the second value axis, up the right side. */
+        public SeriesData rightAxis() { return set("axis", "right"); }
+        public SeriesData color(String color) { return set("color", color); }
+        /** A colour for each value (a bar, point or slice). */
+        public SeriesData colors(String... colors) { return set("colors", Arrays.asList(colors)); }
+        public SeriesData lineWidth(double pixels) { return set("lineWidth", pixels); }
+        /** "dashed" or "dotted". */
+        public SeriesData dash(String dash) { return set("dash", dash); }
+        /** A curve through the values; tension is from 0 to 1. */
+        public SeriesData smooth(double tension) { set("interpolation", "smooth"); return set("tension", tension); }
+        public SeriesData monotone() { return set("interpolation", "monotone"); }
+        /** "before", "after" or "middle". */
+        public SeriesData step(String step) { return set("step", step); }
+        public SeriesData fill(boolean on) { return set("fill", on); }
+        /** Fills the space between this series and the series at that index. */
+        public SeriesData fillTo(int series) { return set("fillTo", series); }
+        /** "circle", "triangle", "square", "diamond", "cross" or "star", and the marker radius. */
+        public SeriesData pointStyle(String shape, double radius) { set("pointStyle", shape); return set("pointRadius", radius); }
+        public SeriesData colorSegments() { return set("colorSegments", true); }
+        /** The pile this series stacks in. */
+        public SeriesData stack(String name) { return set("stack", name); }
+        /** A bubble chart's radius for each value. */
+        public SeriesData sizes(List<?> sizes) { return set("sizes", sizes); }
+        /** Floating bars: where each bar starts. */
+        public SeriesData from(List<?> from) { return set("from", from); }
+        public SeriesData cornerRadius(double pixels) { return set("cornerRadius", pixels); }
+    }
+
+    public static SeriesData series(Object values) { return new SeriesData(values); }
+
+    /** What a chart is told besides its data: Display.options().title("Sales").labels("Jan", "Feb").stacked().y2Axis("%", 0, 100). */
+    public static class Options {
+        String title;
+        List<String> labels;
+        final Map<String, Object> extra = new LinkedHashMap<>();
+
+        public Options title(String title) { this.title = title; return this; }
+        /** Names the places of the values: x positions, a radar's spokes, a pie's slices. */
+        public Options labels(String... names) { this.labels = Arrays.asList(names); return this; }
+        public Options stacked() { extra.put("stack", "stacked"); return this; }
+        public Options percentStacked() { extra.put("stack", "percent"); return this; }
+        public Options horizontal() { extra.put("orientation", "horizontal"); return this; }
+        public Options gauge() { extra.put("startAngle", -90); extra.put("sweep", 180); return this; }
+        public Options angles(double start, double sweep) { extra.put("startAngle", start); extra.put("sweep", sweep); return this; }
+        public Options cutout(double share) { extra.put("cutout", share); return this; }
+        /** "top", "bottom", "left" or "right". */
+        public Options legendAt(String position) { return nest("legend", "position", position); }
+        /** A second value axis, up the right side, for the series set rightAxis(). */
+        public Options y2Axis(String title, double min, double max) { nest("y2Axis", "title", title); nest("y2Axis", "min", min); return nest("y2Axis", "max", max); }
+        /** "linear", "log", "time" (x only) or "category" (x only). */
+        public Options xScale(String scale) { return nest("xAxis", "scale", scale); }
+        public Options yScale(String scale) { return nest("yAxis", "scale", scale); }
+        public Options suggestedY(double min, double max) { nest("yAxis", "suggestedMin", min); return nest("yAxis", "suggestedMax", max); }
+        public Options reverseX() { return nest("xAxis", "reverse", true); }
+        public Options reverseY() { return nest("yAxis", "reverse", true); }
+
+        @SuppressWarnings("unchecked")
+        private Options nest(String key, String field, Object value) {
+            ((Map<String, Object>) extra.computeIfAbsent(key, k -> new LinkedHashMap<String, Object>())).put(field, value);
+            return this;
+        }
+    }
+
+    public static Options options() { return new Options(); }
+
     public static void emitRaw(String json) {
         if (customSink != null) {
             customSink.emit(json);
@@ -278,23 +354,65 @@ public class Display {
     }
 
     // Charts
-    public static DisplayHandle lineChart(Object data) { return lineChart(data, null); }
-    public static DisplayHandle lineChart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("line", data, title, null)); }
+    private static DisplayHandle chartDisplay(String kind, Object data, Options options) {
+        Map<String, Object> spec = chartSpec(kind, data, options.title, options.extra);
+        if (options.labels != null && spec.get("series") instanceof List<?> all) {
+            for (Object one : all) {
+                if (one instanceof Map<?, ?> m && m.get("y") instanceof List<?> y && y.size() == options.labels.size()) {
+                    @SuppressWarnings("unchecked") Map<String, Object> series = (Map<String, Object>) m;
+                    series.put("labels", options.labels);
+                }
+            }
+        }
+        return sendDisplay(CHART_MIME, spec);
+    }
 
-    public static DisplayHandle scatterChart(Object data) { return scatterChart(data, null); }
-    public static DisplayHandle scatterChart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("scatter", data, title, null)); }
+    private static Options titled(String title) { return new Options().title(title); }
 
-    public static DisplayHandle barChart(Object data) { return barChart(data, null); }
-    public static DisplayHandle barChart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("bar", data, title, null)); }
+    public static DisplayHandle lineChart(Object data) { return lineChart(data, (String) null); }
+    public static DisplayHandle lineChart(Object data, String title) { return chartDisplay("line", data, titled(title)); }
+    public static DisplayHandle lineChart(Object data, Options options) { return chartDisplay("line", data, options); }
 
-    public static DisplayHandle chart(Object data) { return chart(data, null); }
-    public static DisplayHandle chart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("line", data, title, null)); }
+    public static DisplayHandle areaChart(Object data) { return areaChart(data, (String) null); }
+    public static DisplayHandle areaChart(Object data, String title) { return chartDisplay("area", data, titled(title)); }
+    public static DisplayHandle areaChart(Object data, Options options) { return chartDisplay("area", data, options); }
 
-    public static DisplayHandle pieChart(Object data) { return pieChart(data, null); }
-    public static DisplayHandle pieChart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("pie", data, title, null)); }
+    public static DisplayHandle scatterChart(Object data) { return scatterChart(data, (String) null); }
+    public static DisplayHandle scatterChart(Object data, String title) { return chartDisplay("scatter", data, titled(title)); }
+    public static DisplayHandle scatterChart(Object data, Options options) { return chartDisplay("scatter", data, options); }
 
-    public static DisplayHandle donutChart(Object data) { return donutChart(data, null); }
-    public static DisplayHandle donutChart(Object data, String title) { return sendDisplay(CHART_MIME, chartSpec("donut", data, title, null)); }
+    public static DisplayHandle barChart(Object data) { return barChart(data, (String) null); }
+    public static DisplayHandle barChart(Object data, String title) { return chartDisplay("bar", data, titled(title)); }
+    public static DisplayHandle barChart(Object data, Options options) { return chartDisplay("bar", data, options); }
+
+    public static DisplayHandle stackedBarChart(Object data, String title) { return chartDisplay("bar", data, titled(title).stacked()); }
+    public static DisplayHandle stackedBarChart(Object data, Options options) { return chartDisplay("bar", data, options.stacked()); }
+
+    public static DisplayHandle horizontalBarChart(Object data, String title) { return chartDisplay("bar", data, titled(title).horizontal()); }
+    public static DisplayHandle horizontalBarChart(Object data, Options options) { return chartDisplay("bar", data, options.horizontal()); }
+
+    public static DisplayHandle chart(Object data) { return chart(data, (String) null); }
+    public static DisplayHandle chart(Object data, String title) { return chartDisplay("line", data, titled(title)); }
+    public static DisplayHandle chart(Object data, Options options) { return chartDisplay("line", data, options); }
+
+    public static DisplayHandle pieChart(Object data) { return pieChart(data, (String) null); }
+    public static DisplayHandle pieChart(Object data, String title) { return chartDisplay("pie", data, titled(title)); }
+    public static DisplayHandle pieChart(Object data, Options options) { return chartDisplay("pie", data, options); }
+
+    public static DisplayHandle donutChart(Object data) { return donutChart(data, (String) null); }
+    public static DisplayHandle donutChart(Object data, String title) { return chartDisplay("donut", data, titled(title)); }
+    public static DisplayHandle donutChart(Object data, Options options) { return chartDisplay("donut", data, options); }
+
+    /** (x, y, size) items; the size is a radius in pixels. */
+    public static DisplayHandle bubbleChart(Object data, String title) { return chartDisplay("bubble", data, titled(title)); }
+    public static DisplayHandle bubbleChart(Object data, Options options) { return chartDisplay("bubble", data, options); }
+
+    /** A polygon for each series over a spoke for each value (name the spokes with Options.labels). */
+    public static DisplayHandle radarChart(Object data, String title) { return chartDisplay("radar", data, titled(title)); }
+    public static DisplayHandle radarChart(Object data, Options options) { return chartDisplay("radar", data, options); }
+
+    public static DisplayHandle polarAreaChart(Object data, String title) { return chartDisplay("polarArea", data, titled(title)); }
+    public static DisplayHandle polarAreaChart(Object data, Options options) { return chartDisplay("polarArea", data, options); }
 
     public static DisplayHandle histogram(Object data, String title, int bins) {
         Map<String, Object> extra = new LinkedHashMap<>();
@@ -405,6 +523,17 @@ public class Display {
         if (extra != null) spec.putAll(extra);
         List<Map<String, Object>> series = new ArrayList<>();
 
+        if ("bubble".equals(kind)) {
+            if (data instanceof Map<?, ?> named) {
+                for (Map.Entry<?, ?> e : named.entrySet()) series.add(bubbleSeries(toList(e.getValue()), String.valueOf(e.getKey())));
+            } else {
+                series.add(bubbleSeries(toList(data), null));
+            }
+            spec.put("series", series);
+            if (title != null) spec.put("title", title);
+            return spec;
+        }
+
         List<?> list = toList(data);
         if (list != null) {
             List<?> firstPair = toList(!list.isEmpty() ? list.get(0) : null);
@@ -452,16 +581,19 @@ public class Display {
         } else if (data instanceof Map<?, ?> map) {
             boolean isMultiSeries = false;
             for (Object v : map.values()) {
-                if (toList(v) != null) { isMultiSeries = true; break; }
+                if (v instanceof SeriesData || toList(v) != null) { isMultiSeries = true; break; }
             }
             if (isMultiSeries) {
                 for (Map.Entry<?, ?> e : map.entrySet()) {
-                    List<?> yVals = toList(e.getValue());
+                    Object value = e.getValue();
+                    SeriesData styled = value instanceof SeriesData sd ? sd : null;
+                    List<?> yVals = toList(styled != null ? styled.values : value);
                     List<Object> y = new ArrayList<>();
                     if (yVals != null) for (Object item : yVals) y.add(toNum(item));
                     Map<String, Object> s = new LinkedHashMap<>();
                     s.put("name", String.valueOf(e.getKey()));
                     s.put("y", y);
+                    if (styled != null) s.putAll(styled.options);
                     series.add(s);
                 }
             } else {
@@ -481,6 +613,32 @@ public class Display {
         spec.put("series", series);
         if (title != null) spec.put("title", title);
         return spec;
+    }
+
+    // (x, y, size) items, each a list of at least three numbers.
+    private static Map<String, Object> bubbleSeries(List<?> items, String name) {
+        Map<String, Object> series = new LinkedHashMap<>();
+        if (name != null) series.put("name", name);
+        List<Object> x = new ArrayList<>(), y = new ArrayList<>(), sizes = new ArrayList<>();
+        if (items != null) {
+            for (Object item : items) {
+                List<?> p = toList(item);
+                if (p != null && p.size() >= 3) {
+                    x.add(toNum(p.get(0)));
+                    y.add(toNum(p.get(1)));
+                    sizes.add(toNum(p.get(2)));
+                } else {
+                    x.add(null);
+                    y.add(null);
+                    sizes.add(null);
+                }
+            }
+        }
+
+        series.put("x", x);
+        series.put("y", y);
+        series.put("sizes", sizes);
+        return series;
     }
 
     private static Map<String, Object> plot3dSpec(String kind, Object data, String title) {

@@ -34,7 +34,7 @@ internal static class VisualSnapshots
                 Console.Error.WriteLine($"{name}: still preparing after 30 s");
             }
 
-            Snapshot.Save(window, options.Value("name") ?? $"visual_{name}");
+            Snapshot.Save(window, options, $"visual_{name}");
             window.Close();
         }
     }

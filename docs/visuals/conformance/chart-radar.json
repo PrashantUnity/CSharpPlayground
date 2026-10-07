@@ -1,0 +1,35 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "radar",
+    "series": [
+      {
+        "name": "Ada",
+        "y": [
+          8,
+          6,
+          9
+        ],
+        "labels": [
+          "Speed",
+          "Power",
+          "Skill"
+        ]
+      },
+      {
+        "name": "Bo",
+        "y": [
+          5,
+          9,
+          6
+        ],
+        "labels": [
+          "Speed",
+          "Power",
+          "Skill"
+        ]
+      }
+    ],
+    "title": "Radar"
+  }
+}

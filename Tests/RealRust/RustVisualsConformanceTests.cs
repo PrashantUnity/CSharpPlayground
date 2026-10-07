@@ -83,6 +83,29 @@ public class RustVisualsConformanceTests : IClassFixture<RustStudioFixture>, IDi
         fry::islands(&vec![vec![1, 0], vec![1, 1]]).title("Islands").show();
         """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way Rust writes them.
+    private const string TheFeatureStatements = """
+        let months = ["Jan", "Feb", "Mar"];
+        let rev = vec![40, 55, 48];
+        let costs = vec![30, 35, 38];
+        let margin = vec![25, 36, 21];
+        fry::bar_chart(&vec![("Revenue", rev.clone()), ("Costs", costs.clone()), ("Margin", margin.clone())])
+            .series("Margin", fry::SeriesStyle::new().kind("line").right_axis().dash("dashed"))
+            .labels(&months).y2_axis("Margin %", 0.0, 100.0).title("Combo").show();
+        fry::bar_chart(&vec![("Revenue", rev.clone()), ("Costs", costs.clone())]).stacked().labels(&months).title("Stacked").show();
+        fry::horizontal_bar_chart(&vec![("Revenue", rev.clone())]).labels(&months).title("Horizontal").show();
+        fry::line_chart(&vec![("Smooth", rev.clone()), ("Steps", costs.clone()), ("Filled", margin.clone())])
+            .series("Smooth", fry::SeriesStyle::new().smooth(0.5))
+            .series("Steps", fry::SeriesStyle::new().step("after").dash("dotted").point_style("star", 6.0))
+            .series("Filled", fry::SeriesStyle::new().fill(true).color("#ff8800"))
+            .title("Line styles").show();
+        fry::bubble_chart(&vec![(1.0, 2.0, 8.0), (2.0, 4.0, 12.0)]).title("Bubbles").show();
+        fry::radar_chart(&vec![("Ada", vec![8, 6, 9]), ("Bo", vec![5, 9, 6])]).labels(&["Speed", "Power", "Skill"]).title("Radar").show();
+        fry::polar_area_chart(&vec![("A", 3), ("B", 5)]).title("Polar").show();
+        fry::donut_chart(&vec![("Done", 70), ("Left", 30)]).gauge().title("Gauge").show();
+        fry::line_chart(&vec![("Growth", vec![1, 10, 100])]).y_scale("log").suggested_y(1.0, 1000.0).reverse_x().title("Scales").show();
+        """;
+
     private static string BuildMainProgram(string statements) => $$"""
         fn main() {
             {{statements}}
@@ -131,6 +154,28 @@ public class RustVisualsConformanceTests : IClassFixture<RustStudioFixture>, IDi
             OnRichOutput = rich.Add,
         }, CancellationToken.None).WaitAsync(Patience);
         return (result, console.ToString(), rich);
+    }
+
+    [RustFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.rs", BuildMainProgram(TheFeatureStatements));
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual;
+            Assert.NotNull(v);
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
     }
 
     [RustFact]

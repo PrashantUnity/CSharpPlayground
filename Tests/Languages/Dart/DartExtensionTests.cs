@@ -512,6 +512,61 @@ public class DartExtensionTests : IDisposable
     }
 
     [DartFact]
+    public async Task DartExtension_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        using var manager = new ExtensionManager();
+        var loadResult = await manager.LoadExtensionAsync(_extensionPath, enableHotReload: false);
+        Assert.True(loadResult.Success, loadResult.ErrorMessage);
+
+        var dartLang = StudioAppContext.Instance.Languages.Get("dart");
+        Assert.NotNull(dartLang);
+        var kernel = dartLang.NotebookKernels!.Create(new KernelCreationContext(() => "/tmp"));
+
+        var richOutputs = new System.Collections.Generic.List<RichCellOutput>();
+        var consoleOutput = new System.Text.StringBuilder();
+
+        // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way Dart writes them.
+        var featureCalls = """
+            final months = ['Jan', 'Feb', 'Mar'];
+            final rev = [40, 55, 48], costs = [30, 35, 38], margin = [25, 36, 21];
+            Display.barChart({'Revenue': rev, 'Costs': costs, 'Margin': {'values': margin, 'kind': 'line', 'axis': 'right', 'dash': 'dashed'}},
+                {'title': 'Combo', 'labels': months, 'y2Axis': {'title': 'Margin %', 'min': 0, 'max': 100}});
+            Display.stackedBarChart({'Revenue': rev, 'Costs': costs}, {'title': 'Stacked', 'labels': months});
+            Display.horizontalBarChart({'Revenue': rev}, {'title': 'Horizontal', 'labels': months});
+            Display.lineChart({'Smooth': {'values': rev, 'interpolation': 'smooth', 'tension': 0.5},
+                'Steps': {'values': costs, 'step': 'after', 'dash': 'dotted', 'pointStyle': 'star', 'pointRadius': 6},
+                'Filled': {'values': margin, 'fill': true, 'color': '#ff8800'}}, 'Line styles');
+            Display.bubbleChart([[1, 2, 8], [2, 4, 12]], 'Bubbles');
+            Display.radarChart({'Ada': [8, 6, 9], 'Bo': [5, 9, 6]}, {'title': 'Radar', 'labels': ['Speed', 'Power', 'Skill']});
+            Display.polarAreaChart({'A': 3, 'B': 5}, 'Polar');
+            Display.donutChart({'Done': 70, 'Left': 30}, {'title': 'Gauge', 'gauge': true});
+            Display.lineChart({'Growth': [1, 10, 100]}, {'title': 'Scales', 'yAxis': {'scale': 'log', 'suggestedMin': 1, 'suggestedMax': 1000}, 'xAxis': {'reverse': true}});
+            """;
+
+        var res = await kernel.ExecuteAsync(new KernelExecutionRequest
+        {
+            Code = featureCalls,
+            OnRichOutput = richOutputs.Add,
+            OnConsole = s => consoleOutput.Append(s)
+        }, CancellationToken.None);
+
+        Assert.True(res.Success, $"Execution failed: {res.ErrorMessage}\nConsole:\n{consoleOutput}");
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, richOutputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = richOutputs[i].Visual!;
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+
+        kernel.Dispose();
+        await manager.UnloadExtensionAsync("dart-support");
+    }
+
+    [DartFact]
     public async Task DartExtension_VisualUpdate_RedrawsSingleVisual()
     {
         using var manager = new ExtensionManager();

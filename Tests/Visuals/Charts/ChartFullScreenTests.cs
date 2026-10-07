@@ -26,4 +26,33 @@ public class ChartFullScreenTests
         Assert.Null(ChartFullScreenOverlay.Open(new InteractiveChartControl()));
         Assert.Null(ChartFullScreenOverlay.Open(new InteractiveChartControl(new ChartOptions { Title = "t" })));
     }
+
+    [Fact]
+    public void WhatTheLegendHidesAndTheStackToggle_AreTheViewsOwn_NeverTheCharts()
+    {
+        var options = new ChartOptions
+        {
+            Stack = ChartStack.None,
+            Series = { new ChartSeries { Points = { new ChartDataPoint(0, 1) } }, new ChartSeries { Points = { new ChartDataPoint(0, 2) } } }
+        };
+        var view = new ChartViewState();
+        view.HiddenSeries.Add(1);
+        view.OverrideStack = ChartStack.Stacked;
+
+        var drawn = options.WithView(view.EffectiveType(options), view.EffectiveShowGrid(options), view.HiddenSeries, view.EffectiveStack(options));
+        var copy = new ChartViewState(view);
+
+        Assert.Equal(ChartStack.None, options.Stack);   // the chart itself is untouched
+        Assert.Null(options.HiddenSeries);
+        Assert.Equal(ChartStack.Stacked, drawn.Stack);
+        Assert.Equal([1], drawn.HiddenSeries!);
+        Assert.Same(options.Series, drawn.Series);       // the series are shared, not copied
+        Assert.Equal([1], copy.HiddenSeries);            // a full-screen copy starts with the same choices...
+        copy.HiddenSeries.Clear();
+        Assert.Equal([1], view.HiddenSeries);            // ...and changes them on its own
+
+        view.Reset();
+        Assert.Empty(view.HiddenSeries);
+        Assert.Null(view.OverrideStack);
+    }
 }

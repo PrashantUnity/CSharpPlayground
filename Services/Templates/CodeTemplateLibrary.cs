@@ -502,11 +502,13 @@ fn main() {
             InitialCode = @"using System;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 
 double canvasWidth = 380, canvasHeight = 220;
 double ballRadius = 16;
-var ballBrush = new SolidColorBrush(Color.Parse(""#F472B6""));
-var trackBrush = new SolidColorBrush(Color.Parse(""#151B2B""));
+// Immutable brushes can be drawn with from the UI thread; a plain SolidColorBrush made here belongs to this script's thread.
+var ballBrush = new ImmutableSolidColorBrush(Color.Parse(""#F472B6""));
+var trackBrush = new ImmutableSolidColorBrush(Color.Parse(""#151B2B""));
 
 Display.Animate((ctx, elapsed) =>
 {
@@ -561,21 +563,24 @@ Console.WriteLine(""Rendered via Display.Markdown -> Display.Html -> RichHtmlVie
             InitialCode = @"#r ""nuget: ScottPlot.Avalonia, 5.1.59""
 using ScottPlot.Avalonia;
 
-var avaPlot = new AvaPlot { Width = 520, Height = 300 };
-var plot = avaPlot.Plot;
-
 double[] months = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 double[] revenue = { 12, 15, 14, 18, 22, 26, 24, 28, 31, 29, 34, 38 };
 
-var scatter = plot.Add.Scatter(months, revenue);
-scatter.LineWidth = 2;
-scatter.MarkerSize = 6;
+// A control belongs to the thread that makes it, and only the UI thread can show one: build it inside Display.Control.
+Display.Control(() =>
+{
+    var avaPlot = new AvaPlot { Width = 520, Height = 300 };
+    var plot = avaPlot.Plot;
 
-plot.Title(""Monthly Revenue (Thousands, USD)"");
-plot.XLabel(""Month"");
-plot.YLabel(""Revenue ($K)"");
+    var scatter = plot.Add.Scatter(months, revenue);
+    scatter.LineWidth = 2;
+    scatter.MarkerSize = 6;
 
-Display.Control(avaPlot);
+    plot.Title(""Monthly Revenue (Thousands, USD)"");
+    plot.XLabel(""Month"");
+    plot.YLabel(""Revenue ($K)"");
+    return avaPlot;
+});
 Console.WriteLine(""Live, interactive ScottPlot chart rendered via #r nuget + Display.Control."");"
         },
         new()

@@ -1,0 +1,56 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "bar",
+    "y2Axis": {
+      "title": "Margin %",
+      "min": 0,
+      "max": 100
+    },
+    "series": [
+      {
+        "name": "Revenue",
+        "y": [
+          40,
+          55,
+          48
+        ],
+        "labels": [
+          "Jan",
+          "Feb",
+          "Mar"
+        ]
+      },
+      {
+        "name": "Costs",
+        "y": [
+          30,
+          35,
+          38
+        ],
+        "labels": [
+          "Jan",
+          "Feb",
+          "Mar"
+        ]
+      },
+      {
+        "name": "Margin",
+        "kind": "line",
+        "axis": "right",
+        "dash": "dashed",
+        "y": [
+          25,
+          36,
+          21
+        ],
+        "labels": [
+          "Jan",
+          "Feb",
+          "Mar"
+        ]
+      }
+    ],
+    "title": "Combo"
+  }
+}

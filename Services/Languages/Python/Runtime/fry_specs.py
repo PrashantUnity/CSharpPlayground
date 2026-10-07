@@ -25,7 +25,15 @@ PLACE_NAMES = ("x", "key", "label", "name", "title", "category", "region", "coun
 LABEL_NAMES = ("label", "name", "title", "id")
 NODE_VALUE_NAMES = ("val", "Val", "value", "Value", "data", "Data", "key", "Key")
 
-CHART_KINDS = ("line", "area", "bar", "scatter", "pie", "donut", "histogram")
+CHART_KINDS = ("line", "area", "bar", "scatter", "pie", "donut", "histogram", "bubble", "radar", "polarArea")
+_KIND_ALIASES = {"polar_area": "polarArea", "polararea": "polarArea", "polar": "polarArea", "doughnut": "donut"}
+
+# What a series can be told, and the spec's name for it (a series given as {"values": [...], "dash": "dashed"}).
+SERIES_OPTIONS = {
+    "name": "name", "color": "color", "colors": "colors", "line_width": "lineWidth", "kind": "kind", "axis": "axis", "stack": "stack",
+    "dash": "dash", "interpolation": "interpolation", "tension": "tension", "step": "step", "fill": "fill", "fill_to": "fillTo",
+    "point_style": "pointStyle", "point_radius": "pointRadius", "color_segments": "colorSegments", "sizes": "sizes",
+    "from_": "from", "from": "from", "corner_radius": "cornerRadius", "ids": "ids", "labels": "labels"}
 PLOT3D_KINDS = ("scatter", "surface", "wireframe", "trajectory", "graph", "voxelBar")
 TRAVERSALS = {"preorder": "preorder", "inorder": "inorder", "postorder": "postorder", "levelorder": "levelOrder", "bfs": "levelOrder"}
 
@@ -147,14 +155,71 @@ def _series(items, name=None):
     return series
 
 
+def _apply_series_options(series, options):
+    """Puts a series' options (dash, axis, kind, point_style…) in its spec; a name it doesn't know says what it does."""
+    for name, value in options.items():
+        if name == "values":
+            continue
+        if name not in SERIES_OPTIONS:
+            raise TypeError(f"There is no series option {name!r}: use one of {', '.join(sorted(k for k in SERIES_OPTIONS if k != 'from'))}.")
+        if value is None:
+            continue
+        series[SERIES_OPTIONS[name]] = [number(v) for v in _as_list(value)] if name in ("sizes", "from_", "from") else value
+    return series
+
+
+def _is_named_series(item):
+    """("Sales", [1, 2, 3]): a name and its values."""
+    return isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) and is_sequence(item[1])
+
+
+def _read_bubble(item):
+    item = _plain(item)
+    if isinstance(item, (list, tuple)) and not hasattr(item, "_asdict") and len(item) >= 3:
+        return number(item[0]), number(item[1]), number(item[2])
+    if _is_record(item):
+        fields = dict(members(item))
+        size = next((fields[n] for n in ("size", "r", "radius", "z", "weight") if n in fields), None)
+        value = next((fields[n] for n in VALUE_NAMES if n in fields), None)
+        return number(fields.get("x")), number(value), number(size)
+    return None, None, None
+
+
+def _bubble_series(items, name=None):
+    series = {} if name is None else {"name": str(name)}
+    xs, ys, sizes = [], [], []
+    for item in _as_list(items):
+        px, py, size = _read_bubble(item)
+        xs.append(px)
+        ys.append(py)
+        sizes.append(size)
+    series.update({"x": xs, "y": ys, "sizes": sizes})
+    return series
+
+
 def chart_spec(data, kind="line", x=None, y=None):
     """A chart of data; x and y (field names or functions) say where each record goes and its value."""
+    kind = _KIND_ALIASES.get(str(kind).lower(), kind)
     if kind not in CHART_KINDS:
         raise ValueError(f"There is no {kind!r} chart: use one of {', '.join(CHART_KINDS)}.")
     if kind == "histogram":
         return histogram_spec(data)
     spec = {"kind": kind, "series": []}
     data = _plain(data)
+    if kind == "bubble":
+        if data is None:
+            pass
+        elif isinstance(data, dict) and all(is_sequence(v) for v in data.values()):
+            spec["series"] = [_bubble_series(v, k) for k, v in data.items()]
+        elif is_sequence(data):
+            spec["series"].append(_bubble_series(data))
+        else:
+            raise TypeError(f"A bubble chart shows (x, y, size) items, not a single {type(data).__name__}.")
+        return CHART_MIME, spec
+    if _is_named_series(data):
+        data = {data[0]: data[1]}
+    elif isinstance(data, list) and data and all(_is_named_series(d) for d in data):
+        data = {name: values for name, values in data}
     if y is not None:
         get_y = y if callable(y) else (lambda r, name=y: dict(members(r)).get(name))
         get_x = None if x is None else x if callable(x) else (lambda r, name=x: dict(members(r)).get(name))
@@ -163,8 +228,11 @@ def chart_spec(data, kind="line", x=None, y=None):
         pass
     elif isinstance(data, dict):
         entries = list(data.items())
-        if entries and all(is_sequence(v) for _, v in entries):
-            spec["series"] = [_series((_read(i) for i in _as_list(v)), k) for k, v in entries]
+        if entries and all(is_sequence(v) or (isinstance(v, dict) and "values" in v) for _, v in entries):
+            for k, v in entries:
+                values = v["values"] if isinstance(v, dict) else v
+                series = _series((_read(i) for i in _as_list(values)), k)
+                spec["series"].append(_apply_series_options(series, v) if isinstance(v, dict) else series)
         else:
             spec["series"].append(_series((None, str(k), number(v)) for k, v in entries))
     elif is_sequence(data):

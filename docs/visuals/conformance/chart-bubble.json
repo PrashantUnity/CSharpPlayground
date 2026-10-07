@@ -1,0 +1,23 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "bubble",
+    "series": [
+      {
+        "sizes": [
+          8,
+          12
+        ],
+        "x": [
+          1,
+          2
+        ],
+        "y": [
+          2,
+          4
+        ]
+      }
+    ],
+    "title": "Bubbles"
+  }
+}

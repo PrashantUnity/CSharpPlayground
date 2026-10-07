@@ -285,6 +285,37 @@ function applyOptions(spec, opts) {
         spec.yAxis = Object.assign({}, spec.yAxis, typeof opts.yTitle === 'string' ? { title: opts.yTitle } : opts.yAxis);
     }
     if (opts.legend !== undefined) spec.legend = typeof opts.legend === 'boolean' ? { show: opts.legend } : opts.legend;
+
+    // A second value axis, scales, suggested ranges, reversed axes, stacking, round charts, the legend's place.
+    const axis = (name, key, value) => { if (value !== undefined) spec[name] = Object.assign({}, spec[name], { [key]: value }); };
+    if (opts.y2Axis) spec.y2Axis = Object.assign({}, spec.y2Axis, opts.y2Axis);
+    axis('y2Axis', 'title', opts.y2Title);
+    axis('y2Axis', 'min', opts.y2Min);
+    axis('y2Axis', 'max', opts.y2Max);
+    axis('xAxis', 'scale', opts.xScale);
+    axis('yAxis', 'scale', opts.yScale);
+    axis('y2Axis', 'scale', opts.y2Scale);
+    axis('xAxis', 'suggestedMin', opts.xSuggestedMin);
+    axis('xAxis', 'suggestedMax', opts.xSuggestedMax);
+    axis('yAxis', 'suggestedMin', opts.ySuggestedMin);
+    axis('yAxis', 'suggestedMax', opts.ySuggestedMax);
+    axis('xAxis', 'reverse', opts.reverseX);
+    axis('yAxis', 'reverse', opts.reverseY);
+    if (opts.legendPosition !== undefined) spec.legend = Object.assign({}, spec.legend, { position: opts.legendPosition });
+    if (opts.orientation !== undefined) spec.orientation = opts.orientation;
+    if (opts.horizontal) spec.orientation = 'horizontal';
+    if (opts.stack !== undefined) spec.stack = opts.stack;
+    if (opts.percent) spec.stack = 'percent';
+    if (opts.startAngle !== undefined) spec.startAngle = opts.startAngle;
+    if (opts.sweep !== undefined) spec.sweep = opts.sweep;
+    if (opts.cutout !== undefined) spec.cutout = opts.cutout;
+    if (opts.gauge) { spec.startAngle = -90; spec.sweep = 180; }
+    if (opts.labels !== undefined && Array.isArray(spec.series)) {
+        const names = Array.from(opts.labels).map(l => (l === null || l === undefined ? null : String(l)));
+        for (const series of spec.series) {
+            if (Array.isArray(series.y) && series.y.length === names.length) series.labels = names;
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------------------------------------- helpers
@@ -310,10 +341,59 @@ function parseOpts(titleOrOptions, options) {
 }
 
 // ----------------------------------------------------------------------------------------------------------- specs
+// What a series can be told, and the spec's name for it: { values: [...], dash: 'dashed', axis: 'right' }.
+const SERIES_OPTIONS = {
+    name: 'name', color: 'color', colors: 'colors', lineWidth: 'lineWidth', line_width: 'lineWidth', kind: 'kind', axis: 'axis', stack: 'stack',
+    dash: 'dash', interpolation: 'interpolation', tension: 'tension', step: 'step', fill: 'fill', fillTo: 'fillTo', fill_to: 'fillTo',
+    pointStyle: 'pointStyle', point_style: 'pointStyle', pointRadius: 'pointRadius', point_radius: 'pointRadius',
+    colorSegments: 'colorSegments', color_segments: 'colorSegments', sizes: 'sizes', from: 'from', cornerRadius: 'cornerRadius',
+    corner_radius: 'cornerRadius', ids: 'ids', labels: 'labels'
+};
+const KIND_ALIASES = { polar_area: 'polarArea', polararea: 'polarArea', polar: 'polarArea', doughnut: 'donut' };
+
+function applySeriesOptions(series, options) {
+    for (const [name, value] of Object.entries(options)) {
+        if (name === 'values' || value === undefined || value === null) continue;
+        if (!(name in SERIES_OPTIONS)) {
+            throw new Error(`There is no series option '${name}': use one of ${Object.keys(SERIES_OPTIONS).filter(k => !k.includes('_')).sort().join(', ')}.`);
+        }
+        const key = SERIES_OPTIONS[name];
+        series[key] = key === 'sizes' || key === 'from' ? Array.from(value).map(number) : value;
+    }
+    return series;
+}
+
+function bubbleItem(item) {
+    if (Array.isArray(item) && item.length >= 3) return [number(item[0]), number(item[1]), number(item[2])];
+    if (item && typeof item === 'object') {
+        const valueKey = ['y', 'value', 'amount', 'count', 'total', 'score', 'revenue', 'sales', 'price', 'cost'].find(k => k in item);
+        const sizeKey = ['size', 'r', 'radius', 'z', 'weight'].find(k => k in item);
+        return [number(item.x), number(valueKey ? item[valueKey] : null), number(sizeKey ? item[sizeKey] : null)];
+    }
+    return [null, null, null];
+}
+
+function bubbleSeries(items, name) {
+    const series = name === undefined ? {} : { name };
+    const rows = Array.from(items).map(bubbleItem);
+    series.x = rows.map(r => r[0]);
+    series.y = rows.map(r => r[1]);
+    series.sizes = rows.map(r => r[2]);
+    return series;
+}
+
 function chartSpec(kind, data, titleOrOptions, options) {
     const opts = parseOpts(titleOrOptions, options);
     let series = [];
-    const spec = { kind: kind || opts.kind || 'line', series: [] };
+    const wanted = kind || opts.kind || opts.type || opts.chartType || 'line';
+    const spec = { kind: KIND_ALIASES[String(wanted).toLowerCase()] || wanted, series: [] };
+
+    if (spec.kind === 'bubble') {
+        if (Array.isArray(data)) spec.series.push(bubbleSeries(data));
+        else if (data && typeof data === 'object') for (const [name, items] of Object.entries(data)) spec.series.push(bubbleSeries(items, name));
+        applyOptions(spec, opts);
+        return spec;
+    }
 
     if (Array.isArray(data)) {
         if (data.length > 0 && Array.isArray(data[0])) {
@@ -342,10 +422,13 @@ function chartSpec(kind, data, titleOrOptions, options) {
         }
     } else if (typeof data === 'object' && data !== null) {
         const entries = Object.entries(data);
-        if (entries.length > 0 && Array.isArray(entries[0][1])) {
-            // Series map
-            for (const [name, arr] of entries) {
-                series.push({ name, y: arr.map(number) });
+        const isValues = v => Array.isArray(v) || (v !== null && typeof v === 'object' && Array.isArray(v.values));
+        if (entries.length > 0 && isValues(entries[0][1])) {
+            // Series map: each name has its values, or { values, ...how it is drawn }
+            for (const [name, v] of entries) {
+                const arr = Array.isArray(v) ? v : v.values;
+                const one = { name, y: arr.map(number) };
+                series.push(Array.isArray(v) ? one : applySeriesOptions(one, v));
             }
         } else {
             // Labels map
@@ -703,7 +786,7 @@ class Display {
         channel().send({ type: 'display', data: { 'application/json': JSON.stringify(data), 'text/plain': util.inspect(data) }, metadata: {} });
     }
 
-    static chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('line', data, titleOrOpts, opts)); }
+    static chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec(null, data, titleOrOpts, opts)); }
     static lineChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('line', data, titleOrOpts, opts)); }
     static line_chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('line', data, titleOrOpts, opts)); }
     static areaChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('area', data, titleOrOpts, opts)); }
@@ -717,6 +800,16 @@ class Display {
     static donutChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('donut', data, titleOrOpts, opts)); }
     static donut_chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('donut', data, titleOrOpts, opts)); }
     static histogram(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('histogram', data, titleOrOpts, opts)); }
+    static bubbleChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('bubble', data, titleOrOpts, opts)); }
+    static bubble_chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('bubble', data, titleOrOpts, opts)); }
+    static radarChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('radar', data, titleOrOpts, opts)); }
+    static radar_chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('radar', data, titleOrOpts, opts)); }
+    static polarAreaChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('polarArea', data, titleOrOpts, opts)); }
+    static polar_area_chart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('polarArea', data, titleOrOpts, opts)); }
+    static stackedBarChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('bar', data, titleOrOpts, Object.assign({ stack: 'stacked' }, opts))); }
+    static stacked_bar_chart(data, titleOrOpts, opts) { return Display.stackedBarChart(data, titleOrOpts, opts); }
+    static horizontalBarChart(data, titleOrOpts, opts) { return sendDisplay(CHART_MIME, chartSpec('bar', data, titleOrOpts, Object.assign({ horizontal: true }, opts))); }
+    static horizontal_bar_chart(data, titleOrOpts, opts) { return Display.horizontalBarChart(data, titleOrOpts, opts); }
 
     static plot3d(data, titleOrOpts, opts) { return sendDisplay(PLOT3D_MIME, plot3dSpec('scatter', data, titleOrOpts, opts)); }
     static scatter3d(data, titleOrOpts, opts) { return sendDisplay(PLOT3D_MIME, plot3dSpec('scatter', data, titleOrOpts, opts)); }
@@ -886,6 +979,16 @@ module.exports = {
     donutChart: Display.donutChart,
     donut_chart: Display.donut_chart,
     histogram: Display.histogram,
+    bubbleChart: Display.bubbleChart,
+    bubble_chart: Display.bubble_chart,
+    radarChart: Display.radarChart,
+    radar_chart: Display.radar_chart,
+    polarAreaChart: Display.polarAreaChart,
+    polar_area_chart: Display.polar_area_chart,
+    stackedBarChart: Display.stackedBarChart,
+    stacked_bar_chart: Display.stacked_bar_chart,
+    horizontalBarChart: Display.horizontalBarChart,
+    horizontal_bar_chart: Display.horizontal_bar_chart,
     plot3d: Display.plot3d,
     scatter3d: Display.scatter3d,
     trajectory3d: Display.trajectory3d,

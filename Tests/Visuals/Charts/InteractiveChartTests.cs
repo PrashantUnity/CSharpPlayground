@@ -129,16 +129,20 @@ public class InteractiveChartTests
         var scatterRenderer = ChartRendererFactory.GetRenderer(ChartType.Scatter);
         var pieRenderer = ChartRendererFactory.GetRenderer(ChartType.Pie);
 
-        Assert.IsType<LineChartRenderer>(lineRenderer);
-        Assert.IsType<BarChartRenderer>(barRenderer);
-        Assert.IsType<ScatterChartRenderer>(scatterRenderer);
+        // Everything with x and y axes is drawn by one renderer; round charts have their own.
+        Assert.IsType<CartesianChartRenderer>(lineRenderer);
+        Assert.IsType<CartesianChartRenderer>(barRenderer);
+        Assert.IsType<CartesianChartRenderer>(scatterRenderer);
         Assert.IsType<PieChartRenderer>(pieRenderer);
+        Assert.IsType<CartesianChartRenderer>(ChartRendererFactory.GetRenderer(ChartType.Area));
+        Assert.IsType<CartesianChartRenderer>(ChartRendererFactory.GetRenderer(ChartType.Histogram));
+        Assert.IsType<CartesianChartRenderer>(ChartRendererFactory.GetRenderer(ChartType.Bubble));
     }
 
     [Fact]
-    public void HitTest_LineChartRenderer_ShouldFindClosestPoint()
+    public void HitTest_CartesianChartRenderer_ShouldFindClosestPoint()
     {
-        var renderer = new LineChartRenderer();
+        var renderer = new CartesianChartRenderer();
         var opts = ChartDataParser.Parse(new[] { 10, 20, 30, 40, 50 });
         var bounds = new Rect(0, 0, 500, 300);
 
@@ -177,6 +181,21 @@ public class InteractiveChartTests
         Assert.Contains("0,\"\",0,10", csv);
         Assert.Contains("1,\"\",1,20", csv);
         Assert.Contains("2,\"\",2,30", csv);
+    }
+
+    [Fact]
+    public void ChartExportService_ToCsv_AddsFromAndSizeColumns_OnlyWhenTheChartHasThem()
+    {
+        var plain = ChartExportService.ToCsv(new ChartOptions { Series = { new ChartSeries { Name = "a", Points = { new ChartDataPoint(0, 1) } } } });
+        var floating = ChartExportService.ToCsv(new ChartOptions { Series = { new ChartSeries { Name = "a", Points = { new ChartDataPoint(0, 5) { From = 2 }, new ChartDataPoint(1, 6) } } } });
+        var bubbles = ChartExportService.ToCsv(new ChartOptions { Series = { new ChartSeries { Name = "a", Points = { new ChartDataPoint(1, 5) { Size = 9 } } } } });
+
+        Assert.StartsWith("Series,Index,Label,X,Y\n", plain.Replace("\r\n", "\n"));
+        Assert.StartsWith("Series,Index,Label,X,Y,From\n", floating.Replace("\r\n", "\n"));
+        Assert.Contains("\"a\",0,\"\",0,5,2", floating);
+        Assert.Contains("\"a\",1,\"\",1,6,", floating);
+        Assert.StartsWith("Series,Index,Label,X,Y,Size\n", bubbles.Replace("\r\n", "\n"));
+        Assert.Contains("1,5,9", bubbles);
     }
 
     // In a locale that writes 1,5 the numbers split their field; a gap was written "NaN"; a quote in a name broke the row.

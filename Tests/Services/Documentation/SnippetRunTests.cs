@@ -267,6 +267,46 @@ public class SnippetRunTests : IDisposable
         Assert.False(textOnly.HasVisuals);
     }
 
+    [Fact]
+    public async Task EveryChartGallerySample_DrawsAValidChart()
+    {
+        var gallery = DocumentationService.Instance.Categories.Single(c => c.Id == "chart_gallery");
+        var samples = gallery.Articles.SelectMany(a => a.CodeSnippets).ToList();
+        Assert.True(samples.Count >= 30, "The gallery should have a sample for each kind of chart.");
+
+        foreach (var snippet in samples)
+        {
+            var run = Runner(snippet);
+            await run.RunAsync().WaitAsync(TimeSpan.FromSeconds(60));
+
+            // A spec that can't be drawn shows a warning with what is wrong instead of a chart.
+            Assert.True(run.Status == SnippetRunStatus.Done && !run.ConsoleText.Contains("⚠️"), $"{snippet.Id}: {run.StatusText} {run.ConsoleText}");
+            Assert.True(run.Outputs.Count > 0 && run.Outputs.All(o => o.Kind == CellOutputKind.Chart), $"{snippet.Id}: {string.Join(", ", run.Outputs.Select(o => o.Kind))}");
+        }
+    }
+
+    [Fact]
+    public async Task EveryAnimationSample_RunsToTheEnd_AndLeavesALiveControlOrChart()
+    {
+        var article = DocumentationService.Instance.GetArticle("animate_and_cancellation")!;
+        Assert.True(article.CodeSnippets.Count >= 8, "The animation guide should show several kinds of animation.");
+
+        foreach (var snippet in article.CodeSnippets)
+        {
+            var run = Runner(snippet);
+            await run.RunAsync().WaitAsync(TimeSpan.FromSeconds(60));
+
+            Assert.True(run.Status == SnippetRunStatus.Done, $"{snippet.Id}: {run.StatusText} {run.ConsoleText}");
+            Assert.NotEmpty(run.Outputs);
+            Assert.All(run.Outputs, o => Assert.True(o.Kind is CellOutputKind.Control or CellOutputKind.Chart, $"{snippet.Id}: {o.Kind}"));
+
+            // Clearing the output stops what animates.
+            var animations = run.Outputs.Select(o => o.InteractiveControl).OfType<PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals.AnimatedRenderControl>().ToList();
+            run.Clear();
+            Assert.All(animations, a => Assert.False(a.IsTicking));
+        }
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         var until = DateTime.UtcNow.AddSeconds(10);

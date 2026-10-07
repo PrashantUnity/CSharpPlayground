@@ -21,6 +21,7 @@ public class ScriptImportsTests
         "Check(\"probe\", 1 + 1, \"2\")",          // using static ScriptHelpers
         "Stopwatch.StartNew()",                  // System.Diagnostics
         "new Pen(Brushes.Red, 2)",               // Avalonia.Media, for Display.Animate drawings
+        "new ImmutablePen(new ImmutableSolidColorBrush(Colors.Red), 2)", // Avalonia.Media.Immutable: made off the UI thread, drawn on it
         "new ChartSeries()",                     // charts
         "new Point3D(1, 2, 3)",                  // 3D plots
         "typeof(TreeTracker)",                   // visualizers

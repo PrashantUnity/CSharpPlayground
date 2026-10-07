@@ -77,6 +77,24 @@ Display.bars([ 3; 1; 2 ], "Bars") |> ignore
 Display.islands([ [ 1; 0 ]; [ 1; 1 ] ], "Islands") |> ignore
 """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way F# writes them.
+    private const string TheFeatureStatements = """
+let months = [ "Jan"; "Feb"; "Mar" ]
+let rev = [ 40; 55; 48 ]
+let costs = [ 30; 35; 38 ]
+let margin = [ 25; 36; 21 ]
+let s (v: int list) = Display.series(v)
+Display.barChart([ ("Revenue", s rev); ("Costs", s costs); ("Margin", Display.series(margin).Kind("line").RightAxis().Dash("dashed")) ], ChartStyle().Title("Combo").Labels(months).Y2Axis("Margin %", 0.0, 100.0)) |> ignore
+Display.stackedBarChart([ ("Revenue", s rev); ("Costs", s costs) ], ChartStyle().Title("Stacked").Labels(months)) |> ignore
+Display.horizontalBarChart([ ("Revenue", s rev) ], ChartStyle().Title("Horizontal").Labels(months)) |> ignore
+Display.lineChart([ ("Smooth", Display.series(rev).Smooth(0.5)); ("Steps", Display.series(costs).Step("after").Dash("dotted").PointStyle("star", 6.0)); ("Filled", Display.series(margin).Fill(true).Color("#ff8800")) ], ChartStyle().Title("Line styles")) |> ignore
+Display.bubbleChart([ (1, 2, 8); (2, 4, 12) ], ChartStyle().Title("Bubbles")) |> ignore
+Display.radarChart([ ("Ada", s [ 8; 6; 9 ]); ("Bo", s [ 5; 9; 6 ]) ], ChartStyle().Title("Radar").Labels([ "Speed"; "Power"; "Skill" ])) |> ignore
+Display.polarAreaChart([ ("A", 3); ("B", 5) ], ChartStyle().Title("Polar")) |> ignore
+Display.donutChart([ ("Done", 70); ("Left", 30) ], ChartStyle().Title("Gauge").Gauge()) |> ignore
+Display.lineChart([ ("Growth", s [ 1; 10; 100 ]) ], ChartStyle().Title("Scales").YScale("log").SuggestedY(1.0, 1000.0).ReverseX()) |> ignore
+""";
+
     private static string BuildMainProgram(string statements) =>
         "open Fry\n\n" + statements.Trim() + "\n";
 
@@ -141,6 +159,28 @@ Display.islands([ [ 1; 0 ]; [ 1; 1 ] ], "Islands") |> ignore
         for (var i = 0; i < VisualConformanceFixturesTests.Cases.Length; i++)
         {
             var (name, _) = VisualConformanceFixturesTests.Cases[i];
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual;
+            Assert.NotNull(v);
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+    }
+
+    [FSharpFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.fsx", BuildMainProgram(TheFeatureStatements));
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
             var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
             var v = outputs[i].Visual;
             Assert.NotNull(v);

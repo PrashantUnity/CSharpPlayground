@@ -196,8 +196,15 @@ public sealed partial class SnippetRunViewModel : ObservableObject
 
         ConsoleText = string.Empty;
         Detail = string.Empty;
-        Outputs.Clear();
+        ClearOutputs();
         Status = SnippetRunStatus.Idle;
+    }
+
+    // An animation's timer stops with its control, not with its output going from the page.
+    private void ClearOutputs()
+    {
+        foreach (var output in Outputs) InteractiveControlLifecycle.DisposeIfNeeded(output.InteractiveControl);
+        Outputs.Clear();
     }
 
     private void AppendConsole(int runId, string text)

@@ -1,5 +1,9 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
+using PdfEditorApp.Plugins.CSharpEditor.Charting.Renderers;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -38,6 +42,19 @@ internal static class VisualPerf
 
         var values = Enumerable.Range(0, 100_000).Select(i => Math.Sin(i / 500.0) * 100 + i * 0.001).ToArray();
         Measure("a chart of 100,000 values", CallBudget, () => () => Display.Chart(values, title: "100,000 values"));
+
+        // The newer layers at the same size: each must stay as cheap per frame as the plain line.
+        var costs = Enumerable.Range(0, 100_000).Select(i => Math.Cos(i / 300.0) * 40 + 50).ToArray();
+        var sizes = Enumerable.Range(0, 100_000).Select(i => 2.0 + i % 9).ToArray();
+        Measure("a combo of 100,000 bars and a smooth line on the right axis", CallBudget, () => () =>
+            Charts.Bar(("Bars", costs)).Series("Line", values, s => s.Kind(ChartType.Line).OnRightAxis().Smooth()).Show());
+        Measure("two stacked areas of 100,000 values, stepped and filled", CallBudget, () => () =>
+            Charts.Area(("A", values), ("B", costs)).Stacked().Style(s => s.Step()).Show());
+        Measure("a bubble chart of 100,000 values on a log y axis", CallBudget, () => () =>
+            Charts.Bubble(values.Select((v, i) => (X: (double)i, Y: Math.Abs(v) + 1, Size: sizes[i]))).LogY().Show());
+        Measure("a time-axis line of 100,000 values with two dashed series", CallBudget, () => () =>
+            Charts.Line(values.Select((v, i) => (X: 1.7e12 + i * 60_000.0, Y: v)), "A").TimeX()
+                .Series("B", costs.Select((v, i) => (X: 1.7e12 + i * 60_000.0, Y: v)), s => s.Dashed()).Show());
 
         // The tracker's steps are the script's own work; the display call is what turns them into a spec.
         Measure("a 30 × 30 grid visualizer of 500 steps", LongGridCallBudget, () =>
@@ -120,8 +137,38 @@ internal static class VisualPerf
         Console.WriteLine($"    drawing built in the background in {warm.Background:F0} ms; UI work {warm.Ui:F1} ms{Verdict(warm.Ui, UiBudget)} " +
                           $"(the first view {cold.Ui:F0} ms), then the first frame {warm.Frame:F0} ms; garbage collection paused every thread for {warm.GcPauses:F0} ms of it");
 
+        if (output.Spec is ChartSpec chartSpec)
+        {
+            var (draw, point) = RecordedDraw(chartSpec);
+            Console.WriteLine($"    chart drawn into a recording (no raster): {draw:F1} ms; finding what the pointer is on: {point:F1} ms a move{(point <= UiBudget / 2 ? string.Empty : " (OVER half a frame)")}");
+        }
         if (stepThrough) StepThrough(window, view);
         window.Close();
+    }
+
+    // What the UI thread spends drawing a chart: its draw calls recorded, not rasterized (the render thread does that).
+    private static (double Draw, double Pointer) RecordedDraw(ChartSpec spec)
+    {
+        var options = ChartRenderModelBuilder.Build(spec);
+        var renderer = ChartRendererFactory.GetRenderer(options.Type);
+        var times = new List<double>();
+        for (int i = 0; i < 5; i++)
+        {
+            var clock = Stopwatch.StartNew();
+            var group = new DrawingGroup();
+            using (var context = group.Open()) renderer.Render(context, new Rect(0, 0, 1000, 420), options);
+            times.Add(clock.Elapsed.TotalMilliseconds);
+        }
+
+        var pointer = new List<double>();
+        for (int i = 0; i < 9; i++)
+        {
+            var clock = Stopwatch.StartNew();
+            renderer.HitTest(new Point(300 + i * 40, 200), new Rect(0, 0, 1000, 420), options);
+            pointer.Add(clock.Elapsed.TotalMilliseconds);
+        }
+
+        return (times.Order().ElementAt(2), pointer.Order().ElementAt(4));
     }
 
     // Every step drawn in turn, twice: how long a step takes, and whether memory grows with the steps looked at. The first

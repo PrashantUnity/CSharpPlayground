@@ -37,15 +37,17 @@ internal readonly record struct ChartDataRange(double MinX, double MaxX, double 
             }
         }
 
-        var (fromX, toX) = XAxis(minX, maxX, options.XMin, options.XMax);
-        var (fromY, toY, step) = ValueAxis(minY, maxY, options.YMin, options.YMax, zeroBaseline);
+        var (fromX, toX) = XAxis(minX, maxX, options.XAxis.Min, options.XAxis.Max, options.XAxis.SuggestedMin, options.XAxis.SuggestedMax);
+        var (fromY, toY, step) = ValueAxis(minY, maxY, options.YAxis.Min, options.YAxis.Max, zeroBaseline, options.YAxis.SuggestedMin, options.YAxis.SuggestedMax);
         return new ChartDataRange(fromX, toX, fromY, toY, step);
     }
 
     // Along x, the data as it is (one either side of a single x), unless the chart fixes it.
-    private static (double Min, double Max) XAxis(double dataMin, double dataMax, double? fixedMin, double? fixedMax)
+    internal static (double Min, double Max) XAxis(double dataMin, double dataMax, double? fixedMin, double? fixedMax, double? suggestedMin = null, double? suggestedMax = null)
     {
         if (dataMin > dataMax) (dataMin, dataMax) = (0, 1); // nothing to draw
+        if (suggestedMin is { } sMin && double.IsFinite(sMin)) dataMin = Math.Min(dataMin, sMin);
+        if (suggestedMax is { } sMax && double.IsFinite(sMax)) dataMax = Math.Max(dataMax, sMax);
         double min = dataMin, max = dataMax;
         if (max - min < Epsilon) (min, max) = (min - 1, max + 1);
         if (fixedMin is { } from && double.IsFinite(from)) min = from;
@@ -56,9 +58,11 @@ internal readonly record struct ChartDataRange(double MinX, double MaxX, double 
 
     // The values from tick to tick: all positive start from zero, and an end the chart doesn't fix is a round step past
     // the data.
-    private static (double Min, double Max, double Step) ValueAxis(double dataMin, double dataMax, double? fixedMin, double? fixedMax, bool zeroBaseline)
+    internal static (double Min, double Max, double Step) ValueAxis(double dataMin, double dataMax, double? fixedMin, double? fixedMax, bool zeroBaseline, double? suggestedMin = null, double? suggestedMax = null)
     {
         if (dataMin > dataMax) (dataMin, dataMax) = (0, 1); // nothing to draw
+        if (suggestedMin is { } sMin && double.IsFinite(sMin)) dataMin = Math.Min(dataMin, sMin);
+        if (suggestedMax is { } sMax && double.IsFinite(sMax)) dataMax = Math.Max(dataMax, sMax);
         if (zeroBaseline)
         {
             dataMin = Math.Min(dataMin, 0);
@@ -179,8 +183,20 @@ internal static class ChartPoints
     {
         ArgumentNullException.ThrowIfNull(points);
         ArgumentNullException.ThrowIfNull(column);
+        return ForLineAt(start, length, columns, i => column(points[i].X), i => points[i].Y, Increasing(points, start, length));
+    }
+
+    /// <summary>
+    /// <see cref="ForLine"/> for values placed by index: <paramref name="columnOf"/> is the pixel column value i falls in,
+    /// <paramref name="valueOf"/> the value drawn for it (a stacked top, say), and <paramref name="increasing"/> says
+    /// whether the columns never go back (otherwise the run comes back whole).
+    /// </summary>
+    public static IReadOnlyList<int> ForLineAt(int start, int length, double columns, Func<int, double> columnOf, Func<int, double> valueOf, bool increasing)
+    {
+        ArgumentNullException.ThrowIfNull(columnOf);
+        ArgumentNullException.ThrowIfNull(valueOf);
         var all = new List<int>(Math.Min(length, 4096));
-        if (length <= columns || !Increasing(points, start, length))
+        if (length <= columns || !increasing)
         {
             for (int i = start; i < start + length; i++) all.Add(i);
             return all;
@@ -190,7 +206,7 @@ internal static class ChartPoints
         int first = -1, low = -1, high = -1, last = -1;
         for (int i = start; i < start + length; i++)
         {
-            long at = (long)Math.Floor(column(points[i].X));
+            long at = (long)Math.Floor(columnOf(i));
             if (at != current)
             {
                 AddColumn(all, first, low, high, last);
@@ -199,8 +215,8 @@ internal static class ChartPoints
                 continue;
             }
 
-            if (points[i].Y < points[low].Y) low = i;
-            if (points[i].Y > points[high].Y) high = i;
+            if (valueOf(i) < valueOf(low)) low = i;
+            if (valueOf(i) > valueOf(high)) high = i;
             last = i;
         }
 
@@ -212,14 +228,21 @@ internal static class ChartPoints
     /// <param name="pixel">Where a point is drawn.</param>
     public static IReadOnlyList<int> ForScatter(IReadOnlyList<ChartDataPoint> points, Func<ChartDataPoint, (double X, double Y)> pixel)
     {
-        ArgumentNullException.ThrowIfNull(points);
         ArgumentNullException.ThrowIfNull(pixel);
+        return ForScatterAt(points, i => pixel(points[i]));
+    }
+
+    /// <summary><see cref="ForScatter"/> with the pixel looked up by the point's index.</summary>
+    public static IReadOnlyList<int> ForScatterAt(IReadOnlyList<ChartDataPoint> points, Func<int, (double X, double Y)> pixelOf)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(pixelOf);
         var drawn = new List<int>();
         var taken = new HashSet<(long, long)>();
         for (int i = 0; i < points.Count; i++)
         {
             if (!IsDrawn(points[i])) continue;
-            var (x, y) = pixel(points[i]);
+            var (x, y) = pixelOf(i);
             if (taken.Add(((long)Math.Floor(x / ScatterCell), (long)Math.Floor(y / ScatterCell)))) drawn.Add(i);
         }
 

@@ -47,8 +47,24 @@ public sealed class AxisSpec : IOptionalSpec
     public double? Min { get; set; }
     public double? Max { get; set; }
 
+    /// <summary>A chart only: how values map to positions (default: linear).</summary>
+    public AxisScale? Scale { get; set; }
+
+    /// <summary>A chart only: the lowest the axis goes when the data doesn't reach it; a <c>min</c> overrides it.</summary>
+    public double? SuggestedMin { get; set; }
+
+    /// <summary>A chart only: the highest the axis goes when the data doesn't reach it; a <c>max</c> overrides it.</summary>
+    public double? SuggestedMax { get; set; }
+
+    /// <summary>A chart only: run the axis the other way (largest first, or down for y).</summary>
+    public bool? Reverse { get; set; }
+
     [JsonIgnore]
-    public bool IsEmpty => Title == null && Min == null && Max == null;
+    public bool IsEmpty => Title == null && Min == null && Max == null && Scale == null && SuggestedMin == null && SuggestedMax == null && Reverse == null;
+
+    /// <summary>True when the axis sets something only a chart draws (a 3D plot's axes have a title and a range).</summary>
+    [JsonIgnore]
+    public bool HasChartOnlySettings => Scale != null || SuggestedMin != null || SuggestedMax != null || Reverse != null;
 }
 
 /// <summary>The series legend. Left out, it shows when there is more than one series (a pie or donut always lists its slices).</summary>
@@ -56,8 +72,11 @@ public sealed class LegendSpec : IOptionalSpec
 {
     public bool? Show { get; set; }
 
+    /// <summary>Which side of the chart it goes on (default: bottom).</summary>
+    public LegendPosition? Position { get; set; }
+
     [JsonIgnore]
-    public bool IsEmpty => Show == null;
+    public bool IsEmpty => Show == null && Position == null;
 }
 
 /// <summary>A span of values, such as the x range a surface covers.</summary>

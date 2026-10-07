@@ -23,21 +23,21 @@ public static partial class DisplayExtensions
         return records;
     }
 
-    public static T DisplayLineChart<T>(this T data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
+    public static T DisplayLineChart<T>(this T data, string? title = null, string? color = null, bool? showPoints = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null, ChartStack? stack = null)
     {
-        if (data != null) Display.LineChart(data, title, color, showPoints, configure, xLabel, yLabel, width, height, legend);
+        if (data != null) Display.LineChart(data, title, color, showPoints, configure, xLabel, yLabel, width, height, legend, labels, stack);
         return data;
     }
 
-    public static T DisplayAreaChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
+    public static T DisplayAreaChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null, ChartStack? stack = null)
     {
-        if (data != null) Display.AreaChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
+        if (data != null) Display.AreaChart(data, title, color, configure, xLabel, yLabel, width, height, legend, labels, stack);
         return data;
     }
 
-    public static T DisplayBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
+    public static T DisplayBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null, string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null, ChartStack? stack = null, bool horizontal = false)
     {
-        if (data != null) Display.BarChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
+        if (data != null) Display.BarChart(data, title, color, configure, xLabel, yLabel, width, height, legend, labels, stack, horizontal);
         return data;
     }
 
@@ -47,15 +47,52 @@ public static partial class DisplayExtensions
         return data;
     }
 
-    public static T DisplayPieChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null)
+    public static T DisplayStackedBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null,
+        bool percent = false, bool horizontal = false)
     {
-        if (data != null) Display.PieChart(data, title, configure, width, height, legend);
+        if (data != null) Display.StackedBarChart(data, title, color, configure, xLabel, yLabel, width, height, legend, labels, percent, horizontal);
         return data;
     }
 
-    public static T DisplayDonutChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null)
+    public static T DisplayHorizontalBarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null,
+        ChartStack? stack = null)
     {
-        if (data != null) Display.DonutChart(data, title, configure, width, height, legend);
+        if (data != null) Display.HorizontalBarChart(data, title, color, configure, xLabel, yLabel, width, height, legend, labels, stack);
+        return data;
+    }
+
+    public static T DisplayBubbleChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        string? xLabel = null, string? yLabel = null, double? width = null, double? height = null, bool? legend = null)
+    {
+        if (data != null) Display.BubbleChart(data, title, color, configure, xLabel, yLabel, width, height, legend);
+        return data;
+    }
+
+    public static T DisplayRadarChart<T>(this T data, string? title = null, string? color = null, Action<ChartSpec>? configure = null,
+        double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null, LegendPosition? legendPosition = null)
+    {
+        if (data != null) Display.RadarChart(data, title, color, configure, width, height, legend, labels, legendPosition);
+        return data;
+    }
+
+    public static T DisplayPolarAreaChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null,
+        double? width = null, double? height = null, IEnumerable<string>? labels = null)
+    {
+        if (data != null) Display.PolarAreaChart(data, title, configure, width, height, labels);
+        return data;
+    }
+
+    public static T DisplayPieChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null)
+    {
+        if (data != null) Display.PieChart(data, title, configure, width, height, legend, labels);
+        return data;
+    }
+
+    public static T DisplayDonutChart<T>(this T data, string? title = null, Action<ChartSpec>? configure = null, double? width = null, double? height = null, bool? legend = null, IEnumerable<string>? labels = null, bool gauge = false)
+    {
+        if (data != null) Display.DonutChart(data, title, configure, width, height, legend, labels, gauge);
         return data;
     }
 

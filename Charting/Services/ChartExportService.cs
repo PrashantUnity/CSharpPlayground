@@ -18,7 +18,14 @@ public static class ChartExportService
     public static string ToCsv(ChartOptions options)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Series,Index,Label,X,Y");
+
+        // Columns only a chart that uses them has: where floating bars start, and the sizes of bubbles.
+        var hasFrom = options.Series.Any(s => s.Points.Any(p => p.From != null));
+        var hasSize = options.Series.Any(s => s.Points.Any(p => p.Size != null));
+        sb.Append("Series,Index,Label,X,Y");
+        if (hasFrom) sb.Append(",From");
+        if (hasSize) sb.Append(",Size");
+        sb.AppendLine();
 
         foreach (var s in options.Series)
         {
@@ -29,7 +36,10 @@ public static class ChartExportService
                   .Append(i.ToString(CultureInfo.InvariantCulture)).Append(',')
                   .Append(Quoted(p.Label)).Append(',')
                   .Append(Number(p.X)).Append(',')
-                  .Append(Number(p.Y)).AppendLine();
+                  .Append(Number(p.Y));
+                if (hasFrom) sb.Append(',').Append(p.From is { } from ? Number(from) : string.Empty);
+                if (hasSize) sb.Append(',').Append(p.Size is { } size ? Number(size) : string.Empty);
+                sb.AppendLine();
             }
         }
 

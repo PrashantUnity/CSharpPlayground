@@ -159,6 +159,21 @@ let data = [ for x in 0.0 .. 0.1 .. 6.28 -> (x, sin x) ]
 Display.chart [ "Sine Wave", data ]
 ```
 
+### More chart kinds and options (every language)
+
+All chart kinds beyond line, bar, scatter, pie and histogram are optional additions to chart v1, so older specs read unchanged. Each language's SDK writes the same spec, checked against `docs/visuals/conformance/chart-*.json` by a real-toolchain test per language.
+
+| Feature | Spec field | Python | JavaScript | Go | F# | Dart |
+|---|---|---|---|---|---|---|
+| Combo (a series of another kind, on the right axis) | `series[].kind`, `series[].axis`, `y2Axis` | `{"values": v, "kind": "line", "axis": "right"}` + `y2_title=` | series option `kind`/`axis` | `fry.S(v, "kind", "line", "axis", "right")` + `fry.RightAxis(...)` | `Display.series(v).Kind("line").RightAxis()` + `ChartStyle().Y2Axis(...)` | `{'values': v, 'kind': 'line', 'axis': 'right'}` + `'y2Axis'` |
+| Stacked, horizontal | `stack`, `orientation` | `stacked_bar_chart`, `horizontal_bar_chart` | `stackedBarChart`, `horizontalBarChart` | `StackedBarChart`, `HorizontalBarChart` | `stackedBarChart`, `horizontalBarChart` | `stackedBarChart`, `horizontalBarChart` |
+| Line styling | `dash`, `interpolation`, `tension`, `step`, `fill`, `pointStyle`, `pointRadius`, `colorSegments` | per-series options | per-series options | `fry.S(...)` options | `SeriesData` methods | per-series map keys |
+| Bubble, radar, polar area | `kind: bubble \| radar \| polarArea`, `series[].sizes` | `bubble_chart`, `radar_chart`, `polar_area_chart` | `bubbleChart`, `radarChart`, `polarAreaChart` | `BubbleChart`, `RadarChart`, `PolarAreaChart` | `bubbleChart`, `radarChart`, `polarAreaChart` | `bubbleChart`, `radarChart`, `polarAreaChart` |
+| Gauge (half donut) | `startAngle`, `sweep` | `gauge=True` | `gauge: true` | `fry.Gauge()` | `ChartStyle().Gauge()` | `'gauge': true` |
+| Log, time and reversed scales, suggested range | `xAxis`/`yAxis`: `scale`, `suggestedMin`, `suggestedMax`, `reverse` | `y_scale=`, `y_suggested_min=`, `reverse_x=` | same names in camelCase | `fry.YScale`, `fry.SuggestedY`, `fry.ReverseX` | `ChartStyle().YScale/SuggestedY/ReverseX` | `'yAxis': {...}` |
+
+Java, Rust and C++ follow the same shapes with their own naming (`Display.java`, `lib.rs`, `display.hpp`). The Python tab of the docs and the conformance tests under `Tests/Real*` show the exact calls per language.
+
 ---
 
 ## 5. Live Updates & Two-Way Events

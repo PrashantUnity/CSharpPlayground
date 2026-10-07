@@ -92,6 +92,7 @@ internal static class Usage
           docs                   The Docs learning center.
               --article <words>      open the first article whose title contains the words
               --list                 print every category and article (no image)
+              --sample <n>           show only the nth code sample of the article (counting from 1)
               --run                  run the article's samples and show their output under them
               --fullscreen           then press the expand button of the first chart on the page (needs --run)
           settings               The Settings and Environment Setup page.
@@ -129,6 +130,7 @@ internal static class Usage
                                  ({"application/vnd.fry.chart.v1+json": {...}}) instead; a mistake in it is printed
               --width <px>           window width (default 900)
               --height <px>          window height (default 600)
+              --hover <x,y>          rest the mouse there first, to show a tooltip
           perf                   Time the real studio, no image: first visit and warm switch of every page, tab switches,
                                  file opens, workspace re-scans, memory left behind by repeated visits, and the longest
                                  time input waited on the UI thread during each (what a user feels as a hang).

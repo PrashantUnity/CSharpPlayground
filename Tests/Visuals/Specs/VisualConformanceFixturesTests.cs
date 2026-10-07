@@ -47,6 +47,35 @@ public class VisualConformanceFixturesTests
         ("visualizer-islands", () => Display.Islands(new[] { new[] { 1, 0 }, new[] { 1, 1 } }, "Islands")),
     ];
 
+    private static readonly double[] Revenue = [40, 55, 48];
+    private static readonly double[] Costs = [30, 35, 38];
+    private static readonly double[] Margin = [25, 36, 21];
+    private static readonly string[] Months = ["Jan", "Feb", "Mar"];
+
+    /// <summary>
+    /// The newer chart features (combos, stacks, scales, line styles, bubbles, radial kinds), each a case of its own so the
+    /// older 18 stay as they were. A language's real test makes the same call on the same data in its own words.
+    /// </summary>
+    public static readonly (string Name, Action Call)[] ChartFeatureCases =
+    [
+        ("chart-combo", () => Charts.Bar(("Revenue", Revenue), ("Costs", Costs))
+            .Series("Margin", Margin, s => s.Kind(ChartType.Line).OnRightAxis().Dashed())
+            .Labels(Months).RightAxis("Margin %", 0, 100).Title("Combo").Show()),
+        ("chart-stacked", () => Charts.Bar(("Revenue", Revenue), ("Costs", Costs)).Labels(Months).Stacked().Title("Stacked").Show()),
+        ("chart-horizontal", () => Charts.Bar(("Revenue", Revenue)).Labels(Months).Horizontal().Title("Horizontal").Show()),
+        ("chart-line-styles", () => Charts.Line(("Smooth", Revenue)).Style(s => s.Smooth(0.5))
+            .Series("Steps", Costs, s => s.Step(LineStep.After).Dotted().Points(PointShape.Star, 6))
+            .Series("Filled", Margin, s => s.Fill().Color("#ff8800"))
+            .Title("Line styles").Show()),
+        ("chart-bubble", () => Charts.Bubble(new[] { (1.0, 2.0, 8.0), (2.0, 4.0, 12.0) }).Title("Bubbles").Show()),
+        ("chart-radar", () => Charts.Radar(new Dictionary<string, double[]> { ["Ada"] = [8, 6, 9], ["Bo"] = [5, 9, 6] }, ["Speed", "Power", "Skill"]).Title("Radar").Show()),
+        ("chart-polar", () => Display.PolarAreaChart(new Dictionary<string, int> { ["A"] = 3, ["B"] = 5 }, "Polar")),
+        ("chart-gauge", () => Display.DonutChart(new Dictionary<string, int> { ["Done"] = 70, ["Left"] = 30 }, "Gauge", gauge: true)),
+        ("chart-scales", () => Charts.Line(new double[] { 1, 10, 100 }, "Growth").LogY().SuggestedY(1, 1000).ReverseX().Title("Scales").Show()),
+    ];
+
+    public static IEnumerable<object[]> ChartFeatureCaseNames() => ChartFeatureCases.Select(c => new object[] { c.Name });
+
     public static IEnumerable<object[]> CaseNames() => Cases.Select(c => new object[] { c.Name });
 
     public static string PathOf(string name) => Path.Combine(RepositoryPaths.Root, "docs", "visuals", "conformance", name + ".json");
@@ -108,5 +137,25 @@ public class VisualConformanceFixturesTests
         Assert.True(File.Exists(path), $"{path} is missing: run the tests with FRY_UPDATE_SCHEMAS=1 to write it.");
         Assert.True(File.ReadAllText(path).ReplaceLineEndings("\n") == generated,
             $"{path} is out of date: run the tests with FRY_UPDATE_SCHEMAS=1 and check the diff in.");
+    }
+
+    [Theory]
+    [MemberData(nameof(ChartFeatureCaseNames))]
+    public void TheCheckedInFeatureFixture_IsWhatTheCSharpCallSends(string name)
+    {
+        var generated = Fixture(ChartFeatureCases.Single(c => c.Name == name).Call);
+        var path = PathOf(name);
+        if (Environment.GetEnvironmentVariable("FRY_UPDATE_SCHEMAS") == "1")
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, generated);
+            return;
+        }
+
+        Assert.True(File.Exists(path), $"{path} is missing: run the tests with FRY_UPDATE_SCHEMAS=1 to write it.");
+        Assert.True(File.ReadAllText(path).ReplaceLineEndings("\n") == generated,
+            $"{path} is out of date: run the tests with FRY_UPDATE_SCHEMAS=1 and check the diff in.");
+        Assert.Empty(Cases.Select(c => c.Name).Intersect(ChartFeatureCases.Select(c => c.Name)));
+        Expected(name); // reads and draws: a fixture that isn't a valid, drawable spec fails here
     }
 }

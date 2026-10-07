@@ -147,6 +147,7 @@ public class DocumentationServiceTests
     // tab of a multi-language sample) must compile with the studio's default imports.
     [Theory]
     [InlineData("display_apis")]
+    [InlineData("chart_gallery")]
     [InlineData("diagrams_and_visualizations")]
     [InlineData("polyglot_visuals")]
     public void TheChartingGuides_CSharpSnippets_Compile(string categoryId)

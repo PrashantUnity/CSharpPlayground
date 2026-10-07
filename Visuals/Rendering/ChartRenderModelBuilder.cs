@@ -27,20 +27,34 @@ public static class ChartRenderModelBuilder
             ShowPoints = spec.ShowPoints ?? spec.Series.All(s => s.Y.Count <= ChartRenderDefaults.MaxValuesWithMarkers),
             ShowStats = spec.ShowStats ?? true,
             ShowLegend = spec.Legend.Show ?? spec.Series.Count > 1,
+            LegendPosition = spec.Legend.Position ?? LegendPosition.Bottom,
             Width = spec.Width ?? ChartRenderDefaults.Width,
             Height = spec.Height ?? ChartRenderDefaults.Height,
-            XAxisTitle = spec.XAxis.Title,
-            YAxisTitle = spec.YAxis.Title,
-            XMin = spec.XAxis.Min,
-            XMax = spec.XAxis.Max,
-            YMin = spec.YAxis.Min,
-            YMax = spec.YAxis.Max
+            Orientation = spec.Orientation ?? ChartOrientation.Vertical,
+            Stack = spec.Stack ?? ChartStack.None,
+            StartAngle = spec.StartAngle ?? 0,
+            Sweep = spec.Sweep ?? 360,
+            Cutout = spec.Cutout ?? ChartRenderDefaults.DonutCutout,
+            XAxis = Axis(spec.XAxis),
+            YAxis = Axis(spec.YAxis),
+            Y2Axis = spec.Series.Any(s => s.Axis == AxisSide.Right) ? Axis(spec.Y2Axis) : null
         };
 
         if (spec.Kind == ChartType.Histogram) AddHistogram(options, spec);
         else AddSeries(options, spec);
         return options;
     }
+
+    private static ChartAxisOptions Axis(AxisSpec axis) => new()
+    {
+        Title = axis.Title,
+        Min = axis.Min,
+        Max = axis.Max,
+        SuggestedMin = axis.SuggestedMin,
+        SuggestedMax = axis.SuggestedMax,
+        Scale = axis.Scale ?? AxisScale.Linear,
+        Reverse = axis.Reverse ?? false
+    };
 
     private static string SeriesColor(ChartSeriesSpec series, int index, ChartOptions options) =>
         series.Color ?? (index == 0 ? options.PrimaryColor : ChartPaletteService.GetSeriesColor(index));
@@ -56,7 +70,20 @@ public static class ChartRenderModelBuilder
             {
                 Name = source.Name ?? $"Series {i + 1}",
                 Color = SeriesColor(source, i, options),
-                StrokeThickness = source.LineWidth ?? ChartRenderDefaults.LineWidth
+                StrokeThickness = source.LineWidth ?? ChartRenderDefaults.LineWidth,
+                Kind = source.Kind,
+                Axis = source.Axis ?? AxisSide.Left,
+                StackGroup = source.Stack,
+                Dash = source.Dash ?? LineDash.Solid,
+                Interpolation = source.Interpolation ?? LineInterpolation.Linear,
+                Tension = source.Tension ?? ChartRenderDefaults.Tension,
+                Step = source.Step ?? LineStep.None,
+                Fill = source.Fill,
+                FillTo = source.FillTo,
+                PointStyle = source.PointStyle ?? PointShape.Circle,
+                PointRadius = source.PointRadius,
+                ColorSegments = source.ColorSegments ?? false,
+                CornerRadius = source.CornerRadius
             };
 
             var count = Math.Min(source.Y.Count, Math.Max(0, room));
@@ -67,7 +94,9 @@ public static class ChartRenderModelBuilder
                 var x = source.X is { } xs ? xs[j] ?? double.NaN : j;
                 series.Points.Add(new ChartDataPoint(x, source.Y[j] ?? double.NaN, source.Labels?[j])
                 {
-                    CustomColor = source.Colors?[j]
+                    CustomColor = source.Colors?[j],
+                    Size = source.Sizes?[j],
+                    From = source.From?[j]
                 });
             }
 
