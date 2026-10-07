@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,7 +12,7 @@
 
                 <Border Grid.Row="0"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Padding="32,0">
                     <Grid ColumnDefinitions="*,Auto">
 
@@ -22,8 +22,8 @@
                                 HorizontalAlignment="Left"
                                 Background="{DynamicResource DsSurfaceBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="8"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusLG"
                                 Height="38"
                                 Padding="12,0"
                                 VerticalAlignment="Center">
@@ -34,8 +34,8 @@
                                          Text="{Binding SearchQuery, Mode=TwoWay}"
                                          Background="Transparent"
                                          BorderThickness="0"
-                                         MinHeight="0" Height="28" Padding="0"
-                                         FontSize="13"
+                                         MinHeight="0" lt:Tokens.Height="DsControlHeight150" Padding="0"
+                                         lt:Tokens.FontSize="DsFontSize400"
                                          Foreground="{DynamicResource DsTextWhiteBrush}"
                                          VerticalAlignment="Center" VerticalContentAlignment="Center"
                                          PlaceholderText="Search notebooks, scripts, or connections (Ctrl+K)" />
@@ -50,23 +50,23 @@
                                     <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>
                                 <!-- Ctrl+K Badge -->
-                                <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" CornerRadius="4" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal" Spacing="2">
-                                        <TextBlock Text="Ctrl" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
-                                        <TextBlock Text="K" FontSize="10" FontFamily="JetBrains Mono,Consolas" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <TextBlock Text="Ctrl" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <TextBlock Text="K" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
                         </Border>
 
                         <!-- Right Actions: Bell, Sync Button & System Status Rail Toggle -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
                             <!-- Bell Button -->
-                            <Button Classes="nexus-btn-ghost" Width="36" Height="36" Padding="0" Cursor="Hand" ToolTip.Tip="Notifications">
+                            <Button Classes="nexus-btn-ghost" Width="36" lt:Tokens.Height="DsControlHeight500" Padding="0" Cursor="Hand" ToolTip.Tip="Notifications">
                                 <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="BellOutline" Width="18" Height="18" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsPrimaryBrush}"
-                                            BorderBrush="{DynamicResource DsBgBrush}" BorderThickness="1"
+                                    <Border Width="7" Height="7" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsPrimaryBrush}"
+                                            BorderBrush="{DynamicResource DsBgBrush}" lt:Tokens.BorderThickness="DsBorderThin"
                                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
                                 </Panel>
                             </Button>
@@ -74,7 +74,7 @@
                             <!-- Sync Button -->
                             <Button Command="{Binding RefreshWorkspaceCommand}"
                                     Classes="nexus-btn-surface"
-                                    Height="36" Padding="14,0"
+                                    lt:Tokens.Height="DsControlHeight500" Padding="14,0"
                                     ToolTip.Tip="Reload workspace items from disk">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="CloudUploadOutline" Width="17" Height="17" VerticalAlignment="Center" />
@@ -85,7 +85,7 @@
                             <!-- Toggle System Status Rail -->
                             <ToggleButton IsChecked="{Binding IsSystemStatusRailVisible, Mode=TwoWay}"
                                           Classes="nexus-btn-ghost"
-                                          Width="36" Height="36" Padding="0"
+                                          Width="36" lt:Tokens.Height="DsControlHeight500" Padding="0"
                                           ToolTip.Tip="Toggle System Status &amp; Environment Rail">
                                 <materialIcons:MaterialIcon Kind="DockRight" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </ToggleButton>

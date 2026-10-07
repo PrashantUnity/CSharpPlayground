@@ -25,7 +25,8 @@ public sealed partial class SqlScriptRunner : IScriptRunner
         {
             "-header",
             "-table",
-            string.Equals(dbPath, ":memory:", StringComparison.OrdinalIgnoreCase) ? "\"\"" : dbPath,
+            // Arguments reach sqlite3 as they are (no shell): ":memory:" is its in-memory database (a quoted "" made a file).
+            dbPath,
             $".read {context.SourceFilePath}"
         };
 
@@ -59,6 +60,9 @@ public sealed partial class SqlScriptRunner : IScriptRunner
                 if (match.Success)
                 {
                     var customPath = match.Groups["path"].Value.Trim().Trim('\'', '"');
+                    // ":memory:" is SQLite's in-memory database, not a file name: joined to the folder it made a
+                    // database file called ":memory:" next to the script.
+                    if (string.Equals(customPath, InMemory, StringComparison.OrdinalIgnoreCase)) return InMemory;
                     if (Path.IsPathRooted(customPath)) return customPath;
                     return Path.Combine(workingDir, customPath);
                 }
@@ -77,6 +81,8 @@ public sealed partial class SqlScriptRunner : IScriptRunner
         var candidateSqlite = Path.Combine(workingDir, baseName + ".sqlite");
         if (File.Exists(candidateSqlite)) return candidateSqlite;
 
-        return ":memory:";
+        return InMemory;
     }
+
+    private const string InMemory = ":memory:";
 }

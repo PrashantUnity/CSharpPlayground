@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -10,15 +10,15 @@
         <Style Selector="Border.composer-window">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="BoxShadow" Value="0 14 36 0 #70000000, 0 2 8 0 #30000000" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXL" />
+            <Setter Property="lt:Tokens.BoxShadow" Value="=0 14 36 0 #70000000, 0 2 8 0 #30000000" />
         </Style>
         <Style Selector="Button.composer-btn">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
             <Setter Property="Padding" Value="4" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
@@ -39,9 +39,9 @@
         <!-- Pill Badges & Chips (Inspired by Side Panel nexus-badge-pill) -->
         <Style Selector="Button.composer-pill-btn">
             <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadius2XL" />
             <Setter Property="Padding" Value="8,1" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Transitions">
@@ -57,21 +57,21 @@
             <Setter Property="RenderTransform" Value="scale(1.04)" />
         </Style>
         <Style Selector="Button.composer-pill-btn /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadius2XL" />
         </Style>
 
         <!-- Mode Toggle Switcher Pill in Header (Chat / Agent) -->
         <Style Selector="ToggleButton.composer-mode-toggle">
             <Setter Property="Height" Value="22" />
-            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXL" />
             <Setter Property="Padding" Value="8,0" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
             <Setter Property="Background" Value="#158B949E" />
             <Setter Property="BorderBrush" Value="#252D3B" />
             <Setter Property="Foreground" Value="#8B949E" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FontSize" Value="10.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize150" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.15" />
@@ -81,7 +81,7 @@
             </Setter>
         </Style>
         <Style Selector="ToggleButton.composer-mode-toggle /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXL" />
         </Style>
         <Style Selector="ToggleButton.composer-mode-toggle:checked">
             <Setter Property="Background" Value="#1A38BDF8" />
@@ -107,8 +107,8 @@
             <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Height" Value="28" />
             <Setter Property="Width" Value="28" />
             <Setter Property="Padding" Value="0" />
@@ -126,7 +126,7 @@
         <Style Selector="Button.action-send /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         </Style>
         <Style Selector="Button.action-send:pointerover">
             <Setter Property="Background" Value="{DynamicResource DsPrimaryHoverBrush}" />
@@ -142,8 +142,8 @@
         <!-- Autocomplete Mention Item -->
         <Style Selector="Button.composer-mention-item">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         </Style>
         <Style Selector="Button.composer-mention-item:pointerover">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
@@ -154,8 +154,8 @@
             <Setter Property="Background" Value="#DC2626" />
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="#EF4444" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Height" Value="28" />
             <Setter Property="Width" Value="28" />
             <Setter Property="Padding" Value="0" />
@@ -173,7 +173,7 @@
         <Style Selector="Button.action-stop /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#DC2626" />
             <Setter Property="BorderBrush" Value="#EF4444" />
-            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         </Style>
         <Style Selector="Button.action-stop:pointerover">
             <Setter Property="Background" Value="#B91C1C" />
@@ -191,11 +191,11 @@
             <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryHoverBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
             <Setter Property="Padding" Value="10,4" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.action-accept:pointerover">
@@ -205,10 +205,10 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="#F87171" />
             <Setter Property="BorderBrush" Value="#4B2323" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
             <Setter Property="Padding" Value="10,4" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.action-reject:pointerover">

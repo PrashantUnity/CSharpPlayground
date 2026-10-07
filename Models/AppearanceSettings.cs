@@ -33,6 +33,12 @@ public sealed class AppearanceSettings
 
     /// <summary>The palette being designed (sections, locks, engine, seed), kept as written by the palette generator.</summary>
     public JsonElement? Palette { get; set; }
+
+    /// <summary>The layout in use (fonts, type ramp, radii, borders, spacing, shadows), as the layout spec writes it.</summary>
+    public JsonElement? Layout { get; set; }
+
+    /// <summary>The preset or saved layout it was picked from, for showing which one is in use.</summary>
+    public string? ActiveLayoutId { get; set; }
 }
 
 /// <summary>The theme studio's harmony controls, as the user left them.</summary>

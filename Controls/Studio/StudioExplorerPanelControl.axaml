@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -91,11 +91,11 @@
                         <DockPanel Grid.Column="2" IsVisible="{Binding !IsRenaming}" VerticalAlignment="Center">
                             <Border DockPanel.Dock="Right" Margin="4,0,4,0" Width="14" Height="14" VerticalAlignment="Center"
                                     IsVisible="{Binding GitStatusLetter, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <TextBlock Text="{Binding GitStatusLetter}" FontSize="9.5" FontWeight="Bold"
+                                <TextBlock Text="{Binding GitStatusLetter}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{Binding GitStatusColorHex}" TextAlignment="Center" />
                             </Border>
                             <TextBlock Text="{Binding Name}"
-                                       FontSize="12"
+                                       lt:Tokens.FontSize="DsFontSize300"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis" />
@@ -159,21 +159,21 @@
                 <Border IsVisible="{Binding IsConfirmingDelete}"
                         Background="{DynamicResource NavPinnedBgBrush}"
                         BorderBrush="{DynamicResource NavPinnedFgBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
+                        lt:Tokens.BorderThickness="DsBorderThin"
+                        lt:Tokens.CornerRadius="DsRadiusSM"
                         Margin="{Binding IndentPadding}"
                         Padding="8,4">
                     <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding DeleteConfirmationText}"
-                                   FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}"
+                                   lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}"
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         <Button Grid.Column="1" Command="{Binding ConfirmDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" Margin="6,0,2,0" ToolTip.Tip="Delete the file">
-                            <TextBlock Text="Delete" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource NavPinnedFgBrush}" />
+                            <TextBlock Text="Delete" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource NavPinnedFgBrush}" />
                         </Button>
                         <Button Grid.Column="2" Command="{Binding CancelDeleteCommand}" Classes="explorer-tool-btn"
                                 Width="NaN" Padding="6,0" ToolTip.Tip="Keep the file">
-                            <TextBlock Text="Cancel" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Cancel" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </Button>
                     </Grid>
                 </Border>
@@ -232,7 +232,7 @@
             Background="{DynamicResource DsSurfaceHighBrush}"
             Padding="10,6">
         <TextBlock Text="{Binding ExplorerTruncationText}"
-                   FontSize="11"
+                   lt:Tokens.FontSize="DsFontSize200"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource DsMutedBrush}" />
     </Border>

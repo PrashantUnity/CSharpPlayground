@@ -86,10 +86,7 @@ public partial class CSharpNotebookStudioViewModel
         Tabs.Add(newTab);
         SelectTab(newTab);
         RefreshQuickOpenDocuments();
-
-        var newExpItem = EnsureDocumentInExplorer(newDoc);
-        HighlightExplorerItem(newExpItem.Name);
-        newExpItem.StartRename();
+        // Not saved yet, so not in the workspace folder: it appears in the Explorer once it is saved there.
     }
 
     // Every notebook tab runs its cells with the studio's languages, in the active workspace when it has no folder of its own.
@@ -216,13 +213,12 @@ public partial class CSharpNotebookStudioViewModel
     {
         Notebook = notebook;
 
-        var expItem = EnsureDocumentInExplorer(notebook);
+        var expItem = FindDocumentInExplorer(notebook);
 
-        var existingTab = Tabs.FirstOrDefault(t =>
-            string.Equals(t.Notebook.Id, notebook.Id, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Notebook.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Title, notebook.Title, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Title, $"{notebook.Title}.frynb", StringComparison.OrdinalIgnoreCase));
+        // The same document, by id: copies of a notebook keep its title, so a title match picked the wrong tab.
+        var existingTab = Tabs.FirstOrDefault(t => !string.IsNullOrEmpty(notebook.Id)
+            ? string.Equals(t.Notebook.Id, notebook.Id, StringComparison.OrdinalIgnoreCase)
+            : string.Equals(t.Notebook.Title, notebook.Title, StringComparison.OrdinalIgnoreCase));
 
         if (existingTab != null)
         {

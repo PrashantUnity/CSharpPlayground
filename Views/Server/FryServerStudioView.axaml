@@ -1,5 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:studio="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Studio"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -43,10 +45,18 @@
                     Width="48"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,1,0">
+                    lt:Tokens.BorderThickness="DsBorderRight">
                 <Grid RowDefinitions="*,Auto">
                     <!-- Top Navigation Tool Buttons -->
                     <StackPanel Grid.Row="0" Spacing="0">
+                        <!-- Explorer (Index 2), first as in the other studios -->
+                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="2"
+                                Classes="activity-bar-btn"
+                                Classes.active="{Binding IsExplorerActive}"
+                                ToolTip.Tip="Explorer (Ctrl+Shift+E)">
+                            <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20" />
+                        </Button>
+
                         <!-- Outline (Index 0) -->
                         <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="0"
                                 Classes="activity-bar-btn"
@@ -62,24 +72,16 @@
                                 ToolTip.Tip="Traffic Logs &amp; Telemetry">
                             <Grid>
                                 <materialIcons:MaterialIcon Kind="SwapVertical" Width="20" Height="20" />
-                                <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="7"
+                                <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusMD"
                                         Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                         IsVisible="{Binding TrafficLog.Count}">
-                                    <TextBlock Text="{Binding TrafficLog.Count}" FontSize="8.5" FontWeight="Bold"
+                                    <TextBlock Text="{Binding TrafficLog.Count}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                                Margin="0,1,0,0"
                                                Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </Border>
                             </Grid>
-                        </Button>
-
-                        <!-- Explorer (Index 2) -->
-                        <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="2"
-                                Classes="activity-bar-btn"
-                                Classes.active="{Binding IsExplorerActive}"
-                                ToolTip.Tip="Server Explorer (Ctrl+Shift+E)">
-                            <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="20" Height="20" />
                         </Button>
 
                         <!-- Running Servers (Index 3) -->
@@ -89,11 +91,11 @@
                                 ToolTip.Tip="Running Servers &amp; Processes">
                             <Grid>
                                 <materialIcons:MaterialIcon Kind="ServerNetwork" Width="20" Height="20" />
-                                <Border Background="{DynamicResource DsGreenBrush}" CornerRadius="7"
+                                <Border Background="{DynamicResource DsGreenBrush}" lt:Tokens.CornerRadius="DsRadiusMD"
                                         Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                         IsVisible="{Binding HasRunningServers}">
-                                    <TextBlock Text="{Binding RunningServersBadgeText}" FontSize="8.5" FontWeight="Bold"
+                                    <TextBlock Text="{Binding RunningServersBadgeText}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                                Margin="0,1,0,0"
                                                Foreground="{DynamicResource DsTextWhiteBrush}" />
@@ -120,26 +122,47 @@
                     IsVisible="{Binding IsSideBarVisible}"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,1,0">
+                    lt:Tokens.BorderThickness="DsBorderRight">
                 <Grid RowDefinitions="Auto,*">
                     <!-- SideBar Header -->
-                    <Border Grid.Row="0" Height="35"
+                    <Border Grid.Row="0" Height="36"
                             Background="{DynamicResource DsSurfaceBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="0,0,0,1"
+                            lt:Tokens.BorderThickness="DsBorderBottom"
                             Padding="12,0,8,0">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0"
                                        Text="{Binding SideBarTitle}"
-                                       FontSize="11" FontWeight="Bold"
+                                       lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        VerticalAlignment="Center" />
 
-                            <!-- Header Collapse Action -->
+                            <!-- The Explorer's actions, as in the other studios -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
+                                        IsVisible="{Binding IsExplorerActive}">
+                                <Button Command="{Binding Explorer.NewScriptCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Server (.fryserver)">
+                                    <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Command="{Binding Explorer.NewFolderCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="New Folder">
+                                    <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Command="{Binding Explorer.RefreshExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Refresh Explorer">
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Command="{Binding Explorer.CollapseAllExplorerCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Collapse Folders">
+                                    <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Command="{Binding ToggleSideBarCommand}" Classes="cell-tool-btn" Width="20" Height="20" ToolTip.Tip="Hide Primary Side Bar (Ctrl+B)">
+                                    <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Header Collapse Action (other views) -->
                             <Button Grid.Column="1"
                                     Command="{Binding ToggleSideBarCommand}"
-                                    Classes="cell-tool-btn" Width="22" Height="22"
-                                    ToolTip.Tip="Hide Side Bar (Ctrl+B)">
+                                    IsVisible="{Binding !IsExplorerActive}"
+                                    Classes="cell-tool-btn" Width="20" Height="20"
+                                    ToolTip.Tip="Hide Primary Side Bar (Ctrl+B)">
                                 <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
                         </Grid>
@@ -151,10 +174,10 @@
                         <Grid IsVisible="{Binding IsEndpointsOutlineActive}" RowDefinitions="Auto,*">
                             <!-- Section Sub-Header -->
                             <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="26" Padding="12,0"
-                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{Binding Cells.Count, StringFormat='{}CELLS &amp; ROUTES ({0})'}"
-                                               FontSize="10" FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                Foreground="{DynamicResource DsMutedBrush}"
                                                VerticalAlignment="Center" />
                                     <Button Command="{Binding AddEndpointCellCommand}"
@@ -177,19 +200,19 @@
                                                 <Grid ColumnDefinitions="42,*,Auto" VerticalAlignment="Center">
                                                     <!-- Method Badge / Icon Chip -->
                                                     <Border Grid.Column="0"
-                                                            Background="{Binding TypeBadgeBgBrush}"
-                                                            BorderBrush="{Binding TypeBadgeBorderBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="3"
+                                                            common:ThemeBrush.Background="{Binding TypeBadgeBgKey}"
+                                                            common:ThemeBrush.BorderBrush="{Binding TypeBadgeBorderKey}"
+                                                            lt:Tokens.BorderThickness="DsBorderThin"
+                                                            lt:Tokens.CornerRadius="DsRadiusXS"
                                                             Width="38"
                                                             Height="16"
                                                             Margin="0,0,4,0"
                                                             HorizontalAlignment="Left"
                                                             VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding TypeBadgeText}"
-                                                                   FontSize="8.5"
-                                                                   FontWeight="Bold"
-                                                                   Foreground="{Binding TypeBadgeFgBrush}"
+                                                                   lt:Tokens.FontSize="DsFontSize050"
+                                                                   lt:Tokens.FontWeight="DsWeightStrong"
+                                                                   common:ThemeBrush.Foreground="{Binding TypeBadgeFgKey}"
                                                                    HorizontalAlignment="Center"
                                                                    VerticalAlignment="Center" />
                                                     </Border>
@@ -198,9 +221,9 @@
                                                     <TextBlock Grid.Column="1"
                                                                Text="{Binding Route}"
                                                                IsVisible="{Binding IsEndpoint}"
-                                                               FontFamily="Consolas, Monaco, monospace"
-                                                               FontSize="11"
-                                                               FontWeight="Medium"
+                                                               lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                               lt:Tokens.FontSize="DsFontSize200"
+                                                               lt:Tokens.FontWeight="DsWeightLabel"
                                                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                VerticalAlignment="Center"
                                                                TextTrimming="CharacterEllipsis"
@@ -210,7 +233,7 @@
                                                     <TextBlock Grid.Column="2"
                                                                Text="{Binding Title}"
                                                                IsVisible="{Binding IsEndpoint}"
-                                                               FontSize="10"
+                                                               lt:Tokens.FontSize="DsFontSize100"
                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center"
@@ -221,7 +244,7 @@
                                                                Grid.ColumnSpan="2"
                                                                Text="{Binding Title}"
                                                                IsVisible="{Binding !IsEndpoint}"
-                                                               FontSize="11"
+                                                               lt:Tokens.FontSize="DsFontSize200"
                                                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center"
@@ -237,10 +260,10 @@
                         <!-- View 1: Traffic Telemetry Log -->
                         <Grid IsVisible="{Binding IsTrafficActive}" RowDefinitions="Auto,*">
                             <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="26" Padding="12,0"
-                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{Binding TrafficLog.Count, StringFormat='{}REQUESTS ({0})'}"
-                                               FontSize="10" FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                Foreground="{DynamicResource DsMutedBrush}"
                                                VerticalAlignment="Center" />
                                     <Button Command="{Binding ClearTrafficLogCommand}" Classes="cell-tool-btn" Width="18" Height="18" ToolTip.Tip="Clear Logs">
@@ -253,8 +276,8 @@
                                 <!-- Empty State -->
                                 <StackPanel IsVisible="{Binding !TrafficLog.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6" Margin="16">
                                     <materialIcons:MaterialIcon Kind="SwapVertical" Width="28" Height="28" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.4" HorizontalAlignment="Center" />
-                                    <TextBlock Text="No Traffic Recorded" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Requests to this server will appear here in real time." FontSize="10" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock Text="No Traffic Recorded" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Requests to this server will appear here in real time." lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
                                 </StackPanel>
 
                                 <!-- Flat Streamlined Traffic Log List -->
@@ -265,7 +288,7 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate DataType="server1:FryServerTrafficLogItem">
                                             <Border BorderBrush="{DynamicResource DsBorderBrush}"
-                                                    BorderThickness="0,0,0,1"
+                                                    lt:Tokens.BorderThickness="DsBorderBottom"
                                                     Padding="4,5">
                                                 <Grid RowDefinitions="Auto,Auto">
                                                     <!-- Row 0: Method, Path, Status -->
@@ -273,34 +296,34 @@
                                                         <Border Grid.Column="0"
                                                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="3"
+                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                lt:Tokens.CornerRadius="DsRadiusXS"
                                                                 Width="34"
                                                                 Height="15"
                                                                 VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Method}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding Method}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                         </Border>
                                                         <TextBlock Grid.Column="1"
                                                                    Text="{Binding Path}"
-                                                                   FontFamily="Consolas, Monaco, monospace"
-                                                                   FontSize="11"
+                                                                   lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                                   lt:Tokens.FontSize="DsFontSize200"
                                                                    Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                    Margin="6,0,6,0"
                                                                    VerticalAlignment="Center"
                                                                    TextTrimming="CharacterEllipsis" />
                                                         <Border Grid.Column="2"
                                                                 Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                CornerRadius="3"
+                                                                lt:Tokens.CornerRadius="DsRadiusXS"
                                                                 Padding="4,0"
                                                                 Height="15"
                                                                 VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding StatusCode}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding StatusCode}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                                                         </Border>
                                                     </Grid>
                                                     <!-- Row 1: Timestamp & Latency -->
                                                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,3,0,0">
-                                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" FontSize="9.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" />
-                                                        <TextBlock Grid.Column="1" Text="{Binding ElapsedMilliseconds, StringFormat='{}{0:F1}ms'}" FontSize="9.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding ElapsedMilliseconds, StringFormat='{}{0:F1}ms'}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </Grid>
                                                 </Grid>
                                             </Border>
@@ -310,115 +333,80 @@
                             </Panel>
                         </Grid>
 
-                        <!-- View 2: Server Explorer -->
-                        <Grid IsVisible="{Binding IsExplorerActive}" RowDefinitions="Auto,*">
-                            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0"
-                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
-                                <TextBlock Text="SERVER CONFIGURATION" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            </Border>
+                        <!-- View 2: Explorer, the workspace folder as in the other studios, and the server's overview below -->
+                        <Grid IsVisible="{Binding IsExplorerActive}" RowDefinitions="*,Auto,Auto">
+                            <studio:StudioExplorerPanelControl Grid.Row="0" DataContext="{Binding Explorer}" />
 
-                            <ScrollViewer Grid.Row="1" Padding="12">
-                                <StackPanel Spacing="10">
+                            <Button Grid.Row="1" Command="{Binding ToggleServerInfoCommand}" Classes="server-outline-row"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="28" Padding="8,0"
+                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderTop">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="{Binding ServerInfoChevron}" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="SERVER CONFIGURATION" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <ScrollViewer Grid.Row="2" MaxHeight="360" Padding="12" IsVisible="{Binding IsServerInfoExpanded}">
+                                <StackPanel lt:Tokens.Spacing="DsSpace10">
                                     <!-- Document Info Card -->
-                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                                         <StackPanel Spacing="6">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                <TextBlock Text="{Binding BreadcrumbDocument}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                <TextBlock Text="{Binding BreadcrumbDocument}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                             </StackPanel>
-                                            <TextBlock Text="{Binding FilePath, FallbackValue='In-Memory Active Session'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding FilePath, FallbackValue='In-Memory Active Session'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                                             <Border Height="1" Background="{DynamicResource DsBorderBrush}" Margin="0,2" />
                                             <Grid ColumnDefinitions="*,*">
                                                 <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="Runtime Engine" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                                    <TextBlock Text=".NET 10 Roslyn" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <TextBlock Text="Runtime Engine" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text=".NET 10 Roslyn" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="CORS Status" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                                    <TextBlock Text="Enabled (*)" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsGreenBrush}" />
+                                                    <TextBlock Text="CORS Status" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="Enabled (*)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsGreenBrush}" />
                                                 </StackPanel>
                                             </Grid>
                                         </StackPanel>
                                     </Border>
 
                                     <!-- Metrics Card -->
-                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="METRICS &amp; STATS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                                            <TextBlock Text="METRICS &amp; STATS" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
                                             <Grid ColumnDefinitions="*,*">
                                                 <StackPanel Grid.Column="0" Spacing="1">
-                                                    <TextBlock Text="Total Endpoints" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                                    <TextBlock Text="{Binding EndpointCount}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <TextBlock Text="Total Endpoints" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="{Binding EndpointCount}" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Spacing="1">
-                                                    <TextBlock Text="Requests Served" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                                    <TextBlock Text="{Binding TrafficLog.Count}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                    <TextBlock Text="Requests Served" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <TextBlock Text="{Binding TrafficLog.Count}" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                 </StackPanel>
                                             </Grid>
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Active Running Servers Card -->
-                                    <Border IsVisible="{Binding HasRunningServers}"
-                                            Background="{DynamicResource DsSurfaceHighBrush}"
-                                            BorderBrush="{DynamicResource DsGreenBrush}"
-                                            BorderThickness="1" CornerRadius="6" Padding="10">
-                                        <StackPanel Spacing="6">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                    <Ellipse Width="8" Height="8" Fill="{DynamicResource DsGreenBrush}" />
-                                                    <TextBlock Text="{Binding RunningServerCount, StringFormat='{}RUNNING SERVERS ({0})'}"
-                                                               FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" />
-                                                </StackPanel>
-                                                <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
-                                                        Classes="cell-tool-btn" Height="20" Padding="4,0" ToolTip.Tip="Manage Running Servers">
-                                                    <materialIcons:MaterialIcon Kind="ArrowRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
-                                                </Button>
-                                            </Grid>
-                                            <ItemsControl ItemsSource="{Binding RunningServers}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="server:FryRunningServerItem">
-                                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" Margin="0,2">
-                                                            <TextBlock Grid.Column="0" Text="{Binding DocumentTitle}"
-                                                                       FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                            <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                    CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}"
-                                                                           FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                            </Border>
-                                                            <Button Grid.Column="2"
-                                                                    Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).StopRunningServerCommand}"
-                                                                    CommandParameter="{Binding}"
-                                                                    Classes="cell-tool-btn" Width="18" Height="18" ToolTip.Tip="Stop Server">
-                                                                <materialIcons:MaterialIcon Kind="Stop" Width="11" Height="11" Foreground="{DynamicResource DsRedBrush}" />
-                                                            </Button>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </Border>
 
                                     <!-- Quick Export Actions -->
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="QUICK EXPORTS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" Margin="0,4,0,2" />
-                                        <Button Command="{Binding ExportMinimalApiCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                        <TextBlock Text="QUICK EXPORTS" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" Margin="0,4,0,2" />
+                                        <Button Command="{Binding ExportMinimalApiCommand}" Classes="server-outline-row" lt:Tokens.Height="DsControlHeight150" Padding="6,0">
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="13" Height="13" Foreground="{DynamicResource NavScriptsFgBrush}" />
-                                                <TextBlock Text="Export ASP.NET Program.cs" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="Export ASP.NET Program.cs" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button Command="{Binding ExportOpenApiCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                        <Button Command="{Binding ExportOpenApiCommand}" Classes="server-outline-row" lt:Tokens.Height="DsControlHeight150" Padding="6,0">
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="FileCodeOutline" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
-                                                <TextBlock Text="Export OpenAPI 3.0 (Swagger)" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="Export OpenAPI 3.0 (Swagger)" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button Command="{Binding ExportCurlCommand}" Classes="server-outline-row" Height="28" Padding="6,0">
+                                        <Button Command="{Binding ExportCurlCommand}" Classes="server-outline-row" lt:Tokens.Height="DsControlHeight150" Padding="6,0">
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Console" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                <TextBlock Text="Copy cURL Command Collection" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                                <TextBlock Text="Copy cURL Command Collection" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>
@@ -429,10 +417,10 @@
                         <!-- View 3: Running Servers Manager -->
                         <Grid IsVisible="{Binding IsServersActive}" RowDefinitions="Auto,*">
                             <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0"
-                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{Binding RunningServerCount, StringFormat='{}RUNNING SERVERS ({0})'}"
-                                               FontSize="10.5" FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                Foreground="{DynamicResource DsMutedBrush}"
                                                VerticalAlignment="Center" />
                                     <Button Command="{Binding StopAllRunningServersCommand}"
@@ -442,7 +430,7 @@
                                             ToolTip.Tip="Stop All Running Servers">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <materialIcons:MaterialIcon Kind="StopCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsRedBrush}" />
-                                            <TextBlock Text="Stop All" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsRedBrush}" />
+                                            <TextBlock Text="Stop All" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsRedBrush}" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
@@ -451,13 +439,13 @@
                             <Panel Grid.Row="1">
                                 <!-- Empty State -->
                                 <StackPanel IsVisible="{Binding !HasRunningServers}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" Margin="16">
-                                    <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource DsSurfaceHighBrush}"
+                                    <Border Width="40" Height="40" lt:Tokens.CornerRadius="DsRadius3XL" Background="{DynamicResource DsSurfaceHighBrush}"
                                             HorizontalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="ServerNetworkOff" Width="22" Height="22" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
-                                    <TextBlock Text="No Active Servers" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="No Active Servers" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="Servers started from this or other files will appear here with live metrics and control actions."
-                                               FontSize="10" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
+                                               lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" TextWrapping="Wrap" />
                                 </StackPanel>
 
                                 <!-- Running Servers List -->
@@ -467,8 +455,8 @@
                                             <DataTemplate DataType="server:FryRunningServerItem">
                                                 <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="6"
+                                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                                        lt:Tokens.CornerRadius="DsRadiusMD"
                                                         Padding="10"
                                                         Margin="0,0,0,8">
                                                     <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
@@ -476,17 +464,17 @@
                                                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalAlignment="Center">
                                                             <Ellipse Grid.Column="0" Width="8" Height="8" Fill="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                                                             <TextBlock Grid.Column="1" Text="{Binding DocumentTitle}"
-                                                                       FontSize="11.5" FontWeight="Bold"
+                                                                       lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong"
                                                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        VerticalAlignment="Center" />
                                                             <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}"
                                                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                    BorderThickness="1"
-                                                                    CornerRadius="3"
+                                                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                                                    lt:Tokens.CornerRadius="DsRadiusXS"
                                                                     Padding="4,1">
                                                                 <TextBlock Text="{Binding BoundPort, StringFormat=':{0}'}"
-                                                                           FontSize="9" FontWeight="Bold"
+                                                                           lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
                                                                            Foreground="{DynamicResource DsPrimaryBrush}" />
                                                             </Border>
                                                         </Grid>
@@ -494,17 +482,17 @@
                                                         <!-- Row 1: URL and Metrics -->
                                                         <Grid Grid.Row="1" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                                             <TextBlock Grid.Column="0" Text="{Binding BaseUrl}"
-                                                                       FontFamily="Consolas, monospace" FontSize="10"
+                                                                       lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100"
                                                                        Foreground="{DynamicResource DsMutedBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        VerticalAlignment="Center" />
                                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
                                                                 <TextBlock Text="{Binding EndpointCount, StringFormat='{}{0} routes'}"
-                                                                           FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}"
+                                                                           lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}"
                                                                            VerticalAlignment="Center" />
-                                                                <TextBlock Text="•" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="•" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                                 <TextBlock Text="{Binding TotalRequests, StringFormat='{}{0} reqs'}"
-                                                                           FontSize="9.5" Foreground="{DynamicResource DsPrimaryBrush}"
+                                                                           lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsPrimaryBrush}"
                                                                            VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Grid>
@@ -520,7 +508,7 @@
                                                                     Padding="6,0">
                                                                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                                                                     <materialIcons:MaterialIcon Kind="FileEditOutline" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                                    <TextBlock Text="Open in Editor" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                                    <TextBlock Text="Open in Editor" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                                                 </StackPanel>
                                                             </Button>
 
@@ -569,7 +557,7 @@
                 <Border Grid.Row="0"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Height="35">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Active Server Tab -->
@@ -578,7 +566,7 @@
                                 <materialIcons:MaterialIcon Kind="ServerNetwork" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 <TextBlock Classes="tab-title"
                                            Text="{Binding BreadcrumbDocument}"
-                                           FontSize="12"
+                                           lt:Tokens.FontSize="DsFontSize300"
                                            VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
@@ -589,14 +577,14 @@
                 <Border Grid.Row="1"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Height="26"
                         Padding="16,0">
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                         <!-- Segment 1: Folder -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{DynamicResource NavHomeFgBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding BreadcrumbFolder}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding BreadcrumbFolder}" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
 
                         <!-- Chevron 1 -->
@@ -605,7 +593,7 @@
                         <!-- Segment 2: Document -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ServerNetwork" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="{Binding BreadcrumbDocument}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" MaxWidth="180" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding BreadcrumbDocument}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" MaxWidth="180" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
 
                         <!-- Chevron 2 -->
@@ -615,14 +603,14 @@
                         <Border Grid.Column="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="4"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusSM"
                                 Padding="6,1"
                                 VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="{Binding ActiveCellTypeIcon}" Width="11" Height="11" Foreground="{Binding ActiveCellTypeColor}" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="{Binding ActiveCellTypeIcon}" Width="11" Height="11" common:ThemeBrush.Foreground="{Binding ActiveCellTypeColorKey}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding ActiveCellBadgeText}"
-                                           FontSize="11"
+                                           lt:Tokens.FontSize="DsFontSize200"
                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                            VerticalAlignment="Center"
                                            MaxWidth="180"
@@ -646,13 +634,13 @@
                                     <Button Command="{Binding AddEndpointCellCommand}" Classes="insert-cell-pill" ToolTip.Tip="Insert Endpoint Cell at Top">
                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="Endpoint" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="Endpoint" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                     <Button Command="{Binding AddMiddlewareCellCommand}" Classes="insert-cell-pill" ToolTip.Tip="Insert Middleware Cell at Top">
                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                            <TextBlock Text="Middleware" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="Middleware" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -685,20 +673,20 @@
                         IsVisible="{Binding IsBottomPanelVisible}"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,1,0,0">
+                        lt:Tokens.BorderThickness="DsBorderTop">
                     <Grid RowDefinitions="30,*">
                         <!-- Bottom Deck Header Tabs -->
                         <Border Grid.Row="0"
                                 Background="{DynamicResource DsSurfaceHoverBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="0,0,0,1"
+                                lt:Tokens.BorderThickness="DsBorderBottom"
                                 Padding="12,0">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <!-- Tabs -->
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <Button Classes="ide-tab-btn active">
                                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <TextBlock Text="SERVER TRAFFIC" FontWeight="SemiBold" FontSize="11" />
+                                            <TextBlock Text="SERVER TRAFFIC" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize200" />
                                             <Border Classes="ide-tab-badge" Background="{DynamicResource DsPrimaryBrush}">
                                                 <TextBlock Text="{Binding TrafficLog.Count}" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                             </Border>
@@ -726,21 +714,21 @@
                             <!-- Empty State -->
                             <StackPanel IsVisible="{Binding !TrafficLog.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6" Margin="16">
                                 <materialIcons:MaterialIcon Kind="ServerNetwork" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.4" HorizontalAlignment="Center" />
-                                <TextBlock Text="Server Ready — Waiting for Traffic" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="Execute loopback test requests or consume endpoints via external HTTP clients to view real-time telemetry." FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" />
+                                <TextBlock Text="Server Ready — Waiting for Traffic" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="Execute loopback test requests or consume endpoints via external HTTP clients to view real-time telemetry." lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.7" TextAlignment="Center" />
                             </StackPanel>
 
                             <!-- Structured Telemetry Table -->
                             <Grid IsVisible="{Binding TrafficLog.Count}" RowDefinitions="24,*">
                                 <!-- Column Headers -->
-                                <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                                <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom" Padding="10,0">
                                     <Grid ColumnDefinitions="75,60,*,70,75,140">
-                                        <TextBlock Grid.Column="0" Text="TIME" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1" Text="METHOD" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="2" Text="ROUTE / PATH" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="3" Text="STATUS" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="4" Text="LATENCY" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="5" Text="CLIENT IP" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="0" Text="TIME" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="METHOD" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="ROUTE / PATH" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="STATUS" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="4" Text="LATENCY" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="5" Text="CLIENT IP" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                     </Grid>
                                 </Border>
 
@@ -756,8 +744,8 @@
                                                 <!-- Timestamp -->
                                                 <TextBlock Grid.Column="0"
                                                            Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
-                                                           FontSize="10.5"
-                                                           FontFamily="Consolas, monospace"
+                                                           lt:Tokens.FontSize="DsFontSize150"
+                                                           lt:Tokens.FontFamily="DsCodeFontFamily"
                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                            VerticalAlignment="Center" />
 
@@ -765,19 +753,19 @@
                                                 <Border Grid.Column="1"
                                                         Background="{DynamicResource DsSurfaceHoverBrush}"
                                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="3"
+                                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                                        lt:Tokens.CornerRadius="DsRadiusXS"
                                                         Padding="4,1"
                                                         HorizontalAlignment="Left"
                                                         VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Method}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Method}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                 </Border>
 
                                                 <!-- Path -->
                                                 <TextBlock Grid.Column="2"
                                                            Text="{Binding Path}"
-                                                           FontFamily="Consolas, monospace"
-                                                           FontSize="11"
+                                                           lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                           lt:Tokens.FontSize="DsFontSize200"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            VerticalAlignment="Center"
                                                            TextTrimming="CharacterEllipsis" />
@@ -786,27 +774,27 @@
                                                 <Border Grid.Column="3"
                                                         Background="{DynamicResource DsSurfaceHighBrush}"
                                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="3"
+                                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                                        lt:Tokens.CornerRadius="DsRadiusXS"
                                                         Padding="6,1"
                                                         HorizontalAlignment="Left"
                                                         VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding StatusCode}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" />
+                                                    <TextBlock Text="{Binding StatusCode}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}" />
                                                 </Border>
 
                                                 <!-- Latency -->
                                                 <TextBlock Grid.Column="4"
                                                            Text="{Binding ElapsedMilliseconds, StringFormat='{}{0:F1}ms'}"
-                                                           FontFamily="Consolas, monospace"
-                                                           FontSize="10.5"
+                                                           lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                           lt:Tokens.FontSize="DsFontSize150"
                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                            VerticalAlignment="Center" />
 
                                                 <!-- Client IP -->
                                                 <TextBlock Grid.Column="5"
                                                            Text="{Binding ClientIp}"
-                                                           FontFamily="Consolas, monospace"
-                                                           FontSize="10"
+                                                           lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                           lt:Tokens.FontSize="DsFontSize100"
                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                            Opacity="0.7"
                                                            VerticalAlignment="Center" />
@@ -827,24 +815,24 @@
         <Border Grid.Row="1"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,1,0,0"
+                lt:Tokens.BorderThickness="DsBorderTop"
                 Height="22"
                 Padding="10,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left Status -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock Text="&gt;&lt; FryServer" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
+                    <TextBlock Text="&gt;&lt; FryServer" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsPrimaryBrush}" />
                     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                        <Border Width="6" Height="6" CornerRadius="3"
+                        <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                 Background="{DynamicResource DsGreenBrush}"
                                 IsVisible="{Binding IsServerRunning}"
                                 VerticalAlignment="Center" />
-                        <Border Width="6" Height="6" CornerRadius="3"
+                        <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                 Background="{DynamicResource DsMutedBrush}"
                                 Opacity="0.5"
                                 IsVisible="{Binding !IsServerRunning}"
                                 VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding ServerStatusText}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ServerStatusText}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <Button Command="{Binding SelectActivityBarItemCommand}" CommandParameter="3"
@@ -854,16 +842,16 @@
                             ToolTip.Tip="View all running servers">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ServerNetwork" Width="11" Height="11" Foreground="{DynamicResource DsGreenBrush}" />
-                            <TextBlock Text="{Binding RunningServerCount, StringFormat='{}{0} active'}" FontSize="10" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding RunningServerCount, StringFormat='{}{0} active'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
 
                 <!-- Right Indicators -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding TotalRequestsText}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="UTF-8" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="C# Roslyn" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace14" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TotalRequestsText}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="UTF-8" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="C# Roslyn" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     <Button Classes="cell-tool-btn"
                             Width="18" Height="18"
                             Command="{Binding ToggleBottomPanelCommand}"

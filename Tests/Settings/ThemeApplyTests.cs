@@ -80,7 +80,9 @@ public class ThemeApplyTests : IDisposable
         engine.SetDensity(FrySharp.Sdk.LayoutDensity.Compact);
         Assert.Equal(2, changes);
         Assert.True(child.TryFindResource("DensityTabHeight", out var height));
-        Assert.Equal(28.0, height);
+        Assert.Equal(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokenMapper.Map(
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutSpec.Default with { Density = FrySharp.Sdk.LayoutDensity.Compact }, isDark: true)["DsTabHeight"], height);
+        Assert.True((double)height! < 35);
 
         engine.DetachResourceRoot(root.Resources);
         Assert.Equal(Color.Parse("#2F81F7"), ResolvedColor(child, "DsPrimaryBrush"));

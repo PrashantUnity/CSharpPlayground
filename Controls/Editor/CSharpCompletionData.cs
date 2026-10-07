@@ -46,7 +46,7 @@ public class CSharpCompletionData : ICompletionData
             return new TextBlock
             {
                 Text = _item.DisplayText,
-                FontSize = 12,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("300"),
                 Foreground = new SolidColorBrush(Color.Parse(ThemeService.IsDark ? "#E6EDF3" : "#1F2328")),
                 Margin = new Thickness(4, 2)
             };
@@ -81,9 +81,9 @@ public class CSharpCompletionData : ICompletionData
         var textBlock = new TextBlock
         {
             Text = _item.DisplayText,
-            FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
-            FontSize = 12,
-            FontWeight = FontWeight.Medium,
+            FontFamily = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.CodeFont,
+            FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("300"),
+            FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Label"),
             Foreground = new SolidColorBrush(Color.Parse(isDark ? "#E6EDF3" : "#1F2328")),
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -95,8 +95,8 @@ public class CSharpCompletionData : ICompletionData
             var returnTypeBlock = new TextBlock
             {
                 Text = _item.ReturnType,
-                FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
-                FontSize = 10.5,
+                FontFamily = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.CodeFont,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("150"),
                 Foreground = new SolidColorBrush(Color.Parse(isDark ? "#8B949E" : "#57606A")),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(12, 0, 4, 0)
@@ -125,16 +125,16 @@ public class CSharpCompletionData : ICompletionData
             {
                 Background = new SolidColorBrush(Color.Parse(isDark ? "#161B22" : "#F6F8FA")),
                 BorderBrush = new SolidColorBrush(Color.Parse(isDark ? "#30363D" : "#D0D7DE")),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
+                BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth),
+                CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("SM")),
                 Padding = new Thickness(8, 5)
             };
 
             var sigBlock = new TextBlock
             {
                 Text = _item.Signature,
-                FontFamily = new FontFamily("JetBrains Mono, Menlo, Monaco, Consolas, monospace"),
-                FontSize = 11.5,
+                FontFamily = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.CodeFont,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("250"),
                 Foreground = new SolidColorBrush(Color.Parse(isDark ? "#58A6FF" : "#0969DA")),
                 TextWrapping = TextWrapping.Wrap
             };
@@ -147,7 +147,7 @@ public class CSharpCompletionData : ICompletionData
             var docBlock = new TextBlock
             {
                 Text = _item.Documentation,
-                FontSize = 11.5,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("250"),
                 Foreground = new SolidColorBrush(Color.Parse(isDark ? "#C9D1D9" : "#24292F")),
                 TextWrapping = TextWrapping.Wrap,
                 LineHeight = 16

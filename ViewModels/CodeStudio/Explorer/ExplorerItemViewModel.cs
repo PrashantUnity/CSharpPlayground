@@ -113,6 +113,7 @@ public partial class ExplorerItemViewModel : ObservableObject
         {
             case ".frynb" or ".ipynb": return ("NotebookOutline", NotebookAmberHex);
             case ".cs" or ".frycs": return ("LanguageCsharp", "#58A6FF");
+            case ".fryserver": return ("ServerNetwork", "#3FB9A2");
             case ".json": return ("CodeJson", "#E5C07B");
             case ".md": return ("FormatHeaderPound", "#4EC9B0");
             case ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif": return ("ImageOutline", "#C586C0");

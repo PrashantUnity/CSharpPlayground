@@ -38,6 +38,17 @@ public class WorkspaceItemSummary : ObservableObject
 
     public string DisplayExtension => FileExtension ?? (IsServer ? ".fryserver" : IsNotebook ? ".frynb" : ".frycs");
 
+    /// <summary>The file's own name on disk ("Interactive C# Notebook (2).frynb"), when it came from a workspace file.</summary>
+    public string? FileName { get; set; }
+
+    /// <summary>
+    /// The name an Explorer shows: the file's own name, so copies that keep the same title inside ("Interactive C#
+    /// Notebook" in five files) are all listed; else the title with its extension.
+    /// </summary>
+    public string ExplorerName => !string.IsNullOrEmpty(FileName)
+        ? FileName
+        : Title.EndsWith(DisplayExtension, StringComparison.OrdinalIgnoreCase) ? Title : Title + DisplayExtension;
+
     private bool _isPinned;
     public bool IsPinned
     {

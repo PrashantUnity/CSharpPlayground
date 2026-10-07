@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -22,10 +22,10 @@
             VerticalAlignment="Stretch"
             Background="{DynamicResource DsBgBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,1,0,0">
+            lt:Tokens.BorderThickness="DsBorderTop">
         <Grid RowDefinitions="Auto,*">
             <!-- Bottom Deck Tab Bar -->
-            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <!-- Tab 0: Results (.Dump) -->
@@ -91,7 +91,7 @@
                                         Background="{DynamicResource DsWarningBrush}"
                                         Padding="5,0"
                                         IsVisible="{Binding IsPaused}">
-                                    <TextBlock Text="PAUSED" FontSize="8.5" Foreground="{DynamicResource DsBgBrush}" FontWeight="Bold" />
+                                    <TextBlock Text="PAUSED" lt:Tokens.FontSize="DsFontSize050" Foreground="{DynamicResource DsBgBrush}" lt:Tokens.FontWeight="DsWeightStrong" />
                                 </Border>
                             </StackPanel>
                         </Button>
@@ -123,12 +123,12 @@
                 <!-- Tab 0: Results (.Dump) -->
                 <Border Background="{DynamicResource DsBgBrush}" Padding="12,10">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="12">
+                        <StackPanel lt:Tokens.Spacing="DsSpace12">
                             <Border IsVisible="{Binding HasNoResults}" Padding="24,30" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                <StackPanel lt:Tokens.Spacing="DsSpace10" HorizontalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="TableLarge" Width="36" Height="36" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="No Visual Dumps Yet" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Call .Dump(), Display.Chart(), Display.Plot3D(), or Display.Visualizer() in any language to inspect results here." FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="No Visual Dumps Yet" lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Call .Dump(), Display.Chart(), Display.Plot3D(), or Display.Visualizer() in any language to inspect results here." lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
@@ -145,13 +145,13 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="display:RichCellOutput">
                                         <StackPanel Spacing="0">
-                                            <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
+                                            <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
                                                 <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
                                             </Border>
-                                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,12">
                                                 <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
                                             </Border>
-                                            <Border IsVisible="{Binding IsVisualKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                                            <Border IsVisible="{Binding IsVisualKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,12">
                                                 <visuals:VisualOutputView Output="{Binding Visual}" />
                                             </Border>
                                             <Border IsVisible="{Binding IsInspectorKind}" Margin="0,0,0,12">
@@ -177,7 +177,7 @@
                                 <Border IsVisible="{Binding ConsoleHeader, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                         Padding="0,2,0,2">
                                     <TextBlock Text="{Binding ConsoleHeader}"
-                                               FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                               lt:Tokens.FontFamily="DsCodeFontFamily"
                                                FontSize="{Binding EditorFontSize}"
                                                Foreground="{DynamicResource DsMutedBrush}"
                                                Opacity="0.65"
@@ -186,7 +186,7 @@
 
                                 <!-- 2. Program Output: Crisp, high-contrast hero typography -->
                                 <TextBox Text="{Binding ConsoleBody, Mode=OneWay}"
-                                         FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                         lt:Tokens.FontFamily="DsCodeFontFamily"
                                          FontSize="{Binding EditorFontSize}"
                                          Background="Transparent"
                                          Foreground="{DynamicResource DsTextWhiteBrush}"
@@ -198,7 +198,7 @@
                                 <!-- 3. Process Exit Footer: Subtle status indicator with status icon -->
                                 <Border IsVisible="{Binding ConsoleFooter, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                         Margin="0,4,0,2" Padding="0,6,0,0"
-                                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0">
+                                        BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderTop">
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="13" Height="13"
                                                                     Foreground="{DynamicResource DsGreenBrush}"
@@ -207,7 +207,7 @@
                                                                     Foreground="{DynamicResource DsErrorBrush}"
                                                                     IsVisible="{Binding IsConsoleExitError}" />
                                         <TextBlock Text="{Binding ConsoleFooter}"
-                                                   FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace"
+                                                   lt:Tokens.FontFamily="DsCodeFontFamily"
                                                    FontSize="{Binding EditorFontSize}"
                                                    Foreground="{DynamicResource DsMutedBrush}"
                                                    Opacity="0.75"
@@ -217,13 +217,13 @@
                             </StackPanel>
                         </ScrollViewer>
                         <Border Grid.Row="1" IsVisible="{Binding IsAcceptingProgramInput}"
-                                BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,4,0,0">
+                                BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderTop" Padding="0,6,0,0" Margin="0,4,0,0">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="ChevronRight" Width="14" Height="14"
                                                             Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 <TextBox Grid.Column="1" Text="{Binding ProgramInputText, Mode=TwoWay}"
                                          common:FocusOnTrueBehavior.IsActive="{Binding IsAcceptingProgramInput}"
-                                         FontFamily="Consolas, Menlo, Monaco, Roboto Mono, monospace" FontSize="{Binding EditorFontSize}"
+                                         lt:Tokens.FontFamily="DsCodeFontFamily" FontSize="{Binding EditorFontSize}"
                                          PlaceholderText="Type input for the program, then Enter"
                                          Background="Transparent" BorderThickness="0" MinHeight="22">
                                     <TextBox.KeyBindings>
@@ -241,26 +241,26 @@
                 <!-- Tab 2: Problems / Diagnostics -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12,8">
-                        <TextBlock Text="No problems detected in script." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
+                        <TextBlock Text="No problems detected in script." lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" Margin="10" IsVisible="{Binding !Diagnostics.Count}" />
                         <ItemsControl ItemsSource="{Binding Diagnostics}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm1:DiagnosticItemViewModel">
-                                    <Border Background="Transparent" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+                                    <Border Background="Transparent" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom" Padding="8,6">
                                         <Button Command="{Binding NavigateCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Cursor="Hand">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding SeverityIconKind}" Foreground="{Binding SeverityColorHex}" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" />
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="11.5" Foreground="{Binding SeverityColorHex}" />
-                                                    <TextBlock Text="{Binding Message}" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Id}" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize250" Foreground="{Binding SeverityColorHex}" />
+                                                    <TextBlock Text="{Binding Message}" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                                 <Button Grid.Column="2" Command="{Binding QuickFixCommand}" IsVisible="{Binding HasQuickFix}"
                                                         Classes="cs-toolbar-tonal" Padding="8,2" Margin="8,0,0,0" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <materialIcons:MaterialIcon Kind="PackageDown" Width="13" Height="13" />
-                                                        <TextBlock Text="{Binding QuickFixLabel}" FontSize="11" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{Binding QuickFixLabel}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                     </StackPanel>
                                                 </Button>
-                                                <TextBlock Grid.Column="3" Text="{Binding LocationString}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                                <TextBlock Grid.Column="3" Text="{Binding LocationString}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
                                             </Grid>
                                         </Button>
                                     </Border>
@@ -273,31 +273,31 @@
                 <!-- Tab 3: Test Cases. Each case is a Check("name", answer, "expected") line in the script; every run
                      reads its ✅/❌ line back into the card. -->
                 <Grid RowDefinitions="Auto,*">
-                    <Border Grid.Row="0" Padding="14,7" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Padding="14,7" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                                <TextBlock Text="Test Cases" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding TestCasesSummary}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
+                                <TextBlock Text="Test Cases" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding TestCasesSummary}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <Button Command="{Binding GenerateTestCasesCommand}" IsVisible="{Binding CanGenerateTestCases}" Classes="cs-toolbar-tonal"
                                         ToolTip.Tip="Add this problem's examples and edge cases (empty input, duplicates, negatives...), every answer verified">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="AutoFix" Width="13" Height="13" Foreground="{DynamicResource DsWarningBrush}" />
-                                        <TextBlock Text="Generate" FontSize="11" />
+                                        <TextBlock Text="Generate" lt:Tokens.FontSize="DsFontSize200" />
                                     </StackPanel>
                                 </Button>
                                 <Button Command="{Binding RunAllTestCasesCommand}" IsVisible="{Binding HasTestCases}" Classes="cs-toolbar-tonal"
                                         ToolTip.Tip="Run the script once and check every case">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
-                                        <TextBlock Text="Run All" FontSize="11" />
+                                        <TextBlock Text="Run All" lt:Tokens.FontSize="DsFontSize200" />
                                     </StackPanel>
                                 </Button>
                                 <Button Command="{Binding AddTestCaseCommand}" Classes="cs-toolbar-tonal" ToolTip.Tip="Check a value of your own">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" />
-                                        <TextBlock Text="Add Test Case" FontSize="11" />
+                                        <TextBlock Text="Add Test Case" lt:Tokens.FontSize="DsFontSize200" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -307,55 +307,55 @@
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="14,10" Spacing="8">
                             <TextBlock Text="{Binding TestCasesStatus}" IsVisible="{Binding TestCasesStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                             <!-- New case: what to check and the answer expected -->
                             <Border IsVisible="{Binding IsAddingTestCase}" Background="{DynamicResource DsSurfaceHighBrush}"
-                                    BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                                    BorderBrush="{DynamicResource DsPrimaryBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,10">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="New test case" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <TextBlock Text="New test case" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                     <Grid ColumnDefinitions="72,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                                        <TextBlock Grid.Row="0" Text="Name" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="0" Text="Name" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewTestCaseName, Mode=TwoWay}" Classes="sidebar-search-box" />
-                                        <TextBlock Grid.Row="1" Text="Check" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="1" Text="Check" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewTestCaseCall, Mode=TwoWay}" Classes="sidebar-search-box"
-                                                 FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                 lt:Tokens.FontFamily="DsCodeFontFamily"
                                                  PlaceholderText="The C# expression to check, e.g. sol.MaxArea(new[] { 1, 1 })" />
-                                        <TextBlock Grid.Row="2" Text="Expected" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="2" Text="Expected" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                         <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto">
                                             <TextBox Text="{Binding NewTestCaseExpected, Mode=TwoWay}" Classes="sidebar-search-box"
-                                                     FontFamily="Consolas, Menlo, Monaco, monospace"
+                                                     lt:Tokens.FontFamily="DsCodeFontFamily"
                                                      PlaceholderText="As LeetCode prints it: 49, true, [0,1], &quot;bab&quot;" />
                                             <CheckBox Grid.Column="1" IsChecked="{Binding NewTestCaseAnyOrder, Mode=TwoWay}" Margin="10,0,0,0"
                                                       ToolTip.Tip="Accept the answer's elements in any order">
-                                                <TextBlock Text="Any order" FontSize="11" />
+                                                <TextBlock Text="Any order" lt:Tokens.FontSize="DsFontSize200" />
                                             </CheckBox>
                                         </Grid>
                                     </Grid>
                                     <TextBlock Text="{Binding TestCaseFormError}" IsVisible="{Binding TestCaseFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               FontSize="11" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap" />
+                                               lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap" />
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBlock Text="Adds a Check(...) line to the script; Run or F5 shows whether it passes."
-                                                   FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                   lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0">
                                             <Button Command="{Binding CancelAddTestCaseCommand}" Classes="cs-toolbar-outlined">
-                                                <TextBlock Text="Cancel" FontSize="11" />
+                                                <TextBlock Text="Cancel" lt:Tokens.FontSize="DsFontSize200" />
                                             </Button>
                                             <Button Command="{Binding ConfirmAddTestCaseCommand}" Classes="cs-toolbar-filled">
-                                                <TextBlock Text="Add" FontSize="11" />
+                                                <TextBlock Text="Add" lt:Tokens.FontSize="DsFontSize200" />
                                             </Button>
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Border>
 
-                            <TextBlock IsVisible="{Binding !HasTestCases}" TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}"
+                            <TextBlock IsVisible="{Binding !HasTestCases}" TextWrapping="Wrap" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}"
                                        Text="No test cases yet. Add one to check a value your code computes; for a Blind 75 problem, Generate brings in its examples and edge cases." />
 
                             <ItemsControl ItemsSource="{Binding TestCases}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:TestCaseItem">
-                                        <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10,8" Margin="0,0,0,6">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <!-- Passed, failed, running, or not run yet -->
                                                 <Panel Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,0,10,0">
@@ -365,16 +365,16 @@
                                                     <materialIcons:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource DsBorderBrush}" IsVisible="{Binding IsNotRun}" ToolTip.Tip="Not run yet" />
                                                 </Panel>
                                                 <StackPanel Grid.Column="1" Spacing="3">
-                                                    <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                    <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Input, StringFormat='{}Input: {0}'}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding Input, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                    <TextBlock Text="{Binding Call, StringFormat='{}Checks: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding Call, StringFormat='{}Checks: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding ShowsCall}" />
-                                                    <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ExpectedOutput, StringFormat='{}Expected: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding ExpectedOutput, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsGreenBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsGreenBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding IsPassed}" />
-                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" FontSize="11" FontFamily="Consolas, Menlo, Monaco, monospace" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap"
+                                                    <TextBlock Text="{Binding ActualOutput, StringFormat='{}Output: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsErrorBrush}" TextWrapping="Wrap"
                                                                IsVisible="{Binding IsFailed}" />
                                                 </StackPanel>
                                                 <Button Grid.Column="2" Command="{Binding $parent[UserControl].DataContext.DeleteTestCaseCommand}" CommandParameter="{Binding}" Classes="cs-toolbar-icon"
@@ -393,20 +393,20 @@
                 <Grid ColumnDefinitions="*,4,*">
                     <!-- Left: Locals Inspection -->
                     <Border Grid.Column="0" Padding="10,8" Background="{DynamicResource DsBgBrush}"
-                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0">
+                            BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderRight">
                         <Grid RowDefinitions="Auto,*">
                             <!-- Same 20px header row as the REPL pane, so both titles sit on one line. -->
                             <Grid Grid.Row="0" MinHeight="20" Margin="0,0,0,4">
-                                <TextBlock Text="LOCAL VARIABLES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="LOCAL VARIABLES" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </Grid>
                             <TextBlock Grid.Row="1" IsVisible="{Binding !Locals.Count}"
                                        Text="Start debugging (F5) and stop at a breakpoint to see the local variables here."
-                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
                             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Locals}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models:DebugVariableItem">
-                                            <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,3" Margin="0,0,0,3">
+                                            <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,3" Margin="0,0,0,3">
                                                 <StackPanel Orientation="Vertical">
                                                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
                                                         <!-- Expander arrow -->
@@ -424,20 +424,20 @@
                                                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Variable Name -->
-                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                                        <TextBlock Grid.Column="3" Text="=" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                                         <!-- Type Name -->
-                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
 
                                                         <!-- Value Display (Normal or Changed Highlight) -->
                                                         <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding ValueDisplay}"
-                                                                       FontFamily="Consolas, monospace" FontSize="10.5"
+                                                                       lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize150"
                                                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                        VerticalAlignment="Center" />
-                                                            <Border IsVisible="{Binding HasValueChanged}" Background="{DynamicResource NavPinnedFgBrush}" CornerRadius="3" Padding="3,0" Margin="4,0,0,0" ToolTip.Tip="Value has changed since last evaluation">
-                                                                <TextBlock Text="changed" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsBgBrush}" />
+                                                            <Border IsVisible="{Binding HasValueChanged}" Background="{DynamicResource NavPinnedFgBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="3,0" Margin="4,0,0,0" ToolTip.Tip="Value has changed since last evaluation">
+                                                                <TextBlock Text="changed" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsBgBrush}" />
                                                             </Border>
                                                         </StackPanel>
 
@@ -446,12 +446,12 @@
                                                             <Button Command="{Binding $parent[UserControl].DataContext.ExploreVariableCommand}" CommandParameter="{Binding}"
                                                                     IsVisible="{Binding IsCollection}"
                                                                     Classes="cs-toolbar-tonal" Height="20" MinHeight="0" Padding="5,0" ToolTip.Tip="Explore in Collection View (Table)">
-                                                                <TextBlock Text="Explore" FontSize="9.5" FontWeight="SemiBold" />
+                                                                <TextBlock Text="Explore" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                             </Button>
                                                             <Button Command="{Binding $parent[UserControl].DataContext.ViewVariableCommand}" CommandParameter="{Binding}"
                                                                     IsVisible="{Binding IsTextOrStructured}"
                                                                     Classes="cs-toolbar-tonal" Height="20" MinHeight="0" Padding="5,0" ToolTip.Tip="View full text / JSON">
-                                                                <TextBlock Text="View" FontSize="9.5" FontWeight="SemiBold" />
+                                                                <TextBlock Text="View" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                             </Button>
                                                         </StackPanel>
                                                     </Grid>
@@ -460,7 +460,7 @@
                                                     <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding IsExpanded}" Margin="18,3,0,1">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate x:DataType="models:DebugVariableItem">
-                                                                <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="3" Padding="4,2" Margin="0,1">
+                                                                <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="4,2" Margin="0,1">
                                                                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
                                                                         <Button Grid.Column="0"
                                                                                 Command="{Binding $parent[UserControl].DataContext.ExpandVariableCommand}"
@@ -472,20 +472,20 @@
                                                                             <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
                                                                         </Button>
                                                                         <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
-                                                                        <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource CodeMemberBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                        <TextBlock Grid.Column="3" Text="=" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                                                        <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource CodeTypeBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                                                        <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                                                         <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                                             <Button Command="{Binding $parent[UserControl].DataContext.ExploreVariableCommand}" CommandParameter="{Binding}"
                                                                                     IsVisible="{Binding IsCollection}"
                                                                                     Classes="cs-toolbar-tonal" Height="18" MinHeight="0" Padding="4,0" ToolTip.Tip="Explore in Collection View (Table)">
-                                                                                <TextBlock Text="Explore" FontSize="9" />
+                                                                                <TextBlock Text="Explore" lt:Tokens.FontSize="DsFontSize075" />
                                                                             </Button>
                                                                             <Button Command="{Binding $parent[UserControl].DataContext.ViewVariableCommand}" CommandParameter="{Binding}"
                                                                                     IsVisible="{Binding IsTextOrStructured}"
                                                                                     Classes="cs-toolbar-tonal" Height="18" MinHeight="0" Padding="4,0" ToolTip.Tip="View full text / JSON">
-                                                                                <TextBlock Text="View" FontSize="9" />
+                                                                                <TextBlock Text="View" lt:Tokens.FontSize="DsFontSize075" />
                                                                             </Button>
                                                                         </StackPanel>
                                                                     </Grid>
@@ -508,7 +508,7 @@
                     <Border Grid.Column="2" Padding="10,8" Background="{DynamicResource DsBgBrush}">
                         <Grid RowDefinitions="Auto,*,Auto">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                <TextBlock Grid.Column="0" Text="IMMEDIATE REPL CONSOLE" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="0" Text="IMMEDIATE REPL CONSOLE" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 <Button Grid.Column="1" Command="{Binding ClearImmediateCommand}" Classes="cs-toolbar-icon" Width="20" Height="20">
                                     <materialIcons:MaterialIcon Kind="Eraser" Width="12" Height="12" />
                                 </Button>
@@ -518,7 +518,7 @@
                                 <ItemsControl ItemsSource="{Binding ImmediateOutput}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="10.5" Foreground="{DynamicResource DsPrimaryBrush}" TextWrapping="Wrap" Margin="0,1" />
+                                            <TextBlock Text="{Binding}" lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsPrimaryBrush}" TextWrapping="Wrap" Margin="0,1" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -526,14 +526,14 @@
 
                             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                 <TextBox Grid.Column="0" Text="{Binding ImmediateInputText, Mode=TwoWay}"
-                                         FontFamily="Consolas, monospace" FontSize="11"
+                                         lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize200"
                                          Classes="sidebar-search-box" PlaceholderText="{Binding ImmediatePromptWatermark}">
                                     <TextBox.KeyBindings>
                                         <KeyBinding Gesture="Enter" Command="{Binding EvaluateImmediateCommand}" />
                                     </TextBox.KeyBindings>
                                 </TextBox>
-                                <Button Grid.Column="1" Command="{Binding EvaluateImmediateCommand}" Classes="cs-toolbar-tonal" Height="28" MinHeight="0" Margin="4,0,0,0">
-                                    <TextBlock Text="Eval" FontSize="10" FontWeight="Bold" />
+                                <Button Grid.Column="1" Command="{Binding EvaluateImmediateCommand}" Classes="cs-toolbar-tonal" lt:Tokens.Height="DsControlHeight150" MinHeight="0" Margin="4,0,0,0">
+                                    <TextBlock Text="Eval" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" />
                                 </Button>
                             </Grid>
                         </Grid>

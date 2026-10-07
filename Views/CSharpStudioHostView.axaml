@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,6 +13,8 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView"
              x:DataType="common:CSharpStudioHostViewModel"
              activities:ActivityScope.Presenter="{Binding Activity}"
+             lt:Tokens.FontFamily="DsUiFontFamily"
+             lt:Tokens.FontWeight="DsWeightBody"
              Background="{DynamicResource M3SurfaceBrush}">
 
     <UserControl.Resources>
@@ -64,7 +66,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Background="{DynamicResource DsSurfaceBrush}"
-                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1,0,0,0"
+                        BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderLeft"
                         IsVisible="{Binding AiComposer.IsSideBarDocked}">
                     <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
                                                       HorizontalAlignment="Stretch"
@@ -85,7 +87,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     Background="{DynamicResource DsSurfaceBrush}"
-                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0"
+                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderTop"
                     IsVisible="{Binding AiComposer.IsBottomDocked}">
                 <ai:StudioFloatingComposerControl DataContext="{Binding AiComposer}"
                                                   HorizontalAlignment="Stretch"

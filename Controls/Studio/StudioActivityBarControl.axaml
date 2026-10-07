@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,7 +12,7 @@
     <Border Width="48"
             Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,1,0">
+            lt:Tokens.BorderThickness="DsBorderRight">
         <Grid RowDefinitions="*,Auto">
             <!-- Top Activity Tool Buttons -->
             <StackPanel Grid.Row="0" Spacing="0">
@@ -39,11 +39,11 @@
                         ToolTip.Tip="Source Control (Ctrl+Shift+G / ⌘Shift+G)">
                     <Grid>
                         <materialIcons:MaterialIcon Kind="SourceCommit" Width="20" Height="20" />
-                        <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="7"
+                        <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusMD"
                                 Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                 IsVisible="{Binding UncommittedChangesCount}">
-                            <TextBlock Text="{Binding UncommittedChangesCount}" FontSize="8.5" FontWeight="Bold"
+                            <TextBlock Text="{Binding UncommittedChangesCount}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0"
                                        Foreground="{DynamicResource DsOnAccentBrush}" />
@@ -58,7 +58,7 @@
                         ToolTip.Tip="Run &amp; Debug (Ctrl+Shift+D)">
                     <Grid>
                         <materialIcons:MaterialIcon Kind="BugPlayOutline" Width="20" Height="20" />
-                        <Border Background="{DynamicResource DsWarningBrush}" Width="7" Height="7" CornerRadius="4"
+                        <Border Background="{DynamicResource DsWarningBrush}" Width="7" Height="7" lt:Tokens.CornerRadius="DsRadiusSM"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-2,0"
                                 IsVisible="{Binding IsPaused}" />
                     </Grid>
@@ -87,11 +87,11 @@
                         ToolTip.Tip="Problems &amp; Diagnostics (Ctrl+Shift+M)">
                     <Grid>
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" />
-                        <Border Background="{DynamicResource DsErrorBrush}" CornerRadius="7"
+                        <Border Background="{DynamicResource DsErrorBrush}" lt:Tokens.CornerRadius="DsRadiusMD"
                                 Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                 IsVisible="{Binding ErrorCount}">
-                            <TextBlock Text="{Binding ErrorCount}" FontSize="8.5" FontWeight="Bold"
+                            <TextBlock Text="{Binding ErrorCount}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0"
                                        Foreground="{DynamicResource DsOnAccentBrush}" />

@@ -43,7 +43,8 @@ public class ExternalChangeTests : IDisposable
     [InlineData("/work/src/node_modules/left-pad/index.js", true)]
     [InlineData("/work/tools/__pycache__/x.pyc", true)]
     [InlineData("/work/.venv/lib/site.py", true)]
-    [InlineData("/work/node_modules", true)]
+    [InlineData("/work/node_modules", false)] // the folder itself shows in the Explorer (closed): it appearing matters
+    [InlineData("/work/bin", false)]
     [InlineData("/work/src/App.cs", false)]
     [InlineData("/work/docs/git-notes.md", false)]
     [InlineData("/elsewhere/.git/config", false)]

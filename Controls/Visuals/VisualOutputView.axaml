@@ -1,16 +1,16 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals.VisualOutputView">
     <!-- Draws any chart, 3D plot or visualizer output from its spec: the notebook, the Results deck and fullscreen all use it. -->
     <StackPanel Spacing="4">
         <TextBlock x:Name="NoticeText"
                    IsVisible="False"
-                   FontSize="11"
+                   lt:Tokens.FontSize="DsFontSize200"
                    Foreground="{DynamicResource DsMutedBrush}"
                    TextWrapping="Wrap" />
         <TextBlock x:Name="StatusText"
                    IsVisible="False"
-                   FontSize="12"
+                   lt:Tokens.FontSize="DsFontSize300"
                    Margin="4,8"
                    Foreground="{DynamicResource DsMutedBrush}"
                    TextWrapping="Wrap" />

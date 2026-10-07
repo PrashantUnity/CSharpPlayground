@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ============================================================ -->
@@ -10,8 +10,8 @@
     <Style Selector="Button.about-sponsor-btn">
         <Setter Property="Background" Value="#1AEA4AAA" />
         <Setter Property="BorderBrush" Value="#60EA4AAA" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Height" Value="34" />
         <Setter Property="Padding" Value="12,0" />
         <Setter Property="Cursor" Value="Hand" />
@@ -36,8 +36,8 @@
     <Style Selector="Button.about-action-btn">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Height" Value="34" />
         <Setter Property="Padding" Value="12,0" />
         <Setter Property="Cursor" Value="Hand" />
@@ -62,12 +62,12 @@
     <Style Selector="Button.about-close-btn">
         <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Height" Value="34" />
         <Setter Property="MinWidth" Value="76" />
         <Setter Property="Padding" Value="16,0" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />

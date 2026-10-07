@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -27,17 +27,17 @@
                     <ToggleButton IsChecked="{Binding SearchMatchCase, Mode=TwoWay}"
                                   Classes="sidebar-option-toggle"
                                   ToolTip.Tip="Match Case (Alt+C)">
-                        <TextBlock Text="Aa" FontSize="11" FontWeight="Bold" />
+                        <TextBlock Text="Aa" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" />
                     </ToggleButton>
                     <ToggleButton IsChecked="{Binding SearchWholeWord, Mode=TwoWay}"
                                   Classes="sidebar-option-toggle"
                                   ToolTip.Tip="Match Whole Word (Alt+W)">
-                        <TextBlock Text="|ab|" FontSize="10" FontWeight="Bold" />
+                        <TextBlock Text="|ab|" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" />
                     </ToggleButton>
                     <ToggleButton IsChecked="{Binding SearchUseRegex, Mode=TwoWay}"
                                   Classes="sidebar-option-toggle"
                                   ToolTip.Tip="Use Regular Expression (Alt+R)">
-                        <TextBlock Text=".*" FontSize="11" FontWeight="Bold" />
+                        <TextBlock Text=".*" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" />
                     </ToggleButton>
                     <ToggleButton IsChecked="{Binding SearchAllFiles, Mode=TwoWay}"
                                   Classes="sidebar-option-toggle"
@@ -70,7 +70,7 @@
         <!-- Results Summary Header -->
         <Border Grid.Row="1" Padding="12,4" Background="{DynamicResource DsSurfaceBrush}">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding SearchStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="0" Text="{Binding SearchStatusText}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
             </Grid>
         </Border>
 
@@ -81,7 +81,7 @@
              the template and the VirtualizingStackPanel is its direct content. -->
         <Grid Grid.Row="3">
             <TextBlock Text="{Binding SearchEmptyText}"
-                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}"
+                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}"
                        Margin="14,10" VerticalAlignment="Top" TextWrapping="Wrap"
                        IsVisible="{Binding !SearchMatches.Count}" />
 
@@ -109,19 +109,19 @@
                                 <!-- A file of the workspace search: its name, its folder and how many matches it has -->
                                 <Grid ColumnDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding IsFileHeader}">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="FileCodeOutline" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="2" Text="{Binding LineText}" FontSize="10" Margin="8,0,6,0" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                    <Border Grid.Column="3" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="8" Padding="6,1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding MatchCountText}" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding FileName}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding LineText}" lt:Tokens.FontSize="DsFontSize100" Margin="8,0,6,0" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <Border Grid.Column="3" Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusLG" Padding="6,1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding MatchCountText}" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                                     </Border>
                                 </Grid>
 
                                 <!-- A match -->
                                 <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !IsFileHeader}">
-                                    <Border Grid.Column="0" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FormattedLocation}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <Border Grid.Column="0" Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FormattedLocation}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" />
                                     </Border>
-                                    <TextBlock Grid.Column="1" Text="{Binding LineText}" FontSize="11.5" FontFamily="Consolas, monospace" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding LineText}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                 </Grid>
                             </Panel>
                         </Button>

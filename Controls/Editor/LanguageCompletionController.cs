@@ -204,8 +204,8 @@ public sealed class LanguageCompletionController : IDisposable
                     _completionWindow.CompletionList.Background = new SolidColorBrush(Color.Parse(isDark ? "#14171F" : "#FFFFFF"));
                     _completionWindow.CompletionList.Foreground = new SolidColorBrush(Color.Parse(isDark ? "#D4D4D4" : "#1F2328"));
                     _completionWindow.CompletionList.BorderBrush = new SolidColorBrush(Color.Parse(isDark ? "#30363D" : "#D0D7DE"));
-                    _completionWindow.CompletionList.BorderThickness = new Thickness(1);
-                    _completionWindow.CompletionList.CornerRadius = new CornerRadius(8);
+                    _completionWindow.CompletionList.BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth);
+                    _completionWindow.CompletionList.CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("LG"));
 
                     var data = _completionWindow.CompletionList.CompletionData;
                     data.Clear();

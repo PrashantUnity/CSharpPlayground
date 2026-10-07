@@ -318,7 +318,7 @@ public partial class RichHtmlView : UserControl
             {
                 Text = TagStripRegex.Replace(sanitized, string.Empty),
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 13,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
                 Foreground = _onSurfaceBrush
             });
         }
@@ -380,7 +380,7 @@ public partial class RichHtmlView : UserControl
         var tb = new SelectableTextBlock
         {
             FontSize = level switch { 1 => 22, 2 => 19, 3 => 17, 4 => 15.5, 5 => 14.5, _ => 14 },
-            FontWeight = FontWeight.Bold,
+            FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong"),
             Foreground = _onSurfaceBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, level <= 2 ? 8 : 4, 0, 6)
@@ -396,7 +396,7 @@ public partial class RichHtmlView : UserControl
     {
         var tb = new SelectableTextBlock
         {
-            FontSize = 13,
+            FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
             Foreground = _onSurfaceBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8)
@@ -423,11 +423,11 @@ public partial class RichHtmlView : UserControl
         {
             var line = new SelectableTextBlock
             {
-                FontSize = 13,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
                 Foreground = _onSurfaceBrush,
                 TextWrapping = TextWrapping.Wrap
             };
-            line.Inlines!.Add(new Run(ordered ? $"{i}. " : "•  ") { FontWeight = FontWeight.SemiBold });
+            line.Inlines!.Add(new Run(ordered ? $"{i}. " : "•  ") { FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Emphasis") });
             AppendInlines(line.Inlines, li.Groups["content"].Value);
             listPanel.Children.Add(line);
             i++;
@@ -494,7 +494,7 @@ public partial class RichHtmlView : UserControl
         var run = new Run(text)
         {
             Foreground = isLink ? _linkBrush : (code ? _codeBrush : _onSurfaceBrush),
-            FontWeight = bold ? FontWeight.Bold : FontWeight.Normal,
+            FontWeight = bold ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong") : FontWeight.Normal,
             FontStyle = italic ? FontStyle.Italic : FontStyle.Normal
         };
         if (code)

@@ -1,5 +1,6 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -47,7 +48,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                         <materialIcons:MaterialIcon Kind="Check" Width="9" Height="9" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" />
                         <materialIcons:MaterialIcon Kind="Close" Width="9" Height="9" Foreground="{DynamicResource NavPinnedFgBrush}" IsVisible="{Binding HasError}" />
-                        <TextBlock Text="{Binding ExecutionTimeText}" FontSize="8.5" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="{Binding ExecutionTimeText}" lt:Tokens.FontSize="DsFontSize050" Foreground="{DynamicResource DsMutedBrush}" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
@@ -59,8 +60,8 @@
                 <Grid>
                     <!-- 3px Left Vertical Accent Focus Line -->
                     <Border Width="3"
-                            Background="{Binding TypeBadgeBorderBrush}"
-                            CornerRadius="4,0,0,4"
+                            common:ThemeBrush.Background="{Binding TypeBadgeBorderKey}"
+                            lt:Tokens.CornerRadius="DsRadiusSMLeft"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Stretch" />
 
@@ -68,7 +69,7 @@
                         <!-- HEADER BAR (Height 32px) -->
                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="0,0,0,1"
+                                lt:Tokens.BorderThickness="DsBorderBottom"
                                 Height="32"
                                 Padding="10,0">
                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" VerticalAlignment="Center">
@@ -76,9 +77,9 @@
                                 <Button Grid.Column="0"
                                         IsVisible="{Binding IsEndpoint}"
                                         Classes="method-dropdown-btn"
-                                        Background="{Binding MethodBadgeBgBrush}"
-                                        BorderBrush="{Binding MethodBadgeBorderBrush}"
-                                        BorderThickness="1"
+                                        common:ThemeBrush.Background="{Binding MethodBadgeBgKey}"
+                                        common:ThemeBrush.BorderBrush="{Binding MethodBadgeBorderKey}"
+                                        lt:Tokens.BorderThickness="DsBorderThin"
                                         Margin="0,0,8,0"
                                         ToolTip.Tip="Change HTTP Method">
                                     <Button.Flyout>
@@ -95,23 +96,23 @@
                                         </MenuFlyout>
                                     </Button.Flyout>
                                     <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Method}" FontSize="10" FontWeight="Bold" Foreground="{Binding MethodBadgeFgBrush}" VerticalAlignment="Center" />
-                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="9" Height="9" Foreground="{Binding MethodBadgeFgBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Method}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" common:ThemeBrush.Foreground="{Binding MethodBadgeFgKey}" VerticalAlignment="Center" />
+                                        <materialIcons:MaterialIcon Kind="ChevronDown" Width="9" Height="9" common:ThemeBrush.Foreground="{Binding MethodBadgeFgKey}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
 
                                 <!-- Non-Endpoint Cell Type Badge -->
                                 <Border Grid.Column="0"
                                         IsVisible="{Binding !IsEndpoint}"
-                                        Background="{Binding TypeBadgeBgBrush}"
-                                        BorderBrush="{Binding TypeBadgeBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
+                                        common:ThemeBrush.Background="{Binding TypeBadgeBgKey}"
+                                        common:ThemeBrush.BorderBrush="{Binding TypeBadgeBorderKey}"
+                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                        lt:Tokens.CornerRadius="DsRadiusSM"
                                         Padding="6,1"
                                         Height="22"
                                         Margin="0,0,8,0"
                                         VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding TypeBadgeText}" FontSize="9.5" FontWeight="Bold" Foreground="{Binding TypeBadgeFgBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding TypeBadgeText}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" common:ThemeBrush.Foreground="{Binding TypeBadgeFgKey}" VerticalAlignment="Center" />
                                 </Border>
 
                                 <!-- Route Capsule Input (Endpoints) -->
@@ -119,16 +120,16 @@
                                         IsVisible="{Binding IsEndpoint}"
                                         Background="{DynamicResource DsBgBrush}"
                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
+                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                        lt:Tokens.CornerRadius="DsRadiusSM"
                                         Height="22"
                                         Padding="6,0"
                                         Margin="0,0,8,0"
                                         VerticalAlignment="Center">
                                     <TextBox Text="{Binding Route, Mode=TwoWay}"
-                                             FontFamily="Consolas, Monaco, monospace"
-                                             FontSize="11.5"
-                                             FontWeight="SemiBold"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
+                                             lt:Tokens.FontSize="DsFontSize250"
+                                             lt:Tokens.FontWeight="DsWeightEmphasis"
                                              Foreground="{DynamicResource DsTextWhiteBrush}"
                                              Background="Transparent"
                                              BorderThickness="0"
@@ -144,7 +145,7 @@
                                 <!-- Title Textbox -->
                                 <TextBox Grid.Column="2"
                                          Text="{Binding Title, Mode=TwoWay}"
-                                         FontSize="11.5"
+                                         lt:Tokens.FontSize="DsFontSize250"
                                          Foreground="{DynamicResource DsMutedBrush}"
                                          Background="Transparent"
                                          BorderThickness="0"
@@ -164,7 +165,7 @@
                                                   ToolTip.Tip="Toggle Test Parameters">
                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Tune" Width="11" Height="11" />
-                                            <TextBlock Text="Test" FontSize="10.5" FontWeight="Medium" VerticalAlignment="Center" />
+                                            <TextBlock Text="Test" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </ToggleButton>
 
@@ -207,51 +208,51 @@
                         <!-- TEST HARNESS DRAWER (Only when expanded by user!) -->
                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="0,0,0,1"
+                                lt:Tokens.BorderThickness="DsBorderBottom"
                                 Padding="12,8"
                                 IsVisible="{Binding IsTestHarnessExpanded}">
                             <Grid ColumnDefinitions="*,*,Auto,Auto">
                                 <!-- Path Params -->
                                 <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,8,0">
-                                    <TextBlock Text="Path Parameters" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="Path Parameters" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                                     <TextBox Text="{Binding TestPathParamsText, Mode=TwoWay}"
                                              Height="24"
-                                             FontSize="11"
-                                             FontFamily="Consolas, Monaco, monospace"
+                                             lt:Tokens.FontSize="DsFontSize200"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
                                              Background="{DynamicResource DsBgBrush}"
                                              BorderBrush="{DynamicResource DsBorderBrush}"
-                                             BorderThickness="1"
-                                             CornerRadius="4"
+                                             lt:Tokens.BorderThickness="DsBorderThin"
+                                             lt:Tokens.CornerRadius="DsRadiusSM"
                                              Padding="6,2"
                                              PlaceholderText="id=101" />
                                 </StackPanel>
 
                                 <!-- Query Params -->
                                 <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,8,0">
-                                    <TextBlock Text="Query Parameters" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="Query Parameters" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                                     <TextBox Text="{Binding TestQueryParamsText, Mode=TwoWay}"
                                              Height="24"
-                                             FontSize="11"
-                                             FontFamily="Consolas, Monaco, monospace"
+                                             lt:Tokens.FontSize="DsFontSize200"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
                                              Background="{DynamicResource DsBgBrush}"
                                              BorderBrush="{DynamicResource DsBorderBrush}"
-                                             BorderThickness="1"
-                                             CornerRadius="4"
+                                             lt:Tokens.BorderThickness="DsBorderThin"
+                                             lt:Tokens.CornerRadius="DsRadiusSM"
                                              Padding="6,2"
                                              PlaceholderText="includeOrders=true" />
                                 </StackPanel>
 
                                 <!-- Headers -->
                                 <StackPanel Grid.Column="2" Spacing="2" Width="180" Margin="0,0,8,0">
-                                    <TextBlock Text="Headers" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="Headers" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                                     <TextBox Text="{Binding TestHeadersText, Mode=TwoWay}"
                                              Height="24"
-                                             FontSize="11"
-                                             FontFamily="Consolas, Monaco, monospace"
+                                             lt:Tokens.FontSize="DsFontSize200"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
                                              Background="{DynamicResource DsBgBrush}"
                                              BorderBrush="{DynamicResource DsBorderBrush}"
-                                             BorderThickness="1"
-                                             CornerRadius="4"
+                                             lt:Tokens.BorderThickness="DsBorderThin"
+                                             lt:Tokens.CornerRadius="DsRadiusSM"
                                              Padding="6,2"
                                              PlaceholderText="Accept=application/json" />
                                 </StackPanel>
@@ -265,7 +266,7 @@
                                             ToolTip.Tip="Execute loopback test (Ctrl+Enter)">
                                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Play" Width="11" Height="11" />
-                                            <TextBlock Text="Send" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="Send" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -283,13 +284,13 @@
                                                              TextContent="{Binding Source, Mode=TwoWay}"
                                                              ExecuteCommand="{Binding SendTestRequestCommand}"
                                                              MinHeight="55"
-                                                             FontSize="12.5" />
+                                                             lt:Tokens.FontSize="DsFontSize350" />
 
                                 <!-- Markdown documentation cell -->
                                 <docs:MarkdownView IsVisible="{Binding IsMarkdown}"
                                                        Markdown="{Binding Source}"
                                                        Margin="8,4"
-                                                       FontSize="12.5"
+                                                       lt:Tokens.FontSize="DsFontSize350"
                                                        Foreground="{DynamicResource DsTextWhiteBrush}" />
                             </Panel>
                         </Border>
@@ -297,7 +298,7 @@
                         <!-- RESPONSE / OUTPUT INSPECTOR (When HasOutput) -->
                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="0,1,0,0"
+                                lt:Tokens.BorderThickness="DsBorderTop"
                                 Padding="12,8"
                                 IsVisible="{Binding HasOutput}">
                             <StackPanel Spacing="6">
@@ -307,29 +308,29 @@
                                     <Border Grid.Column="0"
                                             Background="{DynamicResource DsSurfaceBrush}"
                                             BorderBrush="{DynamicResource DsGreenBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="4"
+                                            lt:Tokens.BorderThickness="DsBorderThin"
+                                            lt:Tokens.CornerRadius="DsRadiusSM"
                                             Padding="6,1"
                                             IsVisible="{Binding !HasError}"
                                             Margin="0,0,8,0">
-                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} OK'}" FontSize="10" Foreground="{DynamicResource DsGreenBrush}" FontWeight="Bold" />
+                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} OK'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsGreenBrush}" lt:Tokens.FontWeight="DsWeightStrong" />
                                     </Border>
 
                                     <Border Grid.Column="0"
                                             Background="{DynamicResource DsSurfaceBrush}"
                                             BorderBrush="{DynamicResource NavPinnedFgBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="4"
+                                            lt:Tokens.BorderThickness="DsBorderThin"
+                                            lt:Tokens.CornerRadius="DsRadiusSM"
                                             Padding="6,1"
                                             IsVisible="{Binding HasError}"
                                             Margin="0,0,8,0">
-                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} Error'}" FontSize="10" Foreground="{DynamicResource NavPinnedFgBrush}" FontWeight="Bold" />
+                                        <TextBlock Text="{Binding LastStatusCode, StringFormat='HTTP {0} Error'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource NavPinnedFgBrush}" lt:Tokens.FontWeight="DsWeightStrong" />
                                     </Border>
 
                                     <!-- Execution Latency -->
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="ClockOutline" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding ExecutionTimeText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ExecutionTimeText}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
 
                                     <!-- Right: Clear Output -->
@@ -345,14 +346,14 @@
                                 <!-- Formatted Response Content -->
                                 <Border Background="{DynamicResource DsBgBrush}"
                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
+                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                        lt:Tokens.CornerRadius="DsRadiusSM"
                                         Padding="10,6"
                                         MaxHeight="240">
                                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                         <SelectableTextBlock Text="{Binding LastResponseText}"
-                                                             FontFamily="Consolas, Monaco, monospace"
-                                                             FontSize="11.5"
+                                                             lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                             lt:Tokens.FontSize="DsFontSize250"
                                                              Foreground="{DynamicResource DsTextBrush}" />
                                     </ScrollViewer>
                                 </Border>
@@ -373,7 +374,7 @@
                             Classes="insert-cell-pill" ToolTip.Tip="Insert Endpoint Cell Below">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="Endpoint" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Endpoint" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button Command="{Binding $parent[UserControl;1].((vm:FryServerStudioViewModel)DataContext).InsertMiddlewareCellAfterCommand}"
@@ -381,7 +382,7 @@
                             Classes="insert-cell-pill" ToolTip.Tip="Insert Middleware Cell Below">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource NavHomeFgBrush}" />
-                            <TextBlock Text="Middleware" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Middleware" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

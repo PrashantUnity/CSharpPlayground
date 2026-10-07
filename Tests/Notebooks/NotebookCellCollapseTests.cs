@@ -322,6 +322,10 @@ public class NotebookCellCollapseTests : IDisposable
         firstCell.IsOutputCollapsed = true;
         firstCell.IsOutputScrolled = true;
 
+        // Saved as a file of the workspace (the Explorer lists nothing else), with the flags.
+        await _testStorage.SaveNotebookAsync(studio.ActiveTab.Notebook);
+        await studio.RefreshExplorer();
+
         var docFile = studio.ExplorerRootItems.First(x => x.Name == "Collapsible Studio Test.frynb");
         await studio.DuplicateExplorerItemAsync(docFile);
 

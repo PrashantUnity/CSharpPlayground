@@ -386,7 +386,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
                 portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
                 storageService: _storageService,
                 backToHubAction: NavigateToManager,
-                backToHomeAction: NavigateToHome);
+                backToHomeAction: NavigateToHome,
+                openScriptAction: NavigateToCodeStudio,
+                openNotebookAction: NavigateToNotebookStudio);
         }
         else
         {

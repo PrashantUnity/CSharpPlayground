@@ -11,8 +11,16 @@ using Xunit;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tests.Extensibility;
 
-public class AiExtensibilityAndDockingTests
+// Each test installs its own global studio context (the tools read StudioAppContext.Instance): it must never overlap a test
+// that uses the global one (theme engine, state), and the previous context comes back afterwards. Swapping it while the
+// theme and notebook tests ran made them read another engine or another state bag.
+[Collection(CSharpEditorPlugin.Tests.ExtensionTestsCollection.Name)]
+public class AiExtensibilityAndDockingTests : IDisposable
 {
+    private readonly StudioAppContext _previous = StudioAppContext.Instance;
+
+    public void Dispose() => StudioAppContext.Instance = _previous;
+
     private (StudioAppContext context, AiComposerViewModel vm) CreateTestContext()
     {
         var context = new StudioAppContext();

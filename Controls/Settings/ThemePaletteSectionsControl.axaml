@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,11 +12,11 @@
     <UserControl.Styles>
         <Style Selector="Button.section-action">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
             <Setter Property="Padding" Value="3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="MinWidth" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Opacity" Value="0.85" />
         </Style>
@@ -25,16 +25,16 @@
             <Setter Property="Background" Value="#26000000" />
         </Style>
         <Style Selector="TextBox.section-hex">
-            <Setter Property="FontFamily" Value="{DynamicResource DsCodeFontFamily}" />
-            <Setter Property="FontSize" Value="11" />
+            <Setter Property="lt:Tokens.FontFamily" Value="DsCodeFontFamily" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="4,2" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
         </Style>
         <Style Selector="TextBlock.section-contrast">
-            <Setter Property="FontSize" Value="10" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize100" />
             <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
             <Setter Property="Margin" Value="4,0,0,0" />
         </Style>
@@ -42,10 +42,10 @@
             <Setter Property="Foreground" Value="{DynamicResource DsWarningBrush}" />
         </Style>
         <Style Selector="TextBlock.group-title">
-            <Setter Property="FontSize" Value="10.5" />
-            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize150" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightStrong" />
             <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="LetterSpacing" Value="0.6" />
+            <Setter Property="lt:Tokens.LetterSpacing" Value="DsTracking060" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
     </UserControl.Styles>
@@ -53,12 +53,12 @@
     <UserControl.Resources>
         <!-- One section: its colour (with lock and regenerate-this on it), its hex (type to set and lock), its contrast. -->
         <DataTemplate x:Key="SectionCardTemplate" x:DataType="settings:PaletteSectionItemViewModel">
-            <Border Width="118" Margin="0,0,8,8" CornerRadius="8" ClipToBounds="True"
-                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+            <Border Width="118" Margin="0,0,8,8" lt:Tokens.CornerRadius="DsRadiusLG" ClipToBounds="True"
+                    Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.BoxShadow="DsCardShadow">
                 <StackPanel>
                     <Border Height="54" Background="{Binding Hex, Converter={x:Static common:HexToBrushConverter.Instance}}">
                         <Grid RowDefinitions="Auto,*" Margin="7,5,4,4">
-                            <TextBlock Grid.Row="0" Text="{Binding Label}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,40,0"
+                            <TextBlock Grid.Row="0" Text="{Binding Label}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" TextTrimming="CharacterEllipsis" Margin="0,0,40,0"
                                        Foreground="{Binding OnHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
                             <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="0">
                                 <Button Classes="section-action" ToolTip.Tip="Lock: Generate keeps this colour"
@@ -92,62 +92,62 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="1"
-            CornerRadius="10"
-            Padding="18,16">
-        <StackPanel Spacing="12">
+            lt:Tokens.BorderThickness="DsCardBorder"
+            lt:Tokens.CornerRadius="DsRadiusCard"
+            lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+        <StackPanel lt:Tokens.Spacing="DsSpace12">
             <!-- Engine, Generate, history, Apply -->
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="ViewColumnOutline" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="PALETTE SECTIONS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    <TextBlock Text="PALETTE SECTIONS" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <ComboBox ItemsSource="{Binding AvailableColorEngines}" SelectedItem="{Binding SelectedColorEngineOption, Mode=TwoWay}" Width="160" Height="32"
+                    <ComboBox ItemsSource="{Binding AvailableColorEngines}" SelectedItem="{Binding SelectedColorEngineOption, Mode=TwoWay}" Width="160" lt:Tokens.Height="DsControlHeight300"
                               ToolTip.Tip="The colour model palettes are built in">
                         <ComboBox.SelectionBoxItemTemplate>
                             <DataTemplate x:DataType="settings:ColorEngineOption">
-                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </DataTemplate>
                         </ComboBox.SelectionBoxItemTemplate>
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="settings:ColorEngineOption">
                                 <StackPanel Spacing="1">
-                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                                    <TextBlock Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" />
+                                    <TextBlock Text="{Binding Description}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="320" />
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <Button Command="{Binding GeneratePaletteCommand}" Classes="cs-toolbar-outlined" Height="32" Padding="12,0"
+                    <Button Command="{Binding GeneratePaletteCommand}" Classes="cs-toolbar-outlined" lt:Tokens.Height="DsControlHeight300" Padding="12,0"
                             ToolTip.Tip="New colours for every unlocked section (Space)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="DiceMultipleOutline" Width="14" Height="14" />
-                            <TextBlock Text="Generate" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,0" VerticalAlignment="Center">
-                                <TextBlock Text="Space" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Generate" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="5,0" VerticalAlignment="Center">
+                                <TextBlock Text="Space" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                             </Border>
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding UndoPaletteCommand}" IsEnabled="{Binding CanUndoPalette}" Classes="cs-toolbar-outlined" Height="32" Width="32" Padding="0" ToolTip.Tip="Undo (Ctrl+Z)">
+                    <Button Command="{Binding UndoPaletteCommand}" IsEnabled="{Binding CanUndoPalette}" Classes="cs-toolbar-outlined" lt:Tokens.Height="DsControlHeight300" Width="32" Padding="0" ToolTip.Tip="Undo (Ctrl+Z)">
                         <materialIcons:MaterialIcon Kind="Undo" Width="15" Height="15" />
                     </Button>
-                    <Button Command="{Binding RedoPaletteCommand}" IsEnabled="{Binding CanRedoPalette}" Classes="cs-toolbar-outlined" Height="32" Width="32" Padding="0" ToolTip.Tip="Redo (Ctrl+Shift+Z)">
+                    <Button Command="{Binding RedoPaletteCommand}" IsEnabled="{Binding CanRedoPalette}" Classes="cs-toolbar-outlined" lt:Tokens.Height="DsControlHeight300" Width="32" Padding="0" ToolTip.Tip="Redo (Ctrl+Shift+Z)">
                         <materialIcons:MaterialIcon Kind="Redo" Width="15" Height="15" />
                     </Button>
-                    <Button Command="{Binding ApplyHarmonicConfigurationCommand}" Classes="cs-toolbar-filled" Height="32" Padding="14,0" ToolTip.Tip="Make this palette the studio's theme">
+                    <Button Command="{Binding ApplyHarmonicConfigurationCommand}" Classes="cs-toolbar-filled" lt:Tokens.Height="DsControlHeight300" Padding="14,0" ToolTip.Tip="Make this palette the studio's theme">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
-                            <TextBlock Text="Apply" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="Apply" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </Grid>
 
-            <TextBlock FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
+            <TextBlock lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap"
                        Text="Lock the colours you like and press Space for new ones everywhere else. ↻ changes one colour only; type a hex to set one. Text and accents are always solved for contrast on their surface." />
             <TextBlock IsVisible="{Binding HarmonyAnchorHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding HarmonyAnchorHint}"
-                       FontSize="11" Foreground="{DynamicResource DsPrimaryBrush}" />
+                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsPrimaryBrush}" />
 
             <!-- Core roles -->
             <TextBlock Classes="group-title" Text="CORE ROLES" />
@@ -157,9 +157,9 @@
 
             <!-- Syntax: a sample in the editor's colours, and its roles -->
             <TextBlock Classes="group-title" Text="SYNTAX (EVERY LANGUAGE)" Margin="0,4,0,0" />
-            <Border CornerRadius="8" Padding="14,10" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+            <Border lt:Tokens.CornerRadius="DsRadiusLG" Padding="14,10" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
                     Background="{Binding EditorPreviewBgHex, Converter={x:Static common:HexToBrushConverter.Instance}}">
-                <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="12.5" LineHeight="19"
+                <TextBlock lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize350" LineHeight="19"
                            Foreground="{Binding EditorPreviewFgHex, Converter={x:Static common:HexToBrushConverter.Instance}}">
                     <Run Text="// Lock a role to keep it while you generate" Foreground="{Binding SyntaxSections[7].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><LineBreak />
                     <Run Text="#nullable enable" Foreground="{Binding SyntaxSections[5].Hex, Converter={x:Static common:HexToBrushConverter.Instance}, FallbackValue={x:Null}}" /><LineBreak />
@@ -177,7 +177,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="EyeCheckOutline" Width="14" Height="14" IsVisible="{Binding ChartsAreSafe}" Foreground="{DynamicResource DsSuccessBrush}" />
                     <materialIcons:MaterialIcon Kind="EyeOffOutline" Width="14" Height="14" IsVisible="{Binding !ChartsAreSafe}" Foreground="{DynamicResource DsWarningBrush}" />
-                    <TextBlock Text="{Binding ChartSafetyLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ChartSafetyLabel}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
             <ItemsControl ItemsSource="{Binding ChartSections}" ItemTemplate="{StaticResource SectionCardTemplate}">

@@ -1,10 +1,12 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.AboutWindow"
+        lt:Tokens.FontFamily="DsUiFontFamily"
+        lt:Tokens.FontWeight="DsWeightBody"
         Title="About FrySharp"
         Icon="/Assets/app-logo.ico"
         Width="510" Height="580"
@@ -35,11 +37,11 @@
         <Border Padding="28,24,28,20">
             <Grid RowDefinitions="Auto,Auto,*,Auto">
                 <!-- App Logo, Title, and Version Section -->
-                <StackPanel Grid.Row="0" HorizontalAlignment="Center" Spacing="10" Margin="0,0,0,12">
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center" lt:Tokens.Spacing="DsSpace10" Margin="0,0,0,12">
                     <!-- Pure Circular Logo Emblem (Zero External Square Card) -->
                     <Border Width="72" Height="72" CornerRadius="36"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1"
+                            lt:Tokens.BorderThickness="DsBorderThin"
                             ClipToBounds="True"
                             HorizontalAlignment="Center"
                             BoxShadow="0 10 30 0 #80000000, 0 0 20 0 #2E2F81F7">
@@ -53,26 +55,26 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="FrySharp"
-                                       FontSize="23" FontWeight="ExtraBold"
+                                       lt:Tokens.FontSize="DsFontSize800" lt:Tokens.FontWeight="DsWeightStrong"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        VerticalAlignment="Center" />
                             <Border Background="#1A2F81F7"
                                     BorderBrush="#4D2F81F7"
-                                    BorderThickness="1"
-                                    CornerRadius="12"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadius2XL"
                                     Padding="8,2"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                    <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                    <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="v1.0.6 • Stable"
-                                               FontSize="10.5" FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                Foreground="{DynamicResource DsPrimaryBrush}"
                                                VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
                         <TextBlock Text="Polyglot Workspace &amp; .NET 10 Roslyn Studio"
-                                   FontSize="12"
+                                   lt:Tokens.FontSize="DsFontSize300"
                                    Foreground="{DynamicResource DsMutedBrush}"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
@@ -83,7 +85,7 @@
                            Text="High-performance in-app IDE for .NET 10 document automation, Roslyn scripting, algorithms, and polyglot interactive notebooks."
                            TextWrapping="Wrap"
                            TextAlignment="Center"
-                           FontSize="11.5"
+                           lt:Tokens.FontSize="DsFontSize250"
                            LineHeight="17"
                            Foreground="{DynamicResource DsTextBrush}"
                            Margin="14,0,14,14" />
@@ -93,17 +95,17 @@
                         VerticalAlignment="Top"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="12"
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadius2XL"
                         Padding="18,14"
-                        BoxShadow="{DynamicResource DsFloatingShadow}"
+                        lt:Tokens.BoxShadow="DsFloatingShadow"
                         Margin="0,0,0,16">
-                    <StackPanel Spacing="10">
+                    <StackPanel lt:Tokens.Spacing="DsSpace10">
                         <!-- Card Header -->
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="SYSTEM ARCHITECTURE"
-                                       FontSize="10" FontWeight="Bold" LetterSpacing="1"
+                                       lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking100"
                                        Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
@@ -112,32 +114,32 @@
                             <!-- Runtime -->
                             <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
                                 <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Runtime" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Runtime" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <Border Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1.5" Margin="0,2,0,2">
-                                <TextBlock x:Name="RuntimeText" Text=".NET 10.0" FontFamily="Consolas, SF Mono, Menlo, monospace" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <Border Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Background="{DynamicResource DsSurfaceHoverBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,1.5" Margin="0,2,0,2">
+                                <TextBlock x:Name="RuntimeText" Text=".NET 10.0" lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                             </Border>
 
                             <!-- Compiler -->
                             <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
                                 <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Compiler" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Compiler" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Microsoft Roslyn C# 13" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Microsoft Roslyn C# 13" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
 
                             <!-- UI Framework -->
                             <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
                                 <materialIcons:MaterialIcon Kind="PaletteOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="UI Engine" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="UI Engine" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Avalonia 12.1.2 (Metal GPU)" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Avalonia 12.1.2 (Metal GPU)" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" />
 
                             <!-- OS Platform -->
                             <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,3,8,3">
                                 <materialIcons:MaterialIcon Kind="Laptop" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Platform" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Platform" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="PlatformText" Text="macOS" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="PlatformText" Text="macOS" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,3,0,3" TextTrimming="CharacterEllipsis" />
                         </Grid>
 
                         <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" Margin="0,6,0,6" Opacity="0.7" />
@@ -147,33 +149,33 @@
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="LayersOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="POLYGLOT TOOLCHAINS"
-                                           FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
+                                           lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking080"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <WrapPanel Orientation="Horizontal">
-                                <Border Background="#1E7C3AED" BorderBrush="#507C3AED" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="C# (.NET 10)" FontSize="10.5" FontWeight="SemiBold" Foreground="#C4B5FD" />
+                                <Border Background="#1E7C3AED" BorderBrush="#507C3AED" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C# (.NET 10)" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#C4B5FD" />
                                 </Border>
-                                <Border Background="#1E0284C7" BorderBrush="#500284C7" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="Python" FontSize="10.5" FontWeight="SemiBold" Foreground="#38BDF8" />
+                                <Border Background="#1E0284C7" BorderBrush="#500284C7" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Python" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#38BDF8" />
                                 </Border>
-                                <Border Background="#1E16A34A" BorderBrush="#5016A34A" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="JavaScript / Node" FontSize="10.5" FontWeight="SemiBold" Foreground="#4ADE80" />
+                                <Border Background="#1E16A34A" BorderBrush="#5016A34A" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="JavaScript / Node" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#4ADE80" />
                                 </Border>
-                                <Border Background="#1EEA580C" BorderBrush="#50EA580C" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="Java" FontSize="10.5" FontWeight="SemiBold" Foreground="#FB923C" />
+                                <Border Background="#1EEA580C" BorderBrush="#50EA580C" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Java" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#FB923C" />
                                 </Border>
-                                <Border Background="#1E0891B2" BorderBrush="#500891B2" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="C++" FontSize="10.5" FontWeight="SemiBold" Foreground="#22D3EE" />
+                                <Border Background="#1E0891B2" BorderBrush="#500891B2" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C++" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#22D3EE" />
                                 </Border>
-                                <Border Background="#1E64748B" BorderBrush="#5064748B" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="C" FontSize="10.5" FontWeight="SemiBold" Foreground="#CBD5E1" />
+                                <Border Background="#1E64748B" BorderBrush="#5064748B" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="C" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#CBD5E1" />
                                 </Border>
-                                <Border Background="#1ED97706" BorderBrush="#50D97706" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="Rust" FontSize="10.5" FontWeight="SemiBold" Foreground="#FBBF24" />
+                                <Border Background="#1ED97706" BorderBrush="#50D97706" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Rust" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#FBBF24" />
                                 </Border>
-                                <Border Background="#1E0D9488" BorderBrush="#500D9488" BorderThickness="1" CornerRadius="6" Padding="8,2.5" Margin="0,2,6,2">
-                                    <TextBlock Text="Go" FontSize="10.5" FontWeight="SemiBold" Foreground="#2DD4BF" />
+                                <Border Background="#1E0D9488" BorderBrush="#500D9488" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,2.5" Margin="0,2,6,2">
+                                    <TextBlock Text="Go" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="#2DD4BF" />
                                 </Border>
                             </WrapPanel>
                         </StackPanel>
@@ -181,9 +183,9 @@
                 </Border>
 
                 <!-- Bottom Actions and Copyright -->
-                <StackPanel Grid.Row="3" Spacing="10">
+                <StackPanel Grid.Row="3" lt:Tokens.Spacing="DsSpace10">
                     <TextBlock Text="Copyright © 2026 Code Fry Dev • Open Source Polyglot Studio"
-                               FontSize="10.5"
+                               lt:Tokens.FontSize="DsFontSize150"
                                Foreground="{DynamicResource DsMutedBrush}"
                                HorizontalAlignment="Center" />
 
@@ -197,7 +199,7 @@
                                     ToolTip.Tip="Sponsor FrySharp on GitHub (❤)">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Heart" Width="14" Height="14" Foreground="#EA4AAA" VerticalAlignment="Center" />
-                                    <TextBlock Text="Sponsor" FontWeight="Bold" FontSize="12" Foreground="#EA4AAA" VerticalAlignment="Center" />
+                                    <TextBlock Text="Sponsor" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize300" Foreground="#EA4AAA" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -208,7 +210,7 @@
                                     ToolTip.Tip="Open Documentation">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="14" Height="14" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Docs" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Docs" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -219,7 +221,7 @@
                                     ToolTip.Tip="Open GitHub Repository">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Github" Width="14" Height="14" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="GitHub" FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="GitHub" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>

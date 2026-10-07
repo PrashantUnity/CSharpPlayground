@@ -90,7 +90,7 @@ public partial class QuickInfoTipControl : UserControl
 
     private void AddBlock(IReadOnlyList<QuickInfoTextRun> runs, bool isDark)
     {
-        var block = new SelectableTextBlock { FontSize = 12.5, LineHeight = 18, TextWrapping = TextWrapping.Wrap };
+        var block = new SelectableTextBlock { FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("350"), LineHeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("350") * 1.44, TextWrapping = TextWrapping.Wrap };
         Fill(block, runs, isDark);
         DocumentationPanel.Children.Add(block);
     }

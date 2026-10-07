@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -74,8 +74,8 @@
                                                                     Foreground="{Binding LanguageIconColor}" VerticalAlignment="Center" />
                                         <TextBlock Classes="tab-title"
                                                    Text="{Binding Title}"
-                                                   FontSize="12"
-                                                   FontWeight="Medium"
+                                                   lt:Tokens.FontSize="DsFontSize300"
+                                                   lt:Tokens.FontWeight="DsWeightLabel"
                                                    VerticalAlignment="Center" />
                                         <!-- Unsaved dirty dot -->
                                         <Ellipse Width="6" Height="6"

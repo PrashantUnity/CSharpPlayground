@@ -307,7 +307,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
     public string BreadcrumbDocument    => ActiveTab?.BreadcrumbDocument ?? "Untitled.frynb";
     public string ActiveCellBadgeText   => ActiveTab?.ActiveCellBadgeText ?? "Notebook Root";
     public string ActiveCellTypeIcon    => ActiveTab?.ActiveCellTypeIcon ?? "CodeBraces";
-    public string ActiveCellTypeColor   => ActiveTab?.ActiveCellTypeColor ?? "#58A6FF";
+    public string ActiveCellTypeColorKey => ActiveTab?.ActiveCellTypeColorKey ?? "DsPrimaryBrush";
 
     public string BreadcrumbText    => $"{BreadcrumbFolder} › {BreadcrumbDocument} › {ActiveCellBadgeText}";
     public string DocumentTabTitle  => ActiveTab?.Title ?? "Notebook.frynb";
@@ -340,12 +340,12 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         if (e.PropertyName is nameof(NotebookTabViewModel.ActiveCell) or
             nameof(NotebookTabViewModel.ActiveCellBadgeText) or
             nameof(NotebookTabViewModel.ActiveCellTypeIcon) or
-            nameof(NotebookTabViewModel.ActiveCellTypeColor))
+            nameof(NotebookTabViewModel.ActiveCellTypeColorKey))
         {
             OnPropertyChanged(nameof(ActiveCell));
             OnPropertyChanged(nameof(ActiveCellBadgeText));
             OnPropertyChanged(nameof(ActiveCellTypeIcon));
-            OnPropertyChanged(nameof(ActiveCellTypeColor));
+            OnPropertyChanged(nameof(ActiveCellTypeColorKey));
             OnPropertyChanged(nameof(BreadcrumbText));
         }
         else if (e.PropertyName == nameof(NotebookTabViewModel.KernelStatusText))
@@ -399,7 +399,7 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
         OnPropertyChanged(nameof(BreadcrumbDocument));
         OnPropertyChanged(nameof(ActiveCellBadgeText));
         OnPropertyChanged(nameof(ActiveCellTypeIcon));
-        OnPropertyChanged(nameof(ActiveCellTypeColor));
+        OnPropertyChanged(nameof(ActiveCellTypeColorKey));
         OnPropertyChanged(nameof(BreadcrumbText));
         OnPropertyChanged(nameof(DocumentTabTitle));
     }

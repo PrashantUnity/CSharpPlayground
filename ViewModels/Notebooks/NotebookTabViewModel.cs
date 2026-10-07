@@ -98,7 +98,8 @@ public partial class NotebookTabViewModel : ObservableObject
 
     public string ActiveCellTypeIcon => (ActiveCell?.Type == CellType.Markdown) ? "FormatHeaderPound" : "CodeBraces";
 
-    public string ActiveCellTypeColor => (ActiveCell?.Type == CellType.Markdown) ? "#4EC9B0" : "#58A6FF";
+    /// <summary>The breadcrumb icon's theme colour (a key, resolved by the view so it follows the theme).</summary>
+    public string ActiveCellTypeColorKey => ActiveCell?.Type == CellType.Markdown ? "NavNotebooksFgBrush" : "DsPrimaryBrush";
 
     public NotebookTabViewModel(
         NotebookDocumentItem notebook,
@@ -138,7 +139,7 @@ public partial class NotebookTabViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ActiveCellBadgeText));
         OnPropertyChanged(nameof(ActiveCellTypeIcon));
-        OnPropertyChanged(nameof(ActiveCellTypeColor));
+        OnPropertyChanged(nameof(ActiveCellTypeColorKey));
     }
 
     partial void OnTitleChanged(string value)

@@ -106,7 +106,7 @@ public class LazyExplorerTests : IDisposable
     }
 
     [Fact]
-    public async Task ListFolder_ReturnsOneFoldersDirectContents_WithoutTheFoldersToolsFill()
+    public async Task ListFolder_ReturnsOneFoldersDirectContents_AsVsCodeShowsThem()
     {
         Files("src", 2);
         Files("src/models", 3);
@@ -115,10 +115,11 @@ public class LazyExplorerTests : IDisposable
 
         var listing = await _storage.ListFolderAsync("src");
 
-        Assert.Equal(new[] { "src/models" }, listing.FolderPaths);
+        // node_modules is shown (its contents listed when it is opened); .git is hidden, as in VS Code.
+        Assert.Equal(new[] { "src/models", "src/node_modules" }, listing.FolderPaths.OrderBy(p => p, StringComparer.Ordinal));
         Assert.Equal(2, listing.Items.Count);
         Assert.True(listing.IsPartial);
-        Assert.Equal("src/models", string.Join(",", (await _storage.ListFolderAsync("src")).FolderPaths));
+        Assert.Equal(4, (await _storage.ListFolderAsync("src/node_modules")).Items.Count);
     }
 
     [Fact]
@@ -143,14 +144,15 @@ public class LazyExplorerTests : IDisposable
         var folders = studio.ExplorerRootItems.Where(i => i.IsDirectory).ToList();
         Assert.Equal(5, folders.Count);
         // The two files of the folder, and the open document that is not part of it (listed at the top).
-        Assert.Equal(new[] { "Open.frycs", "top00.py", "top01.py" }, studio.ExplorerRootItems.Where(i => !i.IsDirectory).Select<ExplorerItemViewModel, string>(i => i.Name).OrderBy(n => n));
+        // The folder's own files only: the open document ("Open", never saved here) has no row.
+        Assert.Equal(new[] { "top00.py", "top01.py" }, studio.ExplorerRootItems.Where(i => !i.IsDirectory).Select<ExplorerItemViewModel, string>(i => i.Name).OrderBy(n => n));
         Assert.All(folders, f =>
         {
             Assert.False(f.ChildrenLoaded);
             Assert.Single(f.Children);
             Assert.True(f.Children[0].IsPlaceholder);
         });
-        Assert.Equal(8, studio.ExplorerRows.Rows.Count);
+        Assert.Equal(7, studio.ExplorerRows.Rows.Count); // 5 folders, 2 files
         Assert.False((bool)studio.IsExplorerTruncated);
     }
 
@@ -169,7 +171,7 @@ public class LazyExplorerTests : IDisposable
         Assert.Equal(5, folder.Children.Count);
         Assert.All(folder.Children, c => Assert.False(c.IsPlaceholder));
         Assert.Equal(new[] { "f3_00.py", "f3_01.py", "f3_02.py", "f3_03.py", "f3_04.py" }, folder.Children.Select<ExplorerItemViewModel, string>(c => c.Name));
-        Assert.Equal(5 + 3 + 5, studio.ExplorerRows.Rows.Count);
+        Assert.Equal(5 + 2 + 5, studio.ExplorerRows.Rows.Count); // folders, the top files, the opened folder's files
         Assert.All(folder.Children, c => Assert.Equal("folder3/" + c.Name, (string?)c.FullPath));
         // The other folders were not listed.
         Assert.All(studio.ExplorerRootItems.Where(i => i.IsDirectory && i != folder), f => Assert.False(f.ChildrenLoaded));
@@ -192,7 +194,7 @@ public class LazyExplorerTests : IDisposable
         await Task.Delay(100);
 
         Assert.Equal(children, folder.Children.ToList());
-        Assert.Equal(5 + 3 + 5, studio.ExplorerRows.Rows.Count);
+        Assert.Equal(5 + 2 + 5, studio.ExplorerRows.Rows.Count); // folders, the top files, the opened folder's files
     }
 
     [Fact]

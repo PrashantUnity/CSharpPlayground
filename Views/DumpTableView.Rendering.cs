@@ -12,7 +12,10 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Views;
 
-/// <summary>The theme brushes a table paints with, resolved once per theme instead of once per cell.</summary>
+/// <summary>
+/// The theme brushes and layout values (type sizes, weights, line widths, radii, the code font) a table paints with,
+/// resolved once per theme or layout instead of once per cell.
+/// </summary>
 internal sealed record DumpTableBrushes(
     IBrush Header,
     IBrush HeaderHover,
@@ -24,7 +27,16 @@ internal sealed record DumpTableBrushes(
     IBrush RowOdd,
     IBrush RowHover,
     IBrush RowSelected,
-    FontFamily Monospace)
+    FontFamily Monospace,
+    double TextSize,
+    double SmallSize,
+    double TinySize,
+    FontWeight Emphasis,
+    FontWeight Strong,
+    double Line,
+    double Accent,
+    double SmallRadius,
+    double MediumRadius)
 {
     public static DumpTableBrushes Resolve(DumpTableView view) => new(
         view.ResolveBrush("M3SurfaceContainerHighBrush", "#252C36"),
@@ -37,7 +49,16 @@ internal sealed record DumpTableBrushes(
         view.ResolveBrush("M3SurfaceContainerLowBrush", "#161A1F"),
         view.ResolveBrush("M3SurfaceContainerHighestBrush", "#252C36"),
         view.ResolveBrush("M3PrimaryContainerBrush", "#192B42"),
-        new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace"));
+        view.ResolveToken("DsCodeFontFamily", new FontFamily("Consolas, Menlo, Monaco, Roboto Mono, JetBrains Mono, monospace")),
+        view.ResolveToken("DsFontSize300", 12.0),
+        view.ResolveToken("DsFontSize200", 11.0),
+        view.ResolveToken("DsFontSize075", 9.5),
+        view.ResolveToken("DsWeightEmphasis", FontWeight.SemiBold),
+        view.ResolveToken("DsWeightStrong", FontWeight.Bold),
+        view.ResolveToken("DsBorderThin", new Thickness(1)).Left,
+        view.ResolveToken("DsBorderAccentLeft", new Thickness(2, 0, 0, 0)).Left,
+        view.ResolveToken("DsRadiusSM", new CornerRadius(4)).TopLeft,
+        view.ResolveToken("DsRadiusMD", new CornerRadius(6)).TopLeft);
 }
 
 /// <summary>
@@ -182,13 +203,13 @@ public partial class DumpTableView
         {
             Background = brushes.Header,
             BorderBrush = brushes.Border,
-            BorderThickness = new Thickness(0, 0, 1, 1),
+            BorderThickness = new Thickness(0, 0, brushes.Line, brushes.Line),
             Padding = new Thickness(6, 6),
             Child = new TextBlock
             {
                 Text = "#",
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
+                FontSize = brushes.SmallSize,
+                FontWeight = brushes.Emphasis,
                 Foreground = brushes.OnSurfaceMuted,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -208,7 +229,7 @@ public partial class DumpTableView
             {
                 Background = isSortedCol ? brushes.HeaderHover : brushes.Header,
                 BorderBrush = brushes.Border,
-                BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : 1), 1),
+                BorderThickness = new Thickness(0, 0, (c == colCount - 1 ? 0 : brushes.Line), brushes.Line),
                 Padding = new Thickness(DumpTableLayout.CellPaddingX, 6),
                 Cursor = new Cursor(StandardCursorType.Hand)
             };
@@ -217,8 +238,8 @@ public partial class DumpTableView
             var headerText = new TextBlock
             {
                 Text = col.Header,
-                FontSize = 12,
-                FontWeight = isSortedCol ? FontWeight.Bold : FontWeight.SemiBold,
+                FontSize = brushes.TextSize,
+                FontWeight = isSortedCol ? brushes.Strong : brushes.Emphasis,
                 Foreground = isSortedCol ? brushes.Primary : brushes.OnSurface,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
@@ -271,7 +292,7 @@ public partial class DumpTableView
         var textBlock = new SelectableTextBlock
         {
             Text = cellText,
-            FontSize = 12,
+            FontSize = brushes.TextSize,
             FontFamily = brushes.Monospace,
             Foreground = cell?.IsNull == true ? brushes.OnSurfaceMuted : brushes.OnSurface,
             FontStyle = cell?.IsNull == true ? FontStyle.Italic : FontStyle.Normal,

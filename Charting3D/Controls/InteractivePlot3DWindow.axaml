@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,6 +6,8 @@
         xmlns:charting3d="using:PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="750"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Charting3D.Controls.InteractivePlot3DWindow"
+        lt:Tokens.FontFamily="DsUiFontFamily"
+        lt:Tokens.FontWeight="DsWeightBody"
         Title="3D Visualizer"
         Width="1100" Height="750"
         MinWidth="640" MinHeight="450"
@@ -32,36 +34,36 @@
                 Padding="12,8"
                 Background="{DynamicResource DsGlassBgBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                BoxShadow="{DynamicResource DsFloatingShadow}">
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusLG"
+                lt:Tokens.BoxShadow="DsFloatingShadow">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Title & Info Pill -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="CubeOutline" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Name="WindowTitleText" Text="3D Visualization" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                    <TextBlock Name="WindowTitleText" Text="3D Visualization" lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
 
-                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                        <TextBlock Name="WindowStatsText" Text="3D View" FontSize="10.5" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource M3SurfaceContainerHighBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Name="WindowStatsText" Text="3D View" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                     </Border>
                 </StackPanel>
 
                 <!-- Right: Full Action Suite -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <!-- Camera View Presets -->
-                    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="1" CornerRadius="4" Padding="2">
+                    <Border Background="{DynamicResource M3SurfaceContainerLowBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="2">
                         <StackPanel Orientation="Horizontal" Spacing="2">
                             <Button Name="WinIsoViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Isometric 3D View (1)">
-                                <TextBlock Text="ISO" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Text="ISO" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
                             <Button Name="WinTopViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Top View XY (2)">
-                                <TextBlock Text="TOP" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Text="TOP" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
                             <Button Name="WinFrontViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Front View XZ (3)">
-                                <TextBlock Text="FRT" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Text="FRT" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
                             <Button Name="WinSideViewBtn" Classes="cell-tool-btn" Width="26" Height="24" ToolTip.Tip="Side View YZ (4)">
-                                <TextBlock Text="SIDE" FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Text="SIDE" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
                         </StackPanel>
                     </Border>
@@ -121,21 +123,21 @@
                 Padding="14,6"
                 Background="{DynamicResource DsGlassBgBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="16"
-                BoxShadow="{DynamicResource DsBottomBarShadow}">
-            <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadius3XL"
+                lt:Tokens.BoxShadow="DsBottomBarShadow">
+            <StackPanel Orientation="Horizontal" lt:Tokens.Spacing="DsSpace16" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="GestureTap" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
                     <TextBlock Text="Left-Drag: Orbit  •  Right/Shift-Drag: Pan  •  Wheel: Zoom  •  Space: Rotate  •  F11: Fullscreen  •  Esc: Exit"
-                               FontSize="10.5"
+                               lt:Tokens.FontSize="DsFontSize150"
                                Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Name="WinCameraInfoText"
                            Text="Pitch: -45.0°  Yaw: 30.0°"
-                           FontSize="10"
-                           FontFamily="{DynamicResource DsCodeFontFamily}"
+                           lt:Tokens.FontSize="DsFontSize100"
+                           lt:Tokens.FontFamily="DsCodeFontFamily"
                            Foreground="{DynamicResource M3PrimaryBrush}"
                            VerticalAlignment="Center" />
             </StackPanel>

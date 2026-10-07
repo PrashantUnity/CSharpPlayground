@@ -28,6 +28,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsLanguagesCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsEditorCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsThemesCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsLayoutCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsExecutionCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsKeymapCategoryActive))]
     [NotifyPropertyChangedFor(nameof(IsCustomizationCategoryActive))]
@@ -52,6 +53,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
     public bool IsLanguagesCategoryActive => string.Equals(ActiveCategory, "Languages", StringComparison.OrdinalIgnoreCase);
     public bool IsEditorCategoryActive => string.Equals(ActiveCategory, "Editor", StringComparison.OrdinalIgnoreCase);
     public bool IsThemesCategoryActive => string.Equals(ActiveCategory, "Themes", StringComparison.OrdinalIgnoreCase);
+    public bool IsLayoutCategoryActive => string.Equals(ActiveCategory, "Layout", StringComparison.OrdinalIgnoreCase);
     public bool IsExecutionCategoryActive => string.Equals(ActiveCategory, "Execution", StringComparison.OrdinalIgnoreCase);
     public bool IsKeymapCategoryActive => string.Equals(ActiveCategory, "Keymap", StringComparison.OrdinalIgnoreCase);
     public bool IsCustomizationCategoryActive => string.Equals(ActiveCategory, "Customization", StringComparison.OrdinalIgnoreCase);
@@ -82,6 +84,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         InitializeLanguages();
         InitializeThemingSettings();
         InitializeCustomizationSettings();
+        InitializeLayoutSettings();
         InitializeAiSettings();
 
         _settingsStore.SettingsChanged += OnStoreSettingsChanged;
@@ -105,6 +108,7 @@ public partial class CSharpSettingsViewModel : ObservableObject
         Categories.Add(new SettingsCategoryItem("Languages", "Languages & Runtimes", "TuneVariant", "Interpreters, SDKs, virtualenvs & compilers"));
         Categories.Add(new SettingsCategoryItem("Editor", "Editor & Formatting", "CodeBraces", "Indentation, font size, line numbers & wrap"));
         Categories.Add(new SettingsCategoryItem("Themes", "Theme & Colors", "PaletteOutline", "Color harmony wheel, live token inspector, themes & palettes"));
+        Categories.Add(new SettingsCategoryItem("Layout", "Layout & Typography", "FormatSize", "Fonts, type sizes & weights, corner radius, borders, spacing & shadows"));
         Categories.Add(new SettingsCategoryItem("Execution", "Execution & Terminal", "Console", "Execution timeout, stdout buffers & process lifecycle"));
         Categories.Add(new SettingsCategoryItem("Keymap", "Keymap & Shortcuts", "KeyboardOutline", "Visual Studio Code & studio keybindings"));
         Categories.Add(new SettingsCategoryItem("Customization", "Customization & Extensions", "PuzzleOutline", "C# scripts, dynamic themes, tokens, extensions & hooks"));

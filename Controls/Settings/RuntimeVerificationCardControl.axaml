@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,18 +10,18 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="1"
-            CornerRadius="10"
-            Padding="18,16">
-        <StackPanel Spacing="12">
+            lt:Tokens.BorderThickness="DsCardBorder"
+            lt:Tokens.CornerRadius="DsRadiusCard"
+            lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+        <StackPanel lt:Tokens.Spacing="DsSpace12">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
                     <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}" />
-                        <TextBlock Text="RUNTIME HEALTH &amp; HELLO WORLD CHECK" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" />
+                        <TextBlock Text="RUNTIME HEALTH &amp; HELLO WORLD CHECK" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" />
                     </StackPanel>
                     <TextBlock Text="Execute a quick 'Hello World' program using the selected runtime configuration to verify execution and output."
-                               FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" />
+                               lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" />
                 </StackPanel>
                 <Button Grid.Column="1"
                         Command="{Binding TestHelloWorldCommand}"
@@ -30,7 +30,7 @@
                         VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="PlayCircleOutline" Width="15" Height="15" />
-                        <TextBlock Text="{Binding TestButtonFullLabel}" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="11.5" />
+                        <TextBlock Text="{Binding TestButtonFullLabel}" VerticalAlignment="Center" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize250" />
                     </StackPanel>
                 </Button>
             </Grid>
@@ -38,8 +38,8 @@
             <!-- Test Results Drawer -->
             <Border Background="{DynamicResource DsBgBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8"
+                    lt:Tokens.BorderThickness="DsBorderThin"
+                    lt:Tokens.CornerRadius="DsRadiusLG"
                     Padding="12"
                     IsVisible="{Binding HasHelloWorldResult}">
                 <StackPanel Spacing="8">
@@ -47,27 +47,27 @@
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                     BorderBrush="{Binding HelloWorldStatusColor}"
-                                    BorderThickness="1"
-                                    CornerRadius="12"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadius2XL"
                                     Padding="8,3">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="{Binding HelloWorldStatusColor}" />
-                                    <TextBlock Text="{Binding HelloWorldStatusBadge}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <TextBlock Text="{Binding HelloWorldStatusBadge}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="{Binding HelloWorldExecutionMessage}" FontSize="11.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding HelloWorldExecutionMessage}" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border Background="{DynamicResource DsSurfaceBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadiusSM"
                                     Padding="5,2"
                                     IsVisible="{Binding HelloWorldEngineDetails.Length}">
-                                <TextBlock Text="{Binding HelloWorldEngineDetails}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="{Binding HelloWorldEngineDetails}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
                             </Border>
-                            <TextBlock Text="{Binding HelloWorldElapsedText}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding HelloWorldElapsedText}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             <Button Command="{Binding ClearHelloWorldResultCommand}" Classes="snippet-action-btn" Padding="4,2" ToolTip.Tip="Clear output">
                                 <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
                             </Button>
@@ -76,13 +76,13 @@
 
                     <Border Background="{DynamicResource DsSurfaceBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
+                            lt:Tokens.BorderThickness="DsBorderThin"
+                            lt:Tokens.CornerRadius="DsRadiusMD"
                             Padding="10"
                             IsVisible="{Binding HelloWorldOutput.Length}">
                         <SelectableTextBlock Text="{Binding HelloWorldOutput}"
-                                             FontFamily="Consolas,Menlo,monospace"
-                                             FontSize="11.5"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
+                                             lt:Tokens.FontSize="DsFontSize250"
                                              Foreground="{DynamicResource DsTextWhiteBrush}"
                                              TextWrapping="Wrap"
                                              MaxHeight="140" />

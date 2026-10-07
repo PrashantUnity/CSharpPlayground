@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -11,16 +11,16 @@
     <!-- ── 1. Category Header Button (Button.doc-category-btn) ─────────────── -->
     <Style Selector="Button.doc-category-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Padding" Value="8,6" />
         <Setter Property="Margin" Value="0,1" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize350" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
@@ -45,7 +45,7 @@
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
     <Style Selector="Button.doc-category-btn.selected /template/ ContentPresenter#PART_ContentPresenter,
                      Button.doc-category-btn.active /template/ ContentPresenter#PART_ContentPresenter">
@@ -56,16 +56,16 @@
     <!-- ── 2. Collapsible Article Item (Button.doc-article-item) ────────────── -->
     <Style Selector="Button.doc-article-item">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="8,5" />
         <Setter Property="Margin" Value="0,1" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize300" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightBody" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
@@ -94,7 +94,7 @@
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
     <Style Selector="Button.doc-article-item.active /template/ ContentPresenter#PART_ContentPresenter,
                      Button.doc-article-item.selected /template/ ContentPresenter#PART_ContentPresenter">
@@ -104,7 +104,7 @@
 
     <Style Selector="Button.doc-article-item.active TextBlock, Button.doc-article-item.selected TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
 
     <Style Selector="Button.doc-article-item.active materialIcons|MaterialIcon,
@@ -115,7 +115,7 @@
     <!-- ── 3. Outline Section Item (Border.doc-article-item) ────────────────── -->
     <Style Selector="Border.doc-article-item">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>

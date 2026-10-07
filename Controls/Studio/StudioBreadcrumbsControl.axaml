@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,16 +11,16 @@
 
     <Border Background="{DynamicResource DsBgBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,0,1"
+            lt:Tokens.BorderThickness="DsBorderBottom"
             Padding="14,2">
         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-            <TextBlock Text="scripts" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="scripts" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
             <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Script.Title, FallbackValue='script.csx'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
             <materialIcons:MaterialIcon Kind="ChevronRight" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding RuntimeLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="6,0,0,0" IsVisible="{Binding SupportsExecutionModes}">
-                <TextBlock Text="{Binding CurrentLanguageMode}" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+            <TextBlock Text="{Binding RuntimeLabel}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusXS" Padding="5,1" Margin="6,0,0,0" IsVisible="{Binding SupportsExecutionModes}">
+                <TextBlock Text="{Binding CurrentLanguageMode}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" />
             </Border>
         </StackPanel>
     </Border>

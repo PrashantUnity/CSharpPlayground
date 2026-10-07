@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,12 +13,12 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubWorkspacesPanelControl"
              x:DataType="hub:CSharpManagerViewModel">
 
-    <StackPanel Grid.Column="0" Spacing="16">
+    <StackPanel Grid.Column="0" lt:Tokens.Spacing="DsSpace16">
 
         <!-- Dashboard Navigation & View Switcher (Workspaces vs Starter Templates) -->
         <Grid ColumnDefinitions="Auto,*,Auto">
-            <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                    CornerRadius="9999" Padding="3">
+            <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                    lt:Tokens.CornerRadius="DsRadiusFull" Padding="3">
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <Button Command="{Binding SetActiveDashboardViewCommand}" CommandParameter="Workspaces"
                             Classes="nexus-tab-pill"
@@ -50,14 +50,14 @@
         <!-- ======================================================== -->
         <!-- RECENT WORKSPACES & PROJECTS (RIDER / VS CODE STYLE)    -->
         <!-- ======================================================== -->
-        <StackPanel Spacing="12" IsVisible="{Binding IsWorkspacesTabActive}">
+        <StackPanel lt:Tokens.Spacing="DsSpace12" IsVisible="{Binding IsWorkspacesTabActive}">
 
             <!-- Header: Title & Category Filter Chips -->
             <Border common:CompactWhenCrowded.IsEnabled="True">
                 <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
                         <materialIcons:MaterialIcon Kind="History" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="RECENT WORKSPACES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="RECENT WORKSPACES" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Segmented Category Filter Chips -->
@@ -68,7 +68,7 @@
                                 Classes.active="{Binding IsAllFilterActive}">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <TextBlock Text="All" />
-                                <TextBlock Text="{Binding TotalRecentWorkspaces}" FontSize="10" Opacity="0.7" />
+                                <TextBlock Text="{Binding TotalRecentWorkspaces}" lt:Tokens.FontSize="DsFontSize100" Opacity="0.7" />
                             </StackPanel>
                         </Button>
 
@@ -78,7 +78,7 @@
                                 Classes.active="{Binding IsWorkspacesFilterActive}">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <TextBlock Text="Workspaces" />
-                                <TextBlock Text="{Binding RecentWorkspacesCount}" FontSize="10" Opacity="0.7" />
+                                <TextBlock Text="{Binding RecentWorkspacesCount}" lt:Tokens.FontSize="DsFontSize100" Opacity="0.7" />
                             </StackPanel>
                         </Button>
 
@@ -88,7 +88,7 @@
                                 Classes.active="{Binding IsNotebooksFilterActive}">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <TextBlock Text="Notebooks" />
-                                <TextBlock Text="{Binding RecentNotebooksCount}" FontSize="10" Opacity="0.7" />
+                                <TextBlock Text="{Binding RecentNotebooksCount}" lt:Tokens.FontSize="DsFontSize100" Opacity="0.7" />
                             </StackPanel>
                         </Button>
 
@@ -99,7 +99,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="Pin" Width="12" Height="12" VerticalAlignment="Center" />
                                 <TextBlock Text="Pinned" />
-                                <TextBlock Text="{Binding RecentPinnedCount}" FontSize="10" Opacity="0.7" />
+                                <TextBlock Text="{Binding RecentPinnedCount}" lt:Tokens.FontSize="DsFontSize100" Opacity="0.7" />
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -109,14 +109,14 @@
             <!-- Search & Action Bar -->
             <Grid ColumnDefinitions="*,Auto">
                 <!-- Search Box -->
-                <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                        CornerRadius="8" Height="36" Padding="10,0" Margin="0,0,10,0">
+                <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                        lt:Tokens.CornerRadius="DsRadiusLG" Height="36" Padding="10,0" Margin="0,0,10,0">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                         <TextBox Grid.Column="1" Text="{Binding SearchQuery, Mode=TwoWay}"
                                  Background="Transparent" BorderThickness="0"
-                                 MinHeight="0" Height="28" Padding="0"
-                                 FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}"
+                                 MinHeight="0" lt:Tokens.Height="DsControlHeight150" Padding="0"
+                                 lt:Tokens.FontSize="DsFontSize350" Foreground="{DynamicResource DsTextWhiteBrush}"
                                  VerticalAlignment="Center" VerticalContentAlignment="Center"
                                  PlaceholderText="Search projects, workspaces, or notebooks..." />
                         <Button Grid.Column="2" Command="{Binding ClearSearchCommand}"
@@ -130,27 +130,27 @@
                 <!-- Quick Action Buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                     <Button Click="OnNewWorkspaceClick"
-                            Classes="nexus-btn-primary" Height="36"
+                            Classes="nexus-btn-primary" lt:Tokens.Height="DsControlHeight500"
                             ToolTip.Tip="Create or select a new isolated workspace folder">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FolderPlusOutline" Width="15" Height="15" VerticalAlignment="Center" />
-                            <TextBlock Text="New Workspace..." VerticalAlignment="Center" FontSize="12" />
+                            <TextBlock Text="New Workspace..." VerticalAlignment="Center" lt:Tokens.FontSize="DsFontSize300" />
                         </StackPanel>
                     </Button>
                     <Button Click="OnOpenFolderClick"
-                            Classes="nexus-btn-surface" Height="36"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight500"
                             ToolTip.Tip="Open an existing folder as workspace">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="15" Height="15" VerticalAlignment="Center" />
-                            <TextBlock Text="Open Folder..." VerticalAlignment="Center" FontSize="12" />
+                            <TextBlock Text="Open Folder..." VerticalAlignment="Center" lt:Tokens.FontSize="DsFontSize300" />
                         </StackPanel>
                     </Button>
                     <Button Click="OnOpenProjectFileClick"
-                            Classes="nexus-btn-surface" Height="36"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight500"
                             ToolTip.Tip="Open a script, notebook, or project file">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FilePlusOutline" Width="15" Height="15" VerticalAlignment="Center" />
-                            <TextBlock Text="Open File..." VerticalAlignment="Center" FontSize="12" />
+                            <TextBlock Text="Open File..." VerticalAlignment="Center" lt:Tokens.FontSize="DsFontSize300" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -159,31 +159,31 @@
             <!-- Projects & Workspaces List Container -->
             <Border Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    ClipToBounds="True">
+                    lt:Tokens.BorderThickness="DsCardBorder"
+                    lt:Tokens.CornerRadius="DsRadius2XL"
+                    ClipToBounds="True" lt:Tokens.BoxShadow="DsCardShadow">
                 <StackPanel>
                     <!-- Empty State -->
                     <Border IsVisible="{Binding !HasFilteredWorkspaces}" Padding="32,48">
-                        <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <StackPanel HorizontalAlignment="Center" lt:Tokens.Spacing="DsSpace12">
                             <Border Width="52" Height="52" CornerRadius="26" Background="{DynamicResource DsSurfaceHoverBrush}" HorizontalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
 
                             <TextBlock Text="No recent workspaces yet" IsVisible="{Binding IsRecentWorkspacesEmpty}"
-                                       FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                       lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="Open a project or workspace folder from disk, or start with one of our curated templates."
                                        IsVisible="{Binding IsRecentWorkspacesEmpty}"
-                                       FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                                       lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
 
                             <TextBlock Text="No matching workspaces found" IsVisible="{Binding !IsRecentWorkspacesEmpty}"
-                                       FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                       lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="Try clearing your search query or switching category filters."
                                        IsVisible="{Binding !IsRecentWorkspacesEmpty}"
-                                       FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                                       lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
 
-                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" HorizontalAlignment="Center" Margin="0,8,0,0">
                                 <Button Command="{Binding SetActiveDashboardViewCommand}" CommandParameter="Templates"
                                         Classes="nexus-btn-surface"
                                         IsVisible="{Binding IsRecentWorkspacesEmpty}">
@@ -259,12 +259,12 @@
                                             <!-- Col 0: Monogram + Project Name, Tag & Path -->
                                             <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                                                 <!-- Monogram Tile (JetBrains Rider Style) -->
-                                                <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8"
+                                                <Border Grid.Column="0" Width="36" Height="36" lt:Tokens.CornerRadius="DsRadiusLG"
                                                         Background="{Binding MonogramBgBrush}"
                                                         VerticalAlignment="Center"
                                                         Margin="0,0,14,0">
                                                     <TextBlock Text="{Binding Monogram}"
-                                                                FontSize="13" FontWeight="Bold"
+                                                                lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong"
                                                                 Foreground="{Binding MonogramFgBrush}"
                                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
@@ -273,7 +273,7 @@
                                                 <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center" Margin="0,0,12,0">
                                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Name}"
-                                                                   FontSize="13.5" FontWeight="SemiBold"
+                                                                   lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                    Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    ToolTip.Tip="{Binding Name}" />
@@ -281,24 +281,24 @@
                                                         <!-- Kind Badge Pill -->
                                                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="4" Padding="5,1"
+                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                lt:Tokens.CornerRadius="DsRadiusSM" Padding="5,1"
                                                                 VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding KindBadgeText}"
-                                                                       FontSize="9" FontWeight="Bold"
+                                                                       lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
                                                                        Foreground="{DynamicResource DsPrimaryBrush}" />
                                                         </Border>
 
                                                         <!-- Git Branch Pill (if inside a git repository) -->
                                                         <Border Background="{DynamicResource DsSurfaceHoverBrush}"
                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                BorderThickness="1"
-                                                                CornerRadius="4" Padding="5,1"
+                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                lt:Tokens.CornerRadius="DsRadiusSM" Padding="5,1"
                                                                 IsVisible="{Binding HasGitBranch}"
                                                                 VerticalAlignment="Center">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                 <materialIcons:MaterialIcon Kind="SourceBranch" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                                                <TextBlock Text="{Binding GitBranch}" FontSize="10" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                                                <TextBlock Text="{Binding GitBranch}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Border>
 
@@ -312,7 +312,7 @@
 
                                                     <!-- Path with ~ substitution -->
                                                     <TextBlock Text="{Binding DisplayPath}"
-                                                               FontSize="10.5" FontFamily="{DynamicResource DsCodeFontFamily}"
+                                                               lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily"
                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                ToolTip.Tip="{Binding Path}" />
@@ -322,7 +322,7 @@
                                             <!-- Col 1: Last Opened Time -->
                                             <TextBlock Grid.Column="1"
                                                        Text="{Binding LastModifiedDisplay}"
-                                                       FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}"
+                                                       lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}"
                                                        HorizontalAlignment="Right" VerticalAlignment="Center"
                                                        Margin="16,0,16,0" />
 
@@ -332,7 +332,7 @@
                                                 <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).TogglePinRecentWorkspaceCommand}"
                                                         CommandParameter="{Binding}"
                                                         Classes="nexus-btn-ghost"
-                                                        Width="28" Height="28" Padding="0"
+                                                        Width="28" lt:Tokens.Height="DsControlHeight150" Padding="0"
                                                         VerticalAlignment="Center"
                                                         Cursor="Hand">
                                                     <Panel>
@@ -351,7 +351,7 @@
                                                 <Button Command="{Binding $parent[UserControl].((hub:CSharpManagerViewModel)DataContext).RemoveRecentWorkspaceCommand}"
                                                         CommandParameter="{Binding}"
                                                         Classes="nexus-btn-ghost"
-                                                        Width="28" Height="28" Padding="0"
+                                                        Width="28" lt:Tokens.Height="DsControlHeight150" Padding="0"
                                                         VerticalAlignment="Center"
                                                         Cursor="Hand"
                                                         ToolTip.Tip="Remove from Recent Projects">

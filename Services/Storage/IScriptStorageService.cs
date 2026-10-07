@@ -88,6 +88,21 @@ public interface IScriptStorageService
     Task<SourceFileRename> RenameSourceFileAsync(string id, string newFileName);
 
     /// <summary>
+    /// Renames a document's file (.frycs, .frynb, .fryserver) in its folder, as renaming it in an Explorer does: the file
+    /// takes the new name (its extension is kept) and its title follows. Returns the new file name. Throws
+    /// <see cref="IOException"/> when another file already has that name, <see cref="FileNotFoundException"/> when the
+    /// document has no file.
+    /// </summary>
+    Task<string> RenameDocumentFileAsync(string id, string newFileName);
+
+    /// <summary>
+    /// Copies a file of the workspace next to itself ("name copy.ext", "name copy 2.ext", ...), as VS Code's Duplicate
+    /// does. A copied document gets an id of its own and the copy's name as its title. Returns the copy's path from the
+    /// workspace root (<c>/</c> separators).
+    /// </summary>
+    Task<string> DuplicateFileAsync(string relativePath);
+
+    /// <summary>
     /// Writes a source file's text. Without <paramref name="overwriteChangesOnDisk"/> it writes only when the text changed
     /// and nothing else changed the file since it was read (<see cref="SaveScriptAsync"/> saves source files this way).
     /// </summary>

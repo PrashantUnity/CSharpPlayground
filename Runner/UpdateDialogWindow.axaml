@@ -1,10 +1,12 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d"
         x:Class="PdfEditorApp.Plugins.CSharpEditor.Runner.UpdateDialogWindow"
+        lt:Tokens.FontFamily="DsUiFontFamily"
+        lt:Tokens.FontWeight="DsWeightBody"
         Title="Check for Updates"
         Icon="/Assets/app-logo.ico"
         Width="420" Height="260"
@@ -21,12 +23,12 @@
 
         <Border Padding="24">
             <Grid RowDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,4,0,16">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace16" Margin="0,4,0,16">
                     <Border Width="48" Height="48"
-                            CornerRadius="24"
+                            lt:Tokens.CornerRadius="DsRadius4XL"
                             Background="#1A2F81F7"
                             BorderBrush="#4D2F81F7"
-                            BorderThickness="1"
+                            lt:Tokens.BorderThickness="DsBorderThin"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="CheckCircleOutline"
@@ -38,11 +40,11 @@
 
                     <StackPanel VerticalAlignment="Center" Spacing="4">
                         <TextBlock Text="You're up to date!"
-                                   FontFamily="{DynamicResource DsUiFontFamily}"
-                                   FontSize="16" FontWeight="Bold"
+                                   lt:Tokens.FontFamily="DsUiFontFamily"
+                                   lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsTextWhiteBrush}" />
                         <TextBlock Text="FrySharp v1.0.6 • Stable"
-                                   FontSize="12"
+                                   lt:Tokens.FontSize="DsFontSize300"
                                    Foreground="{DynamicResource DsMutedBrush}" />
                     </StackPanel>
                 </StackPanel>
@@ -50,7 +52,7 @@
                 <TextBlock Grid.Row="1"
                            Text="You are currently running the latest release of FrySharp. All Roslyn compiler services and polyglot runtime modules are ready."
                            TextWrapping="Wrap"
-                           FontSize="12"
+                           lt:Tokens.FontSize="DsFontSize300"
                            LineHeight="18"
                            Foreground="{DynamicResource DsTextBrush}"
                            Margin="4,0,4,12" />

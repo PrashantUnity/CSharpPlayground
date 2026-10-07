@@ -171,6 +171,47 @@ internal static class PerfLoading
 
         window.ResourcesChanged -= Count;
 
+        // The swap alone (every dynamic resource re-resolving), ten themes in a row: steadier than a whole apply, which
+        // also lays out, draws and collects garbage.
+        var engine = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine;
+        var swaps = new List<double>();
+        var applies = new List<double>();
+        for (int i = 0; i < 10; i++)
+        {
+            var apply = Stopwatch.StartNew();
+            settings.ApplyThemePreset(i % 2 == 0 ? "dracula" : "dark-plus");
+            Dispatcher.UIThread.RunJobs();
+            using (window.CaptureRenderedFrame()) { }
+            applies.Add(apply.Elapsed.TotalMilliseconds);
+            swaps.Add(engine.LastCommitDuration.TotalMilliseconds);
+        }
+
+        // What a restyle of the whole studio costs (every page built): a style added to the host and removed again.
+        var hostView = window.GetVisualDescendants().OfType<PdfEditorApp.Plugins.CSharpEditor.Views.CSharpStudioHostView>().FirstOrDefault();
+        if (hostView != null)
+        {
+            var restyles = new List<double>();
+            for (int i = 0; i < 3; i++)
+            {
+                var probeStyle = new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType(x, typeof(TextBlock)), "restyle-probe"))
+                {
+                    Setters = { new Avalonia.Styling.Setter(TextBlock.FontSizeProperty, 11.0) },
+                };
+                var clock = Stopwatch.StartNew();
+                hostView.Styles.Add(probeStyle);
+                Dispatcher.UIThread.RunJobs();
+                using (window.CaptureRenderedFrame()) { }
+                restyles.Add(clock.Elapsed.TotalMilliseconds);
+                hostView.Styles.Remove(probeStyle);
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            Console.WriteLine($"restyle of the whole studio (a style added to the host): {string.Join(", ", restyles.Select(r => r.ToString("F0")))} ms");
+        }
+
+        Console.WriteLine($"theme switch x10: swap (resources re-resolving) median {swaps.Order().ElementAt(5):F1} ms, " +
+                          $"whole apply median {applies.Order().ElementAt(5):F0} ms, slowest {applies.Max():F0} ms");
+
         // Dragging the hue wheel: one change per frame, each followed by its jobs and a frame, as the user sees it.
         var frames = new List<double>();
         double dragStall = probe.Measure(() =>
@@ -222,6 +263,20 @@ internal static class PerfLoading
             ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Oklch
             : PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath.ColorEngineKind.Hct, times: 4);
         Step("palette undo", settings.UndoPalette, times: 5);
+        // Layouts: every keyed control gets its new value, then the studio lays out again.
+        foreach (var presetId in new[] { "layout-material", "layout-vscode", "layout-large", "layout-studio" })
+        {
+            var preset = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutPresets.Get(presetId)!;
+            var clock = Stopwatch.StartNew();
+            double stall = probe.Measure(() =>
+            {
+                PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.ApplyLayout(preset.Spec);
+                Dispatcher.UIThread.RunJobs();
+                using (window.CaptureRenderedFrame()) { }
+            });
+            Console.WriteLine($"layout {preset.Name}: {clock.Elapsed.TotalMilliseconds:F0} ms ({PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.RegisteredCount:N0} keyed controls), longest input wait {stall:F0} ms");
+        }
+
         Step("palette apply (generate + apply as the studio theme)", () => { settings.GeneratePalette(); settings.ApplyHarmonicConfiguration(); }, times: 3);
 
         foreach (var (name, action) in new (string, Func<Task>)[]

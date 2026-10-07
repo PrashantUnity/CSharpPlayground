@@ -5,7 +5,10 @@ using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebo
 
 namespace CSharpEditorPlugin.Tests;
 
-/// <summary>Running a notebook shows its markdown rendered instead of as source, the way Jupyter does.</summary>
+/// <summary>
+/// A notebook opens with its markdown rendered, and running shows markdown that was being edited rendered again, the
+/// way Jupyter and VS Code do.
+/// </summary>
 public class NotebookMarkdownRenderingTests
 {
     private static NotebookTabViewModel Tab(params (CellType Type, string Source)[] cells)
@@ -18,10 +21,28 @@ public class NotebookMarkdownRenderingTests
         return new NotebookTabViewModel(notebook);
     }
 
+    // The notes as the user left them after editing each one.
+    private static NotebookTabViewModel Editing(params (CellType Type, string Source)[] cells)
+    {
+        var tab = Tab(cells);
+        foreach (var cell in tab.Cells.Where(c => c.IsMarkdownCell)) cell.IsMarkdownPreviewMode = false;
+        return tab;
+    }
+
+    [Fact]
+    public void ANotebook_OpensWithItsNotesRendered_AndAnEmptyNoteOpensForTyping()
+    {
+        var tab = Tab((CellType.Markdown, "# Problem"), (CellType.Code, "var x = 1;"), (CellType.Markdown, ""));
+
+        Assert.True((bool)tab.Cells[0].IsViewingMarkdown);
+        Assert.True((bool)tab.Cells[2].IsEditingMarkdown);
+        Assert.True(tab.Cells[0].Model.IsMarkdownPreviewMode); // saved as shown
+    }
+
     [Fact]
     public async Task RunAll_RendersEveryMarkdownCell()
     {
-        var tab = Tab((CellType.Markdown, "# Problem"), (CellType.Code, "var x = 1;"), (CellType.Markdown, "## Notes"));
+        var tab = Editing((CellType.Markdown, "# Problem"), (CellType.Code, "var x = 1;"), (CellType.Markdown, "## Notes"));
         Assert.All(tab.Cells.Where(c => c.IsMarkdownCell), c => Assert.False((bool)c.IsMarkdownPreviewMode));
 
         await tab.RunAllCellsAsync();
@@ -33,7 +54,7 @@ public class NotebookMarkdownRenderingTests
     [Fact]
     public async Task RunningAMarkdownCell_RendersItWithoutExecutingAnything()
     {
-        var tab = Tab((CellType.Markdown, "**bold**"));
+        var tab = Editing((CellType.Markdown, "**bold**"));
 
         await tab.RunSingleCellAsync(tab.Cells[0]);
 
@@ -44,7 +65,7 @@ public class NotebookMarkdownRenderingTests
     [Fact]
     public async Task RunAbove_RendersOnlyTheMarkdownItReaches()
     {
-        var tab = Tab((CellType.Markdown, "# Above"), (CellType.Code, "var y = 2;"), (CellType.Markdown, "# Below"));
+        var tab = Editing((CellType.Markdown, "# Above"), (CellType.Code, "var y = 2;"), (CellType.Markdown, "# Below"));
 
         await tab.RunCellsAboveAsync(tab.Cells[1]);
 

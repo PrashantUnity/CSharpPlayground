@@ -33,9 +33,6 @@ public partial class CSharpCodeStudioViewModel
     // workspace scan only when this has moved, not on every tab switch.
     private long _explorerStructureVersion = -1;
 
-    // The row listing the open document when it isn't part of this workspace (a file opened from elsewhere).
-    private Explorer.ExplorerItemViewModel? _explorerOrphanItem;
-
     private LazyExplorerTree? _lazyExplorer;
 
     // The Explorer of a workspace too big to list at once: one folder at a time (see LazyExplorerTree).
@@ -52,16 +49,14 @@ public partial class CSharpCodeStudioViewModel
         if (!listing.IsPartial)
         {
             LazyExplorer.Deactivate();
-            RebuildExplorerTree(listing.FolderPaths, listing.Items);
+            RebuildExplorerTree(listing.FolderPaths, listing.Items, listing.ClosedFolders);
             return;
         }
 
         var openFolders = Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
-        _explorerOrphanItem = null;
         LazyExplorer.Build(listing, openFolders);
         // Only the top folder itself can be cut off here (a nested one says so in its own rows).
         IsExplorerTruncated = listing.IsTruncated;
-        EnsureOpenDocumentListed(sort: false);
         HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
 
@@ -98,7 +93,8 @@ public partial class CSharpCodeStudioViewModel
 
     /// <summary>
     /// Brings the Explorer up to date without rescanning the workspace when nothing in it has changed: switching a tab
-    /// or coming back to this page only moves the highlight (and lists the open document if it lives outside the workspace).
+    /// or coming back to this page only moves the highlight. The Explorer lists the workspace folder's files only: a
+    /// document opened from elsewhere gets no row of its own.
     /// </summary>
     public async Task RefreshExplorerIfStaleAsync()
     {
@@ -108,7 +104,6 @@ public partial class CSharpCodeStudioViewModel
             return;
         }
 
-        EnsureOpenDocumentListed();
         HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
 
@@ -175,33 +170,7 @@ public partial class CSharpCodeStudioViewModel
 
     public void OnDeactivated() => _isPageActive = false;
 
-    // The open document isn't part of the workspace when it was opened from elsewhere (a loose file, or a tab left over
-    // from another folder): the tree lists it at the top for as long as it is the open one.
-    private void EnsureOpenDocumentListed(bool sort = true, bool evenIfInWorkspace = false)
-    {
-        if (_explorerOrphanItem != null && !string.Equals(_explorerOrphanItem.DocumentId, Script?.Id, StringComparison.OrdinalIgnoreCase))
-        {
-            ExplorerRootItems.Remove(_explorerOrphanItem);
-            _explorerOrphanItem = null;
-        }
-
-        if (Script == null || string.IsNullOrEmpty(Script.Id) || FindByDocumentId(ExplorerRootItems, Script.Id) != null) return;
-
-        // In a big workspace the document may sit in a folder that has not been listed yet: it is not an outsider.
-        if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(Script.Id) != null) return;
-
-        var isSourceLang = ActiveLanguage.Storage == LanguageStorageKind.SourceFile;
-        var sourceLanguage = (Script.SourceFilePath != null || isSourceLang) ? ActiveLanguage : null;
-        var ext = isSourceLang ? ActiveLanguage.DefaultExtension() : ".frycs";
-        var fileName = Script.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase)
-            ? Script.Title
-            : (isSourceLang && Script.SourceFilePath != null ? Script.Title : $"{Script.Title}{ext}");
-        _explorerOrphanItem = CreateFileItem(fileName, Script.Id, parent: null, fullPath: fileName, sourceLanguage);
-        ExplorerRootItems.Add(_explorerOrphanItem);
-        if (sort) SortExplorerTree(ExplorerRootItems);
-    }
-
-    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries)
+    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries, IReadOnlyList<string> closedFolders)
     {
         // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
         using var rowsScope = ExplorerRows.Suspend();
@@ -209,7 +178,6 @@ public partial class CSharpCodeStudioViewModel
         // A refresh keeps the folders the user had open open.
         var expandedFolders = Explorer.ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems);
         ExplorerRootItems.Clear();
-        _explorerOrphanItem = null;
         var folderNodes = new Dictionary<string, Explorer.ExplorerItemViewModel>(StringComparer.OrdinalIgnoreCase);
         // The file names already in each folder (the root under its own key): a name-by-name scan of the siblings for every
         // file would be quadratic in the size of a folder.
@@ -237,10 +205,15 @@ public partial class CSharpCodeStudioViewModel
             GetOrCreateFolder(path);
         }
 
-        foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
+        // The folders the walk doesn't go into (node_modules, bin, .venv): shown closed and listed when opened, as in VS Code.
+        foreach (var path in closedFolders)
         {
-            var ext = s.DisplayExtension;
-            var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
+            if (GetOrCreateFolder(path) is { } closed) LazyExplorer.MakeUnlisted(closed);
+        }
+
+        foreach (var s in summaries.OrderBy(x => x.ExplorerName, StringComparer.OrdinalIgnoreCase))
+        {
+            var name = s.ExplorerName; // the file's own name: copies with one title are all listed
 
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
@@ -259,8 +232,6 @@ public partial class CSharpCodeStudioViewModel
             var docItem = CreateFileItem(name, s.Id, parent, fullPath, s.IsSourceFile ? _languages.Registry.Get(s.LanguageId) : null);
             AddToTree(parent, docItem);
         }
-
-        EnsureOpenDocumentListed(sort: false);
 
         SortExplorerTree(ExplorerRootItems);
         HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
@@ -362,12 +333,7 @@ public partial class CSharpCodeStudioViewModel
         var item = await LazyExplorer.RevealAsync(documentId);
         if (!string.Equals(Script?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
 
-        if (item == null)
-        {
-            // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
-            EnsureOpenDocumentListed(evenIfInWorkspace: true);
-            return;
-        }
+        if (item == null) return; // not in the workspace's folders: the Explorer shows the folder only
 
         DeselectAll(ExplorerRootItems);
         item.IsSelected = true;
@@ -856,9 +822,10 @@ public partial class CSharpCodeStudioViewModel
             ? item.Name.Substring(0, item.Name.Length - 6)
             : item.Name;
 
-        if (Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase))
+        var isOpen = Script != null && string.Equals(Script.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase);
+        if (isOpen)
         {
-            Script.Title = newTitle;
+            Script!.Title = newTitle;
             OnPropertyChanged(nameof(Script));
             await SaveAsync();
         }
@@ -870,6 +837,33 @@ public partial class CSharpCodeStudioViewModel
                 doc.Title = newTitle;
                 await _storageService.SaveScriptAsync(doc);
             }
+        }
+
+        // The file on disk takes the new name, as renaming in VS Code's Explorer does (only the title inside used to
+        // change, so the folder kept the old name). A name another file already has leaves everything as it was.
+        var oldName = Path.GetFileName((string?)item.FullPath) ?? item.Name;
+        try
+        {
+            var fileName = await _storageService.RenameDocumentFileAsync(item.DocumentId, item.Name);
+            item.Name = fileName;
+            item.FullPath = item.Parent == null ? fileName : $"{item.Parent.FullPath}/{fileName}";
+            if (isOpen)
+            {
+                Script!.Title = Path.GetFileNameWithoutExtension(fileName);
+                OnPropertyChanged(nameof(Script));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            item.Name = oldName;
+            if (isOpen)
+            {
+                Script!.Title = Path.GetFileNameWithoutExtension(oldName);
+                OnPropertyChanged(nameof(Script));
+                await SaveAsync();
+            }
+
+            CompilerStatusText = $"⚠️ Couldn't rename {oldName}: {ex.Message}";
         }
     }
 

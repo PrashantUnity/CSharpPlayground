@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -23,9 +23,9 @@
     <Style Selector="Button.chrome-tool-btn">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceVariantBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Width" Value="22" />
         <Setter Property="Height" Value="22" />
@@ -43,8 +43,8 @@
     <Style Selector="Border.watch-cell">
         <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXS" />
         <Setter Property="Padding" Value="6,1" />
         <Setter Property="Margin" Value="0,1,4,1" />
     </Style>
@@ -54,12 +54,12 @@
     </Style>
     <Style Selector="Border.watch-cell.marker">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
         <Setter Property="Padding" Value="0,1" />
     </Style>
     <Style Selector="Border.watch-cell TextBlock">
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize100" />
+        <Setter Property="lt:Tokens.FontFamily" Value="DsCodeFontFamily" />
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
     </Style>
     <Style Selector="Border.watch-cell.marker TextBlock">
@@ -71,8 +71,8 @@
     <Style Selector="Button.m3-icon-btn, ToggleButton.m3-icon-btn">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="9999" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusFull" />
         <Setter Property="Width" Value="24" />
         <Setter Property="Height" Value="24" />
         <Setter Property="Padding" Value="0" />
@@ -98,12 +98,12 @@
     <Style Selector="Button.m3-tonal-btn">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="10,4" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize300" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -119,11 +119,11 @@
     <Style Selector="Button.m3-filled-btn">
         <Setter Property="Background" Value="{DynamicResource DsPrimaryBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="14,6" />
-        <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize350" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />

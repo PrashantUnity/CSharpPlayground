@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;
 using FrySharp.Sdk;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
@@ -33,6 +34,19 @@ public class DynamicThemeEngine : IThemeApi
     private readonly Dictionary<string, object> _layer = new(StringComparer.Ordinal);
     private readonly object _layerGate = new();
     private ThemeVariant? _variant;
+    private LayoutSpec _layout = LayoutSpec.Default;
+
+    // The colour keys the active theme and its overrides put in the layer: the next theme takes back the ones it doesn't
+    // set, or they would keep the old theme's colour.
+    private readonly HashSet<string> _colorKeys = new(StringComparer.Ordinal);
+
+    // The value colours (object inspector, data tips, watch rows) follow a theme's syntax colours when it has them and
+    // doesn't set its own; otherwise the palette's per-scheme defaults show. Null values are muted text.
+    private static readonly (string Code, string Source)[] CodeColorSources =
+    [
+        ("CodeTypeBrush", "SyntaxTypeBrush"), ("CodeMemberBrush", "SyntaxVariableBrush"), ("CodeStringBrush", "SyntaxStringBrush"),
+        ("CodeNumberBrush", "SyntaxNumberBrush"), ("CodeKeywordBrush", "SyntaxKeywordBrush"), ("CodeNullBrush", "DsMutedBrush"),
+    ];
 
     // Where the layer is shown (UI thread only): each root's resources, and the layer dictionary installed in it.
     private readonly List<IResourceDictionary> _roots = new();
@@ -42,7 +56,16 @@ public class DynamicThemeEngine : IThemeApi
     /// <summary>How many times the layer was swapped into the screen (tests check a whole theme costs one).</summary>
     public int LayerCommits { get; private set; }
 
+    /// <summary>How long the last swap took on the UI thread: every dynamic resource below the roots re-resolving (perf tools read it).</summary>
+    public TimeSpan LastCommitDuration { get; private set; }
+
     public event Action<string>? ThemeChanged;
+
+    /// <summary>The layout changed (fonts, sizes, radii, borders, spacing, shadows), with the new layout.</summary>
+    public event Action<LayoutSpec>? LayoutChanged;
+
+    /// <summary>The layout in use; it is independent of the colour theme and stays when the theme changes.</summary>
+    public LayoutSpec Layout => _layout;
 
     public string ActiveThemeId => _activeThemeId;
     public IReadOnlyDictionary<string, string> Overrides => _overrides;
@@ -67,23 +90,39 @@ public class DynamicThemeEngine : IThemeApi
 
         _overrides[tokenName] = hexOrRgb;
 
-        // Auto-associate Brush and Color variants
+        // The Brush and Color variants come too, and a syntax colour carries its value colour along.
         string brushKey = tokenName.EndsWith("Brush", StringComparison.OrdinalIgnoreCase) ? tokenName : tokenName + "Brush";
-        string colorKey = tokenName.EndsWith("Brush", StringComparison.OrdinalIgnoreCase)
-            ? tokenName.Substring(0, tokenName.Length - 5) + "Color"
-            : tokenName;
-
-        var brush = new ImmutableSolidColorBrush(color);
         lock (_layerGate)
         {
-            _layer[brushKey] = brush;
-            _layer[colorKey] = color;
-            _layer[tokenName] = brush;
+            WriteColor(tokenName, color);
+            foreach (var (code, source) in CodeColorSources)
+            {
+                if (string.Equals(source, brushKey, StringComparison.Ordinal) && !_overrides.ContainsKey(code) && !ActiveThemeSets(code)) WriteColor(code, color);
+            }
         }
 
         QueueCommit();
         ThemeChanged?.Invoke(_activeThemeId);
     }
+
+    // Under _layerGate: a colour under its key, its Brush key and its Color key.
+    private void WriteColor(string key, Color color)
+    {
+        string brushKey = key.EndsWith("Brush", StringComparison.OrdinalIgnoreCase) ? key : key + "Brush";
+        string colorKey = key.EndsWith("Brush", StringComparison.OrdinalIgnoreCase)
+            ? key.Substring(0, key.Length - 5) + "Color"
+            : key;
+
+        var brush = new ImmutableSolidColorBrush(color);
+        _layer[brushKey] = brush;
+        _layer[colorKey] = color;
+        _layer[key] = brush;
+        _colorKeys.Add(brushKey);
+        _colorKeys.Add(colorKey);
+        _colorKeys.Add(key);
+    }
+
+    private bool ActiveThemeSets(string key) => _themes.TryGetValue(_activeThemeId, out var active) && active.Colors.ContainsKey(key);
 
     public string? GetColor(string tokenName)
     {
@@ -144,6 +183,8 @@ public class DynamicThemeEngine : IThemeApi
             case "mono":
             case "code":
                 _layer["M3FontFamilyMono"] = family;
+                _layer["DsCodeFontFamily"] = family;
+                _layer["JetBrainsMonoFontFamily"] = family;
                 _layer["EditorFontFamily"] = family;
                 if (size.HasValue) _layer["EditorFontSize"] = size.Value;
                 break;
@@ -152,29 +193,43 @@ public class DynamicThemeEngine : IThemeApi
             default:
                 _layer["M3FontFamily"] = family;
                 _layer["M3FontFamilyDisplay"] = family;
+                _layer["DsUiFontFamily"] = family;
                 if (size.HasValue) _layer["M3FontSizeBodyMedium"] = size.Value;
                 break;
         }
     }
 
-    public void SetDensity(LayoutDensity density)
+    /// <summary>Compact, Comfortable or Spacious: the layout's density (spacing of containers, controls, rows and tabs).</summary>
+    public void SetDensity(LayoutDensity density) => ApplyLayout(_layout with { Density = density });
+
+    /// <summary>
+    /// Lays the studio out by <paramref name="layout"/>: every layout token (fonts, type ramp, weights, radii, borders,
+    /// spacing, shadows) in one swap of the theme layer, so the whole change costs one resource notification.
+    /// </summary>
+    public void ApplyLayout(LayoutSpec layout)
     {
-        var (tab, rail, small, medium) = density switch
-        {
-            LayoutDensity.Compact => (28.0, 42.0, 2.0, 6.0),
-            LayoutDensity.Spacious => (42.0, 54.0, 6.0, 12.0),
-            _ => (35.0, 48.0, 4.0, 8.0),
-        };
-
-        lock (_layerGate)
-        {
-            _layer["DensityTabHeight"] = tab;
-            _layer["DensityRailWidth"] = rail;
-            _layer["DensityPaddingSmall"] = small;
-            _layer["DensityPaddingMedium"] = medium;
-        }
-
+        ArgumentNullException.ThrowIfNull(layout);
+        _layout = layout;
+        lock (_layerGate) WriteLayoutValues(layout, GetTheme(_activeThemeId));
         QueueCommit();
+        LayoutChanged?.Invoke(layout);
+    }
+
+    // Called under _layerGate.
+    private void WriteLayoutValues(LayoutSpec layout, ThemeDefinition? theme)
+    {
+        var isDark = _variant is { } variant ? variant != ThemeVariant.Light : theme?.IsDark ?? true;
+        foreach (var (key, value) in LayoutTokenMapper.Map(layout, isDark)) _layer[key] = value;
+
+        // A theme's own fonts apply where the layout keeps the defaults.
+        if (theme != null)
+        {
+            foreach (var (fontRole, fontName) in theme.Fonts)
+            {
+                var isCode = fontRole.Equals("code", StringComparison.OrdinalIgnoreCase) || fontRole.Equals("mono", StringComparison.OrdinalIgnoreCase) || fontRole.Equals("editor", StringComparison.OrdinalIgnoreCase);
+                if (isCode ? layout.CodeFont == null : layout.UiFont == null) SetFontValues(fontRole, fontName, null);
+            }
+        }
     }
 
     public void SetSpacing(string tokenName, double value)
@@ -248,26 +303,21 @@ public class DynamicThemeEngine : IThemeApi
         lock (_layerGate)
         {
             _variant = def.IsDark ? ThemeVariant.Dark : ThemeVariant.Light;
+            foreach (var key in _colorKeys) _layer.Remove(key);
+            _colorKeys.Clear();
             foreach (var (key, hex) in def.Colors)
             {
-                if (TryParseColor(hex, out var color))
-                {
-                    string brushKey = key.EndsWith("Brush", StringComparison.OrdinalIgnoreCase) ? key : key + "Brush";
-                    string colorKey = key.EndsWith("Brush", StringComparison.OrdinalIgnoreCase)
-                        ? key.Substring(0, key.Length - 5) + "Color"
-                        : key;
-
-                    var brush = new ImmutableSolidColorBrush(color);
-                    _layer[brushKey] = brush;
-                    _layer[colorKey] = color;
-                    _layer[key] = brush;
-                }
+                if (TryParseColor(hex, out var color)) WriteColor(key, color);
             }
 
-            foreach (var (fontRole, fontName) in def.Fonts)
+            foreach (var (code, source) in CodeColorSources)
             {
-                SetFontValues(fontRole, fontName, null);
+                if (!def.Colors.ContainsKey(code) && def.Colors.TryGetValue(source, out var hex) && TryParseColor(hex, out var color)) WriteColor(code, color);
             }
+
+            // The layout stays: its shadows are worked out again for the theme's scheme, and its fonts win over the
+            // theme's (when it has chosen any).
+            WriteLayoutValues(_layout, def);
         }
 
         QueueCommit();
@@ -335,6 +385,19 @@ public class DynamicThemeEngine : IThemeApi
     }
 
     private void CommitNow()
+    {
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        try
+        {
+            CommitLayer();
+        }
+        finally
+        {
+            LastCommitDuration = System.Diagnostics.Stopwatch.GetElapsedTime(started);
+        }
+    }
+
+    private void CommitLayer()
     {
         Dictionary<object, object?> values;
         ThemeVariant? variant;
@@ -442,6 +505,31 @@ public class DynamicThemeEngine : IThemeApi
                 });
             }
         });
+    }
+
+    public bool ApplyLayout(string layoutJson)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(layoutJson);
+        try
+        {
+            var element = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(layoutJson);
+            var json = element.TryGetProperty("$extensions", out var ext) && ext.TryGetProperty("com.frypdf.layout", out var embedded) ? embedded : element;
+            if (LayoutSpec.FromJson(json) is not { } layout) return false;
+            ApplyLayout(layout);
+            return true;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+
+    public string GetLayoutJson() => _layout.ToJson().GetRawText();
+
+    public object? GetLayoutToken(string tokenName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tokenName);
+        return LayoutTokens.TryGet(tokenName, out var value) ? value : null;
     }
 
     public void ResetToDefaults()

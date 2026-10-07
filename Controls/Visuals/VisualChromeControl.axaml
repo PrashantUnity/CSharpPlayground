@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
@@ -7,8 +7,8 @@
 
     <Border Background="{DynamicResource M3SurfaceContainerLowBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-            BorderThickness="1"
-            CornerRadius="6"
+            lt:Tokens.BorderThickness="DsBorderThin"
+            lt:Tokens.CornerRadius="DsRadiusMD"
             Padding="12,10">
         <Grid RowDefinitions="Auto,*,Auto,Auto">
             <!-- Header Toolbar -->
@@ -17,21 +17,21 @@
                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon x:Name="HeaderIcon" Kind="ChartLine" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock x:Name="TitleText" Text="Visual" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="TitleText" Text="Visual" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
 
                         <!-- Stats Pill -->
                         <Border x:Name="StatsPillBorder"
                                 Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                                BorderThickness="1"
-                                CornerRadius="3"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusXS"
                                 Padding="6,2"
                                 VerticalAlignment="Center">
-                            <TextBlock x:Name="StatsSummaryText" Text="N: 0" FontSize="10" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="StatsSummaryText" Text="N: 0" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
                         </Border>
                     </StackPanel>
-                    <TextBlock x:Name="SubtitleText" IsVisible="False" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                    <TextBlock x:Name="NoticeText" IsVisible="False" FontSize="10" TextWrapping="Wrap" Foreground="{DynamicResource M3PrimaryBrush}" FontStyle="Italic" />
+                    <TextBlock x:Name="SubtitleText" IsVisible="False" lt:Tokens.FontSize="DsFontSize150" TextWrapping="Wrap" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                    <TextBlock x:Name="NoticeText" IsVisible="False" lt:Tokens.FontSize="DsFontSize100" TextWrapping="Wrap" Foreground="{DynamicResource M3PrimaryBrush}" FontStyle="Italic" />
                 </StackPanel>
 
                 <!-- Right: Kind-Specific & Shared Toolbars -->
@@ -42,8 +42,8 @@
                     <!-- Shared Actions Toolbar -->
                     <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
+                            lt:Tokens.BorderThickness="DsBorderThin"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
                             Padding="2">
                         <StackPanel Orientation="Horizontal" Spacing="1">
                             <!-- Reset / Fit -->
@@ -80,8 +80,8 @@
                     x:Name="CanvasContainerBorder"
                     Background="{DynamicResource VisCanvasBgBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
+                    lt:Tokens.BorderThickness="DsBorderThin"
+                    lt:Tokens.CornerRadius="DsRadiusSM"
                     Padding="4"
                     ClipToBounds="True"
                     HorizontalAlignment="Stretch"

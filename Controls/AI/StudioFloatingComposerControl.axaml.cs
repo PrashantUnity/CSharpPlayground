@@ -55,6 +55,7 @@ public partial class StudioFloatingComposerControl : UserControl
 
         AttachedToVisualTree += (_, _) =>
         {
+            StudioAppContext.Instance.ThemeEngine.LayoutChanged += OnLayoutChanged;
             StudioAppContext.Instance.UI.ContributionsChanged += RefreshDynamicActions;
             RefreshDynamicActions();
             HookViewModel(DataContext as AiComposerViewModel);
@@ -62,6 +63,7 @@ public partial class StudioFloatingComposerControl : UserControl
 
         DetachedFromVisualTree += (_, _) =>
         {
+            StudioAppContext.Instance.ThemeEngine.LayoutChanged -= OnLayoutChanged;
             StudioAppContext.Instance.UI.ContributionsChanged -= RefreshDynamicActions;
             HookViewModel(null);
         };
@@ -102,6 +104,10 @@ public partial class StudioFloatingComposerControl : UserControl
             Avalonia.Threading.Dispatcher.UIThread.Post(UpdateLayoutForDockMode);
         }
     }
+
+    // The floating panel's corners and border follow the layout.
+    private void OnLayoutChanged(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutSpec layout) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateLayoutForDockMode);
 
     private void OnDockModeChanged(FrySharp.Sdk.AiDockMode mode)
     {
@@ -149,11 +155,13 @@ public partial class StudioFloatingComposerControl : UserControl
             container.Margin = new Thickness(0, 48, 24, 0);
             container.Width = normalVm.WindowWidth;
             container.Height = normalVm.WindowHeight;
-            container.CornerRadius = new CornerRadius(10);
-            container.BorderThickness = new Thickness(1);
+            var radius = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("Dialog") * 10 / 16;
+            var inner = Math.Max(0, radius - 1);
+            container.CornerRadius = new CornerRadius(radius);
+            container.BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth);
             container.BoxShadow = Avalonia.Media.BoxShadows.Parse("0 14 36 0 #70000000, 0 2 8 0 #30000000");
-            if (header != null) header.CornerRadius = new CornerRadius(9, 9, 0, 0);
-            if (promptDeck != null) promptDeck.CornerRadius = new CornerRadius(0, 0, 9, 9);
+            if (header != null) header.CornerRadius = new CornerRadius(inner, inner, 0, 0);
+            if (promptDeck != null) promptDeck.CornerRadius = new CornerRadius(0, 0, inner, inner);
             SetResizeHandlesVisible(true);
         }
     }
@@ -202,7 +210,7 @@ public partial class StudioFloatingComposerControl : UserControl
                         Content = new TextBlock
                         {
                             Text = action.Title,
-                            FontSize = 10.5,
+                            FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("150"),
                             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
                         }
                     };

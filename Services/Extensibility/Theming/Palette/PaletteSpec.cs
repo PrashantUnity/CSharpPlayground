@@ -135,7 +135,8 @@ public sealed record PaletteSpec
     /// <summary>A spec read back from JSON; <c>null</c> when it isn't one (or is from a newer version).</summary>
     public static PaletteSpec? FromJson(JsonElement? json)
     {
-        if (json is not { ValueKind: JsonValueKind.Object } element) return null;
+        // Ours always carries its version: any other object (which would read as all defaults) isn't a palette.
+        if (json is not { ValueKind: JsonValueKind.Object } element || !element.TryGetProperty(nameof(Version), out _)) return null;
         try
         {
             var spec = element.Deserialize<PaletteSpec>(JsonOptions);

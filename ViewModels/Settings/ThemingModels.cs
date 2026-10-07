@@ -101,7 +101,11 @@ public partial class ContrastPairingItemViewModel : ObservableObject
     private string _wcagBadge = "AA";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WcagBadgeBrushKey))]
     private bool _isWcagPassed = true;
+
+    /// <summary>The badge's theme colour: success when the pair passes, error when it doesn't.</summary>
+    public string WcagBadgeBrushKey => IsWcagPassed ? "DsSuccessBrush" : "DsErrorBrush";
 
     [ObservableProperty]
     private float _apcaLc;

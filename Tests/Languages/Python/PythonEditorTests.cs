@@ -8,6 +8,8 @@ using Xunit;
 namespace CSharpEditorPlugin.Tests;
 
 /// <summary>Python in the editor: its colors in both themes, and indentation after Enter.</summary>
+// Reads the shared highlighting definitions, which the theme tests recolour: never at the same time as them.
+[Collection("SettingsTests")]
 public class PythonEditorTests
 {
     // The color the highlighter gives a token (the occurrence-th one). The engine runs line by line from the top, as the

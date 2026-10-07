@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,8 +11,8 @@
         <Border x:Name="TextContainer"
                 Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="6"
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusMD"
                 Padding="14,10"
                 Margin="0,0,0,12"
                 HorizontalAlignment="Stretch"
@@ -24,8 +24,8 @@
         <Border x:Name="WebContainer"
                 Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusLG"
                 Margin="0,0,0,12"
                 HorizontalAlignment="Stretch"
                 ClipToBounds="True"
@@ -35,20 +35,20 @@
                 <Border Grid.Row="0"
                         Background="{DynamicResource M3SurfaceContainerLowBrush}"
                         BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Padding="10,6">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Document / App Info -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                    Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                                <TextBlock Text="&lt;/&gt;" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}"
+                                    Height="18" MinHeight="18" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,0" VerticalAlignment="Center">
+                                <TextBlock Text="&lt;/&gt;" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource M3PrimaryBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                             </Border>
-                            <TextBlock x:Name="WebTitleText" Text="HTML5 Interactive Web Document" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="WebTitleText" Text="HTML5 Interactive Web Document" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
                             <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
-                                    Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                                <TextBlock Text="LIVE PREVIEW" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}"
+                                    Height="18" MinHeight="18" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,0" VerticalAlignment="Center">
+                                <TextBlock Text="LIVE PREVIEW" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource M3PrimaryBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                             </Border>
                         </StackPanel>
@@ -56,18 +56,18 @@
                         <!-- Action Toolbar -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <!-- Reload Content -->
-                            <Button x:Name="ReloadButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Reload Web Content">
-                                <TextBlock Text="↻" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button x:Name="ReloadButton" Classes="html-action-btn" Width="26" lt:Tokens.Height="DsControlHeight100" ToolTip.Tip="Reload Web Content">
+                                <TextBlock Text="↻" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
 
                             <!-- Open in External Browser -->
-                            <Button x:Name="OpenBrowserButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Open in Default Web Browser">
-                                <TextBlock Text="↗" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button x:Name="OpenBrowserButton" Classes="html-action-btn" Width="26" lt:Tokens.Height="DsControlHeight100" ToolTip.Tip="Open in Default Web Browser">
+                                <TextBlock Text="↗" lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
 
                             <!-- Toggle Viewport Height -->
-                            <Button x:Name="HeightToggleButton" Classes="html-action-btn" Width="26" Height="26" ToolTip.Tip="Toggle Expanded Viewport">
-                                <TextBlock x:Name="HeightToggleSymbol" Text="⤢" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button x:Name="HeightToggleButton" Classes="html-action-btn" Width="26" lt:Tokens.Height="DsControlHeight100" ToolTip.Tip="Toggle Expanded Viewport">
+                                <TextBlock x:Name="HeightToggleSymbol" Text="⤢" lt:Tokens.FontSize="DsFontSize400" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Button>
                         </StackPanel>
                     </Grid>

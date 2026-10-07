@@ -48,6 +48,9 @@
   <ItemGroup>
     <!-- Code Editor & Roslyn compilation dependencies bundled with plugin -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <!-- Syntax colours: VS Code's TextMate grammars and themes (AvaloniaEdit's TextMate support). -->
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4" />
     <PackageReference Include="Avalonia.Controls.WebView" Version="12.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
@@ -93,6 +96,10 @@
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.xml" Condition="Exists('$(TargetDir)CSharpEditorPlugin.xml')" />
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
       <PluginFiles Include="$(TargetDir)AvaloniaEdit.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.dll')" />
+      <PluginFiles Include="$(TargetDir)AvaloniaEdit.TextMate.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.TextMate.dll')" />
+      <PluginFiles Include="$(TargetDir)TextMateSharp.dll" Condition="Exists('$(TargetDir)TextMateSharp.dll')" />
+      <PluginFiles Include="$(TargetDir)TextMateSharp.Grammars.dll" Condition="Exists('$(TargetDir)TextMateSharp.Grammars.dll')" />
+      <PluginFiles Include="$(TargetDir)Onigwrap.dll" Condition="Exists('$(TargetDir)Onigwrap.dll')" />
       <PluginFiles Include="$(TargetDir)Avalonia.Controls.WebView.dll" Condition="Exists('$(TargetDir)Avalonia.Controls.WebView.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.dll')" />
       <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll')" />
@@ -103,6 +110,11 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginStagingDir)" />
+    <!-- The TextMate grammars' regex engine (Oniguruma) is native: one library per platform, kept in its runtimes folder. -->
+    <ItemGroup>
+      <PluginNativeFiles Include="$(TargetDir)runtimes/*/native/*onigwrap*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PluginNativeFiles)" DestinationFiles="@(PluginNativeFiles->'$(PluginStagingDir)runtimes/%(RecursiveDir)%(Filename)%(Extension)')" />
     <Delete Files="$(OutputFryPlugin)" Condition="Exists('$(OutputFryPlugin)')" />
     <ZipDirectory SourceDirectory="$(PluginStagingDir)" DestinationFile="$(OutputFryPlugin)" />
     <RemoveDir Directories="$(PluginStagingDir)" />

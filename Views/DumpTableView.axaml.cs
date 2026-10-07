@@ -55,12 +55,31 @@ public partial class DumpTableView : UserControl
         }
 
         DataContextChanged += OnDataContextChanged;
-        ActualThemeVariantChanged += (s, e) =>
-        {
-            TableBrushes = null;
-            if (_currentTable != null) Refresh();
-        };
+        ActualThemeVariantChanged += (s, e) => OnLookChanged();
     }
+
+    // Another theme (even of the same light or dark scheme) or another layout: the table repaints with its values.
+    private void OnLookChanged()
+    {
+        TableBrushes = null;
+        if (_currentTable != null) Refresh();
+    }
+
+    private int _lookChangeQueued;
+
+    private void OnThemeOrLayoutChanged()
+    {
+        if (System.Threading.Interlocked.Exchange(ref _lookChangeQueued, 1) == 1) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            System.Threading.Interlocked.Exchange(ref _lookChangeQueued, 0);
+            OnLookChanged();
+        }, Avalonia.Threading.DispatcherPriority.Background);
+    }
+
+    private void OnThemeChanged(string themeId) => OnThemeOrLayoutChanged();
+
+    private void OnLayoutChanged(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutSpec layout) => OnThemeOrLayoutChanged();
 
     public bool FillHeight
     {
@@ -98,12 +117,18 @@ public partial class DumpTableView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        var engine = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine;
+        engine.ThemeChanged += OnThemeChanged;
+        engine.LayoutChanged += OnLayoutChanged;
         if (DataContext is DumpTableResult table) Attach(table, refreshNow: true);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        var engine = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine;
+        engine.ThemeChanged -= OnThemeChanged;
+        engine.LayoutChanged -= OnLayoutChanged;
         UnhookTable();
     }
 
@@ -213,6 +238,14 @@ public partial class DumpTableView : UserControl
 
     /// <summary>A nested table was opened or closed: the visible rows rebuild their content (nothing else does).</summary>
     internal void NestedToggled() => _rowsList?.RefreshRealizedRows(remeasure: true, rebuild: true);
+
+    /// <summary>A layout token (size, weight, thickness, radius, font) as the table's place in the tree resolves it.</summary>
+    internal T ResolveToken<T>(string resourceKey, T fallback)
+    {
+        if (this.TryFindResource(resourceKey, out var res) && res is T value) return value;
+        if (Application.Current != null && Application.Current.TryFindResource(resourceKey, out var appRes) && appRes is T appValue) return appValue;
+        return fallback;
+    }
 
     internal IBrush ResolveBrush(string resourceKey, string fallbackHex)
     {

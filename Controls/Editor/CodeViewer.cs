@@ -37,7 +37,6 @@ public class CodeViewer : TextEditor
         set => SetValue(LanguageProperty, value);
     }
 
-    private static readonly FontFamily s_defaultCodeFont = new("JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace");
     private static readonly IBrush s_darkForeground = new SolidColorBrush(Color.Parse("#D4D4D4"));
     private static readonly IBrush s_darkLink = new SolidColorBrush(Color.Parse("#4FC1FF"));
     private static readonly IBrush s_lightForeground = new SolidColorBrush(Color.Parse("#1E293B"));
@@ -51,8 +50,10 @@ public class CodeViewer : TextEditor
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         Background = Brushes.Transparent;
-        FontFamily = Application.Current != null && Application.Current.TryFindResource("DsCodeFontFamily", out var fontRes) && fontRes is FontFamily ff ? ff : s_defaultCodeFont;
-        FontSize = 12;
+        // The layout's code font (Settings → Layout & Typography), and every change to it.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.SetFontFamily(this, "DsCodeFontFamily");
+        // Code samples follow the layout's type ramp (body size).
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.SetFontSize(this, "DsFontSize300");
 
         Options.HighlightCurrentLine = false;
         Options.ConvertTabsToSpaces = true;
@@ -97,15 +98,14 @@ public class CodeViewer : TextEditor
                       (ActualThemeVariant != ThemeVariant.Light && (Application.Current?.ActualThemeVariant == ThemeVariant.Dark));
 
         var language = StudioLanguageServices.Default.Registry.Get(Language);
+        SyntaxColoring.Apply(this, language, isDark);
         if (isDark)
         {
-            SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(language?.GetHighlighting(isDark: true) ?? CSharpSyntaxHighlightingTheme.GetDarkTheme());
             Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
             TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_darkLink);
         }
         else
         {
-            SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(language?.GetHighlighting(isDark: false) ?? CSharpSyntaxHighlightingTheme.GetLightTheme());
             Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
             TextArea.TextView.LinkTextForegroundBrush = ResolveBrush("EditorLinkBrush", s_lightLink);
         }

@@ -1513,6 +1513,8 @@ internal static class StudioSnapshots
 
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("server_scripts"), languages.Registry);
+        // --workspace <folder>: the Explorer shows that folder (as when the studio has a workspace open).
+        if (options.Value("workspace") is { } serverWorkspace) Snapshot.Wait(storage.OpenExternalProjectAsync(serverWorkspace));
         var compiler = new RoslynServerCompilationService();
         var portService = new PortAvailabilityService();
         var engine = new FryHttpListenerServerEngine(portService, compiler);

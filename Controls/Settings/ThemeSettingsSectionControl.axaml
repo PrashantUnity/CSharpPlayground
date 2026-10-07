@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,49 +10,49 @@
              x:DataType="settings:CSharpSettingsViewModel">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16" Margin="24,18,24,32" MaxWidth="1120">
+        <StackPanel lt:Tokens.Spacing="DsSpace16" Margin="24,18,24,32" MaxWidth="1120">
 
             <!-- 1. TOP HEADER & GLOBAL ACTIONS -->
             <Border Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="18,14">
+                    lt:Tokens.BorderThickness="DsCardBorder"
+                    lt:Tokens.CornerRadius="DsRadiusCard"
+                    Padding="18,14" lt:Tokens.BoxShadow="DsCardShadow">
                 <Grid RowDefinitions="Auto,Auto">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <Border Width="34" Height="34" CornerRadius="8"
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
+                            <Border Width="34" Height="34" lt:Tokens.CornerRadius="DsRadiusLG"
                                     Background="{DynamicResource DsPrimarySubtleBrush}"
                                     BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
-                                    BorderThickness="1">
+                                    lt:Tokens.BorderThickness="DsBorderThin">
                                 <materialIcons:MaterialIcon Kind="PaletteOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
-                            <TextBlock Text="THEME &amp; COLOR HARMONY STUDIO" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="THEME &amp; COLOR HARMONY STUDIO" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Button Command="{Binding RandomizeHarmonicWheelCommand}" Classes="cs-toolbar-filled" Padding="11,5" ToolTip.Tip="New colours for every unlocked section, applied to the studio">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="DiceMultipleOutline" Width="14" Height="14" VerticalAlignment="Center" />
-                                    <TextBlock Text="Generate &amp; Apply" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="Generate &amp; Apply" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding ResetDefaultThemeCommand}" Classes="cs-toolbar-outlined" Padding="10,5" ToolTip.Tip="Reset to the default theme">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Restore" Width="13" Height="13" VerticalAlignment="Center" />
-                                    <TextBlock Text="Reset" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Text="Reset" lt:Tokens.FontSize="DsFontSize200" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
                     </Grid>
 
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                        <TextBlock Grid.Column="0" Text="Scientific color harmony generator, 11-stop tonal scale synthesizer, vision-deficiency simulation, and live preview for 120+ tokens." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Scientific color harmony generator, 11-stop tonal scale synthesizer, vision-deficiency simulation, and live preview for 120+ tokens." lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadius2XL" Padding="10,3" Margin="10,0,0,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Active:" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding ActiveThemeName}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <Border Width="7" Height="7" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Active:" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveThemeName}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
                     </Grid>

@@ -207,6 +207,7 @@ public partial class LocalScriptStorageService
         IsSourceFile = true,
         LastModified = LastWriteTimeUtc(file),
         FolderPath = GetFolderPath(file),
+        FileName = Path.GetFileName(file),
         IsExternalRoot = IsExternalWorkspaceActive,
         WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
     };

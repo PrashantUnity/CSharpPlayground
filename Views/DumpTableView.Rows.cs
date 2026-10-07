@@ -179,6 +179,7 @@ public sealed class DumpTableRowControl : Control
         if (owner == null || table == null || brushes == null || _row == null) return;
 
         _indexText.FontFamily = brushes.Monospace;
+        _indexText.FontSize = brushes.SmallSize;
         for (int c = 0; c < table.Columns.Count; c++)
         {
             var cell = c < _row.Cells.Count ? _row.Cells[c] : null;

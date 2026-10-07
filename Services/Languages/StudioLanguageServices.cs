@@ -44,6 +44,7 @@ public sealed class StudioLanguageServices
         ToolchainSettings = new ToolchainSettingsStore(Path.Combine(BaseDirectory, "toolchains.json"));
         StudioSettings = new Settings.StudioSettingsStore(Path.Combine(BaseDirectory, "studio_settings.json"));
         ThemeLibrary = new Extensibility.Theming.ThemeLibraryStore(Path.Combine(BaseDirectory, "themes"));
+        LayoutLibrary = new Extensibility.Theming.Layout.LayoutLibraryStore(Path.Combine(BaseDirectory, "layouts"));
         Registry = new LanguageRegistry();
 
         AdapterManager = new Debugging.Dap.DapAdapterManager(Processes, Host);
@@ -86,6 +87,9 @@ public sealed class StudioLanguageServices
 
     /// <summary>The user's saved themes (as many as they like, each named), one file each under <c>themes/</c>.</summary>
     public Extensibility.Theming.ThemeLibraryStore ThemeLibrary { get; }
+
+    /// <summary>The user's saved layouts (Settings → Layout &amp; Typography).</summary>
+    public Extensibility.Theming.Layout.LayoutLibraryStore LayoutLibrary { get; }
     public LanguageRegistry Registry { get; }
 
     public ILanguageDefinition CSharp => Registry.Get(LanguageIds.CSharp) ?? throw new InvalidOperationException("C# isn't registered.");

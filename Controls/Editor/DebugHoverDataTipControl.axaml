@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
@@ -7,16 +7,16 @@
 
     <Border Background="{DynamicResource M3SurfaceContainerHighBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-            BorderThickness="1"
-            CornerRadius="8"
-            BoxShadow="{DynamicResource DsModalShadow}"
+            lt:Tokens.BorderThickness="DsBorderThin"
+            lt:Tokens.CornerRadius="DsRadiusLG"
+            lt:Tokens.BoxShadow="DsModalShadow"
             MinWidth="340"
             MaxWidth="620"
             MaxHeight="450"
             ClipToBounds="True">
         <Grid RowDefinitions="Auto,*,Auto">
             <!-- 1. Header Bar (Root variable / expression inspection) -->
-            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" lt:Tokens.BorderThickness="DsBorderBottom" Padding="8,5">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!-- Left: Root Node (Chevron, Icon, Name, =, Type, Value) -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
@@ -31,10 +31,10 @@
 
                         <materialIcons:MaterialIcon Name="RootNodeIcon" Kind="Variable" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
 
-                        <TextBlock Name="VariableNameText" Text="variable" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
-                        <TextBlock Text="=" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                        <TextBlock Name="VariableTypeText" Text="" FontSize="11" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
-                        <TextBlock Name="ValueSummaryText" Text="null" FontSize="11.5" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
+                        <TextBlock Name="VariableNameText" Text="variable" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource M3OnSurfaceBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalAlignment="Center" />
+                        <TextBlock Text="=" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                        <TextBlock Name="VariableTypeText" Text="" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource CodeTypeBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalAlignment="Center" />
+                        <TextBlock Name="ValueSummaryText" Text="null" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource M3OnSurfaceBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Right: Quick Actions (Explore, View, +Watch, Copy, Close) -->
@@ -46,7 +46,7 @@
                                 ToolTip.Tip="Explore in Collection View (Table grid)">
                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="Table" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Explore" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Explore" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -57,7 +57,7 @@
                                 ToolTip.Tip="View formatted text / JSON">
                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="EyeOutline" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="View" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="View" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -66,11 +66,11 @@
                                 Classes="m3-tonal-btn"
                                 Height="22" MinHeight="0"
                                 Padding="7,0"
-                                CornerRadius="11"
+                                lt:Tokens.CornerRadius="DsRadiusXL"
                                 ToolTip.Tip="Pin expression to Watch expressions">
                             <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="EyePlusOutline" Width="11" Height="11" Foreground="{DynamicResource M3OnSecondaryContainerBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="+ Watch" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="+ Watch" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -116,14 +116,14 @@
                                             <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
 
                                             <!-- Node Name -->
-                                            <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="3" Text="=" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="4,0" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource CodeMemberBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="=" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="4,0" VerticalAlignment="Center" />
 
                                             <!-- Node Type -->
-                                            <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="10" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,0,4,0" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource CodeTypeBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" Margin="0,0,4,0" VerticalAlignment="Center" />
 
                                             <!-- Node Value -->
-                                            <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontSize="11" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextTrimming="CharacterEllipsis" MaxWidth="260" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource M3OnSurfaceBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextTrimming="CharacterEllipsis" MaxWidth="260" VerticalAlignment="Center" />
 
                                             <!-- Node Context Actions (Explore / View) -->
                                             <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
@@ -132,14 +132,14 @@
                                                         Click="OnChildExploreClicked"
                                                         Tag="{Binding}"
                                                         ToolTip.Tip="Explore in Collection View (Table)">
-                                                    <TextBlock Text="Explore" FontWeight="SemiBold" />
+                                                    <TextBlock Text="Explore" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                 </Button>
                                                 <Button Classes="hover-action-btn"
                                                         IsVisible="{Binding IsTextOrStructured}"
                                                         Click="OnChildViewClicked"
                                                         Tag="{Binding}"
                                                         ToolTip.Tip="View full text / JSON">
-                                                    <TextBlock Text="View" FontWeight="SemiBold" />
+                                                    <TextBlock Text="View" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
@@ -160,10 +160,10 @@
                                                                     <materialIcons:MaterialIcon Kind="{Binding IsExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=ChevronRight}" Width="11" Height="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                                                 </ToggleButton>
                                                                 <materialIcons:MaterialIcon Grid.Column="1" Kind="{Binding IconKind}" Width="12" Height="12" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                 <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
-                                                                <TextBlock Grid.Column="3" Text="=" FontSize="10" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
-                                                                <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9.5" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,0,3,0" VerticalAlignment="Center" />
-                                                                <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" FontSize="10.5" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center" />
+                                                                 <TextBlock Grid.Column="2" Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource CodeMemberBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="3" Text="=" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="4" Text="{Binding TypeName, StringFormat='\{{0}\}'}" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource CodeTypeBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" Margin="0,0,3,0" VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="5" Text="{Binding ValueDisplay}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource M3OnSurfaceBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center" />
 
                                                                 <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="4,0,0,0">
                                                                     <Button Classes="hover-action-btn"
@@ -171,14 +171,14 @@
                                                                             Click="OnChildExploreClicked"
                                                                             Tag="{Binding}"
                                                                             ToolTip.Tip="Explore in Collection View (Table)">
-                                                                        <TextBlock Text="Explore" FontWeight="SemiBold" />
+                                                                        <TextBlock Text="Explore" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                                     </Button>
                                                                     <Button Classes="hover-action-btn"
                                                                             IsVisible="{Binding IsTextOrStructured}"
                                                                             Click="OnChildViewClicked"
                                                                             Tag="{Binding}"
                                                                             ToolTip.Tip="View full text / JSON">
-                                                                        <TextBlock Text="View" FontWeight="SemiBold" />
+                                                                        <TextBlock Text="View" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                                                     </Button>
                                                                 </StackPanel>
                                                             </Grid>
@@ -190,10 +190,10 @@
                                                                         <Border Classes="hover-node-row" Margin="0,1">
                                                                             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*">
                                                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="11" Height="11" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0" />
-                                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource CodeMemberBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" VerticalAlignment="Center" />
-                                                                                <TextBlock Grid.Column="2" Text="=" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
-                                                                                <TextBlock Grid.Column="3" Text="{Binding TypeName, StringFormat='\{{0}\}'}" FontSize="9" Foreground="{DynamicResource CodeTypeBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,0,3,0" VerticalAlignment="Center" />
-                                                                                <TextBlock Grid.Column="4" Text="{Binding ValueDisplay}" FontSize="10" Foreground="{DynamicResource M3OnSurfaceBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource CodeMemberBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="2" Text="=" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="3,0" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="3" Text="{Binding TypeName, StringFormat='\{{0}\}'}" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource CodeTypeBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" Margin="0,0,3,0" VerticalAlignment="Center" />
+                                                                                <TextBlock Grid.Column="4" Text="{Binding ValueDisplay}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource M3OnSurfaceBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextTrimming="CharacterEllipsis" MaxWidth="180" VerticalAlignment="Center" />
                                                                             </Grid>
                                                                         </Border>
                                                                     </DataTemplate>
@@ -213,10 +213,10 @@
             </Grid>
 
             <!-- 3. Subtle Status / Hint Footer -->
-            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="8,3">
+            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerLowestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" lt:Tokens.BorderThickness="DsBorderTop" Padding="8,3">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Live Debug Variable Inspector" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" FontSize="9.5" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Live Debug Variable Inspector" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="Press Esc to dismiss" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center" />
                 </Grid>
             </Border>
         </Grid>

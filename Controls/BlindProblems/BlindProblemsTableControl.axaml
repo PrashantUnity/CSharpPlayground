@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -20,7 +20,7 @@
         <Border Grid.Row="0"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,0,0,1"
+                lt:Tokens.BorderThickness="DsBorderBottom"
                 Padding="16,0,20,0">
             <Grid x:Name="HeaderGrid">
                 <Grid.ColumnDefinitions>
@@ -163,16 +163,16 @@
                                 </Border>
 
                                 <TextBlock Grid.Column="3" Text="{Binding AcceptanceRateText}" Margin="12,0,8,0"
-                                           FontSize="12" Foreground="{DynamicResource DsMutedBrush}"
+                                           lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}"
                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
                                 <Border Grid.Column="4" Margin="12,0,8,0"
                                         Background="{Binding DifficultyBackground}"
                                         Height="20" MinHeight="20"
-                                        CornerRadius="10" Padding="8,0"
+                                        lt:Tokens.CornerRadius="DsRadiusXL" Padding="8,0"
                                         HorizontalAlignment="Left" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DifficultyBadgeText}"
-                                               FontSize="11" FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                                Margin="0,1,0,0"
                                                Foreground="{Binding DifficultyColor}" />
@@ -221,11 +221,11 @@
         </ItemsControl>
 
         <!-- Nothing matches: say so, and offer the way back -->
-        <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+        <StackPanel Grid.Row="1" lt:Tokens.Spacing="DsSpace10" HorizontalAlignment="Center" VerticalAlignment="Center"
                     IsVisible="{Binding HasNoResults}">
             <materialIcons:MaterialIcon Kind="FilterRemoveOutline" Width="32" Height="32"
                                         Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="No problems match these filters" FontSize="13" FontWeight="SemiBold"
+            <TextBlock Text="No problems match these filters" lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightEmphasis"
                        Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
             <Button Classes="nexus-btn-surface" Command="{Binding ClearFiltersCommand}" HorizontalAlignment="Center" Padding="12,6">
                 <StackPanel Orientation="Horizontal" Spacing="6">

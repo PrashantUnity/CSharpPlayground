@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -27,19 +27,19 @@
                         <!-- Top: Icon badge + Kind label -->
                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
                             <Border Grid.Column="0" Width="36" Height="36"
-                                    CornerRadius="8"
+                                    lt:Tokens.CornerRadius="DsRadiusLG"
                                     Background="{DynamicResource DsPrimarySubtleBrush}"
                                     BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
-                                    BorderThickness="1">
+                                    lt:Tokens.BorderThickness="DsBorderThin">
                                 <materialIcons:MaterialIcon Kind="{Binding IconKind}"
                                                             Width="18" Height="18"
                                                             Foreground="{DynamicResource DsPrimaryBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
 
-                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                    Height="18" MinHeight="18" CornerRadius="4" Padding="6,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding KindBadgeText}" FontSize="10" FontWeight="SemiBold"
+                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                                    Height="18" MinHeight="18" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding KindBadgeText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis"
                                            Foreground="{DynamicResource DsMutedBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                             </Border>
@@ -48,12 +48,12 @@
                         <!-- Body: Title & Description -->
                         <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
                             <TextBlock Text="{Binding Title}"
-                                       FontWeight="SemiBold" FontSize="13"
+                                       lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize400"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        TextTrimming="CharacterEllipsis"
                                        ToolTip.Tip="{Binding Title}" />
                             <TextBlock Text="{Binding Description}"
-                                       FontSize="11.5"
+                                       lt:Tokens.FontSize="DsFontSize250"
                                        Foreground="{DynamicResource DsMutedBrush}"
                                        TextWrapping="Wrap"
                                        TextTrimming="CharacterEllipsis"
@@ -91,7 +91,7 @@
                                     Classes="nexus-card-use-btn"
                                     ToolTip.Tip="Launch template now (or double-click card)">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <TextBlock Text="Use" FontWeight="SemiBold" FontSize="11" />
+                                    <TextBlock Text="Use" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize200" />
                                     <materialIcons:MaterialIcon Kind="ArrowRight" Width="12" Height="12" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -102,13 +102,13 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <StackPanel Spacing="16">
+    <StackPanel lt:Tokens.Spacing="DsSpace16">
         <!-- Header: Title, Category Filter Chips & Search -->
         <Border common:CompactWhenCrowded.IsEnabled="True">
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
                     <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="STARTER TEMPLATES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="STARTER TEMPLATES" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- Category Filter Chips -->
@@ -119,7 +119,7 @@
                             Classes.active="{Binding IsAllTemplateCategoryActive}">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <TextBlock Text="All" />
-                            <TextBlock Text="{Binding StarterTemplates.Count}" FontSize="10" Opacity="0.7" />
+                            <TextBlock Text="{Binding StarterTemplates.Count}" lt:Tokens.FontSize="DsFontSize100" Opacity="0.7" />
                         </StackPanel>
                     </Button>
 
@@ -162,14 +162,14 @@
         </Border>
 
         <!-- Inline Search & Filter Bar for Templates -->
-        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                CornerRadius="8" Height="36" Padding="10,0">
+        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusLG" Height="36" Padding="10,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <materialIcons:MaterialIcon Grid.Column="0" Kind="Magnify" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBox Grid.Column="1" Text="{Binding SearchQuery, Mode=TwoWay}"
                          Background="Transparent" BorderThickness="0"
-                         MinHeight="0" Height="28" Padding="0"
-                         FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}"
+                         MinHeight="0" lt:Tokens.Height="DsControlHeight150" Padding="0"
+                         lt:Tokens.FontSize="DsFontSize350" Foreground="{DynamicResource DsTextWhiteBrush}"
                          VerticalAlignment="Center" VerticalContentAlignment="Center"
                          PlaceholderText="Filter templates by title, description, or tags..." />
                 <Button Grid.Column="2" Command="{Binding ClearSearchCommand}"
@@ -182,15 +182,15 @@
 
         <!-- Empty State When No Templates Match Filter -->
         <Border IsVisible="{Binding !HasMatchingTemplates}"
-                Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                CornerRadius="12" Padding="32,40">
-            <StackPanel HorizontalAlignment="Center" Spacing="12">
-                <Border Width="48" Height="48" CornerRadius="24" Background="{DynamicResource DsSurfaceHoverBrush}" HorizontalAlignment="Center">
+                Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsCardBorder"
+                lt:Tokens.CornerRadius="DsRadius2XL" Padding="32,40" lt:Tokens.BoxShadow="DsCardShadow">
+            <StackPanel HorizontalAlignment="Center" lt:Tokens.Spacing="DsSpace12">
+                <Border Width="48" Height="48" lt:Tokens.CornerRadius="DsRadius4XL" Background="{DynamicResource DsSurfaceHoverBrush}" HorizontalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="24" Height="24" Foreground="{DynamicResource DsMutedBrush}"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
-                <TextBlock Text="No starter templates found" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                <TextBlock Text="No templates match your current filter or search criteria." FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="No starter templates found" lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="No templates match your current filter or search criteria." lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                 <Button Command="{Binding ResetTemplateFiltersCommand}" Classes="nexus-btn-surface" HorizontalAlignment="Center" Margin="0,6,0,0">
                     <TextBlock Text="Reset Template Filters" />
                 </Button>
@@ -198,12 +198,12 @@
         </Border>
 
         <!-- Templates Content Lists -->
-        <StackPanel Spacing="24" IsVisible="{Binding HasMatchingTemplates}">
+        <StackPanel lt:Tokens.Spacing="DsSpace24" IsVisible="{Binding HasMatchingTemplates}">
             <!-- Script Templates Group -->
-            <StackPanel Spacing="12">
+            <StackPanel lt:Tokens.Spacing="DsSpace12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="C# Automation Scripts" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                    <TextBlock Text="— runs top to bottom" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="C# Automation Scripts" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    <TextBlock Text="— runs top to bottom" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding ScriptTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
                     <ItemsControl.ItemsPanel>
@@ -215,10 +215,10 @@
             </StackPanel>
 
             <!-- Notebook Templates Group -->
-            <StackPanel Spacing="12">
+            <StackPanel lt:Tokens.Spacing="DsSpace12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="Interactive C# Notebooks" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                    <TextBlock Text="— multi-cell interactive exploration" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Interactive C# Notebooks" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    <TextBlock Text="— multi-cell interactive exploration" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding NotebookTemplates}" ItemTemplate="{StaticResource TemplateCardTemplate}">
                     <ItemsControl.ItemsPanel>

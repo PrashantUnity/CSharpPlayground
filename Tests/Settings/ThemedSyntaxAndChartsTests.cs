@@ -21,6 +21,8 @@ public class ThemedSyntaxAndChartsTests : IDisposable
     {
         StudioAppContext.Instance.ThemeEngine.ApplyTheme(BuiltInThemes.DarkPlus.Id);
         SyntaxPaletteApplier.Refresh();
+        // The language definitions are shared by the whole test run: give them back as the languages define them.
+        foreach (var (_, definition) in Definitions()) SyntaxPaletteApplier.Forget(definition);
         try { Directory.Delete(_services.BaseDirectory, recursive: true); } catch (IOException) { }
     }
 

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,27 +15,27 @@
         <!-- Toolbar Strip -->
         <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,0,0,1"
+                lt:Tokens.BorderThickness="DsBorderBottom"
                 Padding="12,6" Height="38">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: File Details & Comparison Pill -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="SourceCommit" Width="16" Height="16"
                                                 Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding ActiveDiffDocument.FileName}" FontWeight="Bold" FontSize="12"
+                    <TextBlock Text="{Binding ActiveDiffDocument.FileName}" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize300"
                                Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding ActiveDiffDocument.RelativePath}" FontSize="10.5"
+                    <TextBlock Text="{Binding ActiveDiffDocument.RelativePath}" lt:Tokens.FontSize="DsFontSize150"
                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
 
                     <!-- Comparison Mode Pill -->
-                    <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="3" Padding="6,2" Margin="6,0,0,0">
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="6,2" Margin="6,0,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <TextBlock Text="HEAD" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
-                            <TextBlock Text="↔" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="HEAD" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="↔" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
                             <TextBlock Text="{Binding ActiveDiffDocument.IsStaged, Converter={x:Static ObjectConverters.IsNull}}"
-                                       FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}"
+                                       lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}"
                                        IsVisible="False" />
-                            <TextBlock Text="Working Tree" FontSize="9.5" FontWeight="Bold"
+                            <TextBlock Text="Working Tree" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
                                        Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -43,9 +43,9 @@
                     <!-- Additions / Deletions Stats -->
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="6,0,0,0">
                         <TextBlock Text="{Binding ActiveDiffDocument.AdditionsCount, StringFormat='+{0}'}"
-                                   FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                   lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding ActiveDiffDocument.DeletionsCount, StringFormat='-{0}'}"
-                                   FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
+                                   lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
 
@@ -59,7 +59,7 @@
                                                         Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding IsSideBySideDiff, Converter={x:Static ObjectConverters.IsNull}}"
                                        IsVisible="False" />
-                            <TextBlock Text="Toggle View" FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Toggle View" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -69,7 +69,7 @@
                             ToolTip.Tip="Stage Changes for this file">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Stage" FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Stage" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -78,7 +78,7 @@
                             ToolTip.Tip="Unstage Changes for this file">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="Minus" Width="13" Height="13" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Unstage" FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Unstage" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -88,7 +88,7 @@
                             ToolTip.Tip="Discard Changes (revert to HEAD)">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="Undo" Width="13" Height="13" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Discard" FontSize="10.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Discard" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -116,8 +116,8 @@
                 <!-- Left Pane: HEAD / Previous -->
                 <Grid Grid.Column="0" RowDefinitions="Auto,*">
                     <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Padding="10,4"
-                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="HEAD (Previous / Original)" FontSize="10" FontWeight="Bold"
+                            BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
+                        <TextBlock Text="HEAD (Previous / Original)" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsMutedBrush}" />
                     </Border>
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -146,8 +146,8 @@
                 <!-- Right Pane: Working Tree / Modified -->
                 <Grid Grid.Column="2" RowDefinitions="Auto,*">
                     <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Padding="10,4"
-                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Working Tree (Modified)" FontSize="10" FontWeight="Bold"
+                            BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom">
+                        <TextBlock Text="Working Tree (Modified)" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsPrimaryBrush}" />
                     </Border>
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -200,7 +200,7 @@
                 <materialIcons:MaterialIcon Kind="FileCheckOutline" Width="36" Height="36"
                                             Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                 <TextBlock Text="No differences detected. File matches HEAD."
-                           FontSize="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                           lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
             </StackPanel>
         </Panel>
     </Grid>

@@ -27,6 +27,15 @@ public partial class FryServerStudioView : UserControl
             return;
         }
 
+        // VS Code Shortcut: Ctrl+Shift+E / Cmd+Shift+E -> Explorer
+        if (isCmdOrCtrl && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.E)
+        {
+            // Shows the Explorer (as in VS Code it never hides it; clicking the icon again does).
+            if (!(vm.IsExplorerActive && vm.IsSideBarVisible)) vm.SelectActivityBarItem(2);
+            e.Handled = true;
+            return;
+        }
+
         // VS Code Shortcut: Ctrl+J / Cmd+J -> Toggle Bottom Panel
         if (isCmdOrCtrl && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.J)
         {

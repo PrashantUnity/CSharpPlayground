@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,22 +15,22 @@
         <StackPanel x:Name="KindToolsPanel" Orientation="Horizontal" Spacing="4" IsVisible="False">
             <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
+                    lt:Tokens.BorderThickness="DsBorderThin"
+                    lt:Tokens.CornerRadius="DsRadiusSM"
                     Padding="2"
                     Margin="0,0,4,0">
                 <StackPanel Orientation="Horizontal" Spacing="1">
                     <Button Name="IsoViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Isometric 3D View">
-                        <TextBlock Text="ISO" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="ISO" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button Name="TopViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Top View (XY)">
-                        <TextBlock Text="TOP" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="TOP" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button Name="FrontViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Front View (XZ)">
-                        <TextBlock Text="FRT" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="FRT" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                     <Button Name="SideViewBtn" Classes="chrome-tool-btn" Width="24" Height="22" ToolTip.Tip="Side View (YZ)">
-                        <TextBlock Text="SIDE" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="SIDE" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
                 </StackPanel>
             </Border>
@@ -58,8 +58,8 @@
         <Border x:Name="CanvasContainer"
                 Background="{DynamicResource VisCanvasBgBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusSM"
                 Padding="2"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"

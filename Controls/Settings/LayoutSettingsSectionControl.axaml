@@ -1,0 +1,446 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             xmlns:settingsControls="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Settings"
+             xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="1600"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.LayoutSettingsSectionControl"
+             x:DataType="settings:CSharpSettingsViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.layout-card">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsCardBorder" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusCard" />
+            <Setter Property="lt:Tokens.Padding" Value="DsCardPadding" />
+        </Style>
+        <Style Selector="TextBlock.card-title">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightStrong" />
+            <Setter Property="lt:Tokens.LetterSpacing" Value="DsTracking080" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.lever-label">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
+            <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.lever-value">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
+            <Setter Property="lt:Tokens.FontFamily" Value="DsCodeFontFamily" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize150" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="Button.segment-btn">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.segment-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+        </Style>
+        <Style Selector="Button.preset-card">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.preset-card:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
+        </Style>
+        <Style Selector="Button.card-action">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        </Style>
+        <Style Selector="Slider">
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Margin" Value="0,-6" />
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize300" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusInput" />
+        </Style>
+        <Style Selector="Expander">
+            <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
+        </Style>
+        <Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        </Style>
+        <Style Selector="Expander /template/ Border#ExpanderContent">
+            <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- A layout card: a sample corner and type, click to apply; copy on every layout, rename and delete on the user's own. -->
+        <DataTemplate x:Key="LayoutCardTemplate" x:DataType="settings:LayoutPresetItemViewModel">
+            <Panel Margin="0,0,10,10" Width="236">
+                <Button Classes="preset-card"
+                        Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).ApplyLayoutPresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}" ToolTip.Tip="{Binding Description}">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <Border Grid.RowSpan="2" Width="34" Height="34" Margin="0,0,10,0" BorderBrush="{DynamicResource DsPrimaryBrush}"
+                                lt:Tokens.BorderThickness="DsBorderMedium" CornerRadius="{Binding SampleRadius, Converter={x:Static settingsControls:LayoutConverters.Radius}}"
+                                Background="{DynamicResource DsPrimarySubtleBrush}" VerticalAlignment="Center">
+                            <TextBlock Text="Aa" FontSize="{Binding SampleFontSize}" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" />
+                            <Border Grid.Column="1" IsVisible="{Binding IsActive}" Background="{DynamicResource DsPrimarySubtleBrush}" lt:Tokens.CornerRadius="DsRadiusFull"
+                                    Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="IN USE" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            </Border>
+                        </Grid>
+                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Summary}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" Margin="0,2,56,0" />
+                    </Grid>
+                </Button>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,5" Spacing="1">
+                    <Button Classes="card-action" IsVisible="{Binding IsUserLayout}" ToolTip.Tip="Rename"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).BeginRenameLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" />
+                    </Button>
+                    <Button Classes="card-action" ToolTip.Tip="Save a copy to My layouts"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).DuplicateLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="13" Height="13" />
+                    </Button>
+                    <Button Classes="card-action" IsVisible="{Binding IsUserLayout}" ToolTip.Tip="Delete"
+                            Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).AskDeleteLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}">
+                        <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="13" Height="13" />
+                    </Button>
+                </StackPanel>
+
+                <Border IsVisible="{Binding IsRenaming}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}"
+                        lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="10,8">
+                    <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                        <TextBox Classes="layout-rename-box" Text="{Binding EditName, Mode=TwoWay}" lt:Tokens.FontSize="DsFontSize300" MaxLength="80" KeyDown="OnRenameBoxKeyDown" />
+                        <Button Grid.Column="1" Classes="card-action" Margin="4,0,0,0" ToolTip.Tip="Rename"
+                                Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).RenameLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <materialIcons:MaterialIcon Kind="Check" Width="15" Height="15" />
+                        </Button>
+                        <Button Grid.Column="2" Classes="card-action" ToolTip.Tip="Cancel"
+                                Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).CancelRenameLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <materialIcons:MaterialIcon Kind="Close" Width="15" Height="15" />
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Border IsVisible="{Binding IsConfirmingDelete}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsErrorBrush}"
+                        lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="10,8">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <TextBlock lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextBrush}" TextTrimming="CharacterEllipsis">
+                            <Run Text="Delete" /> <Run Text="{Binding Name}" lt:Tokens.FontWeight="DsWeightEmphasis" /><Run Text="?" />
+                        </TextBlock>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0" HorizontalAlignment="Right">
+                            <Button Classes="cs-toolbar-outlined" Content="Keep"
+                                    Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).AskDeleteLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                            <Button Classes="cs-toolbar-filled" Content="Delete" Background="{DynamicResource DsErrorBrush}"
+                                    Command="{Binding ((settings:CSharpSettingsViewModel)DataContext).DeleteLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Panel>
+        </DataTemplate>
+
+        <!-- An override row: Auto follows the global lever; Custom sets this one. -->
+        <DataTemplate x:Key="OverrideRowTemplate" x:DataType="settings:LayoutOverrideRowViewModel">
+            <Grid ColumnDefinitions="150,Auto,*,52" Margin="0,2">
+                <TextBlock Grid.Column="0" Classes="lever-label" Text="{Binding Label}" lt:Tokens.FontWeight="DsWeightBody" />
+                <CheckBox Grid.Column="1" Content="Custom" IsChecked="{Binding IsOverridden, Mode=TwoWay}" lt:Tokens.FontSize="DsFontSize150" Margin="0,0,10,0" MinHeight="0" />
+                <Slider Grid.Column="2" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" Value="{Binding Value, Mode=TwoWay}"
+                        IsEnabled="{Binding IsOverridden}" TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Classes="lever-value" Text="{Binding Value, StringFormat='{}{0:0.#} px'}" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel lt:Tokens.Spacing="DsSpace16" Margin="24,18,24,32" MaxWidth="1180">
+
+            <!-- Header -->
+            <Border Classes="layout-card">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Width="34" Height="34" lt:Tokens.CornerRadius="DsRadiusLG" Background="{DynamicResource DsPrimarySubtleBrush}"
+                                BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin">
+                            <materialIcons:MaterialIcon Kind="FormatSize" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="LAYOUT &amp; TYPOGRAPHY" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusFull" Padding="10,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <TextBlock Text="In use:" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="{Binding ActiveLayoutName}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Command="{Binding UndoLayoutCommand}" IsEnabled="{Binding CanUndoLayout}" Classes="cs-toolbar-outlined" Width="32" Height="32" Padding="0" ToolTip.Tip="Undo">
+                            <materialIcons:MaterialIcon Kind="Undo" Width="15" Height="15" />
+                        </Button>
+                        <Button Command="{Binding RedoLayoutCommand}" IsEnabled="{Binding CanRedoLayout}" Classes="cs-toolbar-outlined" Width="32" Height="32" Padding="0" ToolTip.Tip="Redo">
+                            <materialIcons:MaterialIcon Kind="Redo" Width="15" Height="15" />
+                        </Button>
+                        <Button Command="{Binding ResetLayoutCommand}" Classes="cs-toolbar-outlined" Padding="10,5" ToolTip.Tip="Back to the studio's own layout">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <materialIcons:MaterialIcon Kind="Restore" Width="13" Height="13" />
+                                <TextBlock Text="Reset" lt:Tokens.FontSize="DsFontSize200" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="hint" Margin="0,10,0,0"
+                               Text="Fonts, type sizes and weights, corners, borders, spacing and shadows for the whole studio. The preview follows each lever; the studio follows when you let go." />
+                </Grid>
+            </Border>
+
+            <!-- Presets and My layouts -->
+            <Border Classes="layout-card">
+                <StackPanel lt:Tokens.Spacing="DsSpace12">
+                    <TextBlock Classes="card-title" Text="PRESETS" />
+                    <ItemsControl ItemsSource="{Binding LayoutPresetItems}" ItemTemplate="{StaticResource LayoutCardTemplate}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                        <TextBlock Classes="card-title" Text="MY LAYOUTS" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <TextBox Text="{Binding NewLayoutName, Mode=TwoWay}" Width="220" lt:Tokens.FontSize="DsFontSize300" MaxLength="80"
+                                     PlaceholderText="Name the current layout…" KeyDown="OnSaveAsBoxKeyDown" />
+                            <Button Command="{Binding SaveLayoutAsCommand}" Classes="cs-toolbar-filled" ToolTip.Tip="Save the layout in use to My layouts under this name">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="14" Height="14" />
+                                    <TextBlock Text="Save as" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Classes="hint" IsVisible="{Binding !UserLayouts.Count}"
+                               Text="Layouts you save appear here and come back every time the studio opens. Copy any preset with its copy button to start from it." />
+                    <ItemsControl ItemsSource="{Binding UserLayouts}" ItemTemplate="{StaticResource LayoutCardTemplate}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Levers and preview -->
+            <Grid ColumnDefinitions="*,16,380">
+                <StackPanel Grid.Column="0" lt:Tokens.Spacing="DsSpace16">
+
+                    <!-- Typography -->
+                    <Border Classes="layout-card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="card-title" Text="TYPOGRAPHY" />
+                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto" RowSpacing="8">
+                                <TextBlock Classes="lever-label" Text="Interface font" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding UiFonts}" SelectedItem="{Binding SelectedUiFont, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="320">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="settings:LayoutFontChoice">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Name}" FontFamily="{Binding Preview}" lt:Tokens.FontSize="DsFontSize300" />
+                                                <TextBlock Text="{Binding Note}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Grid.Row="1" Classes="lever-label" Text="Code font" />
+                                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CodeFonts}" SelectedItem="{Binding SelectedCodeFont, Mode=TwoWay}" HorizontalAlignment="Stretch" MaxDropDownHeight="320">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="settings:LayoutFontChoice">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Name}" FontFamily="{Binding Preview}" lt:Tokens.FontSize="DsFontSize300" />
+                                                <TextBlock Text="{Binding Note}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Base text size" />
+                                <Slider Grid.Column="1" Minimum="10" Maximum="16" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding LayoutBaseFontSize, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutBaseFontSize, StringFormat='{}{0:0.#} px'}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Hierarchy" ToolTip.Tip="How far headings and captions stand from body text" />
+                                <Slider Grid.Column="1" Minimum="0.85" Maximum="1.25" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding LayoutHierarchy, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutHierarchy, StringFormat='×{0:0.00}'}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,*" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+                                <TextBlock Classes="lever-label" Text="Weights" />
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Classes="hint" Text="Body" />
+                                    <ComboBox ItemsSource="{x:Static settings:CSharpSettingsViewModel.LayoutWeightOptions}" SelectedItem="{Binding LayoutBodyWeight, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="2">
+                                    <TextBlock Classes="hint" Text="Labels" />
+                                    <ComboBox ItemsSource="{x:Static settings:CSharpSettingsViewModel.LayoutWeightOptions}" SelectedItem="{Binding LayoutLabelWeight, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                                    <TextBlock Classes="hint" Text="Emphasis" />
+                                    <ComboBox ItemsSource="{x:Static settings:CSharpSettingsViewModel.LayoutWeightOptions}" SelectedItem="{Binding LayoutEmphasisWeight, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="2">
+                                    <TextBlock Classes="hint" Text="Headings" />
+                                    <ComboBox ItemsSource="{x:Static settings:CSharpSettingsViewModel.LayoutWeightOptions}" SelectedItem="{Binding LayoutStrongWeight, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Caps letter spacing" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding LayoutCapsSpacing, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutCapsSpacing, StringFormat='×{0:0.0}'}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Shape -->
+                    <Border Classes="layout-card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="card-title" Text="CORNERS" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Button Classes="segment-btn" Content="None" Command="{Binding SetLayoutRadiusPresetCommand}" CommandParameter="0" />
+                                <Button Classes="segment-btn" Content="Small" Command="{Binding SetLayoutRadiusPresetCommand}" CommandParameter="0.5" />
+                                <Button Classes="segment-btn" Content="Medium" Command="{Binding SetLayoutRadiusPresetCommand}" CommandParameter="1" />
+                                <Button Classes="segment-btn" Content="Large" Command="{Binding SetLayoutRadiusPresetCommand}" CommandParameter="1.6" />
+                                <Button Classes="segment-btn" Content="Extra" Command="{Binding SetLayoutRadiusPresetCommand}" CommandParameter="2.2" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Radius scale" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="2.5" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding LayoutRadiusScale, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutRadiusScale, StringFormat='×{0:0.00}'}" />
+                            </Grid>
+                            <Expander Header="Per component" HorizontalAlignment="Stretch">
+                                <ItemsControl ItemsSource="{Binding RadiusOverrideRows}" ItemTemplate="{StaticResource OverrideRowTemplate}" />
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Borders -->
+                    <Border Classes="layout-card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="card-title" Text="BORDERS &amp; DIVIDERS" />
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Border width" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="3" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding LayoutBorderWidth, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutBorderWidth, StringFormat='{}{0:0.#} px'}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Accent bar" ToolTip.Tip="The coloured bar on selected and flagged items" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="6" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="{Binding LayoutAccentWidth, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutAccentWidth, StringFormat='{}{0:0.#} px'}" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="18">
+                                <CheckBox Content="Card outlines" IsChecked="{Binding LayoutCardBorders, Mode=TwoWay}" lt:Tokens.FontSize="DsFontSize250" />
+                                <CheckBox Content="Divider lines" IsChecked="{Binding LayoutDividers, Mode=TwoWay}" lt:Tokens.FontSize="DsFontSize250" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Spacing -->
+                    <Border Classes="layout-card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="card-title" Text="SPACING &amp; DENSITY" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Button Classes="segment-btn" Content="Compact" Command="{Binding SetLayoutDensityCommand}" CommandParameter="Compact" />
+                                <Button Classes="segment-btn" Content="Comfortable" Command="{Binding SetLayoutDensityCommand}" CommandParameter="Comfortable" />
+                                <Button Classes="segment-btn" Content="Spacious" Command="{Binding SetLayoutDensityCommand}" CommandParameter="Spacious" />
+                                <TextBlock Classes="lever-value" Text="{Binding LayoutDensity}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Spacing scale" />
+                                <Slider Grid.Column="1" Minimum="0.75" Maximum="1.5" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding LayoutSpacingScale, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutSpacingScale, StringFormat='×{0:0.00}'}" />
+                            </Grid>
+                            <Expander Header="Sizes" HorizontalAlignment="Stretch">
+                                <ItemsControl ItemsSource="{Binding SizeOverrideRows}" ItemTemplate="{StaticResource OverrideRowTemplate}" />
+                            </Expander>
+                            <TextBlock Classes="hint" Text="The activity bar (48 px) and status bar (22 px) keep their size." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Elevation -->
+                    <Border Classes="layout-card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="card-title" Text="SHADOWS" />
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Strength" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding LayoutShadowStrength, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutShadowStrength, StringFormat='×{0:0.00}'}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*,60">
+                                <TextBlock Classes="lever-label" Text="Softness" />
+                                <Slider Grid.Column="1" Minimum="0.5" Maximum="2" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding LayoutShadowSoftness, Mode=TwoWay}" />
+                                <TextBlock Grid.Column="2" Classes="lever-value" Text="{Binding LayoutShadowSoftness, StringFormat='×{0:0.00}'}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="150,*">
+                                <TextBlock Classes="lever-label" Text="Card elevation" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <Button Classes="segment-btn" Content="Flat" Command="{Binding SetLayoutCardElevationCommand}" CommandParameter="0" />
+                                    <Button Classes="segment-btn" Content="1" Command="{Binding SetLayoutCardElevationCommand}" CommandParameter="1" />
+                                    <Button Classes="segment-btn" Content="2" Command="{Binding SetLayoutCardElevationCommand}" CommandParameter="2" />
+                                    <Button Classes="segment-btn" Content="3" Command="{Binding SetLayoutCardElevationCommand}" CommandParameter="3" />
+                                    <Button Classes="segment-btn" Content="Floating" Command="{Binding SetLayoutCardElevationCommand}" CommandParameter="4" />
+                                    <TextBlock Classes="lever-value" Text="{Binding LayoutCardElevation, StringFormat='level {0}'}" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Export -->
+                    <Border Classes="layout-card">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="card-title" Text="SHARE" />
+                                <TextBlock Classes="hint" Text="Copy the layout as W3C design tokens or CSS variables; paste a copied layout to import it into My layouts." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Classes="cs-toolbar-outlined" Command="{Binding CopyLayoutDtcgCommand}" Content="Copy tokens (JSON)" />
+                                <Button Classes="cs-toolbar-outlined" Command="{Binding CopyLayoutCssCommand}" Content="Copy CSS" />
+                                <Button Classes="cs-toolbar-outlined" Command="{Binding ImportLayoutFromClipboardCommand}" Content="Import" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <settingsControls:LayoutSpecimenControl Grid.Column="2" VerticalAlignment="Top" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,20 +9,20 @@
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.ThemeLiveChromePreviewControl"
              x:DataType="settings:CSharpSettingsViewModel">
 
-    <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18,16">
-        <StackPanel Spacing="10">
+    <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.CornerRadius="DsRadiusCard" lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+        <StackPanel lt:Tokens.Spacing="DsSpace10">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="MonitorEye" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="LIVE IDE CHROME PREVIEW" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    <TextBlock Text="LIVE IDE CHROME PREVIEW" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBlock Grid.Column="2" Text="Updates live with 80+ dynamic tokens" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="Updates live with 80+ dynamic tokens" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
             </Grid>
 
-            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Height="195" ClipToBounds="True">
+            <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Height="195" ClipToBounds="True">
                 <Grid RowDefinitions="24,*,20">
                     <!-- Top Tab Strip -->
-                    <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1" Padding="8,0">
+                    <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom" Padding="8,0">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,*">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,10,0">
                                 <Ellipse Width="7" Height="7" Fill="#EF4444" /><Ellipse Width="7" Height="7" Fill="#F59E0B" /><Ellipse Width="7" Height="7" Fill="#22C55E" />
@@ -30,14 +30,14 @@
                             <Border Grid.Column="1" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="0,0,0,2" Padding="8,0" VerticalAlignment="Stretch">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="MainScript.cs" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="●" FontSize="7" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
+                                    <TextBlock Text="MainScript.cs" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="●" lt:Tokens.FontSize="DsFontSize050" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Grid.Column="2" Padding="8,0" VerticalAlignment="Stretch">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Console" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Terminal" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Terminal" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -45,9 +45,9 @@
 
                     <!-- Body Layout -->
                     <Grid Grid.Row="1" ColumnDefinitions="32,110,*,220">
-                        <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0">
+                        <Border Grid.Column="0" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderRight">
                             <StackPanel Spacing="6" Margin="0,6" HorizontalAlignment="Center">
-                                <Border Width="20" Height="20" CornerRadius="4" Background="{DynamicResource DsPrimarySubtleBrush}">
+                                <Border Width="20" Height="20" lt:Tokens.CornerRadius="DsRadiusSM" Background="{DynamicResource DsPrimarySubtleBrush}">
                                     <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <materialIcons:MaterialIcon Kind="Magnify" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
@@ -55,20 +55,20 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,1,0" Padding="6,5">
+                        <Border Grid.Column="1" Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderRight" Padding="6,5">
                             <StackPanel Spacing="3">
-                                <TextBlock Text="EXPLORER" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.5" />
+                                <TextBlock Text="EXPLORER" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking050" />
                                 <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
                                     <materialIcons:MaterialIcon Kind="LanguageCsharp" Width="10" Height="10" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="MainScript.cs" FontSize="9.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="MainScript.cs" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <materialIcons:MaterialIcon Kind="LanguagePython" Width="10" Height="10" Foreground="{DynamicResource NavNotebooksFgBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="pipeline.py" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="pipeline.py" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <materialIcons:MaterialIcon Kind="BookOpenOutline" Width="10" Height="10" Foreground="{DynamicResource NavDocsFgBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="docs.md" FontSize="9.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="docs.md" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -76,53 +76,53 @@
                         <Border Grid.Column="2" Background="{DynamicResource EditorBgBrush}" Padding="6,5">
                             <Grid ColumnDefinitions="18,*">
                                 <StackPanel Grid.Column="0" Spacing="2">
-                                    <TextBlock Text="1" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorLineNumbersBrush}" />
-                                    <TextBlock Text="2" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorLineNumbersBrush}" />
-                                    <TextBlock Text="3" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorLineNumbersBrush}" />
-                                    <TextBlock Text="4" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorLineNumbersBrush}" />
+                                    <TextBlock Text="1" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorLineNumbersBrush}" />
+                                    <TextBlock Text="2" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorLineNumbersBrush}" />
+                                    <TextBlock Text="3" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorLineNumbersBrush}" />
+                                    <TextBlock Text="4" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorLineNumbersBrush}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Spacing="2">
                                     <StackPanel Orientation="Horizontal" Spacing="3">
-                                        <TextBlock Text="using" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="SemiBold" />
-                                        <TextBlock Text="FrySharp.Sdk;" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorFgBrush}" />
+                                        <TextBlock Text="using" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" />
+                                        <TextBlock Text="FrySharp.Sdk;" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorFgBrush}" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="3">
-                                        <TextBlock Text="var" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                        <TextBlock Text="msg =" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorFgBrush}" />
-                                        <Border Background="{DynamicResource EditorSelectionBrush}" CornerRadius="2" Padding="2,0"><TextBlock Text="&quot;Harmonized&quot;;" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsSyntaxStringBrush}" /></Border>
+                                        <TextBlock Text="var" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                        <TextBlock Text="msg =" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorFgBrush}" />
+                                        <Border Background="{DynamicResource EditorSelectionBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="2,0"><TextBlock Text="&quot;Harmonized&quot;;" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsSyntaxStringBrush}" /></Border>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="3">
-                                        <TextBlock Text="Console.WriteLine(msg);" FontSize="9.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource EditorFgBrush}" />
+                                        <TextBlock Text="Console.WriteLine(msg);" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource EditorFgBrush}" />
                                         <Rectangle Width="1.5" Height="10" Fill="{DynamicResource EditorCaretBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
-                                        <Border Background="{DynamicResource BadgeEasyBgBrush}" BorderBrush="{DynamicResource BadgeEasyBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="3,1"><TextBlock Text="PASSED" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BadgeEasyFgBrush}" /></Border>
-                                        <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="3" Padding="3,1"><TextBlock Text="80+ Tokens" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" /></Border>
+                                        <Border Background="{DynamicResource BadgeEasyBgBrush}" BorderBrush="{DynamicResource BadgeEasyBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusXS" Padding="3,1"><TextBlock Text="PASSED" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource BadgeEasyFgBrush}" /></Border>
+                                        <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusXS" Padding="3,1"><TextBlock Text="80+ Tokens" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" /></Border>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
                         </Border>
 
-                        <Border Grid.Column="3" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1,0,0,0" Padding="6,5">
+                        <Border Grid.Column="3" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderLeft" Padding="6,5">
                             <StackPanel Spacing="3">
-                                <TextBlock Text="OUTPUT: TERMINAL" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.5" />
-                                <TextBlock Text="[Host] .NET 10 Roslyn Ready" FontSize="8.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" />
-                                <TextBlock Text="[Theme] Tokens dynamically bound" FontSize="8.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                <TextBlock Text="[Run] Script executed (0 errors)" FontSize="8.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource BadgeEasyFgBrush}" />
+                                <TextBlock Text="OUTPUT: TERMINAL" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking050" />
+                                <TextBlock Text="[Host] .NET 10 Roslyn Ready" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" />
+                                <TextBlock Text="[Theme] Tokens dynamically bound" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="[Run] Script executed (0 errors)" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource BadgeEasyFgBrush}" />
                             </StackPanel>
                         </Border>
                     </Grid>
 
                     <!-- Status Bar -->
-                    <Border Grid.Row="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,1,0,0" Padding="6,0">
+                    <Border Grid.Row="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderTop" Padding="6,0">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBlock Text="&gt;&lt; FrySharp" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Ready" FontSize="8.5" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="&gt;&lt; FrySharp" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Ready" lt:Tokens.FontSize="DsFontSize050" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBlock Text="Ln 3, Col 24" FontSize="8.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="C# (.NET 10)" FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Ln 3, Col 24" lt:Tokens.FontSize="DsFontSize050" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="C# (.NET 10)" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Grid>
                     </Border>

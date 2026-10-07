@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -19,11 +19,11 @@
                             <Border common:CompactWhenCrowded.IsEnabled="True">
                             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                                 <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,24,0">
-                                    <TextBlock Text="Welcome back, Developer" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                    <TextBlock Text="Pick up where you left off, open an existing project, or start a new workspace." FontSize="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="Welcome back, Developer" lt:Tokens.FontSize="DsFontSize800" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <TextBlock Text="Pick up where you left off, open an existing project, or start a new workspace." lt:Tokens.FontSize="DsFontSize400" Foreground="{DynamicResource DsMutedBrush}" />
                                 </StackPanel>
 
-                                <StackPanel Classes="hub-welcome-actions" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <StackPanel Classes="hub-welcome-actions" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace12" VerticalAlignment="Center">
                                     <!-- Blind 75 Challenge -->
                                     <Button Command="{Binding NavigateToBlindProblemsCommand}"
                                             Classes="nexus-btn-surface"

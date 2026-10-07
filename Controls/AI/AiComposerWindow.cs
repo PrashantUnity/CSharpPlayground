@@ -71,6 +71,9 @@ public class AiComposerWindow : Window
             Source = new Uri("avares://CSharpEditorPlugin/Styles/StudioStyles.axaml")
         });
         Content = composerControl;
+        // The layout's interface font and body weight, inherited by everything in the window (as in the studio host).
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.SetFontFamily(this, "DsUiFontFamily");
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.SetFontWeight(this, "DsWeightBody");
         PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.TrackResourceRoot(this);
     }
 

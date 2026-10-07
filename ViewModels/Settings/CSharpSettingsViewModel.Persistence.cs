@@ -47,7 +47,7 @@ public partial class CSharpSettingsViewModel
     private void ScheduleAutoSave()
     {
         // Without a running UI (tests) nothing would ever tick the timer: Apply() and FlushAutoSave() save explicitly.
-        if (Avalonia.Application.Current == null) return;
+        if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime) return;
         if (_autoSaveTimer == null)
         {
             _autoSaveTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = AutoSaveDelay };
@@ -162,7 +162,7 @@ public partial class CSharpSettingsViewModel
     private void LoadSavedThemes()
     {
         var library = Library;
-        if (Avalonia.Application.Current == null)
+        if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime)
         {
             // No UI to keep responsive (tests, tools): read the library now rather than on a busy thread pool.
             ShowSavedThemes(library.List());
@@ -177,7 +177,7 @@ public partial class CSharpSettingsViewModel
                 ShowSavedThemes(t.Result);
             }
 
-            if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Show();
+            if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime || Dispatcher.UIThread.CheckAccess()) Show();
             else Dispatcher.UIThread.Post(Show);
         }, TaskScheduler.Default);
     }
@@ -201,6 +201,7 @@ public partial class CSharpSettingsViewModel
     {
         var preset = PresetFor(saved.Theme, isUserTheme: true, saved.ModifiedUtc);
         preset.Palette = saved.Palette;
+        preset.Layout = saved.Layout;
         return preset;
     }
 
@@ -239,7 +240,8 @@ public partial class CSharpSettingsViewModel
         var palette = current.Id.StartsWith("harmonic-", StringComparison.OrdinalIgnoreCase) && _appliedPaletteSpec != null
             ? _appliedPaletteSpec.ToJson()
             : (System.Text.Json.JsonElement?)null;
-        var saved = Library.Save(name, current, CurrentHarmonySettings(), palette, source: ThemeLibraryStore.IsLibraryId(current.Id) ? "duplicate" : "generated");
+        var layout = IncludeLayoutInTheme ? StudioAppContext.Instance.ThemeEngine.Layout.ToJson() : (System.Text.Json.JsonElement?)null;
+        var saved = Library.Save(name, current, CurrentHarmonySettings(), palette, source: ThemeLibraryStore.IsLibraryId(current.Id) ? "duplicate" : "generated", layout: layout);
         engine.RegisterTheme(saved.Theme);
         UserThemes.Insert(0, PresetFor(saved));
         engine.ApplyTheme(saved.Id);

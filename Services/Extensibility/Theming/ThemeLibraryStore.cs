@@ -30,6 +30,9 @@ public sealed class SavedTheme
 
     /// <summary>The palette (sections, locks, engine, seed) it was made from, as the palette generator wrote it.</summary>
     public JsonElement? Palette { get; set; }
+
+    /// <summary>A layout saved with the theme ("Include current layout"); applying the theme applies it too.</summary>
+    public JsonElement? Layout { get; set; }
 }
 
 /// <summary>
@@ -74,7 +77,7 @@ public sealed class ThemeLibraryStore
     public SavedTheme? Get(string id) => IsLibraryId(id) ? Read(PathOf(id)) : null;
 
     /// <summary>Saves <paramref name="theme"/> as a new library theme called <paramref name="name"/>.</summary>
-    public SavedTheme Save(string name, ThemeDefinition theme, HarmonyStudioSettings? harmony = null, JsonElement? palette = null, string source = "generated")
+    public SavedTheme Save(string name, ThemeDefinition theme, HarmonyStudioSettings? harmony = null, JsonElement? palette = null, string source = "generated", JsonElement? layout = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         var now = DateTime.UtcNow;
@@ -89,6 +92,7 @@ public sealed class ThemeLibraryStore
             Theme = WithIdentity(theme, id, CleanName(name)),
             Harmony = harmony,
             Palette = palette,
+            Layout = layout,
         };
         Write(saved);
         return saved;

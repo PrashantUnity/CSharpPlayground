@@ -25,9 +25,8 @@ public class MarkdownView : UserControl
     public static readonly StyledProperty<string?> MarkdownProperty =
         AvaloniaProperty.Register<MarkdownView, string?>(nameof(Markdown));
 
-    private static readonly FontFamily Monospace = Application.Current != null && Application.Current.TryFindResource("DsCodeFontFamily", out var fontRes) && fontRes is FontFamily ff
-        ? ff
-        : new FontFamily("Cascadia Code, Consolas, Menlo, monospace");
+    // The layout's code font (a rendered document is rebuilt when the layout changes).
+    private static FontFamily Monospace => PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.CodeFont;
 
     private static readonly IBrush CodeBrush = new SolidColorBrush(Color.FromArgb(46, 128, 128, 128));
     private static readonly IBrush CodeBlockBrush = new SolidColorBrush(Color.FromArgb(30, 128, 128, 128));
@@ -86,13 +85,34 @@ public class MarkdownView : UserControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == FontSizeProperty && RenderCount > 0) MarkStale();
         if (_isStale && change.Property.Name == "IsEffectivelyVisible" && IsShown()) Rebuild();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        StudioLayoutEvents().LayoutChanged += OnLayoutChanged;
         if (_isStale && IsShown()) Rebuild();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        StudioLayoutEvents().LayoutChanged -= OnLayoutChanged;
+    }
+
+    private static PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.DynamicThemeEngine StudioLayoutEvents() =>
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine;
+
+    // Another layout (or a new text size): headings, code and tables are rebuilt with its sizes, now or when next shown.
+    private void OnLayoutChanged(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutSpec layout) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(MarkStale, Avalonia.Threading.DispatcherPriority.Background);
+
+    private void MarkStale()
+    {
+        _isStale = true;
+        if (IsShown()) Rebuild();
     }
 
     private void Rebuild()
@@ -128,7 +148,7 @@ public class MarkdownView : UserControl
                 {
                     int level = heading.Level;
                     double size = FontSize * (level switch { 1 => 1.55, 2 => 1.32, 3 => 1.16, _ => 1.05 });
-                    var text = RenderInlines(heading.Inline, size, FontWeight.Bold);
+                    var text = RenderInlines(heading.Inline, size, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong"));
                     text.Margin = new Thickness(0, level <= 2 ? 8 : 4, 0, 2);
                     yield return text;
                     break;
@@ -169,8 +189,8 @@ public class MarkdownView : UserControl
                     {
                         Background = QuoteBrush,
                         BorderBrush = QuoteAccentBrush,
-                        BorderThickness = new Thickness(3, 0, 0, 0),
-                        CornerRadius = new CornerRadius(0, 6, 6, 0),
+                        BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.AccentWidth + 1, 0, 0, 0),
+                        CornerRadius = new CornerRadius(0, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("MD"), PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("MD"), 0),
                         Padding = new Thickness(12, 8),
                         Margin = new Thickness(0, 4, 0, 4),
                         Child = quotePanel
@@ -219,7 +239,7 @@ public class MarkdownView : UserControl
                 {
                     Text = marker,
                     FontSize = FontSize,
-                    FontWeight = list.IsOrdered ? FontWeight.SemiBold : FontWeight.Normal,
+                    FontWeight = list.IsOrdered ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Emphasis") : FontWeight.Normal,
                     MinWidth = list.IsOrdered ? 22 : 14,
                     LineHeight = FontSize * 1.45,
                     VerticalAlignment = VerticalAlignment.Top
@@ -342,7 +362,7 @@ public class MarkdownView : UserControl
             var headerBg = new Border
             {
                 Background = CodeBlockBrush,
-                BorderThickness = new Thickness(0, 0, 0, 1),
+                BorderThickness = new Thickness(0, 0, 0, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth),
                 BorderBrush = RuleBrush
             };
             Grid.SetRow(headerBg, 0);
@@ -352,13 +372,13 @@ public class MarkdownView : UserControl
             for (int c = 0; c < headers.Length; c++)
             {
                 var align = c < alignments.Length ? alignments[c] : TextAlignment.Left;
-                var text = Text(headers[c], FontSize, FontWeight.SemiBold);
+                var text = Text(headers[c], FontSize, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Emphasis"));
                 text.TextAlignment = align;
 
                 var cell = new Border
                 {
                     Padding = new Thickness(12, 7),
-                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? 1 : 0, 0),
+                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth : 0, 0),
                     BorderBrush = RuleBrush,
                     Child = text
                 };
@@ -396,7 +416,7 @@ public class MarkdownView : UserControl
                 var cell = new Border
                 {
                     Padding = new Thickness(12, 6),
-                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? 1 : 0, isLastRow ? 0 : 1),
+                    BorderThickness = new Thickness(0, 0, c < colCount - 1 ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth : 0, isLastRow ? 0 : PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth),
                     BorderBrush = TableBorderBrush,
                     Child = text
                 };
@@ -409,8 +429,8 @@ public class MarkdownView : UserControl
         return new Border
         {
             BorderBrush = RuleBrush,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(5),
+            BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth),
+            CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("SM")),
             ClipToBounds = true,
             Margin = new Thickness(0, 4, 0, 8),
             HorizontalAlignment = HorizontalAlignment.Left,
@@ -421,7 +441,7 @@ public class MarkdownView : UserControl
     private Control CodeBlock(string code) => new Border
     {
         Background = CodeBlockBrush,
-        CornerRadius = new CornerRadius(6),
+        CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("MD")),
         Padding = new Thickness(12, 10),
         Margin = new Thickness(0, 4, 0, 4),
         Child = new SelectableTextBlock

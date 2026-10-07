@@ -103,7 +103,8 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task OpenDocument_SameFileTwice_DoesNotDuplicateTabs()
     {
-        var studio = CreateStudio();
+        // Saved in the workspace (the library, in these tests), so it is one of the Explorer's files.
+        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var docFile = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(docFile);
@@ -117,7 +118,8 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task SelectTab_SwitchesActiveTab_AndUpdatesExplorerSelection()
     {
-        var studio = CreateStudio();
+        // The first notebook is a file of the workspace (the Explorer lists nothing else).
+        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var secondFile = EnsureSecondNotebookItem(studio);
         await studio.OpenDocumentAsync(secondFile);
@@ -188,7 +190,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.Equal("Document Automation Notebook.frynb", studio.BreadcrumbDocument);
         Assert.Equal((string?)"Markdown: 📓 Polyglot Notebook Demo Copy", (string?)activeTab.ActiveCellBadgeText);
         Assert.Equal((string?)"FormatHeaderPound", (string?)activeTab.ActiveCellTypeIcon);
-        Assert.Equal((string?)"#4EC9B0", (string?)activeTab.ActiveCellTypeColor);
+        Assert.Equal((string?)"NavNotebooksFgBrush", (string?)activeTab.ActiveCellTypeColorKey);
 
         Assert.DoesNotContain("C# #", studio.BreadcrumbText);
         Assert.DoesNotContain("> C#", studio.BreadcrumbText);
@@ -212,7 +214,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
 
         Assert.Equal((string?)"Cell [1]: public class People", (string?)activeTab.ActiveCellBadgeText);
         Assert.Equal((string?)"CodeBraces", (string?)activeTab.ActiveCellTypeIcon);
-        Assert.Equal((string?)"#58A6FF", (string?)activeTab.ActiveCellTypeColor);
+        Assert.Equal((string?)"DsPrimaryBrush", (string?)activeTab.ActiveCellTypeColorKey);
         Assert.Equal("Library › Document Automation Notebook.frynb › Cell [1]: public class People", studio.BreadcrumbText);
     }
 
@@ -234,7 +236,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     }
 
     [Fact]
-    public async Task NewNotebookTab_CreatesTabAndAddsToExplorer()
+    public async Task NewNotebookTab_CreatesATab_ThatTheExplorerListsOnlyOnceSaved()
     {
         var studio = CreateStudio();
 
@@ -247,7 +249,8 @@ public class CSharpNotebookStudioTabTests : IDisposable
         Assert.True(studio.ActiveTab.Notebook.IsEphemeral, "A freshly created notebook tab must be ephemeral (not yet saved to disk).");
         Assert.Equal("New Notebook.frynb", studio.ActiveTab.Title);
 
-        Assert.Contains(studio.ExplorerRootItems, x => x.Name == studio.ActiveTab.Title);
+        // Not saved, so not a file in the workspace folder yet: the Explorer lists the folder's files only.
+        Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == studio.ActiveTab.Title);
     }
 
     [Fact]
@@ -280,6 +283,29 @@ public class CSharpNotebookStudioTabTests : IDisposable
         await studio.RefreshExplorer();
 
         Assert.Contains(studio.ExplorerRootItems, x => x.IsDirectory && x.Name == "New Folder");
+    }
+
+    [Fact]
+    public async Task RenamingANotebook_RenamesItsFile_AsVsCodeDoes()
+    {
+        // The Explorer shows file names: a rename used to change only the title inside, so the old name stayed.
+        var doc = await _testStorage.CreateNewNotebookAsync("Draft");
+        var studio = CreateStudio(doc);
+        var item = studio.ExplorerRootItems.Single(x => x.DocumentId == doc.Id);
+        var folder = Path.GetDirectoryName(_testStorage.GetWorkspaceRelativePath(doc.Id) is { } rel
+            ? Path.Combine(_testStorage.ActiveWorkspaceRootPath, rel)
+            : Path.Combine(_testStorage.ActiveWorkspaceRootPath, "Draft.frynb"))!;
+
+        item.Name = "Final.frynb";
+        await studio.OnItemRenamedAsync(item);
+
+        Assert.True(File.Exists(Path.Combine(folder, "Final.frynb")));
+        Assert.False(File.Exists(Path.Combine(folder, "Draft.frynb")));
+        Assert.Equal("Final", (await _testStorage.LoadNotebookAsync(doc.Id))!.Title);
+        Assert.Equal("Final.frynb", studio.ActiveTab!.Title);
+
+        await studio.RefreshExplorer();
+        Assert.Contains(studio.ExplorerRootItems, x => x.Name == "Final.frynb" && x.DocumentId == doc.Id);
     }
 
     [Fact]
@@ -763,7 +789,7 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public void UpdateActiveNotebook_AddsDocumentToExplorerAndHighlightsIt()
+    public void UpdateActiveNotebook_OpensATab_ButListsOnlyTheFoldersFiles()
     {
         var studio = CreateStudio();
 
@@ -779,10 +805,8 @@ Console.WriteLine(""should not be reached"");";
         Assert.NotNull(studio.ActiveTab);
         Assert.Equal((string?)"SkiaSharp Graphics & Image Generation Copy.frynb", (string?)studio.ActiveTab.Title);
 
-        var expItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
-        Assert.NotNull(expItem);
-        Assert.True((bool)expItem.IsSelected);
-        Assert.Equal((string?)"skiasharp_image_studio", (string?)expItem.DocumentId);
+        // Not a file of the workspace: the Explorer lists the folder's files only.
+        Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == "SkiaSharp Graphics & Image Generation Copy.frynb");
     }
 
     [Fact]
@@ -824,7 +848,7 @@ Console.WriteLine(""should not be reached"");";
     [Fact]
     public async Task DuplicateExplorerItem_CreatesClonedDocumentInStorageAndExplorer()
     {
-        var studio = CreateStudio();
+        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var docFile = studio.ExplorerRootItems.First(x => x.Name == "Document Automation Notebook.frynb");
 
@@ -949,10 +973,10 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public async Task PopulateExplorerTree_ForDocumentOutsideActiveRoot_ShowsItAsOrphanTopLevelFile()
+    public async Task PopulateExplorerTree_ForDocumentOutsideActiveRoot_DoesNotListIt()
     {
-        // A document saved outside the active workspace root isn't part of the tree walk, but the
-        // currently open tab always surfaces via the orphan-node fallback.
+        // The Explorer shows the workspace folder's files only: a notebook saved outside the active workspace root gets
+        // no row, even while it is open (it used to be listed at the top).
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
         try
         {
@@ -960,14 +984,45 @@ Console.WriteLine(""should not be reached"");";
 
             var studio = CreateStudio(doc);
 
-            var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False((bool)item.IsDirectory);
-            Assert.Equal((string?)"External Doc.frynb", (string?)item.Name);
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == "External Doc.frynb");
         }
         finally
         {
             var root = Path.GetDirectoryName(externalDir)!;
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CopiesThatShareATitle_AreAllListed_ByTheirFileNames_AndEachOpensItsOwnTab()
+    {
+        // Five "Interactive C# Notebook (n).frynb" files keep the title "Interactive C# Notebook" inside: the Explorer
+        // named rows by title and dropped the repeats, and opening one copy selected the tab of another.
+        var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_ExplorerExternalTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(externalDir);
+        try
+        {
+            var first = new NotebookDocumentItem { Title = "Interactive C# Notebook" };
+            var copy = new NotebookDocumentItem { Title = "Interactive C# Notebook" };
+            File.WriteAllText(Path.Combine(externalDir, "Interactive C# Notebook.frynb"), System.Text.Json.JsonSerializer.Serialize(first));
+            File.WriteAllText(Path.Combine(externalDir, "Interactive C# Notebook (2).frynb"), System.Text.Json.JsonSerializer.Serialize(copy));
+            await _testStorage.OpenExternalProjectAsync(externalDir);
+
+            var studio = CreateStudio(first);
+            await studio.RefreshExplorer();
+
+            var names = studio.ExplorerRootItems.Where(x => !x.IsDirectory).Select(x => x.Name).ToList();
+            Assert.Contains("Interactive C# Notebook.frynb", names);
+            Assert.Contains("Interactive C# Notebook (2).frynb", names);
+
+            studio.UpdateActiveNotebook(copy);
+            Assert.Equal(copy.Id, studio.ActiveTab!.Notebook.Id);
+            Assert.Equal(2, studio.Tabs.Count);
+            Assert.Equal(copy.Id, studio.FindDocumentInExplorer(copy)!.DocumentId);
+        }
+        finally
+        {
+            if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
     }
 
@@ -1033,9 +1088,8 @@ Console.WriteLine(""should not be reached"");";
 
             var studio = CreateStudio(helloDoc);
 
-            // Neither folder is the active workspace root, so only the currently open tab shows.
-            var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.Equal((string?)"h.frynb", (string?)item.Name);
+            // Neither folder is the active workspace root, so neither notebook is listed (not even the open one).
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name is "h.frynb" or "New I.frynb");
         }
         finally
         {

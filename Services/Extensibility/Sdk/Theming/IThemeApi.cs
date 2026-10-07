@@ -53,4 +53,13 @@ public interface IThemeApi
 
     /// <summary>Resets all custom color overrides back to active theme defaults.</summary>
     void ResetToDefaults();
+
+    /// <summary>Lays the studio out by a layout (fonts, type sizes and weights, radii, borders, spacing, shadows) given as the JSON Settings → Layout &amp; Typography exports. Returns false when it isn't one.</summary>
+    bool ApplyLayout(string layoutJson);
+
+    /// <summary>The layout in use, as JSON (the same shape <see cref="ApplyLayout"/> takes).</summary>
+    string GetLayoutJson();
+
+    /// <summary>The current value of a layout token (e.g. 'DsFontSize300', 'DsRadiusCard', 'DsCardPadding'), or null.</summary>
+    object? GetLayoutToken(string tokenName);
 }

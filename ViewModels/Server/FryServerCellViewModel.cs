@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -89,139 +88,49 @@ public partial class FryServerCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isTestHarnessExpanded;
 
-    #region Static Fallback Brushes
-    private static readonly IBrush FallbackGetBg = new SolidColorBrush(Color.Parse("#162846"));
-    private static readonly IBrush FallbackGetFg = new SolidColorBrush(Color.Parse("#60A5FA"));
-    private static readonly IBrush FallbackGetBorder = new SolidColorBrush(Color.Parse("#2563EB"));
-
-    private static readonly IBrush FallbackPostBg = new SolidColorBrush(Color.Parse("#123522"));
-    private static readonly IBrush FallbackPostFg = new SolidColorBrush(Color.Parse("#4ADE80"));
-    private static readonly IBrush FallbackPostBorder = new SolidColorBrush(Color.Parse("#22C55E"));
-
-    private static readonly IBrush FallbackPutBg = new SolidColorBrush(Color.Parse("#382A12"));
-    private static readonly IBrush FallbackPutFg = new SolidColorBrush(Color.Parse("#FBBF24"));
-    private static readonly IBrush FallbackPutBorder = new SolidColorBrush(Color.Parse("#D97706"));
-
-    private static readonly IBrush FallbackDeleteBg = new SolidColorBrush(Color.Parse("#3A1519"));
-    private static readonly IBrush FallbackDeleteFg = new SolidColorBrush(Color.Parse("#F87171"));
-    private static readonly IBrush FallbackDeleteBorder = new SolidColorBrush(Color.Parse("#DC2626"));
-
-    private static readonly IBrush FallbackPatchBg = new SolidColorBrush(Color.Parse("#2C1542"));
-    private static readonly IBrush FallbackPatchFg = new SolidColorBrush(Color.Parse("#C084FC"));
-    private static readonly IBrush FallbackPatchBorder = new SolidColorBrush(Color.Parse("#9333EA"));
-
-    private static readonly IBrush FallbackOptionsBg = new SolidColorBrush(Color.Parse("#1E293B"));
-    private static readonly IBrush FallbackOptionsFg = new SolidColorBrush(Color.Parse("#94A3B8"));
-    private static readonly IBrush FallbackOptionsBorder = new SolidColorBrush(Color.Parse("#475569"));
-
-    private static readonly IBrush FallbackOtherBg = new SolidColorBrush(Color.Parse("#133036"));
-    private static readonly IBrush FallbackOtherFg = new SolidColorBrush(Color.Parse("#2DD4BF"));
-    private static readonly IBrush FallbackOtherBorder = new SolidColorBrush(Color.Parse("#0D9488"));
-
-    private static readonly IBrush FallbackStartupBg = new SolidColorBrush(Color.Parse("#2E1846"));
-    private static readonly IBrush FallbackStartupFg = new SolidColorBrush(Color.Parse("#C084FC"));
-    private static readonly IBrush FallbackStartupBorder = new SolidColorBrush(Color.Parse("#9333EA"));
-
-    private static readonly IBrush FallbackMiddlewareBg = new SolidColorBrush(Color.Parse("#122E3B"));
-    private static readonly IBrush FallbackMiddlewareFg = new SolidColorBrush(Color.Parse("#38BDF8"));
-    private static readonly IBrush FallbackMiddlewareBorder = new SolidColorBrush(Color.Parse("#0284C7"));
-
-    private static readonly IBrush FallbackScenarioBg = new SolidColorBrush(Color.Parse("#183522"));
-    private static readonly IBrush FallbackScenarioFg = new SolidColorBrush(Color.Parse("#4ADE80"));
-    private static readonly IBrush FallbackScenarioBorder = new SolidColorBrush(Color.Parse("#22C55E"));
-
-    private static readonly IBrush FallbackJobBg = new SolidColorBrush(Color.Parse("#382710"));
-    private static readonly IBrush FallbackJobFg = new SolidColorBrush(Color.Parse("#FB923C"));
-    private static readonly IBrush FallbackJobBorder = new SolidColorBrush(Color.Parse("#EA580C"));
-
-    private static readonly IBrush FallbackDocsBg = new SolidColorBrush(Color.Parse("#3A2A12"));
-    private static readonly IBrush FallbackDocsFg = new SolidColorBrush(Color.Parse("#FBBF24"));
-    private static readonly IBrush FallbackDocsBorder = new SolidColorBrush(Color.Parse("#D97706"));
-
-    private static readonly IBrush FallbackDefaultBg = FallbackOptionsBg;
-    private static readonly IBrush FallbackDefaultFg = FallbackOptionsFg;
-    private static readonly IBrush FallbackDefaultBorder = FallbackOptionsBorder;
-
-    private static IBrush ResolveBrush(string resourceKey, IBrush fallback)
+    // The badges' colours are theme resources (ServerMethod*/ServerType* in the palette and in every theme): the view
+    // resolves these keys from itself (common:ThemeBrush), so they follow the active theme wherever the studio is hosted.
+    private string MethodKey => Method.ToUpperInvariant() switch
     {
-        if (Avalonia.Application.Current != null &&
-            Avalonia.Application.Current.TryFindResource(resourceKey, out var res) &&
-            res is IBrush brush)
-        {
-            return brush;
-        }
-        return fallback;
+        "GET" => "ServerMethodGet",
+        "POST" => "ServerMethodPost",
+        "PUT" => "ServerMethodPut",
+        "DELETE" => "ServerMethodDelete",
+        "PATCH" => "ServerMethodPatch",
+        "OPTIONS" or "HEAD" => "ServerMethodOptions",
+        _ => "ServerMethodOther",
+    };
+
+    private string TypeKey => Type switch
+    {
+        FryServerCellType.Endpoint => MethodKey,
+        FryServerCellType.Startup => "ServerTypeStartup",
+        FryServerCellType.Middleware => "ServerTypeMiddleware",
+        FryServerCellType.Scenario => "ServerTypeScenario",
+        FryServerCellType.Background => "ServerTypeJob",
+        FryServerCellType.Markdown => "ServerTypeDocs",
+        _ => "ServerMethodOptions",
+    };
+
+    public string MethodBadgeBgKey => MethodKey + "BgBrush";
+    public string MethodBadgeFgKey => MethodKey + "FgBrush";
+    public string MethodBadgeBorderKey => MethodKey + "BorderBrush";
+    public string TypeBadgeBgKey => TypeKey + "BgBrush";
+    public string TypeBadgeFgKey => TypeKey + "FgBrush";
+    public string TypeBadgeBorderKey => TypeKey + "BorderBrush";
+
+    // A new method or type: every badge colour and the badge text (only two of them used to be announced, so the
+    // badge kept its old background and border until the view was rebuilt).
+    private void NotifyBadges()
+    {
+        OnPropertyChanged(nameof(MethodBadgeBgKey));
+        OnPropertyChanged(nameof(MethodBadgeFgKey));
+        OnPropertyChanged(nameof(MethodBadgeBorderKey));
+        OnPropertyChanged(nameof(TypeBadgeBgKey));
+        OnPropertyChanged(nameof(TypeBadgeFgKey));
+        OnPropertyChanged(nameof(TypeBadgeBorderKey));
+        OnPropertyChanged(nameof(TypeBadgeText));
     }
-    #endregion
-
-    public IBrush MethodBadgeBrush => MethodBadgeFgBrush;
-    public IBrush TypeBadgeBrush => TypeBadgeFgBrush;
-
-    public IBrush MethodBadgeBgBrush => Method.ToUpperInvariant() switch
-    {
-        "GET" => ResolveBrush("ServerMethodGetBgBrush", FallbackGetBg),
-        "POST" => ResolveBrush("ServerMethodPostBgBrush", FallbackPostBg),
-        "PUT" => ResolveBrush("ServerMethodPutBgBrush", FallbackPutBg),
-        "DELETE" => ResolveBrush("ServerMethodDeleteBgBrush", FallbackDeleteBg),
-        "PATCH" => ResolveBrush("ServerMethodPatchBgBrush", FallbackPatchBg),
-        "OPTIONS" or "HEAD" => ResolveBrush("ServerMethodOptionsBgBrush", FallbackOptionsBg),
-        _ => ResolveBrush("ServerMethodOtherBgBrush", FallbackOtherBg)
-    };
-
-    public IBrush MethodBadgeFgBrush => Method.ToUpperInvariant() switch
-    {
-        "GET" => ResolveBrush("ServerMethodGetFgBrush", FallbackGetFg),
-        "POST" => ResolveBrush("ServerMethodPostFgBrush", FallbackPostFg),
-        "PUT" => ResolveBrush("ServerMethodPutFgBrush", FallbackPutFg),
-        "DELETE" => ResolveBrush("ServerMethodDeleteFgBrush", FallbackDeleteFg),
-        "PATCH" => ResolveBrush("ServerMethodPatchFgBrush", FallbackPatchFg),
-        "OPTIONS" or "HEAD" => ResolveBrush("ServerMethodOptionsFgBrush", FallbackOptionsFg),
-        _ => ResolveBrush("ServerMethodOtherFgBrush", FallbackOtherFg)
-    };
-
-    public IBrush MethodBadgeBorderBrush => Method.ToUpperInvariant() switch
-    {
-        "GET" => ResolveBrush("ServerMethodGetBorderBrush", FallbackGetBorder),
-        "POST" => ResolveBrush("ServerMethodPostBorderBrush", FallbackPostBorder),
-        "PUT" => ResolveBrush("ServerMethodPutBorderBrush", FallbackPutBorder),
-        "DELETE" => ResolveBrush("ServerMethodDeleteBorderBrush", FallbackDeleteBorder),
-        "PATCH" => ResolveBrush("ServerMethodPatchBorderBrush", FallbackPatchBorder),
-        "OPTIONS" or "HEAD" => ResolveBrush("ServerMethodOptionsBorderBrush", FallbackOptionsBorder),
-        _ => ResolveBrush("ServerMethodOtherBorderBrush", FallbackOtherBorder)
-    };
-
-    public IBrush TypeBadgeBgBrush => Type switch
-    {
-        FryServerCellType.Endpoint => MethodBadgeBgBrush,
-        FryServerCellType.Startup => ResolveBrush("ServerTypeStartupBgBrush", FallbackStartupBg),
-        FryServerCellType.Middleware => ResolveBrush("ServerTypeMiddlewareBgBrush", FallbackMiddlewareBg),
-        FryServerCellType.Scenario => ResolveBrush("ServerTypeScenarioBgBrush", FallbackScenarioBg),
-        FryServerCellType.Background => ResolveBrush("ServerTypeJobBgBrush", FallbackJobBg),
-        FryServerCellType.Markdown => ResolveBrush("ServerTypeDocsBgBrush", FallbackDocsBg),
-        _ => ResolveBrush("ServerMethodOptionsBgBrush", FallbackDefaultBg)
-    };
-
-    public IBrush TypeBadgeFgBrush => Type switch
-    {
-        FryServerCellType.Endpoint => MethodBadgeFgBrush,
-        FryServerCellType.Startup => ResolveBrush("ServerTypeStartupFgBrush", FallbackStartupFg),
-        FryServerCellType.Middleware => ResolveBrush("ServerTypeMiddlewareFgBrush", FallbackMiddlewareFg),
-        FryServerCellType.Scenario => ResolveBrush("ServerTypeScenarioFgBrush", FallbackScenarioFg),
-        FryServerCellType.Background => ResolveBrush("ServerTypeJobFgBrush", FallbackJobFg),
-        FryServerCellType.Markdown => ResolveBrush("ServerTypeDocsFgBrush", FallbackDocsFg),
-        _ => ResolveBrush("ServerMethodOptionsFgBrush", FallbackDefaultFg)
-    };
-
-    public IBrush TypeBadgeBorderBrush => Type switch
-    {
-        FryServerCellType.Endpoint => MethodBadgeBorderBrush,
-        FryServerCellType.Startup => ResolveBrush("ServerTypeStartupBorderBrush", FallbackStartupBorder),
-        FryServerCellType.Middleware => ResolveBrush("ServerTypeMiddlewareBorderBrush", FallbackMiddlewareBorder),
-        FryServerCellType.Scenario => ResolveBrush("ServerTypeScenarioBorderBrush", FallbackScenarioBorder),
-        FryServerCellType.Background => ResolveBrush("ServerTypeJobBorderBrush", FallbackJobBorder),
-        FryServerCellType.Markdown => ResolveBrush("ServerTypeDocsBorderBrush", FallbackDocsBorder),
-        _ => ResolveBrush("ServerMethodOptionsBorderBrush", FallbackDefaultBorder)
-    };
 
     public string TypeBadgeText => Type switch
     {
@@ -302,8 +211,7 @@ public partial class FryServerCellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsMiddleware));
         OnPropertyChanged(nameof(IsScenario));
         OnPropertyChanged(nameof(IsMarkdown));
-        OnPropertyChanged(nameof(TypeBadgeBrush));
-        OnPropertyChanged(nameof(TypeBadgeText));
+        NotifyBadges();
     }
 
     partial void OnTitleChanged(string value) => Model.Title = value;
@@ -317,9 +225,7 @@ public partial class FryServerCellViewModel : ObservableObject
     {
         Model.Method = value;
         _engine?.RefreshRoutes();
-        OnPropertyChanged(nameof(MethodBadgeBrush));
-        OnPropertyChanged(nameof(TypeBadgeBrush));
-        OnPropertyChanged(nameof(TypeBadgeText));
+        NotifyBadges();
     }
 
     partial void OnRouteChanged(string value)

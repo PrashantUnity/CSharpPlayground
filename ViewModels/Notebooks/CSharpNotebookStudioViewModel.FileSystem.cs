@@ -382,5 +382,37 @@ public partial class CSharpNotebookStudioViewModel
                 await _storageService.SaveNotebookAsync(doc);
             }
         }
+
+        await RenameFileAsync(item, openTab);
+    }
+
+    // The file on disk takes the new name, as renaming in VS Code's Explorer does (only the title inside used to change,
+    // so the folder kept the old name). A name another file already has leaves everything as it was.
+    private async Task RenameFileAsync(ExplorerItemViewModel item, NotebookTabViewModel? openTab)
+    {
+        var oldName = Path.GetFileName(item.FullPath);
+        try
+        {
+            var fileName = await _storageService.RenameDocumentFileAsync(item.DocumentId!, item.Name);
+            item.Name = fileName;
+            item.FullPath = item.Parent == null ? fileName : $"{item.Parent.FullPath}/{fileName}";
+            if (openTab != null)
+            {
+                openTab.Title = fileName;
+                openTab.Notebook.Title = Path.GetFileNameWithoutExtension(fileName);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            item.Name = oldName;
+            if (openTab != null)
+            {
+                openTab.Title = oldName;
+                openTab.Notebook.Title = Path.GetFileNameWithoutExtension(oldName);
+                await _storageService.SaveNotebookAsync(openTab.Notebook);
+            }
+
+            CompilerStatusText = $"⚠️ Couldn't rename {oldName}: {ex.Message}";
+        }
     }
 }
