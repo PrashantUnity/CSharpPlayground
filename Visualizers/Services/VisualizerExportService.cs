@@ -117,4 +117,20 @@ public static class VisualizerExportService
             // Headless unit tests or clipboard access limitation
         }
     }
+
+    public static async Task<byte[]> ToGifBytesAsync(
+        VisualizerOptions options,
+        VisualizerGifExportOptions? exportOptions = null,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        await VisualizerGifExportService.ExportToGifBytesAsync(options, exportOptions, progress, cancellationToken);
+
+    public static async Task SaveGifAsync(
+        VisualizerOptions options,
+        string outputPath,
+        VisualizerGifExportOptions? exportOptions = null,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        await VisualizerGifExportService.ExportToFileAsync(options, outputPath, exportOptions, progress, cancellationToken);
 }
+

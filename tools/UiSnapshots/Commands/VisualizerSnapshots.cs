@@ -1,3 +1,4 @@
+using System.IO;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,6 +8,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Problems.Catalogs.Blind75;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Controls;
+using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Visuals.Rendering;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
@@ -68,6 +70,22 @@ internal static class VisualizerSnapshots
                     Snapshot.Save(window, $"p{number}_v{k}_s{step}");
                     window.Close();
                 }
+
+                if (options.Flag("gif") && sequence != null && sequence.HasSteps)
+                {
+                    var gifOptions = new VisualizerGifExportOptions
+                    {
+                        Width = options.Int("width", 640),
+                        Height = options.Int("height", 360),
+                        StepDelay = options.Int("delay", 0) > 0 ? TimeSpan.FromMilliseconds(options.Int("delay", 300)) : null,
+                        IncludeBanner = !options.Flag("no-banner")
+                    };
+                    string gifName = $"p{number}_v{k}.gif";
+                    string gifPath = Path.Combine(Snapshot.OutputFolder, gifName);
+                    var bytes = Snapshot.Wait(VisualizerGifExportService.ExportToGifBytesAsync(visualizer, gifOptions));
+                    File.WriteAllBytes(gifPath, bytes);
+                    Console.WriteLine($"   Saved GIF -> {gifPath} ({bytes.Length / 1024} KB)");
+                }
             }
         }
     }
@@ -124,6 +142,24 @@ internal static class VisualizerSnapshots
                     : $"{template.Id}_v{k}_s{step}";
                 Snapshot.Save(window, name);
                 window.Close();
+            }
+
+            if (options.Flag("gif") && sequence != null && sequence.HasSteps)
+            {
+                var gifOptions = new VisualizerGifExportOptions
+                {
+                    Width = options.Int("width", 640),
+                    Height = options.Int("height", 360),
+                    StepDelay = options.Int("delay", 0) > 0 ? TimeSpan.FromMilliseconds(options.Int("delay", 300)) : null,
+                    IncludeBanner = !options.Flag("no-banner")
+                };
+                string gifName = options.Value("name") is { } customName && !options.List("steps").Any()
+                    ? (customName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ? customName : $"{customName}.gif")
+                    : $"{template.Id}_v{k}.gif";
+                string gifPath = Path.Combine(Snapshot.OutputFolder, gifName);
+                var bytes = Snapshot.Wait(VisualizerGifExportService.ExportToGifBytesAsync(visualizer, gifOptions));
+                File.WriteAllBytes(gifPath, bytes);
+                Console.WriteLine($"   Saved GIF -> {gifPath} ({bytes.Length / 1024} KB)");
             }
         }
     }

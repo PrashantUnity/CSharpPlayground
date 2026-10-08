@@ -19,9 +19,16 @@ public class EditorContextMenuTests
         lock (InitLock)
         {
             if (Application.Current != null) return;
-            AppBuilder.Configure<PdfEditorApp.Plugins.CSharpEditor.Runner.App>()
-                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true })
-                .SetupWithoutStarting();
+            try
+            {
+                AppBuilder.Configure<PdfEditorApp.Plugins.CSharpEditor.Runner.App>()
+                    .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true })
+                    .SetupWithoutStarting();
+            }
+            catch (InvalidOperationException)
+            {
+                // Already setup by another test runner
+            }
         }
     }
 

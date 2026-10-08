@@ -52,6 +52,17 @@ public partial class VisualChromeControl : UserControl
     public Func<VisualSpec?>? SpecGetter { get; set; }
     public Func<string?>? DataCsvGetter { get; set; }
     public Func<Task>? CustomPngSaver { get; set; }
+    public Func<Task>? CustomGifSaver { get; set; }
+
+    public bool SupportsGifExport
+    {
+        get => Find<Button>("SaveGifBtn")?.IsVisible ?? false;
+        set
+        {
+            if (Find<Button>("SaveGifBtn") is { } btn)
+                btn.IsVisible = value;
+        }
+    }
 
     public VisualChromeControl()
     {
@@ -66,6 +77,7 @@ public partial class VisualChromeControl : UserControl
         BindAsync("CopySpecBtn", CopySpecToClipboardAsync);
         BindAsync("CopyDataBtn", CopyDataToClipboardAsync);
         BindAsync("SavePngBtn", SavePngAsync);
+        BindAsync("SaveGifBtn", SaveGifAsync);
         WireResizeGrip();
     }
 
@@ -351,5 +363,13 @@ public partial class VisualChromeControl : UserControl
             }
         }
         catch { }
+    }
+
+    public async Task SaveGifAsync()
+    {
+        if (CustomGifSaver != null)
+        {
+            await CustomGifSaver();
+        }
     }
 }

@@ -66,6 +66,11 @@
                                 <materialIcons:MaterialIcon Kind="ImageOutline" Width="12" Height="12" />
                             </Button>
 
+                            <!-- Save Animated GIF -->
+                            <Button x:Name="SaveGifBtn" Classes="chrome-tool-btn" ToolTip.Tip="Export as Animated GIF" IsVisible="False">
+                                <materialIcons:MaterialIcon Kind="FileGifBox" Width="13" Height="13" />
+                            </Button>
+
                             <!-- Fullscreen -->
                             <Button x:Name="FullscreenBtn" Classes="chrome-tool-btn" ToolTip.Tip="Fullscreen / Pop-Out">
                                 <materialIcons:MaterialIcon x:Name="FullscreenIcon" Kind="Fullscreen" Width="13" Height="13" Foreground="{DynamicResource M3PrimaryBrush}" />
