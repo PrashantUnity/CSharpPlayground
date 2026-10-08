@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using Avalonia.Headless;
-using Avalonia.Skia;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Media.Gif;
 using Xunit;
@@ -102,26 +102,8 @@ public class AnimatedGifEncoderTests
         Assert.Equal(768, quantized.PaletteRgb.Length);
     }
 
-    private static readonly object InitLock = new();
-
-    private static void EnsureAvaloniaInitialized()
-    {
-        lock (InitLock)
-        {
-            if (Avalonia.Application.Current != null) return;
-            try
-            {
-                var builder = Avalonia.AppBuilder.Configure<PdfEditorApp.Plugins.CSharpEditor.Runner.App>();
-                Avalonia.SkiaApplicationExtensions.UseSkia(builder);
-                builder.UseHeadless(new Avalonia.Headless.AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-                    .SetupWithoutStarting();
-            }
-            catch (InvalidOperationException)
-            {
-                // App already setup by another test runner
-            }
-        }
-    }
+    private static void EnsureAvaloniaInitialized() =>
+        TestHeadlessApp.EnsureInitialized();
 
     [Fact]
     public void RenderTargetBitmap_CanExtractPixels()

@@ -62,6 +62,10 @@ public sealed class FakeHostEnvironment : IHostEnvironment
     /// <summary>Whether <c>xcode-select -p</c> succeeds (Apple's Command Line Tools are installed).</summary>
     public bool CommandLineToolsInstalled { get; set; }
 
+    /// <summary>Whether <c>git --version</c> succeeds (Git CLI is installed).</summary>
+    public bool GitInstalled { get; set; } = true;
+    public string GitVersion { get; set; } = "git version 2.44.0";
+
     /// <summary>Answers other commands, e.g. <c>py -0p</c>; null means "not found".</summary>
     public Func<string, IReadOnlyList<string>, CommandResult?>? OnCommand { get; set; }
 
@@ -268,6 +272,13 @@ public sealed class FakeHostEnvironment : IHostEnvironment
         if (arguments.Count > 0 && arguments[0] == "--version" && _sqls.TryGetValue(Normalize(fileName), out var sql))
         {
             return Task.FromResult(sql.ProbeAnswer());
+        }
+
+        if (arguments.Count > 0 && arguments[0] == "--version" && (fileName == "git" || fileName.EndsWith("/git", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith("\\git.exe", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase)))
+        {
+            return Task.FromResult(GitInstalled
+                ? new CommandResult(0, GitVersion + "\n", string.Empty, false)
+                : new CommandResult(-1, string.Empty, "git: not found", false));
         }
 
         return Task.FromResult(OnCommand?.Invoke(fileName, arguments) ?? new CommandResult(-1, string.Empty, $"{fileName}: not found", false));

@@ -48,8 +48,11 @@ public class ServerStudioExplorerTests : IDisposable
         return (studio, open);
     }
 
-    private static IEnumerable<ExplorerItemViewModel> All(IEnumerable<ExplorerItemViewModel> items) =>
-        items.SelectMany(i => new[] { i }.Concat(All(i.Children)));
+    private static IEnumerable<ExplorerItemViewModel> All(IEnumerable<ExplorerItemViewModel> items)
+    {
+        var list = items.ToList();
+        return list.SelectMany(i => new[] { i }.Concat(All(i.Children.ToList())));
+    }
 
     [Fact]
     public async Task TheExplorer_ListsTheFolder_AsVsCodeDoes()
@@ -111,7 +114,7 @@ public class ServerStudioExplorerTests : IDisposable
 
         item.RequestDuplicateCommand.Execute(null);
         var copyPath = Path.Combine(_workspace, "api", "Orders copy.fryserver");
-        for (var i = 0; i < 100 && !File.Exists(copyPath); i++) await Task.Delay(20);
+        for (var i = 0; i < 100 && (!File.Exists(copyPath) || !All(explorer.ExplorerRootItems).Any(x => x.Name == "Orders copy.fryserver")); i++) await Task.Delay(20);
         var copy = JsonSerializer.Deserialize<FryServerDocumentItem>(File.ReadAllText(copyPath))!;
         Assert.NotEqual(open.Id, copy.Id);          // a document of its own
         Assert.Equal("Orders copy", copy.Title);
@@ -121,7 +124,7 @@ public class ServerStudioExplorerTests : IDisposable
         var original = All(explorer.ExplorerRootItems).Single(i => i.DocumentId == open.Id);
         original.RequestDeleteCommand.Execute(null);
         original.ConfirmDeleteCommand.Execute(null);
-        for (var i = 0; i < 100 && File.Exists(Path.Combine(_workspace, "api", "Orders.fryserver")); i++) await Task.Delay(20);
+        for (var i = 0; i < 100 && (File.Exists(Path.Combine(_workspace, "api", "Orders.fryserver")) || deleted == null); i++) await Task.Delay(20);
 
         Assert.False(File.Exists(Path.Combine(_workspace, "api", "Orders.fryserver")));
         Assert.Equal(open.Id, deleted);
@@ -137,7 +140,7 @@ public class ServerStudioExplorerTests : IDisposable
 
         api.RequestNewFileCommand.Execute(null);
         ExplorerItemViewModel? created = null;
-        for (var i = 0; i < 100 && created == null; i++)
+        for (var i = 0; i < 100 && (created == null || !created.IsRenaming); i++)
         {
             await Task.Delay(20);
             created = All(explorer.ExplorerRootItems).FirstOrDefault(c => c.FullPath == "api/New Server.fryserver"); // the tree is rebuilt

@@ -45,10 +45,10 @@ public sealed partial class RustDiagnosticParser : IDiagnosticParser
     [GeneratedRegex(@"^thread '[^']*'(?: \(\d+\))? has overflowed its stack")]
     private static partial Regex StackOverflowRegex();
 
-    [GeneratedRegex(@"linker `(?<linker>[^`]+)` not found")]
+    [GeneratedRegex("""linker ['`"](?<linker>[^'`"]+)['`"] not found""")]
     private static partial Regex LinkerNotFoundRegex();
 
-    [GeneratedRegex(@"linking with `(?<linker>[^`]+)` failed")]
+    [GeneratedRegex("""linking with ['`"](?<linker>[^'`"]+)['`"] failed""")]
     private static partial Regex LinkFailedRegex();
 
     [GeneratedRegex(@"no matching package named `(?<name>[^`]+)`|failed to select a version for(?: the requirement)? `(?<name2>[A-Za-z0-9_\-]+)")]

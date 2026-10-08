@@ -219,8 +219,8 @@ public sealed partial class SnippetRunViewModel : ObservableObject
             _consoleRefreshQueued = true;
         }
 
-        // One refresh for a burst of writes (straight away where there is no UI thread).
-        if (Avalonia.Application.Current == null) PublishConsole(runId);
+        // One refresh for a burst of writes (straight away where there is no live UI thread).
+        if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime || Dispatcher.UIThread.CheckAccess()) PublishConsole(runId);
         else Dispatcher.UIThread.Post(() => PublishConsole(runId), DispatcherPriority.Background);
     }
 
@@ -268,7 +268,6 @@ public sealed partial class SnippetRunViewModel : ObservableObject
     // The kernel reports from its own threads; the page is only touched on the UI thread (directly, where there is none).
     private static void OnUi(Action action)
     {
-        if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) action();
-        else Dispatcher.UIThread.Post(action);
+        PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.RunOnUi(action);
     }
 }

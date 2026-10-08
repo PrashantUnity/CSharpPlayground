@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Headless;
-using Avalonia.Skia;
+using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Media.Gif;
 using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Models;
@@ -14,26 +14,8 @@ namespace CSharpEditorPlugin.Tests.Visuals.Rendering;
 
 public class VisualizerGifExportTests
 {
-    private static readonly object InitLock = new();
-
-    private static void EnsureAvaloniaInitialized()
-    {
-        lock (InitLock)
-        {
-            if (Avalonia.Application.Current != null) return;
-            try
-            {
-                var builder = Avalonia.AppBuilder.Configure<PdfEditorApp.Plugins.CSharpEditor.Runner.App>();
-                Avalonia.SkiaApplicationExtensions.UseSkia(builder);
-                builder.UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-                    .SetupWithoutStarting();
-            }
-            catch (InvalidOperationException)
-            {
-                // App already setup by another test runner
-            }
-        }
-    }
+    private static void EnsureAvaloniaInitialized() =>
+        TestHeadlessApp.EnsureInitialized();
 
     [Fact]
     public async Task ExportToGifBytesAsync_ArrayVisualizer_ProducesValidMultiFrameGif()

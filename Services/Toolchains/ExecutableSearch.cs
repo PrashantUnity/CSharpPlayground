@@ -4,6 +4,10 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 public static class ExecutableSearch
 {
     /// <summary>The folders of a PATH value, in order, without blanks or repeats.</summary>
+    public static IReadOnlyList<string> SplitPath(string? pathValue, IHostEnvironment host) =>
+        SplitPath(pathValue, host.IsWindows);
+
+    /// <summary>The folders of a PATH value, in order, without blanks or repeats.</summary>
     public static IReadOnlyList<string> SplitPath(string? pathValue, bool isWindows)
     {
         if (string.IsNullOrWhiteSpace(pathValue)) return Array.Empty<string>();

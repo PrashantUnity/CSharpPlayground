@@ -74,7 +74,7 @@ public sealed partial class PythonToolchainProvider
             }
 
             if (insideRoot && SameFolder(folder, root!)) break;
-            folder = Path.GetDirectoryName(folder);
+            folder = ExecutableSearch.GetDirectoryName(folder);
         }
     }
 

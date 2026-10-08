@@ -49,6 +49,23 @@ public static class TestCpp
             if (!string.IsNullOrWhiteSpace(explicitPath)) cpp.CppToolchain.Select(explicitPath);
 
             var resolution = cpp.CppToolchain.ResolveAsync(new ToolchainQuery()).GetAwaiter().GetResult();
+            if (resolution.Toolchain == null) return null;
+
+            // Smoke-test compiling a minimal C++ program using <iostream> to verify standard headers and linker.
+            try
+            {
+                var testFile = Path.Combine(scratch, "smoke.cpp");
+                var testOut = Path.Combine(scratch, "smoke.exe");
+                File.WriteAllText(testFile, "#include <iostream>\nint main() { std::cout << 42; return 0; }\n");
+                var host = new HostEnvironment();
+                var buildRes = host.RunAsync(resolution.Toolchain.ExecutablePath, [testFile, "-o", testOut], TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                if (buildRes.ExitCode != 0) return null;
+            }
+            catch
+            {
+                return null;
+            }
+
             return resolution.Toolchain;
         }
         catch (Exception)

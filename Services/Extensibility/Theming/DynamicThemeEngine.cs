@@ -409,12 +409,47 @@ public class DynamicThemeEngine : IThemeApi
         }
 
         // The light/dark switch re-resolves every themed resource once; only when it really changes.
-        if (variant != null && Application.Current is { } app && app.RequestedThemeVariant != variant)
+        if (variant != null && Application.Current is { } app)
         {
-            app.RequestedThemeVariant = variant;
+            try
+            {
+                if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess() && app.RequestedThemeVariant != variant)
+                {
+                    app.RequestedThemeVariant = variant;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
-        var targets = _roots.Count > 0 ? (IEnumerable<IResourceDictionary>)_roots : Application.Current?.Resources is { } appResources ? new[] { appResources } : Array.Empty<IResourceDictionary>();
+        IEnumerable<IResourceDictionary> targets;
+        if (_roots.Count > 0)
+        {
+            targets = _roots;
+        }
+        else if (Application.Current is { } currentApp)
+        {
+            try
+            {
+                if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess() && currentApp.Resources is { } appResources)
+                {
+                    targets = new[] { appResources };
+                }
+                else
+                {
+                    targets = Array.Empty<IResourceDictionary>();
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                targets = Array.Empty<IResourceDictionary>();
+            }
+        }
+        else
+        {
+            targets = Array.Empty<IResourceDictionary>();
+        }
         foreach (var root in targets)
         {
             // The layer stays installed; its content is replaced in one go: one change for everything below the root.

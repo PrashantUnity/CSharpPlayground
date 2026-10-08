@@ -14,7 +14,7 @@ public sealed class SnippetRunService : IDisposable
 {
     private readonly LanguageRegistry _registry;
     private readonly Lazy<NotebookKernelRouter> _router;
-    private readonly string _scratchFolder = Path.Combine(Path.GetTempPath(), "frysharp-docs-run");
+    private readonly string _scratchFolder = Path.Combine(Path.GetTempPath(), "frysharp-docs-run-" + Guid.NewGuid().ToString("N")[..8]);
 
     public SnippetRunService(LanguageRegistry registry)
     {
@@ -77,5 +77,12 @@ public sealed class SnippetRunService : IDisposable
     public void Dispose()
     {
         if (_router.IsValueCreated) _router.Value.Dispose();
+        try
+        {
+            if (Directory.Exists(_scratchFolder)) Directory.Delete(_scratchFolder, recursive: true);
+        }
+        catch
+        {
+        }
     }
 }

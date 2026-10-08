@@ -198,6 +198,17 @@ public partial class InteractiveChartControl : UserControl
     {
         var panel = Find<ItemsControl>("SeriesLegendPanel");
         if (panel == null) return;
+        if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            try
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyLegend(opts));
+            }
+            catch
+            {
+            }
+            return;
+        }
         panel.Items.Clear();
         var show = opts.ShowLegend && ViewState.EffectiveType(opts) is not (ChartType.Pie or ChartType.Donut or ChartType.PolarArea);
         panel.IsVisible = show;

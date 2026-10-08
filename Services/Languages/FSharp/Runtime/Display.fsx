@@ -60,7 +60,7 @@ module private Detail =
                     if root.TryGetProperty("event", &evElem) then
                         if evElem.ValueKind = JsonValueKind.Object then
                             let mutable kindElem = Unchecked.defaultof<JsonElement>
-                            if evElem.TryGetProperty("kind", &kindElem) then
+                            if evElem.TryGetProperty("kind", &kindElem) || evElem.TryGetProperty("event", &kindElem) then
                                 evKind <- kindElem.GetString().ToLowerInvariant()
                             let mutable targetElem = Unchecked.defaultof<JsonElement>
                             if evElem.TryGetProperty("target", &targetElem) && targetElem.ValueKind = JsonValueKind.Object then
@@ -95,6 +95,7 @@ module private Detail =
                         )
                     for cb in callbacks do
                         try cb event with _ -> ()
+                    try stdout.Flush() with _ -> ()
             )
         with _ -> ()
 

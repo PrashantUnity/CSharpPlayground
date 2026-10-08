@@ -86,7 +86,8 @@ public static class StudioScreenshotService
 
                     using var ms = new MemoryStream();
                     rtb.Save(ms, new PngBitmapEncoderOptions());
-                    return ms.ToArray();
+                    var arr = ms.ToArray();
+                    return arr.Length > 0 ? arr : CreateFallbackBitmapBytes(width, height);
                 }
                 catch
                 {
@@ -106,7 +107,8 @@ public static class StudioScreenshotService
             }
         }
 
-        return await UiDispatchHelper.InvokeAsync(DoCapture);
+        var bytes = await UiDispatchHelper.InvokeAsync(DoCapture);
+        return bytes != null && bytes.Length > 0 ? bytes : MinimalValidPngBytes;
     }
 
     /// <summary>
@@ -181,7 +183,8 @@ public static class StudioScreenshotService
             using var rtb = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
             using var ms = new MemoryStream();
             rtb.Save(ms, new PngBitmapEncoderOptions());
-            return ms.ToArray();
+            var arr = ms.ToArray();
+            return arr.Length > 0 ? arr : MinimalValidPngBytes;
         }
         catch
         {

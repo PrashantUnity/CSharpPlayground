@@ -49,6 +49,26 @@ public static class TestRust
             if (!string.IsNullOrWhiteSpace(explicitPath)) rust.RustToolchain.Select(explicitPath);
 
             var resolution = rust.RustToolchain.ResolveAsync(new ToolchainQuery()).GetAwaiter().GetResult();
+            if (resolution.Toolchain == null) return null;
+
+            // Smoke-test linking a minimal binary to ensure the C/MSVC linker is functional on this OS.
+            try
+            {
+                var testFile = Path.Combine(scratch, "smoke.rs");
+                var testOut = Path.Combine(scratch, "smoke.exe");
+                File.WriteAllText(testFile, "fn main() {}");
+                var host = new HostEnvironment();
+                var rustcDir = Path.GetDirectoryName(resolution.Toolchain.ExecutablePath);
+                var rustc = !string.IsNullOrEmpty(rustcDir) ? Path.Combine(rustcDir, host.IsWindows ? "rustc.exe" : "rustc") : "rustc";
+                if (!File.Exists(rustc)) rustc = host.IsWindows ? "rustc.exe" : "rustc";
+                var buildRes = host.RunAsync(rustc, [testFile, "-o", testOut], TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                if (buildRes.ExitCode != 0) return null;
+            }
+            catch
+            {
+                return null;
+            }
+
             return resolution.Toolchain;
         }
         catch (Exception)

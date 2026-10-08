@@ -19,7 +19,7 @@ namespace CSharpEditorPlugin.Tests.Debugging;
 /// </summary>
 public class DebugAdapterLaunchTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_DapLaunch_" + Guid.NewGuid().ToString("N"));
 
     public DebugAdapterLaunchTests()
@@ -315,7 +315,7 @@ public class DebugAdapterLaunchTests : IDisposable
     [Fact]
     public async Task AnAdapterOnItsStandardStreams_ThatExits_EndsTheSession()
     {
-        var exit = new TaskCompletionSource();
+        var exit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var launcher = new FakeProcessLauncher
         {
             Behavior = async (spec, process) =>

@@ -264,7 +264,7 @@ public class JavaVisualsConformanceTests : IDisposable
         await WaitUntil(() => outputs.Count == 1 && outputs[0].Visual?.IsInteractive == true);
         outputs[0].Visual!.Raise(VisualEvent.Click(new VisualEventTarget { Series = 0, Index = 1 }));
 
-        await WaitUntil(() => console.Any(c => c.Contains("clicked 1")));
+        await WaitUntil(() => string.Concat(console).Contains("clicked 1"));
         session.Stop();
     }
 

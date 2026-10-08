@@ -98,7 +98,7 @@ public sealed class DartToolchainProvider : IToolchainProvider
             _host.IsMacOS
                 ? ["Run 'brew install dart' in your terminal.", "Or download the Dart SDK from https://dart.dev/get-dart."]
                 : _host.IsWindows
-                    ? ["Run 'choco install dart-sdk' in an administrator prompt.", "Or download from https://dart.dev/get-dart."]
+                    ? ["Run 'winget install Dart.DartSDK' (or 'choco install dart-sdk').", "Or download from https://dart.dev/get-dart."]
                     : ["Install via your distribution package manager (e.g. 'sudo apt-get install dart')."],
             "https://dart.dev/get-dart");
 
