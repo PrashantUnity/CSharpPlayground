@@ -96,6 +96,17 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
             _searchPanel = SearchPanel.Install(_editor);
+            EditorContextMenu.Attach(
+                _editor,
+                new EditorContextMenuOptions
+                {
+                    LanguageProvider = () => _editorLanguage,
+                    FormatAction = () => _currentVm?.FormatCode(),
+                    RunAction = () => _ = _currentVm?.RunCodeCommand.ExecuteAsync(null),
+                    DebugAction = () => _ = _currentVm?.DebugCodeCommand.ExecuteAsync(null),
+                    ToggleBreakpointAction = line => _currentVm?.ToggleBreakpoint(line),
+                    ToggleCommentAction = () => ToggleLineComment()
+                });
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
             _collectionViewOverlay = this.FindControl<CollectionViewControl>("CollectionViewOverlay");
             if (_collectionViewOverlay != null)

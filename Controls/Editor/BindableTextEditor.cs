@@ -155,6 +155,25 @@ public class BindableTextEditor : TextEditor
         };
         TextChanged += OnEditorTextChanged;
 
+        EditorContextMenu.Attach(this, new EditorContextMenuOptions
+        {
+            LanguageProvider = () => _language,
+            FormatAction = () => FormatCode(),
+            RunAction = () =>
+            {
+                if (ExecuteCommand != null && ExecuteCommand.CanExecute(null))
+                    ExecuteCommand.Execute(null);
+            },
+            RunHeader = "Run Cell",
+            ToggleBreakpointAction = line =>
+            {
+                if (_breakpointMargin.HasBreakpoint(line))
+                    _breakpointMargin.RemoveBreakpoint(line);
+                else
+                    _breakpointMargin.AddBreakpoint(line);
+            }
+        });
+
         // Prevent oversized cell editors from snapping the parent notebook ScrollViewer to the top of the cell
         AddHandler(RequestBringIntoViewEvent, OnRequestBringIntoView, RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(PointerPressedEvent, OnEditorPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
