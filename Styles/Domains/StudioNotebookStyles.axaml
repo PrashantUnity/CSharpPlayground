@@ -188,9 +188,10 @@
 
         <!-- Between-Cell Interactive Insertion Divider -->
         <Style Selector="Border.cell-insert-divider">
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Margin" Value="56,0,0,0" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="Margin" Value="36,0,0,0" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="ClipToBounds" Value="False" />
         </Style>
         <Style Selector="Border.cell-insert-divider StackPanel.insert-pill-group">
             <Setter Property="Opacity" Value="0" />
@@ -315,7 +316,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
             <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
-            <Setter Property="Width" Value="16" />
+            <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="16" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />

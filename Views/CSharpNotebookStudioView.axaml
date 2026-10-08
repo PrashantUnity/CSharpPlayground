@@ -828,7 +828,7 @@
                                                                      VerticalScrollBarVisibility="Auto">
                                     <!-- Side margins only: the top and bottom gaps are the header and footer rows. A vertical margin
                                          here would shrink the area the virtualizing panel fills. -->
-                                    <ItemsPresenter Margin="24,0,36,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                    <ItemsPresenter Margin="8,0,20,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
                                 </controls1:NotebookCanvasScrollViewer>
                             </ControlTemplate>
                         </ItemsControl.Template>
@@ -841,7 +841,7 @@
 
                             <!-- Top Insert Divider (before first cell) -->
                             <DataTemplate DataType="notebooks:NotebookCanvasHeader" x:DataType="notebooks:NotebookCanvasHeader">
-                            <Border Classes="cell-insert-divider" Margin="56,16,0,8">
+                            <Border Classes="cell-insert-divider" Margin="36,8,0,6">
                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                                     <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
                                     <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -868,10 +868,10 @@
                                     <DataTemplate DataType="notebooks:NotebookCellViewModel" x:DataType="notebooks:NotebookCellViewModel">
                                         <StackPanel Spacing="0">
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
-                                            <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
+                                            <Grid ColumnDefinitions="36,*" Margin="0,0,0,0">
                                                 <!-- COLUMN 0: LEFT GUTTER (Aligned with Line 1) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0" VerticalAlignment="Top"
-                                                             nb:StickyGutterBehavior.IsEnabled="True">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,4,0" VerticalAlignment="Top"
+                                                             nb:StickyGutterBehavior.IsEnabled="{Binding IsCodeCell}">
                                                     <!-- Row 1: Gutter Input Fold & Run Button -->
                                                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                                                         <Button Command="{Binding ToggleInputCollapseCommand}"
@@ -1290,10 +1290,10 @@
                                                 </Border>
                                             </Grid>
 
-                                            <!-- 2. DEDICATED CELL OUTPUT BLOCK (Its own separate row, just like VS Code!) -->
-                                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding HasOutput}" Margin="0,3,0,0">
+                                            <!-- 2-Column IDE Cell Layout: Output Block -->
+                                            <Grid ColumnDefinitions="36,*" IsVisible="{Binding HasOutput}" Margin="0,3,0,0">
                                                 <!-- COLUMN 0: OUTPUT GUTTER (Output options '...' and Output Fold) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,4,0">
                                                     <!-- Output Options Menu (...) Flyout -->
                                                     <Button Classes="gutter-fold-btn"
                                                             Width="16" Height="16"
