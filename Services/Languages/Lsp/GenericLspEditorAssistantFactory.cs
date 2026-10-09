@@ -37,15 +37,36 @@ public sealed class GenericLspEditorAssistantFactory : IEditorAssistantFactory, 
         var client = _clients.GetOrAdd(rootPath, path =>
         {
             var lsp = new LspClient(_command, _args, path);
-            _ = Task.Run(async () => await lsp.StartAsync(path));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await lsp.StartAsync(path);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[GenericLsp] StartAsync failed: {ex.Message}");
+                }
+            });
             return lsp;
         });
 
         string docPath = Path.Combine(rootPath, $"temp_{Guid.NewGuid():N}.{_languageId}");
         int docVersion = 1;
 
+        string initialText = editor.Text;
         // Open doc in LSP
-        _ = Task.Run(async () => await client.DidOpenAsync(docPath, _languageId, editor.Text));
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await client.DidOpenAsync(docPath, _languageId, initialText);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GenericLsp] DidOpenAsync failed: {ex.Message}");
+            }
+        });
 
         // Debounced text change synchronization
         var changeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
@@ -54,7 +75,17 @@ public sealed class GenericLspEditorAssistantFactory : IEditorAssistantFactory, 
             changeTimer.Stop();
             var text = editor.Text;
             var ver = Interlocked.Increment(ref docVersion);
-            _ = Task.Run(async () => await client.DidChangeAsync(docPath, ver, text));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await client.DidChangeAsync(docPath, ver, text);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[GenericLsp] DidChangeAsync failed: {ex.Message}");
+                }
+            });
         };
 
         void OnTextChanged(object? sender, EventArgs e)
@@ -80,8 +111,27 @@ public sealed class GenericLspEditorAssistantFactory : IEditorAssistantFactory, 
             (text, offset) =>
             {
                 if (offset < 0 || offset >= text.Length) return null;
-                var location = editor.Document.GetLocation(offset);
-                return client.GetHoverAsync(docPath, location.Line - 1, location.Column - 1, offset).GetAwaiter().GetResult();
+                int line = 0, col = 0, currentOffset = 0;
+                var lines = text.Split('\n');
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    int lineLen = lines[i].Length + 1; // +1 for \n
+                    if (currentOffset + lineLen > offset)
+                    {
+                        line = i;
+                        col = offset - currentOffset;
+                        break;
+                    }
+                    currentOffset += lineLen;
+                }
+                try
+                {
+                    return client.GetHoverAsync(docPath, line, col, offset).GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    return null;
+                }
             });
 
         var composite = new CompositeEditorAssistant(quickInfo, completion);
@@ -90,7 +140,17 @@ public sealed class GenericLspEditorAssistantFactory : IEditorAssistantFactory, 
         {
             editor.Document.TextChanged -= OnTextChanged;
             changeTimer.Stop();
-            _ = Task.Run(async () => await client.DidCloseAsync(docPath));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await client.DidCloseAsync(docPath);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[GenericLsp] DidCloseAsync failed: {ex.Message}");
+                }
+            });
             composite.Dispose();
         });
     }

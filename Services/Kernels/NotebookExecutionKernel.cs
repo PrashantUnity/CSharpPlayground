@@ -330,6 +330,13 @@ public class NotebookExecutionKernel : INotebookKernel
             return;
         }
 
+        // An ECharts chart is shown, unless the cell already showed it (EChart.Line(x).Show() returns the chart).
+        if (returnValue is EChart echart)
+        {
+            if (!echart.IsShown) onRichOutput?.Invoke(echart.ToOutput());
+            return;
+        }
+
         // A spec, or a C# model with a visual form (a chart, 3D plot or visualizer model), is shown as that visual.
         if (VisualOutputs.TryFromModel(returnValue, out var visual))
         {

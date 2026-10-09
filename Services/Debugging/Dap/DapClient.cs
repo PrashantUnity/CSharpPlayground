@@ -378,3 +378,21 @@ public sealed class DapException : Exception
         Response = response;
     }
 }
+
+/// <summary>
+/// The debug adapter's process ended before the session was up (its port was taken, a library is missing…). Reported the
+/// same way whether it went before the debugger connected or while the session was starting.
+/// </summary>
+public sealed class DebugAdapterExitedException : IOException
+{
+    public DebugAdapterExitedException(string languageId, int exitCode)
+        : base($"The {languageId} debug adapter exited (exit code {exitCode}) before the session started. Anything it printed is in the Output.")
+    {
+        LanguageId = languageId;
+        ExitCode = exitCode;
+    }
+
+    public string LanguageId { get; }
+
+    public int ExitCode { get; }
+}

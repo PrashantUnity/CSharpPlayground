@@ -307,32 +307,28 @@ public class SnippetRunTests : IDisposable
     // call out to the internet are left to the people reading them: a test must not depend on a service.
     private async Task EverySample_Runs(string language)
     {
-        var jobs = new List<(DocCodeSnippet Snippet, DocCodeLanguageVariant? Variant)>();
+        var jobs = new List<DocCodeSnippet>();
         foreach (var snippet in DocumentationService.Instance.Categories.SelectMany(c => c.Articles).SelectMany(a => a.CodeSnippets).Where(s => !s.NotRunnable))
         {
-            if (snippet.Variants.Count > 1) jobs.AddRange(snippet.Variants.Where(v => v.Language == language && !CallsTheInternet(v.Code)).Select(v => (snippet, (DocCodeLanguageVariant?)v)));
-            else if (snippet.Language == language && !CallsTheInternet(snippet.Code)) jobs.Add((snippet, null));
+            if (snippet.Variants.Count > 1) jobs.AddRange(snippet.Variants.Where(v => v.Language == language && !CallsTheInternet(v.Code)).Select(v => AsShown(snippet, v)));
+            else if (snippet.Language == language && !CallsTheInternet(snippet.Code)) jobs.Add(snippet);
         }
 
         Assert.NotEmpty(jobs);
-        foreach (var (snippet, variant) in jobs)
+        foreach (var job in jobs)
         {
-            var shown = snippet.SelectedVariant;
-            try
-            {
-                if (variant != null) snippet.SelectVariant(variant);
-                var run = Runner(snippet);
-                await run.RunAsync().WaitAsync(TimeSpan.FromMinutes(3));
+            var run = Runner(job);
+            await run.RunAsync().WaitAsync(TimeSpan.FromMinutes(3));
 
-                Assert.True(run.Status == SnippetRunStatus.Done, $"{language}: {snippet.Title}: {run.StatusText} {run.ConsoleText}");
-                if (language != "csharp") Assert.NotEmpty(run.Outputs);
-            }
-            finally
-            {
-                if (variant != null && shown != null) snippet.SelectVariant(shown);
-            }
+            Assert.True(run.Status == SnippetRunStatus.Done, $"{language}: {job.Title}: {run.StatusText} {run.ConsoleText}");
+            if (language != "csharp") Assert.NotEmpty(run.Outputs);
         }
     }
+
+    // A sample as one of its language tabs shows it, in a snippet of its own. Switching the tab of the documentation's own
+    // snippet would change its code under every other test reading it at the same time.
+    private static DocCodeSnippet AsShown(DocCodeSnippet snippet, DocCodeLanguageVariant variant) =>
+        new() { Id = snippet.Id, Title = snippet.Title, Code = variant.Code, Language = variant.Language };
 
     private static bool CallsTheInternet(string code) => code.Contains("http://") || code.Contains("https://");
 

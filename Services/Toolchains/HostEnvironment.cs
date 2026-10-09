@@ -73,8 +73,9 @@ public sealed class HostEnvironment : IHostEnvironment
         if (IsWindows) return Task.FromResult<string?>(null);
         lock (_gate)
         {
-            // Asked once per run: a login shell takes a moment to start.
-            return _loginShellPath ??= ReadLoginShellPathAsync();
+            // Asked once per run: a login shell takes a moment to start. It starts on the pool, not under the lock, so
+            // the others asking meanwhile wait for the task without holding a thread.
+            return _loginShellPath ??= Task.Run(ReadLoginShellPathAsync);
         }
     }
 

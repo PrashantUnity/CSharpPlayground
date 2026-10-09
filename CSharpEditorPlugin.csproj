@@ -58,7 +58,9 @@
 
   <ItemGroup>
     <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
-    <AvaloniaResource Include="Assets\**" />
+    <!-- ECharts and echarts-gl are read by HtmlAssets from the plugin's resources, so they ship once, not as Avalonia resources too. -->
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\echarts\**" />
+    <EmbeddedResource Include="Assets/echarts/*.js" LogicalName="ECharts.%(Filename)%(Extension)" />
     <!-- The notebook's Python kernel program, written out next to the plugin's data when a Python cell first runs. -->
     <EmbeddedResource Include="Services/Languages/Python/Kernel/*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Services/Languages/Python/Runtime/*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />

@@ -60,6 +60,7 @@ public static partial class CodeTemplateLibrary
         list.AddRange(GetLinkedListTemplates());
         list.AddRange(GetRecursionTemplates());
         list.AddRange(GetCharting3DTemplates());
+        list.AddRange(GetEChartTemplates());
         list.AddRange(GetPolyglotVisualsTemplates());
         list.AddRange(GetDynamicProgrammingTemplates());
         list.AddRange(GetCustomizationTemplates());

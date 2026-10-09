@@ -142,7 +142,7 @@ open Fry
 Display.lineChart([ for x in 0.0 .. 0.1 .. 6.28 -> sin x ], "Sine Wave") |> ignore
 ```
 
-Every sample in the docs' visual articles runs with its real toolchain under the Run button, and `SnippetRunTests.EveryPolyglot*Sample_Runs` keeps them honest.
+Every sample in the docs' visual articles runs with its real toolchain under the Run button, and `SnippetRunTests.Every*Sample_Runs` keeps them honest.
 
 ### More chart kinds and options (every language)
 
@@ -166,3 +166,67 @@ Java, Rust and C++ follow the same shapes with their own naming (`Display.java`,
 - **In-Place Updates**: Returned visual handles support `.update(...)`, throttling mutations and refreshing the visual in-place without generating new cells.
 - **Event Callbacks**: Clicking visual elements routes event messages back through the transport or kernel pipes (`event` message type with `target`, `element`, `modifiers`).
 - **Process Disconnection**: When a program terminates, visual handles are marked disconnected, gracefully preserving the last rendered state while alerting the user.
+
+---
+
+## 6. ECharts in C#: `EChart`
+
+`EChart` draws a chart with Apache ECharts 5.5 (echarts-gl 2.0.9 for 3D) in a web view, in C# only. It has the same
+shape as `Charts`: a factory, settings, `Show()`; and it reads data the same way (numbers, `[x, y]` pairs, a
+label → number map, a name → sequence map, tuples, records by member name). A chart returned as a cell's last value
+shows without `Show()`.
+
+```csharp
+EChart.Line(sales, "Sales").Title("Sales").XLabel("Month").YLabel("USD").Smooth().Show();
+EChart.Bar(revenue, "Revenue").Series("Profit", profit, EChartType.Line).Zoom().Toolbox().Show();
+EChart.Bar(regions, r => r.Region, r => r.Revenue).Horizontal().ValueLabels().Show();
+sales.ToEChart(EChartType.Donut).Title("Share").Show();     // any data, any kind
+sales.DumpEChart("Sales", EChartType.Bar);                   // shows it, returns the data
+```
+
+| Factory | Data |
+| --- | --- |
+| `Line`, `Area`, `Bar`, `Scatter` | as for `Charts`; records with x and y selectors; `params (name, values)` |
+| `Pie`, `Donut`, `Funnel` | label → number, or records with label and value selectors |
+| `Radar(data, spokes?, max?)` | a series per name, a value per spoke |
+| `Heatmap(grid, xLabels?, yLabels?)` | `double[,]` or rows; a row per y, the first at the top |
+| `Candlestick` | `[open, close, low, high]` items, or records with a date and those four |
+| `Gauge(value, max)` | one number |
+| `Treemap`, `Sunburst` | a map of names to numbers or to the maps inside them, or records with name, value, children |
+| `Sankey`, `Graph` | `(from, to, amount)` links, or an adjacency map |
+| `Surface(f, xRange, yRange, resolution)`, `Surface(grid)` | z = f(x, y), or heights; NaN is a hole |
+| `ParametricSurface(x, y, z, u, v)` | three functions of (u, v): spheres, tori, strips |
+| `Bar3D`, `Scatter3D` | a grid, or `(x, y, z)` items; text places are categories (`xLabels`/`yLabels` keep their order) |
+
+Settings: `Title`, `Subtitle`, `XLabel`, `YLabel`, `ZLabel`, `XRange`, `YRange`, `Labels`, `YLabels`, `Legend`,
+`LegendAt`, `Tooltip`, `Toolbox`, `Zoom`, `Stacked`, `Horizontal`, `Smooth`, `ValueLabels`, `Colors`, `ColorMap`
+(a `ColorMapPreset` or colours), `Wireframe`, `Shading`, `AutoRotate`, `Theme` (`Auto` follows the studio), `Svg`. A
+setting a chart can't have says what it is for instead of doing nothing.
+
+### The whole option
+
+Every setting writes into `chart.Option`, the ECharts option itself as a `JsonObject`. What no setting reaches:
+
+```csharp
+EChart.Bar(temps)
+    .Set("series.label.show", true)                     // a list without an index: every item
+    .Set("xAxis.axisLabel.rotate", 30)
+    .Set("tooltip.formatter", JsFunc.From("p => p[0].name + ': ' + p[0].value"))
+    .Merge("""{ "animationDuration": 300 }""")
+    .Configure(o => o["animation"] = true)
+    .Show();
+
+EChart.FromJson(json).Title("From JSON").Show();          // bad JSON says where it is wrong
+EChart.FromJs("option = { series: [{ type: 'pie', data: [1, 2] }] };").Show(); // an ECharts example, as it is
+EChart.FromOption(new { series = new[] { new { type = "pie", data = new[] { 1, 2 } } } }).Show();
+```
+
+`JsFunc` is written into the page as code, wherever it is in the option.
+
+### The page
+
+An output carries the option and names the libraries (`<script data-fry-asset="echarts.min.js">`); the HTML view
+writes them in when it shows the page (`HtmlAssets.ForDisplay`), so a chart is a few kilobytes in a notebook, not
+a megabyte. `chart.ToHtml()` / `chart.SaveHtml(path)` and the view's "open in browser" give a page with the libraries
+in it. echarts-gl is only loaded for charts that need it. The view also sets `window.fryHost = { theme, background }`,
+which `Theme(EChartTheme.Auto)` follows. An option ECharts refuses shows its error on the page.

@@ -56,6 +56,7 @@ public partial class DocumentationService
         var polyglotVisualsCategory = BuildPolyglotVisualsCategory();
         var displayCategory = BuildDisplayApisCategory();
         var chartGalleryCategory = BuildChartGalleryCategory();
+        var echartCategory = BuildEChartCategory();
         var shortcutsCategory = BuildShortcutsCategory();
 
         _categories.Add(appCategory);
@@ -82,6 +83,7 @@ public partial class DocumentationService
         _categories.Add(polyglotVisualsCategory);
         _categories.Add(displayCategory);
         _categories.Add(chartGalleryCategory);
+        _categories.Add(echartCategory);
         _categories.Add(shortcutsCategory);
 
         foreach (var category in _categories)

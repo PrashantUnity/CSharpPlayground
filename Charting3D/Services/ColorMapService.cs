@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia.Media;
 using PdfEditorApp.Plugins.CSharpEditor.Charting3D.Models;
 
@@ -27,43 +28,33 @@ public static class ColorMapService
         return $"#{c.R:X2}{c.G:X2}{c.B:X2}";
     }
 
-    // Viridis: Purple -> Blue -> Teal -> Green -> Yellow
-    private static Color SampleViridis(double t)
+    // The published palettes, as evenly spaced stops (matplotlib's viridis and plasma, Google's Turbo, Moreland's
+    // cool-warm), read between them in a straight line: close to the originals, which are tables of 256.
+    private static readonly Color[] ViridisStops = Stops("#440154", "#482878", "#3E4A89", "#31688E", "#26828E", "#1F9E89", "#35B779", "#6DCD59", "#B4DE2C", "#FDE725");
+    private static readonly Color[] PlasmaStops = Stops("#0D0887", "#46039F", "#7201A8", "#9C179E", "#BD3786", "#D8576B", "#ED7953", "#FB9F3A", "#FDCA26", "#F0F921");
+    private static readonly Color[] TurboStops = Stops("#30123B", "#4662D7", "#36AAF9", "#1AE4B6", "#72FE5E", "#C8EF34", "#FABA39", "#F66B19", "#CA2A04", "#7A0403");
+    private static readonly Color[] CoolWarmStops = Stops("#3B4CC0", "#6788EE", "#9ABBFF", "#C9D7F0", "#EDD1C2", "#F7A889", "#E26952", "#B40426");
+
+    private static Color SampleViridis(double t) => Between(ViridisStops, t);
+
+    private static Color SamplePlasma(double t) => Between(PlasmaStops, t);
+
+    private static Color SampleCoolWarm(double t) => Between(CoolWarmStops, t);
+
+    private static Color SampleTurbo(double t) => Between(TurboStops, t);
+
+    private static Color[] Stops(params string[] hex) => hex.Select(Color.Parse).ToArray();
+
+    private static Color Between(Color[] stops, double t)
     {
-        double r = Math.Sin(t * Math.PI * 0.85) * 230 + 35 * (1 - t) + 253 * Math.Pow(t, 4);
-        double g = Math.Sin(t * Math.PI) * 200 + 231 * Math.Pow(t, 2);
-        double b = Math.Cos(t * Math.PI * 0.8) * 120 + 130 * (1 - t) + 36 * t;
+        var at = t * (stops.Length - 1);
+        var i = Math.Min((int)at, stops.Length - 2);
+        var f = at - i;
+        var (a, b) = (stops[i], stops[i + 1]);
         return Color.FromRgb(
-            (byte)Math.Clamp(r, 0, 255),
-            (byte)Math.Clamp(g, 0, 255),
-            (byte)Math.Clamp(b, 0, 255));
-    }
-
-    // Plasma: Dark Blue -> Violet -> Magenta -> Orange -> Yellow
-    private static Color SamplePlasma(double t)
-    {
-        byte r = (byte)Math.Clamp(13 + 240 * Math.Pow(t, 0.8), 0, 255);
-        byte g = (byte)Math.Clamp(8 + 200 * Math.Pow(t, 2.5) + (t > 0.6 ? (t - 0.6) * 120 : 0), 0, 255);
-        byte b = (byte)Math.Clamp(135 * (1 - t) + 240 * Math.Sin(t * Math.PI), 0, 255);
-        return Color.FromRgb(r, g, b);
-    }
-
-    // CoolWarm: Cyan/Blue -> White/Gray -> Red/Orange
-    private static Color SampleCoolWarm(double t)
-    {
-        byte r = (byte)Math.Clamp(59 + 196 * t, 0, 255);
-        byte g = (byte)Math.Clamp(76 + 150 * (1 - Math.Abs(t - 0.5) * 2), 0, 255);
-        byte b = (byte)Math.Clamp(192 + 63 * (1 - t), 0, 255);
-        return Color.FromRgb(r, g, b);
-    }
-
-    // Turbo: Smooth Google Turbo rainbow
-    private static Color SampleTurbo(double t)
-    {
-        byte r = (byte)Math.Clamp(34 + 221 * Math.Sin(Math.Max(0, t - 0.2) * Math.PI * 1.2), 0, 255);
-        byte g = (byte)Math.Clamp(230 * Math.Sin(t * Math.PI), 0, 255);
-        byte b = (byte)Math.Clamp(150 * (1 - t) + 100 * Math.Cos(t * Math.PI * 0.5), 0, 255);
-        return Color.FromRgb(r, g, b);
+            (byte)Math.Round(a.R + (b.R - a.R) * f),
+            (byte)Math.Round(a.G + (b.G - a.G) * f),
+            (byte)Math.Round(a.B + (b.B - a.B) * f));
     }
 
     // Rainbow

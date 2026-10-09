@@ -253,7 +253,7 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Sidebar Bottom Actions: Settings, Return to FryPDF & User Profile -->
+                    <!-- Sidebar Bottom Actions: Settings & User Profile -->
                     <Border Grid.Row="2"
                             BorderBrush="{DynamicResource DsBorderBrush}"
                             lt:Tokens.BorderThickness="DsBorderTop"
@@ -268,18 +268,6 @@
                                         <materialIcons:MaterialIcon Kind="CogOutline" Width="16" Height="16" Foreground="{DynamicResource NavSettingsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Settings" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                </Grid>
-                            </Button>
-
-                            <!-- Return to FryPDF Home -->
-                            <Button Command="{Binding NavigateToHomeCommand}"
-                                    Classes="nexus-nav-item"
-                                    ToolTip.Tip="Return to FryPDF Studio Home (Esc / ⌘W)">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavFrySharpBgBrush}">
-                                        <materialIcons:MaterialIcon Kind="HomeOutline" Width="16" Height="16" Foreground="{DynamicResource NavFrySharpFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <TextBlock Grid.Column="1" Text="FrySharp" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 

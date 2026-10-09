@@ -126,6 +126,18 @@ public class InteractivePlot3DTests
     }
 
     [Fact]
+    public void TheNamedColourMaps_AreThePublishedPalettes()
+    {
+        Assert.Equal("#440154", ColorMapService.GetHexColor(ColorMapPreset.Viridis, 0));
+        Assert.Equal("#FDE725", ColorMapService.GetHexColor(ColorMapPreset.Viridis, 1));
+        Assert.Equal("#0D0887", ColorMapService.GetHexColor(ColorMapPreset.Plasma, 0));
+        Assert.Equal("#F0F921", ColorMapService.GetHexColor(ColorMapPreset.Plasma, 1));
+        Assert.Equal("#30123B", ColorMapService.GetHexColor(ColorMapPreset.Turbo, 0));
+        Assert.Equal("#3B4CC0", ColorMapService.GetHexColor(ColorMapPreset.CoolWarm, 0));
+        Assert.Equal("#B40426", ColorMapService.GetHexColor(ColorMapPreset.CoolWarm, 1));
+    }
+
+    [Fact]
     public void Plot3DDataParser_ShouldParseTuples_IntoSeries3D()
     {
         var points = new List<(double x, double y, double z)>

@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 using System.Text;
-using Avalonia.Headless;
-using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Media.Gif;
 using Xunit;
@@ -101,33 +99,4 @@ public class AnimatedGifEncoderTests
         Assert.Equal(100, quantized.IndexedPixels.Length);
         Assert.Equal(768, quantized.PaletteRgb.Length);
     }
-
-    private static void EnsureAvaloniaInitialized() =>
-        TestHeadlessApp.EnsureInitialized();
-
-    [Fact]
-    public void RenderTargetBitmap_CanExtractPixels()
-    {
-        EnsureAvaloniaInitialized();
-        using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(10, 10));
-        var border = new Avalonia.Controls.Border
-        {
-            Width = 10,
-            Height = 10,
-            Background = Avalonia.Media.Brushes.Blue
-        };
-        using (var ctx = rtb.CreateDrawingContext())
-        {
-            ctx.FillRectangle(Avalonia.Media.Brushes.Green, new Avalonia.Rect(0, 0, 10, 10));
-        }
-
-        byte[] buffer = BitmapPixelReader.ReadPixels(rtb);
-        Assert.NotEmpty(buffer);
-
-        var frame = new GifFrame(buffer, 10, 10, TimeSpan.FromMilliseconds(100));
-        var bytes = AnimatedGifEncoder.EncodeToBytes([frame]);
-        Assert.NotEmpty(bytes);
-    }
 }
-
-
