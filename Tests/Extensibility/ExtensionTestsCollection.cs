@@ -9,5 +9,5 @@ namespace CSharpEditorPlugin.Tests;
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class ExtensionTestsCollection
 {
-    public const string Name = "ExtensionTests";
+    public const string Name = "SettingsTests";
 }

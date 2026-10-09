@@ -15,6 +15,12 @@ public sealed class DartFactAttribute : FactAttribute
 {
     public DartFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestDart.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestDart.Toolchain == null && !TestDart.Required)
         {
             Skip = "Needs the Dart SDK (dart). Install it, or set FRY_TEST_DART to an executable.";

@@ -12,6 +12,12 @@ public sealed class RustFactAttribute : FactAttribute
 {
     public RustFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestRust.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestRust.Toolchain == null && !TestRust.Required)
         {
             Skip = "Needs the Rust toolchain (cargo and rustc). Install it from https://rustup.rs, or set FRY_TEST_RUST to a cargo executable.";

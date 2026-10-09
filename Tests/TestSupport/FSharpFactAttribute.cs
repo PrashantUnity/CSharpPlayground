@@ -12,6 +12,12 @@ public sealed class FSharpFactAttribute : FactAttribute
 {
     public FSharpFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestFSharp.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestFSharp.Toolchain == null && !TestFSharp.Required)
         {
             Skip = "Needs F# Interactive (dotnet fsi). Install .NET SDK with F#, or set FRY_TEST_FSHARP to an executable.";

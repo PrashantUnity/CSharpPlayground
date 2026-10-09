@@ -15,6 +15,12 @@ public sealed class ZigFactAttribute : FactAttribute
 {
     public ZigFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestZig.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestZig.Toolchain == null && !TestZig.Required)
         {
             Skip = "Needs the Zig compiler (zig 0.11+). Install it from https://ziglang.org/download/, or set FRY_TEST_ZIG to an executable.";

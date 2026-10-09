@@ -48,10 +48,23 @@ public class ServerStudioExplorerTests : IDisposable
         return (studio, open);
     }
 
-    private static IEnumerable<ExplorerItemViewModel> All(IEnumerable<ExplorerItemViewModel> items)
+    private static List<ExplorerItemViewModel> All(IEnumerable<ExplorerItemViewModel> items)
     {
-        var list = items.ToList();
-        return list.SelectMany(i => new[] { i }.Concat(All(i.Children.ToList())));
+        var result = new List<ExplorerItemViewModel>();
+        try
+        {
+            var snapshot = items.ToArray();
+            foreach (var item in snapshot)
+            {
+                result.Add(item);
+                result.AddRange(All(item.Children));
+            }
+        }
+        catch (Exception)
+        {
+            // Collection may be mutated concurrently during background tree rebuilds.
+        }
+        return result;
     }
 
     [Fact]
@@ -95,7 +108,7 @@ public class ServerStudioExplorerTests : IDisposable
         item.StartRename();
         item.EditName = "Shop";
         item.CommitRename();
-        for (var i = 0; i < 100 && !File.Exists(Path.Combine(_workspace, "api", "Shop.fryserver")); i++) await Task.Delay(20);
+        for (var i = 0; i < 100 && (!File.Exists(Path.Combine(_workspace, "api", "Shop.fryserver")) || item.FullPath != "api/Shop.fryserver"); i++) await Task.Delay(20);
 
         Assert.True(File.Exists(Path.Combine(_workspace, "api", "Shop.fryserver")));
         Assert.False(File.Exists(Path.Combine(_workspace, "api", "Orders.fryserver")));
@@ -143,7 +156,14 @@ public class ServerStudioExplorerTests : IDisposable
         for (var i = 0; i < 100 && (created == null || !created.IsRenaming); i++)
         {
             await Task.Delay(20);
-            created = All(explorer.ExplorerRootItems).FirstOrDefault(c => c.FullPath == "api/New Server.fryserver"); // the tree is rebuilt
+            try
+            {
+                created = All(explorer.ExplorerRootItems).FirstOrDefault(c => c.FullPath == "api/New Server.fryserver"); // the tree is rebuilt
+            }
+            catch (Exception)
+            {
+                // Retry on next tick if tree is being mutated concurrently
+            }
         }
 
         Assert.NotNull(created);

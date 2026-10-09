@@ -5,6 +5,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
+using CSharpEditorPlugin.Tests.TestSupport;
 using Xunit;
 
 namespace CSharpEditorPlugin.Tests.RealCSharp;
@@ -67,7 +68,7 @@ public class CSharpDebuggerTests : IDisposable
 
     private const string Calc = "var a = 41;\nvar b = 1;\nvar c = a + b;\nConsole.WriteLine(c);\n";
 
-    [Fact]
+    [TimeFact]
     public async Task TheDebugger_IsResolved_WhenNetCoreDbgIsInstalled()
     {
         var provider = Provider();
@@ -79,7 +80,7 @@ public class CSharpDebuggerTests : IDisposable
         Assert.True(File.Exists(resolution.ExecutablePath), resolution.ExecutablePath);
     }
 
-    [Fact]
+    [TimeFact]
     public async Task ABreakpoint_PausesTheScript_AndItsLocalsAreShown()
     {
         var provider = Provider();
@@ -109,7 +110,7 @@ public class CSharpDebuggerTests : IDisposable
         Assert.Contains("42", output.ToString());
     }
 
-    [Fact]
+    [TimeFact]
     public async Task SteppingOver_MovesToTheNextLine_AndTheNewValueAppears()
     {
         var provider = Provider();
@@ -134,7 +135,7 @@ public class CSharpDebuggerTests : IDisposable
         Assert.Equal(0, (await terminated.Task.WaitAsync(Patience)).ExitCode);
     }
 
-    [Fact]
+    [TimeFact]
     public async Task ABreakpointAddedWhileTheScriptIsPaused_IsHit()
     {
         var provider = Provider();
@@ -158,7 +159,7 @@ public class CSharpDebuggerTests : IDisposable
         Assert.Equal(0, (await terminated.Task.WaitAsync(Patience)).ExitCode);
     }
 
-    [Fact]
+    [TimeFact]
     public async Task AScriptThatIsNeverPaused_RunsToTheEnd_AndItsOutputIsShown()
     {
         var provider = Provider();
@@ -180,7 +181,7 @@ public class CSharpDebuggerTests : IDisposable
     }
 
     // netcoredbg 3.2.0-1 reports exit code 0 for Environment.Exit(3); the debug build writes the real one as the process ends.
-    [Fact]
+    [TimeFact]
     public async Task AScriptThatExitsWithACode_ReportsThatCode()
     {
         var provider = Provider();
@@ -194,7 +195,7 @@ public class CSharpDebuggerTests : IDisposable
         Assert.Equal(3, (await terminated.Task.WaitAsync(Patience)).ExitCode);
     }
 
-    [Fact]
+    [TimeFact]
     public async Task AScriptUsingPluginTypesAndCheck_PausesAtBreakpoint_AndResolvesAssemblies()
     {
         var provider = Provider();

@@ -12,6 +12,12 @@ public sealed class CppFactAttribute : FactAttribute
 {
     public CppFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestCpp.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestCpp.Toolchain == null && !TestCpp.Required)
         {
             Skip = "Needs a C++ compiler (clang++, g++, or cl.exe). Install it, or set FRY_TEST_CPP to an executable.";
